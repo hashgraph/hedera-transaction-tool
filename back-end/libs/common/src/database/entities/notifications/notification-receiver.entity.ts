@@ -1,6 +1,7 @@
 import {
   Entity,
   Column,
+  Index,
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
@@ -10,6 +11,8 @@ import { Notification } from './notification.entity';
 import { User } from '../user.entity';
 
 @Entity()
+@Index('IDX_notification_receiver_userId_isRead', ['userId', 'isRead'])
+@Index('IDX_notification_receiver_notificationId', ['notificationId'])
 export class NotificationReceiver {
   @PrimaryGeneratedColumn()
   id: number;

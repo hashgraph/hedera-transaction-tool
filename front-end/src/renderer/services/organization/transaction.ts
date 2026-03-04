@@ -102,9 +102,15 @@ export const uploadSignatures = async (
     ];
   }
 
+  const decryptedKeyCache = new Map<string, string>();
+
   for (const { publicKeys, transaction, transactionId } of items) {
     for (const publicKey of publicKeys) {
-      const privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
+      let privateKeyRaw = decryptedKeyCache.get(publicKey);
+      if (!privateKeyRaw) {
+        privateKeyRaw = await decryptPrivateKey(userId, userPassword, publicKey);
+        decryptedKeyCache.set(publicKey, privateKeyRaw);
+      }
       const privateKey = getPrivateKey(publicKey, privateKeyRaw);
       await transaction.sign(privateKey);
     }

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -129,6 +130,7 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
 export type NotificationAdditionalData = Record<string, any>;
 
 @Entity()
+@Index('IDX_notification_type_entityId', ['type', 'entityId'])
 export class Notification {
   @PrimaryGeneratedColumn()
   id: number;

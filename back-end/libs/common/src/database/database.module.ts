@@ -18,6 +18,9 @@ import { ConfigService } from '@nestjs/config';
           synchronize: configService.getOrThrow<boolean>('POSTGRES_SYNCHRONIZE', { infer: true }),
           autoLoadEntities: true,
           poolSize: configService.getOrThrow<number>('POSTGRES_MAX_POOL_SIZE', { infer: true }),
+          extra: {
+            connectionTimeoutMillis: 10000,
+          },
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
@@ -36,9 +39,9 @@ import { ConfigService } from '@nestjs/config';
           password: configService.getOrThrow('POSTGRES_PASSWORD'),
           synchronize: false, // Don't sync twice
           autoLoadEntities: true,
-          poolSize: 5, // Smaller dedicated pool
+          poolSize: configService.get<number>('POSTGRES_CACHE_POOL_SIZE', 10),
           extra: {
-            statement_timeout: 15000, // Slightly longer for cache operations
+            connectionTimeoutMillis: 10000,
           },
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],

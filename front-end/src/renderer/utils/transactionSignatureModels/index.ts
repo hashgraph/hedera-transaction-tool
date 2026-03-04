@@ -30,6 +30,7 @@ export const computeSignatureKey = async (
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
   organization: ConnectedOrganization | null,
+  publicKeyOwnerCache?: Map<string, string | null>,
 ): Promise<SignatureAudit> => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
 
@@ -38,6 +39,7 @@ export const computeSignatureKey = async (
     accountInfoCache,
     nodeInfoCache,
     organization,
+    publicKeyOwnerCache,
   );
 };
 
@@ -49,6 +51,7 @@ export const usersPublicRequiredToSign = async (
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
   organization: ConnectedOrganization | null,
+  publicKeyOwnerCache?: Map<string, string | null>,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
 
@@ -64,6 +67,7 @@ export const usersPublicRequiredToSign = async (
     accountInfoCache,
     nodeInfoCache,
     organization,
+    publicKeyOwnerCache,
   );
 
   const requiredUnsignedKeys = new Set<string>();

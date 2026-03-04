@@ -10,6 +10,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { getTransactionGroupById } from '@renderer/services/organization';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
+import { TransactionStatus } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
@@ -34,6 +35,7 @@ const nodeByIdCache = NodeByIdCache.inject();
 
 /* State */
 const signOnGoing = ref(false);
+const progressText = ref('Sign All');
 const isConfirmModalShown = ref(false);
 
 /* Handlers */
@@ -54,12 +56,18 @@ const handleSign = async (personalPassword: string|null) => {
   signOnGoing.value = true;
   try {
     const group = await getTransactionGroupById(serverUrl, props.groupId, false);
-    const transactions = group.groupItems.map(item => item.transaction);
+    const transactions = group.groupItems
+      .map(item => item.transaction)
+      .filter(t => t.status === TransactionStatus.WAITING_FOR_SIGNATURES);
+    progressText.value = `Signing 0/${transactions.length}...`;
     const signed = await signTransactions(
       transactions,
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      (completed, total) => {
+        progressText.value = `Signing ${completed}/${total}...`;
+      },
     );
 
     emit('transactionGroupSigned', { groupId: props.groupId, signed });
@@ -72,6 +80,7 @@ const handleSign = async (personalPassword: string|null) => {
     toast.error('Transaction group not signed', errorToastOptions);
   } finally {
     signOnGoing.value = false;
+    progressText.value = 'Sign All';
   }
 };
 </script>
@@ -81,7 +90,7 @@ const handleSign = async (personalPassword: string|null) => {
     v-bind="$attrs"
     :disabled="signOnGoing"
     :loading="signOnGoing"
-    loading-text="Sign All"
+    :loading-text="progressText"
     color="primary"
     type="button"
     @click.prevent="handleClick"

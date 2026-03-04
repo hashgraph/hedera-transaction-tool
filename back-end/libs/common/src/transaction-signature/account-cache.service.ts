@@ -282,13 +282,13 @@ export class AccountCacheService {
 
   /**
    * Insert an association between a transaction and a cached account.
-   * The insertion is idempotent (duplicates are ignored).
+   * The insertion is idempotent (duplicates are ignored via ON CONFLICT DO NOTHING).
    */
-  private linkTransactionToAccount(
+  private async linkTransactionToAccount(
     transactionId: number,
     cachedAccountId: number,
   ): Promise<void> {
-    return this.cacheHelper.linkTransactionToEntity(
+    await this.cacheHelper.linkTransactionToEntity(
       TransactionCachedAccount,
       transactionId,
       cachedAccountId,

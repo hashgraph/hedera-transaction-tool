@@ -305,6 +305,7 @@ export class SignersService {
     }
 
     // Execute in single transaction
+    let updatedNotificationReceivers: any[] = [];
     try {
       await this.dataSource.transaction(async manager => {
         // Bulk update transactions
@@ -314,12 +315,7 @@ export class SignersService {
 
         // Bulk update notifications
         if (notificationsToUpdate.length > 0) {
-          const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
-
-          emitDismissedNotifications(
-            this.notificationsPublisher,
-            updatedNotificationReceivers,
-          );
+          updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
         }
 
         // Bulk insert signers
@@ -330,6 +326,14 @@ export class SignersService {
     } catch (err) {
       console.error('Database transaction failed:', err);
       throw new BadRequestException(ErrorCodes.FST);
+    }
+
+    // Emit AFTER transaction commits to avoid holding DB connection during NATS publish
+    if (updatedNotificationReceivers.length > 0) {
+      emitDismissedNotifications(
+        this.notificationsPublisher,
+        updatedNotificationReceivers,
+      );
     }
 
     return transactionsToProcess;

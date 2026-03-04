@@ -37,17 +37,10 @@ export class FanOutService {
   }
 
   async notifyClients(dtos: NotifyClientDto[]) {
-    // for (const userId of userIds) {
-    //   // client.emit<undefined, NotifyClientDto>(NOTIFY_CLIENT, {
-    //   //   message: TRANSACTION_ACTION,
-    //   //   content: '',
-    //   // });
-    //   await this.websocket.notifyClient({ message: TRANSACTION_ACTION, content: '' });
-    // }
-    console.log('Notify clients called in fan-out service');
+    const groupIds = [...new Set(dtos.map(d => d.groupId).filter(Boolean))];
     await this.websocket.notifyClient({
       message: TRANSACTION_ACTION,
-      content: '',
+      content: groupIds.length > 0 ? JSON.stringify({ groupIds }) : '',
     });
   }
 }

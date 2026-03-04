@@ -1,5 +1,5 @@
 import type { AccountInfo, ITransaction } from '@shared/interfaces';
-import type { HederaAccount } from '@prisma/client';
+import type { HederaAccount, Organization } from '@prisma/client';
 
 import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
 
@@ -21,7 +21,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
-import type { SignatureItem } from '@renderer/types';
+import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 
 export * from './dom';
 export * from './sdk';
@@ -188,59 +188,85 @@ export async function signTransactions(
   password: string | null,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  onProgress?: (completed: number, total: number) => void,
+  precomputedKeys?: Record<number, string[]>,
 ): Promise<boolean> {
   const user = useUserStore();
   const network = useNetworkStore();
   const toast = useToast();
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
+  const org = user.selectedOrganization as Organization & LoggedInOrganization;
 
   const items: SignatureItem[] = [];
   let signed = false;
+  const allNonRestoredKeys = new Set<string>();
+  const publicKeyOwnerCache = new Map<string, string | null>();
 
-  for (const tx of transactions) {
-    const tid = tx.id;
-    const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+  const BATCH_SIZE = 10;
+  const total = transactions.length;
+  let completedCount = 0;
 
-    const publicKeysRequired = await usersPublicRequiredToSign(
-      transaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-      accountInfoCache,
-      nodeInfoCache,
-      user.selectedOrganization,
+  for (let i = 0; i < total; i += BATCH_SIZE) {
+    const batch = transactions.slice(i, i + BATCH_SIZE);
+
+    const results = await Promise.allSettled(
+      batch.map(async tx => {
+        const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+
+        const publicKeysRequired = precomputedKeys?.[tx.id] ??
+          await usersPublicRequiredToSign(
+            transaction,
+            org.userKeys,
+            network.mirrorNodeBaseURL,
+            accountInfoCache,
+            nodeInfoCache,
+            org,
+            publicKeyOwnerCache,
+          );
+
+        const restoredRequiredKeys: string[] = [];
+        const nonRestoredRequiredKeys: string[] = [];
+
+        for (const requiredKey of publicKeysRequired) {
+          if (user.keyPairs.some(k => k.public_key === requiredKey)) {
+            restoredRequiredKeys.push(requiredKey);
+          } else {
+            nonRestoredRequiredKeys.push(requiredKey);
+          }
+        }
+
+        return { tx, transaction, restoredRequiredKeys, nonRestoredRequiredKeys, publicKeysRequired };
+      }),
     );
 
-    const restoredRequiredKeys = [];
-    const nonRestoredRequiredKeys = [];
-
-    // Separate keys into restored and non-restored, where restored indicates that the
-    // key is locally present.
-    for (const requiredKey of publicKeysRequired) {
-      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-        restoredRequiredKeys.push(requiredKey);
+    for (const result of results) {
+      if (result.status === 'fulfilled') {
+        const { tx, transaction, restoredRequiredKeys, nonRestoredRequiredKeys, publicKeysRequired } =
+          result.value;
+        if (nonRestoredRequiredKeys.length > 0) {
+          nonRestoredRequiredKeys.forEach(k => allNonRestoredKeys.add(k));
+        } else if (restoredRequiredKeys.length > 0) {
+          items.push({
+            publicKeys: publicKeysRequired,
+            transaction: transaction,
+            transactionId: tx.id,
+          });
+        }
       } else {
-        nonRestoredRequiredKeys.push(requiredKey);
+        console.error('Failed to process transaction for signing:', result.reason);
       }
     }
 
-    if (nonRestoredRequiredKeys.length > 0) {
-      toast.error(
-        `You need to restore the following public keys to fully sign the transaction: ${nonRestoredRequiredKeys.join(
-          ', ',
-        )}`,
-        errorToastOptions,
-      );
-      break;
-    }
+    completedCount += batch.length;
+    onProgress?.(completedCount, total);
+  }
 
-    if (restoredRequiredKeys.length > 0) {
-      items.push({
-        publicKeys: publicKeysRequired,
-        transaction: transaction,
-        transactionId: tid,
-      });
-    }
+  if (allNonRestoredKeys.size > 0) {
+    toast.error(
+      `The following public keys need to be restored to fully sign all transactions: ${[...allNonRestoredKeys].join(', ')}`,
+      errorToastOptions,
+    );
   }
 
   if (items.length > 0) {
