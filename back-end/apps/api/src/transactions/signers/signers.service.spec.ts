@@ -21,6 +21,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 import {
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
@@ -36,6 +37,7 @@ import { SignersService } from './signers.service';
 jest.mock('@app/common/utils');
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
+  emitDismissedNotifications: jest.fn(),
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
@@ -621,7 +623,7 @@ describe('SignersService', () => {
 
       // Mock transaction manager
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -697,7 +699,7 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -984,7 +986,7 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -1016,6 +1018,140 @@ describe('SignersService', () => {
       clearSpy.mockRestore();
       user.keys[0].publicKey = originalPublicKey;
     });
+
+    it('should not emit dismissed notifications when no SIGN receivers were updated', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockManager = mockDeep<any>();
+      // bulkUpdateNotificationReceivers returns empty array (no SIGN receivers to dismiss)
+      mockManager.query.mockResolvedValue([]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      const clearSpy = jest.spyOn(service as any, 'clearNewIndicatorForUser').mockResolvedValue(undefined);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      // bulkUpdateNotificationReceivers was called but returned empty array
+      expect(mockManager.query).toHaveBeenCalled();
+
+      // emitDismissedNotifications should NOT be called when no receivers were updated
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
+
+      clearSpy.mockRestore();
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should emit dismissed notifications when SIGN receivers were updated', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockManager = mockDeep<any>();
+      const dismissedReceivers = [{ id: 10, userId: user.id }];
+      // First query call: bulkUpdateTransactions
+      // Second query call: bulkUpdateNotificationReceivers (returns dismissed receivers)
+      mockManager.query
+        .mockResolvedValueOnce(undefined) // bulkUpdateTransactions
+        .mockResolvedValue(dismissedReceivers); // bulkUpdateNotificationReceivers + subsequent calls
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      const clearSpy = jest.spyOn(service as any, 'clearNewIndicatorForUser').mockResolvedValue(undefined);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      // emitDismissedNotifications SHOULD be called with the dismissed receivers
+      expect(emitDismissedNotifications).toHaveBeenCalledWith(
+        notificationsPublisher,
+        dismissedReceivers,
+      );
+
+      clearSpy.mockRestore();
+      user.keys[0].publicKey = originalPublicKey;
+    });
   });
 
   describe('clearNewIndicatorForUser', () => {
@@ -1032,18 +1168,43 @@ describe('SignersService', () => {
       });
     });
 
+    it('should acquire FOR UPDATE lock on transaction rows to serialize with notification service', async () => {
+      const notifications = [{ id: 100 }];
+      const receivers = [{ id: 500 }];
+
+      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
+      mockManager.find
+        .mockResolvedValueOnce(notifications)
+        .mockResolvedValueOnce(receivers);
+      mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      // Should lock transaction rows before any reads
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [transactionIds],
+      );
+    });
+
     it('should delete receivers, clean up orphans atomically, and emit WebSocket event', async () => {
       const notifications = [{ id: 100 }, { id: 200 }];
       const receivers = [{ id: 500 }, { id: 501 }];
 
+      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
       mockManager.find
         .mockResolvedValueOnce(notifications) // find Notifications
         .mockResolvedValueOnce(receivers);    // find NotificationReceivers
 
       mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
-      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
 
       await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      // Should acquire FOR UPDATE lock
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [transactionIds],
+      );
 
       // Should find NEW indicator notifications
       expect(mockManager.find).toHaveBeenCalledWith(Notification, {
@@ -1085,17 +1246,19 @@ describe('SignersService', () => {
     });
 
     it('should return early when no NEW notifications exist', async () => {
+      mockManager.query.mockResolvedValue(undefined); // FOR UPDATE lock
       mockManager.find.mockResolvedValueOnce([]); // no notifications
 
       await service['clearNewIndicatorForUser'](userId, transactionIds);
 
-      // Only the first find should be called
+      // Only the first find should be called (after the lock)
       expect(mockManager.find).toHaveBeenCalledTimes(1);
       expect(mockManager.delete).not.toHaveBeenCalled();
       expect(notificationsPublisher.publish).not.toHaveBeenCalled();
     });
 
     it('should return early when no unread receivers for this user', async () => {
+      mockManager.query.mockResolvedValue(undefined); // FOR UPDATE lock
       mockManager.find
         .mockResolvedValueOnce([{ id: 100 }]) // notification exists
         .mockResolvedValueOnce([]);            // but no receivers for this user

@@ -332,10 +332,12 @@ export class SignersService {
         if (notificationsToUpdate.length > 0) {
           const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
 
-          emitDismissedNotifications(
-            this.notificationsPublisher,
-            updatedNotificationReceivers,
-          );
+          if (updatedNotificationReceivers.length > 0) {
+            emitDismissedNotifications(
+              this.notificationsPublisher,
+              updatedNotificationReceivers,
+            );
+          }
         }
 
         // Bulk insert signers
@@ -432,6 +434,16 @@ export class SignersService {
       let deletedReceiverIds: number[] = [];
 
       await this.dataSource.transaction(async manager => {
+        // Lock transaction rows to serialize with notification service's NEW indicator creation
+        // (which uses the same FOR UPDATE lock). This prevents the race where we delete the
+        // signing user's receiver while the notification service is re-creating the indicator.
+        if (transactionIds.length > 0) {
+          await manager.query(
+            `SELECT id FROM "transaction" WHERE id = ANY($1) FOR UPDATE`,
+            [transactionIds],
+          );
+        }
+
         const notifications = await manager.find(Notification, {
           where: {
             type: NotificationType.TRANSACTION_INDICATOR_NEW,

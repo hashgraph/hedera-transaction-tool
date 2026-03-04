@@ -1094,8 +1094,11 @@ describe('ReceiverService', () => {
         .mockResolvedValueOnce(newSignReceivers)    // first call: SIGN indicator
         .mockResolvedValueOnce(newIndicatorReceivers); // second call: NEW indicator
 
-      // Mock the FOR UPDATE lock query
-      em.query.mockResolvedValueOnce([{ id: 52 }]);
+      // Mock SAVEPOINT, FOR UPDATE lock, and RELEASE SAVEPOINT queries
+      em.query
+        .mockResolvedValueOnce(undefined)    // SAVEPOINT
+        .mockResolvedValueOnce([{ id: 52 }]) // FOR UPDATE
+        .mockResolvedValueOnce(undefined);   // RELEASE SAVEPOINT
 
       // No existing NEW notification
       em.findOne.mockResolvedValueOnce(null);
@@ -1121,11 +1124,17 @@ describe('ReceiverService', () => {
         52,
       );
 
+      // Should use SAVEPOINT to isolate NEW indicator creation
+      expect(em.query).toHaveBeenCalledWith('SAVEPOINT create_new_indicator');
+
       // Should acquire a row-level lock to prevent concurrent duplicate creation
       expect(em.query).toHaveBeenCalledWith(
         expect.stringContaining('FOR UPDATE'),
         [52],
       );
+
+      // Should release savepoint after successful creation
+      expect(em.query).toHaveBeenCalledWith('RELEASE SAVEPOINT create_new_indicator');
 
       // Should have created both SIGN and NEW indicators
       expect(createSpy).toHaveBeenCalledTimes(2);
@@ -1161,8 +1170,11 @@ describe('ReceiverService', () => {
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
         .mockResolvedValueOnce([{ id: 300, userId: 1 } as any]); // SIGN indicator only
 
-      // Mock the FOR UPDATE lock query
-      em.query.mockResolvedValueOnce([{ id: 53 }]);
+      // Mock SAVEPOINT, FOR UPDATE lock, and RELEASE SAVEPOINT queries
+      em.query
+        .mockResolvedValueOnce(undefined)    // SAVEPOINT
+        .mockResolvedValueOnce([{ id: 53 }]) // FOR UPDATE
+        .mockResolvedValueOnce(undefined);   // RELEASE SAVEPOINT
 
       // Existing NEW notification found
       em.findOne.mockResolvedValueOnce({ id: 999, type: NotificationType.TRANSACTION_INDICATOR_NEW });
@@ -1184,11 +1196,17 @@ describe('ReceiverService', () => {
         53,
       );
 
+      // Should use SAVEPOINT
+      expect(em.query).toHaveBeenCalledWith('SAVEPOINT create_new_indicator');
+
       // Should acquire lock before checking
       expect(em.query).toHaveBeenCalledWith(
         expect.stringContaining('FOR UPDATE'),
         [53],
       );
+
+      // Should release savepoint
+      expect(em.query).toHaveBeenCalledWith('RELEASE SAVEPOINT create_new_indicator');
 
       // Should only create SIGN indicator, not NEW
       expect(createSpy).toHaveBeenCalledTimes(1);
@@ -1203,6 +1221,74 @@ describe('ReceiverService', () => {
       );
 
       createSpy.mockRestore();
+    });
+
+    it('preserves SIGN indicator when NEW indicator creation fails (savepoint rollback)', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const transaction = {
+        id: 55,
+        transactionId: 'tx-55',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      } as any;
+
+      jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+
+      const newSignReceivers = [{ id: 500, userId: 1 } as any];
+
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockResolvedValueOnce(newSignReceivers)    // first call: SIGN indicator succeeds
+        .mockRejectedValueOnce(new Error('DB constraint violation')); // second call: NEW indicator fails
+
+      // Mock SAVEPOINT (succeeds), FOR UPDATE (succeeds)
+      em.query
+        .mockResolvedValueOnce(undefined)    // SAVEPOINT
+        .mockResolvedValueOnce([{ id: 55 }]) // FOR UPDATE
+        .mockResolvedValueOnce(undefined);   // ROLLBACK TO SAVEPOINT
+
+      // No existing NEW notification
+      em.findOne.mockResolvedValueOnce(null);
+
+      const inAppNotifications: { [userId: number]: any[] } = {};
+      const inAppReceiverIds: number[] = [];
+      const affectedUserIds = new Set<number>();
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        inAppNotifications,
+        inAppReceiverIds,
+        {},
+        [],
+        affectedUserIds,
+        55,
+      );
+
+      // Should rollback the savepoint, not the entire transaction
+      expect(em.query).toHaveBeenCalledWith('ROLLBACK TO SAVEPOINT create_new_indicator');
+
+      // SIGN indicator receivers should still be tracked (not rolled back)
+      expect(inAppReceiverIds).toContain(500);
+      expect(affectedUserIds.has(1)).toBe(true);
+
+      // NEW indicator receivers should NOT be tracked (rolled back)
+      expect(inAppReceiverIds).not.toContain(201);
+
+      // Error should be logged
+      expect(consoleError).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to create NEW indicator for transaction 55'),
+        expect.any(Error),
+      );
+
+      createSpy.mockRestore();
+      consoleError.mockRestore();
     });
 
     it('does not create NEW indicator for non-SIGN syncTypes', async () => {

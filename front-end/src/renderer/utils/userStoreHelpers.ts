@@ -509,6 +509,17 @@ export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null
   return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
 };
 
+export const clearAllAuthTokensFromSessionStorage = () => {
+  const keysToRemove: string[] = [];
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const key = sessionStorage.key(i);
+    if (key && key.startsWith(SESSION_STORAGE_AUTH_TOKEN_PREFIX)) {
+      keysToRemove.push(key);
+    }
+  }
+  keysToRemove.forEach(key => sessionStorage.removeItem(key));
+};
+
 export const restoreOrganizationKeys = async (
   organization: ConnectedOrganization,
   recoveryPhrase: RecoveryPhrase | null,

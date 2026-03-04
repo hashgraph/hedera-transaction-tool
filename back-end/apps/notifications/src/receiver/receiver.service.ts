@@ -787,38 +787,61 @@ export class ReceiverService {
         });
 
         // Create TRANSACTION_INDICATOR_NEW on first entry to WAITING_FOR_SIGNATURES.
-        // Lock the transaction row to prevent concurrent duplicate creation
-        // when the same event is processed by multiple workers simultaneously.
+        // Wrapped in a SAVEPOINT so that if NEW creation fails, the SIGN indicator
+        // (created above) is preserved. Without this, a failure here would cause
+        // PostgreSQL to abort the entire transaction, rolling back both SIGN and NEW.
         if (syncType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
-          await entityManager.query(
-            `SELECT id FROM "transaction" WHERE id = $1 FOR UPDATE`,
-            [transaction.id],
-          );
+          try {
+            await entityManager.query('SAVEPOINT create_new_indicator');
 
-          const existingNew = await entityManager.findOne(Notification, {
-            where: {
-              entityId: transaction.id,
-              type: NotificationType.TRANSACTION_INDICATOR_NEW,
-            },
-          });
-
-          if (!existingNew) {
-            const newIndicatorReceivers = await this.createNotificationWithReceivers(
-              entityManager,
-              transaction,
-              approvers,
-              NotificationType.TRANSACTION_INDICATOR_NEW,
-              additionalData,
-              cache,
-              keyCache,
+            // Lock the transaction row to prevent concurrent duplicate creation
+            // when the same event is processed by multiple workers simultaneously.
+            await entityManager.query(
+              `SELECT id FROM "transaction" WHERE id = $1 FOR UPDATE`,
+              [transaction.id],
             );
 
-            newIndicatorReceivers.forEach(nr => {
+            const existingNew = await entityManager.findOne(Notification, {
+              where: {
+                entityId: transaction.id,
+                type: NotificationType.TRANSACTION_INDICATOR_NEW,
+              },
+            });
+
+            let pendingNewReceivers: NotificationReceiver[] = [];
+
+            if (!existingNew) {
+              pendingNewReceivers = await this.createNotificationWithReceivers(
+                entityManager,
+                transaction,
+                approvers,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                additionalData,
+                cache,
+                keyCache,
+              );
+            }
+
+            await entityManager.query('RELEASE SAVEPOINT create_new_indicator');
+
+            // Merge only after RELEASE - guarantees these rows exist in DB
+            pendingNewReceivers.forEach(nr => {
               if (!inAppNotifications[nr.userId]) inAppNotifications[nr.userId] = [];
               inAppNotifications[nr.userId].push(nr);
               inAppReceiverIds.push(nr.id);
               affectedUserIds.add(nr.userId);
             });
+          } catch (newIndicatorError) {
+            console.error(
+              `Failed to create NEW indicator for transaction ${transaction.id}, SIGN indicator preserved:`,
+              newIndicatorError,
+            );
+            try {
+              await entityManager.query('ROLLBACK TO SAVEPOINT create_new_indicator');
+            } catch (rollbackError) {
+              console.error('Failed to rollback NEW indicator savepoint:', rollbackError);
+              throw rollbackError;
+            }
           }
         }
       }

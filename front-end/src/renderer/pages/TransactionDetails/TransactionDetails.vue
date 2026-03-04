@@ -188,7 +188,8 @@ async function fetchTransaction() {
   const notificationIds = notifications.currentOrganizationNotifications
     .filter((n: INotificationReceiver) => {
       return (
-        n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+        (n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN ||
+          n.notification.type === NotificationType.TRANSACTION_INDICATOR_NEW) &&
         n.notification.entityId === Number(id)
       );
     })
