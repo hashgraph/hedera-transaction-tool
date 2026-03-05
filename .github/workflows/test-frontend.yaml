@@ -282,7 +282,7 @@ jobs:
           POSTGRES_DATABASE: postgres
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
-        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
+        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }} --video retain-on-failure
         working-directory: automation
 
       - name: Upload Playwright Report
@@ -291,8 +291,16 @@ jobs:
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
           path: |
-            automation/playwright-report
-            automation/test-results
+            automation/reports/playwright
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Upload Playwright Videos
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos-${{ matrix.test-suite.name }}
+          path: automation/test-results/**/*.webm
           if-no-files-found: warn
           retention-days: 3
 
