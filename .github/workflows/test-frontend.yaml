@@ -143,24 +143,23 @@ jobs:
           # pgadmin and nats-box are dev-only tools, skip them to avoid unnecessary pulls.
           SERVICES=(database redis nats migration api chain notifications)
 
-          # Pull external images first (with retries). Building local images is
-          # deterministic, but pulling from Docker Hub can be flaky.
+          docker system prune -af
+          docker builder prune -af
+
+          # Pull, build and start (with retries for flaky Docker Hub pulls).
           for attempt in $(seq 1 5); do
-            if docker compose pull "${SERVICES[@]}" 2>&1; then
+            if docker compose up -d --build "${SERVICES[@]}"; then
               break
             fi
             if [ "${attempt}" -eq 5 ]; then
-              echo "docker compose pull failed after 5 attempts" >&2
+              echo "docker compose up failed after 5 attempts" >&2
+              docker compose ps || true
+              docker compose logs --tail=200 || true
               exit 1
             fi
-            echo "Pull attempt ${attempt} failed; retrying in 10s..."
-            sleep 10
+            echo "Attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
           done
-
-          # Build local images without cache (avoids corrupted BuildKit cache
-          # on self-hosted runners) then start the services.
-          docker compose build --no-cache "${SERVICES[@]}"
-          docker compose up -d "${SERVICES[@]}"
 
           # Wait for the API to become ready.
           # The API serves HTTPS when NODE_ENV=development and cert files are present.
