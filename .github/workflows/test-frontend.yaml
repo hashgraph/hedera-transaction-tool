@@ -282,7 +282,7 @@ jobs:
           POSTGRES_DATABASE: postgres
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
-        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }} --video retain-on-failure
+        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
       - name: Upload Playwright Report
