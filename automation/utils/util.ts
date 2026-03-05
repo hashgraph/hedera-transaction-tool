@@ -76,25 +76,37 @@ export async function closeApp(app: ElectronApplication) {
   await app.close();
 }
 
-// const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
+const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 // Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
-  return '44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c';
-  // return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
+  const privateKey = process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
+    ? process.env.PRIVATE_KEY
+    : null;
+
+  console.log('[ENV] PRIVATE_KEY:', privateKey ? '[SET]' : '[NOT SET]');
+  return privateKey;
 }
 
 // Retrieves the operator private key from environment variables
 export function getOperatorKeyEnv(): string {
-  return '302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137';
-  // return process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== '' ? process.env.OPERATOR_KEY : LOCALNET_OPERATOR_KEY;
+  const operatorKey = process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== ''
+    ? process.env.OPERATOR_KEY
+    : LOCALNET_OPERATOR_KEY;
+
+  console.log('[ENV] OPERATOR_KEY:', process.env.OPERATOR_KEY ? '[FROM ENV]' : '[USING LOCALNET_OPERATOR_KEY]');
+  return operatorKey;
 }
 
 // Retrieves the network used from environment variables
 export function getNetworkEnv(): string {
-  return 'LOCALNET';
-  // return process.env.ENVIRONMENT && process.env.ENVIRONMENT !== '' ? process.env.ENVIRONMENT : 'LOCALNET';
+  const network = process.env.ENVIRONMENT && process.env.ENVIRONMENT !== ''
+    ? process.env.ENVIRONMENT
+    : 'LOCALNET';
+
+  console.log('[ENV] ENVIRONMENT:', network);
+  return network;
 }
 
 export async function setupEnvironmentForTransactions(
