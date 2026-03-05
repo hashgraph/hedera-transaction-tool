@@ -139,21 +139,26 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          # Start all back-end services, retrying up to 3 times on failure.
-          for attempt in $(seq 1 3); do
-            if docker compose up -d; then
+          # Only the services needed for the automation tests.
+          # pgadmin and nats-box are dev-only tools, skip them to avoid unnecessary pulls.
+          SERVICES=(database redis nats migration api chain notifications)
+
+          # Pull external images first (with retries). Building local images is
+          # deterministic, but pulling from Docker Hub can be flaky.
+          for attempt in $(seq 1 5); do
+            if docker compose pull "${SERVICES[@]}" 2>&1; then
               break
             fi
-            if [ "${attempt}" -eq 3 ]; then
-              echo "docker compose up failed after 3 attempts" >&2
-              docker compose ps || true
-              docker compose logs --tail=200 || true
+            if [ "${attempt}" -eq 5 ]; then
+              echo "docker compose pull failed after 5 attempts" >&2
               exit 1
             fi
-            echo "Attempt ${attempt} failed; retrying in 10s..."
-            docker compose down --remove-orphans || true
+            echo "Pull attempt ${attempt} failed; retrying in 10s..."
             sleep 10
           done
+
+          # Build local images and start the services.
+          docker compose up -d "${SERVICES[@]}"
 
           # Wait for the API to become ready.
           # The API serves HTTPS when NODE_ENV=development and cert files are present.
