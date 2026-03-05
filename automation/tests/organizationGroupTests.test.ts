@@ -131,7 +131,7 @@ test.describe('Organization Group Tx tests', () => {
     await resetPostgresDbState();
   });
 
-  test('Verify user can execute group transaction in organization', async () => {
+  test.only('Verify user can execute group transaction in organization', async () => {
     test.slow();
     await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
 

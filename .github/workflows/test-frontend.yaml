@@ -260,6 +260,10 @@ jobs:
       - name: Install Runtime Shared Libraries
         run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
 
+      - name: Test API connectivity
+        run: |
+          curl -v http://localhost:3001
+
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
