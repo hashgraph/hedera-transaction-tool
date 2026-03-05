@@ -1120,6 +1120,28 @@ describe('ReceiverService', () => {
       prepSpy.mockRestore();
     });
 
+    it('logs error and skips when transaction is not found in map', async () => {
+      const prepSpy = jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue({
+        transactionIds: [999],
+        transactionMap: new Map(),
+        approversMap: new Map(),
+        cache: new Map(),
+        keyCache: new Map(),
+        inAppReceiverIds: [],
+        emailReceiverIds: [],
+        affectedUserIds: new Map(),
+      });
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 999 } as any]);
+
+      expect(consoleSpy).toHaveBeenCalledWith('Transaction 999 not found in map, skipping');
+      expect(emitNewNotifications).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+      prepSpy.mockRestore();
+    });
+
     it('processes deletions, creates in-app receivers and collects email receivers', async () => {
       // test-specific: deleteExistingIndicators will call em.find again to look up existing notifications.
       em.find.mockResolvedValueOnce([]);
@@ -1480,6 +1502,54 @@ describe('ReceiverService', () => {
       await service.processDismissedNotifications([]);
 
       expect(sendDeletionSpy).toHaveBeenCalledWith({});
+    });
+  });
+
+  describe('sendNotifyClients', () => {
+    it('emits DTOs with groupId when affectedUserIds has non-empty groupId sets', async () => {
+      const affectedUserIds = new Map<number, Set<number>>();
+      affectedUserIds.set(10, new Set([100, 200]));
+
+      await (service as any).sendNotifyClients(affectedUserIds);
+
+      expect(emitNotifyClients).toHaveBeenCalledWith(publisher, [
+        { userId: 10, groupId: 100 },
+        { userId: 10, groupId: 200 },
+      ]);
+    });
+  });
+
+  describe('addAffectedUser', () => {
+    it('adds groupId to the user set when groupId is provided', () => {
+      const map = new Map<number, Set<number>>();
+      (service as any).addAffectedUser(map, 10, 5);
+
+      expect(map.get(10)).toEqual(new Set([5]));
+    });
+  });
+
+  describe('mergeNotificationResults', () => {
+    it('merges deletionNotifications from source into target', () => {
+      const target = {
+        deletionNotifications: {} as Record<number, number[]>,
+        inAppNotifications: {} as Record<number, any[]>,
+        inAppReceiverIds: [] as number[],
+        emailNotifications: {} as Record<string, any[]>,
+        emailReceiverIds: [] as number[],
+        affectedUsers: new Map<number, Set<number>>(),
+      };
+      const source = {
+        deletionNotifications: { 10: [1, 2] } as Record<number, number[]>,
+        inAppNotifications: {} as Record<number, any[]>,
+        inAppReceiverIds: [] as number[],
+        emailNotifications: {} as Record<string, any[]>,
+        emailReceiverIds: [] as number[],
+        affectedUsers: new Map<number, Set<number>>(),
+      };
+
+      (service as any).mergeNotificationResults(target, source);
+
+      expect(target.deletionNotifications[10]).toEqual([1, 2]);
     });
   });
 });
