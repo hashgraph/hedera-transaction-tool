@@ -26,6 +26,7 @@ import {
 } from '@entities';
 
 import { AccountCacheService } from './account-cache.service';
+import { MirrorNodeCircuitBreaker } from './mirror-node-circuit-breaker.service';
 import { MirrorNodeClient } from './mirror-node.client';
 import { NodeCacheService } from './node-cache.service';
 import { TransactionSignatureService } from './transaction-signature.service';
@@ -63,11 +64,13 @@ import { SqlBuilderModule } from '../sql';
   providers: [
     AccountCacheService,
     MirrorNodeClient,
+    MirrorNodeCircuitBreaker,
     NodeCacheService,
     TransactionSignatureService,
   ],
   exports: [
     AccountCacheService,
+    MirrorNodeCircuitBreaker,
     NodeCacheService,
     TransactionSignatureService,
   ],
