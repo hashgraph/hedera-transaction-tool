@@ -96,6 +96,8 @@ jobs:
         run: |
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          # Provide legacy docker-compose command for scripts that use hyphenated syntax.
+          sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
       - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
@@ -142,11 +144,6 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          # Services to deploy — mirrors local Docker setup (postgres, nats, nats-box,
-          # chain, api, notifications, migration, nest-pgadmin).
-          # Redis is intentionally excluded.
-          SERVICES=(database nats nats-box migration api chain notifications nest-pgadmin)
-
           # Restart the Docker daemon to clear corrupted BuildKit state that causes
           # persistent "short read: expected 32 bytes" errors on self-hosted runners.
           # GitHub Actions runners do not use systemd, so we restart dockerd directly.
@@ -160,15 +157,16 @@ jobs:
             sleep 2
           done
 
-          # Pull, build and start all services (with retries for flaky Docker Hub pulls).
+          # Start all services from back-end/docker-compose.yaml.
+          # Retries handle flaky Docker Hub pulls on self-hosted runners.
           for attempt in $(seq 1 5); do
-            if docker compose up -d --build "${SERVICES[@]}"; then
+            if docker-compose up -d; then
               break
             fi
             if [ "${attempt}" -eq 5 ]; then
               echo "docker compose up failed after 5 attempts" >&2
-              docker compose ps || true
-              docker compose logs --tail=200 || true
+              docker-compose ps || true
+              docker-compose logs --tail=200 || true
               exit 1
             fi
             echo "Attempt ${attempt} failed; retrying in 15s..."
@@ -186,19 +184,19 @@ jobs:
             fi
             if (( attempt % 10 == 0 )); then
               echo "Waiting for back-end... attempt ${attempt}/${MAX_ATTEMPTS} (HTTP ${code})"
-              docker compose ps
-              docker compose logs --tail=50 api || true
+              docker-compose ps
+              docker-compose logs --tail=50 api || true
             fi
             if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
               echo "Back-end did not become ready in time" >&2
-              docker compose ps || true
-              docker compose logs --tail=300 || true
+              docker-compose ps || true
+              docker-compose logs --tail=300 || true
               exit 1
             fi
             sleep 5
           done
 
-          docker compose ps
+          docker-compose ps
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -270,12 +268,12 @@ jobs:
 
       - name: Show Back-end Logs
         if: ${{ failure() }}
-        run: docker compose logs --tail=300
+        run: docker-compose logs --tail=300
         working-directory: back-end
 
       - name: Stop Back-end Services
         if: ${{ always() }}
-        run: docker compose down --remove-orphans || true
+        run: docker-compose down --remove-orphans || true
         working-directory: back-end
 
   unit-test:
