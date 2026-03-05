@@ -5,7 +5,7 @@ import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { ConnectedOrganization } from '@renderer/types';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 
 export interface SignatureAudit {

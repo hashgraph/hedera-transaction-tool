@@ -7,7 +7,7 @@ import {
   filterAuditByUser,
   filterTransactionSignersByUser,
 } from '@shared/utils/transactionFile.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export class TransactionBrowserEntry {
   public readonly fullySignedByUser: boolean;
