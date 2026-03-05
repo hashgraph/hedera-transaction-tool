@@ -157,7 +157,9 @@ jobs:
             sleep 10
           done
 
-          # Build local images and start the services.
+          # Build local images without cache (avoids corrupted BuildKit cache
+          # on self-hosted runners) then start the services.
+          docker compose build --no-cache "${SERVICES[@]}"
           docker compose up -d "${SERVICES[@]}"
 
           # Wait for the API to become ready.
