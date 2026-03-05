@@ -104,6 +104,7 @@ jobs:
         working-directory: automation
 
       - name: Build | Back-end
+        working-directory: back-end
         run: |
           set -euo pipefail
 
@@ -137,8 +138,26 @@ jobs:
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/notifications/.env
 
-          # Force API to bind externally inside the container.
-          # (Dev servers frequently default to 127.0.0.1 which causes host port to reset.)
+          if grep -q '^REDIS_URL=' apps/api/.env; then
+            sed -i 's|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|' apps/api/.env
+          else
+            echo 'REDIS_URL=redis://redis:6379' >> apps/api/.env
+          fi
+
+          if grep -q '^REDIS_URL=' apps/chain/.env; then
+            sed -i 's|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|' apps/chain/.env
+          else
+            echo 'REDIS_URL=redis://redis:6379' >> apps/chain/.env
+          fi
+
+          # notifications config validation expects boolean
+          if grep -q '^EMAIL_API_SECURE=' apps/notifications/.env; then
+            sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
+          else
+            echo 'EMAIL_API_SECURE=false' >> apps/notifications/.env
+          fi
+
+          # Force API bind (avoid 127.0.0.1 binding issues)
           if grep -q '^HOST=' apps/api/.env; then
             sed -i 's/^HOST=.*/HOST=0.0.0.0/' apps/api/.env
           else
@@ -151,6 +170,8 @@ jobs:
             echo 'HTTP_HOST=0.0.0.0' >> apps/api/.env
           fi
 
+          # -----------------------------------
+
           if [ ! -f docker-compose.yaml ]; then
             echo "Expected to run docker-compose from back-end root" >&2
             exit 1
@@ -158,7 +179,8 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          compose_services=(database nats migration chain notifications api)
+          # IMPORTANT: include redis so "redis" resolves inside the network
+          compose_services=(database redis nats migration chain notifications api)
 
           for attempt in $(seq 1 3); do
             if docker-compose up -d "${compose_services[@]}"; then
@@ -168,7 +190,7 @@ jobs:
             if [ "${attempt}" -eq 3 ]; then
               echo "docker-compose failed after ${attempt} attempts" >&2
               docker-compose ps || true
-              docker-compose logs --tail=200 api chain notifications migration database nats || true
+              docker-compose logs --tail=200 api chain notifications migration database redis nats || true
               exit 1
             fi
 
@@ -179,18 +201,20 @@ jobs:
 
           BACKEND_HOST="localhost"
           BACKEND_PORT="3001"
-          HTTP_URL="https://${BACKEND_HOST}:${BACKEND_PORT}/"
+          HTTP_URL="http://${BACKEND_HOST}:${BACKEND_PORT}/"
+          MAX_BACKEND_WAIT_ATTEMPTS=30
 
           is_ready_code() {
             [[ "$1" == "200" || "$1" == "426" ]]
           }
 
+          # TCP check inside container: does something listen on 3000?
           probe_container_tcp() {
             docker-compose exec -T api sh -lc '
               node -e "
                 const net=require(\"net\");
                 const s=net.createConnection({host:\"127.0.0.1\",port:3000});
-                s.setTimeout(2000);
+                s.setTimeout(1500);
                 s.on(\"connect\",()=>{ console.log(\"200\"); s.end(); process.exit(0); });
                 s.on(\"timeout\",()=>{ console.log(\"000\"); s.destroy(); process.exit(0); });
                 s.on(\"error\",()=>{ console.log(\"000\"); process.exit(0); });
@@ -198,29 +222,34 @@ jobs:
             ' 2>/dev/null | tail -n1 || echo "000"
           }
 
+          # Host HTTP check against published port 3001 -> 3000
           probe_host_http() {
             local code
-            code="$(curl -k -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null)"
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null || true)"
             [[ -n "${code}" ]] && echo "${code}" || echo "000"
           }
 
-          for attempt in $(seq 1 120); do
+          for attempt in $(seq 1 "${MAX_BACKEND_WAIT_ATTEMPTS}"); do
             container_tcp="$(probe_container_tcp)"
             host_code="$(probe_host_http)"
 
             if is_ready_code "${host_code}"; then
-              echo "Back-end is ready on ${HTTP_URL} (host HTTPS ${host_code}, container TCP ${container_tcp})"
+              echo "Back-end is ready on ${HTTP_URL} (host HTTP ${host_code}, container TCP ${container_tcp})"
               break
             fi
 
             if (( attempt % 10 == 0 )); then
-              echo "Waiting for back-end... attempt ${attempt}/120 (container_tcp=${container_tcp}, host_https=${host_code})"
+              echo "Waiting for back-end... attempt ${attempt}/${MAX_BACKEND_WAIT_ATTEMPTS} (container_tcp=${container_tcp}, host_http=${host_code})"
               docker-compose ps
+              echo "=== api logs (tail) ==="
+              docker-compose logs --tail=80 api || true
+              echo "=== redis logs (tail) ==="
+              docker-compose logs --tail=40 redis || true
             fi
 
-            if [ "${attempt}" -eq 120 ]; then
+            if [ "${attempt}" -eq "${MAX_BACKEND_WAIT_ATTEMPTS}" ]; then
               echo "Back-end did not become ready in time" >&2
-              echo "Last probe results: container_tcp=${container_tcp}, host_https=${host_code}" >&2
+              echo "Last probe results: container_tcp=${container_tcp}, host_http=${host_code}" >&2
 
               echo "Container status:" >&2
               docker-compose ps || true
@@ -229,7 +258,7 @@ jobs:
               docker-compose logs --tail=300 api || true
 
               echo "Other logs (tail):" >&2
-              docker-compose logs --tail=200 chain notifications migration database nats || true
+              docker-compose logs --tail=200 chain notifications migration database redis nats || true
 
               exit 1
             fi
@@ -238,14 +267,13 @@ jobs:
           done
 
           docker-compose ps
-        working-directory: back-end
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
           install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
+          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7afee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
           version: v0.26.0
           kubectl_version: v1.31.4
           verbosity: 3
@@ -299,7 +327,8 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
-          ORGANIZATION_URL: https://localhost:3001
+          # IMPORTANT: backend is served via HTTP (compose maps 3001 -> 3000 without TLS)
+          ORGANIZATION_URL: http://localhost:3001
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DATABASE: postgres
@@ -319,7 +348,7 @@ jobs:
 
       - name: Show Back-end logs on failure
         if: ${{ failure() }}
-        run: docker-compose logs --tail=300 api chain notifications migration database nats
+        run: docker-compose logs --tail=300 api chain notifications migration database redis nats
         working-directory: back-end
 
       - name: Stop Back-end Services
