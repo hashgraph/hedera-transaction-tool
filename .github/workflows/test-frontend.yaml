@@ -69,24 +69,10 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-#          - name: Registration
-#            command: RegistrationTests
-#            soloRequired: false
-#          - name: Login
-#            command: LoginTests
-#            soloRequired: false
-#          - name: Settings
-#            command: SettingsTests
-#            soloRequired: false
-#          - name: Transactions
-#            command: TransactionTests
-#            soloRequired: true
-#          - name: Workflow
-#            command: WorkflowTests
-#            soloRequired: true
           - name: OrganizationGroup
             command: OrganizationGroupTests
             soloRequired: true
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
@@ -151,6 +137,20 @@ jobs:
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/notifications/.env
 
+          # --- IMPORTANT: force API to bind externally inside container (prevents curl reset) ---
+          if ! grep -q '^HOST=' apps/api/.env; then
+            echo 'HOST=0.0.0.0' >> apps/api/.env
+          else
+            sed -i 's/^HOST=.*/HOST=0.0.0.0/' apps/api/.env
+          fi
+
+          if ! grep -q '^HTTP_HOST=' apps/api/.env; then
+            echo 'HTTP_HOST=0.0.0.0' >> apps/api/.env
+          else
+            sed -i 's/^HTTP_HOST=.*/HTTP_HOST=0.0.0.0/' apps/api/.env
+          fi
+          # -------------------------------------------------------------------------------
+
           if [ ! -f docker-compose.yaml ]; then
             echo "Expected to run docker-compose from back-end root" >&2
             exit 1
@@ -168,7 +168,7 @@ jobs:
             if [ "${attempt}" -eq 3 ]; then
               echo "docker-compose failed after ${attempt} attempts" >&2
               docker-compose ps || true
-              docker-compose logs --tail=200 api chain notifications migration database redis nats || true
+              docker-compose logs --tail=200 api chain notifications migration database nats || true
               exit 1
             fi
 
@@ -185,45 +185,37 @@ jobs:
             [[ "$1" == "200" || "$1" == "426" ]]
           }
 
-          probe() {
-            # args: url, extra curl flags
-            local url="$1"
-            shift
-            local out http_code curl_rc
-            out="$(curl "$@" -sS -o /dev/null -w '%{http_code}' "${url}")"
-            curl_rc=$?
-            http_code="${out:-000}"
-            echo "${curl_rc}:${http_code}"
-          }
-
           for attempt in $(seq 1 120); do
-            http_result="$(probe "${HTTP_URL}" || true)"
-            http_rc="${http_result%%:*}"
-            http_code="${http_result##*:}"
+            # Probe inside the container first (API listens on 3000 inside container)
+            in_code="$(docker-compose exec -T api sh -lc 'curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || true')"
+            # Then probe via host published port (3001 -> 3000)
+            host_code="$(curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null || echo "000")"
 
-            if [[ "${http_rc}" == "0" ]] && is_ready_code "${http_code}"; then
-              echo "Back-end is ready on ${HTTP_URL} (HTTP ${http_code})"
+            if is_ready_code "${in_code}" && is_ready_code "${host_code}"; then
+              echo "Back-end is ready on ${HTTP_URL} (container HTTP ${in_code}, host HTTP ${host_code})"
               break
             fi
 
-            # Light progress output every 10 attempts
             if (( attempt % 10 == 0 )); then
-              echo "Waiting for back-end... attempt ${attempt}/120 (http rc=${http_rc} code=${http_code})"
+              echo "Waiting for back-end... attempt ${attempt}/120 (container=${in_code}, host=${host_code})"
               docker-compose ps
             fi
 
             if [ "${attempt}" -eq 120 ]; then
               echo "Back-end did not become ready in time" >&2
-              echo "Last probe results: http rc=${http_rc} code=${http_code}" >&2
+              echo "Last probe results: container=${in_code}, host=${host_code}" >&2
 
               echo "Container status:" >&2
               docker-compose ps || true
+
+              echo "API listeners:" >&2
+              docker-compose exec -T api sh -lc '(ss -lntp || netstat -lntp) 2>/dev/null | grep -E ":3000|:3001" || true' || true
 
               echo "API logs (tail):" >&2
               docker-compose logs --tail=300 api || true
 
               echo "Other logs (tail):" >&2
-              docker-compose logs --tail=200 chain notifications migration database redis nats || true
+              docker-compose logs --tail=200 chain notifications migration database nats || true
 
               exit 1
             fi
@@ -293,13 +285,13 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
-          ORGANIZATION_URL: https://localhost:3001
+          # IMPORTANT: backend is served via HTTP in this docker-compose (3001->3000)
+          ORGANIZATION_URL: http://localhost:3001
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           POSTGRES_DATABASE: postgres
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
-
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
@@ -314,7 +306,7 @@ jobs:
 
       - name: Show Back-end logs on failure
         if: ${{ failure() }}
-        run: docker-compose logs --tail=300 api chain notifications migration database redis nats
+        run: docker-compose logs --tail=300 api chain notifications migration database nats
         working-directory: back-end
 
       - name: Stop Back-end Services
@@ -335,6 +327,7 @@ jobs:
             command: renderer
           - name: Shared
             command: shared
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
