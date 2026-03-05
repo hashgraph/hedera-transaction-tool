@@ -5,6 +5,7 @@ dotenv.config();
 
 export async function launchHederaTransactionTool(): Promise<ElectronApplication> {
   const executablePath = process.env.EXECUTABLE_PATH;
+  const videoDir = process.env.PW_ELECTRON_VIDEO_DIR || 'test-results/electron-videos';
 
   if (!executablePath) {
     console.error('[ElectronLauncher] EXECUTABLE_PATH is not defined.');
@@ -18,6 +19,9 @@ export async function launchHederaTransactionTool(): Promise<ElectronApplication
 
   const app = await electron.launch({
     executablePath,
+    recordVideo: {
+      dir: videoDir,
+    },
     // These args are passed to Electron/Chromium. Crucial for CI when using mkcert/self-signed TLS.
     args: [
       '--ignore-certificate-errors',
