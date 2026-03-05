@@ -164,6 +164,10 @@ const useNotificationsStore = defineStore('notifications', () => {
 
     const severUrls = user.organizations.map(o => o.serverUrl);
     for (const severUrl of severUrls) {
+      if (!notifications.value[severUrl]) {
+        notifications.value[severUrl] = [];
+      }
+
       const unsubNew = ws.on(severUrl, NOTIFICATIONS_NEW, e => {
         const newNotifications: INotificationReceiver[] = e;
 
@@ -172,7 +176,7 @@ const useNotificationsStore = defineStore('notifications', () => {
       });
 
       const unsubDelete = ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        const deleteNotifications: {notificationReceiverIds: number}[] = e;
+        const deleteNotifications: {notificationReceiverIds: number[]}[] = e;
         const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
 
         notifications.value[severUrl] = (notifications.value[severUrl] || []).filter(
@@ -249,6 +253,30 @@ const useNotificationsStore = defineStore('notifications', () => {
       });
     }
   });
+
+  // If websockets are already connected (store constructed after setup), fetch immediately
+  if (
+    organizationServerUrls.value.length > 0 &&
+    organizationServerUrls.value.some(url => ws.isConnected(url))
+  ) {
+    listenForUpdates();
+    fetchNotifications();
+  }
+
+  // Re-register listeners when a socket reconnects
+  watch(
+    () => ({ ...ws.connectionStates.value }),
+    (newStates, oldStates) => {
+      if (
+        oldStates &&
+        Object.keys(newStates).some(
+          url => newStates[url] === 'connected' && oldStates[url] !== 'connected',
+        )
+      ) {
+        listenForUpdates();
+      }
+    },
+  );
 
   /* Watchers */
   watch(loggedInOrganization, async () => await fetchPreferences(), { immediate: true });

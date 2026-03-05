@@ -550,6 +550,24 @@ describe('SignersService', () => {
       expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
 
+    it('should include signingUserId in additionalData when provided', async () => {
+      const transactionsToProcess = [
+        { id: 1, transaction: { id: 1 } as Transaction },
+      ];
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(1, TransactionStatus.WAITING_FOR_EXECUTION);
+
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      await service['updateStatusesAndNotify'](transactionsToProcess, 42);
+
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{ entityId: 1, additionalData: { signingUserId: 42 } }]
+      );
+    });
+
     it('should emit transaction update for unchanged statuses', async () => {
       const transactionsToProcess = [
         { id: 1, transaction: { id: 1 } as Transaction },
@@ -653,7 +671,7 @@ describe('SignersService', () => {
       });
       expect(mockManager.query).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [
-        { entityId: transactionId },
+        { entityId: transactionId, additionalData: { signingUserId: user.id } },
       ]);
       expect(result).toHaveLength(1);
 
@@ -731,7 +749,10 @@ describe('SignersService', () => {
       });
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        expect.arrayContaining([{ entityId: transactionId1 }, { entityId: transactionId2 }])
+        expect.arrayContaining([
+          { entityId: transactionId1, additionalData: { signingUserId: user.id } },
+          { entityId: transactionId2, additionalData: { signingUserId: user.id } },
+        ])
       );
 
       user.keys[0].publicKey = originalPublicKey;
@@ -1269,16 +1290,53 @@ describe('SignersService', () => {
       expect(notificationsPublisher.publish).not.toHaveBeenCalled();
     });
 
-    it('should catch and log errors without throwing', async () => {
+    it('should retry once on failure and log each attempt', async () => {
       const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
-      (dataSource.transaction as jest.Mock).mockRejectedValueOnce(new Error('DB failure'));
+      (dataSource.transaction as jest.Mock)
+        .mockRejectedValueOnce(new Error('DB failure'))
+        .mockRejectedValueOnce(new Error('DB failure'));
 
       // Should not throw
       await service['clearNewIndicatorForUser'](userId, transactionIds);
 
       expect(consoleError).toHaveBeenCalledWith(
-        `Error clearing NEW indicators for user ${userId}:`,
+        `Attempt 1/2 clearing NEW indicators for user ${userId}, txs [${transactionIds.join(',')}]:`,
         expect.any(Error),
+      );
+      expect(consoleError).toHaveBeenCalledWith(
+        `Attempt 2/2 clearing NEW indicators for user ${userId}, txs [${transactionIds.join(',')}]:`,
+        expect.any(Error),
+      );
+
+      consoleError.mockRestore();
+    });
+
+    it('should succeed on retry after first attempt fails', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const notifications = [{ id: 100 }];
+      const receivers = [{ id: 500 }];
+
+      // First attempt fails
+      (dataSource.transaction as jest.Mock).mockRejectedValueOnce(new Error('DB failure'));
+
+      // Second attempt succeeds
+      (dataSource.transaction as jest.Mock).mockImplementationOnce(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        const retryManager = mockDeep<any>();
+        retryManager.query.mockResolvedValue(undefined);
+        retryManager.find
+          .mockResolvedValueOnce(notifications)
+          .mockResolvedValueOnce(receivers);
+        retryManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+        return callback(retryManager);
+      });
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      expect(consoleError).toHaveBeenCalledTimes(1);
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        FAN_OUT_DELETE_NOTIFICATIONS,
+        [{ userId, notificationReceiverIds: [500] }],
       );
 
       consoleError.mockRestore();

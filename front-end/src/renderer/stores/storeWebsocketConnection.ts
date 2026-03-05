@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
@@ -18,6 +18,7 @@ interface WebsocketConnectionStoreReturn {
   setup: () => Promise<void>;
   isConnected: (serverUrl: string) => boolean;
   isLive: (serverUrl: string) => boolean;
+  connectionStates: Ref<Record<string, 'connected' | 'disconnected' | 'connecting'>>;
 }
 
 const useWebsocketConnection = defineStore(
@@ -241,6 +242,7 @@ const useWebsocketConnection = defineStore(
       setup,
       isConnected,
       isLive,
+      connectionStates,
     };
   },
 );

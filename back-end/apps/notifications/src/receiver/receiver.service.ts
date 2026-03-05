@@ -747,6 +747,7 @@ export class ReceiverService {
     emailReceiverIds: number[],
     affectedUserIds: Set<number>,
     transactionId: number,
+    signingUserId?: number,
   ) {
     try {
       const additionalData = this.buildAdditionalData(transaction);
@@ -820,6 +821,66 @@ export class ReceiverService {
                 cache,
                 keyCache,
               );
+            } else {
+              // Reconcile receivers for the existing NEW indicator
+              const allReceiverUserIds = await this.getNotificationReceiverIds(
+                entityManager,
+                transaction,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                approvers,
+                keyCache,
+              );
+              const filteredReceiverIds = await this.filterReceiversByPreferenceForType(
+                entityManager,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                new Set(allReceiverUserIds),
+                cache,
+              );
+
+              const existingReceivers = await entityManager.find(NotificationReceiver, {
+                where: { notificationId: existingNew.id },
+              });
+              const existingUserIds = new Set(existingReceivers.map(r => r.userId));
+
+              // Add missing receivers
+              const newUserIds = filteredReceiverIds.filter(id => !existingUserIds.has(id));
+              if (newUserIds.length > 0) {
+                pendingNewReceivers = await this.createNotificationReceivers(
+                  entityManager,
+                  existingNew,
+                  newUserIds,
+                );
+              }
+
+              // Remove stale receivers
+              const staleReceivers = existingReceivers.filter(
+                r => !filteredReceiverIds.includes(r.userId),
+              );
+              if (staleReceivers.length > 0) {
+                staleReceivers.forEach(r => {
+                  if (!deletionNotifications[r.userId]) deletionNotifications[r.userId] = [];
+                  deletionNotifications[r.userId].push(r.id);
+                  affectedUserIds.add(r.userId);
+                });
+                await entityManager.delete(NotificationReceiver, {
+                  id: In(staleReceivers.map(r => r.id)),
+                });
+              }
+            }
+
+            // Exclude the signing user from NEW indicator receivers
+            if (signingUserId != null && pendingNewReceivers.length > 0) {
+              const signingUserReceivers = pendingNewReceivers.filter(
+                nr => nr.userId === signingUserId,
+              );
+              if (signingUserReceivers.length > 0) {
+                await entityManager.delete(NotificationReceiver, {
+                  id: In(signingUserReceivers.map(r => r.id)),
+                });
+                pendingNewReceivers = pendingNewReceivers.filter(
+                  nr => nr.userId !== signingUserId,
+                );
+              }
             }
 
             await entityManager.query('RELEASE SAVEPOINT create_new_indicator');
@@ -838,6 +899,9 @@ export class ReceiverService {
             );
             try {
               await entityManager.query('ROLLBACK TO SAVEPOINT create_new_indicator');
+              // Clear identity map for entities created inside the rolled-back savepoint
+              entityManager.clear(Notification);
+              entityManager.clear(NotificationReceiver);
             } catch (rollbackError) {
               console.error('Failed to rollback NEW indicator savepoint:', rollbackError);
               throw rollbackError;
@@ -1088,7 +1152,8 @@ export class ReceiverService {
     } = ctx;
 
     // Process each event
-    for (const { entityId: transactionId } of events) {
+    for (const { entityId: transactionId, additionalData: eventAdditionalData } of events) {
+      const signingUserId = eventAdditionalData?.signingUserId as number | undefined;
       const transaction = transactionMap.get(transactionId);
       const approvers = approversMap.get(transactionId) || [];
 
@@ -1119,6 +1184,7 @@ export class ReceiverService {
           emailReceiverIds,
           affectedUserIds,
           transactionId,
+          signingUserId,
         );
       });
     }
