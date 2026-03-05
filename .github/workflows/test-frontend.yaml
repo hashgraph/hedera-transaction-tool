@@ -262,7 +262,13 @@ jobs:
 
       - name: Test API connectivity
         run: |
-          curl -v http://localhost:3001
+          set -euo pipefail
+          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
+          echo "API connectivity check returned HTTP ${code}"
+          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
+            echo "Unexpected HTTP status from API: ${code}" >&2
+            exit 1
+          fi
 
       - name: Run Automation
         env:
