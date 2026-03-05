@@ -130,10 +130,24 @@ const activeTabs = computed(() => {
       nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
     ) || [];
 
-  const readyToSignNotifications =
-    networkFilteredNotifications.value?.filter(
-      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN,
-    ) || [];
+  const readyToSignNotifications = (() => {
+    const all =
+      networkFilteredNotifications.value?.filter(
+        nr =>
+          nr.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN ||
+          nr.notification.type === NotificationType.TRANSACTION_INDICATOR_NEW,
+      ) || [];
+    const seen = new Set<string>();
+    return all.filter(nr => {
+      const key =
+        nr.notification.additionalData?.groupId?.toString() ??
+        nr.notification.entityId?.toString() ??
+        nr.id.toString();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
 
   const readyForExecutionNotifications =
     networkFilteredNotifications.value?.filter(
