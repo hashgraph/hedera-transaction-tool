@@ -123,51 +123,38 @@ export async function processTransactionStatus(
   const statusChanges = new Map<number, TransactionStatus>();
   const updatesByStatus = new Map<TransactionStatus, number[]>();
 
-  // Process transactions in parallel batches
-  const BATCH_SIZE = 5;
-  for (let i = 0; i < transactions.length; i += BATCH_SIZE) {
-    const batch = transactions.slice(i, i + BATCH_SIZE);
+  // Process all transactions and group updates as we go
+  for (const transaction of transactions) {
+    if (!transaction) continue;
 
-    const results = await Promise.allSettled(
-      batch.map(async transaction => {
-        if (!transaction) return null;
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-        const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+    const signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
 
-        const signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
-
-        const isAbleToSign = hasValidSignatureKey(
-          [...sdkTransaction._signerPublicKeys],
-          signatureKey,
-        );
-
-        let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
-
-        if (isAbleToSign) {
-          const collatedTx = await smartCollate(transaction, signatureKey);
-
-          if (collatedTx !== null) {
-            newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
-          }
-        }
-
-        return { transaction, newStatus };
-      }),
+    const isAbleToSign = hasValidSignatureKey(
+      [...sdkTransaction._signerPublicKeys],
+      signatureKey
     );
 
-    for (const result of results) {
-      if (result.status === 'fulfilled' && result.value) {
-        const { transaction, newStatus } = result.value;
-        if (transaction.status !== newStatus) {
-          statusChanges.set(transaction.id, newStatus);
-          if (!updatesByStatus.has(newStatus)) {
-            updatesByStatus.set(newStatus, []);
-          }
-          updatesByStatus.get(newStatus)!.push(transaction.id);
-        }
-      } else if (result.status === 'rejected') {
-        console.error('Failed to process transaction status:', result.reason);
+    let newStatus = TransactionStatus.WAITING_FOR_SIGNATURES;
+
+    if (isAbleToSign) {
+      const collatedTx = await smartCollate(transaction, signatureKey);
+
+      if (collatedTx !== null) {
+        newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
       }
+    }
+
+    if (transaction.status !== newStatus) {
+      // Track what changed (for return value)
+      statusChanges.set(transaction.id, newStatus);
+
+      // Group by status for bulk update
+      if (!updatesByStatus.has(newStatus)) {
+        updatesByStatus.set(newStatus, []);
+      }
+      updatesByStatus.get(newStatus)!.push(transaction.id);
     }
   }
 

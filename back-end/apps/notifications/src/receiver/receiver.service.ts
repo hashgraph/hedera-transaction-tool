@@ -1070,52 +1070,39 @@ export class ReceiverService {
       affectedUsers: new Map<number, Set<number>>(),
     };
 
-    // Process events in parallel batches
-    const BATCH_SIZE = 5;
-    for (let i = 0; i < events.length; i += BATCH_SIZE) {
-      const batch = events.slice(i, i + BATCH_SIZE);
-
-      const results = await Promise.allSettled(
-        batch.map(async ({ entityId: transactionId }) => {
-          const transaction = transactionMap.get(transactionId);
-          if (!transaction) {
-            console.error(`Transaction ${transactionId} not found in map, skipping`);
-            return null;
-          }
-          const approvers = approversMap.get(transactionId) || [];
-
-          if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
-            console.error(
-              `Soft-deleted transaction ${transactionId} has unexpected status: ${transaction.status} (expected CANCELED)`
-            );
-            transaction.status = TransactionStatus.CANCELED;
-          }
-
-          const syncType = this.getInAppNotificationType(transaction.status);
-          const emailType = this.getEmailNotificationType(transaction.status);
-
-          return await this.entityManager.transaction(async entityManager => {
-            return await this.handleTransactionStatusUpdateNotifications(
-              entityManager,
-              transaction,
-              approvers,
-              syncType,
-              emailType,
-              cache,
-              keyCache,
-              transactionId,
-            );
-          });
-        }),
-      );
-
-      for (const result of results) {
-        if (result.status === 'fulfilled' && result.value != null) {
-          this.mergeNotificationResults(merged, result.value);
-        } else if (result.status === 'rejected') {
-          console.error('Failed to process transaction notifications:', result.reason);
-        }
+    // Process each event sequentially
+    for (const { entityId: transactionId } of events) {
+      const transaction = transactionMap.get(transactionId);
+      if (!transaction) {
+        console.error(`Transaction ${transactionId} not found in map, skipping`);
+        continue;
       }
+      const approvers = approversMap.get(transactionId) || [];
+
+      if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
+        console.error(
+          `Soft-deleted transaction ${transactionId} has unexpected status: ${transaction.status} (expected CANCELED)`
+        );
+        transaction.status = TransactionStatus.CANCELED;
+      }
+
+      const syncType = this.getInAppNotificationType(transaction.status);
+      const emailType = this.getEmailNotificationType(transaction.status);
+
+      const result = await this.entityManager.transaction(async entityManager => {
+        return await this.handleTransactionStatusUpdateNotifications(
+          entityManager,
+          transaction,
+          approvers,
+          syncType,
+          emailType,
+          cache,
+          keyCache,
+          transactionId,
+        );
+      });
+
+      this.mergeNotificationResults(merged, result);
     }
 
     // Send all notifications in batch

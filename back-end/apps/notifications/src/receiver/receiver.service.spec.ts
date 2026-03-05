@@ -869,13 +869,6 @@ describe('ReceiverService', () => {
     beforeEach(() => jest.clearAllMocks());
 
     it('processes deletions, creates in-app receivers and collects email receivers', async () => {
-      const deletionNotifications: { [userId: number]: number[] } = {};
-      const inAppNotifications: { [userId: number]: any[] } = {};
-      const inAppReceiverIds: number[] = [];
-      const emailNotifications: { [email: string]: any[] } = {};
-      const emailReceiverIds: number[] = [];
-      const affectedUserIds = new Set<number>();
-
       const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net' } as any;
       const approvers: any[] = [];
 
@@ -894,7 +887,7 @@ describe('ReceiverService', () => {
 
       const collectEmailSpy = jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
 
-      await (service as any).handleTransactionStatusUpdateNotifications(
+      const result = await (service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         transaction,
         approvers,
@@ -902,35 +895,28 @@ describe('ReceiverService', () => {
         NotificationType.TRANSACTION_EXECUTED, // emailType present
         new Map(),
         new Map(),
-        deletionNotifications,
-        inAppNotifications,
-        inAppReceiverIds,
-        emailNotifications,
-        emailReceiverIds,
-        affectedUserIds,
         123,
       );
 
-      // deletedReceiverIds.forEach updated deletionNotifications and affectedUserIds
+      // deletedReceiverIds.forEach updated deletionNotifications and affectedUsers
       expect((service as any).deleteExistingIndicators).toHaveBeenCalledWith(em as any, transaction);
-      expect(deletionNotifications[1]).toEqual([10]);
-      expect(affectedUserIds.has(1)).toBe(true);
+      expect(result.deletionNotifications[1]).toEqual([10]);
+      expect(result.affectedUsers.has(1)).toBe(true);
 
       // new in-app receivers were added to inAppNotifications and inAppReceiverIds
-      expect(inAppNotifications[2]).toBeDefined();
-      expect(inAppNotifications[2].length).toBeGreaterThan(0);
-      expect(inAppReceiverIds).toContain(101);
+      expect(result.inAppNotifications[2]).toBeDefined();
+      expect(result.inAppNotifications[2].length).toBeGreaterThan(0);
+      expect(result.inAppReceiverIds).toContain(101);
 
       // createNotificationWithReceivers called twice (sync + email) and collectEmailNotifications invoked for email receivers
       expect(createSpy).toHaveBeenCalledTimes(2);
-      expect(collectEmailSpy).toHaveBeenCalledWith(createdEmail, [], emailNotifications, emailReceiverIds, expect.any(Map));
+      expect(collectEmailSpy).toHaveBeenCalledWith(createdEmail, [], result.emailNotifications, result.emailReceiverIds, expect.any(Map));
     });
 
-    it('logs an error when internal call throws', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    it('throws when internal call throws', async () => {
       jest.spyOn(service as any, 'deleteExistingIndicators').mockRejectedValue(new Error('boom'));
 
-      await (service as any).handleTransactionStatusUpdateNotifications(
+      await expect((service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         { transactionId: 'tx', mirrorNetwork: 'n' } as any,
         [],
@@ -938,21 +924,8 @@ describe('ReceiverService', () => {
         null,
         new Map(),
         new Map(),
-        {},
-        {},
-        [],
-        {},
-        [],
-        new Set(),
         123,
-      );
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Error processing notifications for transaction 123:'),
-        expect.any(Error),
-      );
-
-      consoleSpy.mockRestore();
+      )).rejects.toThrow('boom');
     });
   });
 
@@ -1076,7 +1049,7 @@ describe('ReceiverService', () => {
       expect(ctx!.keyCache).toBeInstanceOf(Map);
       expect(ctx!.inAppReceiverIds).toEqual([]);
       expect(ctx!.emailReceiverIds).toEqual([]);
-      expect(ctx!.affectedUserIds).toBeInstanceOf(Set);
+      expect(ctx!.affectedUserIds).toBeInstanceOf(Map);
     });
   });
 
@@ -1175,7 +1148,14 @@ describe('ReceiverService', () => {
       // stub heavy handler so we only assert normalization and types passed in
       const handlerSpy = jest
         .spyOn(service as any, 'handleTransactionStatusUpdateNotifications')
-        .mockResolvedValue(undefined);
+        .mockResolvedValue({
+          deletionNotifications: {},
+          inAppNotifications: {},
+          inAppReceiverIds: [],
+          emailNotifications: {},
+          emailReceiverIds: [],
+          affectedUsers: new Map(),
+        });
 
       await service.processTransactionStatusUpdateNotifications([{ entityId: 42 } as any]);
 

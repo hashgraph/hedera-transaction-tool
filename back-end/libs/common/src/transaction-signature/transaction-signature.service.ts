@@ -37,24 +37,18 @@ export class TransactionSignatureService {
     // Extract signature requirements from the transaction model
     const requirements = this.extractSignatureRequirements(transactionModel);
 
-    // Build the key list — gather keys in parallel, then merge
+    // Build the key list
     const signatureKey = new KeyList();
 
-    const feePayerKeys = new KeyList();
-    const signingKeys = new KeyList();
-    const receiverKeys = new KeyList();
-    const nodeKeys = new KeyList();
+    await this.addFeePayerKey(signatureKey, transaction, requirements.feePayerAccount);
+    await this.addSigningAccountKeys(signatureKey, transaction, requirements.signingAccounts);
+    await this.addReceiverAccountKeys(signatureKey, transaction, requirements.receiverAccounts, showAll);
 
-    await Promise.all([
-      this.addFeePayerKey(feePayerKeys, transaction, requirements.feePayerAccount),
-      this.addSigningAccountKeys(signingKeys, transaction, requirements.signingAccounts),
-      this.addReceiverAccountKeys(receiverKeys, transaction, requirements.receiverAccounts, showAll),
-      requirements.nodeId
-        ? this.addNodeKeys(nodeKeys, transaction, requirements.nodeId)
-        : Promise.resolve(),
-    ]);
+    if (requirements.nodeId) {
+      await this.addNodeKeys(signatureKey, transaction, requirements.nodeId);
+    }
 
-    signatureKey.push(...feePayerKeys, ...signingKeys, ...receiverKeys, ...nodeKeys, ...requirements.newKeys);
+    signatureKey.push(...requirements.newKeys);
 
     return signatureKey;
   }
@@ -104,19 +98,19 @@ export class TransactionSignatureService {
     transaction: Transaction,
     signingAccounts: Set<string>
   ): Promise<void> {
-    const accountList = [...signingAccounts];
-    const results = await Promise.allSettled(
-      accountList.map(account =>
-        this.accountCacheService.getAccountInfoForTransaction(transaction, account),
-      ),
-    );
-    results.forEach((result, idx) => {
-      if (result.status === 'fulfilled' && result.value?.key) {
-        signatureKey.push(result.value.key);
-      } else if (result.status === 'rejected') {
-        this.logger.error(`Failed to get key for signing account ${accountList[idx]}: ${result.reason?.message}`);
+    for (const account of signingAccounts) {
+      try {
+        const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
+          transaction,
+          account,
+        );
+        if (accountInfo?.key) {
+          signatureKey.push(accountInfo.key);
+        }
+      } catch (error) {
+        this.logger.error(`Failed to get key for account ${account}: ${error.message}`);
       }
-    });
+    }
   }
 
   /**
@@ -128,22 +122,19 @@ export class TransactionSignatureService {
     receiverAccounts: Set<string>,
     showAll: boolean,
   ): Promise<void> {
-    const accountList = [...receiverAccounts];
-    const results = await Promise.allSettled(
-      accountList.map(account =>
-        this.accountCacheService.getAccountInfoForTransaction(transaction, account),
-      ),
-    );
-    results.forEach((result, idx) => {
-      if (result.status === 'fulfilled') {
-        const accountInfo = result.value;
+    for (const account of receiverAccounts) {
+      try {
+        const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
+          transaction,
+          account,
+        );
         if ((showAll || accountInfo?.receiverSignatureRequired) && accountInfo?.key) {
           signatureKey.push(accountInfo.key);
         }
-      } else if (result.status === 'rejected') {
-        this.logger.error(`Failed to get receiver key for ${accountList[idx]}: ${result.reason?.message}`);
+      } catch (error) {
+        this.logger.error(`Failed to get receiver key for account ${account}: ${error.message}`);
       }
-    });
+    }
   }
 
   /**

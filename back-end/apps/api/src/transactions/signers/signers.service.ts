@@ -309,7 +309,7 @@ export class SignersService {
     try {
       await this.dataSource.transaction(async manager => {
         // Set query timeout (works even behind PgBouncer where startup params are ignored)
-        await manager.query('SET LOCAL statement_timeout = 120000');
+        await manager.query('SET LOCAL statement_timeout = 60000');
 
         // Bulk update transactions
         if (transactionsToUpdate.length > 0) {

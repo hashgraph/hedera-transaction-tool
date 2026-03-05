@@ -20,8 +20,8 @@ import { ConfigService } from '@nestjs/config';
           poolSize: configService.getOrThrow<number>('POSTGRES_MAX_POOL_SIZE', { infer: true }),
           extra: {
             connectionTimeoutMillis: 10000,
-            statement_timeout: 120000,
-            idle_in_transaction_session_timeout: 120000,
+            statement_timeout: 60000,
+            idle_in_transaction_session_timeout: 60000,
           },
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
