@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
@@ -86,7 +86,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
             automation/pnpm-lock.yaml
 
@@ -137,19 +137,19 @@ jobs:
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/notifications/.env
 
-          # --- IMPORTANT: force API to bind externally inside container (prevents curl reset) ---
-          if ! grep -q '^HOST=' apps/api/.env; then
-            echo 'HOST=0.0.0.0' >> apps/api/.env
-          else
+          # Force API to bind externally inside the container.
+          # (Dev servers frequently default to 127.0.0.1 which causes host port to reset.)
+          if grep -q '^HOST=' apps/api/.env; then
             sed -i 's/^HOST=.*/HOST=0.0.0.0/' apps/api/.env
+          else
+            echo 'HOST=0.0.0.0' >> apps/api/.env
           fi
 
-          if ! grep -q '^HTTP_HOST=' apps/api/.env; then
-            echo 'HTTP_HOST=0.0.0.0' >> apps/api/.env
-          else
+          if grep -q '^HTTP_HOST=' apps/api/.env; then
             sed -i 's/^HTTP_HOST=.*/HTTP_HOST=0.0.0.0/' apps/api/.env
+          else
+            echo 'HTTP_HOST=0.0.0.0' >> apps/api/.env
           fi
-          # -------------------------------------------------------------------------------
 
           if [ ! -f docker-compose.yaml ]; then
             echo "Expected to run docker-compose from back-end root" >&2
@@ -185,11 +185,25 @@ jobs:
             [[ "$1" == "200" || "$1" == "426" ]]
           }
 
+          probe_container() {
+            docker-compose exec -T api sh -lc '
+              if command -v wget >/dev/null 2>&1; then
+                wget -qO- --server-response http://127.0.0.1:3000/ 2>&1 \
+                  | awk "/^  HTTP/{print \$2}" | tail -n1
+                exit 0
+              fi
+
+              (echo > /dev/tcp/127.0.0.1/3000) >/dev/null 2>&1 && echo 200 || echo 000
+            ' 2>/dev/null || echo "000"
+          }
+
+          probe_host() {
+            curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null || echo "000"
+          }
+
           for attempt in $(seq 1 120); do
-            # Probe inside the container first (API listens on 3000 inside container)
-            in_code="$(docker-compose exec -T api sh -lc 'curl -sS -o /dev/null -w "%{http_code}" http://127.0.0.1:3000/ || true')"
-            # Then probe via host published port (3001 -> 3000)
-            host_code="$(curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null || echo "000")"
+            in_code="$(probe_container)"
+            host_code="$(probe_host)"
 
             if is_ready_code "${in_code}" && is_ready_code "${host_code}"; then
               echo "Back-end is ready on ${HTTP_URL} (container HTTP ${in_code}, host HTTP ${host_code})"
@@ -207,9 +221,6 @@ jobs:
 
               echo "Container status:" >&2
               docker-compose ps || true
-
-              echo "API listeners:" >&2
-              docker-compose exec -T api sh -lc '(ss -lntp || netstat -lntp) 2>/dev/null | grep -E ":3000|:3001" || true' || true
 
               echo "API logs (tail):" >&2
               docker-compose logs --tail=300 api || true
@@ -285,7 +296,6 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
-          # IMPORTANT: backend is served via HTTP in this docker-compose (3001->3000)
           ORGANIZATION_URL: http://localhost:3001
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
@@ -341,7 +351,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: 'npm'
+          cache: "npm"
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
