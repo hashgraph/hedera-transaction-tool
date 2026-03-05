@@ -185,39 +185,42 @@ jobs:
             [[ "$1" == "200" || "$1" == "426" ]]
           }
 
-          probe_container() {
+          probe_container_tcp() {
             docker-compose exec -T api sh -lc '
-              if command -v wget >/dev/null 2>&1; then
-                wget -qO- --server-response http://127.0.0.1:3000/ 2>&1 \
-                  | awk "/^  HTTP/{print \$2}" | tail -n1
-                exit 0
-              fi
-
-              (echo > /dev/tcp/127.0.0.1/3000) >/dev/null 2>&1 && echo 200 || echo 000
-            ' 2>/dev/null || echo "000"
+              node -e "
+                const net=require(\"net\");
+                const s=net.createConnection({host:\"127.0.0.1\",port:3000});
+                s.setTimeout(2000);
+                s.on(\"connect\",()=>{ console.log(\"200\"); s.end(); process.exit(0); });
+                s.on(\"timeout\",()=>{ console.log(\"000\"); s.destroy(); process.exit(0); });
+                s.on(\"error\",()=>{ console.log(\"000\"); process.exit(0); });
+              "
+            ' 2>/dev/null | tail -n1 || echo "000"
           }
 
-          probe_host() {
-            curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null || echo "000"
+          probe_host_http() {
+            local code
+            code="$(curl -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null)"
+            [[ -n "${code}" ]] && echo "${code}" || echo "000"
           }
 
           for attempt in $(seq 1 120); do
-            in_code="$(probe_container)"
-            host_code="$(probe_host)"
+            container_tcp="$(probe_container_tcp)"
+            host_code="$(probe_host_http)"
 
-            if is_ready_code "${in_code}" && is_ready_code "${host_code}"; then
-              echo "Back-end is ready on ${HTTP_URL} (container HTTP ${in_code}, host HTTP ${host_code})"
+            if is_ready_code "${host_code}"; then
+              echo "Back-end is ready on ${HTTP_URL} (host HTTP ${host_code}, container TCP ${container_tcp})"
               break
             fi
 
             if (( attempt % 10 == 0 )); then
-              echo "Waiting for back-end... attempt ${attempt}/120 (container=${in_code}, host=${host_code})"
+              echo "Waiting for back-end... attempt ${attempt}/120 (container_tcp=${container_tcp}, host_http=${host_code})"
               docker-compose ps
             fi
 
             if [ "${attempt}" -eq 120 ]; then
               echo "Back-end did not become ready in time" >&2
-              echo "Last probe results: container=${in_code}, host=${host_code}" >&2
+              echo "Last probe results: container_tcp=${container_tcp}, host_http=${host_code}" >&2
 
               echo "Container status:" >&2
               docker-compose ps || true
