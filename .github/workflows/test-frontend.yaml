@@ -110,16 +110,19 @@ jobs:
           # libnss3-tools provides certutil, required by mkcert -install on Linux.
           sudo apt-get update -q
           sudo apt-get install -y --no-install-recommends libnss3-tools
+
           curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
             -o /tmp/mkcert
           sudo install -m755 /tmp/mkcert /usr/local/bin/mkcert
 
           # Install the local CA so the cert is trusted by Chromium/Electron.
           mkcert -install
+
+          # Create cert directory and generate TLS certificates for localhost.
           mkdir -p cert
           mkcert -key-file cert/key.pem -cert-file cert/cert.pem localhost
 
-          # Create .env files from examples.
+          # Copy .env files from examples for all back-end packages.
           for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
             cp "${dir}/example.env" "${dir}/.env"
           done
@@ -139,14 +142,17 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          # Only the services needed for the automation tests.
-          # pgadmin and nats-box are dev-only tools, skip them to avoid unnecessary pulls.
-          SERVICES=(database redis nats migration api chain notifications)
+          # Services to deploy — mirrors local Docker setup (postgres, nats, nats-box,
+          # chain, api, notifications, migration, nest-pgadmin).
+          # Redis is intentionally excluded.
+          SERVICES=(database nats nats-box migration api chain notifications nest-pgadmin)
 
-          docker system prune -af
-          docker builder prune -af
+          # Restart the Docker daemon to clear corrupted BuildKit state that causes
+          # persistent "short read: expected 32 bytes" errors on self-hosted runners.
+          sudo systemctl restart docker
+          sleep 5
 
-          # Pull, build and start (with retries for flaky Docker Hub pulls).
+          # Pull, build and start all services (with retries for flaky Docker Hub pulls).
           for attempt in $(seq 1 5); do
             if docker compose up -d --build "${SERVICES[@]}"; then
               break
