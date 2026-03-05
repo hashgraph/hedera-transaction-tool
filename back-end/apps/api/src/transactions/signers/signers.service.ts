@@ -318,7 +318,7 @@ export class SignersService {
 
         // Bulk update notifications
         if (notificationsToUpdate.length > 0) {
-          updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
+          updatedNotificationReceivers = (await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate)) ?? [];
         }
 
         // Bulk insert signers
