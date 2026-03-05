@@ -149,8 +149,16 @@ jobs:
 
           # Restart the Docker daemon to clear corrupted BuildKit state that causes
           # persistent "short read: expected 32 bytes" errors on self-hosted runners.
-          sudo systemctl restart docker
+          # GitHub Actions runners do not use systemd, so we restart dockerd directly.
+          sudo pkill dockerd || true
+          sleep 3
+          sudo dockerd &>/tmp/dockerd.log &
           sleep 5
+          # Wait until Docker is responsive again.
+          for i in $(seq 1 10); do
+            docker info &>/dev/null && break
+            sleep 2
+          done
 
           # Pull, build and start all services (with retries for flaky Docker Hub pulls).
           for attempt in $(seq 1 5); do
