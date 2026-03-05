@@ -177,18 +177,54 @@ jobs:
             sleep 10
           done
 
+          BACKEND_HOST="localhost"
+          BACKEND_PORT="3001"
+          HTTP_URL="http://${BACKEND_HOST}:${BACKEND_PORT}/"
+
+          is_ready_code() {
+            [[ "$1" == "200" || "$1" == "426" ]]
+          }
+
+          probe() {
+            # args: url, extra curl flags
+            local url="$1"
+            shift
+            local out http_code curl_rc
+            out="$(curl "$@" -sS -o /dev/null -w '%{http_code}' "${url}")"
+            curl_rc=$?
+            http_code="${out:-000}"
+            echo "${curl_rc}:${http_code}"
+          }
+
           for attempt in $(seq 1 120); do
-            status_code="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:3001/ || true)"
-            if [ "${status_code}" = "200" ] || [ "${status_code}" = "426" ]; then
-              echo "Back-end is ready on http://localhost:3001 (HTTP ${status_code})"
+            http_result="$(probe "${HTTP_URL}" || true)"
+            http_rc="${http_result%%:*}"
+            http_code="${http_result##*:}"
+
+            if [[ "${http_rc}" == "0" ]] && is_ready_code "${http_code}"; then
+              echo "Back-end is ready on ${HTTP_URL} (HTTP ${http_code})"
               break
+            fi
+
+            # Light progress output every 10 attempts
+            if (( attempt % 10 == 0 )); then
+              echo "Waiting for back-end... attempt ${attempt}/120 (http rc=${http_rc} code=${http_code})"
+              docker-compose ps
             fi
 
             if [ "${attempt}" -eq 120 ]; then
               echo "Back-end did not become ready in time" >&2
-              echo "Last health status code: ${status_code}" >&2
-              docker-compose ps
-              docker-compose logs --tail=200 api chain notifications migration database redis nats || true
+              echo "Last probe results: http rc=${http_rc} code=${http_code}" >&2
+
+              echo "Container status:" >&2
+              docker-compose ps || true
+
+              echo "API logs (tail):" >&2
+              docker-compose logs --tail=300 api || true
+
+              echo "Other logs (tail):" >&2
+              docker-compose logs --tail=200 chain notifications migration database redis nats || true
+
               exit 1
             fi
 
