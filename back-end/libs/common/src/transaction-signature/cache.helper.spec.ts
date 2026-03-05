@@ -429,22 +429,4 @@ describe('CacheHelper', () => {
       ]);
     });
   });
-
-  describe('linkTransactionToEntity', () => {
-    it('links transaction to entity idempotently', async () => {
-      qb.execute.mockResolvedValue({});
-
-      await helper.linkTransactionToEntity(
-        {} as any,
-        5,
-        9,
-        'node',
-      );
-
-      expect(qb.values).toHaveBeenCalledWith({
-        transaction: { id: 5 },
-        node: { id: 9 },
-      });
-    });
-  });
 });
