@@ -156,7 +156,26 @@ jobs:
             exit 1
           fi
 
-          docker-compose up -d
+          export COMPOSE_PARALLEL_LIMIT=4
+
+          compose_services=(database redis nats migration chain notifications api)
+
+          for attempt in $(seq 1 3); do
+            if docker-compose up -d "${compose_services[@]}"; then
+              break
+            fi
+
+            if [ "${attempt}" -eq 3 ]; then
+              echo "docker-compose failed after ${attempt} attempts" >&2
+              docker-compose ps || true
+              docker-compose logs --tail=200 api chain notifications migration database redis nats || true
+              exit 1
+            fi
+
+            echo "docker-compose up failed on attempt ${attempt}; retrying in 10 seconds..."
+            docker-compose down --remove-orphans || true
+            sleep 10
+          done
 
           for attempt in $(seq 1 120); do
             status_code="$(curl -ksS -o /dev/null -w '%{http_code}' https://localhost:3001/ || true)"
