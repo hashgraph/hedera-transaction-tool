@@ -144,16 +144,25 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          # Restart the Docker daemon to clear corrupted BuildKit state that causes
-          # persistent "short read: expected 32 bytes" errors on self-hosted runners.
-          # GitHub Actions runners do not use systemd, so we restart dockerd directly.
-          sudo pkill dockerd || true
-          sleep 3
-          sudo dockerd &>/tmp/dockerd.log &
-          sleep 5
-          # Wait until Docker is responsive again.
-          for i in $(seq 1 10); do
-            docker info &>/dev/null && break
+          # Ensure Docker daemon is reachable before deploying.
+          # Do not restart dockerd here; restarting is disruptive on shared/self-hosted runners.
+          if ! docker info &>/dev/null; then
+            echo "Docker daemon is not reachable; attempting to start it..."
+            sudo service docker start || true
+            sudo systemctl start docker || true
+          fi
+
+          for i in $(seq 1 15); do
+            if docker info &>/dev/null; then
+              break
+            fi
+            if [ "${i}" -eq 15 ]; then
+              echo "Docker daemon is unavailable after startup attempts" >&2
+              ls -l /var/run/docker.sock || true
+              sudo ls -l /var/run/docker.sock || true
+              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
+              exit 1
+            fi
             sleep 2
           done
 
