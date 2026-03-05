@@ -1316,6 +1316,70 @@ describe('ReceiverService', () => {
       consoleError.mockRestore();
     });
 
+    it('throws when savepoint rollback itself fails', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const transaction = {
+        id: 55,
+        transactionId: 'tx-55',
+        mirrorNetwork: 'net',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      } as any;
+
+      jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([]);
+
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockResolvedValueOnce([{ id: 500, userId: 1 } as any])    // SIGN indicator succeeds
+        .mockRejectedValueOnce(new Error('DB constraint violation')); // NEW indicator fails
+
+      const rollbackError = new Error('rollback failed');
+      em.query
+        .mockResolvedValueOnce(undefined)    // SAVEPOINT
+        .mockResolvedValueOnce([{ id: 55 }]) // FOR UPDATE
+        .mockRejectedValueOnce(rollbackError); // ROLLBACK TO SAVEPOINT fails
+
+      em.findOne.mockResolvedValueOnce(null);
+
+      const inAppNotifications: { [userId: number]: any[] } = {};
+      const inAppReceiverIds: number[] = [];
+      const affectedUserIds = new Set<number>();
+
+      await (service as any).handleTransactionStatusUpdateNotifications(
+        em as any,
+        transaction,
+        [],
+        NotificationType.TRANSACTION_INDICATOR_SIGN,
+        null,
+        new Map(),
+        new Map(),
+        {},
+        inAppNotifications,
+        inAppReceiverIds,
+        {},
+        [],
+        affectedUserIds,
+        55,
+      );
+
+      // Rollback error should be logged
+      expect(consoleError).toHaveBeenCalledWith(
+        'Failed to rollback NEW indicator savepoint:',
+        rollbackError,
+      );
+
+      // Outer catch should also log the re-thrown rollback error
+      expect(consoleError).toHaveBeenCalledWith(
+        expect.stringContaining('Error processing notifications for transaction 55'),
+        rollbackError,
+      );
+
+      // em.clear should NOT be called since rollback failed before reaching clear
+      expect(em.clear).not.toHaveBeenCalled();
+
+      createSpy.mockRestore();
+      consoleError.mockRestore();
+    });
+
     it('does not create NEW indicator for non-SIGN syncTypes', async () => {
       const transaction = {
         id: 54,
