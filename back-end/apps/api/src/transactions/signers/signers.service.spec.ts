@@ -983,8 +983,9 @@ describe('SignersService', () => {
       ];
 
       const mockManager = mockDeep<any>();
-      // First query call: bulkUpdateTransactions, second: bulkUpdateNotificationReceivers
+      // Query calls: 1) SET LOCAL statement_timeout, 2) bulkUpdateTransactions, 3) bulkUpdateNotificationReceivers
       mockManager.query
+        .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce(undefined)
         .mockResolvedValueOnce(mockNotificationReceivers);
       mockManager.createQueryBuilder.mockReturnValue({
