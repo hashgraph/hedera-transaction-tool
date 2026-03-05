@@ -13,6 +13,7 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 import {
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
@@ -27,6 +28,7 @@ import { SignersService } from './signers.service';
 jest.mock('@app/common/utils');
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
+  emitDismissedNotifications: jest.fn(),
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
@@ -773,6 +775,7 @@ describe('SignersService', () => {
       expect(mockManager.createQueryBuilder).not.toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
       expect(emitTransactionUpdate).not.toHaveBeenCalled();
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
 
       user.keys[0].publicKey = originalPublicKey;
     });
@@ -946,6 +949,74 @@ describe('SignersService', () => {
       expect(result).toHaveLength(0);
 
       consoleError.mockRestore();
+    });
+
+    it('should call emitDismissedNotifications after transaction commits when notifications are updated', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockNotificationReceivers = [
+        { id: 10, userId: user.id },
+        { id: 11, userId: user.id },
+      ];
+
+      const mockManager = mockDeep<any>();
+      // First query call: bulkUpdateTransactions, second: bulkUpdateNotificationReceivers
+      mockManager.query
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce(mockNotificationReceivers);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user
+      );
+
+      expect(emitDismissedNotifications).toHaveBeenCalledWith(
+        notificationsPublisher,
+        mockNotificationReceivers,
+      );
+
+      user.keys[0].publicKey = originalPublicKey;
     });
   });
 });
