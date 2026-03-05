@@ -275,6 +275,17 @@ jobs:
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
+      - name: Upload Playwright Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.test-suite.name }}
+          path: |
+            automation/playwright-report
+            automation/test-results
+          if-no-files-found: warn
+          retention-days: 3
+
       - name: Show Back-end Logs
         if: ${{ failure() }}
         run: docker-compose logs --tail=300
