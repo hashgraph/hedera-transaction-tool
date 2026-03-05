@@ -40,7 +40,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
@@ -69,10 +69,9 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: OrganizationGroup
+          - name: Organization
             command: OrganizationGroupTests
             soloRequired: true
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
@@ -86,7 +85,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             automation/pnpm-lock.yaml
 
@@ -97,188 +96,89 @@ jobs:
         run: |
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-          sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
       - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: automation
 
-      - name: Build | Back-end
+      - name: Deploy Back-end
+        working-directory: back-end
         run: |
           set -euo pipefail
 
-          if [ ! -f package.json ] || [ ! -f pnpm-workspace.yaml ]; then
-            echo "Expected to run pnpm install from back-end root" >&2
-            exit 1
-          fi
+          # Install mkcert for generating a locally-trusted TLS certificate.
+          # libnss3-tools provides certutil, required by mkcert -install on Linux.
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends libnss3-tools
+          curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
+            -o /tmp/mkcert
+          sudo install -m755 /tmp/mkcert /usr/local/bin/mkcert
 
-          pnpm install
-
-          sudo apt-get update
-          sudo apt-get install -y libnss3-tools mkcert
-
-          mkdir -p cert
+          # Install the local CA so the cert is trusted by Chromium/Electron.
           mkcert -install
-          mkcert -key-file ./cert/key.pem -cert-file ./cert/cert.pem localhost
+          mkdir -p cert
+          mkcert -key-file cert/key.pem -cert-file cert/cert.pem localhost
 
-          # Copy example envs -> .env
-          for directory in apps/api apps/chain apps/notifications . scripts typeorm; do
-            if [ -f "${directory}/.example.env" ]; then
-              cp "${directory}/.example.env" "${directory}/.env"
-            elif [ -f "${directory}/example.env" ]; then
-              cp "${directory}/example.env" "${directory}/.env"
-            else
-              echo "No .example.env or example.env file found in ${directory}" >&2
-              exit 1
-            fi
+          # Create .env files from examples.
+          for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
+            cp "${dir}/example.env" "${dir}/.env"
           done
 
-          # Align supported FE versions
-          FRONTEND_VERSION="$(node -p "require('../front-end/package.json').version")"
-          sed -i "s/^LATEST_SUPPORTED_FRONTEND_VERSION=.*/LATEST_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
-          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/api/.env
-          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FRONTEND_VERSION}/" apps/notifications/.env
+          # Align frontend version compatibility constraints with the built app.
+          FE_VERSION="$(node -p "require('../front-end/package.json').version")"
+          sed -i "s/^LATEST_SUPPORTED_FRONTEND_VERSION=.*/LATEST_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/notifications/.env
 
-          # Force API to bind externally inside the container (if present in your env schema)
-          if grep -q '^HOST=' apps/api/.env; then
-            sed -i 's/^HOST=.*/HOST=0.0.0.0/' apps/api/.env
-          else
-            echo 'HOST=0.0.0.0' >> apps/api/.env
-          fi
+          # Notifications service requires EMAIL_API_SECURE to be a boolean.
+          sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
 
-          if grep -q '^HTTP_HOST=' apps/api/.env; then
-            sed -i 's/^HTTP_HOST=.*/HTTP_HOST=0.0.0.0/' apps/api/.env
-          else
-            echo 'HTTP_HOST=0.0.0.0' >> apps/api/.env
-          fi
-
-          # ✅ Ensure Redis points to the compose service name on internal port
-          if grep -q '^REDIS_URL=' apps/api/.env; then
-            sed -i 's|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|' apps/api/.env
-          else
-            echo 'REDIS_URL=redis://redis:6379' >> apps/api/.env
-          fi
-
-          if [ -f apps/chain/.env ]; then
-            if grep -q '^REDIS_URL=' apps/chain/.env; then
-              sed -i 's|^REDIS_URL=.*|REDIS_URL=redis://redis:6379|' apps/chain/.env
-            else
-              echo 'REDIS_URL=redis://redis:6379' >> apps/chain/.env
-            fi
-          fi
-
-          # ✅ Fix notifications config validation
-          if grep -q '^EMAIL_API_SECURE=' apps/notifications/.env; then
-            sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
-          else
-            echo 'EMAIL_API_SECURE=false' >> apps/notifications/.env
-          fi
-
-          # Compose file check (your repo has docker-compoase.yaml in the snippet,
-          # but CI must match the real filename; prefer docker-compose.yaml).
-          if [ -f docker-compose.yaml ]; then
-            COMPOSE_FILE="docker-compose.yaml"
-          elif [ -f docker-compoase.yaml ]; then
-            COMPOSE_FILE="docker-compoase.yaml"
-          else
-            echo "Could not find docker-compose.yaml (or docker-compoase.yaml) in back-end/" >&2
-            ls -la
-            exit 1
-          fi
-          export COMPOSE_FILE
+          # Install back-end dependencies (required because the dev docker-compose
+          # mounts .:/usr/src/app, overwriting the container's node_modules).
+          SKIP_NOTICE_GEN=true pnpm install
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          # ✅ IMPORTANT: start ALL services so redis is included (avoid missing dependencies)
+          # Start all back-end services, retrying up to 3 times on failure.
           for attempt in $(seq 1 3); do
-            if docker-compose up -d; then
+            if docker compose up -d; then
               break
             fi
-
             if [ "${attempt}" -eq 3 ]; then
-              echo "docker-compose failed after ${attempt} attempts" >&2
-              docker-compose ps || true
-              docker-compose logs --tail=200 api chain notifications migration database nats redis || true
+              echo "docker compose up failed after 3 attempts" >&2
+              docker compose ps || true
+              docker compose logs --tail=200 || true
               exit 1
             fi
-
-            echo "docker-compose up failed on attempt ${attempt}; retrying in 10 seconds..."
-            docker-compose down --remove-orphans || true
+            echo "Attempt ${attempt} failed; retrying in 10s..."
+            docker compose down --remove-orphans || true
             sleep 10
           done
 
-          # Quick sanity checks for redis DNS + readiness (helps catch ENOTFOUND early)
-          echo "Checking redis connectivity inside network..."
-          docker-compose exec -T redis sh -lc 'redis-cli ping | grep -q PONG' || {
-            echo "Redis is not responding to PING" >&2
-            docker-compose ps || true
-            docker-compose logs --tail=200 redis || true
-            exit 1
-          }
-
-          BACKEND_HOST="localhost"
-          BACKEND_PORT="3001"
-          HTTP_URL="https://${BACKEND_HOST}:${BACKEND_PORT}/"
-          MAX_BACKEND_WAIT_ATTEMPTS=60
-
-          is_ready_code() {
-            [[ "$1" == "200" || "$1" == "426" ]]
-          }
-
-          probe_container_tcp() {
-            docker-compose exec -T api sh -lc '
-              node -e "
-                const net=require(\"net\");
-                const s=net.createConnection({host:\"127.0.0.1\",port:3000});
-                s.setTimeout(2000);
-                s.on(\"connect\",()=>{ console.log(\"200\"); s.end(); process.exit(0); });
-                s.on(\"timeout\",()=>{ console.log(\"000\"); s.destroy(); process.exit(0); });
-                s.on(\"error\",()=>{ console.log(\"000\"); process.exit(0); });
-              "
-            ' 2>/dev/null | tail -n1 || echo "000"
-          }
-
-          probe_host_https() {
-            local code
-            code="$(curl -k -sS -o /dev/null -w '%{http_code}' "${HTTP_URL}" 2>/dev/null)"
-            [[ -n "${code}" ]] && echo "${code}" || echo "000"
-          }
-
-          for attempt in $(seq 1 "${MAX_BACKEND_WAIT_ATTEMPTS}"); do
-            container_tcp="$(probe_container_tcp)"
-            host_code="$(probe_host_https)"
-
-            if is_ready_code "${host_code}"; then
-              echo "Back-end is ready on ${HTTP_URL} (host HTTPS ${host_code}, container TCP ${container_tcp})"
+          # Wait for the API to become ready.
+          # The API serves HTTPS when NODE_ENV=development and cert files are present.
+          MAX_ATTEMPTS=60
+          for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
+            code="$(curl -k -s -o /dev/null -w '%{http_code}' https://localhost:3001/ 2>/dev/null || echo '000')"
+            if [[ "${code}" == "200" || "${code}" == "426" ]]; then
+              echo "Back-end is ready (attempt ${attempt})"
               break
             fi
-
             if (( attempt % 10 == 0 )); then
-              echo "Waiting for back-end... attempt ${attempt}/${MAX_BACKEND_WAIT_ATTEMPTS} (container_tcp=${container_tcp}, host_https=${host_code})"
-              docker-compose ps
+              echo "Waiting for back-end... attempt ${attempt}/${MAX_ATTEMPTS} (HTTP ${code})"
+              docker compose ps
+              docker compose logs --tail=50 api || true
             fi
-
-            if [ "${attempt}" -eq "${MAX_BACKEND_WAIT_ATTEMPTS}" ]; then
+            if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
               echo "Back-end did not become ready in time" >&2
-              echo "Last probe results: container_tcp=${container_tcp}, host_https=${host_code}" >&2
-
-              echo "Container status:" >&2
-              docker-compose ps || true
-
-              echo "API logs (tail):" >&2
-              docker-compose logs --tail=300 api || true
-
-              echo "Other logs (tail):" >&2
-              docker-compose logs --tail=200 chain notifications migration database nats redis || true
-
+              docker compose ps || true
+              docker compose logs --tail=300 || true
               exit 1
             fi
-
             sleep 5
           done
 
-          docker-compose ps
-        working-directory: back-end
+          docker compose ps
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -348,23 +248,14 @@ jobs:
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
 
-      - name: Upload Playwright Report
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-report-${{ matrix.test-suite.name }}
-          path: automation/reports/playwright
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Show Back-end logs on failure
+      - name: Show Back-end Logs
         if: ${{ failure() }}
-        run: docker-compose logs --tail=300 api chain notifications migration database nats redis
+        run: docker compose logs --tail=300
         working-directory: back-end
 
       - name: Stop Back-end Services
         if: ${{ always() }}
-        run: docker-compose down --remove-orphans
+        run: docker compose down --remove-orphans || true
         working-directory: back-end
 
   unit-test:
@@ -380,7 +271,6 @@ jobs:
             command: renderer
           - name: Shared
             command: shared
-
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
@@ -394,7 +284,7 @@ jobs:
         uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
         with:
           node-version: 22.12.0
-          cache: "npm"
+          cache: 'npm'
           cache-dependency-path: |
             front-end/pnpm-lock.yaml
 
