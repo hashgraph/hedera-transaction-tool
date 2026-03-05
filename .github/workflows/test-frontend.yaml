@@ -178,9 +178,9 @@ jobs:
           done
 
           for attempt in $(seq 1 120); do
-            status_code="$(curl -ksS -o /dev/null -w '%{http_code}' https://localhost:3001/ || true)"
+            status_code="$(curl -sS -o /dev/null -w '%{http_code}' http://localhost:3001/ || true)"
             if [ "${status_code}" = "200" ] || [ "${status_code}" = "426" ]; then
-              echo "Back-end is ready on https://localhost:3001 (HTTP ${status_code})"
+              echo "Back-end is ready on http://localhost:3001 (HTTP ${status_code})"
               break
             fi
 
