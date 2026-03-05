@@ -304,6 +304,11 @@ export class SignersService {
       transactionsToProcess.push({ id, transaction });
     }
 
+    // Nothing to persist — skip the DB transaction entirely
+    if (transactionsToUpdate.length === 0 && signersToInsert.length === 0 && notificationsToUpdate.length === 0) {
+      return transactionsToProcess;
+    }
+
     // Execute in single transaction
     let updatedNotificationReceivers: any[] = [];
     try {
