@@ -255,3 +255,7 @@ npm run grafana:stop
 > **Note:** Requires Docker running. If Grafana doesn't load, verify Docker is running and port 3030 is available.
 
 The Grafana dashboard shows live metrics: request rates, response times, error rates, and VU count over time.
+
+## Things I had to do
+- my docker uses https://localhost:3001, so I had to set the BASE_URL env variable to http://localhost:3001 for the k6 tests to work locally. I probably could have overridden that another way
+- create a reports/k6 directory in automation directory

@@ -32,6 +32,8 @@ import {
   FileCreateTransaction,
   AccountId,
   Transaction,
+  TransactionId,
+  Timestamp,
 } from '@hashgraph/sdk';
 import { DATA_VOLUMES, SEED_MARKER, TEST_USER_POOL } from '../src/config/constants.js';
 import type { SignatureMap } from '../src/types/api.types.js';
@@ -188,10 +190,10 @@ async function initializeKeyPair(): Promise<void> {
   console.log(`Mnemonic hash: ${testMnemonicHash.substring(0, 30)}...`);
 }
 
-function generateTransactionId(index: number): string {
-  const accountId = 1000 + index;
-  const timestamp = Math.floor(Date.now() / 1000);
-  return `0.0.${accountId}@${timestamp}.${index}`;
+function generateTransactionId(index: number): TransactionId {
+  const accountId = AccountId.fromString(`0.0.${1000 + index}`);
+  const validStart = Timestamp.generate()
+  return TransactionId.withValidStart(accountId, validStart);
 }
 
 function generateTransactionHash(): string {
@@ -493,6 +495,7 @@ function createFileCreateTransaction(index: number): {
   // Storing unsigned bytes ensures transactions appear in /transactions/sign
   const unsignedBytes = tx.toBytes();
 
+  //TODO should not do construction by hand here
   const txId = tx.transactionId?.toString() || `0.0.2@${Math.floor(now.getTime() / 1000)}.${index}`;
 
   const txHash = crypto.createHash('sha256').update(unsignedBytes).digest('hex');
@@ -505,7 +508,7 @@ function createFileCreateTransaction(index: number): {
     unsignedTransactionBytes: Buffer.from(unsignedBytes),
     transactionId: txId,
     transactionHash: txHash,
-    validStart: now,
+    validStart: tx.transactionId?.validStart?.toDate() ?? now,
     signature: signatureBytes,
   };
 }
@@ -564,9 +567,10 @@ async function insertTransaction(
     signature = txData.signature;
   } else {
     // Use dummy bytes for history (no signing required)
-    transactionId = generateTransactionId(index);
+    const txId = generateTransactionId(index);
+    transactionId = txId.toString();
     transactionHash = generateTransactionHash();
-    validStart = new Date();
+    validStart =  txId?.validStart?.toDate() ?? new Date();
     transactionBytes = Buffer.from('dummy-tx-bytes');
     unsignedTransactionBytes = Buffer.from('dummy-unsigned-bytes');
     signature = Buffer.from('dummy-signature');
@@ -597,7 +601,7 @@ async function insertTransaction(
       status,
       creatorKeyId,
       signature,
-      validStart,
+      validStart.toISOString(),
       MIRROR_NETWORK,
       false,
       executedAt,
@@ -643,6 +647,7 @@ async function seedSignTransactions(
       index: i,
       status: 'WAITING FOR SIGNATURES',
       creatorKeyId: userKeyId,
+      name: `Sign Tx ${i + 1}`,
       useRealTx: true,
       cachedAccountId,
     });

@@ -17,7 +17,7 @@ const NETWORK = __ENV.HEDERA_NETWORK || 'mainnet';
  */
 export const ENVIRONMENTS: EnvironmentMap = {
   local: {
-    baseUrl: 'http://localhost:3001',
+    baseUrl: 'https://localhost:3001',
     name: 'Local Development',
   },
   development: {
@@ -33,6 +33,18 @@ export const ENVIRONMENTS: EnvironmentMap = {
     name: 'Production',
   },
 };
+
+function buildEndpointWithParams(
+  path: string,
+  params: Record<string, string | number | boolean | undefined | null>,
+): string {
+  const qs = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+    .join('&');
+
+  return qs ? `${path}?${qs}` : path;
+}
 
 /**
  * Build optimized transaction-nodes endpoint URL
@@ -88,3 +100,8 @@ export const endpoints: Endpoints = {
   'ready-to-approve': buildTransactionNodesEndpoint('READY_FOR_REVIEW'),
   'ready-to-sign': buildTransactionNodesEndpoint('READY_TO_SIGN'),
 };
+
+export const endpointBuilders = {
+  transactionGroupById: (id: string | number) =>
+    buildEndpointWithParams('/transaction-groups', { id }),
+} as const;
