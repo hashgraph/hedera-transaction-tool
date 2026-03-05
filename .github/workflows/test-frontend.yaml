@@ -207,6 +207,16 @@ jobs:
 
           docker-compose ps
 
+      - name: Test API connectivity
+        run: |
+          set -euo pipefail
+          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
+          echo "API connectivity check returned HTTP ${code}"
+          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
+            echo "Unexpected HTTP status from API: ${code}" >&2
+            exit 1
+          fi
+
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
@@ -259,16 +269,6 @@ jobs:
 
       - name: Install Runtime Shared Libraries
         run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
-
-      - name: Test API connectivity
-        run: |
-          set -euo pipefail
-          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
-          echo "API connectivity check returned HTTP ${code}"
-          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
-            echo "Unexpected HTTP status from API: ${code}" >&2
-            exit 1
-          fi
 
       - name: Run Automation
         env:
