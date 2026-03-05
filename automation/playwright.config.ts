@@ -6,6 +6,7 @@ export default defineConfig({
     ? [['github'], ['list'], ['html', { outputFolder: 'reports/playwright', open: 'never' }]]
     : [['list'], ['html', { outputFolder: 'reports/playwright', open: 'on-failure' }]],
   use: {
+    video: 'retain-on-failure',
     screenshot: {
       mode: 'only-on-failure',
       fullPage: true,
