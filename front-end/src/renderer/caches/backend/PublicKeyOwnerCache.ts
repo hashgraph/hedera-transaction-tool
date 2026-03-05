@@ -1,4 +1,3 @@
-import axios from 'axios';
 import { inject, provide } from 'vue';
 import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import { getPublicKeyOwner } from '@renderer/services/organization';
@@ -28,16 +27,6 @@ export class PublicKeyOwnerCache extends EntityCache<string, string | null> {
   //
 
   protected override async load(publicKey: string, serverUrl: string): Promise<string | null> {
-    let result: string | null;
-    try {
-      result = await getPublicKeyOwner(serverUrl, publicKey);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status == 404) {
-        result = null;
-      } else {
-        throw error;
-      }
-    }
-    return result;
+    return await getPublicKeyOwner(serverUrl, publicKey);
   }
 }
