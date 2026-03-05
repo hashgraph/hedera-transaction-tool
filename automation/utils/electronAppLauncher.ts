@@ -1,9 +1,9 @@
-import { _electron as electron } from '@playwright/test';
+import { _electron as electron, type ElectronApplication } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
 
-export async function launchHederaTransactionTool() {
+export async function launchHederaTransactionTool(): Promise<ElectronApplication> {
   const executablePath = process.env.EXECUTABLE_PATH;
 
   if (!executablePath) {
@@ -18,6 +18,13 @@ export async function launchHederaTransactionTool() {
 
   const app = await electron.launch({
     executablePath,
+    // These args are passed to Electron/Chromium. Crucial for CI when using mkcert/self-signed TLS.
+    args: [
+      '--ignore-certificate-errors',
+      // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
+      '--no-sandbox',
+      '--disable-dev-shm-usage',
+    ],
   });
 
   const launchTime = Date.now() - launchStart;
