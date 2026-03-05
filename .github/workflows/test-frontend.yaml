@@ -158,7 +158,7 @@ jobs:
 
           export COMPOSE_PARALLEL_LIMIT=4
 
-          compose_services=(database redis nats migration chain notifications api)
+          compose_services=(database nats migration chain notifications api)
 
           for attempt in $(seq 1 3); do
             if docker-compose up -d "${compose_services[@]}"; then
