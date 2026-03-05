@@ -265,7 +265,7 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   // Re-register listeners when a socket reconnects
   watch(
-    () => ({ ...(ws.connectionStates.value as Record<string, string>) }),
+    () => ({ ...ws.connectionStates }),
     (newStates, oldStates) => {
       if (
         oldStates &&
