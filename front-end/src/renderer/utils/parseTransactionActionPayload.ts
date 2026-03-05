@@ -26,12 +26,44 @@ export function parseTransactionActionPayload(raw: unknown): TransactionActionPa
     if (typeof item === 'string') return null;
 
     if (item && typeof item === 'object') {
-      for (const id of item.transactionIds ?? []) txIds.add(id);
-      for (const id of item.groupIds ?? []) grpIds.add(id);
-      if (item.eventType === 'status_update') {
-        eventType = 'status_update';
-      } else if (item.eventType && eventType !== 'status_update') {
-        eventType = item.eventType;
+      const {
+        transactionIds,
+        groupIds,
+        eventType: itemEventType,
+      } = item as {
+        transactionIds?: unknown;
+        groupIds?: unknown;
+        eventType?: unknown;
+      };
+
+      if (transactionIds !== undefined) {
+        if (
+          !Array.isArray(transactionIds) ||
+          !transactionIds.every((id) => typeof id === 'number')
+        ) {
+          // Unparseable payload shape
+          return null;
+        }
+        for (const id of transactionIds) txIds.add(id);
+      }
+
+      if (groupIds !== undefined) {
+        if (
+          !Array.isArray(groupIds) ||
+          !groupIds.every((id) => typeof id === 'number')
+        ) {
+          // Unparseable payload shape
+          return null;
+        }
+        for (const id of groupIds) grpIds.add(id);
+      }
+
+      if (typeof itemEventType === 'string') {
+        if (itemEventType === 'status_update') {
+          eventType = 'status_update';
+        } else if (eventType !== 'status_update') {
+          eventType = itemEventType;
+        }
       }
     }
   }
