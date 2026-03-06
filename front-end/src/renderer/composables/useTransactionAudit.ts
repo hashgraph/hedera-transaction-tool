@@ -12,6 +12,7 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export interface TransactionAudit {
   transaction: ComputedRef<Promise<ITransactionFull | Error | null>>;
@@ -28,6 +29,7 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
   /* Injected */
   const accountByIdCache = AccountByIdCache.inject();
   const nodeByIdCache = NodeByIdCache.inject();
+  const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
   /* Computed */
   const transaction = computed(async () => {
@@ -71,6 +73,7 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        publicKeyOwnerCache,
         user.selectedOrganization,
       );
     }

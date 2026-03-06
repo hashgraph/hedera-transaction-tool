@@ -12,6 +12,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 /* Props */
 const props = defineProps<{
@@ -25,6 +26,7 @@ const network = useNetwork();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
@@ -53,6 +55,7 @@ const updateSignatureKeyObject = async () => {
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        publicKeyOwnerCache,
         user.selectedOrganization,
       );
     } catch (error) {

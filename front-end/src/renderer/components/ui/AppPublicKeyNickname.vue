@@ -2,6 +2,7 @@
 import { computed, ref, watchEffect } from 'vue';
 import { PublicKey } from '@hashgraph/sdk';
 import { extractIdentifier, formatPublicKey } from '@renderer/utils';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -9,6 +10,9 @@ const props = defineProps<{
   signed?: boolean;
   external?: boolean;
 }>();
+
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const formattedPublicKey = ref('');
@@ -20,7 +24,7 @@ const value = computed(() => {
 
 watchEffect(async () => {
   if (value.value) {
-    formattedPublicKey.value = await formatPublicKey(value.value);
+    formattedPublicKey.value = await formatPublicKey(value.value, publicKeyOwnerCache);
   }
 });
 </script>
