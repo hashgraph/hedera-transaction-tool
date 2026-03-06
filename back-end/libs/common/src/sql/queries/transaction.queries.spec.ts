@@ -462,6 +462,170 @@ describe('getTransactionNodesForUser - Integration', () => {
       expect(result[2].transaction_id).toBe(tx1.id);
     });
   });
+
+  describe('receiver account filtering', () => {
+    it('should NOT show transaction when user key only matches a receiver account', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: true });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should show transaction when user key matches a non-receiver account', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: false });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should show transaction when user has keys on both receiver AND non-receiver accounts', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: true });
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: false });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should NOT show receiver-only transaction even with onlyUnsigned: false', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: true });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, {
+        signer: true,
+        onlyUnsigned: false,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should show receiver-linked transaction if user is also creator', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        isReceiver: true,
+      });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, {
+        signer: true,
+        creator: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should show receiver-only transaction with terminal status override', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.EXECUTED,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: true });
+
+      const query = getTransactionNodesQuery(
+        sqlBuilder,
+        { statuses: [TransactionStatus.EXECUTED] },
+        signer,
+        signerRoles,
+      );
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should show transaction via publicKeys even when cached account is receiver-only', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      await linkSignerToTransaction(dataSource, transaction, signer, { isReceiver: true });
+
+      await dataSource.getRepository(Transaction).update(
+        { id: transaction.id },
+        { publicKeys: [signer.keys[0].publicKey] },
+      );
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should handle grouped transaction with mixed receiver/non-receiver links', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const signer = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      const txA = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      await linkSignerToTransaction(dataSource, txA, signer, { isReceiver: false });
+
+      const txB = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+      await linkSignerToTransaction(dataSource, txB, signer, { isReceiver: true });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, signer, {
+        ...signerRoles,
+        onlyUnsigned: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].group_id).toBe(group.id);
+      expect(Number(result[0].group_collected_count)).toBe(1);
+    });
+  });
 });
 
 // --- Helpers ---
@@ -517,6 +681,7 @@ async function createTestTransaction(
     seq?: number;
     createdAt?: Date;
     requireBothKeys?: boolean;
+    isReceiver?: boolean;
   },
 ): Promise<Transaction> {
   const now = options.createdAt || new Date();
@@ -585,6 +750,7 @@ async function createTestTransaction(
   const transactionCachedAccount = dataSource.getRepository(TransactionCachedAccount).create({
     transactionId: transaction.id,
     cachedAccountId: cachedAccount.id,
+    isReceiver: options.isReceiver ?? false,
   });
   await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
 
@@ -636,9 +802,10 @@ async function linkSignerToTransaction(
   dataSource: DataSource,
   transaction: Transaction,
   signer: User,
+  options?: { isReceiver?: boolean },
 ): Promise<void> {
   const cachedAccount = dataSource.getRepository(CachedAccount).create({
-    account: `0.0.${transaction.id + 1000}`,
+    account: `0.0.${transaction.id + 1000}-${Math.random().toString(36).slice(2)}`,
     mirrorNetwork: 'mainnet',
     receiverSignatureRequired: null,
     encodedKey: null,
@@ -657,6 +824,7 @@ async function linkSignerToTransaction(
   const transactionCachedAccount = dataSource.getRepository(TransactionCachedAccount).create({
     transactionId: transaction.id,
     cachedAccountId: cachedAccount.id,
+    isReceiver: options?.isReceiver ?? false,
   });
   await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
 }
