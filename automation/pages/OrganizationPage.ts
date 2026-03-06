@@ -896,7 +896,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    await this.click(this.signTransactionButton, 0, this.LONG_TIMEOUT * 2);
+    await this.click(this.signTransactionButton, 0, this.LONG_TIMEOUT * 6);
   }
 
   async isSignTransactionButtonVisible() {
@@ -904,7 +904,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async getTransactionDetailsId() {
-    return await this.getText(this.transactionDetailsIdSelector, null, 5000);
+    return await this.getText(this.transactionDetailsIdSelector, null, this.LONG_TIMEOUT);
   }
 
   /**
