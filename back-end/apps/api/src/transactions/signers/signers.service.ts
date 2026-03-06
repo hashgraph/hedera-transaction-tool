@@ -5,6 +5,7 @@ import { DataSource, In, Repository } from 'typeorm';
 import { PublicKey, SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
+  DismissedNotificationReceiverDto,
   emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
@@ -304,9 +305,18 @@ export class SignersService {
       transactionsToProcess.push({ id, transaction });
     }
 
+    // Nothing to persist — skip the DB transaction entirely
+    if (transactionsToUpdate.length === 0 && signersToInsert.length === 0 && notificationsToUpdate.length === 0) {
+      return transactionsToProcess;
+    }
+
     // Execute in single transaction
+    let updatedNotificationReceivers: DismissedNotificationReceiverDto[] = [];
     try {
       await this.dataSource.transaction(async manager => {
+        // Set query timeout (works even behind PgBouncer where startup params are ignored)
+        await manager.query('SET LOCAL statement_timeout = 60000');
+
         // Bulk update transactions
         if (transactionsToUpdate.length > 0) {
           await this.bulkUpdateTransactions(manager, transactionsToUpdate);
@@ -314,12 +324,7 @@ export class SignersService {
 
         // Bulk update notifications
         if (notificationsToUpdate.length > 0) {
-          const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
-
-          emitDismissedNotifications(
-            this.notificationsPublisher,
-            updatedNotificationReceivers,
-          );
+          updatedNotificationReceivers = (await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate)) ?? [];
         }
 
         // Bulk insert signers
@@ -330,6 +335,14 @@ export class SignersService {
     } catch (err) {
       console.error('Database transaction failed:', err);
       throw new BadRequestException(ErrorCodes.FST);
+    }
+
+    // Emit AFTER transaction commits to avoid holding DB connection during NATS publish
+    if (updatedNotificationReceivers.length > 0) {
+      emitDismissedNotifications(
+        this.notificationsPublisher,
+        updatedNotificationReceivers,
+      );
     }
 
     return transactionsToProcess;

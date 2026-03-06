@@ -85,7 +85,7 @@ export class TransactionSignatureService {
         signatureKey.push(accountInfo.key);
       }
     } catch (error) {
-      this.logger.error(`Failed to get fee payer key: ${error.message}`);
+      this.logger.error(`Failed to get fee payer key for ${feePayerAccount}: ${error.message}`);
       return null;
     }
   }

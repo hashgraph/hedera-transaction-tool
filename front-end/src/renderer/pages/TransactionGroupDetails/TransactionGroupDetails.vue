@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { IGroup } from '@renderer/services/organization';
+import type { LoggedInOrganization } from '@renderer/types';
+import type { Organization } from '@prisma/client';
 import {
   BackEndTransactionType,
   type IGroupItem,
@@ -9,7 +11,7 @@ import {
 } from '@shared/interfaces';
 import { TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
@@ -102,9 +104,33 @@ const notifications = useNotificationsStore();
 /* Composables */
 const router = useRouter();
 const toast = useToast();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
-  const id = router.currentRoute.value.params.id;
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+const FETCH_DEBOUNCE_MS = 1000;
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload) => {
+  // Group ID scoping: ignore events for other groups
+  const rawPayload = Array.isArray(payload) ? payload[0] : payload;
+  if (rawPayload) {
+    try {
+      const data = JSON.parse(rawPayload);
+      const currentGroupId = Number(router.currentRoute.value.params.id);
+      if (data.groupIds && !data.groupIds.includes(currentGroupId)) return;
+    } catch {
+      /* not JSON, process anyway */
+    }
+  }
+
+  if (debounceTimer) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(async () => {
+    debounceTimer = null;
+    const id = router.currentRoute.value.params.id;
+    await fetchGroup(Array.isArray(id) ? id[0] : id);
+  }, FETCH_DEBOUNCE_MS);
+});
+onBeforeUnmount(() => {
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -325,17 +351,20 @@ const handleSignAll = async (showModal = false) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   try {
-    loadingStates[sign] = 'Signing...';
-
     let itemsToSign = group.value?.groupItems.map(item => item.transaction) ?? [];
     itemsToSign = itemsToSign.filter(
       item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES,
     );
+    loadingStates[sign] = `Signing 0/${itemsToSign.length}...`;
     const signed = await signTransactions(
       itemsToSign,
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      (completed, total) => {
+        loadingStates[sign] = `Signing ${completed}/${total}...`;
+      },
+      unsignedSignersToCheck.value,
     );
     await fetchGroup(group.value!.id);
 
@@ -546,6 +575,7 @@ async function fetchGroup(id: string | number) {
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
+        // Version mismatch check stays sequential (needs early break, pure CPU)
         for (const item of group.value.groupItems) {
           const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
           const tx = Transaction.fromBytes(transactionBytes);
@@ -556,30 +586,53 @@ async function fetchGroup(id: string | number) {
             isVersionMismatch.value = true;
             break;
           }
+        }
 
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+        // getUserShouldApprove() is hardcoded to false — remove from loop
+        shouldApprove.value = false;
 
-          const txId = item.transaction.id;
-
-          const usersPublicKeys = await usersPublicRequiredToSign(
-            tx,
-            user.selectedOrganization.userKeys,
-            network.mirrorNodeBaseURL,
-            accountByIdCache,
-            nodeByIdCache,
-            user.selectedOrganization,
+        // Batch usersPublicRequiredToSign() calls in parallel
+        if (!isVersionMismatch.value) {
+          const org = user.selectedOrganization as Organization & LoggedInOrganization;
+          const publicKeyOwnerCache = new Map<string, string | null>();
+          const BATCH_SIZE = 10;
+          const items = group.value.groupItems.filter(
+            item =>
+              item.transaction.status !== TransactionStatus.CANCELED &&
+              item.transaction.status !== TransactionStatus.EXPIRED,
           );
 
-          if (
-            item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED &&
-            usersPublicKeys.length > 0
-          ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
+          for (let i = 0; i < items.length; i += BATCH_SIZE) {
+            const batch = items.slice(i, i + BATCH_SIZE);
+
+            const results = await Promise.allSettled(
+              batch.map(async item => {
+                const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
+                const tx = Transaction.fromBytes(transactionBytes);
+                const usersPublicKeys = await usersPublicRequiredToSign(
+                  tx,
+                  org.userKeys,
+                  network.mirrorNodeBaseURL,
+                  accountByIdCache,
+                  nodeByIdCache,
+                  org,
+                  publicKeyOwnerCache,
+                );
+                return { item, usersPublicKeys };
+              }),
+            );
+
+            for (const result of results) {
+              if (result.status === 'fulfilled') {
+                const { item, usersPublicKeys } = result.value;
+                if (usersPublicKeys.length > 0) {
+                  updatedUnsignedSignersToCheck[item.transaction.id] = usersPublicKeys;
+                }
+              }
+            }
           }
         }
+
         signingItems.value = Array(group.value.groupItems.length).fill(false);
         fullyLoaded.value = true;
 

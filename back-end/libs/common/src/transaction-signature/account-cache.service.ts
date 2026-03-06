@@ -26,6 +26,8 @@ import { InjectDataSource } from '@nestjs/typeorm';
 export class AccountCacheService {
   private readonly logger = new Logger(AccountCacheService.name);
   private readonly cacheHelper: CacheHelper;
+  private readonly linkedPairs = new Set<string>();
+  private static readonly MAX_LINKED_PAIRS = 10000;
 
   private readonly cacheTtlMs: number;
   private readonly claimTimeoutMs: number;
@@ -282,13 +284,20 @@ export class AccountCacheService {
 
   /**
    * Insert an association between a transaction and a cached account.
-   * The insertion is idempotent (duplicates are ignored).
+   * The insertion is idempotent (duplicates are ignored via ON CONFLICT DO NOTHING).
    */
-  private linkTransactionToAccount(
+  private async linkTransactionToAccount(
     transactionId: number,
     cachedAccountId: number,
   ): Promise<void> {
-    return this.cacheHelper.linkTransactionToEntity(
+    const key = `${transactionId}:${cachedAccountId}`;
+    if (this.linkedPairs.has(key)) return;
+    if (this.linkedPairs.size >= AccountCacheService.MAX_LINKED_PAIRS) {
+      this.linkedPairs.clear();
+    }
+    this.linkedPairs.add(key);
+
+    await this.cacheHelper.linkTransactionToEntity(
       TransactionCachedAccount,
       transactionId,
       cachedAccountId,
