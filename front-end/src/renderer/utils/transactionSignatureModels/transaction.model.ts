@@ -100,7 +100,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     // Also resolve node info in parallel if needed
     let nodeInfo: Awaited<ReturnType<typeof nodeInfoCache.lookup>> | null = null;
     let nodeAccountInfo: AccountInfoResult | null = null;
-    if (!Number.isNaN(nodeId) && nodeId !== null) {
+    if (nodeId != null && !Number.isNaN(nodeId)) {
       try {
         nodeInfo = await nodeInfoCache.lookup(nodeId, mirrorNodeLink);
         const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;

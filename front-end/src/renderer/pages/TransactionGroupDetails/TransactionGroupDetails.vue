@@ -596,7 +596,11 @@ async function fetchGroup(id: string | number) {
           const org = user.selectedOrganization as Organization & LoggedInOrganization;
           const publicKeyOwnerCache = new Map<string, string | null>();
           const BATCH_SIZE = 10;
-          const items = group.value.groupItems;
+          const items = group.value.groupItems.filter(
+            item =>
+              item.transaction.status !== TransactionStatus.CANCELED &&
+              item.transaction.status !== TransactionStatus.EXPIRED,
+          );
 
           for (let i = 0; i < items.length; i += BATCH_SIZE) {
             const batch = items.slice(i, i + BATCH_SIZE);
@@ -621,11 +625,7 @@ async function fetchGroup(id: string | number) {
             for (const result of results) {
               if (result.status === 'fulfilled') {
                 const { item, usersPublicKeys } = result.value;
-                if (
-                  item.transaction.status !== TransactionStatus.CANCELED &&
-                  item.transaction.status !== TransactionStatus.EXPIRED &&
-                  usersPublicKeys.length > 0
-                ) {
+                if (usersPublicKeys.length > 0) {
                   updatedUnsignedSignersToCheck[item.transaction.id] = usersPublicKeys;
                 }
               }

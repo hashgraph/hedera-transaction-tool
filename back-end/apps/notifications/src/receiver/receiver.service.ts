@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
@@ -53,6 +53,8 @@ export class ReceiverService {
     [TransactionStatus.EXPIRED]: NotificationType.TRANSACTION_EXPIRED,
     [TransactionStatus.CANCELED]: NotificationType.TRANSACTION_CANCELLED,
   };
+
+  private readonly logger = new Logger(ReceiverService.name);
 
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
@@ -243,7 +245,7 @@ export class ReceiverService {
         return [...approversUserIds, ...observerUserIds, ...requiredUserIds];
 
       default:
-        console.warn(`No recipient logic for ${newIndicatorType}`);
+        this.logger.warn(`No recipient logic for ${newIndicatorType}`);
         return [];
     }
   }
@@ -584,7 +586,7 @@ export class ReceiverService {
       keyExtractor: (nr, cache) => {
         const user = cache?.get(nr.userId);
         if (!user?.email) {
-          console.error(`User ${nr.userId} not found in cache or missing email`);
+          this.logger.error(`User ${nr.userId} not found in cache or missing email`);
           return null;
         }
         return user.email;
@@ -664,7 +666,7 @@ export class ReceiverService {
     };
 
     const onError = async (err) => {
-      console.error('Failed to send email notifications:', err);
+      this.logger.error('Failed to send email notifications:', err);
     };
 
     await emitEmailNotifications(
@@ -1074,13 +1076,13 @@ export class ReceiverService {
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
       if (!transaction) {
-        console.error(`Transaction ${transactionId} not found in map, skipping`);
+        this.logger.error(`Transaction ${transactionId} not found in map, skipping`);
         continue;
       }
       const approvers = approversMap.get(transactionId) || [];
 
       if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
-        console.error(
+        this.logger.error(
           `Soft-deleted transaction ${transactionId} has unexpected status: ${transaction.status} (expected CANCELED)`
         );
         transaction.status = TransactionStatus.CANCELED;
@@ -1222,7 +1224,7 @@ export class ReceiverService {
     });
 
     if (!registeredUser) {
-      console.error(`User ${userId} not found`);
+      this.logger.error(`User ${userId} not found`);
       return;
     }
 
@@ -1232,7 +1234,7 @@ export class ReceiverService {
     });
 
     if (adminUsers.length === 0) {
-      console.log('No admin users found to notify');
+      this.logger.log('No admin users found to notify');
       return;
     }
 

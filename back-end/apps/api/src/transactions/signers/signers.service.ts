@@ -5,6 +5,7 @@ import { DataSource, In, Repository } from 'typeorm';
 import { PublicKey, SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
+  DismissedNotificationReceiverDto,
   emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
@@ -310,7 +311,7 @@ export class SignersService {
     }
 
     // Execute in single transaction
-    let updatedNotificationReceivers: unknown[] = [];
+    let updatedNotificationReceivers: DismissedNotificationReceiverDto[] = [];
     try {
       await this.dataSource.transaction(async manager => {
         // Set query timeout (works even behind PgBouncer where startup params are ignored)

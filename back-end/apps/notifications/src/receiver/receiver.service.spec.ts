@@ -416,7 +416,7 @@ describe('ReceiverService', () => {
     });
 
     it('logs a warning and returns empty array for unknown types', async () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = jest.spyOn((service as any).logger, 'warn').mockImplementation(() => {});
       const res = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
@@ -636,16 +636,16 @@ describe('ReceiverService', () => {
       const emailNotifications: { [email: string]: any[] } = {};
       const receiverIds: number[] = [];
 
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const errorSpy = jest.spyOn((service as any).logger, 'error').mockImplementation(() => {});
 
       (service as any).collectEmailNotifications(newReceivers, updatedReceivers, emailNotifications, receiverIds, cache);
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('User 1 not found in cache or missing email'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('User 3 not found in cache or missing email'));
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('User 1 not found in cache or missing email'));
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('User 3 not found in cache or missing email'));
       expect(Object.keys(emailNotifications)).toEqual([]);
       expect(receiverIds).toEqual([]);
 
-      consoleSpy.mockRestore();
+      errorSpy.mockRestore();
     });
   });
 
@@ -689,7 +689,7 @@ describe('ReceiverService', () => {
 
     it('calls onError and logs when emit fails (no DB update)', async () => {
       em.update.mockResolvedValue({});
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn((service as any).logger, 'error').mockImplementation(() => {});
 
       (emitEmailNotifications as jest.Mock).mockImplementation(async (_pub, _dtos, _onSuccess, onError) => {
         await onError(new Error('send-failed'));
@@ -1131,7 +1131,7 @@ describe('ReceiverService', () => {
         emailReceiverIds: [],
         affectedUserIds: new Map(),
       });
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn((service as any).logger, 'error').mockImplementation(() => {});
 
       await service.processTransactionStatusUpdateNotifications([{ entityId: 999 } as any]);
 
@@ -1165,7 +1165,7 @@ describe('ReceiverService', () => {
       transaction.deletedAt = new Date();
 
       // spy console.error
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn((service as any).logger, 'error').mockImplementation(() => {});
 
       // stub heavy handler so we only assert normalization and types passed in
       const handlerSpy = jest
@@ -1409,7 +1409,7 @@ describe('ReceiverService', () => {
 
       // missing user
       em.findOne.mockResolvedValueOnce(null);
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn((service as any).logger, 'error').mockImplementation(() => {});
       await service.processUserRegisteredNotifications(evt);
       expect(consoleSpy).toHaveBeenCalled();
       consoleSpy.mockRestore();
@@ -1452,7 +1452,7 @@ describe('ReceiverService', () => {
       // no admin users returned
       em.find.mockResolvedValueOnce([]);
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn((service as any).logger, 'log').mockImplementation(() => {});
 
       await service.processUserRegisteredNotifications(evt);
 
