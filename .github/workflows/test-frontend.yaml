@@ -69,6 +69,21 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
+          - name: Registration
+            command: RegistrationTests
+            soloRequired: false
+          - name: Login
+            command: LoginTests
+            soloRequired: false
+          - name: Settings
+            command: SettingsTests
+            soloRequired: false
+          - name: Transactions
+            command: TransactionTests
+            soloRequired: true
+          - name: Workflow
+            command: WorkflowTests
+            soloRequired: true
           - name: Organization
             command: OrganizationGroupTests
             soloRequired: true
