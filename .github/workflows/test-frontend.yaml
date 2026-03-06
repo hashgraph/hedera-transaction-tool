@@ -295,15 +295,6 @@ jobs:
           if-no-files-found: warn
           retention-days: 3
 
-      - name: Upload Playwright Videos
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: playwright-videos-${{ matrix.test-suite.name }}
-          path: automation/test-results/**/*.webm
-          if-no-files-found: warn
-          retention-days: 3
-
       - name: Upload Playwright Screenshots
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
