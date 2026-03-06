@@ -8,6 +8,7 @@ import { TransactionBrowserEntry } from '@renderer/components/ExternalSigning/Tr
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -17,6 +18,7 @@ const props = defineProps<{
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
 const nodeInfoCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* Stores */
 const network = useNetworkStore();
@@ -35,6 +37,7 @@ const updateEntries = async () => {
       mirrorNodeLink,
       accountInfoCache,
       nodeInfoCache,
+      publicKeyOwnerCache,
       user.publicKeys,
     );
   } catch {

@@ -28,6 +28,7 @@ import { useToast } from 'vue-toast-notification';
 import { Transaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
@@ -42,6 +43,7 @@ const toast = useToast();
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
 const nodeInfoCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const isOnlyExternalSelected = ref(false);
@@ -69,6 +71,7 @@ async function handleExport() {
         mirrorNodeLink,
         accountInfoCache,
         nodeInfoCache,
+        publicKeyOwnerCache,
         user.selectedOrganization,
       );
       if (audit.externalKeys.size > 0) {

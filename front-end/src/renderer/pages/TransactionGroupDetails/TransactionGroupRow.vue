@@ -1,0 +1,188 @@
+<script setup lang="ts">
+import { computed, ref, watch } from 'vue';
+import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
+import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
+import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import AppButton from '@renderer/components/ui/AppButton.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
+import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import {
+  assertIsLoggedInOrganization,
+  getStatusFromCode,
+  hexToUint8Array,
+  usersPublicRequiredToSign,
+} from '@renderer/utils';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import useNetwork from '@renderer/stores/storeNetwork.ts';
+import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { Transaction } from '@hashgraph/sdk';
+import SignGroupItemButton from '@renderer/pages/TransactionGroupDetails/SignGroupItemButton.vue';
+import useRevealed from '@renderer/composables/useRevealed.ts';
+
+/* Props */
+const props = defineProps<{
+  groupItem: IGroupItem;
+  rowIndex: number;
+}>();
+
+/* Emits */
+const emit = defineEmits<{
+  (event: 'handleDetails', transactionId: number): Promise<void>;
+  (event: 'transactionSigned', transaction: ITransactionFull): void;
+}>();
+
+/* Injected */
+const accountByIdCache = AccountByIdCache.inject();
+const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+
+/* Stores */
+const user = useUserStore();
+const network = useNetwork();
+
+/* State */
+const canSign = ref(false);
+const container = ref<HTMLElement | null>(null);
+
+/* Computed */
+const itemStatusBadgeClass = computed((): string => {
+  let result: string;
+  const status = props.groupItem.transaction.status;
+  const statusCode = props.groupItem.transaction.statusCode;
+  if (statusCode) {
+    result = [0, 22, 104].includes(statusCode) ? 'bg-success' : 'bg-danger';
+  } else {
+    switch (status) {
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        result = 'bg-success-subtle text-success-emphasis border border-success-subtle';
+        break;
+      case TransactionStatus.ARCHIVED:
+        result = 'bg-success';
+        break;
+      case TransactionStatus.EXPIRED:
+      case TransactionStatus.CANCELED:
+      case TransactionStatus.REJECTED:
+        result = 'bg-danger';
+        break;
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        result = canSign.value ? 'bg-info' : 'text-muted';
+        break;
+      default:
+        result = 'text-muted';
+    }
+  }
+  return result;
+});
+
+const itemStatusLabel = computed((): string => {
+  let result: string;
+  const status = props.groupItem.transaction.status;
+  const statusCode = props.groupItem.transaction.statusCode;
+
+  if (statusCode) {
+    // Transaction has been executed
+    result = getStatusFromCode(statusCode) ?? '';
+  } else {
+    switch (status) {
+      case TransactionStatus.WAITING_FOR_SIGNATURES:
+        result = canSign.value ? 'READY TO SIGN' : 'IN PROGRESS';
+        break;
+      case TransactionStatus.WAITING_FOR_EXECUTION:
+        result = 'READY FOR EXECUTION';
+        break;
+      case TransactionStatus.EXECUTED:
+        result = 'EXECUTED';
+        break;
+      case TransactionStatus.CANCELED:
+        result = 'CANCELED';
+        break;
+      case TransactionStatus.EXPIRED:
+        result = 'EXPIRED';
+        break;
+      case TransactionStatus.REJECTED:
+        result = 'REJECTED';
+        break;
+      case TransactionStatus.ARCHIVED:
+        result = 'ARCHIVED';
+        break;
+      default:
+        result = status;
+    }
+  }
+  return result;
+});
+
+const transactionType = computed(() => {
+  const typeName = TransactionTypeName[props.groupItem.transaction.type];
+  return formatTransactionType(typeName, false, true);
+});
+
+/* Functions */
+const updateSigningStatus = async (): Promise<void> => {
+  canSign.value = false;
+  const tx = props.groupItem.transaction;
+  if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
+    assertIsLoggedInOrganization(user.selectedOrganization);
+    const transactionBytes = hexToUint8Array(tx.transactionBytes);
+    const sdkTransaction = Transaction.fromBytes(transactionBytes);
+    const usersPublicKeys = await usersPublicRequiredToSign(
+      sdkTransaction,
+      user.selectedOrganization.userKeys,
+      network.mirrorNodeBaseURL,
+      accountByIdCache,
+      nodeByIdCache,
+      publicKeyOwnerCache,
+      user.selectedOrganization,
+    );
+    canSign.value = usersPublicKeys.length > 0;
+  }
+};
+
+/* Hooks */
+useRevealed(container, () => {
+  // console.log('Row has been revealed for: ' + props.groupItem.transaction.transactionId);
+  watch(() => props.groupItem, updateSigningStatus, { immediate: true });
+});
+</script>
+
+<template>
+  <tr ref="container">
+    <!-- Column #1 : Transaction ID -->
+    <td data-testid="td-group-transaction-id">
+      <TransactionId :transaction-id="props.groupItem.transaction.transactionId" wrap />
+    </td>
+    <!-- Column #2 : Transaction Type -->
+    <td>
+      <span class="text-bold">{{ transactionType }}</span>
+    </td>
+    <!-- Column #3 : Status -->
+    <td :data-testid="`td-transaction-node-transaction-status-${props.rowIndex}`">
+      <span :class="itemStatusBadgeClass" class="badge text-break">{{ itemStatusLabel }}</span>
+    </td>
+    <!-- Column #4 : Valid Start -->
+    <td data-testid="td-group-valid-start-time">
+      <DateTimeString :date="new Date(groupItem.transaction.validStart)" compact wrap />
+    </td>
+    <!-- Column #5 : Actions -->
+    <td class="text-center">
+      <div class="d-flex justify-content-center gap-4">
+        <SignGroupItemButton
+          :transaction-id="props.groupItem.transactionId"
+          :signing-enabled="canSign"
+          @transactionSigned="payload => emit('transactionSigned', payload.transaction)"
+        />
+        <AppButton
+          type="button"
+          color="secondary"
+          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
+          :data-testid="`button-group-transaction-${props.rowIndex}`"
+          ><span>Details</span>
+        </AppButton>
+      </div>
+    </td>
+  </tr>
+</template>
+
+<style scoped></style>
