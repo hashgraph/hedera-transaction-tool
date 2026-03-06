@@ -133,11 +133,18 @@ export class ExecuteService {
       result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
       transactionStatusCode = receipt.status._code || Status.Ok._code;
+      if (transactionStatusCode !== Status.Ok._code) {
+        console.log(`Execution did complete for transaction: ${sdkTransaction.transactionId.toString()}`);
+        console.log(`Transaction status code: ${transactionStatusCode}`);
+      }
     } catch (error) {
       transactionStatusCode = error.status?._code || 21;
       if (!error.status) transactionStatusCode = getStatusCodeFromMessage(error.message);
       transactionStatus = TransactionStatus.FAILED;
       result.error = error.message;
+      console.log(`Execution did fail for transaction: ${sdkTransaction.transactionId.toString()}`);
+      console.log(`Error message: ${result.error}`);
+      console.log(`Transaction status code: ${transactionStatusCode}`);
     } finally {
       result.status = transactionStatus;
 
