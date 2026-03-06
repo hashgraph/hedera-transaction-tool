@@ -310,7 +310,7 @@ export class SignersService {
     }
 
     // Execute in single transaction
-    let updatedNotificationReceivers: any[] = [];
+    let updatedNotificationReceivers: unknown[] = [];
     try {
       await this.dataSource.transaction(async manager => {
         // Set query timeout (works even behind PgBouncer where startup params are ignored)
