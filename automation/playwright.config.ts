@@ -6,7 +6,6 @@ export default defineConfig({
     ? [['github'], ['list'], ['html', { outputFolder: 'reports/playwright', open: 'never' }]]
     : [['list'], ['html', { outputFolder: 'reports/playwright', open: 'on-failure' }]],
   use: {
-    video: 'retain-on-failure',
     screenshot: {
       mode: 'only-on-failure',
       fullPage: true,
@@ -14,7 +13,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   reportSlowTests: null,
-  retries: process.env.CI ? 0 : 0,
+  retries: process.env.CI ? 2 : 0,
   timeout: process.env.CI ? 60_000 : 3600_000,
   workers: 1,
 
