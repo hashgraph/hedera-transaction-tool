@@ -75,6 +75,40 @@ export class BasePage {
   }
 
   /**
+   * Clicks on a button once it is enabled.
+   * @param {string} testId - The data-testid of the button.
+   * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the button to be enabled.
+   * @returns {Promise<void>}
+   */
+  async clickButtonWhenEnabled(testId: string, timeout: number = this.LONG_TIMEOUT): Promise<void> {
+    const button = this.window.getByTestId(testId);
+    await button.scrollIntoViewIfNeeded();
+    await button.waitFor({ state: 'visible', timeout });
+    await this.waitForButtonEnabled(testId, timeout);
+    await button.click();
+  }
+
+  /**
+   * Waits for a button to be enabled.
+   * @param {string} testId - The data-testid of the button.
+   * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the button to be enabled.
+   * @returns {Promise<void>}
+   * @throws {Error} - If the button is not enabled within the specified timeout.
+   */
+  async waitForButtonEnabled(testId: string, timeout: number = this.LONG_TIMEOUT): Promise<void> {
+    const button = this.window.getByTestId(testId);
+    await button.waitFor({ state: 'attached', timeout });
+    const start = Date.now();
+    while (Date.now() - start < timeout) {
+      if (await button.isEnabled()) {
+        return;
+      }
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+    }
+    throw new Error(`Button with testId "${testId}" was not enabled within ${timeout} ms`);
+  }
+
+  /**
    * Fills an input field with the provided value.
    * @param {string} selector - The selector of the input element.
    * @param {string} value - The value to fill in.
@@ -231,21 +265,25 @@ export class BasePage {
 
   /**
    * Waits for an element with a specified testId to become visible within the DOM.
-   * @param {string} testId - The testId of the element to wait for.
+   * @param selector
    * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @param index
    * @returns {Promise<void>}
    */
   async waitForElementToBeVisible(
-    testId: string,
+    selector: string,
     timeout: number = this.LONG_TIMEOUT,
+    index: number | null = null,
   ): Promise<void> {
-    console.log(`Waiting for element with testId: ${testId} to become visible`);
+    console.log(`Waiting for element with selector: ${selector} to become visible`);
+
     try {
-      await this.window.waitForSelector(`[data-testid="${testId}"]`, { state: 'visible', timeout });
-      console.log(`Element with testId ${testId} is now visible.`);
+      const element = this.getElement(selector, index);
+      await element.waitFor({ state: 'visible', timeout });
+      console.log(`Element with selector ${selector} is now visible.`);
     } catch (error) {
       console.error(
-        `Element with testId ${testId} did not become visible within the timeout: ${timeout}`,
+        `Element with selector ${selector} did not become visible within the timeout: ${timeout}`,
         error,
       );
       throw error;
@@ -378,7 +416,7 @@ export class BasePage {
   async isElementEditable(
     selector: string,
     index: number | null = null,
-    timeout = this.DEFAULT_TIMEOUT,
+    timeout: number = this.DEFAULT_TIMEOUT,
   ): Promise<boolean> {
     console.log(`Checking if element with selector: ${selector} is editable`);
     const element = this.getElement(selector, index);

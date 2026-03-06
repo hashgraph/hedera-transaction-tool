@@ -51,7 +51,7 @@ test.describe('Organization Contact List tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(globalCredentials.password, payerPrivateKey);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
   });
 
   test.afterEach(async () => {

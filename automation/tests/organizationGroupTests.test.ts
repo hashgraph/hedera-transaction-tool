@@ -68,6 +68,7 @@ test.describe('Organization Group Tx tests', () => {
     // Setup Organization
     await organizationPage.setupOrganization();
     await organizationPage.setUpInitialUsers(
+      window,
       globalCredentials.password,
       payerPrivateKey,
     );
@@ -142,8 +143,8 @@ test.describe('Organization Group Tx tests', () => {
     // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
 
-    const txId = await groupPage.getTransactionTimestamp(0) ?? '';
-    const secondTxId = await groupPage.getTransactionTimestamp(1) ?? '';
+    const txId = await groupPage.getTransactionTimestamp(0, 100) ?? '';
+    const secondTxId = (await groupPage.getTransactionTimestamp(1, 100)) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
     await groupPage.clickOnConfirmGroupActionButton();
@@ -163,7 +164,6 @@ test.describe('Organization Group Tx tests', () => {
     const result = transactionDetails?.result;
     expect(transactionType).toBe('CRYPTOAPPROVEALLOWANCE');
     expect(result).toBe('SUCCESS');
-
     const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
     const secondTransactionType = secondTransactionDetails?.name;
     const secondResult = secondTransactionDetails?.result;
@@ -174,7 +174,6 @@ test.describe('Organization Group Tx tests', () => {
   test('Verify user can cancel all items in a transaction group', async () => {
     test.slow();
     await groupPage.addSingleTransactionToGroup(2);
-
     await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnCancelAllButton();
@@ -218,7 +217,7 @@ test.describe('Organization Group Tx tests', () => {
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
+    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions, 100);
 
     return groupPage.verifyAllTransactionsAreSuccessful(timestamps);
   }

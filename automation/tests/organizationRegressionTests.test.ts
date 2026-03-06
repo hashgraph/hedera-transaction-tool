@@ -57,7 +57,7 @@ test.describe.skip('Organization Regression tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(globalCredentials.password, payerPrivateKey);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
     firstUser = organizationPage.getUser(0);
 
     // Disable notifications for test users
