@@ -81,32 +81,17 @@ const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 // Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
-  const privateKey = process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
-    ? process.env.PRIVATE_KEY
-    : null;
-
-  console.log('[ENV] PRIVATE_KEY:', privateKey ? '[SET]' : '[NOT SET]');
-  return privateKey;
+  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
 }
 
 // Retrieves the operator private key from environment variables
 export function getOperatorKeyEnv(): string {
-  const operatorKey = process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== ''
-    ? process.env.OPERATOR_KEY
-    : LOCALNET_OPERATOR_KEY;
-
-  console.log('[ENV] OPERATOR_KEY:', process.env.OPERATOR_KEY ? '[FROM ENV]' : '[USING LOCALNET_OPERATOR_KEY]');
-  return operatorKey;
+  return process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== '' ? process.env.OPERATOR_KEY : LOCALNET_OPERATOR_KEY;
 }
 
 // Retrieves the network used from environment variables
 export function getNetworkEnv(): string {
-  const network = process.env.ENVIRONMENT && process.env.ENVIRONMENT !== ''
-    ? process.env.ENVIRONMENT
-    : 'LOCALNET';
-
-  console.log('[ENV] ENVIRONMENT:', network);
-  return network;
+  return process.env.ENVIRONMENT && process.env.ENVIRONMENT !== '' ? process.env.ENVIRONMENT : 'LOCALNET';
 }
 
 export async function setupEnvironmentForTransactions(
