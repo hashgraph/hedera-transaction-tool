@@ -267,6 +267,7 @@ export async function signTransactions(
       `The following public keys need to be restored to fully sign all transactions: ${[...allNonRestoredKeys].join(', ')}`,
       errorToastOptions,
     );
+    return false;
   }
 
   if (items.length > 0) {
