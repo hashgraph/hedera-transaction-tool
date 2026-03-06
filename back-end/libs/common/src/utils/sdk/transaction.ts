@@ -23,7 +23,12 @@ import {
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
+import {
+  MAX_TRANSACTION_BYTE_SIZE,
+  TransactionType,
+  Transaction,
+  TransactionStatusCodeFallback,
+} from '@entities';
 import {
   decode,
   computeShortenedPublicKeyList,
@@ -246,7 +251,7 @@ export const getStatusCodeFromMessage = (message: string) => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
-    return 21;
+    return TransactionStatusCodeFallback;
   }
 };
 

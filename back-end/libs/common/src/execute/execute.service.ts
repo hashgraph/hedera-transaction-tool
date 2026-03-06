@@ -8,7 +8,12 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionStatus,
+  TransactionStatusCodeFallback,
+} from '@entities';
 
 import {
   emitTransactionStatusUpdate,
@@ -119,7 +124,7 @@ export class ExecuteService {
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
-    let transactionStatusCode = 21;
+    let transactionStatusCode = TransactionStatusCodeFallback;
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
@@ -138,7 +143,7 @@ export class ExecuteService {
         console.log(`Transaction status code: ${transactionStatusCode}`);
       }
     } catch (error) {
-      transactionStatusCode = error.status?._code || 21;
+      transactionStatusCode = error.status?._code || TransactionStatusCodeFallback;
       if (!error.status) transactionStatusCode = getStatusCodeFromMessage(error.message);
       transactionStatus = TransactionStatus.FAILED;
       result.error = error.message;

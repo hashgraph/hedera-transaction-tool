@@ -22,7 +22,12 @@ import {
   emitTransactionStatusUpdate,
   TransactionSignatureService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionStatus,
+  TransactionStatusCodeFallback,
+} from '@entities';
 import { ExecuteService } from './execute.service';
 
 jest.mock('@app/common/utils');
@@ -210,7 +215,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
       });
-      jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(21);
+      jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(TransactionStatusCodeFallback);
 
       await service.executeTransaction(transaction);
 
@@ -219,7 +224,7 @@ describe('ExecuteService', () => {
         {
           executedAt: expect.any(Date),
           status: TransactionStatus.FAILED,
-          statusCode: 21,
+          statusCode: TransactionStatusCodeFallback,
         },
       );
       expect(client.close).toHaveBeenCalled();
@@ -236,7 +241,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
         status: {
-          _code: 21,
+          _code: TransactionStatusCodeFallback,
         },
       });
 
@@ -247,7 +252,7 @@ describe('ExecuteService', () => {
         {
           executedAt: expect.any(Date),
           status: TransactionStatus.FAILED,
-          statusCode: 21,
+          statusCode: TransactionStatusCodeFallback,
         },
       );
       expect(client.close).toHaveBeenCalled();
@@ -432,7 +437,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValue({
         message: 'Transaction failed',
         status: {
-          _code: 21,
+          _code: TransactionStatusCodeFallback,
         },
       });
 
@@ -448,7 +453,7 @@ describe('ExecuteService', () => {
           {
             executedAt: expect.any(Date),
             status: TransactionStatus.FAILED,
-            statusCode: 21,
+            statusCode: TransactionStatusCodeFallback,
           },
         );
       });
