@@ -229,8 +229,10 @@ export class OrganizationPage extends BasePage {
   }
 
   async setUpInitialUsers(
+    window: Page,
     encryptionPassword: string,
     payerPrivateKey: string | null,
+    setPrivateKey = true
   ) {
     const user = this.users[0];
 
@@ -257,7 +259,11 @@ export class OrganizationPage extends BasePage {
     if (!payerPrivateKey) {
       throw new Error('Payer private key was not provided.');
     }
-    this.users[0].privateKey = payerPrivateKey;
+
+    if (setPrivateKey) {
+      await setupEnvironmentForTransactions(window, payerPrivateKey);
+      this.users[0].privateKey = payerPrivateKey;
+    }
 
     await this.settingsPage.navigateToLogout();
     await this.click(this.logoutButtonSelector);

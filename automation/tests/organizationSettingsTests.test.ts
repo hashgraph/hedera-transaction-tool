@@ -53,7 +53,7 @@ test.describe('Organization Settings tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(globalCredentials.password, payerPrivateKey);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
 
     // Log in with the organization user
     firstUser = organizationPage.getUser(0);

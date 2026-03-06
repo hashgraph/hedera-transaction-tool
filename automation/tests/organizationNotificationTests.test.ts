@@ -55,7 +55,7 @@ test.describe('Organization Notification tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(globalCredentials.password, payerPrivateKey);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
 

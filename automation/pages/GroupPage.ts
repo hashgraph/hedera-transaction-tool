@@ -140,19 +140,24 @@ export class GroupPage extends BasePage {
     return await this.getText(this.transactionTypeIndexSelector + index);
   }
 
-  async getTransactionTimestamp(index: number) {
-    return await this.getText(this.transactionTimestampIndexSelector + index);
+  async getTransactionTimestamp(index: number, timeout: number): Promise<string | null> {
+    return await this.getText(this.transactionTimestampIndexSelector + index, null, timeout);
   }
 
-  async getTransactionGroupDetailsId(index: number) {
+  async getTransactionGroupDetailsId(index: number): Promise<string | null> {
     return await this.getText(this.transactionGroupDetailsIdSelector, index);
   }
 
-  async getAllTransactionTimestamps(numberOfTransactions: number) {
-    const timestamps = [];
+  async getAllTransactionTimestamps(
+    numberOfTransactions: number,
+    timeout: number = 100,
+  ): Promise<string[]> {
+    const timestamps: string[] = [];
+
     for (let i = 0; i < numberOfTransactions; i++) {
-      const timestamp = await this.getTransactionTimestamp(i);
-      if (timestamp !== null) {
+      const timestamp = await this.getTransactionTimestamp(i, timeout);
+
+      if (timestamp) {
         timestamps.push(timestamp);
       }
     }
@@ -326,12 +331,14 @@ export class GroupPage extends BasePage {
       // Backend cache linking can take 10-30s+ depending on mirror node latency
       const found = await this.waitForTransactionInTab(
         this.organizationPage.readyToSignTabSelector,
-        30,   // Max 30 retries (increased from 15)
-        2000  // 2 seconds between retries = max 60s wait
+        30, // Max 30 retries (increased from 15)
+        2000, // 2 seconds between retries = max 60s wait
       );
 
       if (!found) {
-        throw new Error(`User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`);
+        throw new Error(
+          `User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`,
+        );
       }
 
       await this.clickOnDetailsGroupButton(0);
@@ -411,7 +418,7 @@ export class GroupPage extends BasePage {
   async waitForTransactionInTab(
     tabSelector: string,
     maxRetries: number = 30,
-    delayMs: number = 2000
+    delayMs: number = 2000,
   ): Promise<boolean> {
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -422,13 +429,16 @@ export class GroupPage extends BasePage {
         // Transaction renders immediately even with loader visible
 
         // Use Playwright's native waitFor for better reliability
-        await this.window.locator('[data-testid="button-transaction-node-details-0"]')
+        await this.window
+          .locator('[data-testid="button-transaction-node-details-0"]')
           .waitFor({ state: 'visible', timeout: 3000 });
 
         console.log(`Transaction found in tab after ${i + 1} attempt(s)`);
         return true;
       } catch (error: any) {
-        console.log(`Transaction not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${maxRetries})`);
+        console.log(
+          `Transaction not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${maxRetries})`,
+        );
         if (i < maxRetries - 1) {
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
