@@ -272,9 +272,9 @@ export function getTransactionNodesQuery(
               t.${sql.col(Transaction, 'type')} AS transaction_type,
               t.${sql.col(Transaction, 'isManual')} AS is_manual,
               ROW_NUMBER() OVER (
-          PARTITION BY gi.${sql.col(TransactionGroupItem, 'groupId')}
-          ORDER BY t.${sql.col(Transaction, 'createdAt')} DESC
-        ) AS rn
+                PARTITION BY gi.${sql.col(TransactionGroupItem, 'groupId')}
+                ORDER BY t.${sql.col(Transaction, 'createdAt')} DESC
+              ) AS rn
           FROM ${sql.table(Transaction)} t
                    LEFT JOIN ${sql.table(TransactionGroupItem)} gi
                              ON gi.${sql.col(TransactionGroupItem, 'transactionId')} = t.${sql.col(Transaction, 'id')}
