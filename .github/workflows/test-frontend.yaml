@@ -93,6 +93,10 @@ jobs:
             command: OrganizationContactListTests
             soloRequired: true
             backendRequired: true
+          - name: OrganizationSettings
+            command: OrganizationSettingsTests
+            soloRequired: true
+            backendRequired: true
 #          - name: Organization
 #            command: OrganizationGroupTests
 #            soloRequired: true
