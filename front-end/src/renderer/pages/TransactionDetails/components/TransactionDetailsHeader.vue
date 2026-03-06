@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -224,8 +225,8 @@ const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  shouldApprove.value && buttons.push(reject, approve);
-  canSign.value && !shouldApprove.value && buttons.push(sign);
+  FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
+  canSign.value && !(FEATURE_APPROVERS_ENABLED && shouldApprove.value) && buttons.push(sign);
   canExecute.value && buttons.push(execute);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);

@@ -4,6 +4,7 @@ import type { ITransactionFull } from '@shared/interfaces';
 import { computed } from 'vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import AppStepper from '@renderer/components/ui/AppStepper.vue';
 
@@ -14,7 +15,7 @@ const props = defineProps<{
 
 /* Computed */
 const hasApproveStep = computed(() => {
-  return props.transaction.approvers.length > 0;
+  return FEATURE_APPROVERS_ENABLED && props.transaction.approvers.length > 0;
 });
 
 const stepperItems = computed(() => {
