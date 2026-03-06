@@ -77,11 +77,14 @@ export async function closeApp(app: ElectronApplication) {
 }
 
 const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
+// const LOCALNET_PRIVATE_KEY = '44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c';
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 // Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
-  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
+  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
+    ? process.env.PRIVATE_KEY
+    : null;
 }
 
 // Retrieves the operator private key from environment variables
@@ -97,8 +100,9 @@ export function getNetworkEnv(): string {
 export async function setupEnvironmentForTransactions(
   window: Page,
   privateKey = getPrivateKeyEnv(),
-) {
+): Promise<string | null> {
   const network = getNetworkEnv().toUpperCase();
+  let resolvedPrivateKey = privateKey;
   if (network === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -107,7 +111,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
 
-    if (privateKey === null) {
+    if (resolvedPrivateKey === null) {
       // The private key is not configured so we are going to create a payer account using the
       // operator key, so we need to:
       //  - import the operator key
@@ -119,7 +123,7 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.fillInED25519Nickname('Operator Account');
       await settingsPage.clickOnED25519ImportButton();
 
-      const { publicKey, privateKey } = generateEd25519KeyPair();
+      const { publicKey, privateKey: generatedPrivateKey } = generateEd25519KeyPair();
 
       const transactionPage = new TransactionPage(window);
       await transactionPage.clickOnTransactionsMenuButton();
@@ -136,12 +140,13 @@ export async function setupEnvironmentForTransactions(
 
       await settingsPage.clickOnImportButton();
       await settingsPage.clickOnED25519DropDown();
-      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519PrivateKey(generatedPrivateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
+      resolvedPrivateKey = generatedPrivateKey;
     } else {
       // The private key is configured so this is the one which will be used as payer for all transactions
-      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519PrivateKey(resolvedPrivateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
     }
@@ -152,7 +157,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
-    await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
+    await settingsPage.fillInECDSAPrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else if (network === 'PREVIEWNET') {
@@ -162,7 +167,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
-    await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
+    await settingsPage.fillInECDSAPrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else {
@@ -173,10 +178,12 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
-    await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
+    await settingsPage.fillInED25519PrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
   }
+
+  return resolvedPrivateKey;
 }
 
 export const generateRandomEmail = (domain = 'test.com') => {

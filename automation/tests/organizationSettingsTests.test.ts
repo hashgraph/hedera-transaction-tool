@@ -49,11 +49,11 @@ test.describe('Organization Settings tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(globalCredentials.password, payerPrivateKey);
 
     // Log in with the organization user
     firstUser = organizationPage.getUser(0);

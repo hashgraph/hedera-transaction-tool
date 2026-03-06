@@ -228,10 +228,11 @@ export class OrganizationPage extends BasePage {
     await createTestUsersBatch(usersData);
   }
 
-  async setUpInitialUsers(window: Page, encryptionPassword: string, setPrivateKey = true) {
+  async setUpInitialUsers(
+    encryptionPassword: string,
+    payerPrivateKey: string | null,
+  ) {
     const user = this.users[0];
-    const privateKey = getPrivateKeyEnv();
-    if (!privateKey) throw new Error('PRIVATE_KEY env variable is not set');
 
     // Full setup for the first user (index 0) who is payer
     await this.signInOrganization(user.email, user.password, encryptionPassword);
@@ -253,10 +254,10 @@ export class OrganizationPage extends BasePage {
     );
     await this.registrationPage.clickOnFinalNextButtonWithRetry();
 
-    if (setPrivateKey) {
-      await setupEnvironmentForTransactions(window, privateKey);
-      this.users[0].privateKey = privateKey;
+    if (!payerPrivateKey) {
+      throw new Error('Payer private key was not provided.');
     }
+    this.users[0].privateKey = payerPrivateKey;
 
     await this.settingsPage.navigateToLogout();
     await this.click(this.logoutButtonSelector);
