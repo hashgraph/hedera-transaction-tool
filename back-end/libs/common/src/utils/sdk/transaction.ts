@@ -337,7 +337,7 @@ export const isTransactionValidForNodes = (
   sdkTransaction: SDKTransaction,
   allowedNodeAccountIds: Set<string>
 ): boolean  => {
-  const txNodeIds = Array.from((sdkTransaction as any)._nodeAccountIds ?? []).map((id: any) =>
+  const txNodeIds = Array.from((sdkTransaction as any)._nodeAccountIds?.list ?? []).map((id: any) =>
     (id instanceof AccountId ? id : AccountId.fromString(String(id))).toString(),
   );
 
