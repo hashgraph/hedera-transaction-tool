@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -29,6 +29,8 @@ import {
 
 @Injectable()
 export class ExecuteService {
+  private readonly logger = new Logger(ExecuteService.name);
+
   constructor(
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
     private readonly notificationsPublisher: NatsPublisherService,
@@ -58,7 +60,7 @@ export class ExecuteService {
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
   async executeTransactionGroup(transactionGroup: TransactionGroup) {
-    console.log('executing transactions');
+    this.logger.log('executing transactions');
     transactionGroup.groupItems = transactionGroup.groupItems.filter(
       tx => tx.transaction.status === TransactionStatus.WAITING_FOR_EXECUTION
     );
@@ -138,18 +140,26 @@ export class ExecuteService {
       result.receipt = JSON.stringify(receipt.toJSON());
       result.receiptBytes = Buffer.from(receipt.toBytes());
       transactionStatusCode = receipt.status._code || Status.Ok._code;
-      if (transactionStatusCode !== Status.Ok._code) {
-        console.log(`Execution did complete for transaction: ${sdkTransaction.transactionId.toString()}`);
-        console.log(`Transaction status code: ${transactionStatusCode}`);
-      }
     } catch (error) {
-      transactionStatusCode = error.status?._code || TransactionStatusCodeFallback;
-      if (!error.status) transactionStatusCode = getStatusCodeFromMessage(error.message);
+      let message = 'Unknown error';
+      let statusCode = TransactionStatusCodeFallback;
+
+      if (error instanceof Error) {
+        message = error.message;
+
+        const status = (error as any).status;
+        if (status?._code) {
+          statusCode = status._code;
+        } else {
+          statusCode = getStatusCodeFromMessage(message);
+        }
+      }
+
       transactionStatus = TransactionStatus.FAILED;
-      result.error = error.message;
-      console.log(`Execution did fail for transaction: ${sdkTransaction.transactionId.toString()}`);
-      console.log(`Error message: ${result.error}`);
-      console.log(`Transaction status code: ${transactionStatusCode}`);
+      transactionStatusCode = statusCode;
+      result.error = message;
+
+      this.logger.error(`Error executing transaction ${transaction.id}: ${message}`);
     } finally {
       result.status = transactionStatus;
 

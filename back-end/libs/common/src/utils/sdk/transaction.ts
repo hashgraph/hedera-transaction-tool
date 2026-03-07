@@ -20,6 +20,7 @@ import {
   SystemUndeleteTransaction,
   FileContentsQuery,
   KeyList,
+  AccountId,
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
@@ -331,3 +332,14 @@ export const transactionIs = <T extends SDKTransaction>(
 ): transaction is T => {
   return transaction instanceof type;
 };
+
+export const isTransactionValidForNodes = (
+  sdkTransaction: SDKTransaction,
+  allowedNodeAccountIds: Set<string>
+): boolean  => {
+  const txNodeIds = Array.from((sdkTransaction as any)._nodeAccountIds ?? []).map((id: any) =>
+    (id instanceof AccountId ? id : AccountId.fromString(String(id))).toString(),
+  );
+
+  return txNodeIds.every((id) => allowedNodeAccountIds.has(id));
+}
