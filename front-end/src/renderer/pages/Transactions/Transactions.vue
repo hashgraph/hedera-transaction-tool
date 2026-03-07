@@ -13,7 +13,6 @@ import {
   draftsTitle,
   historyTitle,
   inProgressTitle,
-  readyForExecutionTitle,
   readyForReviewTitle,
   readyToSignTitle,
 } from '@shared/constants';
@@ -77,7 +76,6 @@ const organizationTabs: TabItem[] = [
   { title: readyForReviewTitle },
   { title: readyToSignTitle },
   { title: inProgressTitle },
-  { title: readyForExecutionTitle },
   { title: historyTitle },
 ];
 const sharedTabs: TabItem[] = [{ title: draftsTitle }, { title: historyTitle }];
@@ -158,7 +156,7 @@ const activeTabs = computed(() => {
       case readyToSignTitle:
         tab.notifications = readyToSignNotifications.length || undefined;
         break;
-      case readyForExecutionTitle:
+      case inProgressTitle:
         tab.notifications = readyForExecutionNotifications.length || undefined;
         break;
       case historyTitle:
@@ -420,12 +418,6 @@ onBeforeMount(async () => {
       <template v-if="selectedTabTitle === inProgressTitle">
         <TransactionNodeTable
           :collection="TransactionNodeCollection.IN_PROGRESS"
-          @nodes-fetched="collectionNodes = $event"
-        />
-      </template>
-      <template v-if="selectedTabTitle === readyForExecutionTitle">
-        <TransactionNodeTable
-          :collection="TransactionNodeCollection.READY_FOR_EXECUTION"
           @nodes-fetched="collectionNodes = $event"
         />
       </template>
