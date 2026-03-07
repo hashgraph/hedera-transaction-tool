@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Repository } from 'typeorm';
@@ -8,7 +8,12 @@ import {
   Transaction as SDKTransaction,
 } from '@hashgraph/sdk';
 
-import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionStatus,
+  TransactionStatusCodeFallback,
+} from '@entities';
 
 import {
   emitTransactionStatusUpdate,
@@ -24,6 +29,8 @@ import {
 
 @Injectable()
 export class ExecuteService {
+  private readonly logger = new Logger(ExecuteService.name);
+
   constructor(
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
     private readonly notificationsPublisher: NatsPublisherService,
@@ -53,7 +60,7 @@ export class ExecuteService {
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
   async executeTransactionGroup(transactionGroup: TransactionGroup) {
-    console.log('executing transactions');
+    this.logger.log('executing transactions');
     transactionGroup.groupItems = transactionGroup.groupItems.filter(
       tx => tx.transaction.status === TransactionStatus.WAITING_FOR_EXECUTION
     );
@@ -119,7 +126,7 @@ export class ExecuteService {
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
-    let transactionStatusCode = 21;
+    let transactionStatusCode = TransactionStatusCodeFallback;
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
@@ -134,10 +141,25 @@ export class ExecuteService {
       result.receiptBytes = Buffer.from(receipt.toBytes());
       transactionStatusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
-      transactionStatusCode = error.status?._code || 21;
-      if (!error.status) transactionStatusCode = getStatusCodeFromMessage(error.message);
+      let message = 'Unknown error';
+      let statusCode = TransactionStatusCodeFallback;
+
+      if (error instanceof Error) {
+        message = error.message;
+
+        const status = (error as any).status;
+        if (status?._code) {
+          statusCode = status._code;
+        } else {
+          statusCode = getStatusCodeFromMessage(message);
+        }
+      }
+
       transactionStatus = TransactionStatus.FAILED;
-      result.error = error.message;
+      transactionStatusCode = statusCode;
+      result.error = message;
+
+      this.logger.error(`Error executing transaction ${transaction.id}: ${message}`);
     } finally {
       result.status = transactionStatus;
 

@@ -20,10 +20,16 @@ import {
   SystemUndeleteTransaction,
   FileContentsQuery,
   KeyList,
+  AccountId,
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
+import {
+  MAX_TRANSACTION_BYTE_SIZE,
+  TransactionType,
+  Transaction,
+  TransactionStatusCodeFallback,
+} from '@entities';
 import {
   decode,
   computeShortenedPublicKeyList,
@@ -246,7 +252,7 @@ export const getStatusCodeFromMessage = (message: string) => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
-    return 21;
+    return TransactionStatusCodeFallback;
   }
 };
 
@@ -326,3 +332,14 @@ export const transactionIs = <T extends SDKTransaction>(
 ): transaction is T => {
   return transaction instanceof type;
 };
+
+export const isTransactionValidForNodes = (
+  sdkTransaction: SDKTransaction,
+  allowedNodeAccountIds: Set<string>
+): boolean  => {
+  const txNodeIds = Array.from((sdkTransaction as any)._nodeAccountIds ?? []).map((id: any) =>
+    (id instanceof AccountId ? id : AccountId.fromString(String(id))).toString(),
+  );
+
+  return txNodeIds.every((id) => allowedNodeAccountIds.has(id));
+}
