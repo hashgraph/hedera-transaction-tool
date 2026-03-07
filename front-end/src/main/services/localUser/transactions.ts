@@ -142,7 +142,7 @@ export const executeTransaction = async (transactionBytes: Uint8Array) => {
 
     return { responseJSON: JSON.stringify(response.toJSON()), receiptBytes: receipt.toBytes() };
   } catch (error: any) {
-    let status = error.status?._code || 21;
+    let status = error.status?._code || null;
     if (!error.status) {
       status = getStatusCodeFromMessage(error.message);
     }

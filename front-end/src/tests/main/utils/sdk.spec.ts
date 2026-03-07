@@ -17,6 +17,6 @@ describe('SDK utilities', () => {
 
     const status = getStatusCodeFromMessage(message);
 
-    expect(status).toEqual(Status.Unknown._code);
+    expect(status).toBeNull();
   });
 });
