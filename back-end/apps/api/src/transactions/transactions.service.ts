@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
+  AccountCreateTransaction,
   AccountUpdateTransaction,
   Client,
   Key,
@@ -869,7 +870,9 @@ export class TransactionsService {
     try {
       let keyToExtract: Key | null = null;
 
-      if (transactionType === TransactionType.ACCOUNT_UPDATE) {
+      if (transactionType === TransactionType.ACCOUNT_CREATE) {
+        keyToExtract = (sdkTransaction as AccountCreateTransaction).key;
+      } else if (transactionType === TransactionType.ACCOUNT_UPDATE) {
         keyToExtract = (sdkTransaction as AccountUpdateTransaction).key;
       } else if (transactionType === TransactionType.NODE_UPDATE) {
         keyToExtract = (sdkTransaction as NodeUpdateTransaction).adminKey;

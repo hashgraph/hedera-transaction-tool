@@ -130,6 +130,8 @@ export function useGroupedNotifications() {
         return `User${suffix} has completed registration`;
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return `Transaction${suffix} ready to sign`;
+      case NotificationType.TRANSACTION_INDICATOR_NEW:
+        return `New transaction${suffix}`;
       default:
         return '';
     }
@@ -159,6 +161,12 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return async () => {
           await selectOrganization();
+          await router.push({ name: 'transactions', query: { tab: readyToSignTitle } });
+        };
+      case NotificationType.TRANSACTION_INDICATOR_NEW:
+        return async () => {
+          await selectOrganization();
+          await notificationsStore.markAsRead(NotificationType.TRANSACTION_INDICATOR_NEW);
           await router.push({ name: 'transactions', query: { tab: readyToSignTitle } });
         };
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:

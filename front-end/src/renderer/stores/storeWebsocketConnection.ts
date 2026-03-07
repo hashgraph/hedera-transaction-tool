@@ -1,4 +1,4 @@
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import { defineStore } from 'pinia';
 import { Socket, io } from 'socket.io-client';
 
@@ -12,11 +12,13 @@ import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 interface WebsocketConnectionStoreReturn {
   disconnect: (serverUrl: string) => void;
+  disconnectAll: () => void;
   connect: (serverUrl: string, url: string) => Socket;
   on: (serverUrl: string, event: string, callback: (...args: any[]) => void) => () => void;
   setup: () => Promise<void>;
   isConnected: (serverUrl: string) => boolean;
   isLive: (serverUrl: string) => boolean;
+  connectionStates: Ref<Record<string, 'connected' | 'disconnected' | 'connecting'>>;
 }
 
 const useWebsocketConnection = defineStore(
@@ -122,6 +124,14 @@ const useWebsocketConnection = defineStore(
       connectionStates.value[serverUrl] = 'disconnected';
     }
 
+    function disconnectAll() {
+      for (const serverUrl of Object.keys(sockets.value)) {
+        disconnect(serverUrl);
+      }
+      sockets.value = {};
+      connectionStates.value = {};
+    }
+
     function isVersionError(errorMessage: string): boolean {
       const versionErrorPatterns = [
         'no longer supported',
@@ -218,13 +228,21 @@ const useWebsocketConnection = defineStore(
       return socket?.connected === true;
     }
 
+    user.$onAction(({ name }) => {
+      if (name === 'logout') {
+        disconnectAll();
+      }
+    });
+
     return {
       disconnect,
+      disconnectAll,
       connect,
       on,
       setup,
       isConnected,
       isLive,
+      connectionStates,
     };
   },
 );

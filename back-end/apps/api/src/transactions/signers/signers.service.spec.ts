@@ -3,7 +3,15 @@ import { mock, mockDeep } from 'jest-mock-extended';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 
-import { Transaction, TransactionSigner, TransactionStatus, User } from '@entities';
+import {
+  Notification,
+  NotificationReceiver,
+  NotificationType,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+} from '@entities';
 
 import {
   AccountCreateTransaction,
@@ -13,9 +21,11 @@ import {
   TransactionId,
 } from '@hashgraph/sdk';
 import {
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   ErrorCodes,
+  FAN_OUT_DELETE_NOTIFICATIONS,
   NatsPublisherService,
   processTransactionStatus,
   TransactionSignatureService,
@@ -27,6 +37,7 @@ import { SignersService } from './signers.service';
 jest.mock('@app/common/utils');
 jest.mock('@app/common', () => ({
   ...jest.requireActual('@app/common'),
+  emitDismissedNotifications: jest.fn(),
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
@@ -539,6 +550,24 @@ describe('SignersService', () => {
       expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
 
+    it('should include signingUserId in additionalData when provided', async () => {
+      const transactionsToProcess = [
+        { id: 1, transaction: { id: 1 } as Transaction },
+      ];
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(1, TransactionStatus.WAITING_FOR_EXECUTION);
+
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      await service['updateStatusesAndNotify'](transactionsToProcess, 42);
+
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{ entityId: 1, additionalData: { signingUserId: 42 } }]
+      );
+    });
+
     it('should emit transaction update for unchanged statuses', async () => {
       const transactionsToProcess = [
         { id: 1, transaction: { id: 1 } as Transaction },
@@ -612,7 +641,7 @@ describe('SignersService', () => {
 
       // Mock transaction manager
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -642,7 +671,7 @@ describe('SignersService', () => {
       });
       expect(mockManager.query).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [
-        { entityId: transactionId },
+        { entityId: transactionId, additionalData: { signingUserId: user.id } },
       ]);
       expect(result).toHaveLength(1);
 
@@ -688,7 +717,7 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([]);
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -720,7 +749,10 @@ describe('SignersService', () => {
       });
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        expect.arrayContaining([{ entityId: transactionId1 }, { entityId: transactionId2 }])
+        expect.arrayContaining([
+          { entityId: transactionId1, additionalData: { signingUserId: user.id } },
+          { entityId: transactionId2, additionalData: { signingUserId: user.id } },
+        ])
       );
 
       user.keys[0].publicKey = originalPublicKey;
@@ -944,6 +976,368 @@ describe('SignersService', () => {
         `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNRS}`
       );
       expect(result).toHaveLength(0);
+
+      consoleError.mockRestore();
+    });
+
+    it('should call clearNewIndicatorForUser with processed transaction ids', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue([]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      const clearSpy = jest.spyOn(service as any, 'clearNewIndicatorForUser').mockResolvedValue(undefined);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      expect(clearSpy).toHaveBeenCalledWith(user.id, [transactionId]);
+
+      clearSpy.mockRestore();
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should not emit dismissed notifications when no SIGN receivers were updated', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockManager = mockDeep<any>();
+      // bulkUpdateNotificationReceivers returns empty array (no SIGN receivers to dismiss)
+      mockManager.query.mockResolvedValue([]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      const clearSpy = jest.spyOn(service as any, 'clearNewIndicatorForUser').mockResolvedValue(undefined);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      // bulkUpdateNotificationReceivers was called but returned empty array
+      expect(mockManager.query).toHaveBeenCalled();
+
+      // emitDismissedNotifications should NOT be called when no receivers were updated
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
+
+      clearSpy.mockRestore();
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should emit dismissed notifications when SIGN receivers were updated', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const publicKeyId = user.keys[0].id;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+        mirrorNetwork: 'testnet',
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockManager = mockDeep<any>();
+      const dismissedReceivers = [{ id: 10, userId: user.id }];
+      // First query call: bulkUpdateTransactions
+      // Second query call: bulkUpdateNotificationReceivers (returns dismissed receivers)
+      mockManager.query
+        .mockResolvedValueOnce(undefined) // bulkUpdateTransactions
+        .mockResolvedValue(dismissedReceivers); // bulkUpdateNotificationReceivers + subsequent calls
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue(undefined),
+      });
+      mockManager.find.mockResolvedValue([
+        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
+      ]);
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const statusMap = new Map<number, TransactionStatus>();
+      statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
+      jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+
+      const clearSpy = jest.spyOn(service as any, 'clearNewIndicatorForUser').mockResolvedValue(undefined);
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      // emitDismissedNotifications SHOULD be called with the dismissed receivers
+      expect(emitDismissedNotifications).toHaveBeenCalledWith(
+        notificationsPublisher,
+        dismissedReceivers,
+      );
+
+      clearSpy.mockRestore();
+      user.keys[0].publicKey = originalPublicKey;
+    });
+  });
+
+  describe('clearNewIndicatorForUser', () => {
+    const userId = 1;
+    const transactionIds = [10, 20];
+
+    let mockManager: any;
+
+    beforeEach(() => {
+      mockManager = mockDeep<any>();
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+    });
+
+    it('should acquire FOR UPDATE lock on transaction rows to serialize with notification service', async () => {
+      const notifications = [{ id: 100 }];
+      const receivers = [{ id: 500 }];
+
+      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
+      mockManager.find
+        .mockResolvedValueOnce(notifications)
+        .mockResolvedValueOnce(receivers);
+      mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      // Should lock transaction rows before any reads
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [transactionIds],
+      );
+    });
+
+    it('should delete receivers, clean up orphans atomically, and emit WebSocket event', async () => {
+      const notifications = [{ id: 100 }, { id: 200 }];
+      const receivers = [{ id: 500 }, { id: 501 }];
+
+      mockManager.query.mockResolvedValue({ affected: 1, raw: [] });
+      mockManager.find
+        .mockResolvedValueOnce(notifications) // find Notifications
+        .mockResolvedValueOnce(receivers);    // find NotificationReceivers
+
+      mockManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      // Should acquire FOR UPDATE lock
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('FOR UPDATE'),
+        [transactionIds],
+      );
+
+      // Should find NEW indicator notifications
+      expect(mockManager.find).toHaveBeenCalledWith(Notification, {
+        where: {
+          type: NotificationType.TRANSACTION_INDICATOR_NEW,
+          entityId: In(transactionIds),
+        },
+      });
+
+      // Should find receivers for this user
+      expect(mockManager.find).toHaveBeenCalledWith(NotificationReceiver, {
+        where: {
+          notificationId: In([100, 200]),
+          userId,
+          isRead: false,
+        },
+      });
+
+      // Should delete receivers
+      expect(mockManager.delete).toHaveBeenCalledWith(NotificationReceiver, {
+        id: In([500, 501]),
+      });
+
+      // Should atomically clean up orphaned notifications via raw query
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM notification'),
+        [[100, 200]],
+      );
+      expect(mockManager.query).toHaveBeenCalledWith(
+        expect.stringContaining('NOT EXISTS'),
+        [[100, 200]],
+      );
+
+      // Should emit WebSocket deletion
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        FAN_OUT_DELETE_NOTIFICATIONS,
+        [{ userId, notificationReceiverIds: [500, 501] }],
+      );
+    });
+
+    it('should return early when no NEW notifications exist', async () => {
+      mockManager.query.mockResolvedValue(undefined); // FOR UPDATE lock
+      mockManager.find.mockResolvedValueOnce([]); // no notifications
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      // Only the first find should be called (after the lock)
+      expect(mockManager.find).toHaveBeenCalledTimes(1);
+      expect(mockManager.delete).not.toHaveBeenCalled();
+      expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should return early when no unread receivers for this user', async () => {
+      mockManager.query.mockResolvedValue(undefined); // FOR UPDATE lock
+      mockManager.find
+        .mockResolvedValueOnce([{ id: 100 }]) // notification exists
+        .mockResolvedValueOnce([]);            // but no receivers for this user
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      expect(mockManager.delete).not.toHaveBeenCalled();
+      expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should retry once on failure and log each attempt', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+      (dataSource.transaction as jest.Mock)
+        .mockRejectedValueOnce(new Error('DB failure'))
+        .mockRejectedValueOnce(new Error('DB failure'));
+
+      // Should not throw
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      expect(consoleError).toHaveBeenCalledWith(
+        `Attempt 1/2 clearing NEW indicators for user ${userId}, txs [${transactionIds.join(',')}]:`,
+        expect.any(Error),
+      );
+      expect(consoleError).toHaveBeenCalledWith(
+        `Attempt 2/2 clearing NEW indicators for user ${userId}, txs [${transactionIds.join(',')}]:`,
+        expect.any(Error),
+      );
+
+      consoleError.mockRestore();
+    });
+
+    it('should succeed on retry after first attempt fails', async () => {
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const notifications = [{ id: 100 }];
+      const receivers = [{ id: 500 }];
+
+      // First attempt fails
+      (dataSource.transaction as jest.Mock).mockRejectedValueOnce(new Error('DB failure'));
+
+      // Second attempt succeeds
+      (dataSource.transaction as jest.Mock).mockImplementationOnce(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        const retryManager = mockDeep<any>();
+        retryManager.query.mockResolvedValue(undefined);
+        retryManager.find
+          .mockResolvedValueOnce(notifications)
+          .mockResolvedValueOnce(receivers);
+        retryManager.delete.mockResolvedValue({ affected: 1, raw: [] });
+        return callback(retryManager);
+      });
+
+      await service['clearNewIndicatorForUser'](userId, transactionIds);
+
+      expect(consoleError).toHaveBeenCalledTimes(1);
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        FAN_OUT_DELETE_NOTIFICATIONS,
+        [{ userId, notificationReceiverIds: [500] }],
+      );
 
       consoleError.mockRestore();
     });

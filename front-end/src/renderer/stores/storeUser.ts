@@ -86,6 +86,7 @@ const useUserStore = defineStore('user', () => {
   };
 
   const logout = () => {
+    ush.clearAllAuthTokensFromSessionStorage();
     personal.value = {
       isLoggedIn: false,
     };

@@ -32,6 +32,15 @@ import {
 
 @Injectable()
 export class ReceiverService {
+  // Terminal statuses where NEW indicators should also be cleaned up
+  private static readonly TERMINAL_STATUSES: TransactionStatus[] = [
+    TransactionStatus.EXECUTED,
+    TransactionStatus.FAILED,
+    TransactionStatus.EXPIRED,
+    TransactionStatus.CANCELED,
+    TransactionStatus.ARCHIVED,
+  ];
+
   // Mapping from transaction status to the in-app indicator notification type
   private static readonly IN_APP_NOTIFICATION_TYPES: Partial<Record<TransactionStatus, NotificationType>> = {
     [TransactionStatus.WAITING_FOR_SIGNATURES]: NotificationType.TRANSACTION_INDICATOR_SIGN,
@@ -228,6 +237,7 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return requiredUserIds;
 
+      case NotificationType.TRANSACTION_INDICATOR_NEW:
       case NotificationType.TRANSACTION_READY_FOR_EXECUTION:
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
       case NotificationType.TRANSACTION_EXECUTED:
@@ -360,8 +370,14 @@ export class ReceiverService {
   // --- Indicator deletion helpers --------------------------------------
 
   /* Get all indicator notifications for a transaction */
-  private async getIndicatorNotifications(entityManager: EntityManager, transactionId: number) {
-    const indicatorTypes = Object.values(NotificationType).filter(t => t.includes('INDICATOR'));
+  private async getIndicatorNotifications(
+    entityManager: EntityManager,
+    transactionId: number,
+    excludeTypes: NotificationType[] = [],
+  ) {
+    const indicatorTypes = Object.values(NotificationType).filter(
+      t => t.includes('INDICATOR') && !excludeTypes.includes(t),
+    );
 
     return entityManager.find(Notification, {
       where: {
@@ -379,10 +395,12 @@ export class ReceiverService {
   private async deleteExistingIndicators(
     entityManager: EntityManager,
     transaction: Transaction,
+    excludeTypes: NotificationType[] = [],
   ): Promise<Array<{ userId: number; receiverId: number }>> {
     const indicatorNotifications = await this.getIndicatorNotifications(
       entityManager,
       transaction.id,
+      excludeTypes,
     );
 
     if (indicatorNotifications.length === 0) {
@@ -729,12 +747,20 @@ export class ReceiverService {
     emailReceiverIds: number[],
     affectedUserIds: Set<number>,
     transactionId: number,
+    signingUserId?: number,
   ) {
     try {
       const additionalData = this.buildAdditionalData(transaction);
 
       if (syncType) {
-        const deletedReceiverIds = await this.deleteExistingIndicators(entityManager, transaction);
+        const isTerminal = ReceiverService.TERMINAL_STATUSES.includes(transaction.status);
+        const excludeTypes = isTerminal ? [] : [NotificationType.TRANSACTION_INDICATOR_NEW];
+
+        const deletedReceiverIds = await this.deleteExistingIndicators(
+          entityManager,
+          transaction,
+          excludeTypes,
+        );
 
         deletedReceiverIds.forEach(({ userId, receiverId }) => {
           if (!deletionNotifications[userId]) {
@@ -760,6 +786,128 @@ export class ReceiverService {
           inAppReceiverIds.push(nr.id);
           affectedUserIds.add(nr.userId);
         });
+
+        // Create TRANSACTION_INDICATOR_NEW on first entry to WAITING_FOR_SIGNATURES.
+        // Wrapped in a SAVEPOINT so that if NEW creation fails, the SIGN indicator
+        // (created above) is preserved. Without this, a failure here would cause
+        // PostgreSQL to abort the entire transaction, rolling back both SIGN and NEW.
+        if (syncType === NotificationType.TRANSACTION_INDICATOR_SIGN) {
+          try {
+            await entityManager.query('SAVEPOINT create_new_indicator');
+
+            // Lock the transaction row to prevent concurrent duplicate creation
+            // when the same event is processed by multiple workers simultaneously.
+            await entityManager.query(
+              `SELECT id FROM "transaction" WHERE id = $1 FOR UPDATE`,
+              [transaction.id],
+            );
+
+            const existingNew = await entityManager.findOne(Notification, {
+              where: {
+                entityId: transaction.id,
+                type: NotificationType.TRANSACTION_INDICATOR_NEW,
+              },
+            });
+
+            let pendingNewReceivers: NotificationReceiver[] = [];
+
+            if (!existingNew) {
+              pendingNewReceivers = await this.createNotificationWithReceivers(
+                entityManager,
+                transaction,
+                approvers,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                additionalData,
+                cache,
+                keyCache,
+              );
+            } else {
+              // Reconcile receivers for the existing NEW indicator
+              const allReceiverUserIds = await this.getNotificationReceiverIds(
+                entityManager,
+                transaction,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                approvers,
+                keyCache,
+              );
+              const filteredReceiverIds = await this.filterReceiversByPreferenceForType(
+                entityManager,
+                NotificationType.TRANSACTION_INDICATOR_NEW,
+                new Set(allReceiverUserIds),
+                cache,
+              );
+
+              const existingReceivers = await entityManager.find(NotificationReceiver, {
+                where: { notificationId: existingNew.id },
+              });
+              const existingUserIds = new Set(existingReceivers.map(r => r.userId));
+
+              // Add missing receivers
+              const newUserIds = filteredReceiverIds.filter(id => !existingUserIds.has(id));
+              if (newUserIds.length > 0) {
+                pendingNewReceivers = await this.createNotificationReceivers(
+                  entityManager,
+                  existingNew,
+                  newUserIds,
+                );
+              }
+
+              // Remove stale receivers
+              const staleReceivers = existingReceivers.filter(
+                r => !filteredReceiverIds.includes(r.userId),
+              );
+              if (staleReceivers.length > 0) {
+                staleReceivers.forEach(r => {
+                  if (!deletionNotifications[r.userId]) deletionNotifications[r.userId] = [];
+                  deletionNotifications[r.userId].push(r.id);
+                  affectedUserIds.add(r.userId);
+                });
+                await entityManager.delete(NotificationReceiver, {
+                  id: In(staleReceivers.map(r => r.id)),
+                });
+              }
+            }
+
+            // Exclude the signing user from NEW indicator receivers
+            if (signingUserId != null && pendingNewReceivers.length > 0) {
+              const signingUserReceivers = pendingNewReceivers.filter(
+                nr => nr.userId === signingUserId,
+              );
+              if (signingUserReceivers.length > 0) {
+                await entityManager.delete(NotificationReceiver, {
+                  id: In(signingUserReceivers.map(r => r.id)),
+                });
+                pendingNewReceivers = pendingNewReceivers.filter(
+                  nr => nr.userId !== signingUserId,
+                );
+              }
+            }
+
+            await entityManager.query('RELEASE SAVEPOINT create_new_indicator');
+
+            // Merge only after RELEASE - guarantees these rows exist in DB
+            pendingNewReceivers.forEach(nr => {
+              if (!inAppNotifications[nr.userId]) inAppNotifications[nr.userId] = [];
+              inAppNotifications[nr.userId].push(nr);
+              inAppReceiverIds.push(nr.id);
+              affectedUserIds.add(nr.userId);
+            });
+          } catch (newIndicatorError) {
+            console.error(
+              `Failed to create NEW indicator for transaction ${transaction.id}, SIGN indicator preserved:`,
+              newIndicatorError,
+            );
+            try {
+              await entityManager.query('ROLLBACK TO SAVEPOINT create_new_indicator');
+              // Clear identity map for entities created inside the rolled-back savepoint
+              entityManager.clear(Notification);
+              entityManager.clear(NotificationReceiver);
+            } catch (rollbackError) {
+              console.error('Failed to rollback NEW indicator savepoint:', rollbackError);
+              throw rollbackError;
+            }
+          }
+        }
       }
 
       if (emailType) {
@@ -1004,7 +1152,8 @@ export class ReceiverService {
     } = ctx;
 
     // Process each event
-    for (const { entityId: transactionId } of events) {
+    for (const { entityId: transactionId, additionalData: eventAdditionalData } of events) {
+      const signingUserId = eventAdditionalData?.signingUserId as number | undefined;
       const transaction = transactionMap.get(transactionId);
       const approvers = approversMap.get(transactionId) || [];
 
@@ -1035,6 +1184,7 @@ export class ReceiverService {
           emailReceiverIds,
           affectedUserIds,
           transactionId,
+          signingUserId,
         );
       });
     }
