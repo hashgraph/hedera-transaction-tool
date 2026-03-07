@@ -9,6 +9,7 @@ import {
   NatsPublisherService,
   NotificationEventDto,
   DismissedNotificationReceiverDto,
+  TRANSACTION_EVENT_TYPE,
 } from '@app/common';
 import {
   Notification,
@@ -676,13 +677,37 @@ export class ReceiverService {
   }
 
   /**
-   * Notify connected clients about affected users
+   * Notify connected clients about affected users with transaction/group context
    */
-  private async sendNotifyClients(affectedUserIds: Set<number>) {
-    if (affectedUserIds.size === 0) return;
+  private async sendNotifyClients(
+    affectedUsers: Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>,
+    eventType: string,
+  ) {
+    if (affectedUsers.size === 0) return;
 
-    const dtos = Array.from(affectedUserIds, userId => ({ userId }));
+    const dtos = Array.from(affectedUsers, ([userId, context]) => ({
+      userId,
+      transactionIds: [...context.transactionIds],
+      groupIds: [...context.groupIds],
+      eventType,
+    }));
     await emitNotifyClients(this.notificationsPublisher, dtos);
+  }
+
+  // --- Affected user tracking ----------------------------------------
+
+  private addAffectedUser(
+    affectedUsers: Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>,
+    userId: number,
+    transactionId: number,
+    groupId?: number,
+  ) {
+    if (!affectedUsers.has(userId)) {
+      affectedUsers.set(userId, { transactionIds: new Set(), groupIds: new Set() });
+    }
+    const ctx = affectedUsers.get(userId)!;
+    ctx.transactionIds.add(transactionId);
+    if (groupId) ctx.groupIds.add(groupId);
   }
 
   // --- Entity Transaction Handlers ------------------------------------
@@ -727,9 +752,11 @@ export class ReceiverService {
     inAppReceiverIds: number[],
     emailNotifications: { [email: string]: Notification[] },
     emailReceiverIds: number[],
-    affectedUserIds: Set<number>,
+    affectedUsers: Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>,
     transactionId: number,
   ) {
+    const groupId = transaction.groupItem?.groupId;
+
     try {
       const additionalData = this.buildAdditionalData(transaction);
 
@@ -741,7 +768,7 @@ export class ReceiverService {
             deletionNotifications[userId] = [];
           }
           deletionNotifications[userId].push(receiverId);
-          affectedUserIds.add(userId);
+          this.addAffectedUser(affectedUsers, userId, transactionId, groupId);
         });
 
         const newReceivers = await this.createNotificationWithReceivers(
@@ -758,7 +785,7 @@ export class ReceiverService {
           if (!inAppNotifications[nr.userId]) inAppNotifications[nr.userId] = [];
           inAppNotifications[nr.userId].push(nr);
           inAppReceiverIds.push(nr.id);
-          affectedUserIds.add(nr.userId);
+          this.addAffectedUser(affectedUsers, nr.userId, transactionId, groupId);
         });
       }
 
@@ -967,7 +994,7 @@ export class ReceiverService {
     const emailNotifications: { [email: string]: Notification[] } = {};
     const inAppReceiverIds: number[] = [];
     const emailReceiverIds: number[] = [];
-    const affectedUserIds = new Set<number>();
+    const affectedUsers = new Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>();
 
     return {
       cache,
@@ -980,7 +1007,7 @@ export class ReceiverService {
       emailNotifications,
       inAppReceiverIds,
       emailReceiverIds,
-      affectedUserIds,
+      affectedUsers,
     };
   }
 
@@ -1000,12 +1027,16 @@ export class ReceiverService {
       emailNotifications,
       inAppReceiverIds,
       emailReceiverIds,
-      affectedUserIds,
+      affectedUsers,
     } = ctx;
 
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) {
+        console.warn(`Transaction ${transactionId} not found, skipping status-update notifications`);
+        continue;
+      }
       const approvers = approversMap.get(transactionId) || [];
 
       if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
@@ -1033,7 +1064,7 @@ export class ReceiverService {
           inAppReceiverIds,
           emailNotifications,
           emailReceiverIds,
-          affectedUserIds,
+          affectedUsers,
           transactionId,
         );
       });
@@ -1043,7 +1074,7 @@ export class ReceiverService {
     await this.sendDeletionNotifications(deletionNotifications);
     await this.sendInAppNotifications(inAppNotifications, inAppReceiverIds);
     await this.sendEmailNotifications(emailNotifications, emailReceiverIds);
-    await this.sendNotifyClients(affectedUserIds);
+    await this.sendNotifyClients(affectedUsers, TRANSACTION_EVENT_TYPE.STATUS_UPDATE);
   }
 
   async processTransactionUpdateNotifications(events: NotificationEventDto[]) {
@@ -1054,23 +1085,27 @@ export class ReceiverService {
       keyCache,
       transactionMap,
       approversMap,
-      affectedUserIds, // from ctx
+      affectedUsers,
     } = ctx;
 
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) continue;
       const approvers = approversMap.get(transactionId) || [];
 
       const syncType = this.getInAppNotificationType(transaction.status);
 
       if (syncType) {
         const receiverIds = await this.getNotificationReceiverIds(this.entityManager, transaction, syncType, approvers, keyCache);
-        receiverIds.forEach(id => affectedUserIds.add(id));
+        const groupId = transaction.groupItem?.groupId;
+        receiverIds.forEach(id => {
+          this.addAffectedUser(affectedUsers, id, transactionId, groupId);
+        });
       }
     }
 
-    await this.sendNotifyClients(affectedUserIds);
+    await this.sendNotifyClients(affectedUsers, TRANSACTION_EVENT_TYPE.UPDATE);
   }
 
   private async processSignerReminders(
@@ -1093,6 +1128,10 @@ export class ReceiverService {
 
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
+      if (!transaction) {
+        console.warn(`Transaction ${transactionId} not found, skipping signer reminder`);
+        continue;
+      }
 
       const allKeys = await keysRequiredToSign(
         transaction,
