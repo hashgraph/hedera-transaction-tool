@@ -315,3 +315,135 @@ describe('Electron entry file - single instance lock not acquired', async () => 
     expect(freshApp.on).not.toHaveBeenCalledWith('second-instance', expect.any(Function));
   });
 });
+
+describe('Electron entry file - update lock check on ready', () => {
+  const setupWithLock = async (mockLockFns: {
+    getUpdateLock: ReturnType<typeof vi.fn>;
+    removeUpdateLock: ReturnType<typeof vi.fn>;
+    isUpdateLockStale: ReturnType<typeof vi.fn>;
+  }) => {
+    vi.resetModules();
+
+    const electronMock = mockDeep<typeof import('electron')>();
+    electronMock.app.requestSingleInstanceLock.mockReturnValue(true);
+    electronMock.app.whenReady.mockResolvedValue();
+
+    vi.doMock('electron', () => electronMock);
+    vi.doMock('path', () => mockDeep());
+    vi.doMock('@electron-toolkit/utils', () => mockDeep());
+    vi.doMock('@main/db/init', () => mockDeep());
+    vi.doMock('@main/services/localUser', () => mockDeep());
+    vi.doMock('@main/modules/logger', () => mockDeep());
+    vi.doMock('@main/modules/menu', () => mockDeep());
+    vi.doMock('@main/modules/deepLink', () => ({
+      default: vi.fn(),
+      PROTOCOL_NAME: 'test-protocol',
+    }));
+    vi.doMock('@main/modules/ipcHandlers', () => mockDeep());
+    vi.doMock('@main/windows/mainWindow', () => {
+      const m = mockDeep();
+      m.restoreOrCreateWindow.mockResolvedValue(new BrowserWindow());
+      return m;
+    });
+    vi.doMock('@main/services/electronUpdater', () => ({
+      getUpdaterService: vi.fn(() => null),
+      initializeUpdaterService: vi.fn(),
+    }));
+    vi.doMock('@main/services/updateLock', () => mockLockFns);
+
+    await import('@main/index');
+
+    //@ts-expect-error Incorrect type definition
+    const readyHandler = electronMock.app.on.mock.calls.find(([event]) => event === 'ready');
+    return { electronMock, readyHandler };
+  };
+
+  test('Should remove lock and continue when version matches', async () => {
+    const mockGetUpdateLock = vi.fn().mockReturnValue({ version: '1.0.0', timestamp: Date.now() });
+    const mockRemoveUpdateLock = vi.fn();
+    const mockIsUpdateLockStale = vi.fn().mockReturnValue(false);
+
+    const { electronMock, readyHandler } = await setupWithLock({
+      getUpdateLock: mockGetUpdateLock,
+      removeUpdateLock: mockRemoveUpdateLock,
+      isUpdateLockStale: mockIsUpdateLockStale,
+    });
+
+    electronMock.app.getVersion.mockReturnValue('1.0.0');
+
+    expect(readyHandler).toBeDefined();
+    await readyHandler![1]();
+
+    expect(mockRemoveUpdateLock).toHaveBeenCalled();
+    expect(electronMock.app.quit).not.toHaveBeenCalled();
+    expect(electronMock.dialog.showMessageBoxSync).not.toHaveBeenCalled();
+  });
+
+  test('Should show dialog and quit when lock is active (non-stale, version mismatch)', async () => {
+    const mockGetUpdateLock = vi.fn().mockReturnValue({ version: '2.0.0', timestamp: Date.now() });
+    const mockRemoveUpdateLock = vi.fn();
+    const mockIsUpdateLockStale = vi.fn().mockReturnValue(false);
+
+    const { electronMock, readyHandler } = await setupWithLock({
+      getUpdateLock: mockGetUpdateLock,
+      removeUpdateLock: mockRemoveUpdateLock,
+      isUpdateLockStale: mockIsUpdateLockStale,
+    });
+
+    electronMock.app.getVersion.mockReturnValue('1.0.0');
+
+    expect(readyHandler).toBeDefined();
+    await readyHandler![1]();
+
+    expect(electronMock.dialog.showMessageBoxSync).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'info',
+        title: 'Update in Progress',
+      }),
+    );
+    expect(electronMock.app.quit).toHaveBeenCalled();
+    expect(mockRemoveUpdateLock).not.toHaveBeenCalled();
+  });
+
+  test('Should remove stale lock and continue normally', async () => {
+    const mockGetUpdateLock = vi
+      .fn()
+      .mockReturnValue({ version: '2.0.0', timestamp: Date.now() - 15 * 60 * 1000 });
+    const mockRemoveUpdateLock = vi.fn();
+    const mockIsUpdateLockStale = vi.fn().mockReturnValue(true);
+
+    const { electronMock, readyHandler } = await setupWithLock({
+      getUpdateLock: mockGetUpdateLock,
+      removeUpdateLock: mockRemoveUpdateLock,
+      isUpdateLockStale: mockIsUpdateLockStale,
+    });
+
+    electronMock.app.getVersion.mockReturnValue('1.0.0');
+
+    expect(readyHandler).toBeDefined();
+    await readyHandler![1]();
+
+    expect(mockRemoveUpdateLock).toHaveBeenCalled();
+    expect(electronMock.app.quit).not.toHaveBeenCalled();
+    expect(electronMock.dialog.showMessageBoxSync).not.toHaveBeenCalled();
+  });
+
+  test('Should proceed normally when no lock exists', async () => {
+    const mockGetUpdateLock = vi.fn().mockReturnValue(null);
+    const mockRemoveUpdateLock = vi.fn();
+    const mockIsUpdateLockStale = vi.fn().mockReturnValue(false);
+
+    const { electronMock, readyHandler } = await setupWithLock({
+      getUpdateLock: mockGetUpdateLock,
+      removeUpdateLock: mockRemoveUpdateLock,
+      isUpdateLockStale: mockIsUpdateLockStale,
+    });
+
+    expect(readyHandler).toBeDefined();
+    await readyHandler![1]();
+
+    expect(mockRemoveUpdateLock).not.toHaveBeenCalled();
+    expect(electronMock.app.quit).not.toHaveBeenCalled();
+    expect(electronMock.dialog.showMessageBoxSync).not.toHaveBeenCalled();
+  });
+});
