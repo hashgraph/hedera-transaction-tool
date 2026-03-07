@@ -29,40 +29,27 @@ export class LoginPage extends BasePage {
   passwordLabelSelector = 'label-password';
 
   // Messages
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 
-  // Method to close the 'Important note' modal if it appears
   async closeImportantNoteModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.importantNoteModalButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(e => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
+    const isModal = await this.isElementVisible(this.importantNoteModalButtonSelector);
+    if (isModal) {
+      await this.click(this.importantNoteModalButtonSelector);
     }
   }
 
-  // Method to close the 'Key Chain' modal if it appears
   async closeKeyChainModal() {
-    // Wait for the button to be visible with a timeout
-    //await this.waitForElementToBeVisible(this.rejectKeyChainButtonSelector, 500);
-
-    // If the modal is visible, then click the button to close the modal
-    if (await this.isElementVisible(this.rejectKeyChainButtonSelector)) {
+    const isModal = await this.isElementVisible(this.rejectKeyChainButtonSelector);
+    if (isModal) {
       await this.click(this.rejectKeyChainButtonSelector);
     }
   }
 
-  // Method to close the 'Begin Migration' modal if it appears
   async closeMigrationModal() {
-    // Wait for the button to be visible with a timeout
-    //await this.waitForElementToBeVisible(this.rejectMigrationButtonSelector, 500);
-
-    // If the modal is visible, then click the button to close the modal
-    if (await this.isElementVisible(this.rejectMigrationButtonSelector)) {
+    const isModal = await this.isElementVisible(this.rejectMigrationButtonSelector);
+    if (isModal) {
       await this.click(this.rejectMigrationButtonSelector);
     }
   }
@@ -73,14 +60,14 @@ export class LoginPage extends BasePage {
   }
 
   async logout() {
-    let isLogoutVisible = await this.isElementVisible(this.logoutButtonSelector, null, 500);
+    let isLogoutVisible = await this.isElementVisible(this.logoutButtonSelector, null, this.SHORT_TIMEOUT);
 
     if (!isLogoutVisible) {
-      if (await this.isElementVisible(this.settingsButtonSelector, null, 500)) {
+      if (await this.isElementVisible(this.settingsButtonSelector, null, this.SHORT_TIMEOUT)) {
         await this.click(this.settingsButtonSelector);
       }
 
-      if (await this.isElementVisible(this.profileTabButtonSelector, null, 500)) {
+      if (await this.isElementVisible(this.profileTabButtonSelector, null, this.SHORT_TIMEOUT)) {
         await this.click(this.profileTabButtonSelector);
         isLogoutVisible = await this.isElementVisible(this.logoutButtonSelector);
       }
@@ -88,8 +75,7 @@ export class LoginPage extends BasePage {
 
     if (isLogoutVisible) {
       await this.click(this.logoutButtonSelector);
-      await this.window.getByTestId(this.emailInputSelector)
-        .waitFor({ state: 'visible', timeout: 3000 });
+      await this.waitForElementToBeVisible(this.emailInputSelector);
     } else {
       await this.resetForm();
     }
@@ -128,11 +114,8 @@ export class LoginPage extends BasePage {
       }
       // Now wait for the confirmation reset button to become visible
       try {
-        const resetButton = this.window.getByTestId(this.confirmResetStateButtonSelector);
-        await resetButton.waitFor({ state: 'visible', timeout: 1000 });
-        // If the waitFor resolves successfully, click the reset button
-        await resetButton.click();
-        await this.waitForElementToDisappear(this.toastMessageSelector, 6000, 6000);
+        await this.click(this.confirmResetStateButtonSelector);
+        await this.waitForElementToDisappear(this.toastMessageSelector, this.DEFAULT_TIMEOUT, this.LONG_TIMEOUT);
       } catch (e) {
         console.log("The 'Reset' modal did not appear within the timeout.");
       }
@@ -140,15 +123,15 @@ export class LoginPage extends BasePage {
   }
 
   async typeEmail(email: string) {
-    await this.window.getByTestId(this.emailInputSelector).fill(email);
+    await this.fill(this.emailInputSelector, email);
   }
 
   async typePassword(password: string) {
-    await this.window.getByTestId(this.passwordInputSelector).fill(password);
+    await this.fill(this.passwordInputSelector, password);
   }
 
   async clickSignIn() {
-    await this.window.getByTestId(this.signInButtonSelector).click();
+    await this.click(this.signInButtonSelector);
   }
 
   async waitForToastToDisappear() {

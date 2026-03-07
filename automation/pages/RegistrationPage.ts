@@ -48,7 +48,7 @@ export class RegistrationPage extends BasePage {
   privateKeyLabelSelector = 'label-private-key';
 
   // Messages
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   emailErrorMessageSelector = 'invalid-text-email';
   passwordErrorMessageSelector = 'invalid-text-password';
   confirmPasswordErrorMessageSelector = 'invalid-text-password-not-match';
@@ -87,8 +87,7 @@ export class RegistrationPage extends BasePage {
     this.recoveryPhraseWords = {}; // Reset the recoveryPhraseWords object
     for (let i = 1; i <= 24; i++) {
       const selector = this.getRecoveryWordSelector(i);
-      const wordElement = await this.window.getByTestId(selector);
-      this.recoveryPhraseWords[i] = await wordElement.inputValue();
+      this.recoveryPhraseWords[i] = await this.getTextFromInputField(selector);
     }
   }
 
@@ -102,8 +101,7 @@ export class RegistrationPage extends BasePage {
   async fillAllMissingRecoveryPhraseWords() {
     for (let i = 1; i <= 24; i++) {
       const selector = this.getRecoveryWordSelector(i);
-      const wordElement = await this.window.getByTestId(selector);
-      const value = await wordElement.inputValue();
+      const value = await this.getTextFromInputField(selector);
       if (!value) {
         const word = this.recoveryPhraseWords[i];
         if (word) {
@@ -121,16 +119,12 @@ export class RegistrationPage extends BasePage {
       try {
         // Attempt to click the final next button
         await this.click(this.finalNextButtonSelector);
-        await this.window.getByTestId(this.settingsButtonSelector).waitFor({
-          state: 'visible',
-          timeout: 1000,
-        });
-        isSuccessful = true; // If the above waitForSelector doesn't throw, we assume success
+        await this.waitForElementToBeVisible(this.settingsButtonSelector);
+        isSuccessful = true;
       } catch {
         console.log(
           `Attempt ${attempts + 1} to click ${this.finalNextButtonSelector} failed, retrying...`,
         );
-        await this.window.waitForTimeout(1000); // Wait for 1 second before retrying
         attempts++;
       }
     }
@@ -174,7 +168,7 @@ export class RegistrationPage extends BasePage {
   async verifyAtLeastOneMnemonicFieldCleared() {
     for (let i = 1; i <= 24; i++) {
       const wordFieldSelector = this.getRecoveryWordSelector(i);
-      const fieldValue = await this.window.getByTestId(wordFieldSelector).inputValue();
+      const fieldValue = await this.getTextFromInputField(wordFieldSelector);
       if (fieldValue === '') {
         console.log(`Field ${i} is cleared.`);
         return true;
@@ -187,7 +181,7 @@ export class RegistrationPage extends BasePage {
     let allFieldsCleared = true;
     for (let i = 1; i <= 24; i++) {
       const wordFieldSelector = this.getRecoveryWordSelector(i);
-      const fieldValue = await this.window.getByTestId(wordFieldSelector).inputValue();
+      const fieldValue = await this.getTextFromInputField(wordFieldSelector);
       if (fieldValue !== '') {
         allFieldsCleared = false;
         console.log(`Field ${i} was not cleared.`);
@@ -269,7 +263,6 @@ export class RegistrationPage extends BasePage {
     await this.waitForElementToDisappear(this.toastMessageSelector);
     await this.clickOnFinalNextButtonWithRetry();
 
-    await this.window.waitForSelector(this.toastMessageSelector, { state: 'visible', timeout: 5000 }).catch(() => {});
     const toastMessage = await this.getToastMessage();
     expect(toastMessage).toBe('Key Pair saved successfully');
   }
@@ -405,7 +398,7 @@ export class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    return await this.getText(this.toastMessageSelector, null, 25000);
+    return await this.getText(this.toastMessageSelector, null, this.LONG_TIMEOUT * 5);
   }
 
   async clickOnGenerateAgainButton() {
@@ -413,7 +406,11 @@ export class RegistrationPage extends BasePage {
   }
 
   async isConfirmPasswordFieldVisible() {
-    return await this.isElementVisible(this.confirmPasswordInputSelector, null, 5000);
+    return await this.isElementVisible(
+      this.confirmPasswordInputSelector,
+      null,
+      this.LONG_TIMEOUT * 5,
+    );
   }
 
   async getPublicKey() {

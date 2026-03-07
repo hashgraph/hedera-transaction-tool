@@ -1,6 +1,6 @@
 
 import { BasePage } from './BasePage.js';
-import { Page, expect } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
 import {
   verifyAccountExists,
@@ -130,7 +130,7 @@ export class TransactionPage extends BasePage {
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css.v-toast__text';
   hbarAmountValueSelector = 'p-hbar-amount';
   transactionTypeHeaderSelector = 'h2-transaction-type';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';
@@ -142,18 +142,6 @@ export class TransactionPage extends BasePage {
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
-
-  // Method to close the 'Save Draft' modal if it appears
-  async closeDraftModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(() => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
-  }
 
   // Combined method to verify all elements on Create transaction page
   async verifyAccountCreateTransactionElements() {
@@ -229,7 +217,7 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnTransactionsMenuButton() {
-    await this.click(this.transactionsMenuButtonSelector, null, 2500);
+    await this.click(this.transactionsMenuButtonSelector);
   }
 
   async clickOnSingleTransactionButton() {
@@ -244,10 +232,7 @@ export class TransactionPage extends BasePage {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await this.click(this.createNewTransactionButtonSelector);
-        await this.window.waitForTimeout(500);
-        const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
-        await singleTxButton.waitFor({ state: 'visible', timeout: 3000 });
-        await singleTxButton.click();
+        await this.click(this.singleTransactionButtonSelector, null, this.LONG_TIMEOUT);
         return;
       } catch (error) {
         if (attempt === 2) throw error;
@@ -500,13 +485,16 @@ export class TransactionPage extends BasePage {
     // Wait for Confirm Transaction modal to close before looking for execution modal
     // Note: uses waitForSelector instead of getByTestId because AppModal.vue hardcodes
     // data-testid="modal-confirm-transaction" on ALL modals, causing strict mode violations
-    await this.window.waitForSelector(
-      `[data-testid="${this.confirmTransactionModalSelector}"]`,
-      { state: 'hidden', timeout: 10000 },
-    );
+    await this.window.waitForSelector(`[data-testid="${this.confirmTransactionModalSelector}"]`, {
+      state: 'hidden',
+      timeout: this.LONG_TIMEOUT * 2,
+    });
     // Wait for execution to complete (modal auto-closes when done)
     // Note: don't wait for 'Executing' to appear first - it's transient and may already be gone
-    await this.window.waitForSelector('text=Executing', { state: 'hidden', timeout: 30000 });
+    await this.window.waitForSelector('text=Executing', {
+      state: 'hidden',
+      timeout: this.LONG_TIMEOUT * 6,
+    });
     await this.waitForCreatedAtToBeVisible();
 
     const newTransactionId = await this.getTransactionDetailsId();
@@ -522,18 +510,19 @@ export class TransactionPage extends BasePage {
     return { newAccountId, newTransactionId };
   }
 
-  // Helper method for complex key creation
   async handleComplexKeyCreation() {
     await this.clickOnComplexTab();
     await this.clickOnCreateNewComplexKeyButton();
     await this.createComplexKeyStructure();
     await this.clickOnDoneButton();
-    // Wait for complex key modal to actually close (Done button hidden)
-    const modalClosed = await this.isElementHidden(this.doneComplexKeyButtonSelector, null, 10000);
+    const modalClosed = await this.isElementHidden(
+      this.doneComplexKeyButtonSelector,
+      null,
+      this.LONG_TIMEOUT * 2,
+    );
     if (!modalClosed) {
       throw new Error('Complex key modal did not close within 10 seconds');
     }
-    // Then wait for sign button to become visible and clickable
     await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);
   }
 
@@ -546,8 +535,6 @@ export class TransactionPage extends BasePage {
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitButton();
     await this.clickOnConfirmDeleteAccountButton();
-    // Wait for delete confirmation modal to close before looking for transaction modal
-    await this.window.waitForTimeout(500);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -570,13 +557,10 @@ export class TransactionPage extends BasePage {
     await this.fillInUpdatedAccountId(accountId);
     await this.fillInPublicKeyForAccount(newKey);
     await this.fillInTransactionMemoUpdate('Transaction memo update');
-    await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
-    await this.clickOnSignAndSubmitButton();
-    await this.clickSignTransactionButton();
-    await this.waitForCreatedAtToBeVisible();
-    const transactionId = await this.getTransactionDetailsId();
-    await this.clickOnTransactionsMenuButton();
-    return transactionId;
+    return await this.signSubmitAndReturnTransactionIdAfterElementPresent(
+      this.updateAccountIdFetchedDivSelector,
+      this.LONG_TIMEOUT * 6,
+    );
   }
 
   async updateAccount(
@@ -598,7 +582,14 @@ export class TransactionPage extends BasePage {
     if (await this.isSwitchToggledOn(this.acceptStakingRewardsSwitchSelector)) {
       await this.clickOnAcceptStakingRewardsSwitch(); //disabling staking rewards
     }
-    await this.waitForElementPresentInDOM(this.updateAccountIdFetchedDivSelector, 30000);
+    return await this.signSubmitAndReturnTransactionIdAfterElementPresent(
+      this.updateAccountIdFetchedDivSelector,
+      this.LONG_TIMEOUT * 6,
+    );
+  }
+
+  async signSubmitAndReturnTransactionIdAfterElementPresent(selector: string, timeout: number) {
+    await this.waitForElementPresentInDOM(selector, timeout);
     await this.clickOnSignAndSubmitButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
@@ -608,7 +599,10 @@ export class TransactionPage extends BasePage {
   }
 
   async waitForCreatedAtToBeVisible() {
-    await this.waitForElementToBeVisible(this.transactionDetailsCreatedAtSelector, 25000);
+    await this.waitForElementToBeVisible(
+      this.transactionDetailsCreatedAtSelector,
+      this.LONG_TIMEOUT * 5,
+    );
   }
 
   async getTransactionDetailsId() {
@@ -639,7 +633,7 @@ export class TransactionPage extends BasePage {
     await this.clickOnFileServiceLink();
     await this.clickOnReadCreateTransaction();
     await this.fillInFileIdForRead(fileId);
-    await this.clickOnSignAndReadButton(); // Use query-specific method (dropdown payer, not input)
+    await this.clickOnSignAndReadButton();
     await this.waitForElementToDisappear(this.toastMessageSelector);
     return await this.readFileContentFromTextArea();
   }
@@ -775,7 +769,6 @@ export class TransactionPage extends BasePage {
 
     while (filledBalance !== amount) {
       await this.fill(this.initialBalanceInputSelector, amount);
-      await new Promise(resolve => setTimeout(resolve, 1000));
       filledBalance = await getFilledBalance();
     }
   }
@@ -793,7 +786,7 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnBackButton() {
-    await this.click(this.backButtonSelector, null, 10000);
+    await this.click(this.backButtonSelector, null, this.LONG_TIMEOUT * 2);
   }
 
   async clickOnSignAndSubmitButton() {
@@ -804,41 +797,27 @@ export class TransactionPage extends BasePage {
       const currentValue = await payerInput.inputValue();
       if (!currentValue || currentValue.trim() === '') {
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
-        // Blur field to trigger Vue validation
         await payerInput.blur();
-        // Wait for Vue to re-validate and enable the button
-        const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
-        await button.waitFor({ state: 'visible', timeout: 5000 });
-        // Small delay for Vue reactivity to update button state
-        await this.window.waitForTimeout(500);
+        await this.scrollIntoView(this.signAndSubmitButtonSelector);
+        await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);
       }
     }
 
-    // Wait for button to be enabled before clicking
-    const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
-    await button.scrollIntoViewIfNeeded();
-    await button.waitFor({ state: 'visible', timeout: 30000 });
-    await expect(button).toBeEnabled({ timeout: 30000 });
-    await button.click();
+    await this.scrollIntoView(this.signAndSubmitButtonSelector);
+    await this.clickButtonWhenEnabled(this.signAndSubmitButtonSelector, this.LONG_TIMEOUT * 6);
   }
 
   async clickOnSignAndReadButton() {
-    const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
-    await button.scrollIntoViewIfNeeded();
-    await button.click({ timeout: 10000 });
+    await this.scrollIntoView(this.signAndSubmitButtonSelector);
+    await this.click(this.signAndSubmitButtonSelector);
   }
 
-  async clickSignTransactionButton() {
-    // Construct the selector for the confirmation transaction modal that is visible and in a displayed state
-    const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
-    await this.window.waitForSelector(modalSelector, { state: 'visible', timeout: 15000 });
-
-    // Construct the selector for the enabled sign button within the visible modal
-    const signButtonSelector = `${modalSelector} [data-testid="${this.buttonSignTransactionSelector}"]:enabled`;
-
-    // Wait for the sign button to be visible and enabled, then attempt to click it
-    await this.window.waitForSelector(signButtonSelector, { state: 'visible', timeout: 15000 });
-    await this.window.click(signButtonSelector);
+  async clickSignTransactionButton(): Promise<void> {
+    const visibleModalSelector = `css=[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const enabledSignButtonSelector = `css=[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"] [data-testid="${this.buttonSignTransactionSelector}"]:enabled`;
+    await this.waitForElementToBeVisible(visibleModalSelector, this.LONG_TIMEOUT * 4);
+    await this.waitForElementToBeVisible(enabledSignButtonSelector, this.LONG_TIMEOUT * 4);
+    await this.click(enabledSignButtonSelector);
   }
 
   async clickOnCloseButtonForCompletedTransaction() {
@@ -846,11 +825,9 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnExportTransactionButton(index: string) {
-    await this.window.waitForSelector(`[data-testid="${this.moreDropdownButtonSelector}"]`, {
-      state: 'visible',
-    });
+    await this.isElementVisible(this.moreDropdownButtonSelector);
     await this.click(this.moreDropdownButtonSelector);
-    await this.click(`${this.moreDropdownButtonSelector}-item-${index}`, null, 5000);
+    await this.click(`${this.moreDropdownButtonSelector}-item-${index}`, null, this.LONG_TIMEOUT);
   }
 
   async clickOnCancelTransaction() {
@@ -920,8 +897,7 @@ export class TransactionPage extends BasePage {
 
     while (attempt < maxRetries) {
       // Fill the input normally
-      const element = this.window.getByTestId(inputSelector);
-      await element.fill(accountId);
+      await this.fill(inputSelector, accountId);
 
       // Check if the target button is enabled
       if (await this.isButtonEnabled(buttonSelector)) {

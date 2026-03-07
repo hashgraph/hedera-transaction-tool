@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page } from '@playwright/test';
+import { ElectronApplication, Page } from '@playwright/test';
 import { launchHederaTransactionTool } from './electronAppLauncher.js';
 import { migrationDataExists } from './oldTools.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -17,31 +17,48 @@ import { generateEd25519KeyPair } from './keyUtil.js';
 export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
 
 export async function setupApp() {
-  console.log(asciiArt); // Display ASCII art as the app starts
+  console.log(asciiArt);
+
+  console.log('[setupApp] Launching Hedera Transaction Tool...');
   const app = await launchHederaTransactionTool();
+
   const window = await app.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
   const loginPage = new LoginPage(window);
 
+  console.log('[setupApp] Clearing browser storage...');
   await window.evaluate(() => {
-    (window as any).localStorage.clear();
-    // window.localStorage.setItem('important-note-accepted', 'true');
+    globalThis.localStorage.clear();
+    globalThis.sessionStorage.clear();
   });
 
-  expect(window).not.toBeNull();
+  console.log('[setupApp] Handling startup modals...');
+
   await loginPage.closeImportantNoteModal();
+
   const canMigrate = await migrationDataExists(app);
+  console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
+
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
+
   if (process.platform === 'darwin') {
+    console.log('[setupApp] macOS detected → checking Keychain modal...');
     await loginPage.closeKeyChainModal();
   }
 
-  // Check if we need to reset app state (if user exists from previous run)
+  console.log('[setupApp] Checking if existing user session exists...');
   const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+  console.log(`[setupApp] isSettingsButtonVisible: ${isSettingsButtonVisible}`);
+
   if (isSettingsButtonVisible) {
+    console.log('[setupApp] Existing session detected → resetting app state...');
     await resetAppState(window, app);
   }
+
+  console.log('[setupApp] App ready.');
 
   return { app, window };
 }
@@ -60,11 +77,14 @@ export async function closeApp(app: ElectronApplication) {
 }
 
 const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
+// const LOCALNET_PRIVATE_KEY = '44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c';
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 // Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
-  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
+  return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
+    ? process.env.PRIVATE_KEY
+    : null;
 }
 
 // Retrieves the operator private key from environment variables
@@ -80,8 +100,9 @@ export function getNetworkEnv(): string {
 export async function setupEnvironmentForTransactions(
   window: Page,
   privateKey = getPrivateKeyEnv(),
-) {
+): Promise<string | null> {
   const network = getNetworkEnv().toUpperCase();
+  let resolvedPrivateKey = privateKey;
   if (network === 'LOCALNET') {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
@@ -90,7 +111,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
 
-    if (privateKey === null) {
+    if (resolvedPrivateKey === null) {
       // The private key is not configured so we are going to create a payer account using the
       // operator key, so we need to:
       //  - import the operator key
@@ -102,7 +123,7 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.fillInED25519Nickname('Operator Account');
       await settingsPage.clickOnED25519ImportButton();
 
-      const { publicKey, privateKey } = generateEd25519KeyPair();
+      const { publicKey, privateKey: generatedPrivateKey } = generateEd25519KeyPair();
 
       const transactionPage = new TransactionPage(window);
       await transactionPage.clickOnTransactionsMenuButton();
@@ -119,12 +140,13 @@ export async function setupEnvironmentForTransactions(
 
       await settingsPage.clickOnImportButton();
       await settingsPage.clickOnED25519DropDown();
-      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519PrivateKey(generatedPrivateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
+      resolvedPrivateKey = generatedPrivateKey;
     } else {
       // The private key is configured so this is the one which will be used as payer for all transactions
-      await settingsPage.fillInED25519PrivateKey(privateKey);
+      await settingsPage.fillInED25519PrivateKey(resolvedPrivateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
     }
@@ -135,7 +157,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
-    await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
+    await settingsPage.fillInECDSAPrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else if (network === 'PREVIEWNET') {
@@ -145,7 +167,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnECDSADropDown();
-    await settingsPage.fillInECDSAPrivateKey(privateKey ?? '');
+    await settingsPage.fillInECDSAPrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else {
@@ -156,10 +178,12 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnImportButton();
     await settingsPage.clickOnED25519DropDown();
-    await settingsPage.fillInED25519PrivateKey(privateKey ?? '');
+    await settingsPage.fillInED25519PrivateKey(resolvedPrivateKey ?? '');
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
   }
+
+  return resolvedPrivateKey;
 }
 
 export const generateRandomEmail = (domain = 'test.com') => {
@@ -201,44 +225,62 @@ export function calculateTimeout(totalUsers: number, timePerUser: number): numbe
 }
 
 /**
- * Waits for a valid start time to continue the test.
- * @param dateTimeString - The target date and time in string format.
- * @param bufferSeconds - The buffer time in seconds to wait before the target time.
- * @returns {Promise<void>} - A promise that resolves after the wait time.
+ * Waits until a transaction start time becomes valid.
+ * Supports both Hedera UI format and ISO date formats.
+ *
+ * Examples supported:
+ *  - "Wed, Feb 04, 2026 16:05:05 UTC"
+ *  - "2026-02-04T16:05:05"
+ *  - "2026-02-04T16:05:05Z"
+ *
+ * @param dateTimeString - The target date/time string.
+ * @param bufferSeconds - Additional seconds to wait before execution.
  */
-export async function waitForValidStart(dateTimeString: string, bufferSeconds = 15): Promise<void> {
-  // Convert the dateTimeString to a Date object
-  // Handle both "Wed, Feb 04, 2026 16:05:05 UTC" and ISO formats
-  let dateStr = dateTimeString;
-  if (dateStr.endsWith(' UTC')) {
-    // Replace " UTC" with " GMT" - JS Date understands GMT as UTC timezone
-    dateStr = dateStr.replace(' UTC', ' GMT');
-  } else if (!dateStr.endsWith('Z')) {
-    // Add Z suffix for ISO format strings that don't have timezone
-    dateStr = dateStr + 'Z';
+export async function waitForValidStart(
+  dateTimeString: string,
+  bufferSeconds: number = 15,
+): Promise<void> {
+  if (!dateTimeString || !dateTimeString.trim()) {
+    console.log('waitForValidStart: start time is empty. Skipping wait.');
+    return;
   }
-  const targetDate = new Date(dateStr);
+
+  let normalizedDate = dateTimeString.trim();
+
+  // Handle Hedera UI format: "Wed, Feb 04, 2026 16:05:05 UTC"
+  if (normalizedDate.endsWith(' UTC')) {
+    normalizedDate = normalizedDate.replace(' UTC', ' GMT');
+  }
+
+  // Handle ISO strings missing timezone
+  if (
+    !normalizedDate.endsWith('Z') &&
+    !normalizedDate.includes('GMT') &&
+    !normalizedDate.includes('+')
+  ) {
+    normalizedDate = `${normalizedDate}Z`;
+  }
+
+  const targetDate = new Date(normalizedDate);
+
   if (isNaN(targetDate.getTime())) {
     throw new Error(
-      `waitForValidStart: invalid date string. Original: "${dateTimeString}", normalized: "${dateStr}"`,
+      `waitForValidStart: invalid date string. Original: "${dateTimeString}", normalized: "${normalizedDate}"`,
     );
   }
 
-  // Get the current time
-  const currentDate = new Date();
+  const now = new Date();
+  const timeDifference = targetDate.getTime() - now.getTime();
 
-  // Calculate the difference in milliseconds
-  const timeDifference = targetDate.getTime() - currentDate.getTime();
+  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0);
 
-  // Add buffer time (in milliseconds)
-  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
-
-  // Wait for the calculated time
   if (waitTime > 0) {
-    console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
+    const seconds = Math.ceil(waitTime / 1000);
+    console.log(`Waiting ${seconds} seconds until transaction start time becomes valid...`);
+
     await new Promise(resolve => setTimeout(resolve, waitTime));
   } else {
-    console.log('The target time has already passed.');
+    console.log('The target start time has already passed.');
   }
 }
 

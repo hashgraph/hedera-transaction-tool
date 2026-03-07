@@ -68,11 +68,11 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();

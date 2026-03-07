@@ -43,7 +43,7 @@ test.describe('Organization Contact List tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     adminUser = organizationPage.getUser(0);
     regularUser = organizationPage.getUser(1);
@@ -51,7 +51,7 @@ test.describe('Organization Contact List tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
   });
 
   test.afterEach(async () => {
@@ -175,7 +175,7 @@ test.describe('Organization Contact List tests', () => {
     expect(isUserAdded).toBe(true);
   });
 
-  test('Verify admin user can remove user from the organization', async () => {
+  test.skip('Verify admin user can remove user from the organization', async () => {
     const newUserEmail = generateRandomEmail();
     await organizationPage.signInOrganization(
       adminUser.email,

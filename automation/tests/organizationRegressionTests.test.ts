@@ -53,11 +53,11 @@ test.describe.skip('Organization Regression tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, false);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
     firstUser = organizationPage.getUser(0);
 
     // Disable notifications for test users

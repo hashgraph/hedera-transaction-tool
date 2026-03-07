@@ -72,18 +72,35 @@ jobs:
           - name: Registration
             command: RegistrationTests
             soloRequired: false
+            backendRequired: false
           - name: Login
             command: LoginTests
             soloRequired: false
+            backendRequired: false
           - name: Settings
             command: SettingsTests
             soloRequired: false
+            backendRequired: false
           - name: Transactions
             command: TransactionTests
             soloRequired: true
+            backendRequired: false
           - name: Workflow
             command: WorkflowTests
             soloRequired: true
+            backendRequired: false
+          - name: OrganizationContact
+            command: OrganizationContactListTests
+            soloRequired: true
+            backendRequired: true
+          - name: OrganizationSettings
+            command: OrganizationSettingsTests
+            soloRequired: true
+            backendRequired: true
+          - name: Organization
+            command: OrganizationGroupTests
+            soloRequired: true
+            backendRequired: true
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0
@@ -105,13 +122,150 @@ jobs:
         run: npm install -g pnpm@9.15.3
 
       - name: Install Docker Compose Plugin
+        if: ${{ matrix.test-suite.backendRequired }}
         run: |
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          # Provide legacy docker-compose command for scripts that use hyphenated syntax.
+          sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
       - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
         working-directory: automation
+
+      - name: Install Back-end Dependencies
+        if: ${{ matrix.test-suite.backendRequired }}
+        run: SKIP_NOTICE_GEN=true pnpm install --frozen-lockfile
+        working-directory: back-end
+
+      - name: Deploy Back-end
+        if: ${{ matrix.test-suite.backendRequired }}
+        working-directory: back-end
+        run: |
+          set -euo pipefail
+
+          # Install Python setuptools (required: >= 75.6.0) on Linux runners.
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends python3-pip
+          python3 -m pip install --user --upgrade "setuptools>=75.6.0" || \
+            sudo python3 -m pip install --upgrade --break-system-packages "setuptools>=75.6.0"
+          python3 - <<'PY'
+          import re
+          import setuptools
+          import sys
+
+          required = (75, 6, 0)
+          current = tuple(int(part) for part in re.findall(r'\d+', setuptools.__version__)[:3])
+          current = current + (0,) * (3 - len(current))
+          if current < required:
+              sys.exit(f"setuptools {setuptools.__version__} is below required 75.6.0")
+          print(f"setuptools version: {setuptools.__version__}")
+          PY
+
+          # Install mkcert for generating a locally-trusted TLS certificate.
+          # libnss3-tools provides certutil, required by mkcert -install on Linux.
+          sudo apt-get install -y --no-install-recommends libnss3-tools
+
+          curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
+            -o /tmp/mkcert
+          sudo install -m755 /tmp/mkcert /usr/local/bin/mkcert
+
+          # Install the local CA so the cert is trusted by Chromium/Electron.
+          mkcert -install
+
+          # Create cert directory and generate TLS certificates for localhost.
+          mkdir -p cert
+          mkcert -key-file cert/key.pem -cert-file cert/cert.pem localhost
+
+          # Copy .env files from examples for all back-end packages.
+          for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
+            cp "${dir}/example.env" "${dir}/.env"
+          done
+
+          # Align frontend version compatibility constraints with the built app.
+          FE_VERSION="$(node -p "require('../front-end/package.json').version")"
+          sed -i "s/^LATEST_SUPPORTED_FRONTEND_VERSION=.*/LATEST_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/notifications/.env
+
+          # Notifications service requires EMAIL_API_SECURE to be a boolean.
+          sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
+
+          export COMPOSE_PARALLEL_LIMIT=4
+
+          # Ensure Docker daemon is reachable before deploying.
+          # Do not restart dockerd here; restarting is disruptive on shared/self-hosted runners.
+          if ! docker info &>/dev/null; then
+            echo "Docker daemon is not reachable; attempting to start it..."
+            sudo service docker start || true
+            sudo systemctl start docker || true
+          fi
+
+          for i in $(seq 1 15); do
+            if docker info &>/dev/null; then
+              break
+            fi
+            if [ "${i}" -eq 15 ]; then
+              echo "Docker daemon is unavailable after startup attempts" >&2
+              ls -l /var/run/docker.sock || true
+              sudo ls -l /var/run/docker.sock || true
+              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          # Start all services from back-end/docker-compose.yaml.
+          # Retries handle flaky Docker Hub pulls on self-hosted runners.
+          for attempt in $(seq 1 5); do
+            if docker-compose up -d; then
+              break
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "docker compose up failed after 5 attempts" >&2
+              docker-compose ps || true
+              docker-compose logs --tail=200 || true
+              exit 1
+            fi
+            echo "Attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
+          done
+
+          # Wait for the API to become ready.
+          # The API serves HTTPS when NODE_ENV=development and cert files are present.
+          MAX_ATTEMPTS=60
+          for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
+            code="$(curl -k -s -o /dev/null -w '%{http_code}' https://localhost:3001/ 2>/dev/null || echo '000')"
+            if [[ "${code}" == "200" || "${code}" == "426" ]]; then
+              echo "Back-end is ready (attempt ${attempt})"
+              break
+            fi
+            if (( attempt % 10 == 0 )); then
+              echo "Waiting for back-end... attempt ${attempt}/${MAX_ATTEMPTS} (HTTP ${code})"
+              docker-compose ps
+              docker-compose logs --tail=50 api || true
+            fi
+            if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
+              echo "Back-end did not become ready in time" >&2
+              docker-compose ps || true
+              docker-compose logs --tail=300 || true
+              exit 1
+            fi
+            sleep 5
+          done
+
+          docker-compose ps
+
+      - name: Test API connectivity
+        if: ${{ matrix.test-suite.backendRequired }}
+        run: |
+          set -euo pipefail
+          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
+          echo "API connectivity check returned HTTP ${code}"
+          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
+            echo "Unexpected HTTP status from API: ${code}" >&2
+            exit 1
+          fi
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -148,8 +302,8 @@ jobs:
       - name: Check port forwarding
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
-          ps -ef | grep port-forward
-          env
+          set -euo pipefail
+          ps -ef | grep port-forward || true
           curl -fsS http://localhost:8080/api/v1/network/nodes
           curl -fsS http://localhost:8081/api/v1/network/nodes
 
@@ -169,12 +323,46 @@ jobs:
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
+          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY_TEST }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
-
+          ORGANIZATION_URL: https://localhost:3001
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DATABASE: postgres
+          POSTGRES_USERNAME: postgres
+          POSTGRES_PASSWORD: postgres
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
+
+      - name: Upload Playwright Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.test-suite.name }}
+          path: |
+            automation/reports/playwright
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Upload Playwright Screenshots
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-screenshots-${{ matrix.test-suite.name }}
+          path: automation/test-results/**/*.png
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Show Back-end Logs
+        if: ${{ failure() && matrix.test-suite.backendRequired }}
+        run: docker-compose logs --tail=300
+        working-directory: back-end
+
+      - name: Stop Back-end Services
+        if: ${{ always() && matrix.test-suite.backendRequired }}
+        run: docker-compose down --remove-orphans || true
+        working-directory: back-end
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
