@@ -55,8 +55,6 @@ export enum TransactionStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-export const TransactionStatusCodeFallback = 21;
-
 export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 
 @Entity()

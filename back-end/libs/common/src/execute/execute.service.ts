@@ -12,7 +12,6 @@ import {
   Transaction,
   TransactionGroup,
   TransactionStatus,
-  TransactionStatusCodeFallback,
 } from '@entities';
 
 import {
@@ -126,7 +125,7 @@ export class ExecuteService {
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
-    let transactionStatusCode = TransactionStatusCodeFallback;
+    let transactionStatusCode = null;
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
@@ -142,7 +141,7 @@ export class ExecuteService {
       transactionStatusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
       let message = 'Unknown error';
-      let statusCode = TransactionStatusCodeFallback;
+      let statusCode = null;
 
       if (error instanceof Error) {
         message = error.message;

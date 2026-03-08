@@ -1,7 +1,6 @@
 import { AccountId, AddressBookQuery, Client, FileId, LedgerId } from '@hashgraph/sdk';
 
 import { MirrorNetworkGRPC } from '../mirrorNode';
-import NodeClient from '@hashgraph/sdk/lib/client/NodeClient';
 
 export const MAINNET = 'mainnet';
 export const TESTNET = 'testnet';
@@ -53,7 +52,7 @@ export const getClientFromNetwork = async (
   return client;
 };
 
-export const getNodeAccountIdsFromClientNetwork = (client: NodeClient): Set<string> => {
+export const getNodeAccountIdsFromClientNetwork = (client: Client): Set<string> => {
   const network = client.network as { [key: string]: string | AccountId };
   const values = Object.values(network ?? {});
   return new Set(
@@ -61,4 +60,4 @@ export const getNodeAccountIdsFromClientNetwork = (client: NodeClient): Set<stri
       v instanceof AccountId ? v.toString() : AccountId.fromString(String(v)).toString(),
     ),
   );
-}
+};

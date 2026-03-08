@@ -28,7 +28,6 @@ import {
   MAX_TRANSACTION_BYTE_SIZE,
   TransactionType,
   Transaction,
-  TransactionStatusCodeFallback,
 } from '@entities';
 import {
   decode,
@@ -252,7 +251,7 @@ export const getStatusCodeFromMessage = (message: string) => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
-    return TransactionStatusCodeFallback;
+    return null;
   }
 };
 
@@ -337,9 +336,20 @@ export const isTransactionValidForNodes = (
   sdkTransaction: SDKTransaction,
   allowedNodeAccountIds: Set<string>
 ): boolean  => {
-  const txNodeIds = Array.from((sdkTransaction as any)._nodeAccountIds?.list ?? []).map((id: any) =>
-    (id instanceof AccountId ? id : AccountId.fromString(String(id))).toString(),
-  );
+  const nodeAccountIds = (sdkTransaction as any)._nodeAccountIds;
+  const txNodeIds: string[] = [];
+  if (
+    nodeAccountIds &&
+    typeof nodeAccountIds.length === 'number' &&
+    typeof nodeAccountIds.get === 'function'
+  ) {
+    for (let i = 0; i < nodeAccountIds.length; i++) {
+      const id = nodeAccountIds.get(i);
+      const accountId =
+        id instanceof AccountId ? id : AccountId.fromString(String(id));
+      txNodeIds.push(accountId.toString());
+    }
+  }
 
   return txNodeIds.every((id) => allowedNodeAccountIds.has(id));
-}
+};
