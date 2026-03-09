@@ -181,7 +181,9 @@ jobs:
 
           for attempt in $(seq 1 60); do
             if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
-               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
+               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
+               timeout 3 bash -lc "</dev/tcp/127.0.0.1/50211" >/dev/null 2>&1 && \
+               timeout 3 bash -lc "</dev/tcp/127.0.0.1/5600" >/dev/null 2>&1; then
               echo "Solo port forwarding is ready on attempt ${attempt}"
               break
             fi
@@ -198,6 +200,8 @@ jobs:
 
           curl -fsS http://localhost:8080/api/v1/network/nodes
           curl -fsS http://localhost:8081/api/v1/network/nodes
+          timeout 3 bash -lc "</dev/tcp/127.0.0.1/50211"
+          timeout 3 bash -lc "</dev/tcp/127.0.0.1/5600"
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
@@ -225,7 +229,8 @@ jobs:
 
           # Install mkcert for generating a locally-trusted TLS certificate.
           # libnss3-tools provides certutil, required by mkcert -install on Linux.
-          sudo apt-get install -y --no-install-recommends libnss3-tools
+          # socat exposes Solo's localhost-bound ports to Docker containers via the bridge gateway.
+          sudo apt-get install -y --no-install-recommends libnss3-tools socat
 
           curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
             -o /tmp/mkcert
@@ -288,6 +293,37 @@ jobs:
             echo "Waiting for mirror node... attempt ${attempt}/60"
             sleep 5
           done
+
+          DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
+          if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
+            echo "Failed to resolve the Docker bridge gateway IP" >&2
+            exit 1
+          fi
+          echo "Docker bridge gateway: ${DOCKER_HOST_GATEWAY}"
+
+          # Solo exposes localnet services on localhost. Docker containers reach the host via the
+          # bridge gateway, so we proxy the required ports onto that interface before starting compose.
+          for port in 50211 5600 8081; do
+            sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
+          done
+
+          sleep 2
+
+          for port in 50211 5600; do
+            if ! timeout 3 bash -lc "</dev/tcp/${DOCKER_HOST_GATEWAY}/${port}" >/dev/null 2>&1; then
+              echo "Solo proxy on ${DOCKER_HOST_GATEWAY}:${port} is not reachable" >&2
+              ss -lnt || true
+              sudo tail -n 50 /tmp/socat-${port}.log || true
+              exit 1
+            fi
+          done
+
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1; then
+            echo "Mirror node proxy on ${DOCKER_HOST_GATEWAY}:8081 is not reachable" >&2
+            ss -lnt || true
+            sudo tail -n 50 /tmp/socat-8081.log || true
+            exit 1
+          fi
 
           for attempt in $(seq 1 5); do
             if docker-compose up -d; then
