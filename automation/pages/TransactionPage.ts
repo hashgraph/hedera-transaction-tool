@@ -801,6 +801,7 @@ export class TransactionPage extends BasePage {
     // Mirror Node doesn't return accounts there, so Payer ID is empty.
     if (forceLocalNetPayerHandling || process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
       const currentValue = await this.getTextFromInputField(this.payerAccountInputSelector);
+      console.log('Current payer account ID:', currentValue);
       if (!currentValue || currentValue.trim() === '') {
         console.log('Filling in payer account ID using LOCALNET fallback');
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
