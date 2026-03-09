@@ -22,6 +22,7 @@ let adminUser: UserDetails;
 let regularUser: UserDetails;
 
 test.describe('Organization Contact List tests', () => {
+  test.slow();
   test.beforeAll(async () => {
     await resetDbState();
     await resetPostgresDbState();
@@ -110,7 +111,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify contact email and public keys are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
@@ -130,7 +130,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify associated accounts are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,

@@ -84,24 +84,40 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
    );
  };
 
-export const getAccountDetails = async (accountId: string) => {
+export const getAccountDetails = async (
+  accountId: string,
+  timeout: number = 30000,
+  interval: number = 2000,
+) => {
   return pollWithRetry(
     'accounts',
     { 'account.id': accountId },
     result => result && result.accounts && result.accounts.length > 0,
+    timeout,
+    interval,
   );
 };
 
-export const getTransactionDetails = async (transactionId: string) => {
+export const getTransactionDetails = async (
+  transactionId: string,
+  timeout: number = 30000,
+  interval: number = 2000,
+) => {
   const formatedTransactionId = formatTransactionId(transactionId);
   return pollWithRetry(
     `transactions/${formatedTransactionId}`,
     {},
     result => result && result.transactions && result.transactions.length > 0,
+    timeout,
+    interval,
   );
 };
 
-export const getAssociatedAccounts = async (publicKey: string) => {
+export const getAssociatedAccounts = async (
+  publicKey: string,
+  timeout: number = 30000,
+  interval: number = 2000,
+) => {
   let allAccounts: string[] = [];
   let params: Object | null = { 'account.publickey': publicKey, order: 'asc' };
   let endpoint = 'accounts';
@@ -112,6 +128,8 @@ export const getAssociatedAccounts = async (publicKey: string) => {
       endpoint,
       params,
       result => result && result.accounts && result.accounts.length > 0,
+      timeout,
+      interval,
     );
 
     // Extract the account IDs from the response

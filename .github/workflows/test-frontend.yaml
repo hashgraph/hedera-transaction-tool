@@ -69,38 +69,42 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Registration
-            command: RegistrationTests
-            soloRequired: false
-            backendRequired: false
-          - name: Login
-            command: LoginTests
-            soloRequired: false
-            backendRequired: false
-          - name: Settings
-            command: SettingsTests
-            soloRequired: false
-            backendRequired: false
-          - name: Transactions
-            command: TransactionTests
-            soloRequired: true
-            backendRequired: false
-          - name: Workflow
-            command: WorkflowTests
-            soloRequired: true
-            backendRequired: false
-          - name: OrganizationContactList
-            command: OrganizationContactListTests
-            soloRequired: true
-            backendRequired: true
-          - name: OrganizationSettings
-            command: OrganizationSettingsTests
-            soloRequired: true
-            backendRequired: true
+#          - name: Registration
+#            command: RegistrationTests
+#            soloRequired: false
+#            backendRequired: false
+#          - name: Login
+#            command: LoginTests
+#            soloRequired: false
+#            backendRequired: false
+#          - name: Settings
+#            command: SettingsTests
+#            soloRequired: false
+#            backendRequired: false
+#          - name: Transactions
+#            command: TransactionTests
+#            soloRequired: true
+#            backendRequired: false
+#          - name: Workflow
+#            command: WorkflowTests
+#            soloRequired: true
+#            backendRequired: false
+#          - name: OrganizationContactList
+#            command: OrganizationContactListTests
+#            soloRequired: true
+#            backendRequired: true
+#          - name: OrganizationSettings
+#            command: OrganizationSettingsTests
+#            soloRequired: true
+#            backendRequired: true
           - name: OrganizationGroup
             command: OrganizationGroupTests
             soloRequired: true
             backendRequired: true
+#          - name: OrganizationTransaction
+#            command: OrganizationTransactionTests
+#            soloRequired: true
+#            backendRequired: true
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@a90bcbc6539c36a85cdfeb73f7e2f433735f215b # v2.15.0

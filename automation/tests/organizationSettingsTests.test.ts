@@ -26,6 +26,7 @@ let settingsPage: SettingsPage;
 let firstUser: UserDetails;
 
 test.describe('Organization Settings tests', () => {
+  test.slow();
   test.beforeAll(async () => {
     await resetDbState();
     await resetPostgresDbState();
@@ -178,7 +179,6 @@ test.describe('Organization Settings tests', () => {
   });
 
   test.skip('Verify user can restore account with new mnemonic phrase', async () => {
-    test.slow();
     const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);
     await settingsPage.clickOnSettingsButton();

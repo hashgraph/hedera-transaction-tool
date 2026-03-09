@@ -133,7 +133,7 @@ export class GroupPage extends BasePage {
   }
 
   async clickAddToGroupButton() {
-    await this.click(this.addToGroupButtonSelector);
+    await this.click(this.addToGroupButtonSelector, 0);
   }
 
   async getTransactionType(index: number) {

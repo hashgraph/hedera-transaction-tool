@@ -197,13 +197,21 @@ export class TransactionPage extends BasePage {
   }
 
   async mirrorGetAccountResponse(accountId: string) {
-    const accountDetails = await getAccountDetails(accountId);
+    const accountDetails = await getAccountDetails(
+      accountId,
+      this.LONG_TIMEOUT * 6,
+      this.DEFAULT_TIMEOUT / 2,
+    );
     console.log('Account Details:', accountDetails);
     return accountDetails;
   }
 
   async mirrorGetTransactionResponse(transactionId: string): Promise<Transaction> {
-    const transactionDetails = await getTransactionDetails(transactionId);
+    const transactionDetails = await getTransactionDetails(
+      transactionId,
+      this.LONG_TIMEOUT * 6,
+      this.DEFAULT_TIMEOUT / 2,
+    );
     const firstTransaction = transactionDetails.transactions.find(
       (tx: Transaction) => typeof tx.nonce === 'undefined' || tx.nonce === 0,
     );

@@ -227,7 +227,11 @@ export class ContactListPage extends BasePage {
 
   // This method will get the associated accounts from the Mirror node.
   async mirrorGetAssociatedAccounts(publicKey: string) {
-    const accountIds = await getAssociatedAccounts(publicKey);
+    const accountIds = await getAssociatedAccounts(
+      publicKey,
+      this.LONG_TIMEOUT * 6,
+      this.DEFAULT_TIMEOUT / 2,
+    );
 
     if (accountIds.length > 0) {
       console.log('Associated accounts:', accountIds);

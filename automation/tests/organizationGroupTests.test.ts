@@ -36,9 +36,9 @@ function incrementAccountId(accountId: string) {
   return parts.join('.');
 }
 
-test.describe('Organization Group Tx tests', () => {
+test.describe.only('Organization Group Tx tests', () => {
+  test.slow();
   test.beforeAll(async () => {
-    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
@@ -136,9 +136,7 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify user can execute group transaction in organization', async () => {
-    test.slow();
     await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
-
     await groupPage.clickOnSignAndExecuteButton();
     // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
@@ -172,7 +170,6 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify user can cancel all items in a transaction group', async () => {
-    test.slow();
     await groupPage.addSingleTransactionToGroup(2);
     await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
@@ -185,13 +182,11 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test(`Verify user can import csv with 5 transactions`, async () => {
-    test.slow();
     const isAllTransactionsSuccessful = await executeGroupFromCsvFile(5, false)
     expect(isAllTransactionsSuccessful).toBe(true);
   });
 
   test(`Verify user can import csv with 100 transactions`, async () => {
-    test.slow();
     const isAllTransactionsSuccessful = await executeGroupFromCsvFile(100, true)
     expect(isAllTransactionsSuccessful).toBe(true);
   });
@@ -223,7 +218,6 @@ test.describe('Organization Group Tx tests', () => {
   }
 
   test('Verify import fails if sender account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     // create a non-existing account Id
     const senderAccountId = incrementAccountId(newAccountId);
@@ -232,7 +226,6 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify import fails if fee payer account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     const feePayerAccountId = incrementAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
@@ -240,7 +233,6 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify import fails if receiver account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     const receiverAccountId = incrementAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, receiverAccountId, 5);

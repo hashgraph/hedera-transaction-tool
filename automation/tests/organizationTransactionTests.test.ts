@@ -33,8 +33,8 @@ let thirdUser: UserDetails;
 let complexKeyAccountId: string;
 
 test.describe('Organization Transaction tests', () => {
+  test.slow();
   test.beforeAll(async () => {
-    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
@@ -254,7 +254,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 600, true);
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
@@ -293,7 +292,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is shown "History" after it is executed', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
@@ -461,7 +459,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute transfer transaction with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
       complexKeyAccountId,
       '15',
@@ -491,7 +488,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute approve allowance with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.approveAllowance(complexKeyAccountId, '10');
     await organizationPage.closeDraftModal();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -518,7 +514,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file create with complex account', async () => {
-    test.slow();
     const { txId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -534,7 +529,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file update with complex account', async () => {
-    test.slow();
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -559,7 +553,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file append with complex account', async () => {
-    test.slow();
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -584,7 +577,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute account delete with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.deleteAccount(complexKeyAccountId);
     await organizationPage.closeDraftModal();
     await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
@@ -625,8 +617,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
-      test.slow();
-
       // Create 73 more users, a total of 76
       await organizationPage.createAdditionalUsers(73, globalCredentials.password);
 
@@ -683,8 +673,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user can import superfluous signatures from TTv1 format', async () => {
-      test.slow();
-
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
@@ -741,8 +729,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
-      test.slow();
-
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
