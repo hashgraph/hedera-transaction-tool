@@ -73,6 +73,7 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -128,6 +129,7 @@ const createTooltips = useCreateTooltips();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -265,6 +267,7 @@ const handleSignGroupItem = async (groupItem: IGroupItem) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
 
     if (signed) {
@@ -351,6 +354,7 @@ const handleSignAll = async (showModal = false) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
     await fetchGroup(group.value!.id);
 
@@ -584,6 +588,7 @@ async function fetchGroup(id: string | number) {
             network.mirrorNodeBaseURL,
             accountByIdCache,
             nodeByIdCache,
+            publicKeyOwnerCache,
             user.selectedOrganization,
           );
 

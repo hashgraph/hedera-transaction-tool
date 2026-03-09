@@ -9,6 +9,7 @@ import { getTransactionById } from '@renderer/services/organization';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -30,6 +31,7 @@ const { getPasswordV2 } = usePersonalPassword();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const signOnGoing = ref(false);
@@ -58,6 +60,7 @@ const handleSign = async (personalPassword: string|null) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
 
     emit('transactionSigned', { transactionId: props.transactionId, signed });

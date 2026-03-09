@@ -7,7 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getOne } from '@renderer/services/accountsService';
-import { getPublicKeyOwner, uploadSignatures } from '@renderer/services/organization';
+import { uploadSignatures } from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
@@ -22,6 +22,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import { useToast } from 'vue-toast-notification';
 import type { SignatureItem } from '@renderer/types';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export * from './dom';
 export * from './sdk';
@@ -188,6 +189,7 @@ export async function signTransactions(
   password: string | null,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
 ): Promise<boolean> {
   const user = useUserStore();
   const network = useNetworkStore();
@@ -208,6 +210,7 @@ export async function signTransactions(
       network.mirrorNodeBaseURL,
       accountInfoCache,
       nodeInfoCache,
+      publicKeyOwnerCache,
       user.selectedOrganization,
     );
 
@@ -311,14 +314,14 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
   return result;
 };
 
-export const formatPublicKey = async (publicKey: string) => {
+export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: PublicKeyOwnerCache) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping && mapping.nickname) {
     return `${mapping.nickname} (${mapping.public_key})`;
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
     if (owner) {
       return `${owner} (${publicKey})`;
     }
@@ -326,14 +329,14 @@ export const formatPublicKey = async (publicKey: string) => {
   return publicKey;
 };
 
-export const findIdentifier = async (publicKey: string) => {
+export const findIdentifier = async (publicKey: string, publicKeyOwnerCache: PublicKeyOwnerCache) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping && mapping.nickname) {
     return mapping.nickname as string;
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await getPublicKeyOwner(user.selectedOrganization!.serverUrl, publicKey);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
     if (owner) {
       return owner as string;
     }

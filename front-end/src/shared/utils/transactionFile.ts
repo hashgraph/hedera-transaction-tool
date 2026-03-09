@@ -6,6 +6,7 @@ import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],
@@ -40,6 +41,7 @@ export async function filterTransactionFileItemsToBeSigned(
   mirrorNetwork: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
 ): Promise<TransactionFileItemsStatus> {
   const fullySigned: TransactionFileItem[] = [];
   const needSigning: TransactionFileItem[] = [];
@@ -52,6 +54,7 @@ export async function filterTransactionFileItemsToBeSigned(
         mirrorNetwork,
         accountInfoCache,
         nodeInfoCache,
+        publicKeyOwnerCache,
         null,
       );
       const requiredKeys = filterAuditByUser(audit, userPublicKeys);
@@ -80,6 +83,7 @@ export async function collectMissingSignerKeys(
   mirrorNodeLink: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
 ): Promise<string[]> {
   const result: string[] = [];
 
@@ -88,6 +92,7 @@ export async function collectMissingSignerKeys(
     mirrorNodeLink,
     accountInfoCache,
     nodeInfoCache,
+    publicKeyOwnerCache,
     null,
   );
 
