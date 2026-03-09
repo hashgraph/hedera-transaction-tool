@@ -24,6 +24,7 @@ import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPu
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 
 /* Composables */
 const router = useRouter();
@@ -69,6 +70,7 @@ AccountByIdCache.provide();
 AccountByPublicKeyCache.provide();
 TransactionByIdCache.provide();
 NodeByIdCache.provide();
+PublicKeyOwnerCache.provide();
 </script>
 <template>
   <AppHeader

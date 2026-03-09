@@ -5,6 +5,7 @@ import { formatPublicKey } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -15,6 +16,9 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits(['update:show']);
 
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+
 /* State */
 const formattedKey = ref('');
 
@@ -24,7 +28,7 @@ const handleShowUpdate = (show: boolean) => emit('update:show', show);
 /* Lifecycle hooks */
 onBeforeMount(async () => {
   if (props.accountKey && props.accountKey instanceof PublicKey && true) {
-    formattedKey.value = await formatPublicKey(props.accountKey.toStringRaw());
+    formattedKey.value = await formatPublicKey(props.accountKey.toStringRaw(), publicKeyOwnerCache);
   }
 });
 </script>

@@ -57,6 +57,7 @@ import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOpt
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Types */
 type ActionButton =
@@ -130,6 +131,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const isTransactionVersionMismatch = ref(false);
@@ -267,6 +269,7 @@ const handleSign = async (goNext = false) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
     await props.onAction();
 
@@ -571,6 +574,7 @@ watch(
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        publicKeyOwnerCache,
         user.selectedOrganization,
       ),
       getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),

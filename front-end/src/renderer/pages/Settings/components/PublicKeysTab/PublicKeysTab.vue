@@ -5,7 +5,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useToast } from 'vue-toast-notification';
-import { getPublicKeyOwner } from '@renderer/services/organization';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -18,6 +18,9 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const isDeleteModalShown = ref(false);
@@ -74,7 +77,7 @@ const getOwnersFromOrganization = async () => {
   const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
 
   const ownerPromises = publicKeys.map(async key => {
-    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!.serverUrl) };
   });
   const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
 
@@ -87,7 +90,7 @@ const addOwners = async (newMappings: PublicKeyMapping[], oldMappings: PublicKey
   );
   const newPublicKeys = newItems.map(mapping => mapping.public_key);
   const ownerPromises = newPublicKeys.map(async key => {
-    return { [key]: await getPublicKeyOwner(user.selectedOrganization!.serverUrl, key) };
+    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!.serverUrl) };
   });
   const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
   Object.assign(ownersMapping.value, ...results);
