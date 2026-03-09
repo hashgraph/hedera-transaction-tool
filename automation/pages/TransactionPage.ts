@@ -1,4 +1,3 @@
-
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
@@ -232,7 +231,10 @@ export class TransactionPage extends BasePage {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await this.click(this.createNewTransactionButtonSelector);
-        await this.click(this.singleTransactionButtonSelector, null, this.LONG_TIMEOUT);
+        await this.window.waitForTimeout(500);
+        const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
+        await singleTxButton.waitFor({ state: 'visible', timeout: 3000 });
+        await singleTxButton.click();
         return;
       } catch (error) {
         if (attempt === 2) throw error;
@@ -798,8 +800,11 @@ export class TransactionPage extends BasePage {
       if (!currentValue || currentValue.trim() === '') {
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
         await payerInput.blur();
-        await this.scrollIntoView(this.signAndSubmitButtonSelector);
-        await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);
+        // Wait for Vue to re-validate and enable the button
+        const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
+        await button.waitFor({ state: 'visible', timeout: 5000 });
+        // Small delay for Vue reactivity to update button state
+        await this.window.waitForTimeout(500);
       }
     }
 

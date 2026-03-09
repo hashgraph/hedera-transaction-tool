@@ -89,7 +89,7 @@ jobs:
             command: WorkflowTests
             soloRequired: true
             backendRequired: false
-          - name: OrganizationContact
+          - name: OrganizationContactList
             command: OrganizationContactListTests
             soloRequired: true
             backendRequired: true
@@ -97,7 +97,7 @@ jobs:
             command: OrganizationSettingsTests
             soloRequired: true
             backendRequired: true
-          - name: Organization
+          - name: OrganizationGroup
             command: OrganizationGroupTests
             soloRequired: true
             backendRequired: true
