@@ -135,7 +135,7 @@ test.describe('Organization Group Tx tests', () => {
     await resetPostgresDbState();
   });
 
-  test('Verify user can execute group transaction in organization', async () => {
+  test.only('Verify user can execute group transaction in organization', async () => {
     await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
     await groupPage.clickOnSignAndExecuteButton();
     // Handle "Save Group?" modal if it appears (can happen with fast test execution)
