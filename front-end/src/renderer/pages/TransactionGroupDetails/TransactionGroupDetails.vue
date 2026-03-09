@@ -128,6 +128,11 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 });
 
 /* Computed */
+const groupId = computed(() => {
+  const id = Number(router.currentRoute.value.params.id);
+  return Number.isNaN(id) ? null : id;
+});
+
 const pageTitle = computed(() => {
   let txType: BackEndTransactionType | null = null;
   let result: string | null = null;
@@ -472,15 +477,40 @@ const didSignTransaction = (updatedTransaction: ITransactionFull) => {
   group.value!.groupItems[index].transaction = updatedTransaction;
 };
 
+const groupDidChange = async () => {
+  // We update firstSignableGroupItem
+  firstSignableGroupItem.value = null;
+  const groupItems = group.value?.groupItems ?? [];
+  for (const item of [...groupItems].reverse()) {
+    const tx = item.transaction;
+    if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
+      assertIsLoggedInOrganization(user.selectedOrganization);
+      const transactionBytes = hexToUint8Array(tx.transactionBytes);
+      const sdkTransaction = Transaction.fromBytes(transactionBytes);
+      const usersPublicKeys = await usersPublicRequiredToSign(
+        sdkTransaction,
+        user.selectedOrganization.userKeys,
+        network.mirrorNodeBaseURL,
+        accountByIdCache,
+        nodeByIdCache,
+        publicKeyOwnerCache,
+        user.selectedOrganization,
+      );
+      if (usersPublicKeys.length > 0) {
+        firstSignableGroupItem.value = item;
+        break;
+      }
+    }
+  }
+};
+
 /* Hooks */
 onBeforeMount(async () => {
-  const id = router.currentRoute.value.params.id;
-  if (!id) {
+  if (groupId.value !== null) {
+    await fetchGroup(groupId.value);
+  } else {
     router.back();
-    return;
   }
-
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
 });
 
 /* Watchers */
@@ -490,6 +520,8 @@ watch(
     router.back();
   },
 );
+
+watch(group, groupDidChange, { immediate: true });
 
 watchEffect(() => {
   if (tooltipRef.value && tooltipRef.value.length > 0) {
@@ -517,30 +549,10 @@ async function fetchGroup(id: string | number) {
             break;
           }
 
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
-
-          if (firstSignableGroupItem.value === null) {
-            // We check if this item is signable
-            const usersPublicKeys = await usersPublicRequiredToSign(
-              tx,
-              user.selectedOrganization.userKeys,
-              network.mirrorNodeBaseURL,
-              accountByIdCache,
-              nodeByIdCache,
-              publicKeyOwnerCache,
-              user.selectedOrganization,
-            );
-
-            if (
-              item.transaction.status !== TransactionStatus.CANCELED &&
-              item.transaction.status !== TransactionStatus.EXPIRED &&
-              usersPublicKeys.length > 0
-            ) {
-              firstSignableGroupItem.value = item;
-            }
-          }
+          // Temporarily disabled until approval feature is re-worked
+          // shouldApprove.value =
+          //   shouldApprove.value ||
+          //   (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
         }
         fullyLoaded.value = true;
 
