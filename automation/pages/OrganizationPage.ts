@@ -669,7 +669,7 @@ export class OrganizationPage extends BasePage {
     await this.selectOptionByValue(this.transactionPage.selectThresholdValueByIndex + '0-1', '2');
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     // Handle password modal if it appears (organization signing flow)
     if (encryptionPassword && (await this.isEncryptPasswordInputVisible())) {
@@ -734,7 +734,7 @@ export class OrganizationPage extends BasePage {
     );
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     const transactionId = (await this.getTransactionDetailsId()) ?? '';
     await this.clickOnSignTransactionButton();
@@ -850,7 +850,7 @@ export class OrganizationPage extends BasePage {
     // Step 3: Complete the transaction
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
     await this.transactionPage.fillInInitialFunds('100');
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
 
     // Retrieve and store the transaction ID
@@ -879,7 +879,7 @@ export class OrganizationPage extends BasePage {
       await this.clickOnAddUserButtonForObserver();
     }
 
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     if (isSignRequired) {
       await this.clickOnSignTransactionButton();
@@ -963,7 +963,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async processTransaction(isSignRequiredFromCreator = false, isDeleteTransaction = false) {
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     if (isDeleteTransaction) {
       await this.transactionPage.clickOnConfirmDeleteAccountButton();
     }
@@ -1247,7 +1247,7 @@ export class OrganizationPage extends BasePage {
       // Special processing for large files
       // It does not go through the standard transaction processing
       // Instead it goes into a transaction group
-      await this.transactionPage.clickOnSignAndSubmitButton();
+      await this.transactionPage.clickOnSignAndSubmitButton(true);
       await this.transactionPage.clickSignTransactionButton();
       const txIdArray: string[] = (await this.getGroupTransactionIdText())?.split(',') ?? [];
       const validStartArray = (await this.getGroupValidStartText())?.split(',') ?? [];

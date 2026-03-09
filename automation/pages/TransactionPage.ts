@@ -487,7 +487,7 @@ export class TransactionPage extends BasePage {
       if (condition) await handler();
     }
 
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     // Wait for Confirm Transaction modal to close before looking for execution modal
     // Note: uses waitForSelector instead of getByTestId because AppModal.vue hardcodes
@@ -540,7 +540,7 @@ export class TransactionPage extends BasePage {
     const payerID = await this.getPayerAccountId();
     await this.fillInTransferAccountIdNormally(payerID);
     await this.fillInDeletedAccountId(accountId);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickOnConfirmDeleteAccountButton();
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
@@ -597,7 +597,7 @@ export class TransactionPage extends BasePage {
 
   async signSubmitAndReturnTransactionIdAfterElementPresent(selector: string, timeout: number) {
     await this.waitForElementPresentInDOM(selector, timeout);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -623,7 +623,7 @@ export class TransactionPage extends BasePage {
     await this.clickOnFileCreateTransaction();
     const publicKey = await this.getPublicKeyText();
     await this.fillInFileContent(fileContent);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -654,7 +654,7 @@ export class TransactionPage extends BasePage {
     const publicKey = await this.getPublicKeyFromFile(fileId);
     await this.fillInCurrentPublicKeyForFile(publicKey!);
     await this.fillInFileContentForUpdate(fileContent);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -672,7 +672,7 @@ export class TransactionPage extends BasePage {
     const publicKey = await this.getPublicKeyFromFile(fileId);
     await this.fillInPublicKeyForFile(publicKey!);
     await this.fillInFileContentForAppend(fileContent);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -692,7 +692,7 @@ export class TransactionPage extends BasePage {
     }
     await this.fillInAllowanceAmount(amount);
     await this.fillInSpenderAccountId(spenderAccountId);
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
     await this.waitForCreatedAtToBeVisible();
     const transactionId = await this.getTransactionDetailsId();
@@ -717,7 +717,7 @@ export class TransactionPage extends BasePage {
     await this.fillInTransferAmountToAccount(amount);
     await this.clickOnAddTransferToButton();
 
-    await this.clickOnSignAndSubmitButton();
+    await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
 
     if (isSupposedToFail) {
@@ -796,14 +796,17 @@ export class TransactionPage extends BasePage {
     await this.click(this.backButtonSelector, null, this.LONG_TIMEOUT * 2);
   }
 
-  async clickOnSignAndSubmitButton() {
-    // For LOCALNET: Mirror Node doesn't return accounts, so Payer ID is empty.
-    // Fill it explicitly with the known account ID for the imported key.
-    if (process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
+  async clickOnSignAndSubmitButton(forceLocalnetPayerHandling = false) {
+    // For LOCALNET, or when explicitly requested, use the LOCALNET payer fallback.
+    // Mirror Node doesn't return accounts there, so Payer ID is empty.
+    if (
+      forceLocalnetPayerHandling ||
+      process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET'
+    ) {
       const payerInput = this.window.getByTestId(this.payerAccountInputSelector);
       const currentValue = await payerInput.inputValue();
       if (!currentValue || currentValue.trim() === '') {
-        console.log('Filling in payer account ID for LOCALNET');
+        console.log('Filling in payer account ID using LOCALNET fallback');
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
         await payerInput.blur();
         await this.scrollIntoView(this.signAndSubmitButtonSelector);
