@@ -8,6 +8,7 @@ import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCa
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { SignatureAudit } from './transaction.model';
 import type { ConnectedOrganization } from '@renderer/types';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
@@ -29,6 +30,7 @@ export const computeSignatureKey = async (
   mirrorNodeLink: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
   organization: ConnectedOrganization | null,
 ): Promise<SignatureAudit> => {
   const transactionModel = TransactionFactory.fromTransaction(transaction);
@@ -37,6 +39,7 @@ export const computeSignatureKey = async (
     mirrorNodeLink,
     accountInfoCache,
     nodeInfoCache,
+    publicKeyOwnerCache,
     organization,
   );
 };
@@ -48,6 +51,7 @@ export const usersPublicRequiredToSign = async (
   mirrorNodeLink: string,
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
   organization: ConnectedOrganization | null,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
@@ -63,6 +67,7 @@ export const usersPublicRequiredToSign = async (
     mirrorNodeLink,
     accountInfoCache,
     nodeInfoCache,
+    publicKeyOwnerCache,
     organization,
   );
 

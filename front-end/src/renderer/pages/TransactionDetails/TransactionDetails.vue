@@ -52,6 +52,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -70,6 +71,7 @@ const route = useRoute();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -205,6 +207,7 @@ async function fetchTransaction() {
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
       user.selectedOrganization,
     );
   }

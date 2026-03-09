@@ -28,6 +28,7 @@ import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/Complex
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 /* Props */
 const props = withDefaults(
@@ -55,6 +56,9 @@ const user = useUserStore();
 
 /* Composables */
 const toast = useToast();
+
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
@@ -145,7 +149,7 @@ watch(
   () => props.modelKey,
   async newKey => {
     if (newKey && newKey instanceof PublicKey && true) {
-      const formatted = await formatPublicKey(newKey.toStringRaw());
+      const formatted = await formatPublicKey(newKey.toStringRaw(), publicKeyOwnerCache);
       formattedKey.value = formatted;
       identifier.value = extractIdentifier(formatted)?.identifier;
     }

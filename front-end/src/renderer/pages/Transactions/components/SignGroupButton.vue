@@ -10,6 +10,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { getTransactionGroupById } from '@renderer/services/organization';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -31,6 +32,7 @@ const { getPasswordV2 } = usePersonalPassword();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const signOnGoing = ref(false);
@@ -60,6 +62,7 @@ const handleSign = async (personalPassword: string|null) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
 
     emit('transactionGroupSigned', { groupId: props.groupId, signed });
