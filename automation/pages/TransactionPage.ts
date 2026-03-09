@@ -803,6 +803,7 @@ export class TransactionPage extends BasePage {
       const payerInput = this.window.getByTestId(this.payerAccountInputSelector);
       const currentValue = await payerInput.inputValue();
       if (!currentValue || currentValue.trim() === '') {
+        console.log('Filling in payer account ID for LOCALNET');
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
         await payerInput.blur();
         await this.scrollIntoView(this.signAndSubmitButtonSelector);
