@@ -197,52 +197,45 @@ export async function signTransactions(
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
+  // Capture the narrowed, non-null organization for use across async callbacks
+  const selectedOrganization = user.selectedOrganization;
+
   const items: SignatureItem[] = [];
   let signed = false;
 
-  for (const tx of transactions) {
-    const tid = tx.id;
-    const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+  const results = await Promise.all(
+    transactions.map(async tx => {
+      const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+      const publicKeysRequired = await usersPublicRequiredToSign(
+        transaction,
+        selectedOrganization.userKeys,
+        network.mirrorNodeBaseURL,
+        accountInfoCache,
+        nodeInfoCache,
+        publicKeyOwnerCache,
+        selectedOrganization,
+      );
+      return { id: tx.id, transaction, publicKeysRequired };
+    }),
+  );
 
-    const publicKeysRequired = await usersPublicRequiredToSign(
-      transaction,
-      user.selectedOrganization.userKeys,
-      network.mirrorNodeBaseURL,
-      accountInfoCache,
-      nodeInfoCache,
-      publicKeyOwnerCache,
-      user.selectedOrganization,
-    );
+  const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
 
-    const restoredRequiredKeys = [];
-    const nonRestoredRequiredKeys = [];
+  for (const { id, transaction, publicKeysRequired } of results) {
+    const missingKeys = publicKeysRequired.filter(k => !userPublicKeys.has(k));
 
-    // Separate keys into restored and non-restored, where restored indicates that the
-    // key is locally present.
-    for (const requiredKey of publicKeysRequired) {
-      if (user.keyPairs.some(k => k.public_key === requiredKey)) {
-        restoredRequiredKeys.push(requiredKey);
-      } else {
-        nonRestoredRequiredKeys.push(requiredKey);
-      }
-    }
-
-    if (nonRestoredRequiredKeys.length > 0) {
+    if (missingKeys.length > 0) {
       toast.error(
-        `You need to restore the following public keys to fully sign the transaction: ${nonRestoredRequiredKeys.join(
+        `You need to restore the following public keys to fully sign the transaction: ${missingKeys.join(
           ', ',
         )}`,
         errorToastOptions,
       );
-      break;
+      return false;
     }
 
-    if (restoredRequiredKeys.length > 0) {
-      items.push({
-        publicKeys: publicKeysRequired,
-        transaction: transaction,
-        transactionId: tid,
-      });
+    if (publicKeysRequired.length > 0) {
+      items.push({ publicKeys: publicKeysRequired, transaction, transactionId: id });
     }
   }
 
@@ -250,7 +243,7 @@ export async function signTransactions(
     await uploadSignatures(
       user.personal.id,
       password,
-      user.selectedOrganization,
+      selectedOrganization,
       undefined,
       undefined,
       undefined,
