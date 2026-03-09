@@ -796,18 +796,15 @@ export class TransactionPage extends BasePage {
     await this.click(this.backButtonSelector, null, this.LONG_TIMEOUT * 2);
   }
 
-  async clickOnSignAndSubmitButton(forceLocalnetPayerHandling = false) {
+  async clickOnSignAndSubmitButton(forceLocalNetPayerHandling = true) {
     // For LOCALNET, or when explicitly requested, use the LOCALNET payer fallback.
     // Mirror Node doesn't return accounts there, so Payer ID is empty.
-    if (
-      forceLocalnetPayerHandling ||
-      process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET'
-    ) {
-      const payerInput = this.window.getByTestId(this.payerAccountInputSelector);
-      const currentValue = await payerInput.inputValue();
+    if (forceLocalNetPayerHandling || process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
+      const currentValue = await this.getTextFromInputField(this.payerAccountInputSelector);
       if (!currentValue || currentValue.trim() === '') {
         console.log('Filling in payer account ID using LOCALNET fallback');
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
+        const payerInput = this.getElement(this.payerAccountInputSelector);
         await payerInput.blur();
         await this.scrollIntoView(this.signAndSubmitButtonSelector);
         await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);

@@ -83,8 +83,7 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnSignAndExecuteButton() {
-    // Skip loader wait - it never disappears. Just wait for button to be visible.
-    await this.waitForElementToBeVisible(this.signAndExecuteButtonSelector, 10000);
+    await this.waitForElementToBeVisible(this.signAndExecuteButtonSelector, this.LONG_TIMEOUT);
     await this.click(this.signAndExecuteButtonSelector);
   }
 
@@ -125,7 +124,7 @@ export class GroupPage extends BasePage {
   }
 
   async getToastMessage(dismissToast = false) {
-    const message = await this.getText(this.toastMessageSelector, null, 5000);
+    const message = await this.getText(this.toastMessageSelector, null, this.DEFAULT_TIMEOUT);
     if (dismissToast) {
       await this.click(this.toastMessageSelector);
     }
@@ -150,7 +149,7 @@ export class GroupPage extends BasePage {
 
   async getAllTransactionTimestamps(
     numberOfTransactions: number,
-    timeout: number = 100,
+    timeout: number = this.SHORT_TIMEOUT,
   ): Promise<string[]> {
     const timestamps: string[] = [];
 
@@ -230,7 +229,7 @@ export class GroupPage extends BasePage {
     );
     // Wait for all transactions to be loaded before proceeding
     const lastTxIndex = numberOfTransactions - 1;
-    await this.waitForElementToBeVisible(`span-transaction-type-${lastTxIndex}`, 10000);
+    await this.waitForElementToBeVisible(`span-transaction-type-${lastTxIndex}`, this.LONG_TIMEOUT);
   }
 
   async importCsvExpectingError(
@@ -265,7 +264,6 @@ export class GroupPage extends BasePage {
       await this.clickOnAddTransactionButton();
       await this.transactionPage.clickOnApproveAllowanceTransaction();
       await this.transactionPage.fillInMaxTransactionFee('5');
-
       await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
       await this.transactionPage.fillInAllowanceAmount(amount);
       await this.transactionPage.fillInSpenderAccountId(
@@ -290,8 +288,10 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnConfirmGroupTransactionButton() {
-    // Wait for the confirmation modal to appear before clicking
-    await this.waitForElementToBeVisible(this.confirmGroupTransactionButtonSelector, 5000);
+    await this.waitForElementToBeVisible(
+      this.confirmGroupTransactionButtonSelector,
+      this.DEFAULT_TIMEOUT,
+    );
     await this.click(this.confirmGroupTransactionButtonSelector);
   }
 
@@ -307,15 +307,13 @@ export class GroupPage extends BasePage {
 
   async clickOnDetailsGroupButton(index: number) {
     const selector = this.detailsGroupButtonSelector + index;
-    // Wait for the group button to be visible (may take time to load)
-    await this.waitForElementToBeVisible(selector, 10000);
+    await this.waitForElementToBeVisible(selector, this.LONG_TIMEOUT);
     await this.click(selector);
   }
 
   async clickOnTransactionDetailsButton(index: number) {
     const selector = this.orgTransactionDetailsButtonIndexSelector + index;
-    // Skip loader wait - just wait for button to be visible
-    await this.waitForElementToBeVisible(selector, 10000);
+    await this.waitForElementToBeVisible(selector, this.LONG_TIMEOUT);
     await this.click(selector);
   }
 
@@ -331,8 +329,8 @@ export class GroupPage extends BasePage {
       // Backend cache linking can take 10-30s+ depending on mirror node latency
       const found = await this.waitForTransactionInTab(
         this.organizationPage.readyToSignTabSelector,
-        30, // Max 30 retries (increased from 15)
-        2000, // 2 seconds between retries = max 60s wait
+        30,
+        this.DEFAULT_TIMEOUT,
       );
 
       if (!found) {
@@ -376,8 +374,6 @@ export class GroupPage extends BasePage {
           }
         } while (true);
       }
-
-      // Wait for backend to process signatures before next user logs in
       await this.waitForElementToDisappear(this.toastMessageSelector);
       await this.organizationPage.logoutFromOrganization();
     }
@@ -390,7 +386,7 @@ export class GroupPage extends BasePage {
   async clickOnCancelAllButton() {
     const dropdownSelector = 'button-more-dropdown-lg';
     const cancelItemSelector = 'button-more-dropdown-lg-item-Cancel All';
-    await this.waitForElementToBeVisible(dropdownSelector, 15000);
+    await this.waitForElementToBeVisible(dropdownSelector, this.LONG_TIMEOUT * 3);
     await this.click(dropdownSelector);
     await this.click(cancelItemSelector);
   }
