@@ -76,15 +76,10 @@ export async function closeApp(app: ElectronApplication) {
   await app.close();
 }
 
-const LOCALNET_PK_KEY = '44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c';
 const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 export function getPrivateKeyEnv(): string | null {
-  if (getNetworkEnv().toUpperCase() === 'LOCALNET') {
-    return LOCALNET_PK_KEY;
-  }
-
   return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
     ? process.env.PRIVATE_KEY
     : null;
@@ -104,10 +99,8 @@ export async function setupEnvironmentForTransactions(
   isLocalNet = true,
 ): Promise<string | null> {
   const network = getNetworkEnv().toUpperCase();
-  console.log('[setupEnvironmentForTransactions] network:', network);
   let resolvedPrivateKey = privateKey;
-  console.log('[setupEnvironmentForTransactions] resolvedPrivateKey:',
-    resolvedPrivateKey
+  console.log('[setupEnvironmentForTransactions] resolvedPrivateKey:', resolvedPrivateKey
       ? '[configured]'
       : '[missing]',
   );
