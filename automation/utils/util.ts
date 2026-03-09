@@ -97,8 +97,10 @@ export function getNetworkEnv(): string {
 export async function setupEnvironmentForTransactions(
   window: Page,
   privateKey = getPrivateKeyEnv(),
+  isLocalNet = true,
 ): Promise<string | null> {
   const network = getNetworkEnv().toUpperCase();
+  console.log('[setupEnvironmentForTransactions] network:', network);
   let resolvedPrivateKey = privateKey;
   console.log('[setupEnvironmentForTransactions] resolvedPrivateKey:',
     resolvedPrivateKey
@@ -106,7 +108,11 @@ export async function setupEnvironmentForTransactions(
       : '[missing]',
   );
 
-  if (network === 'LOCALNET') {
+  if (isLocalNet || network === 'LOCALNET') {
+    console.log(
+      '[setupEnvironmentForTransactions] branch: LOCALNET',
+      isLocalNet ? '(forced)' : '(from ENVIRONMENT)',
+    );
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnLocalNodeTab();
@@ -115,6 +121,9 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.clickOnED25519DropDown();
 
     if (resolvedPrivateKey === null) {
+      console.log(
+        '[setupEnvironmentForTransactions] LOCALNET path: no private key configured, creating payer account',
+      );
       // The private key is not configured so we are going to create a payer account using the
       // operator key, so we need to:
       //  - import the operator key
@@ -148,12 +157,16 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.clickOnED25519ImportButton();
       resolvedPrivateKey = generatedPrivateKey;
     } else {
+      console.log(
+        '[setupEnvironmentForTransactions] LOCALNET path: importing configured payer key',
+      );
       // The private key is configured so this is the one which will be used as payer for all transactions
       await settingsPage.fillInED25519PrivateKey(resolvedPrivateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
     }
   } else if (network === 'TESTNET') {
+    console.log('[setupEnvironmentForTransactions] branch: TESTNET');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnTestnetTab();
@@ -164,6 +177,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else if (network === 'PREVIEWNET') {
+    console.log('[setupEnvironmentForTransactions] branch: PREVIEWNET');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnPreviewnetTab();
@@ -174,6 +188,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else {
+    console.log('[setupEnvironmentForTransactions] branch: CUSTOM');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnCustomNodeTab();
