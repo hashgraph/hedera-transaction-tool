@@ -43,6 +43,7 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
   let tx6: Transaction;
   let tx7: Transaction;
   let tx8: Transaction;
+  let tx9: Transaction;
 
   // Group
   let group1: TransactionGroup;
@@ -61,44 +62,48 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
 
     // --- tx1: Bob is signer (non-receiver), created by alice ---
     tx1 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx1');
-    await linkAccount(dataSource, tx1, bob, false);
+    await linkAccount(dataSource, tx1, bob, false, false);
 
     // --- tx2: Carol is receiver only, created by alice ---
     tx2 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx2');
-    await linkAccount(dataSource, tx2, carol, true);
+    await linkAccount(dataSource, tx2, carol, false, true);
 
     // --- tx3: Carol is receiver only, EXECUTED (terminal status) ---
     tx3 = await createTx(dataSource, alice, TransactionStatus.EXECUTED, 'tx3');
-    await linkAccount(dataSource, tx3, carol, true);
+    await linkAccount(dataSource, tx3, carol, false, true);
 
     // --- tx4: Dave is both signer + receiver via 2 different accounts ---
     tx4 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx4');
-    await linkAccount(dataSource, tx4, dave, false); // signer account
-    await linkAccount(dataSource, tx4, dave, true);  // receiver account
+    await linkAccount(dataSource, tx4, dave, false, false); // signer account
+    await linkAccount(dataSource, tx4, dave, false, true);  // receiver account
 
     // --- tx5: Bob is signer, already signed ---
     tx5 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx5');
-    await linkAccount(dataSource, tx5, bob, false);
+    await linkAccount(dataSource, tx5, bob, false, false);
     await createSigner(dataSource, tx5, bob.keys[0]);
 
     // --- tx6: Bob has publicKey match on transaction, cached acct is receiver ---
     tx6 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx6');
-    await linkAccount(dataSource, tx6, bob, true); // receiver-only cached account
+    await linkAccount(dataSource, tx6, bob, false, true); // receiver-only cached account
     await dataSource.getRepository(Transaction).update(
       { id: tx6.id },
       { publicKeys: ['pk-bob'] },
     );
 
-    // --- tx7 & tx8: Grouped transactions ---
+    // --- tx2: Carol is required receiver only, created by alice ---
+    tx7 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx7');
+    await linkAccount(dataSource, tx7, carol, true, true);
+
+    // --- tx8 & tx9: Grouped transactions ---
     group1 = await createGroup(dataSource);
 
-    tx7 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx7');
-    await linkAccount(dataSource, tx7, bob, false); // non-receiver signer
-    await createGroupItem(dataSource, group1, tx7, 0);
+    tx8 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx7');
+    await linkAccount(dataSource, tx8, bob, false, false); // non-receiver signer
+    await createGroupItem(dataSource, group1, tx8, 0);
 
-    tx8 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx8');
-    await linkAccount(dataSource, tx8, bob, true); // receiver only
-    await createGroupItem(dataSource, group1, tx8, 1);
+    tx9 = await createTx(dataSource, alice, TransactionStatus.WAITING_FOR_SIGNATURES, 'tx8');
+    await linkAccount(dataSource, tx9, bob, false, true); // receiver only
+    await createGroupItem(dataSource, group1, tx9, 1);
   }, 120_000);
 
   afterAll(async () => {
@@ -122,7 +127,7 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
       // tx1: bob is non-receiver signer
       // tx5: bob is non-receiver signer (already signed, but onlyUnsigned not set)
       // tx6: bob matches via publicKeys branch
-      // group(tx7+tx8): bob is non-receiver on tx7
+      // group(tx8+tx9): bob is non-receiver on tx8
       // NOT tx2 (carol), tx3 (carol, executed), tx4 (dave)
       const txIds = result.filter(r => r.transaction_id !== null).map(r => r.transaction_id);
       const groupIds = result.filter(r => r.group_id !== null).map(r => r.group_id);
@@ -135,7 +140,7 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
       expect(groupIds[0]).toBe(group1.id);
     });
 
-    it('(scenario 7) group row should have group_collected_count = 1 (only tx7, not tx8)', () => {
+    it('(scenario 7) group row should have group_collected_count = 1 (only tx8, not tx9)', () => {
       const groupRow = result.find(r => r.group_id === group1.id);
       expect(Number(groupRow.group_collected_count)).toBe(1);
     });
@@ -147,10 +152,14 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
   });
 
   // --- Scenario 2: Carol as signer, WAITING_FOR_SIGNATURES ---
-  it('should return 0 results for carol as signer (receiver-only)', async () => {
+  it('should return 1 result for carol as signer (receiver-only)', async () => {
     const query = getTransactionNodesQuery(sqlBuilder, waitingFilter, carol, signerRole);
     const result = await dataSource.query(query.text, query.values);
-    expect(result).toHaveLength(0);
+
+    const txIds = result.filter(r => r.transaction_id !== null).map(r => r.transaction_id);
+
+    expect(txIds).toHaveLength(1);
+    expect(txIds).toContain(tx7.id);
   });
 
   // --- Scenario 3: Carol as signer, EXECUTED (terminal status override) ---
@@ -174,17 +183,18 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
     const query = getTransactionNodesQuery(sqlBuilder, waitingFilter, alice, { creator: true });
     const result = await dataSource.query(query.text, query.values);
 
-    // alice created tx1, tx2, tx4, tx5, tx6, and grouped tx7+tx8 (1 group row)
+    // alice created tx1, tx2, tx4, tx5, tx6, and grouped tx8+tx9 (1 group row)
     // tx3 is EXECUTED so excluded by status filter
     const txIds = result.filter(r => r.transaction_id !== null).map(r => r.transaction_id);
     const groupIds = result.filter(r => r.group_id !== null).map(r => r.group_id);
 
-    expect(txIds).toHaveLength(5);
+    expect(txIds).toHaveLength(6);
     expect(txIds).toContain(tx1.id);
     expect(txIds).toContain(tx2.id);
     expect(txIds).toContain(tx4.id);
     expect(txIds).toContain(tx5.id);
     expect(txIds).toContain(tx6.id);
+    expect(txIds).toContain(tx7.id);
     expect(groupIds).toHaveLength(1);
     expect(groupIds[0]).toBe(group1.id);
   });
@@ -202,7 +212,7 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
 
     // tx1: unsigned non-receiver signer
     // tx6: unsigned via publicKeys
-    // group(tx7): unsigned non-receiver signer
+    // group(tx8): unsigned non-receiver signer
     // NOT tx5 (already signed)
     expect(txIds).toHaveLength(2);
     expect(txIds).toContain(tx1.id);
@@ -302,6 +312,7 @@ async function linkAccount(
   ds: DataSource,
   tx: Transaction,
   user: User,
+  receiverSignatureRequired: boolean,
   isReceiver: boolean,
 ): Promise<void> {
   accountCounter++;
@@ -309,7 +320,7 @@ async function linkAccount(
   const cachedAccount = ds.getRepository(CachedAccount).create({
     account: `0.0.${9000 + accountCounter}`,
     mirrorNetwork: 'mainnet',
-    receiverSignatureRequired: null,
+    receiverSignatureRequired,
     encodedKey: null,
     etag: null,
     keys: [],
