@@ -81,9 +81,13 @@ const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
 export function getPrivateKeyEnv(): string | null {
+  if (getNetworkEnv().toUpperCase() === 'LOCALNET') {
+    return LOCALNET_PK_KEY;
+  }
+
   return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== ''
     ? process.env.PRIVATE_KEY
-    : LOCALNET_PK_KEY;
+    : null;
 }
 
 export function getOperatorKeyEnv(): string {
