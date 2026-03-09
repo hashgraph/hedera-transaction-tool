@@ -158,7 +158,9 @@ export class ExecuteService {
       transactionStatusCode = statusCode;
       result.error = message;
 
-      this.logger.error(`Error executing transaction ${transaction.id}: ${message}`);
+      this.logger.error(
+        `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
+      );
     } finally {
       result.status = transactionStatus;
 
