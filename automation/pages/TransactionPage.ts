@@ -231,10 +231,7 @@ export class TransactionPage extends BasePage {
     for (let attempt = 0; attempt < 3; attempt++) {
       try {
         await this.click(this.createNewTransactionButtonSelector);
-        await this.window.waitForTimeout(500);
-        const singleTxButton = this.getElement(this.singleTransactionButtonSelector);
-        await singleTxButton.waitFor({ state: 'visible', timeout: 3000 });
-        await singleTxButton.click();
+        await this.click(this.singleTransactionButtonSelector, null, this.LONG_TIMEOUT);
         return;
       } catch (error) {
         if (attempt === 2) throw error;
@@ -800,11 +797,8 @@ export class TransactionPage extends BasePage {
       if (!currentValue || currentValue.trim() === '') {
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
         await payerInput.blur();
-        // Wait for Vue to re-validate and enable the button
-        const button = this.window.getByTestId(this.signAndSubmitButtonSelector);
-        await button.waitFor({ state: 'visible', timeout: 5000 });
-        // Small delay for Vue reactivity to update button state
-        await this.window.waitForTimeout(500);
+        await this.scrollIntoView(this.signAndSubmitButtonSelector);
+        await this.waitForElementToBeVisible(this.signAndSubmitButtonSelector);
       }
     }
 

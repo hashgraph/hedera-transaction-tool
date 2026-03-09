@@ -80,7 +80,7 @@ export class OrganizationPage extends BasePage {
   deleteNextButtonSelector = 'button-delete-next';
   addObserverButtonSelector = 'button-add-observer';
   addUserButtonSelector = 'button-add-user';
-  openDatePickerButtonSelector = 'dp-input';
+  openDatePickerButtonSelector = '[data-test-id="dp-input"]';
   datePickerCalendarSelector = 'css=.dp__instance_calendar';
   datePickerInputSelector = 'css=.dp__time_input';
   timePickerIconSelector = 'css=.dp--tp-wrap button[aria-label="Open time picker"]';
@@ -232,7 +232,7 @@ export class OrganizationPage extends BasePage {
     window: Page,
     encryptionPassword: string,
     payerPrivateKey: string | null,
-    setPrivateKey = true
+    setPrivateKey = true,
   ) {
     const user = this.users[0];
 
@@ -993,7 +993,7 @@ export class OrganizationPage extends BasePage {
 
     await this.transactionPage.waitForElementPresentInDOM(
       this.transactionPage.updateAccountIdFetchedDivSelector,
-      30000,
+      this.LONG_TIMEOUT,
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);

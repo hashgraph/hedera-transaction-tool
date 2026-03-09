@@ -44,8 +44,8 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
  * @param {Object} params - The parameters to pass with the API call, usually query parameters.
  * @param {Function} validateResult - A function to validate the result of the API call.
  *    Should return `true` if the result meets the expected conditions, `false` otherwise.
- * @param {number} [timeout=15000] - The maximum time in milliseconds to keep retrying the API call.
- * @param {number} [interval=2500] - The interval in milliseconds between retries.
+ * @param {number} [timeout=30000] - The maximum time in milliseconds to keep retrying the API call.
+ * @param {number} [interval=2000] - The interval in milliseconds between retries.
  * @returns {Promise<Object>} - A promise that resolves with the data from the API once the validation condition is met.
  *    If the timeout is reached without successful validation, the promise rejects.
  *
@@ -60,8 +60,8 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
    endpoint: string,
    params: Object,
    validateResult: (result: any) => boolean,
-   timeout: number = 20000,
-   interval: number = 2500,
+   timeout: number = 30000,
+   interval: number = 2000,
  ): Promise<any> => {
    return retry(
      async () => {

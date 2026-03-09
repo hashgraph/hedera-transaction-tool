@@ -22,10 +22,17 @@ export class BasePage {
    * @returns {boolean} - True if the selector is a CSS selector, false otherwise.
    */
   isCssSelector(selector: string): boolean {
-    // Treat as a selector only when an explicit Playwright engine is used.
-    // Everything else is assumed to be a data-testid string.
-    const engines = ['css=', 'xpath=', 'text=', 'role=', 'id=', 'data-testid='];
-    return engines.some(engine => selector.startsWith(engine));
+    // Explicit Playwright selector engines
+    const engines = ['css=', 'xpath=', 'text=', 'role=', 'id=', 'data-testid=', 'data-test-id='];
+
+    if (engines.some(engine => selector.startsWith(engine))) {
+      return true;
+    }
+
+    // Raw attribute selectors like:
+    // [data-testid="..."]
+    // [data-test-id="..."]
+    return selector.startsWith('[data-testid=') || selector.startsWith('[data-test-id=');
   }
 
   /**
