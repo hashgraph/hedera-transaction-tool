@@ -109,7 +109,7 @@ function buildEligibilityConditions(
         ` : ''}
         WHERE ta.${sql.col(TransactionCachedAccount, 'transactionId')} = t.${sql.col(Transaction, 'id')}
           AND uk.${sql.col(UserKey, 'id')} = ANY(${getKeyIdsParam()})
-          AND ta.${sql.col(TransactionCachedAccount, 'isReceiver')} = false
+          AND (ta.${sql.col(TransactionCachedAccount, 'isReceiver')} = false OR ca.${sql.col(CachedAccount, 'receiverSignatureRequired')} = true)
           ${onlyUnsigned ? `AND ts.${sql.col(TransactionSigner, 'userKeyId')} IS NULL` : ''}
       )
     `;
