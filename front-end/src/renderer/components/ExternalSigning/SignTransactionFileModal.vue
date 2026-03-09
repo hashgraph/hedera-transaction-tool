@@ -19,6 +19,7 @@ import TransactionBrowser from '@renderer/components/ExternalSigning/Transaction
 import { useToast } from 'vue-toast-notification';
 import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -38,6 +39,7 @@ const toast = useToast();
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
 const nodeInfoCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
@@ -70,6 +72,7 @@ async function handleSignAll() {
           network.getMirrorNodeREST(transactionFile.value!.network),
           accountInfoCache,
           nodeInfoCache,
+          publicKeyOwnerCache,
         );
 
         const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
@@ -121,6 +124,7 @@ watch(
           network.getMirrorNodeREST(transactionFile.value.network),
           accountInfoCache,
           nodeInfoCache,
+          publicKeyOwnerCache,
         );
 
         itemsToBeSigned.value = status.needSigning;

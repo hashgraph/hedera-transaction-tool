@@ -58,6 +58,7 @@ import useNextTransactionV2, {
 } from '@renderer/stores/storeNextTransactionV2.ts';
 import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -91,6 +92,7 @@ const withLoader = useLoader();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -317,6 +319,7 @@ async function updateTransactionKey() {
     network.mirrorNodeBaseURL,
     accountByIdCache,
     nodeByIdCache,
+    publicKeyOwnerCache,
     user.selectedOrganization,
   );
   transactionKey.value = new KeyList(computedKeys.signatureKeys);
