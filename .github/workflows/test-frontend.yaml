@@ -130,7 +130,6 @@ jobs:
         run: |
           sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-          # Provide legacy docker-compose command for scripts that use hyphenated syntax.
           sudo ln -sf /usr/local/lib/docker/cli-plugins/docker-compose /usr/local/bin/docker-compose
 
       - name: Install Automation Dependencies
@@ -141,6 +140,64 @@ jobs:
         if: ${{ matrix.test-suite.backendRequired }}
         run: SKIP_NOTICE_GEN=true pnpm install --frozen-lockfile
         working-directory: back-end
+
+      - name: Setup Kind
+        if: ${{ matrix.test-suite.soloRequired }}
+        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        with:
+          install_only: true
+          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
+          version: v0.26.0
+          kubectl_version: v1.31.4
+          verbosity: 3
+          wait: 120s
+
+      - name: Install Solo CLI
+        if: ${{ matrix.test-suite.soloRequired }}
+        run: |
+          set -euo pipefail
+          npm install -g @hashgraph/solo
+          solo --version
+          kind --version
+
+      - name: Deploy Solo
+        if: ${{ matrix.test-suite.soloRequired }}
+        id: solo_deploy
+        env:
+          SOLO_CLUSTER_NAME: solo
+          SOLO_NAMESPACE: solo
+          SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
+          SOLO_DEPLOYMENT: solo-deployment
+        run: |
+          set -euo pipefail
+          kind create cluster -n "${SOLO_CLUSTER_NAME}"
+          solo one-shot single deploy | tee solo-deploy.log
+
+      - name: Check port forwarding
+        if: ${{ matrix.test-suite.soloRequired }}
+        run: |
+          set -euo pipefail
+          ps -ef | grep port-forward || true
+
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
+               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
+              echo "Solo port forwarding is ready on attempt ${attempt}"
+              break
+            fi
+
+            if [ "${attempt}" -eq 60 ]; then
+              echo "Solo port forwarding did not become ready in time" >&2
+              ps -ef | grep port-forward || true
+              exit 1
+            fi
+
+            echo "Waiting for Solo port forwarding... attempt ${attempt}/60"
+            sleep 5
+          done
+
+          curl -fsS http://localhost:8080/api/v1/network/nodes
+          curl -fsS http://localhost:8081/api/v1/network/nodes
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
@@ -219,8 +276,19 @@ jobs:
             sleep 2
           done
 
-          # Start all services from back-end/docker-compose.yaml.
-          # Retries handle flaky Docker Hub pulls on self-hosted runners.
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
+              echo "Mirror node is ready on attempt ${attempt}"
+              break
+            fi
+            if [ "${attempt}" -eq 60 ]; then
+              echo "Mirror node did not become ready in time" >&2
+              exit 1
+            fi
+            echo "Waiting for mirror node... attempt ${attempt}/60"
+            sleep 5
+          done
+
           for attempt in $(seq 1 5); do
             if docker-compose up -d; then
               break
@@ -270,46 +338,6 @@ jobs:
             echo "Unexpected HTTP status from API: ${code}" >&2
             exit 1
           fi
-
-      - name: Setup Kind
-        if: ${{ matrix.test-suite.soloRequired }}
-        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
-        with:
-          install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
-          version: v0.26.0
-          kubectl_version: v1.31.4
-          verbosity: 3
-          wait: 120s
-
-      - name: Install Solo CLI
-        if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          npm install -g @hashgraph/solo
-          solo --version
-          kind --version
-
-      - name: Deploy Solo
-        if: ${{ matrix.test-suite.soloRequired }}
-        id: solo_deploy
-        env:
-          SOLO_CLUSTER_NAME: solo
-          SOLO_NAMESPACE: solo
-          SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
-          SOLO_DEPLOYMENT: solo-deployment
-        run: |
-          set -euo pipefail
-          kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          solo one-shot single deploy | tee solo-deploy.log
-
-      - name: Check port forwarding
-        if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          ps -ef | grep port-forward || true
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
 
       - name: Restore Build Artifacts
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
