@@ -36,7 +36,7 @@ function incrementAccountId(accountId: string) {
   return parts.join('.');
 }
 
-test.describe.only('Organization Group Tx tests', () => {
+test.describe('Organization Group Tx tests', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();
