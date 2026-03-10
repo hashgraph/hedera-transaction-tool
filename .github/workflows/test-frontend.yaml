@@ -150,32 +150,6 @@ jobs:
           mirrorNodeVersion: v0.142.0
           hieroVersion: v0.69.1
 
-      - name: Check port forwarding
-        if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          ps -ef | grep port-forward || true
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
-               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
-              echo "Solo port forwarding is ready on attempt ${attempt}"
-              break
-            fi
-
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo port forwarding did not become ready in time" >&2
-              ps -ef | grep port-forward || true
-              exit 1
-            fi
-
-            echo "Waiting for Solo port forwarding... attempt ${attempt}/60"
-            sleep 5
-          done
-
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
-
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
@@ -356,7 +330,7 @@ jobs:
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           PLAYWRIGHT_STEP_SCREENSHOTS: 'true'
-          PRIVATE_KEY: ${{ secrets.PRIVATE_KEY_TEST }}
+          PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
           ORGANIZATION_URL: https://localhost:3001
