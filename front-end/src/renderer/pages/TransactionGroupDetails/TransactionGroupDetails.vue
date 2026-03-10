@@ -504,7 +504,7 @@ const updateFirstSignableGroupItemAfterFetch = async () => {
 
 const updateFirstSignableGroupItemAfterSign = async (transactionId: number) => {
   if (transactionId === firstSignableGroupItem.value?.transactionId) {
-    updateFirstSignableGroupItemAfterFetch();
+    await updateFirstSignableGroupItemAfterFetch();
   } // else leaves firstSignableGroupItem unchanged because it's valid
 };
 
