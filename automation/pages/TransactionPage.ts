@@ -26,12 +26,14 @@ export class TransactionPage extends BasePage {
   private readonly generatedPublicKeys: string[]; // Store generated public keys
   public generatedAccounts: string[]; // Store generated accounts from create account transaction
   private readonly generatedFiles: Record<string, { text: string; publicKey: string }>; // Store generated files from create file transaction with key-value pairs
+  private hasLoggedFirstCreateTransactionPayer: boolean;
 
   constructor(window: Page) {
     super(window);
     this.generatedPublicKeys = [];
     this.generatedAccounts = [];
     this.generatedFiles = {};
+    this.hasLoggedFirstCreateTransactionPayer = false;
   }
 
   /* Selectors */
@@ -178,7 +180,7 @@ export class TransactionPage extends BasePage {
   async verifyConfirmTransactionInformation(typeTransaction: string) {
     await this.window.waitForSelector(
       '[data-testid="modal-confirm-transaction"][style*="display: block"]',
-      { state: 'visible', timeout: 10000 },
+      { state: 'visible', timeout: this.LONG_TIMEOUT * 2 },
     );
     const regex = /^\d+\.\d+\.\d+@\d+\.\d+$/;
     const transactionId = await this.getText(this.textTransactionIdSelector);
@@ -244,7 +246,7 @@ export class TransactionPage extends BasePage {
       } catch (error) {
         if (attempt === 2) throw error;
         await this.window.keyboard.press('Escape');
-        await this.window.waitForTimeout(300);
+        await this.window.waitForTimeout(this.SHORT_TIMEOUT);
       }
     }
   }
@@ -263,38 +265,60 @@ export class TransactionPage extends BasePage {
 
   async clickOnCreateAccountTransaction() {
     await this.click(this.createAccountSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnDeleteAccountTransaction() {
     await this.click(this.deleteAccountSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnUpdateAccountTransaction() {
     await this.click(this.updateAccountSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnApproveAllowanceTransaction() {
     await this.click(this.allowanceSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnTransferTokensTransaction() {
     await this.click(this.transferTokensSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnFileCreateTransaction() {
     await this.click(this.createFileSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnReadCreateTransaction() {
     await this.click(this.readFileSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnUpdateFileSublink() {
     await this.click(this.updateFileSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnAppendFileSublink() {
     await this.click(this.appendFileSublinkSelector);
+    await this.logPayerOnFirstCreateTransactionScreen();
+  }
+
+  private async logPayerOnFirstCreateTransactionScreen() {
+    if (this.hasLoggedFirstCreateTransactionPayer) {
+      return;
+    }
+
+    await this.waitForElementToBeVisible(this.payerAccountInputSelector, this.LONG_TIMEOUT);
+    await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+
+    const payerValue = await this.getTextFromInputField(this.payerAccountInputSelector);
+    console.log('[first-create-transaction-screen] payer account ID:', payerValue);
+    this.hasLoggedFirstCreateTransactionPayer = true;
   }
 
   async verifyTransactionExists(transactionId: string, transactionType: string) {
@@ -796,18 +820,14 @@ export class TransactionPage extends BasePage {
     await this.click(this.backButtonSelector, null, this.LONG_TIMEOUT * 2);
   }
 
-  async clickOnSignAndSubmitButton(forceLocalNetPayerHandling = true) {
+  async clickOnSignAndSubmitButton(forceLocalNetPayerHandling = false) {
     // For LOCALNET, or when explicitly requested, use the LOCALNET payer fallback.
     // Mirror Node doesn't return accounts there, so Payer ID is empty.
     if (forceLocalNetPayerHandling || process.env.ENVIRONMENT?.toUpperCase() === 'LOCALNET') {
       const currentValue = await this.getTextFromInputField(this.payerAccountInputSelector);
       console.log('Current payer account ID:', currentValue);
-      if (forceLocalNetPayerHandling || !currentValue || currentValue.trim() === '') {
-        console.log(
-          forceLocalNetPayerHandling
-            ? 'Force filling payer account ID using LOCALNET fallback'
-            : 'Filling in payer account ID using LOCALNET fallback',
-        );
+      if (!currentValue || currentValue.trim() === '') {
+        console.log('Filling in payer account ID using LOCALNET fallback');
         await this.fillInPayerAccountId(LOCALNET_PAYER_ACCOUNT_ID);
         const payerInput = this.getElement(this.payerAccountInputSelector);
         await payerInput.blur();
