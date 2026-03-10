@@ -473,8 +473,12 @@ const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
 const didSignTransaction = (updatedTransaction: ITransactionFull) => {
   const transactionId = updatedTransaction.id;
-  const index = group.value!.groupItems.findIndex(item => item.transaction.id === transactionId);
-  group.value!.groupItems[index].transaction = updatedTransaction;
+  if (group.value) {
+    const index = group.value.groupItems.findIndex(item => item.transaction.id === transactionId);
+    if (index != -1) {
+      group.value.groupItems[index].transaction = updatedTransaction;
+    } // else bug : leaves transaction unchanged
+  } // else bug : ignores silently
 };
 
 const groupDidChange = async () => {
