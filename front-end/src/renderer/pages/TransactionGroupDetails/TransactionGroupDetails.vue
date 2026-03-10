@@ -63,7 +63,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { errorToastOptions, successToastOptions, warningToastOptions } from '@renderer/utils/toastOptions.ts';
 import {
   formatTransactionType,
   getTransactionTypeFromBackendType,
@@ -307,7 +307,7 @@ const handleCancelAll = async (showModal = false) => {
     if (toastResult.kind === 'success') {
       toast.success(toastResult.message, successToastOptions);
     } else if (toastResult.kind === 'warning') {
-      toast.warning(toastResult.message, errorToastOptions);
+      toast.warning(toastResult.message, warningToastOptions);
     } else {
       toast.error(toastResult.message, errorToastOptions);
     }

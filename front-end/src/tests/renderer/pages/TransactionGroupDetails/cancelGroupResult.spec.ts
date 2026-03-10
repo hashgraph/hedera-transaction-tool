@@ -60,6 +60,20 @@ describe('getCancelGroupToast', () => {
     });
   });
 
+  test('returns combined success when some are canceled and some already canceled', () => {
+    const result: CancelGroupResult = {
+      canceled: [1],
+      alreadyCanceled: [2],
+      failed: [],
+      summary: { ...baseSummary, total: 2, canceled: 1, alreadyCanceled: 1, failed: 0 },
+    };
+
+    expect(getCancelGroupToast(result)).toEqual({
+      kind: 'success',
+      message: '1 canceled, 1 already canceled',
+    });
+  });
+
   test('returns error when all cancel attempts fail', () => {
     const result: CancelGroupResult = {
       canceled: [],
