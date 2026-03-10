@@ -15,7 +15,7 @@ import { useToast } from 'vue-toast-notification';
 
 import { Transaction } from '@hashgraph/sdk';
 import JSZip from 'jszip';
-import { historyTitle, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_APPROVERS_ENABLED, historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -208,8 +208,8 @@ const visibleButtons = computed(() => {
   if (!fullyLoaded.value) return buttons;
 
   /* The order is important REJECT, APPROVE, SIGN, CANCEL, EXPORT */
-  shouldApprove.value && buttons.push(reject, approve);
-  canSignAll.value && !shouldApprove.value && buttons.push(sign);
+  FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
+  canSignAll.value && !(FEATURE_APPROVERS_ENABLED && shouldApprove.value) && buttons.push(sign);
   canCancelAll.value && buttons.push(cancel);
   buttons.push(exportName);
 
@@ -561,9 +561,14 @@ async function fetchGroup(id: string | number) {
             break;
           }
 
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+          if (FEATURE_APPROVERS_ENABLED) {
+            shouldApprove.value =
+              shouldApprove.value ||
+              (await getUserShouldApprove(
+                user.selectedOrganization.serverUrl,
+                item.transaction.id,
+              ));
+          }
 
           const txId = item.transaction.id;
 
