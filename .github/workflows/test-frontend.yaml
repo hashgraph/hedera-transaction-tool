@@ -150,6 +150,30 @@ jobs:
           mirrorNodeVersion: v0.142.0
           hieroVersion: v0.69.1
 
+      - name: Wait for Hiero Solo
+        if: ${{ matrix.test-suite.soloRequired }}
+        run: |
+          set -euo pipefail
+
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:5551/api/v1/network/nodes >/dev/null 2>&1 && \
+               bash -c '>/dev/tcp/127.0.0.1/5600' >/dev/null 2>&1 && \
+               bash -c '>/dev/tcp/127.0.0.1/50211' >/dev/null 2>&1; then
+              echo "Hiero Solo endpoints are ready on attempt ${attempt}"
+              break
+            fi
+
+            if [ "${attempt}" -eq 60 ]; then
+              echo "Hiero Solo endpoints did not become ready in time" >&2
+              exit 1
+            fi
+
+            echo "Waiting for Hiero Solo endpoints... attempt ${attempt}/60"
+            sleep 5
+          done
+
+          curl -fsS http://localhost:5551/api/v1/network/nodes
+
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
@@ -176,8 +200,7 @@ jobs:
 
           # Install mkcert for generating a locally-trusted TLS certificate.
           # libnss3-tools provides certutil, required by mkcert -install on Linux.
-          # socat exposes Solo's localhost-bound ports to Docker containers via the bridge gateway.
-          sudo apt-get install -y --no-install-recommends libnss3-tools socat
+          sudo apt-get install -y --no-install-recommends libnss3-tools
 
           curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
             -o /tmp/mkcert
@@ -228,28 +251,6 @@ jobs:
             sleep 2
           done
           
-          DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
-          if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
-            echo "Failed to resolve the Docker bridge gateway IP" >&2
-            exit 1
-          fi
-          echo "Docker bridge gateway: ${DOCKER_HOST_GATEWAY}"
-
-          # Solo exposes localnet services on localhost. Docker containers reach the host via the
-          # bridge gateway, so we proxy the required mirror-node REST port before starting compose.
-          for port in 8081; do
-            sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
-          done
-
-          sleep 2
-
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1; then
-            echo "Mirror node proxy on ${DOCKER_HOST_GATEWAY}:8081 is not reachable" >&2
-            ss -lnt || true
-            sudo tail -n 50 /tmp/socat-8081.log || true
-            exit 1
-          fi
-
           for attempt in $(seq 1 5); do
             if docker-compose up -d; then
               break

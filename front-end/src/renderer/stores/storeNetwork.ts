@@ -98,7 +98,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
       [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
       [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
-      [CommonNetwork.LOCAL_NODE]: 'http://localhost:8081',
+      [CommonNetwork.LOCAL_NODE]: 'http://localhost:5551',
     };
 
     if (!networkLink[network]) {

@@ -13,7 +13,7 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
        return 'https://previewnet.mirrornode.hedera.com/api/v1';
      case 'LOCALNET':
      default:
-       return 'http://localhost:8081/api/v1';
+       return 'http://localhost:5551/api/v1';
    }
  };
 
