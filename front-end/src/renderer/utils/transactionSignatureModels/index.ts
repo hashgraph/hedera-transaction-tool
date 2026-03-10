@@ -1,4 +1,4 @@
-import type { IUserKey } from '@shared/interfaces';
+import { type ITransaction, type IUserKey, TransactionStatus } from '@shared/interfaces';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
@@ -7,8 +7,9 @@ import { flattenKeyList } from '../../services/keyPairService';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { SignatureAudit } from './transaction.model';
-import type { ConnectedOrganization } from '@renderer/types';
+import type { ConnectedOrganization, LoggedInOrganization } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { hexToUint8Array } from '@renderer/utils';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
@@ -88,4 +89,36 @@ export const usersPublicRequiredToSign = async (
   });
 
   return [...publicKeysRequired];
+};
+
+export const isSignableTransaction = async (
+  tx: ITransaction,
+  mirrorNodeLink: string,
+  accountInfoCache: AccountByIdCache,
+  nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
+  organization: ConnectedOrganization & LoggedInOrganization,
+): Promise<boolean> => {
+  let result: boolean;
+  if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
+    const transactionBytes = hexToUint8Array(tx.transactionBytes);
+    try {
+      const sdkTransaction = SDKTransaction.fromBytes(transactionBytes);
+      const usersPublicKeys = await usersPublicRequiredToSign(
+        sdkTransaction,
+        organization.userKeys,
+        mirrorNodeLink,
+        accountInfoCache,
+        nodeInfoCache,
+        publicKeyOwnerCache,
+        organization,
+      );
+      result = usersPublicKeys.length > 0;
+    } catch {
+      result = false;
+    }
+  } else {
+    result = false;
+  }
+  return result;
 };

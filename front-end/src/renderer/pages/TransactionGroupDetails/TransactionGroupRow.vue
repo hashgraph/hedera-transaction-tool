@@ -9,15 +9,13 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import {
   assertIsLoggedInOrganization,
   getStatusFromCode,
-  hexToUint8Array,
-  usersPublicRequiredToSign,
+  isSignableTransaction,
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetwork from '@renderer/stores/storeNetwork.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { Transaction } from '@hashgraph/sdk';
 import SignGroupItemButton from '@renderer/pages/TransactionGroupDetails/SignGroupItemButton.vue';
 import useRevealed from '@renderer/composables/useRevealed.ts';
 
@@ -121,22 +119,20 @@ const transactionType = computed(() => {
 
 /* Functions */
 const updateSigningStatus = async (): Promise<void> => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
   canSign.value = false;
   const tx = props.groupItem.transaction;
-  if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
-    assertIsLoggedInOrganization(user.selectedOrganization);
-    const transactionBytes = hexToUint8Array(tx.transactionBytes);
-    const sdkTransaction = Transaction.fromBytes(transactionBytes);
-    const usersPublicKeys = await usersPublicRequiredToSign(
-      sdkTransaction,
-      user.selectedOrganization.userKeys,
+  try {
+    canSign.value = await isSignableTransaction(
+      tx,
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
       publicKeyOwnerCache,
       user.selectedOrganization,
     );
-    canSign.value = usersPublicKeys.length > 0;
+  } catch {
+    canSign.value = false;
   }
 };
 

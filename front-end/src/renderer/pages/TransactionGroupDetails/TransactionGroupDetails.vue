@@ -45,9 +45,9 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
+  isSignableTransaction,
   isUserLoggedIn,
   signTransactions,
-  usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -471,7 +471,7 @@ const handleSubmit = async (e: Event) => {
 
 const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
-const didSignTransaction = (updatedTransaction: ITransactionFull) => {
+const didSignTransaction = async (updatedTransaction: ITransactionFull) => {
   const transactionId = updatedTransaction.id;
   if (group.value) {
     const index = group.value.groupItems.findIndex(item => item.transaction.id === transactionId);
@@ -479,33 +479,33 @@ const didSignTransaction = (updatedTransaction: ITransactionFull) => {
       group.value.groupItems[index].transaction = updatedTransaction;
     } // else bug : leaves transaction unchanged
   } // else bug : ignores silently
+  await updateFirstSignableGroupItemAfterSign(updatedTransaction.id);
 };
 
-const groupDidChange = async () => {
-  // We update firstSignableGroupItem
+const updateFirstSignableGroupItemAfterFetch = async () => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
   firstSignableGroupItem.value = null;
   const groupItems = group.value?.groupItems ?? [];
   for (const item of [...groupItems].reverse()) {
-    const tx = item.transaction;
-    if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
-      assertIsLoggedInOrganization(user.selectedOrganization);
-      const transactionBytes = hexToUint8Array(tx.transactionBytes);
-      const sdkTransaction = Transaction.fromBytes(transactionBytes);
-      const usersPublicKeys = await usersPublicRequiredToSign(
-        sdkTransaction,
-        user.selectedOrganization.userKeys,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
-        user.selectedOrganization,
-      );
-      if (usersPublicKeys.length > 0) {
-        firstSignableGroupItem.value = item;
-        break;
-      }
+    const signable = await isSignableTransaction(
+      item.transaction,
+      network.mirrorNodeBaseURL,
+      accountByIdCache,
+      nodeByIdCache,
+      publicKeyOwnerCache,
+      user.selectedOrganization,
+    );
+    if (signable) {
+      firstSignableGroupItem.value = item;
+      break;
     }
   }
+};
+
+const updateFirstSignableGroupItemAfterSign = async (transactionId: number) => {
+  if (transactionId === firstSignableGroupItem.value?.transactionId) {
+    updateFirstSignableGroupItemAfterFetch();
+  } // else leaves firstSignableGroupItem unchanged because it's valid
 };
 
 /* Hooks */
@@ -524,8 +524,6 @@ watch(
     router.back();
   },
 );
-
-watch(group, groupDidChange, { immediate: true });
 
 watchEffect(() => {
   if (tooltipRef.value && tooltipRef.value.length > 0) {
@@ -575,6 +573,8 @@ async function fetchGroup(id: string | number) {
           await notifications.markAsReadIds(notificationIds);
         }
       }
+
+      await updateFirstSignableGroupItemAfterFetch();
 
       // bootstrap tooltips needs to be recreated when the items' status might have changed
       // since their title is not updated
