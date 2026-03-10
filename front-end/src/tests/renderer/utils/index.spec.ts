@@ -1,16 +1,6 @@
-// front-end/src/tests/renderer/utils/index.spec.ts
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import { hasStartTimestampChanged, transactionsDataMatch, signTransactions } from '@renderer/utils';
-
-vi.mock('@renderer/utils/userStoreHelpers', async () => {
-  const actual = await vi.importActual<any>('@renderer/utils/userStoreHelpers');
-  return {
-    ...actual,
-    assertUserLoggedIn: vi.fn(), // no-op so tests don't throw
-    assertIsLoggedInOrganization: vi.fn(), // no-op so tests don't throw
-  };
-});
 
 export const toastErrorSpy = vi.fn();
 const toastMock = { error: toastErrorSpy };
@@ -29,11 +19,6 @@ const mockUseNetworkStore = vi.fn();
 vi.mock('@renderer/stores/storeNetwork', () => ({
   __esModule: true,
   default: () => mockUseNetworkStore(),
-}));
-
-vi.mock('@renderer/utils/assertions', () => ({
-  assertUserLoggedIn: vi.fn(),
-  assertIsLoggedInOrganization: vi.fn(),
 }));
 
 const mockUsersPublicRequiredToSign = vi.fn();
@@ -205,11 +190,14 @@ describe('signTransactions', () => {
     });
 
     mockUseUserStore.mockReturnValue({
-      personal: { id: 'user-1' },
+      personal: { id: 'user-1', isLoggedIn: true, },
       keyPairs: [{ public_key: 'pk-1' }],
       selectedOrganization: {
         serverUrl: 'https://api.test',
         userKeys: ['org-key-1'],
+        isLoading: false,
+        isServerActive: true,
+        loginRequired: false,
       },
     });
 
