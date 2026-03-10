@@ -535,5 +535,81 @@ describe('TransactionGroupsService', () => {
         BadRequestException,
       );
     });
+
+    it('should map BadRequestException with unrecognized code to INTERNAL_ERROR', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(
+        new BadRequestException('UNKNOWN_CODE'),
+      );
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.failed).toEqual([
+        {
+          id: 1,
+          code: CancelFailureCode.INTERNAL_ERROR,
+          message: 'Cancellation failed due to an unexpected error.',
+        },
+      ]);
+    });
+
+    it('should handle BadRequestException with array message response', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(
+        new BadRequestException([ErrorCodes.OTIP, 'extra detail']),
+      );
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.failed).toEqual([
+        {
+          id: 1,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        },
+      ]);
+    });
+
+    it('should handle BadRequestException with object response lacking message', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      const error = new BadRequestException();
+      jest.spyOn(error, 'getResponse').mockReturnValue({ statusCode: 400 });
+      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(error);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.failed).toEqual([
+        {
+          id: 1,
+          code: CancelFailureCode.INTERNAL_ERROR,
+          message: 'Cancellation failed due to an unexpected error.',
+        },
+      ]);
+    });
+
+    it('should handle BadRequestException with plain string response', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      const error = new BadRequestException();
+      jest.spyOn(error, 'getResponse').mockReturnValue(ErrorCodes.TNF);
+      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(error);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.failed).toEqual([
+        {
+          id: 1,
+          code: CancelFailureCode.NOT_FOUND,
+          message: 'Transaction was not found.',
+        },
+      ]);
+    });
   });
 });
