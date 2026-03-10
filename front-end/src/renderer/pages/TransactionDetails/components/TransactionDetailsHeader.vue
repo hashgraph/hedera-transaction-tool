@@ -58,6 +58,11 @@ import { writeTransactionFile } from '@renderer/services/transactionFileService.
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import {
+  executeTransactionActionFlow,
+  type TransactionAction,
+} from './transactionActionFlow.ts';
+import { isApprovableStatus, isInProgressStatus, isSignableStatus } from './transactionStatusGuards.ts';
 
 /* Types */
 type ActionButton =
@@ -174,13 +179,7 @@ const isCreator = computed(() => {
 });
 
 const transactionIsInProgress = computed(
-  () =>
-    props.organizationTransaction &&
-    [
-      TransactionStatus.NEW,
-      TransactionStatus.WAITING_FOR_EXECUTION,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-    ].includes(props.organizationTransaction.status),
+  () => isInProgressStatus(props.organizationTransaction?.status),
 );
 
 const canCancel = computed(() => {
@@ -190,6 +189,7 @@ const canCancel = computed(() => {
 const canSign = computed(() => {
   if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+  if (!isSignableStatus(props.organizationTransaction.status)) return false;
 
   if (isTransactionVersionMismatch.value) {
     toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
@@ -199,6 +199,15 @@ const canSign = computed(() => {
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
   return userShouldSign;
+});
+
+const canApprove = computed(() => {
+  const status = props.organizationTransaction?.status;
+
+  return (
+    shouldApprove.value &&
+    isApprovableStatus(status)
+  );
 });
 
 const canExecute = computed(() => {
@@ -224,8 +233,8 @@ const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  shouldApprove.value && buttons.push(reject, approve);
-  canSign.value && !shouldApprove.value && buttons.push(sign);
+  canApprove.value && buttons.push(reject, approve);
+  canSign.value && !canApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
@@ -369,13 +378,15 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 };
 
 const handleTransactionAction = async (
-  action: 'cancel' | 'archive' | 'execute' | 'remindSigners',
+  action: TransactionAction,
   showModal?: boolean,
 ) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (!props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
+  const serverUrl = user.selectedOrganization.serverUrl;
+  const transactionId = props.organizationTransaction.id;
 
   const actionDetails = {
     cancel: {
@@ -427,12 +438,23 @@ const handleTransactionAction = async (
   try {
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
-    await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    await props.onAction();
-    toast.success(successMessage, successToastOptions);
-  } catch (error) {
-    isConfirmModalShown.value = false;
-    toast.error(getErrorMessage(error, `Failed to ${action} transaction`), errorToastOptions);
+    await executeTransactionActionFlow({
+      action,
+      execute: async () => {
+        await actionFunction(serverUrl, transactionId);
+      },
+      refresh: props.onAction,
+      onSuccess: () => {
+        toast.success(successMessage, successToastOptions);
+      },
+      onError: error => {
+        isConfirmModalShown.value = false;
+        toast.error(getErrorMessage(error, `Failed to ${action} transaction`), errorToastOptions);
+      },
+      onRefreshError: refreshError => {
+        toast.error(getErrorMessage(refreshError, 'Failed to refresh transaction'), errorToastOptions);
+      },
+    });
   } finally {
     isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;

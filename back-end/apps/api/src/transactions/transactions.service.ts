@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -64,6 +69,11 @@ import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto }
 
 import { ApproversService } from './approvers';
 
+export enum CancelTransactionOutcome {
+  CANCELED = 'CANCELED',
+  ALREADY_CANCELED = 'ALREADY_CANCELED',
+}
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -76,6 +86,21 @@ export class TransactionsService {
     private readonly notificationsPublisher: NatsPublisherService,
   ) {
   }
+
+  private readonly cancelableStatuses = [
+    TransactionStatus.NEW,
+    TransactionStatus.WAITING_FOR_SIGNATURES,
+    TransactionStatus.WAITING_FOR_EXECUTION,
+  ];
+
+  private readonly terminalStatuses = [
+    TransactionStatus.EXECUTED,
+    TransactionStatus.EXPIRED,
+    TransactionStatus.FAILED,
+    TransactionStatus.CANCELED,
+    TransactionStatus.ARCHIVED,
+    TransactionStatus.REJECTED,
+  ];
 
   /* Get the transaction for the provided id in the DATABASE */
 
@@ -618,36 +643,56 @@ export class TransactionsService {
 
   /* Cancel the transaction if the valid start has not come yet. */
   async cancelTransaction(id: number, user: User): Promise<boolean> {
+    await this.cancelTransactionWithOutcome(id, user);
+    return true;
+  }
+
+  async cancelTransactionWithOutcome(
+    id: number,
+    user: User,
+  ): Promise<CancelTransactionOutcome> {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (transaction.status === TransactionStatus.CANCELED) {
-      return true;
+      return CancelTransactionOutcome.ALREADY_CANCELED;
     }
 
-    if (
-      ![
-        TransactionStatus.NEW,
-        TransactionStatus.WAITING_FOR_SIGNATURES,
-        TransactionStatus.WAITING_FOR_EXECUTION,
-      ].includes(transaction.status)
-    ) {
+    if (!this.cancelableStatuses.includes(transaction.status)) {
       throw new BadRequestException(ErrorCodes.OTIP);
     }
 
-    await this.repo.update({ id }, { status: TransactionStatus.CANCELED });
+    const updateResult = await this.repo
+      .createQueryBuilder()
+      .update(Transaction)
+      .set({ status: TransactionStatus.CANCELED })
+      .where('id = :id', { id })
+      .andWhere('status IN (:...statuses)', { statuses: this.cancelableStatuses })
+      .execute();
 
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      [{
-        entityId: id,
-        additionalData: {
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        },
-      }],
-    );
+    if (updateResult.affected && updateResult.affected > 0) {
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        [{
+          entityId: id,
+          additionalData: {
+            transactionId: transaction.transactionId,
+            network: transaction.mirrorNetwork,
+          },
+        }],
+      );
 
-    return true;
+      return CancelTransactionOutcome.CANCELED;
+    }
+
+    // Race-safe fallback: state changed between read and update, so re-check current status.
+    const latestTransaction = await this.getTransactionForCreator(id, user);
+    if (latestTransaction.status === TransactionStatus.CANCELED) {
+      return CancelTransactionOutcome.ALREADY_CANCELED;
+    }
+    if (!this.cancelableStatuses.includes(latestTransaction.status)) {
+      throw new BadRequestException(ErrorCodes.OTIP);
+    }
+    throw new ConflictException('Cancellation conflict');
   }
 
   /* Archive the transaction if the transaction is sign only. */
@@ -795,6 +840,15 @@ export class TransactionsService {
 
   /* Check whether the user should approve the transaction */
   async shouldApproveTransaction(transactionId: number, user: User) {
+    const transaction = await this.getTransactionById(transactionId);
+    if (!transaction) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
+
+    if (this.terminalStatuses.includes(transaction.status)) {
+      return false;
+    }
+
     /* Get all the approvers */
     const approvers = await this.approversService.getApproversByTransactionId(transactionId);
 

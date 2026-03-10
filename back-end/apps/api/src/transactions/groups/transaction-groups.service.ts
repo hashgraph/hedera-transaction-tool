@@ -1,4 +1,9 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
@@ -10,18 +15,15 @@ import {
   NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
+import { Transaction, TransactionGroup, TransactionGroupItem, User, UserKey } from '@entities';
+
+import { CancelTransactionOutcome, TransactionsService } from '../transactions.service';
+
 import {
-  Transaction,
-  TransactionGroup,
-  TransactionGroupItem,
-  TransactionStatus,
-  User,
-  UserKey,
-} from '@entities';
-
-import { TransactionsService } from '../transactions.service';
-
-import { CancelGroupResultDto, CreateTransactionGroupDto } from '../dto';
+  CancelFailureCode,
+  CancelGroupResultDto,
+  CreateTransactionGroupDto,
+} from '../dto';
 
 @Injectable()
 export class TransactionGroupsService {
@@ -204,39 +206,34 @@ export class TransactionGroupsService {
 
     const canceled: number[] = [];
     const alreadyCanceled: number[] = [];
-    const failed: { id: number; reason: string }[] = [];
-
-    const cancelableStatuses = [
-      TransactionStatus.NEW,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-      TransactionStatus.WAITING_FOR_EXECUTION,
-    ];
+    const failed: { id: number; code: CancelFailureCode; message: string }[] = [];
 
     for (const groupItem of group.groupItems) {
-      const tx = groupItem.transaction;
-
-      if (tx.status === TransactionStatus.CANCELED) {
-        alreadyCanceled.push(tx.id);
-        continue;
-      }
-
-      if (!cancelableStatuses.includes(tx.status)) {
-        failed.push({ id: tx.id, reason: `Transaction is ${tx.status}` });
-        continue;
-      }
+      const txId = groupItem.transactionId;
 
       try {
-        await this.transactionsService.cancelTransaction(tx.id, user);
-        canceled.push(tx.id);
+        const outcome = await this.transactionsService.cancelTransactionWithOutcome(txId, user);
+        if (outcome === CancelTransactionOutcome.ALREADY_CANCELED) {
+          alreadyCanceled.push(txId);
+        } else {
+          canceled.push(txId);
+        }
       } catch (error) {
-        failed.push({
-          id: tx.id,
-          reason: error instanceof Error ? error.message : 'Unknown error',
-        });
+        failed.push(this.mapCancelError(txId, error));
       }
     }
 
-    return { canceled, alreadyCanceled, failed };
+    return {
+      canceled,
+      alreadyCanceled,
+      failed,
+      summary: {
+        total: group.groupItems.length,
+        canceled: canceled.length,
+        alreadyCanceled: alreadyCanceled.length,
+        failed: failed.length,
+      },
+    };
   }
 
   private groupBy<T>(
@@ -254,5 +251,70 @@ export class TransactionGroupsService {
     }
 
     return map;
+  }
+
+  private mapCancelError(
+    id: number,
+    error: unknown,
+  ): { id: number; code: CancelFailureCode; message: string } {
+    if (error instanceof UnauthorizedException) {
+      return {
+        id,
+        code: CancelFailureCode.FORBIDDEN,
+        message: 'You do not have permission to cancel this transaction.',
+      };
+    }
+
+    if (error instanceof ConflictException) {
+      return {
+        id,
+        code: CancelFailureCode.CONFLICT,
+        message: 'Transaction state changed during cancellation. Please retry.',
+      };
+    }
+
+    if (error instanceof BadRequestException) {
+      const errorCode = this.extractBadRequestCode(error);
+      if (errorCode === ErrorCodes.OTIP) {
+        return {
+          id,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        };
+      }
+
+      if (errorCode === ErrorCodes.TNF) {
+        return {
+          id,
+          code: CancelFailureCode.NOT_FOUND,
+          message: 'Transaction was not found.',
+        };
+      }
+    }
+
+    return {
+      id,
+      code: CancelFailureCode.INTERNAL_ERROR,
+      message: 'Cancellation failed due to an unexpected error.',
+    };
+  }
+
+  private extractBadRequestCode(error: BadRequestException): string | null {
+    const response = error.getResponse();
+    if (typeof response === 'string') {
+      return response;
+    }
+
+    if (response && typeof response === 'object' && 'message' in response) {
+      const message = (response as { message?: string | string[] }).message;
+      if (Array.isArray(message)) {
+        return message.find(m => typeof m === 'string') ?? null;
+      }
+      if (typeof message === 'string') {
+        return message;
+      }
+    }
+
+    return null;
   }
 }

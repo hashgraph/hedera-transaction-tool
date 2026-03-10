@@ -59,10 +59,28 @@ export const getTransactionGroups = async (serverUrl: string) => {
 };
 
 /* Cancel all transactions in a group */
+export enum CancelFailureCode {
+  NOT_CANCELABLE = 'NOT_CANCELABLE',
+  FORBIDDEN = 'FORBIDDEN',
+  NOT_FOUND = 'NOT_FOUND',
+  CONFLICT = 'CONFLICT',
+  INTERNAL_ERROR = 'INTERNAL_ERROR',
+}
+
 export interface CancelGroupResult {
   canceled: number[];
   alreadyCanceled: number[];
-  failed: { id: number; reason: string }[];
+  failed: {
+    id: number;
+    code: CancelFailureCode;
+    message: string;
+  }[];
+  summary: {
+    total: number;
+    canceled: number;
+    alreadyCanceled: number;
+    failed: number;
+  };
 }
 
 export const cancelTransactionGroup = async (

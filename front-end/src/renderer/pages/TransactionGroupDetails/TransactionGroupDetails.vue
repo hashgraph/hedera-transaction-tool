@@ -73,6 +73,7 @@ import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vu
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { getCancelGroupToast } from './cancelGroupResult.ts';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -292,32 +293,30 @@ const handleCancelAll = async (showModal = false) => {
     throw new Error('User is not logged in organization');
   }
 
+  const groupId = group.value?.id;
+  if (!groupId) {
+    throw new Error('Group is not available');
+  }
+
   try {
     loadingStates[cancel] = 'Canceling...';
 
-    const result = await cancelTransactionGroup(
-      user.selectedOrganization.serverUrl,
-      group.value!.id,
-    );
+    const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, groupId);
+    const toastResult = getCancelGroupToast(result);
 
-    await fetchGroup(group.value!.id);
-
-    const canceledCount = result.canceled.length;
-    const failedCount = result.failed.length;
-
-    if (failedCount === 0) {
-      toast.success(`${canceledCount} transaction(s) canceled successfully`, successToastOptions);
-    } else if (canceledCount > 0) {
-      toast.warning(
-        `${canceledCount} canceled, ${failedCount} could not be canceled`,
-        errorToastOptions,
-      );
+    if (toastResult.kind === 'success') {
+      toast.success(toastResult.message, successToastOptions);
+    } else if (toastResult.kind === 'warning') {
+      toast.warning(toastResult.message, errorToastOptions);
     } else {
-      toast.error('No transactions could be canceled', errorToastOptions);
+      toast.error(toastResult.message, errorToastOptions);
     }
   } catch (error) {
     toast.error(getErrorMessage(error, 'Failed to cancel transactions'), errorToastOptions);
   } finally {
+    await fetchGroup(groupId).catch(refreshError => {
+      toast.error(getErrorMessage(refreshError, 'Failed to refresh transactions'), errorToastOptions);
+    });
     loadingStates[cancel] = null;
   }
 };
@@ -589,8 +588,7 @@ async function fetchGroup(id: string | number) {
           );
 
           if (
-            item.transaction.status !== TransactionStatus.CANCELED &&
-            item.transaction.status !== TransactionStatus.EXPIRED &&
+            item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
             usersPublicKeys.length > 0
           ) {
             updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
