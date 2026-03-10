@@ -41,6 +41,38 @@ const summarizeTransactions = (response: any) => {
   }));
 };
 
+const logRecentTransactionsForDebug = async (payerAccountId: string) => {
+  try {
+    const allTransactions = await apiCall('transactions', { limit: 10, order: 'desc' });
+    console.log(
+      '[mirror-node-debug] Recent transactions from /transactions:',
+      summarizeTransactions(allTransactions),
+    );
+  } catch (listError) {
+    console.log(
+      '[mirror-node-debug] Failed to fetch recent transactions from /transactions:',
+      listError instanceof Error ? listError.message : listError,
+    );
+  }
+
+  try {
+    const payerTransactions = await apiCall('transactions', {
+      'account.id': payerAccountId,
+      limit: 10,
+      order: 'desc',
+    });
+    console.log(
+      `[mirror-node-debug] Recent transactions from /transactions for payer ${payerAccountId}:`,
+      summarizeTransactions(payerTransactions),
+    );
+  } catch (listError) {
+    console.log(
+      `[mirror-node-debug] Failed to fetch payer transactions from /transactions for ${payerAccountId}:`,
+      listError instanceof Error ? listError.message : listError,
+    );
+  }
+};
+
 /**
  * Performs a polling with retry mechanism on the mirror node API endpoint until a condition is met.
  * This function is needed for interacting with the Hedera Mirror Node,
@@ -115,6 +147,8 @@ export const getTransactionDetails = async (
   const formatedTransactionId = formatTransactionId(transactionId);
   const payerAccountId = transactionId.split('@')[0];
 
+  await logRecentTransactionsForDebug(payerAccountId);
+
   try {
     return await pollWithRetry(
       `transactions/${formatedTransactionId}`,
@@ -127,36 +161,7 @@ export const getTransactionDetails = async (
     console.log(
       `[mirror-node-debug] Exact transaction lookup failed for ${formatedTransactionId}. Fetching transaction lists for comparison.`,
     );
-
-    try {
-      const allTransactions = await apiCall('transactions', { limit: 10, order: 'desc' });
-      console.log(
-        '[mirror-node-debug] Recent transactions from /transactions:',
-        summarizeTransactions(allTransactions),
-      );
-    } catch (listError) {
-      console.log(
-        '[mirror-node-debug] Failed to fetch recent transactions from /transactions:',
-        listError instanceof Error ? listError.message : listError,
-      );
-    }
-
-    try {
-      const payerTransactions = await apiCall('transactions', {
-        'account.id': payerAccountId,
-        limit: 10,
-        order: 'desc',
-      });
-      console.log(
-        `[mirror-node-debug] Recent transactions from /transactions for payer ${payerAccountId}:`,
-        summarizeTransactions(payerTransactions),
-      );
-    } catch (listError) {
-      console.log(
-        `[mirror-node-debug] Failed to fetch payer transactions from /transactions for ${payerAccountId}:`,
-        listError instanceof Error ? listError.message : listError,
-      );
-    }
+    await logRecentTransactionsForDebug(payerAccountId);
 
     throw error;
   }

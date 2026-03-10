@@ -211,7 +211,7 @@ export class TransactionPage extends BasePage {
   async mirrorGetTransactionResponse(transactionId: string): Promise<Transaction> {
     const transactionDetails = await getTransactionDetails(
       transactionId,
-      this.LONG_TIMEOUT * 6,
+      this.LONG_TIMEOUT * 12,
       this.DEFAULT_TIMEOUT / 2,
     );
     const firstTransaction = transactionDetails.transactions.find(
