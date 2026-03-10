@@ -54,10 +54,9 @@ export class TransactionNodesService {
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
             mirrorNetwork: network,
-            onlyUnsigned: true,
           },
           user,
-          { signer: true }
+          { signer: true, onlyUnsigned: true }
         );
 
         rows = await this.entityManager.query(query.text, query.values);

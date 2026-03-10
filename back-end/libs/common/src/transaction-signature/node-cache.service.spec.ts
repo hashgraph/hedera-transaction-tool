@@ -33,6 +33,7 @@ jest.mock('@app/common', () => ({
 describe('NodeCacheService', () => {
   let service: NodeCacheService;
   let mirrorNodeClient: jest.Mocked<MirrorNodeClient>;
+  let mockQueryBuilder: any;
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
@@ -55,14 +56,22 @@ describe('NodeCacheService', () => {
       fetchNodeInfo: jest.fn(),
     } as any;
 
+    mockQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+
     dataSource = {
       manager: mockManager,
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     } as any;
 
     cacheHelper = {
       tryClaimRefresh: jest.fn(),
       saveAndReleaseClaim: jest.fn(),
-      linkTransactionToEntity: jest.fn(),
       insertKeys: jest.fn(),
     } as any;
 
@@ -244,19 +253,13 @@ describe('NodeCacheService', () => {
       } as CachedNode;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getNodeInfoForTransaction(mockTransaction, 1);
       expect(result).toEqual({
         admin_key: 'deserialized-encoded-key',
         node_account_id: AccountId.fromString('0.0.3'),
       });
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedNode,
-        1,
-        1,
-        'cachedNode'
-      );
+      expect(dataSource.createQueryBuilder).toHaveBeenCalled();
     });
 
     it('should fetch new data when cache is stale', async () => {
@@ -336,7 +339,6 @@ describe('NodeCacheService', () => {
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
       cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedNode, claimed: false });
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getNodeInfoForTransaction(mockTransaction, 1);
 
@@ -362,6 +364,24 @@ describe('NodeCacheService', () => {
 
       expect(result).toBeNull();
     });
+
+    it('should ignore duplicate transaction-node links', async () => {
+      const cachedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        nodeAccountId: '0.0.3',
+        encodedKey: Buffer.from('encoded-key'),
+        updatedAt: new Date(),
+      } as CachedNode;
+
+      dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedNode);
+
+      await service.getNodeInfoForTransaction(mockTransaction, 1);
+
+      expect(mockQueryBuilder.orIgnore).toHaveBeenCalled();
+    });
+
   });
 
   describe('performRefreshForClaimedNode', () => {
@@ -505,12 +525,11 @@ describe('NodeCacheService', () => {
 
       await (service as any).performRefreshForClaimedNode(claimedNode, 999);
 
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedNode,
-        999,
-        1,
-        'cachedNode'
-      );
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TransactionCachedNode);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 999 },
+        cachedNode: { id: 1 },
+      });
     });
 
     it('should return DATA_UNCHANGED when fetched data matches cached data', async () => {
@@ -691,7 +710,6 @@ describe('NodeCacheService', () => {
 
     it('should link transaction when transactionId provided', async () => {
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       await (service as any).saveNodeData(
         1,
@@ -702,12 +720,11 @@ describe('NodeCacheService', () => {
         999
       );
 
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedNode,
-        999,
-        1,
-        'cachedNode'
-      );
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TransactionCachedNode);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 999 },
+        cachedNode: { id: 1 },
+      });
     });
   });
 
