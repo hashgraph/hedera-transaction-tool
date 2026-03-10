@@ -3,7 +3,6 @@ import { onBeforeUnmount, onMounted, type Ref, watch, type WatchHandle } from 'v
 export default function useRevealed(
   element: Ref<HTMLElement | null>,
   onShow: () => void,
-  onHide?: () => void,
 ) {
   /* State */
   let revealed = false;
@@ -26,11 +25,6 @@ export default function useRevealed(
 
   const updateObserver = () => {
     disconnectObserver();
-
-    if (revealed) {
-      revealed = false;
-      if (onHide) onHide();
-    }
 
     if (element.value !== null) {
       observer = new IntersectionObserver(
