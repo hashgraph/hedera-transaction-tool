@@ -70,6 +70,7 @@ export class RegistrationPage extends BasePage {
       await this.window.keyboard.press('Backspace');
     }
     await this.window.keyboard.press('Backspace');
+    await this.captureStepScreenshot(`clear-recovery-word-${lastWordIndex}`);
   }
 
   async isFinalNextButtonVisible() {

@@ -32,6 +32,15 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
    }
  };
 
+const summarizeTransactions = (response: any) => {
+  return (response?.transactions ?? []).map((transaction: any) => ({
+    transaction_id: transaction.transaction_id,
+    consensus_timestamp: transaction.consensus_timestamp,
+    name: transaction.name,
+    result: transaction.result,
+  }));
+};
+
 /**
  * Performs a polling with retry mechanism on the mirror node API endpoint until a condition is met.
  * This function is needed for interacting with the Hedera Mirror Node,
@@ -104,13 +113,53 @@ export const getTransactionDetails = async (
   interval: number = 2000,
 ) => {
   const formatedTransactionId = formatTransactionId(transactionId);
-  return pollWithRetry(
-    `transactions/${formatedTransactionId}`,
-    {},
-    result => result && result.transactions && result.transactions.length > 0,
-    timeout,
-    interval,
-  );
+  const payerAccountId = transactionId.split('@')[0];
+
+  try {
+    return await pollWithRetry(
+      `transactions/${formatedTransactionId}`,
+      {},
+      result => result && result.transactions && result.transactions.length > 0,
+      timeout,
+      interval,
+    );
+  } catch (error) {
+    console.log(
+      `[mirror-node-debug] Exact transaction lookup failed for ${formatedTransactionId}. Fetching transaction lists for comparison.`,
+    );
+
+    try {
+      const allTransactions = await apiCall('transactions', { limit: 10, order: 'desc' });
+      console.log(
+        '[mirror-node-debug] Recent transactions from /transactions:',
+        summarizeTransactions(allTransactions),
+      );
+    } catch (listError) {
+      console.log(
+        '[mirror-node-debug] Failed to fetch recent transactions from /transactions:',
+        listError instanceof Error ? listError.message : listError,
+      );
+    }
+
+    try {
+      const payerTransactions = await apiCall('transactions', {
+        'account.id': payerAccountId,
+        limit: 10,
+        order: 'desc',
+      });
+      console.log(
+        `[mirror-node-debug] Recent transactions from /transactions for payer ${payerAccountId}:`,
+        summarizeTransactions(payerTransactions),
+      );
+    } catch (listError) {
+      console.log(
+        `[mirror-node-debug] Failed to fetch payer transactions from /transactions for ${payerAccountId}:`,
+        listError instanceof Error ? listError.message : listError,
+      );
+    }
+
+    throw error;
+  }
 };
 
 export const getAssociatedAccounts = async (

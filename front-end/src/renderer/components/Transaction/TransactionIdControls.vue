@@ -3,10 +3,8 @@ import { onBeforeMount, ref, watch } from 'vue';
 import { Hbar, HbarUnit } from '@hashgraph/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
-import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRoute } from 'vue-router';
 
@@ -33,7 +31,6 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
@@ -42,28 +39,11 @@ const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* State */
 const localValidStart = ref<Date>(props.validStart);
-const LOCALNET_AUTOMATION_PAYER_ID = '0.0.1022';
 
 /* Handlers */
 const handlePayerChange = (payerId: string) => {
   emit('update:payerId', payerId || '');
   account.accountId.value = payerId || '';
-};
-
-const getPreferredPayerId = (accountIds: Array<string | null | undefined>) => {
-  const validAccountIds = accountIds.filter((accountId): accountId is string => Boolean(accountId));
-  if (validAccountIds.length === 0) {
-    return null;
-  }
-
-  if (network.network === CommonNetwork.LOCAL_NODE) {
-    return (
-      validAccountIds.find(accountId => accountId === LOCALNET_AUTOMATION_PAYER_ID) ??
-      validAccountIds[0]
-    );
-  }
-
-  return validAccountIds[0];
 };
 
 function handleUpdateValidStart(v: Date) {
@@ -86,9 +66,8 @@ onBeforeMount(async () => {
   }
 
   const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
-  const preferredPayerId = getPreferredPayerId(allAccounts.map(accountInfo => accountInfo.account));
-  if (preferredPayerId) {
-    handlePayerChange(preferredPayerId);
+  if (allAccounts.length > 0) {
+    handlePayerChange(allAccounts[0].account);
   }
 });
 
@@ -110,9 +89,8 @@ watch(
 watch(
   () => user.publicKeyToAccounts,
   () => {
-    const preferredPayerId = getPreferredPayerId(user.publicKeysToAccountsFlattened);
-    if (preferredPayerId) {
-      handlePayerChange(preferredPayerId);
+    if (user.publicKeysToAccountsFlattened.length > 0) {
+      handlePayerChange(user.publicKeysToAccountsFlattened[0]);
     }
   },
 );

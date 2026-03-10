@@ -608,7 +608,7 @@ export class OrganizationPage extends BasePage {
         }
       } else if (count < 0) {
         for (let i = 0; i > count; i--) {
-          await this.window.click(selector.replace('Increment', 'Decrement'));
+          await this.click(selector.replace('Increment', 'Decrement'));
         }
       }
     };

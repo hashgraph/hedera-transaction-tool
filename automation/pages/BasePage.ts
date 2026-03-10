@@ -1,11 +1,81 @@
-import { Page, Locator } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import path from 'node:path';
+
+import { Page, Locator, test } from '@playwright/test';
 
 export class BasePage {
   protected readonly DEFAULT_TIMEOUT = 2500;
   protected readonly SHORT_TIMEOUT = 500;
   protected readonly LONG_TIMEOUT = 5000;
+  private static stepScreenshotCounter = 0;
 
   constructor(protected readonly window: Page) {}
+
+  private shouldCaptureStepScreenshots(): boolean {
+    return process.env.PLAYWRIGHT_STEP_SCREENSHOTS === 'true';
+  }
+
+  private getCurrentTestInfo() {
+    try {
+      return test.info();
+    } catch {
+      return null;
+    }
+  }
+
+  private sanitizeForFilename(value: string): string {
+    const normalized = value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+
+    return normalized.slice(0, 80) || 'step';
+  }
+
+  protected async captureStepScreenshot(stepName: string): Promise<void> {
+    if (!this.shouldCaptureStepScreenshots()) {
+      return;
+    }
+
+    const screenshotIndex = ++BasePage.stepScreenshotCounter;
+    const safeStepName = this.sanitizeForFilename(stepName);
+    const screenshotFileName = `${String(screenshotIndex).padStart(4, '0')}-${this.constructor.name}-${safeStepName}.png`;
+
+    let screenshotPath: string;
+    const testInfo = this.getCurrentTestInfo();
+
+    if (testInfo) {
+      screenshotPath = testInfo.outputPath('step-screenshots', screenshotFileName);
+    } else {
+      const fallbackDirectory = path.join(
+        process.cwd(),
+        'test-results',
+        'step-screenshots',
+        'global',
+      );
+      mkdirSync(fallbackDirectory, { recursive: true });
+      screenshotPath = path.join(fallbackDirectory, screenshotFileName);
+    }
+
+    try {
+      mkdirSync(path.dirname(screenshotPath), { recursive: true });
+      await this.window.screenshot({
+        path: screenshotPath,
+        animations: 'disabled',
+      });
+
+      if (testInfo) {
+        await testInfo.attach(`step-${String(screenshotIndex).padStart(4, '0')}-${safeStepName}`, {
+          path: screenshotPath,
+          contentType: 'image/png',
+        });
+      }
+
+      console.log(`[step-screenshot] ${screenshotPath}`);
+    } catch (error) {
+      console.error(`Failed to capture step screenshot for ${stepName}:`, error);
+    }
+  }
 
   // Debug helper - pauses test execution for manual inspection
   async pause() {
@@ -79,6 +149,7 @@ export class BasePage {
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
     await element.click();
+    await this.captureStepScreenshot(`click-${selector}`);
   }
 
   /**
@@ -93,6 +164,7 @@ export class BasePage {
     await button.waitFor({ state: 'visible', timeout });
     await this.waitForButtonEnabled(testId, timeout);
     await button.click();
+    await this.captureStepScreenshot(`click-button-${testId}`);
   }
 
   /**
@@ -133,6 +205,7 @@ export class BasePage {
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
     await element.fill(value);
+    await this.captureStepScreenshot(`fill-${selector}`);
   }
 
   /**
@@ -208,6 +281,7 @@ export class BasePage {
     const selectElement = this.getElement(selector, index);
     await selectElement.waitFor({ state: 'visible', timeout });
     await selectElement.selectOption({ value });
+    await this.captureStepScreenshot(`select-${selector}-${value}`);
   }
 
   /**
@@ -235,6 +309,7 @@ export class BasePage {
       await this.window.evaluate(el => el.click(), inputElement);
       console.log(`Clicked on switch using JavaScript.`);
     }
+    await this.captureStepScreenshot(`toggle-${selector}`);
   }
 
   /**
@@ -247,6 +322,7 @@ export class BasePage {
     console.log(`Scrolling element with selector: ${selector} into view`);
     const element = this.getElement(selector, index);
     await element.scrollIntoViewIfNeeded();
+    await this.captureStepScreenshot(`scroll-${selector}`);
   }
 
   /**
@@ -288,6 +364,7 @@ export class BasePage {
       const element = this.getElement(selector, index);
       await element.waitFor({ state: 'visible', timeout });
       console.log(`Element with selector ${selector} is now visible.`);
+      await this.captureStepScreenshot(`wait-visible-${selector}`);
     } catch (error) {
       console.error(
         `Element with selector ${selector} did not become visible within the timeout: ${timeout}`,
@@ -313,6 +390,7 @@ export class BasePage {
         timeout: timeout,
       });
       console.log(`Element with selector "${testId}" is present in the DOM.`);
+      await this.captureStepScreenshot(`wait-present-${testId}`);
     } catch {
       console.error(
         `Element with selector "${testId}" did not appear in the DOM within ${timeout} ms.`,
@@ -351,6 +429,8 @@ export class BasePage {
       const fileChooser = await fileChooserPromise;
       await fileChooser.setFiles(filePaths);
     }
+
+    await this.captureStepScreenshot(`upload-${selector}`);
   }
 
   // --------------------------

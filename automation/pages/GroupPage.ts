@@ -59,6 +59,7 @@ export class GroupPage extends BasePage {
 
     if (await modalButton.isVisible()) {
       await modalButton.click();
+      await this.captureStepScreenshot(`close-modal-${selector}`);
     }
   }
 

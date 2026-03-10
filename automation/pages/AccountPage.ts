@@ -189,6 +189,7 @@ export class AccountPage extends BasePage {
 
       // Check if the target button is enabled
       if (await this.isButtonEnabled(buttonSelector)) {
+        await this.captureStepScreenshot(`fill-account-id-${inputSelector}`);
         return; // Exit the function if the button is enabled
       }
 

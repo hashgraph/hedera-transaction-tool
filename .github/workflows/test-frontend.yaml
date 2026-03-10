@@ -378,6 +378,7 @@ jobs:
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
+          PLAYWRIGHT_STEP_SCREENSHOTS: 'true'
           PRIVATE_KEY: ${{ secrets.PRIVATE_KEY_TEST }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
@@ -400,12 +401,12 @@ jobs:
           if-no-files-found: warn
           retention-days: 3
 
-      - name: Upload Playwright Screenshots
+      - name: Upload Playwright Test Results
         if: ${{ always() }}
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-screenshots-${{ matrix.test-suite.name }}
-          path: automation/test-results/**/*.png
+          name: playwright-test-results-${{ matrix.test-suite.name }}
+          path: automation/test-results
           if-no-files-found: warn
           retention-days: 3
 

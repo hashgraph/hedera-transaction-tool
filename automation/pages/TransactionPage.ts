@@ -246,6 +246,7 @@ export class TransactionPage extends BasePage {
       } catch (error) {
         if (attempt === 2) throw error;
         await this.window.keyboard.press('Escape');
+        await this.captureStepScreenshot('dismiss-create-transaction-modal');
         await this.window.waitForTimeout(this.SHORT_TIMEOUT);
       }
     }
@@ -866,8 +867,7 @@ export class TransactionPage extends BasePage {
   async clickOnCancelTransaction() {
     const modalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
     const cancelButtonSelector = `${modalSelector} [data-testid="${this.buttonCancelTransactionSelector}"]`;
-    await this.window.waitForSelector(cancelButtonSelector, { state: 'visible', timeout: 15000 });
-    await this.window.click(cancelButtonSelector);
+    await this.click(cancelButtonSelector, null, 15000);
   }
 
   async clickAddButton(depth: string) {
