@@ -3,6 +3,8 @@ import type { HederaAccount } from '@prisma/client';
 
 import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
 
+import pLimit from 'p-limit';
+
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -203,20 +205,26 @@ export async function signTransactions(
   const items: SignatureItem[] = [];
   let signed = false;
 
+  const limit = pLimit(10);
+
   const results = await Promise.all(
-    transactions.map(async tx => {
-      const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
-      const publicKeysRequired = await usersPublicRequiredToSign(
-        transaction,
-        selectedOrganization.userKeys,
-        network.mirrorNodeBaseURL,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
-        selectedOrganization,
-      );
-      return { id: tx.id, transaction, publicKeysRequired };
-    }),
+    transactions.map(tx =>
+      limit(async () => {
+        const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+
+        const publicKeysRequired = await usersPublicRequiredToSign(
+          transaction,
+          selectedOrganization.userKeys,
+          network.mirrorNodeBaseURL,
+          accountInfoCache,
+          nodeInfoCache,
+          publicKeyOwnerCache,
+          selectedOrganization,
+        );
+
+        return { id: tx.id, transaction, publicKeysRequired };
+      }),
+    ),
   );
 
   const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
