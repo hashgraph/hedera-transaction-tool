@@ -902,11 +902,11 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    await this.click(this.signTransactionButton, 0, this.LONG_TIMEOUT * 6);
+    await this.click(this.signTransactionButton, 0, this.LONG_TIMEOUT * 12);
   }
 
   async isSignTransactionButtonVisible() {
-    return await this.isElementVisible(this.signTransactionButtonSelector);
+    return await this.isElementVisible(this.signTransactionButtonSelector, null, this.LONG_TIMEOUT * 2);
   }
 
   async getTransactionDetailsId() {

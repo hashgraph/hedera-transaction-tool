@@ -119,7 +119,7 @@ export async function setupEnvironmentForTransactions(
     } else {
       resolvedPrivateKey = LOCALNET_PK_KEY;
       console.log(
-        '[setupEnvironmentForTransactions] LOCALNET path: importing fixed payer key for 0.0.1022',
+        '[setupEnvironmentForTransactions] LOCALNET path: importing fixed payer key for 0.0.1003',
       );
     }
 
