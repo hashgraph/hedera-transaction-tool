@@ -142,8 +142,11 @@ const updateSigningStatus = async (): Promise<void> => {
 
 /* Hooks */
 useRevealed(container, () => {
-  // console.log('Row has been revealed for: ' + props.groupItem.transaction.transactionId);
-  watch(() => props.groupItem, updateSigningStatus, { immediate: true });
+  watch(
+    [() => props.groupItem.transaction.status, () => props.groupItem.transaction.transactionBytes],
+    updateSigningStatus,
+    { immediate: true },
+  );
 });
 </script>
 
