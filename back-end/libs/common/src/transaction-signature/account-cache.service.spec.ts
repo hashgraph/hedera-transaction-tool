@@ -33,6 +33,7 @@ jest.mock('@app/common', () => ({
 describe('AccountCacheService', () => {
   let service: AccountCacheService;
   let mirrorNodeClient: jest.Mocked<MirrorNodeClient>;
+  let mockQueryBuilder: any;
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
@@ -55,14 +56,22 @@ describe('AccountCacheService', () => {
       fetchAccountInfo: jest.fn(),
     } as any;
 
+    mockQueryBuilder = {
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      orIgnore: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
+
     dataSource = {
       manager: mockManager,
+      createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
     } as any;
 
     cacheHelper = {
       tryClaimRefresh: jest.fn(),
       saveAndReleaseClaim: jest.fn(),
-      linkTransactionToEntity: jest.fn(),
       insertKeys: jest.fn(),
     } as any;
 
@@ -258,7 +267,6 @@ describe('AccountCacheService', () => {
       } as CachedAccount;
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getAccountInfoForTransaction(mockTransaction, '0.0.123');
 
@@ -266,12 +274,7 @@ describe('AccountCacheService', () => {
         key: 'deserialized-encoded-key',
         receiverSignatureRequired: true,
       });
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedAccount,
-        1,
-        1,
-        'cachedAccount'
-      );
+      expect(dataSource.createQueryBuilder).toHaveBeenCalled();
     });
 
     it('should fetch new data when cache is stale', async () => {
@@ -351,7 +354,6 @@ describe('AccountCacheService', () => {
 
       dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
       cacheHelper.tryClaimRefresh.mockResolvedValue({ data: claimedAccount, claimed: false });
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       const result = await service.getAccountInfoForTransaction(mockTransaction, '0.0.123');
 
@@ -376,6 +378,65 @@ describe('AccountCacheService', () => {
       const result = await service.getAccountInfoForTransaction(mockTransaction, '0.0.123');
 
       expect(result).toBeNull();
+    });
+
+    it('should ignore duplicate transaction-account links', async () => {
+      const cachedAccount = {
+        id: 1,
+        mirrorNetwork: 'testnet',
+        account: '0.0.3',
+        receiverSignatureRequired: true,
+        encodedKey: Buffer.from('encoded-key'),
+        updatedAt: new Date(),
+      } as CachedAccount;
+
+      dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
+
+      await service.getAccountInfoForTransaction(mockTransaction, '0.0.3');
+
+      expect(mockQueryBuilder.orIgnore).toHaveBeenCalled();
+    });
+
+    it('should pass isReceiver=true when account is a receiver', async () => {
+      const cachedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        encodedKey: Buffer.from('encoded-key'),
+        receiverSignatureRequired: true,
+        updatedAt: new Date(),
+      } as CachedAccount;
+
+      dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
+
+      await service.getAccountInfoForTransaction(mockTransaction, '0.0.123', true);
+
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 1 },
+        cachedAccount: { id: 1 },
+        isReceiver: true,
+      });
+    });
+
+    it('should default isReceiver to false when not provided', async () => {
+      const cachedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        encodedKey: Buffer.from('encoded-key'),
+        receiverSignatureRequired: true,
+        updatedAt: new Date(),
+      } as CachedAccount;
+
+      dataSource.manager.findOne = jest.fn().mockResolvedValue(cachedAccount);
+
+      await service.getAccountInfoForTransaction(mockTransaction, '0.0.123'); // no isReceiver arg
+
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 1 },
+        cachedAccount: { id: 1 },
+        isReceiver: false,
+      });
     });
   });
 
@@ -520,12 +581,12 @@ describe('AccountCacheService', () => {
 
       await (service as any).performRefreshForClaimedAccount(claimedAccount, 999);
 
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedAccount,
-        999,
-        1,
-        'cachedAccount'
-      );
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TransactionCachedAccount);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 999 },
+        cachedAccount: { id: 1 },
+        isReceiver: false,
+      });
     });
 
     it('should return DATA_UNCHANGED when fetched data matches cached data', async () => {
@@ -704,7 +765,6 @@ describe('AccountCacheService', () => {
 
     it('should link transaction when transactionId provided', async () => {
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
-      cacheHelper.linkTransactionToEntity.mockResolvedValue(undefined);
 
       await (service as any).saveAccountData(
         '0.0.123',
@@ -715,12 +775,12 @@ describe('AccountCacheService', () => {
         999
       );
 
-      expect(cacheHelper.linkTransactionToEntity).toHaveBeenCalledWith(
-        TransactionCachedAccount,
-        999,
-        1,
-        'cachedAccount'
-      );
+      expect(mockQueryBuilder.into).toHaveBeenCalledWith(TransactionCachedAccount);
+      expect(mockQueryBuilder.values).toHaveBeenCalledWith({
+        transaction: { id: 999 },
+        cachedAccount: { id: 1 },
+        isReceiver: false,
+      });
     });
   });
 
