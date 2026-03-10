@@ -22,7 +22,11 @@ import {
   emitTransactionStatusUpdate,
   TransactionSignatureService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionStatus } from '@entities';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionStatus,
+} from '@entities';
 import { ExecuteService } from './execute.service';
 
 jest.mock('@app/common/utils');
@@ -210,7 +214,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
       });
-      jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(21);
+      jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(null);
 
       await service.executeTransaction(transaction);
 
@@ -219,7 +223,7 @@ describe('ExecuteService', () => {
         {
           executedAt: expect.any(Date),
           status: TransactionStatus.FAILED,
-          statusCode: 21,
+          statusCode: null,
         },
       );
       expect(client.close).toHaveBeenCalled();
@@ -236,7 +240,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
         status: {
-          _code: 21,
+          _code: null,
         },
       });
 
@@ -247,7 +251,7 @@ describe('ExecuteService', () => {
         {
           executedAt: expect.any(Date),
           status: TransactionStatus.FAILED,
-          statusCode: 21,
+          statusCode: null,
         },
       );
       expect(client.close).toHaveBeenCalled();
@@ -432,7 +436,7 @@ describe('ExecuteService', () => {
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValue({
         message: 'Transaction failed',
         status: {
-          _code: 21,
+          _code: null,
         },
       });
 
@@ -448,7 +452,7 @@ describe('ExecuteService', () => {
           {
             executedAt: expect.any(Date),
             status: TransactionStatus.FAILED,
-            statusCode: 21,
+            statusCode: null,
           },
         );
       });
@@ -522,6 +526,94 @@ describe('ExecuteService', () => {
           expect.anything(),
         );
       });
+    });
+  });
+
+  describe('ExecuteService _executeTransaction error handling', () => {
+    it('uses error.status._code when present', async () => {
+      const client = { close: jest.fn() };
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
+
+      const sdkTransaction = {
+        execute: jest.fn().mockRejectedValueOnce(
+          Object.assign(new Error('boom'), { status: { _code: 999 } }),
+        ),
+      } as any;
+
+      const transaction = { id: 1, mirrorNetwork: 'testnet' } as any;
+
+      transactionRepo.update.mockResolvedValueOnce(undefined as any);
+
+      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+
+      expect(result.status).toBe(TransactionStatus.FAILED);
+      expect(result.error).toBe('boom');
+      expect(transactionRepo.update).toHaveBeenCalledWith(
+        { id: transaction.id },
+        expect.objectContaining({
+          status: TransactionStatus.FAILED,
+          statusCode: 999,
+          executedAt: expect.any(Date),
+        }),
+      );
+      expect(client.close).toHaveBeenCalled();
+    });
+
+    it('falls back to getStatusCodeFromMessage(error.message) when status._code is missing', async () => {
+      const client = { close: jest.fn() };
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
+
+      jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(1234 as any);
+
+      const sdkTransaction = {
+        execute: jest.fn().mockRejectedValueOnce(new Error('Transaction failed')),
+      } as any;
+
+      const transaction = { id: 2, mirrorNetwork: 'testnet' } as any;
+
+      transactionRepo.update.mockResolvedValueOnce(undefined as any);
+
+      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+
+      expect(getStatusCodeFromMessage).toHaveBeenCalledWith('Transaction failed');
+      expect(result.status).toBe(TransactionStatus.FAILED);
+      expect(result.error).toBe('Transaction failed');
+      expect(transactionRepo.update).toHaveBeenCalledWith(
+        { id: transaction.id },
+        expect.objectContaining({
+          status: TransactionStatus.FAILED,
+          statusCode: 1234,
+          executedAt: expect.any(Date),
+        }),
+      );
+      expect(client.close).toHaveBeenCalled();
+    });
+
+    it('keeps default fallback when a non-Error is thrown', async () => {
+      const client = { close: jest.fn() };
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
+
+      const sdkTransaction = {
+        execute: jest.fn().mockRejectedValueOnce({ message: 'nope' }),
+      } as any;
+
+      const transaction = { id: 3, mirrorNetwork: 'testnet' } as any;
+
+      transactionRepo.update.mockResolvedValueOnce(undefined as any);
+
+      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+
+      expect(result.status).toBe(TransactionStatus.FAILED);
+      expect(result.error).toEqual('Unknown error');
+      expect(transactionRepo.update).toHaveBeenCalledWith(
+        { id: transaction.id },
+        expect.objectContaining({
+          status: TransactionStatus.FAILED,
+          statusCode: null,
+          executedAt: expect.any(Date),
+        }),
+      );
+      expect(client.close).toHaveBeenCalled();
     });
   });
 });

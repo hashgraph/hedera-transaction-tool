@@ -39,6 +39,7 @@ export enum ErrorCodes {
   IB = 'IB',
   TOS = 'TOS',
   IO = 'IO',
+  TNVN = 'TNVN',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -81,4 +82,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.IB]: 'Invalid body',
   [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
   [ErrorCodes.IO]: 'Invalid operation',
+  [ErrorCodes.TNVN]: 'Transaction is not valid on the configured network (contains node account IDs that are not present on the network)',
 };
