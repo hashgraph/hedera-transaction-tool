@@ -11,7 +11,7 @@ import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -52,6 +52,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -70,6 +71,7 @@ const route = useRoute();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -204,6 +206,7 @@ async function fetchTransaction() {
       network.mirrorNodeBaseURL,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
       user.selectedOrganization,
     );
   }
@@ -322,7 +325,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Approvers -->
               <div
-                v-if="orgTransaction?.approvers && orgTransaction.approvers.length > 0"
+                v-if="FEATURE_APPROVERS_ENABLED && orgTransaction?.approvers && orgTransaction.approvers.length > 0"
                 class="mt-5"
               >
                 <h4 class="text-title text-bold">Approvers</h4>

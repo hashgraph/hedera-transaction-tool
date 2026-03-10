@@ -20,10 +20,15 @@ import {
   SystemUndeleteTransaction,
   FileContentsQuery,
   KeyList,
+  AccountId,
 } from '@hashgraph/sdk';
 import { proto } from '@hashgraph/proto';
 
-import { MAX_TRANSACTION_BYTE_SIZE, TransactionType, Transaction } from '@entities';
+import {
+  MAX_TRANSACTION_BYTE_SIZE,
+  TransactionType,
+  Transaction,
+} from '@entities';
 import {
   decode,
   computeShortenedPublicKeyList,
@@ -246,7 +251,7 @@ export const getStatusCodeFromMessage = (message: string) => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
-    return 21;
+    return null;
   }
 };
 
@@ -325,4 +330,26 @@ export const transactionIs = <T extends SDKTransaction>(
   transaction: SDKTransaction,
 ): transaction is T => {
   return transaction instanceof type;
+};
+
+export const isTransactionValidForNodes = (
+  sdkTransaction: SDKTransaction,
+  allowedNodeAccountIds: Set<string>
+): boolean  => {
+  const nodeAccountIds = (sdkTransaction as any)._nodeAccountIds;
+  const txNodeIds: string[] = [];
+  if (
+    nodeAccountIds &&
+    typeof nodeAccountIds.length === 'number' &&
+    typeof nodeAccountIds.get === 'function'
+  ) {
+    for (let i = 0; i < nodeAccountIds.length; i++) {
+      const id = nodeAccountIds.get(i);
+      const accountId =
+        id instanceof AccountId ? id : AccountId.fromString(String(id));
+      txNodeIds.push(accountId.toString());
+    }
+  }
+
+  return txNodeIds.every((id) => allowedNodeAccountIds.has(id));
 };

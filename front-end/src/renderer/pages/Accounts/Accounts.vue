@@ -34,6 +34,7 @@ import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -43,6 +44,9 @@ const network = useNetworkStore();
 const toast = useToast();
 const accountData = useAccountId();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+
+/* Injected */
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
@@ -201,7 +205,7 @@ watch(
   () => accountData.key.value,
   async newKey => {
     if (newKey instanceof PublicKey && true) {
-      formattedPublicKey.value = await formatPublicKey(newKey.toStringRaw());
+      formattedPublicKey.value = await formatPublicKey(newKey.toStringRaw(), publicKeyOwnerCache);
     }
   },
 );
@@ -523,7 +527,9 @@ onMounted(async () => {
                           (accountData.accountInfo.value?.balance as Hbar) || new Hbar(0),
                         )
                       }}
-                      <span v-if="network.currentRate" class="text-pink">({{ hbarDollarAmount }})</span>
+                      <span v-if="network.currentRate" class="text-pink"
+                        >({{ hbarDollarAmount }})</span
+                      >
                     </p>
                   </div>
                 </div>

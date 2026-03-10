@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -57,6 +58,7 @@ import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOpt
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
+import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Types */
 type ActionButton =
@@ -130,6 +132,7 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
+const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 
 /* State */
 const isTransactionVersionMismatch = ref(false);
@@ -222,8 +225,8 @@ const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  shouldApprove.value && buttons.push(reject, approve);
-  canSign.value && !shouldApprove.value && buttons.push(sign);
+  FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
+  canSign.value && !(FEATURE_APPROVERS_ENABLED && shouldApprove.value) && buttons.push(sign);
   canExecute.value && buttons.push(execute);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
@@ -267,6 +270,7 @@ const handleSign = async (goNext = false) => {
       personalPassword,
       accountByIdCache,
       nodeByIdCache,
+      publicKeyOwnerCache,
     );
     await props.onAction();
 
@@ -564,6 +568,10 @@ watch(
       return;
     }
 
+    const approvePromise = FEATURE_APPROVERS_ENABLED
+      ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
+      : Promise.resolve(false);
+
     const results = await Promise.allSettled([
       usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
@@ -571,9 +579,10 @@ watch(
         network.mirrorNodeBaseURL,
         accountByIdCache,
         nodeByIdCache,
+        publicKeyOwnerCache,
         user.selectedOrganization,
       ),
-      getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
+      approvePromise,
     ]);
 
     results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);

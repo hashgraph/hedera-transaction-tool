@@ -7,6 +7,7 @@ import {
   filterAuditByUser,
   filterTransactionSignersByUser,
 } from '@shared/utils/transactionFile.ts';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 export class TransactionBrowserEntry {
   public readonly fullySignedByUser: boolean;
@@ -40,6 +41,7 @@ export class TransactionBrowserEntry {
     mirrorNetwork: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    publicKeyOwnerCache: PublicKeyOwnerCache,
     userKeys: string[],
   ): Promise<TransactionBrowserEntry> {
     let transaction: SDKTransaction | null;
@@ -51,6 +53,7 @@ export class TransactionBrowserEntry {
         mirrorNetwork,
         accountInfoCache,
         nodeInfoCache,
+        publicKeyOwnerCache,
         null,
       );
     } catch {
@@ -65,11 +68,12 @@ export class TransactionBrowserEntry {
     mirrorNetwork: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    publicKeyOwnerCache: PublicKeyOwnerCache,
     userKeys: string[],
   ): Promise<TransactionBrowserEntry[]> {
     const result: TransactionBrowserEntry[] = [];
     for (const i of items) {
-      result.push(await this.make(i, mirrorNetwork, accountInfoCache, nodeInfoCache, userKeys));
+      result.push(await this.make(i, mirrorNetwork, accountInfoCache, nodeInfoCache, publicKeyOwnerCache, userKeys));
     }
     return result;
   }

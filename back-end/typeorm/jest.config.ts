@@ -9,6 +9,10 @@ const config: Config = {
     'data-source.ts',
   ],
   roots: ['<rootDir>/test'],
+  moduleNameMapper: {
+    '^@app/common(|/.*)$': '<rootDir>/../libs/common/src/$1',
+    '^@entities(|/.*)$': '<rootDir>/../libs/common/src/database/entities/$1',
+  },
 };
 
 export default config;

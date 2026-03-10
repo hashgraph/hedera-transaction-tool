@@ -159,25 +159,4 @@ export class CacheHelper {
       .orIgnore()
       .execute();
   }
-
-  /**
-   * Link a transaction to a cached entity (idempotent).
-   */
-  async linkTransactionToEntity(
-    linkEntity: EntityTarget<any>,
-    transactionId: number,
-    entityId: number,
-    entityFieldName: string,
-  ): Promise<void> {
-    await this.dataSource
-      .createQueryBuilder()
-      .insert()
-      .into(linkEntity)
-      .values({
-        transaction: { id: transactionId },
-        [entityFieldName]: { id: entityId },
-      })
-      .orIgnore()
-      .execute();
-  }
 }
