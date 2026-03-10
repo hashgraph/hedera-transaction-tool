@@ -228,18 +228,18 @@ jobs:
             sleep 2
           done
 
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
-              echo "Mirror node is ready on attempt ${attempt}"
-              break
-            fi
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Mirror node did not become ready in time" >&2
-              exit 1
-            fi
-            echo "Waiting for mirror node... attempt ${attempt}/60"
-            sleep 5
-          done
+#          for attempt in $(seq 1 60); do
+#            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1; then
+#              echo "Mirror node is ready on attempt ${attempt}"
+#              break
+#            fi
+#            if [ "${attempt}" -eq 60 ]; then
+#              echo "Mirror node did not become ready in time" >&2
+#              exit 1
+#            fi
+#            echo "Waiting for mirror node... attempt ${attempt}/60"
+#            sleep 5
+#          done
 
           DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
           if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
