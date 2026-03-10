@@ -6,6 +6,7 @@ import {
   Param,
   ParseBoolPipe,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -16,7 +17,7 @@ import { Serialize } from '@app/common';
 import { TransactionGroup, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
-import { CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
+import { CancelGroupResultDto, CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
 import { GetUser } from '../../decorators';
 
 import { TransactionGroupsService } from './transaction-groups.service';
@@ -69,6 +70,24 @@ export class TransactionGroupsController {
     @Query('full', new ParseBoolPipe({ optional: true })) full?: boolean,
   ): Promise<TransactionGroup> {
     return this.transactionGroupsService.getTransactionGroup(user, groupId, full ?? true);
+  }
+
+  /* Cancel all transactions in a group */
+  @ApiOperation({
+    summary: 'Cancel a transaction group',
+    description: 'Cancel all in-progress transactions in the transaction group.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CancelGroupResultDto,
+  })
+  @Patch('/:id/cancel')
+  @Serialize(CancelGroupResultDto)
+  cancelTransactionGroup(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) groupId: number,
+  ): Promise<CancelGroupResultDto> {
+    return this.transactionGroupsService.cancelTransactionGroup(user, groupId);
   }
 
   /* Delete a transaction group */

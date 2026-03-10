@@ -58,6 +58,24 @@ export const getTransactionGroups = async (serverUrl: string) => {
   }, 'Failed to get transaction groups');
 };
 
+/* Cancel all transactions in a group */
+export interface CancelGroupResult {
+  canceled: number[];
+  alreadyCanceled: number[];
+  failed: { id: number; reason: string }[];
+}
+
+export const cancelTransactionGroup = async (
+  serverUrl: string,
+  groupId: number,
+): Promise<CancelGroupResult> =>
+  commonRequestHandler(async () => {
+    const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
+      `${serverUrl}/transaction-groups/${groupId}/cancel`,
+    );
+    return data;
+  }, 'Failed to cancel transactions in group');
+
 /* Get transaction groups */
 export const getTransactionGroupById = async (serverUrl: string, id: number, full?: boolean) => {
   return commonRequestHandler(async () => {

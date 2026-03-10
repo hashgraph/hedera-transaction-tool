@@ -4,7 +4,7 @@ import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
 import { emitTransactionUpdate } from '@app/common/utils';
-import { Transaction, TransactionGroup, User, UserStatus } from '@entities';
+import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
 import { CreateTransactionGroupDto } from '../dto';
 
@@ -335,6 +335,97 @@ describe('TransactionGroupsService', () => {
           expect.objectContaining({ entityId: 101 }),
           expect.objectContaining({ entityId: 102 }),
         ]),
+      );
+    });
+  });
+
+  describe('cancelTransactionGroup', () => {
+    beforeEach(() => {
+      jest.resetAllMocks();
+    });
+
+    const mockGroupWithItems = (items: { id: number; status: TransactionStatus }[]) => {
+      const group = {
+        id: 1,
+        groupItems: items.map((item, index) => ({
+          seq: index + 1,
+          transactionId: item.id,
+          transaction: { id: item.id, status: item.status } as Transaction,
+        })),
+      };
+      jest.spyOn(service, 'getTransactionGroup').mockResolvedValue(group as any);
+      return group;
+    };
+
+    it('should cancel all in-progress transactions', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+        { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      transactionsService.cancelTransaction.mockResolvedValue(true);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.canceled).toEqual([1, 2]);
+      expect(result.alreadyCanceled).toEqual([]);
+      expect(result.failed).toEqual([]);
+      expect(transactionsService.cancelTransaction).toHaveBeenCalledTimes(2);
+    });
+
+    it('should categorize mixed transaction states correctly', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+        { id: 3, status: TransactionStatus.EXECUTED },
+      ]);
+      transactionsService.cancelTransaction.mockResolvedValue(true);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.alreadyCanceled).toEqual([1]);
+      expect(result.canceled).toEqual([2]);
+      expect(result.failed).toEqual([{ id: 3, reason: 'Transaction is EXECUTED' }]);
+    });
+
+    it('should handle cancelTransaction throwing for one transaction', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+        { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+        { id: 3, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      transactionsService.cancelTransaction
+        .mockResolvedValueOnce(true)
+        .mockRejectedValueOnce(new Error('Cancel failed'))
+        .mockResolvedValueOnce(true);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.canceled).toEqual([1, 3]);
+      expect(result.failed).toEqual([{ id: 2, reason: 'Cancel failed' }]);
+      expect(transactionsService.cancelTransaction).toHaveBeenCalledTimes(3);
+    });
+
+    it('should return all in alreadyCanceled when all are CANCELED', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.CANCELED },
+      ]);
+
+      const result = await service.cancelTransactionGroup(user as User, 1);
+
+      expect(result.alreadyCanceled).toEqual([1, 2]);
+      expect(result.canceled).toEqual([]);
+      expect(result.failed).toEqual([]);
+      expect(transactionsService.cancelTransaction).not.toHaveBeenCalled();
+    });
+
+    it('should propagate error when group is not found', async () => {
+      jest
+        .spyOn(service, 'getTransactionGroup')
+        .mockRejectedValue(new BadRequestException('Not found'));
+
+      await expect(service.cancelTransactionGroup(user as User, 999)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });

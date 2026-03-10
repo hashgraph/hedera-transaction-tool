@@ -1557,6 +1557,24 @@ describe('TransactionsService', () => {
         }],
       );
     });
+
+    it('should return true without updating when transaction is already CANCELED', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.CANCELED,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.cancelTransaction(123, { id: 1 } as User);
+
+      expect(result).toBe(true);
+      expect(transactionsRepo.update).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
   });
 
   describe('archiveTransaction', () => {

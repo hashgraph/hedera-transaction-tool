@@ -432,7 +432,7 @@ const handleTransactionAction = async (
     toast.success(successMessage, successToastOptions);
   } catch (error) {
     isConfirmModalShown.value = false;
-    throw error;
+    toast.error(getErrorMessage(error, `Failed to ${action} transaction`), errorToastOptions);
   } finally {
     isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;

@@ -10,11 +10,18 @@ import {
   NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionGroupItem, User, UserKey } from '@entities';
+import {
+  Transaction,
+  TransactionGroup,
+  TransactionGroupItem,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import { TransactionsService } from '../transactions.service';
 
-import { CreateTransactionGroupDto } from '../dto';
+import { CancelGroupResultDto, CreateTransactionGroupDto } from '../dto';
 
 @Injectable()
 export class TransactionGroupsService {
@@ -187,6 +194,49 @@ export class TransactionGroupsService {
     emitTransactionUpdate(this.notificationsPublisher, groupItems.map(gi => ({ entityId: gi.transactionId })));
 
     return true;
+  }
+
+  async cancelTransactionGroup(
+    user: User,
+    groupId: number,
+  ): Promise<CancelGroupResultDto> {
+    const group = await this.getTransactionGroup(user, groupId);
+
+    const canceled: number[] = [];
+    const alreadyCanceled: number[] = [];
+    const failed: { id: number; reason: string }[] = [];
+
+    const cancelableStatuses = [
+      TransactionStatus.NEW,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+      TransactionStatus.WAITING_FOR_EXECUTION,
+    ];
+
+    for (const groupItem of group.groupItems) {
+      const tx = groupItem.transaction;
+
+      if (tx.status === TransactionStatus.CANCELED) {
+        alreadyCanceled.push(tx.id);
+        continue;
+      }
+
+      if (!cancelableStatuses.includes(tx.status)) {
+        failed.push({ id: tx.id, reason: `Transaction is ${tx.status}` });
+        continue;
+      }
+
+      try {
+        await this.transactionsService.cancelTransaction(tx.id, user);
+        canceled.push(tx.id);
+      } catch (error) {
+        failed.push({
+          id: tx.id,
+          reason: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    return { canceled, alreadyCanceled, failed };
   }
 
   private groupBy<T>(

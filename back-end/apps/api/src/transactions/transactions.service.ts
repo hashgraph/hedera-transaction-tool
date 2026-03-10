@@ -620,6 +620,10 @@ export class TransactionsService {
   async cancelTransaction(id: number, user: User): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
+    if (transaction.status === TransactionStatus.CANCELED) {
+      return true;
+    }
+
     if (
       ![
         TransactionStatus.NEW,

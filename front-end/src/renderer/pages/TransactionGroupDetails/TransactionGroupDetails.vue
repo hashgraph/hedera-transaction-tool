@@ -33,7 +33,7 @@ import {
   getTransactionGroupById,
   getUserShouldApprove,
   sendApproverChoice,
-  cancelTransaction,
+  cancelTransactionGroup,
 } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
@@ -294,18 +294,29 @@ const handleCancelAll = async (showModal = false) => {
 
   try {
     loadingStates[cancel] = 'Canceling...';
-    if (group.value != undefined) {
-      for (const groupItem of group.value.groupItems) {
-        if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
-          await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
-        }
-      }
-    }
+
+    const result = await cancelTransactionGroup(
+      user.selectedOrganization.serverUrl,
+      group.value!.id,
+    );
 
     await fetchGroup(group.value!.id);
-    toast.success('Transactions canceled successfully', successToastOptions);
-  } catch {
-    toast.error('Transactions not canceled', errorToastOptions);
+
+    const canceledCount = result.canceled.length;
+    const failedCount = result.failed.length;
+
+    if (failedCount === 0) {
+      toast.success(`${canceledCount} transaction(s) canceled successfully`, successToastOptions);
+    } else if (canceledCount > 0) {
+      toast.warning(
+        `${canceledCount} canceled, ${failedCount} could not be canceled`,
+        errorToastOptions,
+      );
+    } else {
+      toast.error('No transactions could be canceled', errorToastOptions);
+    }
+  } catch (error) {
+    toast.error(getErrorMessage(error, 'Failed to cancel transactions'), errorToastOptions);
   } finally {
     loadingStates[cancel] = null;
   }
