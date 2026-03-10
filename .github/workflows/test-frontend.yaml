@@ -200,7 +200,8 @@ jobs:
 
           # Install mkcert for generating a locally-trusted TLS certificate.
           # libnss3-tools provides certutil, required by mkcert -install on Linux.
-          sudo apt-get install -y --no-install-recommends libnss3-tools
+          # socat binds loopback-only Solo ports onto the Docker bridge gateway for compose services.
+          sudo apt-get install -y --no-install-recommends libnss3-tools socat
 
           curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
             -o /tmp/mkcert
@@ -250,7 +251,40 @@ jobs:
             fi
             sleep 2
           done
-          
+
+          DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
+          if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
+            echo "Failed to resolve the Docker bridge gateway IP" >&2
+            exit 1
+          fi
+          echo "Docker bridge gateway: ${DOCKER_HOST_GATEWAY}"
+
+          # hiero-solo-action exposes required services on localhost. Compose containers reach the
+          # host through the Docker bridge gateway, so bind the required ports on that gateway IP.
+          for port in 5551 5600 50211; do
+            sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
+          done
+
+          sleep 2
+
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:5551/api/v1/network/nodes" >/dev/null 2>&1; then
+            echo "Mirror node REST proxy on ${DOCKER_HOST_GATEWAY}:5551 is not reachable" >&2
+            sudo tail -n 50 /tmp/socat-5551.log || true
+            exit 1
+          fi
+
+          if ! bash -c ">/dev/tcp/${DOCKER_HOST_GATEWAY}/5600" >/dev/null 2>&1; then
+            echo "Mirror node gRPC proxy on ${DOCKER_HOST_GATEWAY}:5600 is not reachable" >&2
+            sudo tail -n 50 /tmp/socat-5600.log || true
+            exit 1
+          fi
+
+          if ! bash -c ">/dev/tcp/${DOCKER_HOST_GATEWAY}/50211" >/dev/null 2>&1; then
+            echo "Consensus node proxy on ${DOCKER_HOST_GATEWAY}:50211 is not reachable" >&2
+            sudo tail -n 50 /tmp/socat-50211.log || true
+            exit 1
+          fi
+
           for attempt in $(seq 1 5); do
             if docker-compose up -d; then
               break
