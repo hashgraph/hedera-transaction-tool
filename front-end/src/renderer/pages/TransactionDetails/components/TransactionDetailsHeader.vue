@@ -7,6 +7,7 @@ import { useRouter } from 'vue-router';
 import { useToast } from 'vue-toast-notification';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -205,6 +206,7 @@ const canApprove = computed(() => {
   const status = props.organizationTransaction?.status;
 
   return (
+    FEATURE_APPROVERS_ENABLED &&
     shouldApprove.value &&
     isApprovableStatus(status)
   );
@@ -589,6 +591,10 @@ watch(
       return;
     }
 
+    const approvePromise = FEATURE_APPROVERS_ENABLED
+      ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
+      : Promise.resolve(false);
+
     const results = await Promise.allSettled([
       usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
@@ -599,7 +605,7 @@ watch(
         publicKeyOwnerCache,
         user.selectedOrganization,
       ),
-      getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
+      approvePromise,
     ]);
 
     results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);

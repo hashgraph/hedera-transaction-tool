@@ -84,6 +84,25 @@ describe('transactionActionFlow', () => {
     expect(onRefreshError).toHaveBeenCalledTimes(1);
   });
 
+  test('non-cancel action refreshes on success', async () => {
+    const execute = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockResolvedValue(undefined);
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+
+    await executeTransactionActionFlow({
+      action: 'archive',
+      execute,
+      refresh,
+      onSuccess,
+      onError,
+    });
+
+    expect(onError).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
   test('shouldRefreshAfterActionAttempt only applies to cancel', () => {
     expect(shouldRefreshAfterActionAttempt('cancel')).toBe(true);
     expect(shouldRefreshAfterActionAttempt('execute')).toBe(false);

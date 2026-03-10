@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
-import { ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Brackets, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import {
   AccountCreateTransaction,
@@ -1741,6 +1741,29 @@ describe('TransactionsService', () => {
       );
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
     });
+
+    it('should throw BadRequestException when update affects zero rows and transaction moved to non-cancelable status', async () => {
+      const transaction = {
+        id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
+        creatorKey: { userId: 1, user: { id: 1 } },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+      };
+      const executed = { ...transaction, status: TransactionStatus.EXECUTED };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as unknown as Transaction)
+        .mockResolvedValueOnce(executed as unknown as Transaction);
+
+      mockCancelUpdateQueryBuilder(0);
+
+      await expect(service.cancelTransactionWithOutcome(123, { id: 1 } as User)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
   });
 
   describe('archiveTransaction', () => {
@@ -2134,6 +2157,15 @@ describe('TransactionsService', () => {
       const result = await service.shouldApproveTransaction(transactionId, user as User);
 
       expect(result).toBe(false);
+    });
+
+    it('should throw BadRequestException when transaction is not found', async () => {
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(null);
+
+      await expect(service.shouldApproveTransaction(999, user as User)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(approversService.getApproversByTransactionId).not.toHaveBeenCalled();
     });
 
     it('should return false for canceled transaction even when user is an approver', async () => {
