@@ -568,6 +568,10 @@ watch(
       return;
     }
 
+    const approvePromise = FEATURE_APPROVERS_ENABLED
+      ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
+      : Promise.resolve(false);
+
     const results = await Promise.allSettled([
       usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
@@ -578,7 +582,7 @@ watch(
         publicKeyOwnerCache,
         user.selectedOrganization,
       ),
-      getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id),
+      approvePromise,
     ]);
 
     results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);

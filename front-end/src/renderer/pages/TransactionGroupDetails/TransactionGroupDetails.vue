@@ -561,9 +561,14 @@ async function fetchGroup(id: string | number) {
             break;
           }
 
-          shouldApprove.value =
-            shouldApprove.value ||
-            (await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id));
+          if (FEATURE_APPROVERS_ENABLED) {
+            shouldApprove.value =
+              shouldApprove.value ||
+              (await getUserShouldApprove(
+                user.selectedOrganization.serverUrl,
+                item.transaction.id,
+              ));
+          }
 
           const txId = item.transaction.id;
 
