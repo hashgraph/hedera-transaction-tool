@@ -36,6 +36,10 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
+const createDisabled = computed(() => {
+  return !nodeData.nodeInfo?.value;
+});
+
 /* Handlers */
 const handleDraftLoaded = (transaction: Transaction) => {
   if (transaction instanceof NodeDeleteTransaction) {
@@ -55,18 +59,12 @@ const handleExecutedSuccess = async () => {
   toast.success(`Node ${data.nodeId} Deleted`, successToastOptions);
 };
 
-/* Functions */
-const preCreateAssert = () => {
-  if (!data.nodeId) {
-    throw new Error('Node ID Required');
-  }
-};
 </script>
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
-    :pre-create-assert="preCreateAssert"
+    :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >

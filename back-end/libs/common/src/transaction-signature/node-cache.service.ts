@@ -284,16 +284,20 @@ export class NodeCacheService {
    * Insert an association between a transaction and a cached node.
    * The insertion is idempotent (duplicates are ignored).
    */
-  private linkTransactionToNode(
+  private async linkTransactionToNode(
     transactionId: number,
     cachedNodeId: number,
   ): Promise<void> {
-    return this.cacheHelper.linkTransactionToEntity(
-      TransactionCachedNode,
-      transactionId,
-      cachedNodeId,
-      'cachedNode',
-    );
+    await this.dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(TransactionCachedNode)
+      .values({
+        transaction: { id: transactionId },
+        cachedNode: { id: cachedNodeId },
+      })
+      .orIgnore()
+      .execute();
   }
 
   private insertNodeAdminKeys(
@@ -352,11 +356,7 @@ export class NodeCacheService {
       return true;
     }
 
-    if (fetchedData.node_account_id?.toString() !== cached.nodeAccountId) {
-      return true;
-    }
-
-    return false;
+    return fetchedData.node_account_id?.toString() !== cached.nodeAccountId;
   }
 
   /**

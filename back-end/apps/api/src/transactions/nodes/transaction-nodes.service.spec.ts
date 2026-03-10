@@ -354,10 +354,9 @@ describe('TransactionNodesService', () => {
           {
             statuses: TRANSACTION_STATUS_COLLECTIONS.READY_TO_SIGN,
             mirrorNetwork: TEST_NETWORK,
-            onlyUnsigned: true,
           },
           user,
-          { signer: true }
+          { signer: true, onlyUnsigned: true }
         );
 
       // Verify entityManager.query was called with the query
