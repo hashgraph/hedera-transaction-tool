@@ -31,7 +31,7 @@ import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/
 import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
 
 const { versionStatus, updateUrl } = useVersionCheck();
-const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
+const { state, progress, error, updateInfo, startUpdate, installUpdate, confirmInstall } = useElectronUpdater();
 const user = useUserStore();
 const toast = useToast();
 const { setLast } = useDefaultOrganization();
@@ -108,6 +108,10 @@ const handleDownload = () => {
 
 const handleInstall = () => {
   installUpdate();
+};
+
+const handleConfirmInstall = () => {
+  confirmInstall();
 };
 
 const handleDisconnect = async () => {
@@ -187,6 +191,7 @@ const handleCompatibilityCancel = () => {
       :cancel-label="cancelLabel"
       @cancel="handleDisconnect"
       @install="handleInstall"
+      @confirm-install="handleConfirmInstall"
     />
 
     <UpgradeError
@@ -261,14 +266,3 @@ const handleCompatibilityCancel = () => {
     />
   </AppModal>
 </template>
-
-<style scoped>
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>

@@ -2,6 +2,10 @@ import { ref, readonly, onBeforeUnmount } from 'vue';
 import type { UpdateState, UpdateProgress, UpdateError } from '@shared/interfaces/update';
 import type { ProgressInfo, UpdateInfo } from 'electron-updater';
 
+// Intentional module-level singletons: all consumers (MandatoryUpgrade, OptionalUpgrade)
+// share the same update state. Only one upgrade modal is shown at a time, so this is safe.
+// The onBeforeUnmount hook in each consumer calls reset(), which clears state and removes
+// IPC listeners — avoid mounting multiple consumers simultaneously.
 const state = ref<UpdateState>('idle');
 const progress = ref<UpdateProgress | null>(null);
 const error = ref<UpdateError | null>(null);
@@ -50,6 +54,9 @@ export default function useElectronUpdater() {
 
   const installUpdate = () => {
     state.value = 'installing';
+  };
+
+  const confirmInstall = () => {
     window.electronAPI.local.update.install();
   };
 
@@ -81,6 +88,7 @@ export default function useElectronUpdater() {
     updateInfo: readonly(updateInfo),
     startUpdate,
     installUpdate,
+    confirmInstall,
     cancelUpdate,
     reset,
   };

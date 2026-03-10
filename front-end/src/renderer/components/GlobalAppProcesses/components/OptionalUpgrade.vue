@@ -32,6 +32,7 @@ const {
   updateInfo,
   startUpdate,
   installUpdate,
+  confirmInstall,
   cancelUpdate
 } = useElectronUpdater();
 const user = useUserStore();
@@ -84,6 +85,10 @@ const handleUpdate = () => {
 
 const handleInstall = () => {
   installUpdate();
+};
+
+const handleConfirmInstall = () => {
+  confirmInstall();
 };
 
 const handleCancel = () => {
@@ -176,6 +181,7 @@ watch(
       :is-installing="isInstalling"
       @cancel="handleCancel"
       @install="handleInstall"
+      @confirm-install="handleConfirmInstall"
     />
 
     <UpgradeError
@@ -204,14 +210,3 @@ watch(
     />
   </AppModal>
 </template>
-
-<style scoped>
-@keyframes spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-</style>
