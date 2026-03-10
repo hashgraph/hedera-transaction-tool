@@ -11,7 +11,7 @@ import Diff from 'deep-diff';
  * Fixed LOCALNET payer account used by automation.
  * Solo account 0.0.1022 with key: 44162cd9b9a2f5582bd13b43cfd8be3bc20b8a81ee77f6bf77391598bcfbae4c
  */
-export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
+export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1003';
 
 export async function setupApp() {
   console.log(asciiArt);
