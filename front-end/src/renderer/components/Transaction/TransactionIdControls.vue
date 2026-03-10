@@ -66,8 +66,9 @@ onBeforeMount(async () => {
   }
 
   const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
-  if (allAccounts.length > 0) {
-    handlePayerChange(allAccounts[0].account);
+  if (allAccounts.length > 0 && allAccounts[0].account) {
+    account.accountId.value = allAccounts[0].account;
+    emit('update:payerId', allAccounts[0].account || '');
   }
 });
 
@@ -89,9 +90,7 @@ watch(
 watch(
   () => user.publicKeyToAccounts,
   () => {
-    if (user.publicKeysToAccountsFlattened.length > 0) {
-      handlePayerChange(user.publicKeysToAccountsFlattened[0]);
-    }
+    handlePayerChange(user.publicKeysToAccountsFlattened[0]);
   },
 );
 
@@ -113,13 +112,13 @@ const columnClass = 'col-4 col-xxxl-3';
             : '-'
         }}</label
       >
-        <AccountIdInput
-          :modelValue="payerId"
-          @update:modelValue="handlePayerChange"
-          :filled="true"
-          placeholder="Enter Payer ID"
-          data-testid="input-payer-account"
-        />
+      <AccountIdInput
+        :modelValue="payerId"
+        @update:modelValue="handlePayerChange"
+        :filled="true"
+        placeholder="Enter Payer ID"
+        data-testid="input-payer-account"
+      />
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label"
