@@ -119,10 +119,10 @@ const transactionType = computed(() => {
 
 /* Functions */
 const updateSigningStatus = async (): Promise<void> => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
   canSign.value = false;
   const tx = props.groupItem.transaction;
   try {
+    assertIsLoggedInOrganization(user.selectedOrganization);
     canSign.value = await isSignableTransaction(
       tx,
       network.mirrorNodeBaseURL,
