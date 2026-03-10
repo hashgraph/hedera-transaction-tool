@@ -127,8 +127,9 @@ export class TransactionSignatureService {
         const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
           transaction,
           account,
+          true,
         );
-        if ((showAll || accountInfo?.receiverSignatureRequired) && accountInfo?.key) {
+        if (accountInfo?.key && (showAll || accountInfo.receiverSignatureRequired)) {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {

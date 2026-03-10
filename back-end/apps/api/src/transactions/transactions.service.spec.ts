@@ -55,7 +55,28 @@ import { CancelTransactionOutcome, TransactionsService } from './transactions.se
 import { ApproversService } from './approvers';
 import { CreateTransactionDto } from './dto';
 
-jest.mock('@app/common/utils');
+jest.mock(`@app/common/utils`, () => {
+  const actual = jest.requireActual(`@app/common/utils`);
+  return {
+    ...actual,
+
+    // Keep mocks for things you explicitly control in tests
+    attachKeys: jest.fn(),
+    getClientFromNetwork: jest.fn(),
+    getTransactionTypeEnumValue: jest.fn(),
+    isExpired: jest.fn(),
+    isTransactionBodyOverMaxSize: jest.fn(),
+    userKeysRequiredToSign: jest.fn(),
+    getTransactionSignReminderKey: jest.fn(),
+    emitTransactionStatusUpdate: jest.fn(),
+    flattenKeyList: jest.fn(),
+    safe: jest.fn(),
+
+    // Use REAL implementations for the new node-check helpers
+    getNodeAccountIdsFromClientNetwork: actual.getNodeAccountIdsFromClientNetwork,
+    isTransactionValidForNodes: actual.isTransactionValidForNodes,
+  };
+});
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
@@ -1012,6 +1033,70 @@ describe('TransactionsService', () => {
       expect(consoleErrorSpy).toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
+      client.close();
+    });
+
+    it('should throw TNVN if transaction has a single invalid node (0.0.1)', async () => {
+      const client = Client.forTestnet();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.1'))
+        .setNodeAccountIds([AccountId.fromString('0.0.1')]);
+
+      const dto: CreateTransactionDto = {
+        name: 'tx',
+        description: 'desc',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      } as any;
+
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+
+      // await expect(service.createTransaction(dto as CreateTransactionDto, user as User)).rejects.toThrow(
+      //   `Creator key ${dto.creatorKeyId} not found`,
+      // );
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TNVN);
+
+      client.close();
+    });
+
+    it('should throw TNVN if transaction has any invalid nodes (0.0.1, 0.0.3)', async () => {
+      const client = Client.forTestnet();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.1'))
+        .setNodeAccountIds([AccountId.fromString('0.0.1'), AccountId.fromString('0.0.3')]);
+
+      const dto: CreateTransactionDto = {
+        name: 'tx',
+        description: 'desc',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      } as any;
+
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TNVN);
+
       client.close();
     });
   });

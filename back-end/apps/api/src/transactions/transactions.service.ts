@@ -63,6 +63,8 @@ import {
   userKeysRequiredToSign,
   validateSignature,
   flattenKeyList,
+  getNodeAccountIdsFromClientNetwork,
+  isTransactionValidForNodes,
 } from '@app/common';
 
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
@@ -914,6 +916,12 @@ export class TransactionsService {
     // Check size
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TOS);
+    }
+
+    // Check nodes
+    const allowedNodes = getNodeAccountIdsFromClientNetwork(client);
+    if (!isTransactionValidForNodes(sdkTransaction, allowedNodes)) {
+      throw new BadRequestException(ErrorCodes.TNVN);
     }
 
     // Freeze transaction with shared client
