@@ -25,4 +25,7 @@ export class TransactionCachedAccount {
 
   @Column()
   cachedAccountId: number;
+
+  @Column({ default: false })
+  isReceiver: boolean;
 }
