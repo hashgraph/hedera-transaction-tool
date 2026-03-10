@@ -69,6 +69,7 @@ export class AccountCacheService {
   async getAccountInfoForTransaction(
     transaction: Transaction,
     account: string,
+    isReceiver: boolean = false,
   ): Promise<AccountInfoParsed | null> {
     if (!transaction || !transaction.mirrorNetwork) {
       return null;
@@ -85,7 +86,7 @@ export class AccountCacheService {
 
     if (this.hasCompleteData(cached) && isFresh(cached.updatedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
-      await this.linkTransactionToAccount(transaction.id, cached.id);
+      await this.linkTransactionToAccount(transaction.id, cached.id, isReceiver);
       return this.parseCachedAccount(cached);
     }
 
@@ -97,7 +98,7 @@ export class AccountCacheService {
 
     if (!claimed) {
       // Link to transaction
-      await this.linkTransactionToAccount(transaction.id, claimedAccount.id);
+      await this.linkTransactionToAccount(transaction.id, claimedAccount.id, isReceiver);
 
       if (this.hasCompleteData(claimedAccount)) {
         return this.parseCachedAccount(claimedAccount);
@@ -108,7 +109,7 @@ export class AccountCacheService {
       return null;
     }
 
-    const { data } = await this.performRefreshForClaimedAccount(claimedAccount, transaction.id);
+    const { data } = await this.performRefreshForClaimedAccount(claimedAccount, transaction.id, isReceiver);
     return data;
   }
 
@@ -142,6 +143,7 @@ export class AccountCacheService {
     accountData?: AccountInfoParsed,
     etag?: string,
     transactionId?: number,
+    isReceiver: boolean = false,
   ): Promise<{ id: number; accountData?: AccountInfoParsed } | null> {
     const updates = accountData
       ? {
@@ -173,7 +175,7 @@ export class AccountCacheService {
 
     // Link to transaction when provided (idempotent)
     if (transactionId) {
-      await this.linkTransactionToAccount(transactionId, id);
+      await this.linkTransactionToAccount(transactionId, id, isReceiver);
     }
 
     return { id, accountData };
@@ -192,6 +194,7 @@ export class AccountCacheService {
     refreshToken: string,
     etag?: string,
     transactionId?: number,
+    isReceiver: boolean = false,
   ): Promise<AccountInfoParsed | null> {
     const fetchedAccount = await this.mirrorNodeClient.fetchAccountInfo(
       account,
@@ -202,6 +205,8 @@ export class AccountCacheService {
     // Handle 304 Not Modified - data hasn't changed
     if (!fetchedAccount.data) {
       // Update updatedAt and clear refresh token only
+      // Include the isReceiver flag to ensure the transaction
+      // link is created with correct role, if applicable
       await this.saveAccountData(
         account,
         mirrorNetwork,
@@ -209,6 +214,7 @@ export class AccountCacheService {
         undefined,
         undefined,
         transactionId,
+        isReceiver,
       );
       return null; // Indicates no new data (304)
     }
@@ -221,6 +227,7 @@ export class AccountCacheService {
       fetchedAccount.data,
       fetchedAccount.etag,
       transactionId,
+      isReceiver,
     );
 
     return fetchedAccount.data;
@@ -233,6 +240,7 @@ export class AccountCacheService {
   private async performRefreshForClaimedAccount(
     claimedAccount: CachedAccount,
     transactionId?: number,
+    isReceiver: boolean = false,
   ): Promise<RefreshResult<AccountInfoParsed>> {
     const account = claimedAccount.account;
     const mirrorNetwork = claimedAccount.mirrorNetwork;
@@ -244,6 +252,7 @@ export class AccountCacheService {
         claimedAccount.refreshToken,
         claimedAccount?.etag,
         transactionId,
+        isReceiver,
       );
 
       // If 304 (no new data), return cached data if complete
@@ -263,6 +272,7 @@ export class AccountCacheService {
       return { status: RefreshStatus.REFRESHED, data: accountData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
+      // Include the isReceiver flag to ensure the transaction link is created with correct role, if applicable
       try {
         await this.saveAccountData(
           account,
@@ -271,6 +281,7 @@ export class AccountCacheService {
           undefined,
           undefined,
           transactionId,
+          isReceiver,
         );
       } catch (saveError) {
         this.logger.error('Failed to clear refresh token after error', saveError);
@@ -284,16 +295,22 @@ export class AccountCacheService {
    * Insert an association between a transaction and a cached account.
    * The insertion is idempotent (duplicates are ignored).
    */
-  private linkTransactionToAccount(
+  private async linkTransactionToAccount(
     transactionId: number,
     cachedAccountId: number,
+    isReceiver: boolean = false,
   ): Promise<void> {
-    return this.cacheHelper.linkTransactionToEntity(
-      TransactionCachedAccount,
-      transactionId,
-      cachedAccountId,
-      'cachedAccount',
-    );
+    await this.dataSource
+      .createQueryBuilder()
+      .insert()
+      .into(TransactionCachedAccount)
+      .values({
+        transaction: { id: transactionId },
+        cachedAccount: { id: cachedAccountId },
+        isReceiver,
+      })
+      .orIgnore()
+      .execute();
   }
 
   private insertAccountKeys(
@@ -354,11 +371,7 @@ export class AccountCacheService {
       return true;
     }
 
-    if (fetchedData.receiverSignatureRequired !== cached.receiverSignatureRequired) {
-      return true;
-    }
-
-    return false;
+    return fetchedData.receiverSignatureRequired !== cached.receiverSignatureRequired;
   }
 
   /**
