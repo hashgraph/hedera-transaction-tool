@@ -46,11 +46,10 @@ const handleClick = () => {
 };
 
 const handleSign = async (personalPassword: string | null) => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
   try {
     signOnGoing.value = true;
 
+    assertIsLoggedInOrganization(user.selectedOrganization);
     const transaction = await getTransactionById(
       user.selectedOrganization.serverUrl,
       props.transactionId,
