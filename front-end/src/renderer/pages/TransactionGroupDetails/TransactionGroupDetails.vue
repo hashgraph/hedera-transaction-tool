@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
 import {
-  cancelTransaction,
+  cancelTransactionGroup,
   getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
@@ -33,14 +33,6 @@ import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
-
-import {
-  getTransactionById,
-  getTransactionGroupById,
-  getUserShouldApprove,
-  sendApproverChoice,
-  cancelTransactionGroup,
-} from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 
@@ -49,6 +41,7 @@ import {
   assertUserLoggedIn,
   generateTransactionExportFileName,
   generateTransactionV1ExportContent,
+  getErrorMessage,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
@@ -67,11 +60,7 @@ import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { errorToastOptions, successToastOptions, warningToastOptions } from '@renderer/utils/toastOptions.ts';
-import {
-  formatTransactionType,
-  getTransactionTypeFromBackendType,
-} from '@renderer/utils/sdk/transactions.ts';
-import TransactionId from '@renderer/components/ui/TransactionId.vue';
+import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
@@ -582,25 +571,6 @@ async function fetchGroup(id: string | number) {
                 user.selectedOrganization.serverUrl,
                 item.transaction.id,
               ));
-          }
-
-          const txId = item.transaction.id;
-
-          const usersPublicKeys = await usersPublicRequiredToSign(
-            tx,
-            user.selectedOrganization.userKeys,
-            network.mirrorNodeBaseURL,
-            accountByIdCache,
-            nodeByIdCache,
-            publicKeyOwnerCache,
-            user.selectedOrganization,
-          );
-
-          if (
-            item.transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES &&
-            usersPublicKeys.length > 0
-          ) {
-            updatedUnsignedSignersToCheck[txId] = usersPublicKeys;
           }
         }
         fullyLoaded.value = true;
