@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onErrorCaptured, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -26,9 +26,13 @@ import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByI
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 import { ToastManager } from './utils/ToastManager';
+import { getErrorMessage } from '@renderer/utils';
 
 /* Composables */
 const router = useRouter();
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -61,6 +65,11 @@ onMounted(async () => {
   window.electronAPI.local.settings.onSettings(() => {
     router.push('/settings/general').then();
   });
+});
+
+onErrorCaptured((err: unknown) => {
+  console.log(err);
+  toastManager.error(getErrorMessage(err, 'An error occurred'));
 });
 
 /* Providers */
