@@ -6,7 +6,7 @@ import { onMounted, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
@@ -20,7 +20,9 @@ import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 import DeleteAllKeysRequiringHashMigrationModal from '@renderer/components/modals/DeleteAllKeysRequiringHashMigrationModal.vue';
 import { updateIndex, updateMnemonicHash } from '@renderer/services/keyPairService.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -28,7 +30,6 @@ const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 useSetDynamicLayout(ACCOUNT_SETUP_LAYOUT);
-const toast = useToast();
 const router = useRouter();
 const {
   getKeysToUpdateForRecoveryPhrase,
@@ -101,7 +102,7 @@ const handleContinue = async () => {
     updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
   );
   if (!error) {
-    toast.success('Recovery phrase hash updated successfully', successToastOptions);
+    toastManager.success('Recovery phrase hash updated successfully');
     await router.push({ name: 'transactions' });
   }
   loadingText.value = null;

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { resetDataLocal } from '@renderer/services/userService';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 defineProps<{ show: boolean }>();
@@ -23,14 +23,14 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Handlers */
 const handleResetData = async () => {
   await resetDataLocal();
   user.logout();
 
-  toast.success('User data has been reset', successToastOptions);
+  toastManager.success('User data has been reset');
 
   emit('update:show', false);
   emit('data:reset');

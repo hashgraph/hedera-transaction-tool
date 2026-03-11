@@ -8,7 +8,7 @@ import { Transaction } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useDraft from '@renderer/composables/useDraft';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -20,7 +20,6 @@ import {
   getPrivateKey,
   uint8ToHex,
 } from '@renderer/utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -41,7 +40,7 @@ const user = useUserStore();
 const network = useNetwork();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const draft = useDraft();
 
 /* State */
@@ -86,7 +85,7 @@ async function handle(req: Processable) {
 
     results.forEach(result => {
       if (result.status === 'rejected') {
-        toast.error(result.reason.message, errorToastOptions);
+        toastManager.error(result.reason.message);
       }
     });
 

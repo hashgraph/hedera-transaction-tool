@@ -21,8 +21,7 @@ import { isAccountId } from './validator';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import type { SignatureItem } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
@@ -192,10 +191,10 @@ export async function signTransactions(
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
   publicKeyOwnerCache: PublicKeyOwnerCache,
+  toastManager: ToastManager,
 ): Promise<boolean> {
   const user = useUserStore();
   const network = useNetworkStore();
-  const toast = useToast();
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -233,11 +232,10 @@ export async function signTransactions(
     const missingKeys = publicKeysRequired.filter(k => !userPublicKeys.has(k));
 
     if (missingKeys.length > 0) {
-      toast.error(
+      toastManager.error(
         `You need to restore the following public keys to fully sign the transaction: ${missingKeys.join(
           ', ',
         )}`,
-        errorToastOptions,
       );
       return false;
     }

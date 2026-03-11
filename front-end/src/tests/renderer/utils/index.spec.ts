@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import { hasStartTimestampChanged, transactionsDataMatch, signTransactions } from '@renderer/utils';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 export const toastErrorSpy = vi.fn();
 const toastMock = { error: toastErrorSpy };
@@ -218,6 +219,7 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
+      new ToastManager(),
     );
 
     expect(result).toBe(false);
@@ -234,6 +236,7 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
+      new ToastManager(),
     );
 
     expect(result).toBe(false);
@@ -252,6 +255,7 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
+      new ToastManager(),
     );
 
     expect(result).toBe(true);

@@ -7,12 +7,11 @@ import { computed, ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { add, getAll } from '@renderer/services/accountsService';
 
 import { handleFormatAccount, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -32,7 +31,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const isCollapsed = ref(false);
@@ -53,7 +52,7 @@ const handleLinkAccount = async (accountId: string) => {
 
   await add(user.personal.id, accountId, network.network, '');
 
-  toast.success('Account linked successfully', successToastOptions);
+  toastManager.success('Account linked successfully');
 
   emit(
     'update:linkedAccounts',

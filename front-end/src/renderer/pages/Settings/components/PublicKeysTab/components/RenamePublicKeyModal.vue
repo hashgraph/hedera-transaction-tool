@@ -5,18 +5,18 @@ import type { PublicKeyMapping } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { getErrorMessage } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 /* Store */
 const user = useUserStore();
 
-/* Composables */
-const toast = useToast();
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Props */
 const props = defineProps<{
@@ -44,15 +44,15 @@ const handleUpdate = async () => {
         props.publicKeyMapping.public_key,
         newNickname.value,
       );
-      toast.success('Nickname updated successfully', successToastOptions);
+      toastManager.success('Nickname updated successfully');
     } else if (props.publicKey) {
       await user.storePublicKeyMapping(props.publicKey, newNickname.value);
-      toast.success('Nickname set successfully', successToastOptions);
+      toastManager.success('Nickname set successfully');
     }
     emit('change');
     handleShow(false);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to rename public key mapping'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to rename public key mapping'));
   } finally {
     isUpdating.value = false;
   }

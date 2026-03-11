@@ -12,14 +12,13 @@ import {
   safeDuplicateUploadKey,
 } from '@renderer/utils';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { useRouter } from 'vue-router';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const { restoredKey, mnemonicHashNickname, index } = defineProps<{
@@ -28,13 +27,15 @@ const { restoredKey, mnemonicHashNickname, index } = defineProps<{
   index: number;
 }>();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 const router = useRouter();
-const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -95,10 +96,10 @@ const handleSaveKey = async () => {
     user.recoveryPhrase = null;
     await user.refetchUserState();
 
-    toast.success('Key pair saved', successToastOptions);
+    toastManager.success('Key pair saved');
     await router.push({ name: 'settingsKeys' });
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to store private key'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to store private key'));
   } finally {
     loadingText.value = null;
   }

@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { assertUserLoggedIn } from '@renderer/utils';
@@ -11,7 +11,7 @@ import { assertUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 const props = defineProps<{ show: boolean; recoveryPhraseHash: string }>();
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
@@ -42,7 +42,7 @@ const handleUpdate = async () => {
 
     await recoveryPhraseNickname.set(props.recoveryPhraseHash, nickname.value);
 
-    toast.success('Nickname updated successfully', successToastOptions);
+    toastManager.success('Nickname updated successfully');
 
     emit('update:show', false);
     emit('updated');

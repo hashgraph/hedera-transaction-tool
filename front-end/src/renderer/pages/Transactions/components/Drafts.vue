@@ -6,7 +6,7 @@ import { computed, nextTick, onBeforeMount, onUnmounted, ref, watch } from 'vue'
 import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useUserStore from '@renderer/stores/storeUser';
 
 import {
@@ -30,7 +30,6 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
@@ -43,14 +42,13 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 const createTooltips = useCreateTooltips();
 
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
-  DRAFTS_SORT_URL_VALUES,
-  'created_at',
-  'desc',
-);
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
+  useTableQueryState(DRAFTS_SORT_URL_VALUES, 'created_at', 'desc');
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
@@ -142,7 +140,7 @@ const handleDeleteDraft = async (draft: TransactionDraft | TransactionGroup) => 
 
   await fetchDrafts();
 
-  toast.success(toastMessage, successToastOptions);
+  toastManager.success(toastMessage);
 };
 
 const handleContinueDraft = async (draft: TransactionDraft | TransactionGroup) => {
@@ -227,7 +225,7 @@ function createFindGroupArgs(): Prisma.TransactionGroupFindManyArgs {
 }
 
 function clearTruncationState() {
-  descriptionRefs.value.forEach((el) => {
+  descriptionRefs.value.forEach(el => {
     const tooltip = Tooltip.getInstance(el);
     if (tooltip) {
       tooltip.dispose();
@@ -278,8 +276,8 @@ function setDescriptionRef(el: HTMLElement | null, draft: TransactionDraft | Tra
     descriptionRefs.value.set(id, el);
 
     if (!resizeObserver) {
-      resizeObserver = new ResizeObserver((entries) => {
-        entries.forEach((entry) => {
+      resizeObserver = new ResizeObserver(entries => {
+        entries.forEach(entry => {
           const element = entry.target as HTMLElement;
           checkTruncation(element);
         });
@@ -355,15 +353,23 @@ onUnmounted(() => {
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  syncToUrl(currentPage.value, sortField.value, sortDirection.value as 'asc' | 'desc', pageSize.value);
+  syncToUrl(
+    currentPage.value,
+    sortField.value,
+    sortDirection.value as 'asc' | 'desc',
+    pageSize.value,
+  );
   await fetchDrafts();
 });
 
-watch(() => list.value.length, () => {
-  nextTick(() => {
-    descriptionRefs.value.forEach((el) => checkTruncation(el));
-  });
-});
+watch(
+  () => list.value.length,
+  () => {
+    nextTick(() => {
+      descriptionRefs.value.forEach(el => checkTruncation(el));
+    });
+  },
+);
 </script>
 
 <template>
@@ -410,7 +416,12 @@ watch(() => list.value.length, () => {
               <th>
                 <div
                   class="table-sort-link"
-                  @click="handleSort('description', sortField === 'description' ? getOpositeDirection() : 'asc')"
+                  @click="
+                    handleSort(
+                      'description',
+                      sortField === 'description' ? getOpositeDirection() : 'asc',
+                    )
+                  "
                 >
                   <span>Description</span>
                   <i
@@ -453,23 +464,23 @@ watch(() => list.value.length, () => {
                 </td>
                 <td>
                   <span class="text-bold" :data-testid="'span-draft-tx-type-' + i">{{
-                      (draft as TransactionDraft).type
-                        ? getDraftDisplayType(draft as TransactionDraft)
-                        : 'Group'
-                    }}</span>
+                    (draft as TransactionDraft).type
+                      ? getDraftDisplayType(draft as TransactionDraft)
+                      : 'Group'
+                  }}</span>
                 </td>
                 <td>
                   <span
-                  :ref="(el) => setDescriptionRef(el as HTMLElement, draft)"
-                  class="text-wrap-two-line-ellipsis"
-                  :data-testid="'span-draft-tx-description-' + i"
-                  :data-bs-toggle="isTruncated(draft) ? 'tooltip' : ''"
-                  data-bs-trigger="hover"
-                  data-bs-placement="bottom"
-                  data-bs-custom-class="wide-tooltip"
-                  :data-bs-title="isTruncated(draft) ? getDraftDescription(draft) : ''"
+                    :ref="el => setDescriptionRef(el as HTMLElement, draft)"
+                    class="text-wrap-two-line-ellipsis"
+                    :data-testid="'span-draft-tx-description-' + i"
+                    :data-bs-toggle="isTruncated(draft) ? 'tooltip' : ''"
+                    data-bs-trigger="hover"
+                    data-bs-placement="bottom"
+                    data-bs-custom-class="wide-tooltip"
+                    :data-bs-title="isTruncated(draft) ? getDraftDescription(draft) : ''"
                   >
-                  {{getDraftDescription(draft)}}
+                    {{ getDraftDescription(draft) }}
                   </span>
                 </td>
                 <td class="text-center">

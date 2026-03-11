@@ -9,7 +9,7 @@ import { AccountId, Hbar, Transaction } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRoute } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
@@ -20,15 +20,16 @@ import { createAccountCreateTransaction, getAccountCreateData } from '@renderer/
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AccountCreateFormData from '@renderer/components/Transaction/Create/AccountCreate/AccountCreateFormData.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
 const route = useRoute();
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -83,7 +84,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
     await user.refetchKeys();
     await user.refetchAccounts();
   }, 5000);
-  toast.success(`Account ${accountId} linked`, successToastOptions);
+  toastManager.success(`Account ${accountId} has been linked`);
 };
 
 /* Functions */

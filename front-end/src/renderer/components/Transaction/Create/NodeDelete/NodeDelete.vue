@@ -5,7 +5,7 @@ import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 import { computed, reactive, ref } from 'vue';
 import { NodeDeleteTransaction, Transaction } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
@@ -14,10 +14,10 @@ import { getNodeDeleteData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeDeleteFormData from '@renderer/components/Transaction/Create/NodeDelete/NodeDeleteFormData.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const nodeData = useNodeId();
 
 /* State */
@@ -56,7 +56,7 @@ const handleUpdateData = (newData: NodeDeleteData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeId} Deleted`, successToastOptions);
+  toastManager.success(`Node ${data.nodeId} Deleted`);
 };
 
 </script>
