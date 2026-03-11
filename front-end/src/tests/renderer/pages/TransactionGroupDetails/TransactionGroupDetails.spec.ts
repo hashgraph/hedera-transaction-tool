@@ -168,6 +168,7 @@ vi.mock('@renderer/utils', () => ({
   isUserLoggedIn: vi.fn(() => true),
   usersPublicRequiredToSign: vi.fn(async () => []),
   signTransactions: vi.fn(),
+  isSignableTransaction: vi.fn(async () => false),
 }));
 
 vi.mock('@renderer/utils/sdk/transactions.ts', () => ({
