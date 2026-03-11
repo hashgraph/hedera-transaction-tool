@@ -24,7 +24,7 @@ const listedItems = computed(() => {
   return [{ value: '', label: 'None' }, ...organizations];
 });
 
-const handleUpdateDefaultOrganization = async (id: string) => {
+const handleUpdateDefaultOrganization = async (id: string | undefined) => {
   if (!isUserLoggedIn(user.personal)) return;
 
   await setDefault(id || null);
@@ -33,7 +33,7 @@ const handleUpdateDefaultOrganization = async (id: string) => {
     await setLast(user.selectedOrganization?.id || null);
   }
 
-  defaultOrganizationId.value = id;
+  defaultOrganizationId.value = id || '';
 };
 
 /* Hooks */
