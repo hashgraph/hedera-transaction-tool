@@ -259,12 +259,14 @@ const handleCancelAll = async (showModal = false) => {
   isConfirmModalShown.value = false;
 
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
+    toast.error('You must be logged in to cancel transactions.', errorToastOptions);
+    return;
   }
 
   const groupId = group.value?.id;
   if (!groupId) {
-    throw new Error('Group is not available');
+    toast.error('Transaction group is not available.', errorToastOptions);
+    return;
   }
 
   try {
