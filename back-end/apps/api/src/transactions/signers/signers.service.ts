@@ -382,7 +382,7 @@ export class SignersService {
     const txIds = notificationsToUpdate.map(n => n.transactionId);
 
     // Use UNNEST to preserve 1:1 pairing between userIds and transactionIds
-    return await manager.query(
+    const [rows] = await manager.query(
       `
       WITH input(user_id, tx_id) AS (
         SELECT * FROM UNNEST($1::int[], $2::int[])
@@ -400,6 +400,7 @@ export class SignersService {
       `,
       [userIds, txIds]
     );
+    return rows;
   }
 
   private async bulkInsertSigners(

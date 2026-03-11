@@ -248,7 +248,7 @@ export async function signTransactions(
   }
 
   if (items.length > 0) {
-    const results = await uploadSignatures(
+    const uploadResults = await uploadSignatures(
       user.personal.id,
       password,
       selectedOrganization,
@@ -258,7 +258,7 @@ export async function signTransactions(
       items,
     );
 
-    const notificationReceiverIds = results?.data?.notificationReceiverIds;
+    const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
     if (notificationReceiverIds) {
       notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
     }
