@@ -61,7 +61,7 @@
     "playwright": "1.58.2",
     "playwright-core": "1.58.2",
     "prettier": "3.8.1",
-    "sqlite3": "5.1.7",
+    "sqlite3": "5.1.6",
     "uuid": "13.0.0"
   },
   "devDependencies": {
@@ -70,7 +70,7 @@
     "@types/deep-diff": "1.0.5",
     "@types/k6": "1.6.0",
     "@types/lodash": "4.17.24",
-    "@types/node": "25.4.0",
+    "@types/node": "25.3.5",
     "@types/pg": "8.18.0",
     "glob": "13.0.6",
     "ts-loader": "9.5.4",
