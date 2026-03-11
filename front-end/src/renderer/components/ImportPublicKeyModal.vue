@@ -3,13 +3,12 @@ import { reactive, watch } from 'vue';
 
 import { PublicKey } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -23,7 +22,7 @@ const emit = defineEmits(['update:show']);
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const publicKeyMapping = reactive<{ publicKey: string; nickname: string }>({
@@ -42,9 +41,9 @@ const handleImportPublicKey = async () => {
 
     emit('update:show', false);
 
-    toast.success(`Public key and nickname imported successfully`, successToastOptions);
+    toastManager.success(`Public key and nickname imported successfully`);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import public key`), errorToastOptions);
+    toastManager.error(getErrorMessage(error, `Failed to import public key`));
   }
 };
 

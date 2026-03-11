@@ -12,7 +12,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
@@ -44,7 +44,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -67,7 +66,7 @@ const network = useNetworkStore();
 const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -145,7 +144,7 @@ async function signAfterConfirm() {
       await executeTransaction(signedTransactionBytes, groupItem);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Transaction signing failed'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Transaction signing failed'));
   } finally {
     isSigning.value = false;
   }
@@ -218,13 +217,13 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
     // }
 
     if (unmounted.value) {
-      toast.success('Transaction executed', successToastOptions);
+      toastManager.success('Transaction executed');
     }
   } catch (error) {
     const data = JSON.parse(getErrorMessage(error, 'Transaction execution failed'));
     status = data.status;
 
-    toast.error(data.message, errorToastOptions);
+    toastManager.error(data.message);
   } finally {
     isExecuting.value = false;
   }
@@ -348,7 +347,7 @@ async function sendSignedTransactionsToOrganization() {
 
   const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
 
-  toast.success('Transaction submitted successfully', successToastOptions);
+  toastManager.success('Transaction submitted successfully');
 
   for (const groupItem of group.groupItems) {
     const results = await Promise.allSettled([
@@ -359,7 +358,7 @@ async function sendSignedTransactionsToOrganization() {
     ]);
     results.forEach(result => {
       if (result.status === 'rejected') {
-        toast.error(result.reason.message, errorToastOptions);
+        toastManager.error(result.reason.message);
       }
     });
   }

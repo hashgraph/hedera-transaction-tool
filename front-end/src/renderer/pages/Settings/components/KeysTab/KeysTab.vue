@@ -8,7 +8,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { CommonNetwork } from '@shared/enums';
@@ -31,15 +31,16 @@ import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
 import { RESTORE_MISSING_KEYS } from '@renderer/router';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import { KeyType } from '@renderer/types';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -132,7 +133,7 @@ const handleHideDecryptedKey = (publicKey: string) => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message, successToastOptions);
+  toastManager.success(message);
 };
 
 const handleSelectAll = () => {
@@ -217,7 +218,7 @@ const decrypt = async () => {
       });
     }
   } catch {
-    toast.error('Failed to decrypt private key', errorToastOptions);
+    toastManager.error('Failed to decrypt private key');
   }
 };
 

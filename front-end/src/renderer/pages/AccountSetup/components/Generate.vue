@@ -6,7 +6,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
@@ -17,7 +17,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppRecoveryPhraseWord from '@renderer/components/ui/AppRecoveryPhraseWord.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 const props = defineProps<{
@@ -30,7 +30,7 @@ const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
@@ -91,7 +91,7 @@ const handleWordChange = (newWord: string, index: number) => {
 
 const handleCopyRecoveryPhrase = () => {
   navigator.clipboard.writeText(words.value.join(', '));
-  toast.success('Recovery phrase copied', successToastOptions);
+  toastManager.success('Recovery phrase copied');
 };
 
 const handleGenerate = async () => {

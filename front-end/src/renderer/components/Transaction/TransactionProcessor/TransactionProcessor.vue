@@ -6,7 +6,7 @@ import { ref } from 'vue';
 
 import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import ConfirmTransactionHandler from './components/ConfirmTransactionHandler.vue';
 import ValidateRequestHandler from './components/ValidateRequestHandler.vue';
@@ -19,7 +19,7 @@ import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpd
 import CheckKeySettingHandler from '@renderer/components/Transaction/TransactionProcessor/components/CheckKeySettingHandler.vue';
 
 import { assertHandlerExists } from '.';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 const props = defineProps<{
@@ -34,7 +34,7 @@ const props = defineProps<{
 }>();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* State */
 /** Handlers */
@@ -60,13 +60,13 @@ const isLoading = ref(false);
 /* Handlers */
 const handleGroupSubmitSuccess = async (id: number) => {
   setConfirmModalShown(false);
-  toast.success('Transaction group submitted successfully', successToastOptions);
+  toastManager.success('Transaction group submitted successfully');
   props.onGroupSubmitted && (await props.onGroupSubmitted(id));
 };
 
 const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
   setConfirmModalShown(false);
-  toast.success('Transaction submitted successfully', successToastOptions);
+  toastManager.success('Transaction submitted successfully');
   props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 

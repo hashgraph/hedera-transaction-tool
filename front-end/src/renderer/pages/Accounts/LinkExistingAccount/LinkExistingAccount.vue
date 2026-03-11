@@ -5,7 +5,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -22,7 +22,6 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
@@ -30,7 +29,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 useCreateTooltips();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -43,7 +42,7 @@ const handleLinkAccount = async () => {
     accountData.accountId.value.includes('-') &&
     !validateAccountIdChecksum(accountData.accountId.value)
   ) {
-    toast.error('Invalid checksum for the entered Account ID.', errorToastOptions);
+    toastManager.error('Invalid checksum for the entered Account ID.');
     return;
   }
   if (accountData.isValid.value) {
@@ -59,10 +58,10 @@ const handleLinkAccount = async () => {
         nickname.value,
       );
 
-      toast.success('Account linked successfully!', successToastOptions);
+      toastManager.success('Account linked successfully!');
       await router.push({ name: 'accounts' });
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Account link failed'), errorToastOptions);
+      toastManager.error(getErrorMessage(error, 'Account link failed'));
     }
   }
 };

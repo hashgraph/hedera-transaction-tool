@@ -6,11 +6,9 @@ import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { errorToastOptions } from '@renderer/utils/toastOptions';
-
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
 import { logout } from '@renderer/services/organization/auth';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useUserStore from '@renderer/stores/storeUser';
 import {
@@ -33,7 +31,7 @@ import UpgradeError from '@renderer/components/GlobalAppProcesses/components/Upg
 const { versionStatus, updateUrl } = useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
 const user = useUserStore();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const { setLast } = useDefaultOrganization();
 
 const cancelLabel = 'Disconnect';
@@ -137,7 +135,7 @@ const handleDisconnect = async () => {
       );
     } catch (error) {
       console.error('Failed to disconnect organization:', error);
-      toast.error('Failed to disconnect organization', errorToastOptions);
+      toastManager.error('Failed to disconnect organization');
     }
   }
 };

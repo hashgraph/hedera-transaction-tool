@@ -47,8 +47,7 @@ import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignT
 import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
 import ExportTransactionsModal from '@renderer/components/ExternalSigning/ExportTransactionsModal.vue';
 import { filterForImportV1 } from '@renderer/services/importV1.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
@@ -66,7 +65,7 @@ const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -203,7 +202,7 @@ async function handleTransactionFileAction(action: string) {
           filterResult.value = await filterForImportV1([transactionFilePath.value]);
           isImportModalVisible.value = true;
         } else {
-          toast.error(`Unsupported file extension: ${ext}`, errorToastOptions);
+          toastManager.error(`Unsupported file extension: ${ext}`);
         }
       }
       break;
@@ -240,12 +239,11 @@ async function importSignaturesFromV2File(filePath: string) {
   }
 
   if (unknownTransactionIds.length > 1) {
-    toast.error(
+    toastManager.error(
       `Import failed: there are ${unknownTransactionIds.length} unknown transactions in this file`,
-      errorToastOptions,
     );
   } else if (unknownTransactionIds.length === 1) {
-    toast.error('Import failed: there is 1 unknown transaction in this file', errorToastOptions);
+    toastManager.error('Import failed: there is 1 unknown transaction in this file');
   } else {
     // console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
     const importResults = await importSignatures(user.selectedOrganization, importInputs);
@@ -259,14 +257,12 @@ async function importSignaturesFromV2File(filePath: string) {
       }
     }
     if (failedImportCount > 0) {
-      toast.error(
+      toastManager.error(
         `Failed to import signatures for ${failedImportCount} transaction${failedImportCount > 1 ? 's' : ''}`,
-        errorToastOptions,
       );
     } else {
-      toast.success(
+      toastManager.success(
         `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
-        successToastOptions,
       );
     }
     // console.log('importSignatures: RESULTS', JSON.stringify(importResults));

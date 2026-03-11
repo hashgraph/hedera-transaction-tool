@@ -11,6 +11,7 @@ import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOpt
 import { getTransactionById } from '@renderer/services/organization';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 import { ref } from 'vue';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
 
 /* Props */
 const props = defineProps<{
@@ -27,6 +28,7 @@ const emit = defineEmits<{
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const toastManager = ToastManager.inject();
 
 /* Composables */
 const toast = useToast();
@@ -61,6 +63,7 @@ const handleSign = async (personalPassword: string | null) => {
       accountByIdCache,
       nodeByIdCache,
       publicKeyOwnerCache,
+      toastManager
     );
 
     const newTransaction = await getTransactionById(
