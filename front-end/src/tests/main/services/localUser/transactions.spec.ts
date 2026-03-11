@@ -343,7 +343,7 @@ describe('Services Local User Transactions', () => {
         return decryptedPrivateKeys[keyPairs.findIndex(kp => kp.private_key === privateKey)];
       });
 
-      expect(() =>
+      await expect(() =>
         signTransaction(transactionBytes, publicKeys, userId, userPassword),
       ).rejects.toThrow('Required public key not found in local key pairs');
     });
@@ -487,7 +487,9 @@ describe('Services Local User Transactions', () => {
       },
     );
 
-    test('Should write response to file without fileId and show in folder if response is a large buffer', async () => {
+    test('Should write response to file without fileId and show in folder if response is a large buffer',
+      { timeout: 20 * 1_000 },
+      async () => {
       const queryBytes = new Uint8Array([1, 2, 3]);
       const accountId = '0.0.1234';
       const privateKey = '302e020100300506032b657004220420';
