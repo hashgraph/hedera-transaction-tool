@@ -113,6 +113,8 @@ const handleChangePassword = async () => {
     toastManager.error(getErrorMessage(error, 'Failed to change password'));
   } finally {
     isChangingPassword.value = false;
+    currentPassword.value = '';
+    newPassword.value = '';
   }
 };
 
