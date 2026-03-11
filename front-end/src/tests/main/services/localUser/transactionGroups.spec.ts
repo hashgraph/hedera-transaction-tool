@@ -83,7 +83,7 @@ describe('Transaction Groups Service', () => {
 
       prisma.transactionGroup.findUnique.mockResolvedValue(null);
 
-      expect(() => getGroup(id)).rejects.toThrow('Transaction group not found');
+      await expect(getGroup(id)).rejects.toThrow('Transaction group not found');
     });
   });
 

@@ -29,7 +29,7 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'update:selectedTab', value: Tabs): void;
-  (event: 'update:selectedRecoveryPhrase', value: string): void;
+  (event: 'update:selectedRecoveryPhrase', value: string | undefined): void;
 }>();
 
 /* Stores */

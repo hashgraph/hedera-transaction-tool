@@ -2146,7 +2146,7 @@ describe('TransactionsService', () => {
       expect(result).toBe(false);
     });
 
-    it('should reeturn false if a user is not in the approvers list', async () => {
+    it('should return false if a user is not in the approvers list', async () => {
       const transactionId = 123;
       const transaction = { id: transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
       const approvers: TransactionApprover[] = [];
