@@ -341,6 +341,7 @@ export class SignersService {
           const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
 
           if (updatedNotificationReceivers.length > 0) {
+            notificationsToDismiss = updatedNotificationReceivers.map(r => r.id);
             emitDismissedNotifications(
               this.notificationsPublisher,
               updatedNotificationReceivers,

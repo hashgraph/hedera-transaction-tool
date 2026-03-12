@@ -1055,12 +1055,15 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[]]);       // bulkUpdateNotificationReceivers (empty, wrapped for destructuring)
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       mockManager.find.mockResolvedValue([
         { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
@@ -1116,12 +1119,15 @@ describe('SignersService', () => {
 
       const mockManager = mockDeep<any>();
       // bulkUpdateNotificationReceivers returns empty array (no SIGN receivers to dismiss)
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[]]);       // bulkUpdateNotificationReceivers (empty, wrapped for destructuring)
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       mockManager.find.mockResolvedValue([
         { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
@@ -1185,12 +1191,13 @@ describe('SignersService', () => {
       // Second query call: bulkUpdateNotificationReceivers (returns dismissed receivers)
       mockManager.query
         .mockResolvedValueOnce(undefined) // bulkUpdateTransactions
-        .mockResolvedValue(dismissedReceivers); // bulkUpdateNotificationReceivers + subsequent calls
+        .mockResolvedValueOnce([dismissedReceivers]); // bulkUpdateNotificationReceivers (wrapped for destructuring)
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       mockManager.find.mockResolvedValue([
         { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
