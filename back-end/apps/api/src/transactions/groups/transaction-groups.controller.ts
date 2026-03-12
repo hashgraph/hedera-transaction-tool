@@ -81,6 +81,8 @@ export class TransactionGroupsController {
     status: 200,
     type: CancelGroupResultDto,
   })
+  @ApiResponse({ status: 400, description: 'Transaction group not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   @Patch('/:id/cancel')
   @Serialize(CancelGroupResultDto)
   cancelTransactionGroup(

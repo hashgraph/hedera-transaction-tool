@@ -12,6 +12,10 @@ export const getCancelGroupToast = (result: CancelGroupResult): CancelGroupToast
   const alreadyCanceledCount = result.alreadyCanceled.length;
   const failedCount = result.failed.length;
 
+  if (canceledCount === 0 && alreadyCanceledCount === 0 && failedCount === 0) {
+    return { kind: 'success', message: 'No transactions to cancel' };
+  }
+
   if (failedCount === 0 && canceledCount > 0 && alreadyCanceledCount > 0) {
     return {
       kind: 'success',

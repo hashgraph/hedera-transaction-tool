@@ -251,6 +251,7 @@ const mountGroupDetails = async () => {
         NextTransactionCursor: true,
         BreadCrumb: true,
         TransactionId: true,
+        TransactionGroupRow: true,
       },
     },
   });

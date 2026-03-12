@@ -66,6 +66,7 @@ import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { getCancelGroupToast } from './cancelGroupResult.ts';
+import { isInProgressStatus } from '../TransactionDetails/components/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 
 /* Types */
@@ -186,14 +187,9 @@ const isCreator = computed(() => {
 });
 
 const groupIsInProgress = computed(() => {
-  let result = false;
-  for (const item of group.value?.groupItems ?? []) {
-    if (isTransactionInProgress(item.transaction as ITransactionFull)) {
-      result = true;
-      break;
-    }
-  }
-  return result;
+  return group.value?.groupItems?.some(item =>
+    isInProgressStatus(item.transaction.status),
+  ) ?? false;
 });
 
 const canCancelAll = computed(() => {
@@ -605,13 +601,6 @@ async function fetchGroup(id: string | number) {
   }
 }
 
-const isTransactionInProgress = (transaction: ITransactionFull) => {
-  return [
-    TransactionStatus.NEW,
-    TransactionStatus.WAITING_FOR_EXECUTION,
-    TransactionStatus.WAITING_FOR_SIGNATURES,
-  ].includes(transaction.status);
-};
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">

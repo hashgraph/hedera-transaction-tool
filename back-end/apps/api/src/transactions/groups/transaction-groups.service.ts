@@ -208,18 +208,26 @@ export class TransactionGroupsService {
     const alreadyCanceled: number[] = [];
     const failed: { id: number; code: CancelFailureCode; message: string }[] = [];
 
-    for (const groupItem of group.groupItems) {
-      const txId = groupItem.transactionId;
-
-      try {
+    const results = await Promise.allSettled(
+      group.groupItems.map(async (groupItem) => {
+        const txId = groupItem.transactionId;
         const outcome = await this.transactionsService.cancelTransactionWithOutcome(txId, user);
+        return { txId, outcome };
+      }),
+    );
+
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
+      if (result.status === 'fulfilled') {
+        const { txId, outcome } = result.value;
         if (outcome === CancelTransactionOutcome.ALREADY_CANCELED) {
           alreadyCanceled.push(txId);
         } else {
           canceled.push(txId);
         }
-      } catch (error) {
-        failed.push(this.mapCancelError(txId, error));
+      } else {
+        const txId = group.groupItems[i].transactionId;
+        failed.push(this.mapCancelError(txId, result.reason));
       }
     }
 
