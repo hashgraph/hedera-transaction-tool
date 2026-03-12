@@ -14,6 +14,7 @@ catalog:
 
 onlyBuiltDependencies:
   - '@nestjs/core'
+  - '@scarf/scarf'
   - argon2
   - cpu-features
   - protobufjs
