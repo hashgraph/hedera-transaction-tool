@@ -52,7 +52,7 @@ These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
 
 ---
 
-## Final release checklist (v<major.minor.patch>)
+## Final Release
 
 ### Pre-requisites
 - [ ] Beta `v<major.minor.patch>-beta.<number>` deployed and stable
