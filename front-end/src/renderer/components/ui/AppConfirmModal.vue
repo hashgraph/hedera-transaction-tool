@@ -29,6 +29,7 @@ const emit = defineEmits(['update:show']);
 /* Handlers */
 const handleConfirm = () => {
   if (props.loading) return;
+  emit('update:show', false);
   props.callback && props.callback();
 };
 const handleCancel = () => {

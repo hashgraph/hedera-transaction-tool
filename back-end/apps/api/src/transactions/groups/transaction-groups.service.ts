@@ -202,11 +202,11 @@ export class TransactionGroupsService {
     user: User,
     groupId: number,
   ): Promise<CancelGroupResultDto> {
-    const group = await this.getTransactionGroup(user, groupId);
+    const group = await this.getTransactionGroup(user, groupId, false);
 
     // Verify the user is the creator of the group's transactions
     const firstTransaction = group.groupItems[0]?.transaction;
-    if (firstTransaction && firstTransaction.creatorKey?.userId !== user.id) {
+    if (!firstTransaction?.creatorKey || firstTransaction.creatorKey.userId !== user.id) {
       throw new UnauthorizedException('Only the creator can cancel all transactions in a group.');
     }
 
@@ -288,7 +288,7 @@ export class TransactionGroupsService {
       return {
         id,
         code: CancelFailureCode.CONFLICT,
-        message: 'Transaction state changed during cancellation.',
+        message: 'Transaction state changed during cancellation. Please retry.',
       };
     }
 

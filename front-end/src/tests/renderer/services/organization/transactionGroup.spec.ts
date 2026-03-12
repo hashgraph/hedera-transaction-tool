@@ -36,7 +36,7 @@ describe('transactionGroup service', () => {
       alreadyCanceled: [],
       failed: [],
       summary: {
-        total: 1,
+        processedCount: 1,
         canceled: 1,
         alreadyCanceled: 0,
         failed: 0,
@@ -52,6 +52,8 @@ describe('transactionGroup service', () => {
     );
     expect(axiosWithCredentials.patch).toHaveBeenCalledWith(
       `${serverUrl}/transaction-groups/${groupId}/cancel`,
+      undefined,
+      { withCredentials: true },
     );
   });
 

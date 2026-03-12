@@ -66,7 +66,7 @@ import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { getCancelGroupToast } from './cancelGroupResult.ts';
-import { isInProgressStatus } from '../TransactionDetails/components/transactionStatusGuards.ts';
+import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 
 /* Types */
@@ -266,6 +266,10 @@ const handleCancelAll = async (showModal = false) => {
     const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, currentGroupId);
     const toastResult = getCancelGroupToast(result);
 
+    isConfirmModalShown.value = false;
+    isConfirmModalLoadingState.value = false;
+    confirmModalLoadingText.value = '';
+
     if (toastResult.kind === 'success') {
       toastManager.success(toastResult.message);
     } else if (toastResult.kind === 'warning') {
@@ -274,6 +278,7 @@ const handleCancelAll = async (showModal = false) => {
       toastManager.error(toastResult.message);
     }
   } catch (error) {
+    isConfirmModalShown.value = false;
     toastManager.error(getErrorMessage(error, 'Failed to cancel transactions'));
   } finally {
     isConfirmModalShown.value = false;
@@ -636,6 +641,7 @@ async function fetchGroup(id: string | number) {
                 <div>
                   <AppButton
                     :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                    :disabled="Boolean(loadingStates[visibleButtons[0]])"
                     :loading="Boolean(loadingStates[visibleButtons[0]])"
                     :loading-text="loadingStates[visibleButtons[0]] || ''"
                     :data-testid="buttonsDataTestIds[visibleButtons[0]]"

@@ -6,7 +6,7 @@ import {
   isApprovableStatus,
   isInProgressStatus,
   isSignableStatus,
-} from '@renderer/pages/TransactionDetails/components/transactionStatusGuards';
+} from '@renderer/utils/transactionStatusGuards';
 
 describe('transactionStatusGuards', () => {
   test('canceled status is not actionable', () => {

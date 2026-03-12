@@ -351,7 +351,7 @@ describe('TransactionGroupsService', () => {
         groupItems: items.map((item, index) => ({
           seq: index + 1,
           transactionId: item.id,
-          transaction: { id: item.id, status: item.status } as Transaction,
+          transaction: { id: item.id, status: item.status, creatorKey: { userId: user.id } } as unknown as Transaction,
         })),
       };
       jest.spyOn(service, 'getTransactionGroup').mockResolvedValue(group as any);
@@ -373,7 +373,7 @@ describe('TransactionGroupsService', () => {
       expect(result.alreadyCanceled).toEqual([]);
       expect(result.failed).toEqual([]);
       expect(result.summary).toEqual({
-        total: 2,
+        processedCount: 2,
         canceled: 2,
         alreadyCanceled: 0,
         failed: 0,
@@ -404,7 +404,7 @@ describe('TransactionGroupsService', () => {
         },
       ]);
       expect(result.summary).toEqual({
-        total: 3,
+        processedCount: 3,
         canceled: 1,
         alreadyCanceled: 1,
         failed: 1,
@@ -433,7 +433,7 @@ describe('TransactionGroupsService', () => {
         },
       ]);
       expect(result.summary).toEqual({
-        total: 3,
+        processedCount: 3,
         canceled: 2,
         alreadyCanceled: 0,
         failed: 1,
@@ -456,7 +456,7 @@ describe('TransactionGroupsService', () => {
       expect(result.canceled).toEqual([]);
       expect(result.failed).toEqual([]);
       expect(result.summary).toEqual({
-        total: 2,
+        processedCount: 2,
         canceled: 0,
         alreadyCanceled: 2,
         failed: 0,

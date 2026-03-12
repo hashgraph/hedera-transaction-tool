@@ -12,6 +12,7 @@ export const executeTransactionActionFlow = async (
   params: ExecuteTransactionActionFlowParams,
 ): Promise<void> => {
   let executeFailed = false;
+  let refreshFailed = false;
   try {
     await params.execute();
   } catch (error) {
@@ -22,10 +23,11 @@ export const executeTransactionActionFlow = async (
   try {
     await params.refresh();
   } catch (refreshError) {
+    refreshFailed = true;
     params.onRefreshError?.(refreshError);
   }
 
-  if (!executeFailed) {
+  if (!executeFailed && !refreshFailed) {
     params.onSuccess();
   }
 };

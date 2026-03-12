@@ -62,7 +62,7 @@ import {
   executeTransactionActionFlow,
   type TransactionAction,
 } from './transactionActionFlow.ts';
-import { isApprovableStatus, isInProgressStatus, isSignableStatus } from './transactionStatusGuards.ts';
+import { isApprovableStatus, isInProgressStatus, isSignableStatus } from '@renderer/utils/transactionStatusGuards.ts';
 
 /* Types */
 type ActionButton =
