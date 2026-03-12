@@ -95,8 +95,8 @@ export class OrganizationPage extends BasePage {
   signAllTransactionsButtonSelector = 'button-sign-group';
   cancelAllTransactionsButtonSelector = 'button-cancel-group';
   exportAllTransactionsButtonSelector = 'button-export-group';
-  confirmGroupActionButtonSelector = 'button-confirm-group-action';
-  cancelGroupActionButtonSelector = 'button-cancel-group-action';
+  confirmGroupActionButtonSelector = 'button-modal-confirm';
+  cancelGroupActionButtonSelector = 'button-modal-cancel';
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
   serverUrlInputSelector = 'input-server-url';

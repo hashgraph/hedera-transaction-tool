@@ -76,7 +76,7 @@ export interface CancelGroupResult {
     message: string;
   }[];
   summary: {
-    total: number;
+    processedCount: number;
     canceled: number;
     alreadyCanceled: number;
     failed: number;
@@ -90,6 +90,8 @@ export const cancelTransactionGroup = async (
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
       `${serverUrl}/transaction-groups/${groupId}/cancel`,
+      undefined,
+      { withCredentials: true },
     );
     return data;
   }, 'Failed to cancel transactions in group');

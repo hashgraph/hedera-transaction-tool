@@ -1,7 +1,6 @@
 export type TransactionAction = 'cancel' | 'archive' | 'execute' | 'remindSigners';
 
 interface ExecuteTransactionActionFlowParams {
-  action: TransactionAction;
   execute: () => Promise<void>;
   refresh: () => Promise<void>;
   onSuccess: () => void;
@@ -12,21 +11,21 @@ interface ExecuteTransactionActionFlowParams {
 export const executeTransactionActionFlow = async (
   params: ExecuteTransactionActionFlowParams,
 ): Promise<void> => {
-  let failed = false;
+  let executeFailed = false;
   try {
     await params.execute();
-    await params.refresh();
-    params.onSuccess();
   } catch (error) {
-    failed = true;
+    executeFailed = true;
     params.onError(error);
-  } finally {
-    if (failed) {
-      try {
-        await params.refresh();
-      } catch (refreshError) {
-        params.onRefreshError?.(refreshError);
-      }
-    }
+  }
+
+  try {
+    await params.refresh();
+  } catch (refreshError) {
+    params.onRefreshError?.(refreshError);
+  }
+
+  if (!executeFailed) {
+    params.onSuccess();
   }
 };

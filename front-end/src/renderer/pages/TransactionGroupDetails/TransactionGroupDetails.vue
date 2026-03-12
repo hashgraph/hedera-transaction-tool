@@ -251,19 +251,19 @@ const handleCancelAll = async (showModal = false) => {
     return;
   }
 
-  const groupId = group.value?.id;
-  if (!groupId) {
+  const currentGroupId = group.value?.id;
+  if (!currentGroupId) {
     isConfirmModalShown.value = false;
     toastManager.error('Transaction group is not available.');
     return;
   }
 
   try {
-    confirmModalLoadingText.value = 'Canceling...';
+    confirmModalLoadingText.value = 'Canceling…';
     isConfirmModalLoadingState.value = true;
-    loadingStates[cancel] = 'Canceling...';
+    loadingStates[cancel] = 'Canceling…';
 
-    const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, groupId);
+    const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, currentGroupId);
     const toastResult = getCancelGroupToast(result);
 
     if (toastResult.kind === 'success') {
@@ -279,7 +279,7 @@ const handleCancelAll = async (showModal = false) => {
     isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
-    await fetchGroup(groupId).catch(refreshError => {
+    await fetchGroup(currentGroupId).catch(refreshError => {
       toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transactions'));
     });
     loadingStates[cancel] = null;

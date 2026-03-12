@@ -25,7 +25,6 @@ import { TransactionGroupsService } from './transaction-groups.service';
 @ApiTags('Transaction Groups')
 @Controller('transaction-groups')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
-@Serialize(TransactionGroupDto)
 export class TransactionGroupsController {
   constructor(private readonly transactionGroupsService: TransactionGroupsService) {}
 
@@ -42,6 +41,7 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Post()
+  @Serialize(TransactionGroupDto)
   createTransactionGroup(
     @GetUser() user: User,
     @Body() dto: CreateTransactionGroupDto,
@@ -64,6 +64,7 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Get('/:id')
+  @Serialize(TransactionGroupDto)
   getTransactionGroup(
     @GetUser() user: User,
     @Param('id', ParseIntPipe) groupId: number,

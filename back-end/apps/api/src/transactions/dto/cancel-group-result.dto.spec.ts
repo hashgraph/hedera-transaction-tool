@@ -11,7 +11,7 @@ describe('CancelGroupResultDto', () => {
       canceled: [1, 2],
       alreadyCanceled: [3],
       failed: [{ id: 4, code: CancelFailureCode.NOT_CANCELABLE, message: 'Cannot cancel' }],
-      summary: { total: 4, canceled: 2, alreadyCanceled: 1, failed: 1 },
+      summary: { processedCount: 4, canceled: 2, alreadyCanceled: 1, failed: 1 },
     };
 
     const dto = toDto(plain);
@@ -22,7 +22,7 @@ describe('CancelGroupResultDto', () => {
     expect(dto.failed).toHaveLength(1);
     expect(dto.failed[0].id).toBe(4);
     expect(dto.failed[0].code).toBe(CancelFailureCode.NOT_CANCELABLE);
-    expect(dto.summary.total).toBe(4);
+    expect(dto.summary.processedCount).toBe(4);
     expect(dto.summary.canceled).toBe(2);
   });
 });

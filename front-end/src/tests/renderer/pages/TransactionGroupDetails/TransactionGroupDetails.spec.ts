@@ -301,7 +301,7 @@ describe('TransactionGroupDetails.vue', () => {
       alreadyCanceled: [],
       failed: [],
       summary: {
-        total: 1,
+        processedCount: 1,
         canceled: 1,
         alreadyCanceled: 0,
         failed: 0,
@@ -330,7 +330,7 @@ describe('TransactionGroupDetails.vue', () => {
         },
       ],
       summary: {
-        total: 3,
+        processedCount: 3,
         canceled: 1,
         alreadyCanceled: 1,
         failed: 1,
@@ -344,5 +344,75 @@ describe('TransactionGroupDetails.vue', () => {
       '1 canceled, 1 already canceled, 1 failed',
       { duration: 4000 },
     );
+  });
+
+  test('shows error toast when all transactions fail to cancel', async () => {
+    vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
+      canceled: [],
+      alreadyCanceled: [],
+      failed: [
+        {
+          id: 101,
+          code: 'INTERNAL_ERROR',
+          message: 'Cancellation failed due to an unexpected error.',
+        },
+      ],
+      summary: {
+        processedCount: 1,
+        canceled: 0,
+        alreadyCanceled: 0,
+        failed: 1,
+      },
+    } as any);
+
+    const wrapper = await mountGroupDetails();
+    await confirmCancelAll(wrapper);
+
+    expect(toastError).toHaveBeenCalledWith(
+      'No transactions could be canceled',
+      expect.objectContaining({ duration: 0 }),
+    );
+  });
+
+  test('refreshes group state after successful cancel', async () => {
+    vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
+      canceled: [101],
+      alreadyCanceled: [],
+      failed: [],
+      summary: {
+        processedCount: 1,
+        canceled: 1,
+        alreadyCanceled: 0,
+        failed: 0,
+      },
+    } as any);
+
+    const wrapper = await mountGroupDetails();
+
+    expect(getTransactionGroupById).toHaveBeenCalledTimes(1);
+
+    await confirmCancelAll(wrapper);
+
+    // Initial fetch + refresh after cancel
+    expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
+  });
+
+  test('does not show Cancel All button when user is not the creator', async () => {
+    const nonCreatorContacts = {
+      contacts: [
+        {
+          user: { id: 999 },
+          userKeys: [{ id: 77 }],
+        },
+      ],
+    };
+
+    const { default: useContactsStore } = await import('@renderer/stores/storeContacts.ts');
+    vi.mocked(useContactsStore).mockReturnValue(nonCreatorContacts as any);
+
+    const wrapper = await mountGroupDetails();
+
+    const cancelButton = wrapper.find('[data-testid="button-cancel-group"]');
+    expect(cancelButton.exists()).toBe(false);
   });
 });

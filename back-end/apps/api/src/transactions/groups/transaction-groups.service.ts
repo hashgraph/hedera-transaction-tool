@@ -204,30 +204,41 @@ export class TransactionGroupsService {
   ): Promise<CancelGroupResultDto> {
     const group = await this.getTransactionGroup(user, groupId);
 
+    // Verify the user is the creator of the group's transactions
+    const firstTransaction = group.groupItems[0]?.transaction;
+    if (firstTransaction && firstTransaction.creatorKey?.userId !== user.id) {
+      throw new UnauthorizedException('Only the creator can cancel all transactions in a group.');
+    }
+
     const canceled: number[] = [];
     const alreadyCanceled: number[] = [];
     const failed: { id: number; code: CancelFailureCode; message: string }[] = [];
 
-    const results = await Promise.allSettled(
-      group.groupItems.map(async (groupItem) => {
-        const txId = groupItem.transactionId;
-        const outcome = await this.transactionsService.cancelTransactionWithOutcome(txId, user);
-        return { txId, outcome };
-      }),
-    );
+    // Process in batches to avoid DB connection pool exhaustion
+    const BATCH_SIZE = 10;
+    for (let i = 0; i < group.groupItems.length; i += BATCH_SIZE) {
+      const batch = group.groupItems.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(async (groupItem) => {
+          const txId = groupItem.transactionId;
+          const outcome = await this.transactionsService.cancelTransactionWithOutcome(txId, user);
+          return { txId, outcome };
+        }),
+      );
 
-    for (let i = 0; i < results.length; i++) {
-      const result = results[i];
-      if (result.status === 'fulfilled') {
-        const { txId, outcome } = result.value;
-        if (outcome === CancelTransactionOutcome.ALREADY_CANCELED) {
-          alreadyCanceled.push(txId);
+      for (let j = 0; j < results.length; j++) {
+        const result = results[j];
+        if (result.status === 'fulfilled') {
+          const { txId, outcome } = result.value;
+          if (outcome === CancelTransactionOutcome.ALREADY_CANCELED) {
+            alreadyCanceled.push(txId);
+          } else {
+            canceled.push(txId);
+          }
         } else {
-          canceled.push(txId);
+          const txId = batch[j].transactionId;
+          failed.push(this.mapCancelError(txId, result.reason));
         }
-      } else {
-        const txId = group.groupItems[i].transactionId;
-        failed.push(this.mapCancelError(txId, result.reason));
       }
     }
 
@@ -236,7 +247,7 @@ export class TransactionGroupsService {
       alreadyCanceled,
       failed,
       summary: {
-        total: group.groupItems.length,
+        processedCount: group.groupItems.length,
         canceled: canceled.length,
         alreadyCanceled: alreadyCanceled.length,
         failed: failed.length,
@@ -277,7 +288,7 @@ export class TransactionGroupsService {
       return {
         id,
         code: CancelFailureCode.CONFLICT,
-        message: 'Transaction state changed during cancellation. Please retry.',
+        message: 'Transaction state changed during cancellation.',
       };
     }
 

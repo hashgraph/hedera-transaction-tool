@@ -5,7 +5,7 @@ import type { CancelGroupResult } from '@renderer/services/organization/transact
 import { getCancelGroupToast } from '@renderer/pages/TransactionGroupDetails/cancelGroupResult';
 
 const baseSummary = {
-  total: 0,
+  processedCount: 0,
   canceled: 0,
   alreadyCanceled: 0,
   failed: 0,
@@ -17,7 +17,7 @@ describe('getCancelGroupToast', () => {
       canceled: [1, 2],
       alreadyCanceled: [],
       failed: [],
-      summary: { ...baseSummary, total: 2, canceled: 2 },
+      summary: { ...baseSummary, processedCount: 2, canceled: 2 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({
@@ -31,7 +31,7 @@ describe('getCancelGroupToast', () => {
       canceled: [],
       alreadyCanceled: [1, 2],
       failed: [],
-      summary: { ...baseSummary, total: 2, alreadyCanceled: 2 },
+      summary: { ...baseSummary, processedCount: 2, alreadyCanceled: 2 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({
@@ -51,7 +51,7 @@ describe('getCancelGroupToast', () => {
           message: 'Transaction cannot be canceled in its current state.',
         },
       ],
-      summary: { ...baseSummary, total: 3, canceled: 1, alreadyCanceled: 1, failed: 1 },
+      summary: { ...baseSummary, processedCount: 3, canceled: 1, alreadyCanceled: 1, failed: 1 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({
@@ -65,7 +65,7 @@ describe('getCancelGroupToast', () => {
       canceled: [1],
       alreadyCanceled: [2],
       failed: [],
-      summary: { ...baseSummary, total: 2, canceled: 1, alreadyCanceled: 1, failed: 0 },
+      summary: { ...baseSummary, processedCount: 2, canceled: 1, alreadyCanceled: 1, failed: 0 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({
@@ -85,12 +85,26 @@ describe('getCancelGroupToast', () => {
           message: 'Transaction cannot be canceled in its current state.',
         },
       ],
-      summary: { ...baseSummary, total: 2, canceled: 1, alreadyCanceled: 0, failed: 1 },
+      summary: { ...baseSummary, processedCount: 2, canceled: 1, alreadyCanceled: 0, failed: 1 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({
       kind: 'warning',
       message: '1 canceled, 1 failed',
+    });
+  });
+
+  test('returns warning for empty group (processedCount: 0)', () => {
+    const result: CancelGroupResult = {
+      canceled: [],
+      alreadyCanceled: [],
+      failed: [],
+      summary: { ...baseSummary },
+    };
+
+    expect(getCancelGroupToast(result)).toEqual({
+      kind: 'warning',
+      message: 'No transactions to cancel',
     });
   });
 
@@ -105,7 +119,7 @@ describe('getCancelGroupToast', () => {
           message: 'Cancellation failed due to an unexpected error.',
         },
       ],
-      summary: { ...baseSummary, total: 1, failed: 1 },
+      summary: { ...baseSummary, processedCount: 1, failed: 1 },
     };
 
     expect(getCancelGroupToast(result)).toEqual({

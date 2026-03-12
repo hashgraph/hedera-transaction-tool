@@ -37,9 +37,9 @@ const handleCancel = () => {
 };
 </script>
 <template>
-  <AppModal :show="props.show" class="common-modal" @update:show="emit('update:show')">
+  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="emit('update:show')">
     <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="handleCancel"></i>
+      <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
       <div class="text-center">
         <AppCustomIcon :name="'questionMark'" style="height: 160px" />
       </div>
@@ -47,10 +47,10 @@ const handleCancel = () => {
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
       <hr class="separator my-5" />
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" :disabled="props.loading" data-testid="button-cancel-group-action" @click="handleCancel"
+        <AppButton color="borderless" :disabled="props.loading" data-testid="button-modal-cancel" @click="handleCancel"
           >Cancel</AppButton
         >
-        <AppButton color="primary" :loading="props.loading" :loading-text="props.loadingText" data-testid="button-confirm-group-action" @click="handleConfirm"
+        <AppButton color="primary" :loading="props.loading" :loading-text="props.loadingText" data-testid="button-modal-confirm" @click="handleConfirm"
           >{{ props.buttonText }}</AppButton
         >
       </div>

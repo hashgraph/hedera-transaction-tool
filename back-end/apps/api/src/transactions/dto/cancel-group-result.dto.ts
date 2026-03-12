@@ -21,7 +21,7 @@ class CancelGroupFailedItemDto {
 
 class CancelGroupSummaryDto {
   @Expose()
-  total: number;
+  processedCount: number;
 
   @Expose()
   canceled: number;

@@ -122,7 +122,7 @@ describe('TransactionGroupsController', () => {
         },
       ],
       summary: {
-        total: 3,
+        processedCount: 3,
         canceled: 1,
         alreadyCanceled: 1,
         failed: 1,

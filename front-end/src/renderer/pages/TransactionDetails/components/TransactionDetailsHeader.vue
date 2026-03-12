@@ -440,7 +440,6 @@ const handleTransactionAction = async (
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
     await executeTransactionActionFlow({
-      action,
       execute: async () => {
         await actionFunction(serverUrl, transactionId);
       },

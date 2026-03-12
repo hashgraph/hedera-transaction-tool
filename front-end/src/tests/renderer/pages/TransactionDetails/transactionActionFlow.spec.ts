@@ -13,7 +13,6 @@ describe('transactionActionFlow', () => {
     const onError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'cancel',
       execute,
       refresh,
       onSuccess,
@@ -32,7 +31,6 @@ describe('transactionActionFlow', () => {
     const onError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'archive',
       execute,
       refresh,
       onSuccess,
@@ -51,7 +49,6 @@ describe('transactionActionFlow', () => {
     const onError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'cancel',
       execute,
       refresh,
       onSuccess,
@@ -71,7 +68,6 @@ describe('transactionActionFlow', () => {
     const onRefreshError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'cancel',
       execute,
       refresh,
       onSuccess,
@@ -90,7 +86,6 @@ describe('transactionActionFlow', () => {
     const onError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'archive',
       execute,
       refresh,
       onSuccess,
@@ -109,13 +104,33 @@ describe('transactionActionFlow', () => {
     const onError = vi.fn();
 
     await executeTransactionActionFlow({
-      action: 'cancel',
       execute,
       refresh,
       onSuccess,
       onError,
     });
 
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
+
+  test('calls onSuccess even when refresh fails on success path', async () => {
+    const execute = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockRejectedValue(new Error('refresh failed'));
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    const onRefreshError = vi.fn();
+
+    await executeTransactionActionFlow({
+      execute,
+      refresh,
+      onSuccess,
+      onError,
+      onRefreshError,
+    });
+
+    expect(onError).not.toHaveBeenCalled();
+    expect(onSuccess).toHaveBeenCalledTimes(1);
+    expect(onRefreshError).toHaveBeenCalledWith(expect.any(Error));
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 });
