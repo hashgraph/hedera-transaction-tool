@@ -292,18 +292,18 @@ importers:
   apps/notifications:
     dependencies:
       '@socket.io/redis-streams-adapter':
-        specifier: 0.2.2
-        version: 0.2.2(socket.io-adapter@2.5.6)
+        specifier: 0.3.1
+        version: 0.3.1(socket.io-adapter@2.5.6)
       nodemailer:
-        specifier: 6.9.16
-        version: 6.9.16
+        specifier: 8.0.2
+        version: 8.0.2
       socket.io:
-        specifier: 4.8.1
-        version: 4.8.1
+        specifier: 4.8.3
+        version: 4.8.3
     devDependencies:
       '@types/nodemailer':
-        specifier: 6.4.17
-        version: 6.4.17
+        specifier: 7.0.11
+        version: 7.0.11
 
   typeorm:
     dependencies:
@@ -1550,8 +1550,8 @@ packages:
   '@socket.io/component-emitter@3.1.2':
     resolution: {integrity: sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==}
 
-  '@socket.io/redis-streams-adapter@0.2.2':
-    resolution: {integrity: sha512-BMPa6oGC0wFgpMXoGksbJ75zMBwk+79pxjHc2YusdoK+X0BxN4fTsqEBuFV7yeXi9ekbi87rwlsT61+WZGVW9g==}
+  '@socket.io/redis-streams-adapter@0.3.1':
+    resolution: {integrity: sha512-J+kcx5w4TUYSSmvimMC+UZKdxdVAmppiVoscoOPkeJeLDgsf154Sth/NRVNNn8PUg5/bEYV5Q9MxDm+ztTx1LQ==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
       socket.io-adapter: ^2.5.4
@@ -1687,8 +1687,8 @@ packages:
   '@types/node@25.4.0':
     resolution: {integrity: sha512-9wLpoeWuBlcbBpOY3XmzSTG3oscB6xjBEEtn+pYXTfhyXhIxC5FsBer2KTopBlvKEiW9l13po9fq+SJY/5lkhw==}
 
-  '@types/nodemailer@6.4.17':
-    resolution: {integrity: sha512-I9CCaIp6DTldEg7vyUTZi8+9Vo0hi1/T8gv3C89yk1rSAAzoKQ8H8ki/jBYJSFoH/BisgLP8tkZMlQ91CIquww==}
+  '@types/nodemailer@7.0.11':
+    resolution: {integrity: sha512-E+U4RzR2dKrx+u3N4DlsmLaDC6mMZOM/TPROxA0UAPiTgI0y4CEFBmZE+coGWTjakDriRsXG368lNk1u9Q0a2g==}
 
   '@types/normalize-package-data@2.4.4':
     resolution: {integrity: sha512-37i+OaWTh9qeK4LSHPsyRC7NahnGotNuZvjLSgcPzblpHB3rrCJxAOgI5gCdKm7coonsaX1Of0ILiTcnZjbfxA==}
@@ -4256,8 +4256,8 @@ packages:
   node-releases@2.0.36:
     resolution: {integrity: sha512-TdC8FSgHz8Mwtw9g5L4gR/Sh9XhSP/0DEkQxfEFXOpiul5IiHgHan2VhYYb6agDSfp4KuvltmGApc8HMgUrIkA==}
 
-  nodemailer@6.9.16:
-    resolution: {integrity: sha512-psAuZdTIRN08HKVd/E8ObdV6NO7NTBY3KsC30F7M4H1OnmLCUNaS56FpYxyb26zWLSyYF9Ozch9KYHhHegsiOQ==}
+  nodemailer@8.0.2:
+    resolution: {integrity: sha512-zbj002pZAIkWQFxyAaqoxvn+zoIwRnS40hgjqTXudKOOJkiFFgBeNqjgD3/YCR12sZnrghWYBY+yP1ZucdDRpw==}
     engines: {node: '>=6.0.0'}
 
   normalize-package-data@3.0.3:
@@ -4942,6 +4942,10 @@ packages:
 
   socket.io@4.8.1:
     resolution: {integrity: sha512-oZ7iUCxph8WYRHHcjBEc9unw3adt5CmSNlppj/5Q4k2RIrhl8Z5yY2Xr4j9zj0+wzVZ0bxmYoGSzKJnRl6A4yg==}
+    engines: {node: '>=10.2.0'}
+
+  socket.io@4.8.3:
+    resolution: {integrity: sha512-2Dd78bqzzjE6KPkD5fHZmDAKRNe3J15q+YHDrIsy9WEkqttc7GY+kT9OBLSMaPbQaEd0x1BjcmtMtXkfpc+T5A==}
     engines: {node: '>=10.2.0'}
 
   sonic-boom@4.2.1:
@@ -7228,7 +7232,7 @@ snapshots:
 
   '@socket.io/component-emitter@3.1.2': {}
 
-  '@socket.io/redis-streams-adapter@0.2.2(socket.io-adapter@2.5.6)':
+  '@socket.io/redis-streams-adapter@0.3.1(socket.io-adapter@2.5.6)':
     dependencies:
       '@msgpack/msgpack': 2.8.0
       debug: 4.3.7
@@ -7416,7 +7420,7 @@ snapshots:
     dependencies:
       undici-types: 7.18.2
 
-  '@types/nodemailer@6.4.17':
+  '@types/nodemailer@7.0.11':
     dependencies:
       '@types/node': 25.4.0
 
@@ -10442,7 +10446,7 @@ snapshots:
 
   node-releases@2.0.36: {}
 
-  nodemailer@6.9.16: {}
+  nodemailer@8.0.2: {}
 
   normalize-package-data@3.0.3:
     dependencies:
@@ -11268,6 +11272,20 @@ snapshots:
       base64id: 2.0.0
       cors: 2.8.6
       debug: 4.3.7
+      engine.io: 6.6.6
+      socket.io-adapter: 2.5.6
+      socket.io-parser: 4.2.5
+    transitivePeerDependencies:
+      - bufferutil
+      - supports-color
+      - utf-8-validate
+
+  socket.io@4.8.3:
+    dependencies:
+      accepts: 1.3.8
+      base64id: 2.0.0
+      cors: 2.8.6
+      debug: 4.4.3(supports-color@8.1.1)
       engine.io: 6.6.6
       socket.io-adapter: 2.5.6
       socket.io-parser: 4.2.5
