@@ -1,27 +1,5 @@
 # Release workflow
 
-## Core release steps (reused by beta and final)
-
-These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
-
-- [ ] Update `package.json` (and other versioned files) to target version
-- [ ] Run `pnpm i` in `backend/`, `frontend/`, and `automation/`
-- [ ] Build frontend artifacts
-- [ ] Notarize frontend artifacts (all .pkg and .dmg files)
-- [ ] Build and push backend images with correct tags
-- [ ] Create a new branch on DevOps-GitOps:
-  - [ ] Update `development` overlays to use this version
-  - [ ] Update `finance` overlays to use this version (if applicable)
-  - [ ] Update `devops` overlays to use this version (if applicable)
-  - [ ] Update `staging` overlays to use this version
-- [ ] Open PR for GitOps changes and merge
-- [ ] Update `staging` overlays in `staging` branch in DevOps-GitOps and commit 
-- [ ] In ArgoCD, refresh `Development` (others should auto-refresh)
-- [ ] Manually delete `api/chain/notifications` pods of `Development` as needed so they redeploy
-- [ ] Verify all services (api/chain/notifications, etc.) are healthy and running this version
-
----
-
 ## Pre-Release
 
 ### Planning / Temp Release Branch
@@ -41,13 +19,26 @@ These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
 - [ ] Create draft PR for temp release branch to satisfy DCO checks
 
 ### Release branch naming / rules
-- [ ] Request rule relaxing for `release/` branch naming
+- [ ] Request rule relaxing for `release/` branch naming, changes may take a minute to propagate
 - [ ] Rename temp branch to `release/<major.minor>`
-- [ ] Wait for branch protection/rule changes to propagate (if needed)
 - [ ] Request version branch rules to be reinstated
 
-### Apply core release steps for beta
-- [ ] Perform all items in **Core release steps** using version `v<major.minor.patch>-beta.<number>` from the release branch
+### Apply core release steps for pre-release
+- [ ] Update `package.json` (and other versioned files) to target version
+- [ ] Run `pnpm i` in `backend/`, `frontend/`, and `automation/`
+- [ ] Build frontend artifacts
+- [ ] Notarize frontend artifacts (all .pkg and .dmg files)
+- [ ] Build and push backend images with correct tags
+- [ ] Create a new branch on DevOps-GitOps:
+  - [ ] Update `development` overlays to use this version
+  - [ ] Update `finance` overlays to use this version (if applicable)
+  - [ ] Update `devops` overlays to use this version (if applicable)
+  - [ ] Update `staging` overlays to use this version
+- [ ] Open PR for GitOps changes and merge
+- [ ] Update `staging` overlays in `staging` branch in DevOps-GitOps and commit
+- [ ] In ArgoCD, refresh `Development` (others should auto-refresh)
+- [ ] Manually delete `api/chain/notifications` pods of `Development` as needed so they redeploy
+- [ ] Verify all services (api/chain/notifications, etc.) are healthy and running this version
 - [ ] Create GitHub pre-release for `v<major.minor.patch>-beta.<number>` with minimum to no release notes (none should be required)
 
 ---
@@ -65,7 +56,21 @@ These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
 - [ ] Get PR approval and merge
 
 ### Apply core release steps for final
-- [ ] Perform all items in **Core release steps** using version `v<major.minor.patch>` from the release branch
+- [ ] Update `package.json` (and other versioned files) to target version
+- [ ] Run `pnpm i` in `backend/`, `frontend/`, and `automation/`
+- [ ] Build frontend artifacts
+- [ ] Notarize frontend artifacts (all .pkg and .dmg files)
+- [ ] Build and push backend images with correct tags
+- [ ] Create a new branch on DevOps-GitOps:
+  - [ ] Update `development` overlays to use this version
+  - [ ] Update `finance` overlays to use this version (if applicable)
+  - [ ] Update `devops` overlays to use this version (if applicable)
+  - [ ] Update `staging` overlays to use this version
+- [ ] Open PR for GitOps changes and merge
+- [ ] Update `staging` overlays in `staging` branch in DevOps-GitOps and commit
+- [ ] In ArgoCD, refresh `Development` (others should auto-refresh)
+- [ ] Manually delete `api/chain/notifications` pods of `Development` as needed so they redeploy
+- [ ] Verify all services (api/chain/notifications, etc.) are healthy and running this version
 
 ### Final tagging and release
 - [ ] Create final git tag: `v<major.minor.patch>`
