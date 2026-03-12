@@ -204,9 +204,11 @@ export class TransactionGroupsService {
   ): Promise<CancelGroupResultDto> {
     const group = await this.getTransactionGroup(user, groupId, false);
 
-    // Verify the user is the creator of the group's transactions
-    const firstTransaction = group.groupItems[0]?.transaction;
-    if (!firstTransaction?.creatorKey || firstTransaction.creatorKey.userId !== user.id) {
+    // Verify the user is the creator of all transactions in the group
+    const allOwnedByUser = group.groupItems.every(
+      item => item.transaction?.creatorKey?.userId === user.id,
+    );
+    if (!allOwnedByUser) {
       throw new UnauthorizedException('Only the creator can cancel all transactions in a group.');
     }
 

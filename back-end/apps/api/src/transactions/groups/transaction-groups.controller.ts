@@ -51,6 +51,7 @@ export class TransactionGroupsController {
 
   /* TESTING ONLY: Get all transactions groups */
   @Get()
+  @Serialize(TransactionGroupDto)
   getTransactionGroups(): Promise<TransactionGroup[]> {
     return this.transactionGroupsService.getTransactionGroups();
   }
