@@ -358,6 +358,29 @@ describe('TransactionGroupsService', () => {
       return group;
     };
 
+    it('should throw UnauthorizedException when user does not own all transactions', async () => {
+      const group = {
+        id: 1,
+        groupItems: [
+          {
+            seq: 1,
+            transactionId: 1,
+            transaction: { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES, creatorKey: { userId: user.id } } as unknown as Transaction,
+          },
+          {
+            seq: 2,
+            transactionId: 2,
+            transaction: { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES, creatorKey: { userId: user.id + 999 } } as unknown as Transaction,
+          },
+        ],
+      };
+      jest.spyOn(service, 'getTransactionGroup').mockResolvedValue(group as any);
+
+      await expect(service.cancelTransactionGroup(user as User, 1)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
     it('should cancel all in-progress transactions', async () => {
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
