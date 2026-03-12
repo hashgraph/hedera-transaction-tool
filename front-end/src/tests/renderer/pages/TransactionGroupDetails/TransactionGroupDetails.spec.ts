@@ -10,7 +10,7 @@ import {
   getTransactionGroupById,
   getUserShouldApprove,
 } from '@renderer/services/organization';
-import { warningToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
@@ -318,7 +318,7 @@ describe('TransactionGroupDetails.vue', () => {
 
     expect(toastWarning).toHaveBeenCalledWith(
       '1 canceled, 1 already canceled, 1 failed',
-      warningToastOptions,
+      { duration: 4000 },
     );
   });
 });

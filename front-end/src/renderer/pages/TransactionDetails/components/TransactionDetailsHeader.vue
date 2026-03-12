@@ -446,14 +446,14 @@ const handleTransactionAction = async (
       },
       refresh: props.onAction,
       onSuccess: () => {
-        toast.success(successMessage, successToastOptions);
+        toastManager.success(successMessage);
       },
       onError: error => {
         isConfirmModalShown.value = false;
-        toast.error(getErrorMessage(error, `Failed to ${action} transaction`), errorToastOptions);
+        toastManager.error(getErrorMessage(error, `Failed to ${action} transaction`));
       },
       onRefreshError: refreshError => {
-        toast.error(getErrorMessage(refreshError, 'Failed to refresh transaction'), errorToastOptions);
+        toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transaction'));
       },
     });
   } finally {

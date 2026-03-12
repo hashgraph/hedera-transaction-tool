@@ -59,7 +59,7 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { errorToastOptions, successToastOptions, warningToastOptions } from '@renderer/utils/toastOptions.ts';
+
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
@@ -248,13 +248,13 @@ const handleCancelAll = async (showModal = false) => {
   isConfirmModalShown.value = false;
 
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    toast.error('You must be logged in to cancel transactions.', errorToastOptions);
+    toastManager.error('You must be logged in to cancel transactions.');
     return;
   }
 
   const groupId = group.value?.id;
   if (!groupId) {
-    toast.error('Transaction group is not available.', errorToastOptions);
+    toastManager.error('Transaction group is not available.');
     return;
   }
 
@@ -265,17 +265,17 @@ const handleCancelAll = async (showModal = false) => {
     const toastResult = getCancelGroupToast(result);
 
     if (toastResult.kind === 'success') {
-      toast.success(toastResult.message, successToastOptions);
+      toastManager.success(toastResult.message);
     } else if (toastResult.kind === 'warning') {
-      toast.warning(toastResult.message, warningToastOptions);
+      toastManager.warning(toastResult.message);
     } else {
-      toast.error(toastResult.message, errorToastOptions);
+      toastManager.error(toastResult.message);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to cancel transactions'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to cancel transactions'));
   } finally {
     await fetchGroup(groupId).catch(refreshError => {
-      toast.error(getErrorMessage(refreshError, 'Failed to refresh transactions'), errorToastOptions);
+      toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transactions'));
     });
     loadingStates[cancel] = null;
   }
