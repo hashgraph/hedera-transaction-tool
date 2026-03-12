@@ -42,7 +42,7 @@ These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
 
 ### Release branch naming / rules
 - [ ] Request rule relaxing for `release/` branch naming
-- [ ] Rename temp branch to `release/v<major.minor>`
+- [ ] Rename temp branch to `release/<major.minor>`
 - [ ] Wait for branch protection/rule changes to propagate (if needed)
 - [ ] Request version branch rules to be reinstated
 
