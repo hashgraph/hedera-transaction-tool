@@ -22,7 +22,7 @@ These steps apply to any release of `v<major.minor.patch>(-beta.<number>)`.
 
 ---
 
-## Beta release checklist (v<major.minor.patch>-beta.<number>)
+## Pre-Release
 
 ### Planning / Temp Release Branch
 - [ ] Create temp release branch from `main`: `v<major.minor.patch>-beta.<number>-temp-release`
