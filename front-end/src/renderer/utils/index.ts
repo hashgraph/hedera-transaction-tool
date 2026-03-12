@@ -259,7 +259,7 @@ export async function signTransactions(
     );
 
     const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
-    if (notificationReceiverIds) {
+    if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
       notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
     }
 
