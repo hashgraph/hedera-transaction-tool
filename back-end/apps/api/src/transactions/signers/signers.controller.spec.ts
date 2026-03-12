@@ -125,41 +125,38 @@ describe('SignaturesController', () => {
       };
       const transformedDto = { transformed: 'value' };
 
-      // Mock plainToInstance to return a transformed object
       (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
-      // Stub validateOrReject to resolve
       (validateOrReject as jest.Mock).mockResolvedValue(undefined);
-      const expectedResult = [{ id: 1 }];
-      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue(expectedResult);
+      const expectedSigners = [{ id: 1 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: expectedSigners,
+        notificationReceiverIds: [],
+      });
 
       const result = await controller.uploadSignatureMap(dtoInput, user);
 
       expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
       expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
       expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user);
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(expectedSigners);
     });
 
     it('should transform, validate and upload signature maps for an array of objects', async () => {
       const dtoInput = [
-        {
-          id: 1,
-          signatureMap: new SignatureMap(),
-        },
-        {
-          id: 2,
-          signatureMap: new SignatureMap(),
-        }
+        { id: 1, signatureMap: new SignatureMap() },
+        { id: 2, signatureMap: new SignatureMap() },
       ];
       const transformedDtos = [{ transformed: 'value1' }, { transformed: 'value2' }];
 
-      // For each call, return the corresponding transformed object
       (plainToInstance as jest.Mock)
         .mockReturnValueOnce(transformedDtos[0])
         .mockReturnValueOnce(transformedDtos[1]);
       (validateOrReject as jest.Mock).mockResolvedValue(undefined);
-      const expectedResult = [{ id: 1 }, { id: 2 }];
-      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue(expectedResult);
+      const expectedSigners = [{ id: 1 }, { id: 2 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: expectedSigners,
+        notificationReceiverIds: [],
+      });
 
       const result = await controller.uploadSignatureMap(dtoInput, user);
 
@@ -168,7 +165,62 @@ describe('SignaturesController', () => {
       expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
       expect(validateOrReject).toHaveBeenCalledTimes(2);
       expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith(transformedDtos, user);
-      expect(result).toEqual(expectedResult);
+      expect(result).toEqual(expectedSigners);
+    });
+
+    it('should return signers and notificationReceiverIds when includeNotifications is true', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedSigners = [{ id: 1 }];
+      const expectedNotificationReceiverIds = [1, 2, 3];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: expectedSigners,
+        notificationReceiverIds: expectedNotificationReceiverIds,
+      });
+
+      const result = await controller.uploadSignatureMap(dtoInput, user, true);
+
+      expect(result).toEqual({
+        signers: expectedSigners,
+        notificationReceiverIds: expectedNotificationReceiverIds,
+      });
+    });
+
+    it('should return only signers when includeNotifications is false', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedSigners = [{ id: 1 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: expectedSigners,
+        notificationReceiverIds: [1, 2, 3],
+      });
+
+      const result = await controller.uploadSignatureMap(dtoInput, user, false);
+
+      expect(result).toEqual(expectedSigners);
+    });
+
+    it('should return only signers when includeNotifications is not provided', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      const expectedSigners = [{ id: 1 }];
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: expectedSigners,
+        notificationReceiverIds: [1, 2, 3],
+      });
+
+      const result = await controller.uploadSignatureMap(dtoInput, user);
+
+      expect(result).toEqual(expectedSigners);
     });
   });
 });

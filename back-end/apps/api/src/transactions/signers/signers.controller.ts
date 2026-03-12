@@ -6,6 +6,7 @@ import {
   Param,
   ParseIntPipe,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -25,6 +26,7 @@ import { GetUser } from '../../decorators';
 
 import {
   UploadSignatureMapDto,
+  UploadSignatureMapResponseDto,
   TransactionSignerDto,
   TransactionSignerUserKeyDto,
   TransactionSignerFullDto,
@@ -75,6 +77,7 @@ export class SignersController {
     return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
+
   /* Upload one or more signature maps for one or more transactions */
   @ApiOperation({
     summary: 'Upload one or more signature maps for one or more transactions',
@@ -87,16 +90,31 @@ export class SignersController {
   @ApiResponse({
     status: 201,
     type: [TransactionSignerFullDto],
+    description: 'Deprecated: use ?includeNotifications=true for full response'
+  })
+  @ApiResponse({
+    status: 201,
+    type: UploadSignatureMapResponseDto,
+    description: 'Returned when includeNotifications=true'
   })
   @Post()
   @HttpCode(201)
-  @Serialize(TransactionSignerFullDto)
   async uploadSignatureMap(
     @Body() body: UploadSignatureMapDto | UploadSignatureMapDto[],
     @GetUser() user: User,
-  ): Promise<TransactionSigner[]> {
+    @Query('includeNotifications') includeNotifications?: boolean,
+  ): Promise<TransactionSigner[] | UploadSignatureMapResponseDto> {
     const transformedSignatureMaps = await transformAndValidateDto(UploadSignatureMapDto, body);
 
-    return this.signaturesService.uploadSignatureMaps(transformedSignatureMaps, user);
+    const { signers, notificationReceiverIds } = await this.signaturesService.uploadSignatureMaps(
+      transformedSignatureMaps,
+      user,
+    );
+
+    if (includeNotifications) {
+      return { signers, notificationReceiverIds };
+    }
+
+    return signers;
   }
 }

@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hashgraph/sdk';
 import { hasStartTimestampChanged, transactionsDataMatch, signTransactions } from '@renderer/utils';
-import { ToastManager } from '@renderer/utils/ToastManager';
 
 export const toastErrorSpy = vi.fn();
 const toastMock = { error: toastErrorSpy };
@@ -22,6 +21,13 @@ vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => mockUseNetworkStore(),
 }));
 
+const mockDismissNotifications = vi.fn();
+const mockUseNotificationsStore = vi.fn();
+vi.mock('@renderer/stores/storeNotifications', () => ({
+  __esModule: true,
+  default: () => mockUseNotificationsStore(),
+}));
+
 const mockUsersPublicRequiredToSign = vi.fn();
 vi.mock('@renderer/utils/transactionSignatureModels', () => ({
   usersPublicRequiredToSign: (...args: any[]) => mockUsersPublicRequiredToSign(...args),
@@ -31,6 +37,13 @@ const mockUploadSignatures = vi.fn();
 vi.mock('@renderer/services/organization', () => ({
   uploadSignatures: (...args: any[]) => mockUploadSignatures(...args),
 }));
+
+const mockToastManager = {
+  error: vi.fn(),
+  success: vi.fn(),
+  warning: vi.fn(),
+  info: vi.fn(),
+} as any;
 
 describe('General utilities', () => {
   const t1Bytes = [
@@ -185,13 +198,14 @@ describe('signTransactions', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockToastManager.error.mockReset();
 
     mockUseNetworkStore.mockReturnValue({
       mirrorNodeBaseURL: 'https://mirror.test',
     });
 
     mockUseUserStore.mockReturnValue({
-      personal: { id: 'user-1', isLoggedIn: true, },
+      personal: { id: 'user-1', isLoggedIn: true },
       keyPairs: [{ public_key: 'pk-1' }],
       selectedOrganization: {
         serverUrl: 'https://api.test',
@@ -200,6 +214,10 @@ describe('signTransactions', () => {
         isServerActive: true,
         loginRequired: false,
       },
+    });
+
+    mockUseNotificationsStore.mockReturnValue({
+      dismissNotifications: mockDismissNotifications,
     });
 
     originalFromBytes = Transaction.fromBytes;
@@ -219,11 +237,11 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
-      new ToastManager(),
+      mockToastManager,
     );
 
     expect(result).toBe(false);
-    expect(toastErrorSpy).toHaveBeenCalledTimes(1);
+    expect(mockToastManager.error).toHaveBeenCalledTimes(1);
     expect(mockUploadSignatures).not.toHaveBeenCalled();
   });
 
@@ -236,7 +254,7 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
-      new ToastManager(),
+      mockToastManager,
     );
 
     expect(result).toBe(false);
@@ -245,6 +263,7 @@ describe('signTransactions', () => {
 
   test('uploads signatures and returns true when signatures are required and user has keys', async () => {
     mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+    mockUploadSignatures.mockResolvedValue({ data: { notificationReceiverIds: [] } });
 
     const result = await signTransactions(
       [
@@ -255,7 +274,7 @@ describe('signTransactions', () => {
       {} as any,
       {} as any,
       {} as any,
-      new ToastManager(),
+      mockToastManager,
     );
 
     expect(result).toBe(true);
@@ -263,24 +282,73 @@ describe('signTransactions', () => {
 
     const args = mockUploadSignatures.mock.calls[0];
 
-    expect(args[0]).toBe('user-1'); // userId
-    expect(args[1]).toBe('pw'); // password
+    expect(args[0]).toBe('user-1');
+    expect(args[1]).toBe('pw');
     expect(args[2]).toEqual(expect.objectContaining({ serverUrl: 'https://api.test' }));
 
     const signatureItems = args[6] as any[];
     expect(Array.isArray(signatureItems)).toBe(true);
     expect(signatureItems).toHaveLength(2);
     expect(signatureItems[0]).toEqual(
-      expect.objectContaining({
-        transactionId: 'tx-1',
-        publicKeys: ['pk-1'],
-      }),
+      expect.objectContaining({ transactionId: 'tx-1', publicKeys: ['pk-1'] }),
     );
     expect(signatureItems[1]).toEqual(
-      expect.objectContaining({
-        transactionId: 'tx-2',
-        publicKeys: ['pk-1'],
-      }),
+      expect.objectContaining({ transactionId: 'tx-2', publicKeys: ['pk-1'] }),
     );
+  });
+
+  test('dismisses notifications when notificationReceiverIds are returned', async () => {
+    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+    mockUploadSignatures.mockResolvedValue({
+      data: { notificationReceiverIds: [10, 11, 12] },
+    });
+
+    await signTransactions(
+      [{ id: 'tx-1', transactionBytes: '00' } as any],
+      'pw',
+      {} as any,
+      {} as any,
+      {} as any,
+      mockToastManager,
+    );
+
+    expect(mockDismissNotifications).toHaveBeenCalledWith(
+      'https://api.test',
+      [10, 11, 12],
+    );
+  });
+
+  test('does not dismiss notifications when notificationReceiverIds is empty', async () => {
+    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+    mockUploadSignatures.mockResolvedValue({
+      data: { notificationReceiverIds: [] },
+    });
+
+    await signTransactions(
+      [{ id: 'tx-1', transactionBytes: '00' } as any],
+      'pw',
+      {} as any,
+      {} as any,
+      {} as any,
+      mockToastManager,
+    );
+
+    expect(mockDismissNotifications).not.toHaveBeenCalled();
+  });
+
+  test('does not dismiss notifications when uploadSignatures returns no data', async () => {
+    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+    mockUploadSignatures.mockResolvedValue(null);
+
+    await signTransactions(
+      [{ id: 'tx-1', transactionBytes: '00' } as any],
+      'pw',
+      {} as any,
+      {} as any,
+      {} as any,
+      mockToastManager,
+    );
+
+    expect(mockDismissNotifications).not.toHaveBeenCalled();
   });
 });

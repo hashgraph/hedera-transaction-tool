@@ -7,6 +7,7 @@ import pLimit from 'p-limit';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 import { getOne } from '@renderer/services/accountsService';
 import { uploadSignatures } from '@renderer/services/organization';
@@ -195,6 +196,7 @@ export async function signTransactions(
 ): Promise<boolean> {
   const user = useUserStore();
   const network = useNetworkStore();
+  const notificationStore = useNotificationsStore();
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -246,7 +248,7 @@ export async function signTransactions(
   }
 
   if (items.length > 0) {
-    await uploadSignatures(
+    const uploadResults = await uploadSignatures(
       user.personal.id,
       password,
       selectedOrganization,
@@ -255,6 +257,12 @@ export async function signTransactions(
       undefined,
       items,
     );
+
+    const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
+    if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
+      notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
+    }
+
     signed = true;
   }
   return signed;
