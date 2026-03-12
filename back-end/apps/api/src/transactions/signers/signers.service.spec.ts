@@ -411,7 +411,7 @@ describe('SignersService', () => {
   describe('bulkUpdateNotificationReceivers', () => {
     it('should execute bulk notification update query', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([[{ id: 1, userId: 1 }, { id: 2, userId: 2 }], 2]);
 
       const notificationsToUpdate = [
         { userId: 1, transactionId: 100 },
@@ -422,13 +422,12 @@ describe('SignersService', () => {
 
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE notification_receiver'),
-        [[1, 2], [100, 200]]
+        [[1, 2], [100, 200]],
       );
     });
 
     it('should not execute query when notificationsToUpdate is empty', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
 
       await service['bulkUpdateNotificationReceivers'](mockManager, []);
 
@@ -437,7 +436,7 @@ describe('SignersService', () => {
 
     it('should build correct query with UNNEST and paired arrays', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query.mockResolvedValue([[{ id: 1, userId: 42 }], 1]);
 
       const notificationsToUpdate = [{ userId: 42, transactionId: 99 }];
 
@@ -445,29 +444,41 @@ describe('SignersService', () => {
 
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('UNNEST($1::int[], $2::int[])'),
-        [[42], [99]]
+        [[42], [99]],
       );
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining("type = 'TRANSACTION_INDICATOR_SIGN'"),
-        expect.any(Array)
+        expect.any(Array),
       );
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('isRead" = false'),
-        expect.any(Array)
+        expect.any(Array),
       );
     });
 
-    it('should return the query result', async () => {
+    it('should return only the rows, not the rowCount', async () => {
       const mockManager = mockDeep<any>();
-      const mockResult = [{ id: 1, userId: 42 }];
-      mockManager.query.mockResolvedValue(mockResult);
+      const mockRows = [{ id: 1, userId: 42 }];
+      mockManager.query.mockResolvedValue([mockRows, 1]);
 
       const result = await service['bulkUpdateNotificationReceivers'](
         mockManager,
-        [{ userId: 42, transactionId: 99 }]
+        [{ userId: 42, transactionId: 99 }],
       );
 
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(mockRows);
+    });
+
+    it('should return empty array when no rows updated', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue([[], 0]);
+
+      const result = await service['bulkUpdateNotificationReceivers'](
+        mockManager,
+        [{ userId: 42, transactionId: 99 }],
+      );
+
+      expect(result).toEqual([]);
     });
   });
 
@@ -598,7 +609,9 @@ describe('SignersService', () => {
 
       const mockRaw = [{ id: 1, userId: user.id, transactionId, userKeyId: publicKeyId }];
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)        // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);          // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -651,13 +664,13 @@ describe('SignersService', () => {
         .setNodeAccountIds([AccountId.fromString('0.0.3')])
         .freeze();
 
-      await sdkTransaction1.sign(privateKey);
-      await sdkTransaction2.sign(privateKey);
-
       const transactions = [
         { id: transactionId1, transactionBytes: sdkTransaction1.toBytes(), status: TransactionStatus.WAITING_FOR_EXECUTION },
         { id: transactionId2, transactionBytes: sdkTransaction2.toBytes(), status: TransactionStatus.WAITING_FOR_EXECUTION },
       ];
+
+      await sdkTransaction1.sign(privateKey);
+      await sdkTransaction2.sign(privateKey);
 
       dataSource.manager.find.mockResolvedValueOnce(transactions);
       dataSource.manager.find.mockResolvedValueOnce([]);
@@ -665,7 +678,9 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)        // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);          // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -780,11 +795,11 @@ describe('SignersService', () => {
 
       jest.mocked(isExpired).mockReturnValue(false);
 
-      const mockNotificationReceivers = [{ id: 10, userId: user.id }, { id: 11, userId: user.id }];
+      const mockNotificationRows = [{ id: 10, userId: user.id }, { id: 11, userId: user.id }];
       const mockManager = mockDeep<any>();
       mockManager.query
-        .mockResolvedValueOnce(undefined) // bulkUpdateTransactions
-        .mockResolvedValueOnce(mockNotificationReceivers); // bulkUpdateNotificationReceivers
+        .mockResolvedValueOnce(undefined)                        // bulkUpdateTransactions
+        .mockResolvedValueOnce([mockNotificationRows, 2]);       // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -867,7 +882,9 @@ describe('SignersService', () => {
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -905,7 +922,9 @@ describe('SignersService', () => {
       dataSource.manager.find.mockResolvedValueOnce([]);
 
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
@@ -946,7 +965,9 @@ describe('SignersService', () => {
       dataSource.manager.find.mockResolvedValueOnce([]);
 
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
