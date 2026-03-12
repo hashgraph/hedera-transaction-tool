@@ -7,7 +7,7 @@ import { KeyList } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { addComplexKey } from '@renderer/services/complexKeysService';
 
@@ -16,7 +16,6 @@ import { encodeKey, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -32,7 +31,7 @@ const emit = defineEmits(['update:show']);
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const nickname = ref('');
@@ -48,7 +47,7 @@ const handleSaveKeyList = async () => {
   const keyListBytes = encodeKey(props.keyList);
   const newKey = await addComplexKey(user.personal.id, keyListBytes, nickname.value);
 
-  toast.success('Key list saved successfully', successToastOptions);
+  toastManager.success('Key list saved successfully');
 
   props.onComplexKeySave(newKey);
 };

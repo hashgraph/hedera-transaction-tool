@@ -4,7 +4,7 @@ import { onMounted, ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -20,7 +20,6 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -28,11 +27,13 @@ const props = defineProps<{
   publicKey?: string;
 }>();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -73,7 +74,7 @@ const handleImportRecoveryPhrase = async () => {
     );
 
     for (const error of restoredKeys.failedRestoreMessages) {
-      toast.error(error, errorToastOptions);
+      toastManager.error(error);
     }
 
     if (restoredKeys.keys.length === 0) {
@@ -132,7 +133,7 @@ const storeKeys = async (
       );
       restoredKeys++;
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to store key pair'), errorToastOptions);
+      toastManager.error(getErrorMessage(error, 'Failed to store key pair'));
     }
   }
 
@@ -140,7 +141,7 @@ const storeKeys = async (
   await user.refetchUserState();
 
   if (restoredKeys > 0) {
-    toast.success('Key Pairs restored', successToastOptions);
+    toastManager.success('Key Pairs restored');
   }
   await router.push({ name: 'settingsKeys' });
 };

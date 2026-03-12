@@ -42,7 +42,7 @@ const togglePasswordVisibility = () => {
 <template>
   <div
     class="password-input-wrapper d-flex align-items-center position-relative"
-    :class="$attrs.class"
+    :class="($attrs.class as string)"
   >
     <AppInput
       class="pe-7"

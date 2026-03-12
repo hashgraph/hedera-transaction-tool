@@ -422,7 +422,7 @@ describe('SignersService', () => {
   describe('bulkUpdateNotificationReceivers', () => {
     it('should execute bulk notification update query', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
+      mockManager.query.mockResolvedValue([[{ id: 1, userId: 1 }, { id: 2, userId: 2 }], 2]);
 
       const notificationsToUpdate = [
         { userId: 1, transactionId: 100 },
@@ -433,13 +433,12 @@ describe('SignersService', () => {
 
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('UPDATE notification_receiver'),
-        [[1, 2], [100, 200]]
+        [[1, 2], [100, 200]],
       );
     });
 
     it('should not execute query when notificationsToUpdate is empty', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue(undefined);
 
       await service['bulkUpdateNotificationReceivers'](mockManager, []);
 
@@ -448,7 +447,7 @@ describe('SignersService', () => {
 
     it('should build correct query with UNNEST and paired arrays', async () => {
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query.mockResolvedValue([[{ id: 1, userId: 42 }], 1]);
 
       const notificationsToUpdate = [{ userId: 42, transactionId: 99 }];
 
@@ -456,70 +455,69 @@ describe('SignersService', () => {
 
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('UNNEST($1::int[], $2::int[])'),
-        [[42], [99]]
+        [[42], [99]],
       );
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining("type = 'TRANSACTION_INDICATOR_SIGN'"),
-        expect.any(Array)
+        expect.any(Array),
       );
       expect(mockManager.query).toHaveBeenCalledWith(
         expect.stringContaining('isRead" = false'),
-        expect.any(Array)
+        expect.any(Array),
       );
     });
 
-    it('should return the query result', async () => {
+    it('should return only the rows, not the rowCount', async () => {
       const mockManager = mockDeep<any>();
-      const mockResult = [{ id: 1, userId: 42 }];
-      mockManager.query.mockResolvedValue(mockResult);
+      const mockRows = [{ id: 1, userId: 42 }];
+      mockManager.query.mockResolvedValue([mockRows, 1]);
 
       const result = await service['bulkUpdateNotificationReceivers'](
         mockManager,
-        [{ userId: 42, transactionId: 99 }]
+        [{ userId: 42, transactionId: 99 }],
       );
 
-      expect(result).toEqual(mockResult);
+      expect(result).toEqual(mockRows);
+    });
+
+    it('should return empty array when no rows updated', async () => {
+      const mockManager = mockDeep<any>();
+      mockManager.query.mockResolvedValue([[], 0]);
+
+      const result = await service['bulkUpdateNotificationReceivers'](
+        mockManager,
+        [{ userId: 42, transactionId: 99 }],
+      );
+
+      expect(result).toEqual([]);
     });
   });
 
   describe('bulkInsertSigners', () => {
-    it('should execute bulk insert and retrieve signers', async () => {
+    it('should execute bulk insert and return raw results', async () => {
       const mockManager = mockDeep<any>();
+      const mockRaw = [
+        { id: 1, userId: 1, transactionId: 1, userKeyId: 3 },
+      ];
       const mockQueryBuilder = {
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: mockRaw }),
       };
       mockManager.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockManager.find.mockResolvedValue([
-        { id: 1, userId: 1, transactionId: 1, userKeyId: 3 },
-      ]);
 
-      const signersToInsert = [
-        { userId: 1, transactionId: 1, userKeyId: 3 },
-      ];
-      const transactionsToProcess = [{ id: 1, transaction: {} as Transaction }];
-      const signers = new Set<TransactionSigner>();
+      const signersToInsert = [{ userId: 1, transactionId: 1, userKeyId: 3 }];
 
-      await service['bulkInsertSigners'](
-        mockManager,
-        signersToInsert,
-        transactionsToProcess,
-        user,
-        signers
-      );
+      const result = await service['bulkInsertSigners'](mockManager, signersToInsert);
 
       expect(mockQueryBuilder.insert).toHaveBeenCalled();
       expect(mockQueryBuilder.into).toHaveBeenCalledWith(TransactionSigner);
       expect(mockQueryBuilder.values).toHaveBeenCalledWith(signersToInsert);
-      expect(mockManager.find).toHaveBeenCalledWith(TransactionSigner, {
-        where: {
-          transactionId: In([1]),
-          userId: user.id,
-        },
-      });
-      expect(signers.size).toBe(1);
+      expect(mockQueryBuilder.returning).toHaveBeenCalledWith('*');
+      expect(mockQueryBuilder.execute).toHaveBeenCalled();
+      expect(result).toEqual(mockRaw);
     });
   });
 
@@ -633,24 +631,23 @@ describe('SignersService', () => {
 
       await sdkTransaction.sign(privateKey);
 
-      // Mock batch queries
-      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
-      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
 
       jest.mocked(isExpired).mockReturnValue(false);
 
-      // Mock transaction manager
+      const mockRaw = [{ id: 1, userId: user.id, transactionId, userKeyId: publicKeyId }];
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)        // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);          // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: mockRaw }),
       });
-      mockManager.find.mockResolvedValue([
-        { id: 1, userId: user.id, transactionId, userKeyId: publicKeyId },
-      ]);
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
@@ -663,7 +660,7 @@ describe('SignersService', () => {
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
-        user
+        user,
       );
 
       expect(dataSource.manager.find).toHaveBeenCalledWith(Transaction, {
@@ -673,7 +670,8 @@ describe('SignersService', () => {
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [
         { entityId: transactionId, additionalData: { signingUserId: user.id } },
       ]);
-      expect(result).toHaveLength(1);
+      expect(result.signers).toHaveLength(1);
+      expect(result.notificationReceiverIds).toEqual([]);
 
       user.keys[0].publicKey = originalPublicKey;
     });
@@ -695,36 +693,30 @@ describe('SignersService', () => {
         .setNodeAccountIds([AccountId.fromString('0.0.3')])
         .freeze();
 
+      const transactions = [
+        { id: transactionId1, transactionBytes: sdkTransaction1.toBytes(), status: TransactionStatus.WAITING_FOR_EXECUTION },
+        { id: transactionId2, transactionBytes: sdkTransaction2.toBytes(), status: TransactionStatus.WAITING_FOR_EXECUTION },
+      ];
+
       await sdkTransaction1.sign(privateKey);
       await sdkTransaction2.sign(privateKey);
 
-      const transactions = [
-        {
-          id: transactionId1,
-          transactionBytes: sdkTransaction1.toBytes(),
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-        },
-        {
-          id: transactionId2,
-          transactionBytes: sdkTransaction2.toBytes(),
-          status: TransactionStatus.WAITING_FOR_EXECUTION,
-        },
-      ];
-
-      dataSource.manager.find.mockResolvedValueOnce(transactions); // Transactions
-      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+      dataSource.manager.find.mockResolvedValueOnce(transactions);
+      dataSource.manager.find.mockResolvedValueOnce([]);
 
       jest.mocked(isExpired).mockReturnValue(false);
 
       const mockManager = mockDeep<any>();
-      mockManager.query.mockResolvedValue([]);
+      mockManager.query
+        .mockResolvedValueOnce(undefined)        // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);          // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder.mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
-      mockManager.find.mockResolvedValue([]);
 
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
@@ -736,12 +728,12 @@ describe('SignersService', () => {
       statusMap.set(transactionId2, TransactionStatus.WAITING_FOR_EXECUTION);
       jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
 
-      await service.uploadSignatureMaps(
+      const result = await service.uploadSignatureMaps(
         [
           { id: transactionId1, signatureMap: sdkTransaction1.getSignatures() },
           { id: transactionId2, signatureMap: sdkTransaction2.getSignatures() },
         ],
-        user
+        user,
       );
 
       expect(dataSource.manager.find).toHaveBeenCalledWith(Transaction, {
@@ -754,6 +746,8 @@ describe('SignersService', () => {
           { entityId: transactionId2, additionalData: { signingUserId: user.id } },
         ])
       );
+      expect(result.signers).toBeDefined();
+      expect(result.notificationReceiverIds).toEqual([]);
 
       user.keys[0].publicKey = originalPublicKey;
     });
@@ -779,15 +773,13 @@ describe('SignersService', () => {
         mirrorNetwork: 'testnet',
       };
 
-      // Mock batch queries - existing signer
-      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
       dataSource.manager.find.mockResolvedValueOnce([
         { id: 1, transactionId, userKeyId: publicKeyId },
-      ]); // Existing signers
+      ]);
 
       jest.mocked(isExpired).mockReturnValue(false);
 
-      // Mock transaction manager
       const mockManager = mockDeep<any>();
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
@@ -796,15 +788,71 @@ describe('SignersService', () => {
 
       jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
 
-      await service.uploadSignatureMaps(
+      const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
-        user
+        user,
       );
 
       expect(mockManager.query).not.toHaveBeenCalled();
       expect(mockManager.createQueryBuilder).not.toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
       expect(emitTransactionUpdate).not.toHaveBeenCalled();
+      expect(result.signers).toHaveLength(0);
+      expect(result.notificationReceiverIds).toEqual([]);
+
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should return notificationReceiverIds when notifications are dismissed', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const mockNotificationRows = [{ id: 10, userId: user.id }, { id: 11, userId: user.id }];
+      const mockManager = mockDeep<any>();
+      mockManager.query
+        .mockResolvedValueOnce(undefined)                        // bulkUpdateTransactions
+        .mockResolvedValueOnce([mockNotificationRows, 2]);       // bulkUpdateNotificationReceivers
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
+      });
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+      const result = await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+      );
+
+      expect(result.notificationReceiverIds).toEqual([10, 11]);
 
       user.keys[0].publicKey = originalPublicKey;
     });
@@ -838,8 +886,8 @@ describe('SignersService', () => {
       await expect(
         service.uploadSignatureMaps(
           [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
-          user
-        )
+          user,
+        ),
       ).rejects.toThrow(ErrorCodes.FST);
 
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
@@ -860,44 +908,41 @@ describe('SignersService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
       } as Transaction;
 
-      // Load transaction and no existing signers
-      dataSource.manager.find.mockResolvedValueOnce([transaction]); // Transactions
-      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
 
-      // Not expired
       jest.mocked(isExpired).mockReturnValue(false);
 
-      // Ensure transactions run inside a mocked transaction manager so persistSignatureChanges doesn't throw
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
         return callback(mockManager);
       });
 
-      // Spy console.error
       const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-      // Force the private method to throw only once and restore later
       const procSpy = jest
         .spyOn(service as any, 'processTransactionSignatures')
         .mockRejectedValueOnce(new Error('Fail'));
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: new SignatureMap() }],
-        user
+        user,
       );
 
       expect(consoleError).toHaveBeenCalledWith(`[TX ${transactionId}] Error:`, 'Fail');
-      expect(result).toHaveLength(0);
+      expect(result.signers).toHaveLength(0);
+      expect(result.notificationReceiverIds).toEqual([]);
 
-      // cleanup
       procSpy.mockRestore();
       consoleError.mockRestore();
     });
@@ -905,36 +950,37 @@ describe('SignersService', () => {
     it('logs and skips when validation returns transaction-not-found', async () => {
       const transactionId = 42;
 
-      // No transactions found for the given id (transaction query, then signers query)
-      dataSource.manager.find.mockResolvedValueOnce([]); // Transactions
-      dataSource.manager.find.mockResolvedValueOnce([]); // Existing signers
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
 
-      // Provide a mock transaction manager so persistSignatureChanges won't throw
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
         return callback(mockManager);
       });
 
-      // Spy console.error
       const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: new SignatureMap() }],
-        user
+        user,
       );
 
       expect(consoleError).toHaveBeenCalledWith(
-        `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNF}`
+        `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNF}`,
       );
-      expect(result).toHaveLength(0);
+      expect(result.signers).toHaveLength(0);
+      expect(result.notificationReceiverIds).toEqual([]);
 
       consoleError.mockRestore();
     });
@@ -947,18 +993,19 @@ describe('SignersService', () => {
         status: TransactionStatus.CANCELED,
       } as Transaction;
 
-      // Batch queries: transactions then existing signers
       dataSource.manager.find.mockResolvedValueOnce([transaction]);
       dataSource.manager.find.mockResolvedValueOnce([]);
 
-      // Provide a mock transaction manager so persistSignatureChanges won't throw
       const mockManager = mockDeep<any>();
-      mockManager.query = jest.fn().mockResolvedValue(undefined);
+      mockManager.query = jest.fn()
+        .mockResolvedValueOnce(undefined)   // bulkUpdateTransactions
+        .mockResolvedValueOnce([[], 0]);    // bulkUpdateNotificationReceivers
       mockManager.createQueryBuilder = jest.fn().mockReturnValue({
         insert: jest.fn().mockReturnThis(),
         into: jest.fn().mockReturnThis(),
         values: jest.fn().mockReturnThis(),
-        execute: jest.fn().mockResolvedValue(undefined),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
       });
       (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
         const callback = typeof arg1 === 'function' ? arg1 : arg2;
@@ -969,13 +1016,14 @@ describe('SignersService', () => {
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: new SignatureMap() }],
-        user
+        user,
       );
 
       expect(consoleError).toHaveBeenCalledWith(
-        `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNRS}`
+        `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNRS}`,
       );
-      expect(result).toHaveLength(0);
+      expect(result.signers).toHaveLength(0);
+      expect(result.notificationReceiverIds).toEqual([]);
 
       consoleError.mockRestore();
     });

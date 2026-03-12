@@ -189,6 +189,13 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
   }
 
+  function dismissNotifications(serverUrl: string, notificationReceiverIds: number[]) {
+    notifications.value[serverUrl] = notifications.value[serverUrl].filter(
+      nr => !notificationReceiverIds.includes(nr.id),
+    );
+    notifications.value = { ...notifications.value };
+  }
+
   async function markAsRead(type: NotificationType) {
     if (!isLoggedInOrganization(user.selectedOrganization)) {
       throw new Error('No organization selected');
@@ -235,10 +242,8 @@ const useNotificationsStore = defineStore('notifications', () => {
       if (notificationsToUpdate.length === 0) return;
 
       await updateNotifications(notificationsKey, notificationsToUpdate);
-      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-        nr => !notificationIds.includes(nr.id),
-      );
-      notifications.value = { ...notifications.value };
+
+      dismissNotifications(notificationsKey, notificationIds);
     });
 
     // Wait for the current update to complete
@@ -295,6 +300,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     notifications,
     currentOrganizationNotifications,
     updatePreferences,
+    dismissNotifications,
     markAsRead,
     markAsReadIds,
     networkNotifications,

@@ -28,7 +28,7 @@ import {
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
@@ -52,7 +52,6 @@ import BaseApproversObserverData from '@renderer/components/Transaction/Create/B
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import useNextTransactionV2, {
   type TransactionNodeId,
 } from '@renderer/stores/storeNextTransactionV2.ts';
@@ -85,7 +84,7 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const route = useRoute();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const payerData = useAccountId();
 const withLoader = useLoader();
 
@@ -200,7 +199,7 @@ const handleCreate = async () => {
 const handleExecuted = async ({ success, response, receipt }: ExecutedData) => {
   isProcessed.value = true;
   if (success && response && receipt) {
-    toast.success(`${getTransactionType(transaction.value)} Executed`, successToastOptions);
+    toastManager.success(`${getTransactionType(transaction.value)} Executed`);
     emit('executed:success', { success, response, receipt });
   }
   emit('executed', { success, response, receipt });
@@ -256,7 +255,7 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     memoError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Transaction Memo'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Invalid Transaction Memo'));
     memoError.value = true;
   }
 }
@@ -271,13 +270,13 @@ const saveDraft = async (): Promise<void> => {
       description: description.value,
     });
     isDraftSaved.value = true;
-    toast.success('Draft updated', successToastOptions);
+    toastManager.success('Draft updated');
   } else {
     // Draft does not exist yet => this is an add
     assertUserLoggedIn(user.personal);
     await addDraft(user.personal.id, transactionBytes, description.value);
     isDraftSaved.value = true;
-    toast.success('Draft saved', successToastOptions);
+    toastManager.success('Draft saved');
   }
 };
 

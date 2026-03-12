@@ -23,8 +23,7 @@ import {
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { Transaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
@@ -38,7 +37,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
@@ -121,7 +120,7 @@ async function fetchNodes(): Promise<ITransactionNode[]> {
       );
     } catch {
       nodes = [];
-      toast.error('Failed to fetch Transactions to export', errorToastOptions);
+      toastManager.error('Failed to fetch Transactions to export');
     }
   } else {
     nodes = [];

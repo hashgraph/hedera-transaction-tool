@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onErrorCaptured, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -25,9 +25,14 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
+import { ToastManager } from './utils/ToastManager';
+import { getErrorMessage } from '@renderer/utils';
 
 /* Composables */
 const router = useRouter();
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -62,6 +67,11 @@ onMounted(async () => {
   });
 });
 
+onErrorCaptured((err: unknown) => {
+  console.log(err);
+  toastManager.error(getErrorMessage(err, 'An error occurred'));
+});
+
 /* Providers */
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
@@ -71,6 +81,7 @@ AccountByPublicKeyCache.provide();
 TransactionByIdCache.provide();
 NodeByIdCache.provide();
 PublicKeyOwnerCache.provide();
+ToastManager.provide();
 </script>
 <template>
   <AppHeader

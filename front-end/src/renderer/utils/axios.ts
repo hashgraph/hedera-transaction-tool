@@ -14,8 +14,7 @@ import {
 import useUserStore from '@renderer/stores/storeUser';
 
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import { useToast } from 'vue-toast-notification';
-import { warningToastOptions } from './toastOptions';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 function extractServerUrlFromRequest(url: string): string | null {
   if (!url) return null;
@@ -82,10 +81,9 @@ axios.interceptors.response.use(
                 .join(', ');
 
               // Show toast notification for compatibility conflicts
-              const toast = useToast();
-              toast.warning(
+              const toastManager = ToastManager.inject();
+              toastManager.warning(
                 `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-                warningToastOptions,
               );
 
               console.warn(

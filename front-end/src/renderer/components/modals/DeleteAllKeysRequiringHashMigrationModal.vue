@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 
 import { deleteKey } from '@renderer/services/organization';
@@ -14,7 +14,7 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 defineProps<{ show: boolean }>();
@@ -29,7 +29,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const { getRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 
 /* State */
@@ -60,7 +60,7 @@ const handleDelete = async () => {
       await deleteKeyPair(localKeyPair.id);
     }
 
-    toast.success('Key pairs has been deleted', successToastOptions);
+    toastManager.success('Key pairs has been deleted');
 
     emit('update:show', false);
     emit('keys:deleted');

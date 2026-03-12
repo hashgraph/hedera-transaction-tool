@@ -1,4 +1,4 @@
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
@@ -24,7 +24,6 @@ import {
   toggleAuthTokenInSessionStorage,
 } from '@renderer/utils/userStoreHelpers';
 
-import { errorToastOptions } from '@renderer/utils/toastOptions';
 import {
   getOrganizationCredentials,
   updateOrganizationCredentials,
@@ -39,13 +38,13 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
-  const toast = useToast();
+  const toastManager = ToastManager.inject();
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   const user = userStore.personal;
   if (!org) {
     console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);
-    toast.error('Organization not found', errorToastOptions);
+    toastManager.error('Organization not found');
     return { success: false };
   }
 
@@ -160,9 +159,8 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
 
     if (error instanceof Error) {
       if (error.message.includes('network') || error.message.includes('fetch')) {
-        toast.error(
+        toastManager.error(
           `Failed to reconnect to ${org.nickname || serverUrl}. Network error.`,
-          errorToastOptions,
         );
         return { success: false };
       }
@@ -172,17 +170,15 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         error.message.includes('401') ||
         error.message.includes('403')
       ) {
-        toast.error(
+        toastManager.error(
           `Failed to reconnect to ${org.nickname || serverUrl}. Authentication failed.`,
-          errorToastOptions,
         );
         return { success: false };
       }
     }
 
-    toast.error(
+    toastManager.error(
       `Failed to reconnect to ${org.nickname || serverUrl}. ${error instanceof Error ? error.message : 'Unknown error'}`,
-      errorToastOptions,
     );
 
     return { success: false };

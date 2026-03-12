@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
@@ -28,7 +28,6 @@ import {
 } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -45,7 +44,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const router = useRouter();
 const createTooltips = useCreateTooltips();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -100,9 +99,8 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
       keys.value.push(key);
     }
   } catch (error) {
-    toast.error(
+    toastManager.error(
       getErrorMessage(error, `Restoring key at index: ${index} failed`),
-      errorToastOptions,
     );
   }
 };
@@ -138,7 +136,7 @@ const restoreForOrganization = async (organization: ConnectedOrganization) => {
   }
 
   for (const error of restoredKeys.failedRestoreMessages) {
-    toast.error(error, errorToastOptions);
+    toastManager.error(error);
   }
 
   if (restoredKeys.keys.length === 0) {
@@ -216,12 +214,12 @@ const handleSave = async () => {
       }
       storedCount++;
     } catch (error) {
-      toast.error(getErrorMessage(error, `Failed to store key pair: ${key.publicKey}`), errorToastOptions);
+      toastManager.error(getErrorMessage(error, `Failed to store key pair: ${key.publicKey}`));
     }
   }
 
   if (storedCount > 0) {
-    toast.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`, successToastOptions);
+    toastManager.success(`Key Pair${storedCount > 1 ? 's' : ''} saved successfully`);
   }
   await user.refetchUserState();
   await router.push({ name: 'settingsKeys' });

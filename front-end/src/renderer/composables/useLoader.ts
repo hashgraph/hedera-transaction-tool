@@ -2,16 +2,15 @@ import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
 import { inject } from 'vue';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { GLOBAL_MODAL_LOADER_KEY } from '@renderer/providers';
 
 import { getErrorMessage } from '@renderer/utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 export default function useLoader() {
   /* Composables */
-  const toast = useToast();
+  const toastManager = ToastManager.inject()
 
   /* Injected */
   const globalModalLoaderRef = inject<GLOBAL_MODAL_LOADER_TYPE>(GLOBAL_MODAL_LOADER_KEY);
@@ -31,7 +30,7 @@ export default function useLoader() {
       globalModalLoaderRef?.value?.open(background);
       return await Promise.race([fn(), timeoutPromise]);
     } catch (error) {
-      toast.error(getErrorMessage(error, defaultErrorMessage), errorToastOptions);
+      toastManager.error(getErrorMessage(error, defaultErrorMessage));
     } finally {
       globalModalLoaderRef?.value?.close();
     }

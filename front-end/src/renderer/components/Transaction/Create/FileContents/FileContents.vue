@@ -2,7 +2,7 @@
 import type { HederaFile } from '@prisma/client';
 
 import { onMounted, ref } from 'vue';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRoute } from 'vue-router';
 import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
 
@@ -30,14 +30,13 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdsSelect from '@renderer/components/AccountIdsSelect.vue';
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const payerData = useAccountId();
 const route = useRoute();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -77,7 +76,7 @@ const readFile = async () => {
 
     const response = await readContent(privateKey, keyPair.type);
 
-    toast.success('File content read', successToastOptions);
+    toastManager.success('File content read');
 
     const contentBytes = (
       isHederaSpecialFileId(fileId.value) ? encodeString(response) : response
@@ -85,7 +84,7 @@ const readFile = async () => {
 
     await updateLocalFileInfo(contentBytes, privateKey, keyPair.type);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to execute query'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to execute query'));
   } finally {
     network.client._operator = null;
     isLoading.value = false;
@@ -137,7 +136,7 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success('Stored file info updated', successToastOptions);
+      toastManager.success('Stored file info updated');
     } else {
       await add({
         user_id: user.personal.id,
@@ -148,10 +147,10 @@ const updateLocalFileInfo = async (content: string, privateKey: string, privateK
         lastRefreshed: new Date(),
       });
 
-      toast.success(`File ${fileId.value} linked`, successToastOptions);
+      toastManager.success(`File ${fileId.value} linked`);
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add/update file info'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to add/update file info'));
   }
 };
 

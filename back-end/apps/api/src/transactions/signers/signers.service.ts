@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, In, Repository } from 'typeorm';
-import { PublicKey, SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import {
   emitDismissedNotifications,
@@ -109,9 +109,7 @@ export class SignersService {
   async uploadSignatureMaps(
     dto: UploadSignatureMapDto[],
     user: User,
-  ): Promise<TransactionSigner[]> {
-    const signers = new Set<TransactionSigner>();
-
+  ): Promise<{ signers: TransactionSigner[]; notificationReceiverIds: number[] }> {
     // Load all necessary data
     const { transactionMap, signersByTransaction } = await this.loadTransactionData(dto);
 
@@ -124,7 +122,7 @@ export class SignersService {
     );
 
     // Persist changes to database
-    const transactionsToProcess = await this.persistSignatureChanges(validationResults, user, signers);
+    const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user);
 
     // Update transaction statuses and emit notifications
     await this.updateStatusesAndNotify(transactionsToProcess, user.id);
@@ -135,7 +133,10 @@ export class SignersService {
       await this.clearNewIndicatorForUser(user.id, processedTransactionIds);
     }
 
-    return [...signers];
+    return {
+      signers: Array.from(signers),
+      notificationReceiverIds: notificationsToDismiss,
+    };
   }
 
 
@@ -237,40 +238,43 @@ export class SignersService {
   ) {
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    // Extract public keys from signature map
-    const publicKeysByRaw = new Map<string, PublicKey>();
+    const userKeys: UserKey[] = [];
+    const processedRawKeys = new Set<string>();
+
+    // To explain what is going on here, we need to understand how sdkTransaction.addSignature works.
+    // The addSignature method will go through each inner transaction, then go through the map
+    // and pull the signatures for the supplied public key belonging to that inner transaction
+    // (denoted by the node and transaction id), add the signatures to the inner transactions.
+    // So we need to go through the map and get each unique publicKey and call addSignature one time
+    // per key.
     for (const nodeMap of map.values()) {
       for (const txMap of nodeMap.values()) {
         for (const publicKey of txMap.keys()) {
           const raw = publicKey.toStringRaw();
-          if (!publicKeysByRaw.has(raw)) {
-            publicKeysByRaw.set(raw, publicKey);
+
+          // Skip duplicates across node/tx maps, and already-processed keys
+          if (processedRawKeys.has(raw)) continue;
+          processedRawKeys.add(raw);
+
+          // Look up key (raw first, then DER)
+          let userKey = userKeyMap.get(raw);
+          if (!userKey) {
+            userKey = userKeyMap.get(publicKey.toStringDer());
+          }
+          if (!userKey) throw new Error(ErrorCodes.PNY);
+
+          // Only add the signature once per unique key
+          sdkTransaction = sdkTransaction.addSignature(publicKey, map);
+
+          // Only return "new" signers (not already persisted)
+          if (!existingSignerIds.has(userKey.id)) {
+            userKeys.push(userKey);
           }
         }
       }
     }
 
-    // Find matching user keys and add signatures
-    const userKeys: UserKey[] = [];
-    for (const [rawString, publicKey] of publicKeysByRaw) {
-      // Fast path: check raw format first
-      let userKey = userKeyMap.get(rawString);
-
-      // Slow path: check DER format
-      if (!userKey) {
-        const derString = publicKey.toStringDer();
-        userKey = userKeyMap.get(derString);
-      }
-
-      if (!userKey) throw new Error(ErrorCodes.PNY);
-
-      sdkTransaction = sdkTransaction.addSignature(publicKey, map);
-
-      if (!existingSignerIds.has(userKey.id)) {
-        userKeys.push(userKey);
-      }
-    }
-
+    // Finally, compare the resulting transaction bytes to see if any signatures were actually added
     const isSameBytes = Buffer.from(sdkTransaction.toBytes()).equals(
       transaction.transactionBytes
     );
@@ -281,8 +285,10 @@ export class SignersService {
   private async persistSignatureChanges(
     validationResults: any[],
     user: User,
-    signers: Set<TransactionSigner>
   ) {
+    const signers = new Set<TransactionSigner>();
+    let notificationsToDismiss: number[] = [];
+
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
     const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
@@ -297,14 +303,15 @@ export class SignersService {
 
       const { id, transaction, sdkTransaction, userKeys, isSameBytes } = result;
 
-      // Skip if nothing to do
+      // Skip if nothing to do - no signatures were added to the transaction
+      // AND no new signers were inserted (the signature can be present on the transaction
+      // if collated by an outside or 'offline' method)
       if (isSameBytes && userKeys.length === 0) continue;
 
       // Collect updates
       if (!isSameBytes) {
         transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
         transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
-        notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
       }
 
       // Collect inserts
@@ -318,6 +325,7 @@ export class SignersService {
       }
 
       transactionsToProcess.push({ id, transaction });
+      notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
     }
 
     // Execute in single transaction
@@ -342,7 +350,8 @@ export class SignersService {
 
         // Bulk insert signers
         if (signersToInsert.length > 0) {
-          await this.bulkInsertSigners(manager, signersToInsert, transactionsToProcess, user, signers);
+          const results = await this.bulkInsertSigners(manager, signersToInsert);
+          results.forEach(signer => signers.add(signer));
         }
       });
     } catch (err) {
@@ -350,7 +359,11 @@ export class SignersService {
       throw new BadRequestException(ErrorCodes.FST);
     }
 
-    return transactionsToProcess;
+    return {
+      transactionsToProcess,
+      signers,
+      notificationsToDismiss,
+    };
   }
 
   private async bulkUpdateTransactions(
@@ -384,7 +397,7 @@ export class SignersService {
     const txIds = notificationsToUpdate.map(n => n.transactionId);
 
     // Use UNNEST to preserve 1:1 pairing between userIds and transactionIds
-    return await manager.query(
+    const [rows] = await manager.query(
       `
       WITH input(user_id, tx_id) AS (
         SELECT * FROM UNNEST($1::int[], $2::int[])
@@ -402,31 +415,22 @@ export class SignersService {
       `,
       [userIds, txIds]
     );
+    return rows;
   }
 
   private async bulkInsertSigners(
     manager: any,
     signersToInsert: any[],
-    transactionsToProcess: any[],
-    user: User,
-    signers: Set<TransactionSigner>
   ) {
-    await manager
+    const result = await manager
       .createQueryBuilder()
       .insert()
       .into(TransactionSigner)
       .values(signersToInsert)
+      .returning('*')
       .execute();
 
-    if (signers) {
-      const insertedSigners = await manager.find(TransactionSigner, {
-        where: {
-          transactionId: In(transactionsToProcess.map(t => t.id)),
-          userId: user.id,
-        },
-      });
-      insertedSigners.forEach(signer => signers.add(signer));
-    }
+    return result.raw;
   }
 
   private async clearNewIndicatorForUser(userId: number, transactionIds: number[]) {

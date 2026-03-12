@@ -7,7 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
@@ -22,7 +22,9 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -30,7 +32,6 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 useCreateTooltips();
 
 /* State */
@@ -59,10 +60,10 @@ const handleLinkFile = async () => {
 
       await add(file);
 
-      toast.success('File linked successfully!', successToastOptions);
+      toastManager.success('File linked successfully!');
       await router.push({ name: 'files' });
     } catch (error) {
-      toast.error(getErrorMessage(error, 'File link failed'), errorToastOptions);
+      toastManager.error(getErrorMessage(error, 'File link failed'));
     }
   }
 };

@@ -6,7 +6,7 @@ import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isUserLoggedIn } from '@renderer/utils';
@@ -22,7 +22,6 @@ import {
 } from '@renderer/services/transactionGroupsService';
 import EmptyTransactionGroup from '@renderer/components/EmptyTransactionGroup.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Store */
 const user = useUserStore();
@@ -48,7 +47,9 @@ const generatedClass = computed(() => {
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Handlers */
 const handleSort = async (
@@ -73,7 +74,7 @@ const handleDeleteGroup = async (id: string) => {
 
   await fetchGroups();
 
-  toast.success('Group successfully deleted', successToastOptions);
+  toastManager.success('Group successfully deleted');
 };
 
 const handleContinueGroup = async (id: string) => {
