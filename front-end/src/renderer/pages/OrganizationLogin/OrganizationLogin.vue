@@ -4,7 +4,7 @@ import { computed, onMounted, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter, onBeforeRouteLeave } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useLoader from '@renderer/composables/useLoader';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -27,14 +27,15 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ForgotPasswordModal from '@renderer/components/ForgotPasswordModal.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 const withLoader = useLoader();
 useSetDynamicLayout(DEFAULT_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -88,7 +89,7 @@ const handleLogin = async () => {
     );
     await user.refetchOrganizationTokens();
 
-    toast.success('Successfully signed in', successToastOptions);
+    toastManager.success('Successfully signed in');
 
     loading.value = false;
 
@@ -110,7 +111,7 @@ const handleLogin = async () => {
       false,
     );
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign in'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to sign in'));
     inputEmailInvalid.value = true;
     inputPasswordInvalid.value = true;
   } finally {

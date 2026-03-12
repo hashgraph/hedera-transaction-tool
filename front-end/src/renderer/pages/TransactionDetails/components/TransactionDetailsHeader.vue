@@ -4,7 +4,7 @@ import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
 
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
@@ -54,7 +54,6 @@ import { TransactionStatus } from '@shared/interfaces';
 
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
@@ -131,13 +130,13 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const toastManager = ToastManager.inject();
 
 /* State */
 const isTransactionVersionMismatch = ref(false);
@@ -193,7 +192,7 @@ const canSign = computed(() => {
   if (!isSignableStatus(props.organizationTransaction.status)) return false;
 
   if (isTransactionVersionMismatch.value) {
-    toast.error('Transaction version mismatch. Cannot sign.', errorToastOptions);
+    toastManager.error('Transaction version mismatch. Cannot sign.');
     return false;
   }
 
@@ -281,11 +280,12 @@ const handleSign = async (goNext = false) => {
       accountByIdCache,
       nodeByIdCache,
       publicKeyOwnerCache,
+      toastManager,
     );
     await props.onAction();
 
     if (signed) {
-      toast.success('Transaction signed successfully', successToastOptions);
+      toastManager.success('Transaction signed successfully');
       if (goNext) {
         if (nextTransaction.hasNext) {
           await nextTransaction.routeToNext(router);
@@ -294,10 +294,10 @@ const handleSign = async (goNext = false) => {
         }
       }
     } else {
-      toast.error('Failed to sign transaction', errorToastOptions);
+      toastManager.error('Failed to sign transaction');
     }
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to sign transaction'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to sign transaction'));
   } finally {
     loadingStates[sign] = null;
   }
@@ -357,9 +357,8 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         approved,
       );
       await props.onAction();
-      toast.success(
+      toastManager.success(
         `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
-        successToastOptions,
       );
 
       if (!approved) {
@@ -523,7 +522,7 @@ const handleExport = async () => {
     );
     await writeTransactionFile(tx2Content, filePath);
 
-    toast.success('Transaction exported successfully', successToastOptions);
+    toastManager.success('Transaction exported successfully');
   } else if (ext === 'tx') {
     // Export TTv2 --> TTv1
     if (user.publicKeys.length === 0) {
@@ -544,7 +543,7 @@ const handleExport = async () => {
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
-    toast.success('Transaction exported successfully', successToastOptions);
+    toastManager.success('Transaction exported successfully');
   }
 };
 
@@ -616,9 +615,8 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toast.error(
+        toastManager.error(
           getErrorMessage(r.reason, 'Failed to load transaction details'),
-          errorToastOptions,
         ),
     );
   },

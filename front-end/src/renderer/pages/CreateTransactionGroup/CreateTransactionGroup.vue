@@ -14,7 +14,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -42,10 +42,12 @@ import TransactionGroupProcessor from '@renderer/components/Transaction/Transact
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import useNextTransactionV2, {
   type TransactionNodeId,
 } from '@renderer/stores/storeNextTransactionV2.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -55,7 +57,6 @@ const useNextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const route = useRoute();
-const toast = useToast();
 const payerData = useAccountId();
 const network = useNetworkStore();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -182,7 +183,7 @@ const handleLoadGroup = async () => {
 
 async function handleSignSubmit() {
   if (groupDescription.value.trim() === '') {
-    toast.error('Group Description Required', errorToastOptions);
+    toastManager.error('Group Description Required');
     return;
   }
 
@@ -198,7 +199,7 @@ async function handleSignSubmit() {
     await transactionGroupProcessor.value?.process(requiredKey);
   } catch (error) {
     updateValidStarts.value = true;
-    toast.error(getErrorMessage(error, 'Failed to create transaction'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to create transaction'));
   }
 }
 
@@ -272,9 +273,8 @@ async function handleOnFileChanged(e: Event) {
           try {
             await accountByIdCache.lookup(senderAccount, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(
+            toastManager.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
-              errorToastOptions,
             );
             console.log(error);
             return;
@@ -285,9 +285,8 @@ async function handleOnFileChanged(e: Event) {
           try {
             await accountByIdCache.lookup(feePayer, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(
+            toastManager.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
-              errorToastOptions,
             );
             console.log(error);
             return;
@@ -329,9 +328,8 @@ async function handleOnFileChanged(e: Event) {
           try {
             await accountByIdCache.lookup(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
-            toast.error(
+            toastManager.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
-              errorToastOptions,
             );
             console.log(error);
             transactionGroup.clearGroup();
@@ -379,9 +377,9 @@ async function handleOnFileChanged(e: Event) {
         }
       }
     }
-    toast.success('Import complete', successToastOptions);
+    toastManager.success('Import complete');
   } catch (error) {
-    toast.error('Failed to import CSV file', errorToastOptions);
+    toastManager.error('Failed to import CSV file');
     console.log(error);
   } finally {
     if (file.value != null) {

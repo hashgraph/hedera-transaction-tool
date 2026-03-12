@@ -9,7 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNotifcationsStore from '@renderer/stores/storeNotifications';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
@@ -30,7 +30,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Stores */
 const user = useUserStore();
@@ -39,7 +39,7 @@ const contacts = useContactsStore();
 const notifications = useNotifcationsStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTERED]);
@@ -112,7 +112,7 @@ async function handleRemove() {
     contact.value.nicknameId && (await removeContact(user.personal.id, contact.value.nicknameId));
   }
 
-  toast.success('User removed successfully', successToastOptions);
+  toastManager.success('User removed successfully');
   selectedId.value = null;
   await contacts.fetch();
 }
@@ -127,7 +127,7 @@ async function handleElevate() {
 
   await elevateUserToAdmin(user.selectedOrganization.serverUrl, contact.value.user.id);
 
-  toast.success('User elevate to admin successfully', successToastOptions);
+  toastManager.success('User elevate to admin successfully');
   selectedId.value = null;
   await contacts.fetch();
 }

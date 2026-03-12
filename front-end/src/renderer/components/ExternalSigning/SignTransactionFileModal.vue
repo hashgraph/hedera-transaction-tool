@@ -16,8 +16,7 @@ import { assertUserLoggedIn, getErrorMessage, hexToUint8Array, uint8ToHex } from
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
@@ -34,7 +33,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
@@ -105,7 +104,7 @@ async function handleSignAll() {
       showSuccessModal.value = true;
     } catch (error) {
       console.log(getErrorMessage(error, 'Failed to update transaction file'));
-      toast.error('Failed to update file', errorToastOptions);
+      toastManager.error('Failed to update file');
     }
   }
 }
@@ -132,7 +131,7 @@ watch(
         itemsSignable.value = status.needSigning.concat(status.fullySigned);
       } catch (error) {
         console.log(getErrorMessage(error, 'Failed to read transaction file'));
-        toast.error('Failed to read file', errorToastOptions);
+        toastManager.error('Failed to read file');
         transactionFile.value = null;
         itemsToBeSigned.value = [];
         show.value = false;

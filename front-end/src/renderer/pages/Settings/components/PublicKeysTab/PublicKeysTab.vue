@@ -4,20 +4,19 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import DeletePublicKeyMappingModal from './components/DeletePublicKeyMappingModal.vue';
 import RenamePublicKeyModal from './components/RenamePublicKeyModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 
-/* Composables */
-const toast = useToast();
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
@@ -45,7 +44,7 @@ const handleStartNicknameEdit = (publicKeyMapping: PublicKeyMapping) => {
 
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
-  toast.success(message, successToastOptions);
+  toastManager.success(message);
 };
 
 const handleSelectAll = () => {

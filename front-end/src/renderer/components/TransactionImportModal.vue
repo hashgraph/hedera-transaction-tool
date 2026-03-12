@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { computed, ref, watch } from 'vue';
 import { TransactionId } from '@hashgraph/sdk';
 
@@ -19,7 +19,6 @@ import { getTransactionById, importSignatures } from '@renderer/services/organiz
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -34,7 +33,7 @@ const selectedCandidates = ref<V1ImportCandidate[]>([]);
 const transactionMap = ref<Map<string, ITransactionFull>>(new Map()); // transactionId -> ITransactionFull
 const importing = ref(false);
 const user = useUserStore();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -133,36 +132,32 @@ const importSelectedCandidates = async (): Promise<void> => {
     if (errorCount == 1) {
       const [transactionId, result] = errorResults.entries().next().value!;
       const errorMessage = formatError(result);
-      toast.error(
+      toastManager.error(
         'Failed to import transaction ' + transactionId + '\n[' + errorMessage + ']',
-        errorToastOptions,
       );
     } else if (rejectedCount == 1) {
       const transactionId = rejectedTransactionIds[0];
-      toast.error(
+      toastManager.error(
         'Transaction ' + transactionId + ' does not exist or is not accessible',
-        errorToastOptions,
       );
     } else {
       // successCount == 1
       const [transactionId] = successResults.entries().next().value!;
-      toast.success(
+      toastManager.success(
         'Imported transaction ' + transactionId + ' successfully.',
-        successToastOptions,
       );
     }
   } else {
     if (successCount >= 1) {
-      toast.success(
+      toastManager.success(
         'Imported ' + successCount + ' transaction(s) successfully.',
-        successToastOptions,
       );
     }
     if (errorCount >= 1) {
-      toast.error('Failed to import ' + errorCount + ' transaction(s)', errorToastOptions);
+      toastManager.error('Failed to import ' + errorCount + ' transaction(s)');
     }
     if (rejectedCount >= 1) {
-      toast.error('Rejected ' + rejectedCount + ' transaction(s)', errorToastOptions);
+      toastManager.error('Rejected ' + rejectedCount + ' transaction(s)');
     }
   }
 };

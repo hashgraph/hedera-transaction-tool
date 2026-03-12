@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { HederaAccount, PublicKeyMapping } from '@prisma/client';
 import type { AccountInfo, Contact } from '@shared/interfaces';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
@@ -29,7 +29,6 @@ import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/Cont
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
 import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
 import { getLatestClient } from '@renderer/utils/clientVersion.ts';
@@ -43,7 +42,7 @@ const props = defineProps<{
 }>();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -140,11 +139,10 @@ const handleResend = async () => {
       const email = props.contact.user.email;
       await signUp(user.selectedOrganization.serverUrl, email);
     }
-    toast.success('Email sent successfully', successToastOptions);
+    toastManager.success('Email sent successfully');
   } catch (error) {
-    toast.error(
+    toastManager.error(
       getErrorMessage(error, 'Error while sending email. Please try again.'),
-      errorToastOptions,
     );
   }
 };

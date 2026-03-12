@@ -2,20 +2,21 @@
 import { ref, watch } from 'vue';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useMatchRecoveryPrase from '@renderer/composables/useMatchRecoveryPhrase';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 const SEARCHING_TEXT = 'Abort Search';
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Composables */
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const toast = useToast();
 const router = useRouter();
 const { startMatching, externalKeys } = useMatchRecoveryPrase();
 
@@ -51,7 +52,7 @@ const handleSearch = async () => {
         : totalRecovered.value === cachedExternalKeys.value.length
           ? 'All keys matched to recovery phrase'
           : `Matched ${currentSearchCount} keys to recovery phrase`;
-    toast.success(message, successToastOptions);
+    toastManager.success(message);
   } finally {
     loadingText.value = null;
 

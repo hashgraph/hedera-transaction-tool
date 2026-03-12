@@ -17,7 +17,7 @@ import {
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hashgraph/sdk';
 import JSZip from 'jszip';
@@ -96,7 +96,6 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, async () => {
   const id = router.currentRoute.value.params.id;
   await fetchGroup(Array.isArray(id) ? id[0] : id);
@@ -109,6 +108,7 @@ const createTooltips = useCreateTooltips();
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const toastManager = ToastManager.inject();
 
 /* State */
 const group = ref<IGroup | null>(null);
@@ -310,16 +310,17 @@ const handleSignAll = async (showModal = false) => {
       accountByIdCache,
       nodeByIdCache,
       publicKeyOwnerCache,
+      toastManager
     );
     await fetchGroup(group.value!.id);
 
     if (signed) {
-      toast.success('Transactions signed successfully', successToastOptions);
+      toastManager.success('Transactions signed successfully');
     } else {
-      toast.error('Transactions not signed', errorToastOptions);
+      toastManager.error('Transactions not signed');
     }
   } catch {
-    toast.error('Transactions not signed', errorToastOptions);
+    toastManager.error('Transactions not signed');
   } finally {
     loadingStates[sign] = null;
   }
@@ -377,9 +378,8 @@ const handleApproveAll = async (showModal = false, approved = false) => {
           }
         }
       }
-      toast.success(
+      toastManager.success(
         `Transactions ${approved ? 'approved' : 'rejected'} successfully`,
-        successToastOptions,
       );
 
       if (!approved) {
@@ -459,7 +459,7 @@ const handleExportGroup = async () => {
     // write the zip file to disk
     await saveFileToPath(zipContent, filePath);
 
-    toast.success('Transaction exported successfully', successToastOptions);
+    toastManager.success('Transaction exported successfully');
   }
 };
 
@@ -559,7 +559,7 @@ async function fetchGroup(id: string | number) {
 
           const isTransactionVersionMismatch = !areByteArraysEqual(tx.toBytes(), transactionBytes);
           if (isTransactionVersionMismatch) {
-            toast.error('Transaction version mismatch. Cannot sign all.', errorToastOptions);
+            toastManager.error('Transaction version mismatch. Cannot sign all.');
             isVersionMismatch.value = true;
             break;
           }

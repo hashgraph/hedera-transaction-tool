@@ -7,7 +7,7 @@ import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
 
@@ -27,7 +27,6 @@ import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 /* Props */
@@ -55,7 +54,7 @@ enum Tabs {
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
@@ -122,7 +121,7 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
   if (selectedComplexKey.value) {
     const keyListBytes = encodeKey(keyList);
     selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    toast.success('Key list updated successfully', successToastOptions);
+    toastManager.success('Key list updated successfully');
   }
 };
 

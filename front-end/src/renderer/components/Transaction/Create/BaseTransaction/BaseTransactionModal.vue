@@ -13,7 +13,7 @@ import { onBeforeRouteLeave, useRouter, useRoute } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import {
   addDraft,
   draftExists,
@@ -25,7 +25,7 @@ import { getTransactionFromBytes, isUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 const props = defineProps<{
@@ -42,7 +42,7 @@ const transactionGroup = useTransactionGroupStore();
 /* Composables */
 const router = useRouter();
 const route = useRoute();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const isActionModalShown = ref(false);
@@ -110,7 +110,7 @@ const handleSingleTransaction = async () => {
           transactionBytes: transactionBytes.toString(),
           description: props.description,
         });
-        toast.success('Draft updated', successToastOptions);
+        toastManager.success('Draft updated');
         await router.push(redirectPath.value);
       }
     } else {
@@ -123,7 +123,7 @@ const handleSingleTransaction = async () => {
 
 async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
   await addDraft(userId, transactionBytes, props.description);
-  toast.success('Draft saved', successToastOptions);
+  toastManager.success('Draft saved');
   await router.push(redirectPath.value);
 }
 

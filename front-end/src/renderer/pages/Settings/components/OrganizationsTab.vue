@@ -12,7 +12,7 @@ import {
   organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { updateOrganization } from '@renderer/services/organizationsService';
 
@@ -28,7 +28,9 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import ConnectionStatusBadge from '@renderer/components/Organization/ConnectionStatusBadge.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -36,7 +38,6 @@ const ws = useWebsocketConnection();
 const orgConnection = useOrganizationConnection();
 
 /* Composables */
-const toast = useToast();
 const { setLast } = useDefaultOrganization();
 
 /* State */
@@ -54,7 +55,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
   await setLast(null);
-  toast.success('Connection deleted successfully', successToastOptions);
+  toastManager.success('Connection deleted successfully');
 };
 
 const handleStartNicknameEdit = (index: number) => {
@@ -82,9 +83,9 @@ const handleChangeNickname = async (e: Event) => {
   const nickname = (e.target as HTMLInputElement)?.value?.trim() || '';
 
   if (nickname.length === 0) {
-    toast.error('Nickname cannot be empty', errorToastOptions);
+    toastManager.error('Nickname cannot be empty');
   } else if (user.organizations.some(org => org.nickname === nickname)) {
-    toast.error('Nickname already exists', errorToastOptions);
+    toastManager.error('Nickname already exists');
   } else {
     await updateOrganization(user.organizations[index].id, { nickname });
     user.organizations[index].nickname = nickname;
@@ -230,7 +231,7 @@ const hasCompatibilityConflict = (serverUrl: string) => {
                 </td>
                 <td>
                   <div class="d-flex align-items-center gap-2">
-<!--                    <ConnectionToggle :organization="organization" />-->
+                    <!--                    <ConnectionToggle :organization="organization" />-->
                     <AppButton
                       size="small"
                       data-testid="button-delete-connection"
