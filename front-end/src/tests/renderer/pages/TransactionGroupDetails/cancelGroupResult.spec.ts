@@ -74,6 +74,26 @@ describe('getCancelGroupToast', () => {
     });
   });
 
+  test('returns warning omitting zero counts', () => {
+    const result: CancelGroupResult = {
+      canceled: [1],
+      alreadyCanceled: [],
+      failed: [
+        {
+          id: 3,
+          code: 'NOT_CANCELABLE' as CancelGroupResult['failed'][number]['code'],
+          message: 'Transaction cannot be canceled in its current state.',
+        },
+      ],
+      summary: { ...baseSummary, total: 2, canceled: 1, alreadyCanceled: 0, failed: 1 },
+    };
+
+    expect(getCancelGroupToast(result)).toEqual({
+      kind: 'warning',
+      message: '1 canceled, 1 failed',
+    });
+  });
+
   test('returns error when all cancel attempts fail', () => {
     const result: CancelGroupResult = {
       canceled: [],

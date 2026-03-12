@@ -295,6 +295,29 @@ describe('TransactionGroupDetails.vue', () => {
     expect(toastError).toHaveBeenCalled();
   });
 
+  test('shows success toast when all transactions cancel successfully', async () => {
+    vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
+      canceled: [101],
+      alreadyCanceled: [],
+      failed: [],
+      summary: {
+        total: 1,
+        canceled: 1,
+        alreadyCanceled: 0,
+        failed: 0,
+      },
+    } as any);
+
+    const wrapper = await mountGroupDetails();
+    await confirmCancelAll(wrapper);
+
+    expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith(
+      '1 transaction(s) canceled successfully',
+      { duration: 4000 },
+    );
+  });
+
   test('shows warning toast for partial group cancel outcomes', async () => {
     vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
       canceled: [101],

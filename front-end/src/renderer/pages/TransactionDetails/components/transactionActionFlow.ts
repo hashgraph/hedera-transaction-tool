@@ -1,8 +1,5 @@
 export type TransactionAction = 'cancel' | 'archive' | 'execute' | 'remindSigners';
 
-export const shouldRefreshAfterActionAttempt = (action: TransactionAction): boolean =>
-  action === 'cancel';
-
 interface ExecuteTransactionActionFlowParams {
   action: TransactionAction;
   execute: () => Promise<void>;
@@ -12,28 +9,23 @@ interface ExecuteTransactionActionFlowParams {
   onRefreshError?: (error: unknown) => void;
 }
 
-export const executeTransactionActionFlow = async ({
-  action,
-  execute,
-  refresh,
-  onSuccess,
-  onError,
-  onRefreshError,
-}: ExecuteTransactionActionFlowParams): Promise<void> => {
+export const executeTransactionActionFlow = async (
+  params: ExecuteTransactionActionFlowParams,
+): Promise<void> => {
+  let failed = false;
   try {
-    await execute();
-    if (!shouldRefreshAfterActionAttempt(action)) {
-      await refresh();
-    }
-    onSuccess();
+    await params.execute();
+    await params.refresh();
+    params.onSuccess();
   } catch (error) {
-    onError(error);
+    failed = true;
+    params.onError(error);
   } finally {
-    if (shouldRefreshAfterActionAttempt(action)) {
+    if (failed) {
       try {
-        await refresh();
+        await params.refresh();
       } catch (refreshError) {
-        onRefreshError?.(refreshError);
+        params.onRefreshError?.(refreshError);
       }
     }
   }

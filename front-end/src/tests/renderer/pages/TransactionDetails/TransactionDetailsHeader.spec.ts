@@ -207,6 +207,31 @@ describe('TransactionDetailsHeader.vue', () => {
     expect(wrapper.find('[data-testid="button-reject-org-transaction"]').exists()).toBe(false);
   });
 
+  test('shows success toast after successful cancel', async () => {
+    const onAction = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountHeader(undefined, onAction);
+
+    vi.mocked(cancelTransaction).mockResolvedValueOnce(undefined as any);
+
+    const form = wrapper.find('form');
+    const cancelButton = wrapper.get('[data-testid="button-cancel-org-transaction"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: cancelButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    const modal = wrapper.findComponent({ name: 'AppConfirmModal' });
+    const callback = modal.props('callback') as (() => Promise<void>) | null;
+    expect(typeof callback).toBe('function');
+
+    await callback?.();
+    await flushPromises();
+
+    expect(cancelTransaction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith('Transaction canceled successfully', { duration: 4000 });
+  });
+
   test('refreshes transaction state after a failed cancel attempt', async () => {
     const onAction = vi.fn().mockResolvedValue(undefined);
     const wrapper = mountHeader(undefined, onAction);

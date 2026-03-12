@@ -38,9 +38,13 @@ export const getCancelGroupToast = (result: CancelGroupResult): CancelGroupToast
   }
 
   if (failedCount > 0 && canceledCount + alreadyCanceledCount > 0) {
+    const parts: string[] = [];
+    if (canceledCount > 0) parts.push(`${canceledCount} canceled`);
+    if (alreadyCanceledCount > 0) parts.push(`${alreadyCanceledCount} already canceled`);
+    if (failedCount > 0) parts.push(`${failedCount} failed`);
     return {
       kind: 'warning',
-      message: `${canceledCount} canceled, ${alreadyCanceledCount} already canceled, ${failedCount} failed`,
+      message: parts.join(', '),
     };
   }
 

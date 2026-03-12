@@ -10,10 +10,16 @@ const props = withDefaults(
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
+    buttonText?: string;
+    loadingText?: string;
+    loading?: boolean;
   }>(),
   {
     show: false,
     callback: null,
+    buttonText: 'Confirm',
+    loadingText: '',
+    loading: false,
   },
 );
 
@@ -22,10 +28,11 @@ const emit = defineEmits(['update:show']);
 
 /* Handlers */
 const handleConfirm = () => {
-  emit('update:show', false);
+  if (props.loading) return;
   props.callback && props.callback();
 };
 const handleCancel = () => {
+  if (props.loading) return;
   emit('update:show', false);
 };
 </script>
@@ -40,11 +47,11 @@ const handleCancel = () => {
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
       <hr class="separator my-5" />
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" data-testid="button-cancel-group-action" @click="handleCancel"
+        <AppButton color="borderless" :disabled="props.loading" data-testid="button-cancel-group-action" @click="handleCancel"
           >Cancel</AppButton
         >
-        <AppButton color="primary" data-testid="button-confirm-group-action" @click="handleConfirm"
-          >Confirm</AppButton
+        <AppButton color="primary" :loading="props.loading" :loading-text="props.loadingText" data-testid="button-confirm-group-action" @click="handleConfirm"
+          >{{ props.buttonText }}</AppButton
         >
       </div>
     </div>

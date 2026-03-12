@@ -686,5 +686,8 @@ watch(
     :callback="confirmCallback"
     :text="confirmModalText"
     :title="confirmModalTitle"
+    :button-text="confirmModalButtonText"
+    :loading-text="confirmModalLoadingText"
+    :loading="isConfirmModalLoadingState"
   />
 </template>

@@ -120,6 +120,9 @@ const tooltipRef = ref<HTMLElement[]>([]);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
+const confirmModalButtonText = ref('');
+const confirmModalLoadingText = ref('');
+const isConfirmModalLoadingState = ref(false);
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
 const fullyLoaded = ref(false);
@@ -237,24 +240,27 @@ const handleCancelAll = async (showModal = false) => {
     isConfirmModalShown.value = true;
     confirmModalTitle.value = 'Cancel all transactions?';
     confirmModalText.value = 'Are you sure you want to cancel all transactions?';
+    confirmModalButtonText.value = 'Confirm';
     confirmCallback.value = handleCancelAll;
     return;
   }
 
-  isConfirmModalShown.value = false;
-
   if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
+    isConfirmModalShown.value = false;
     toastManager.error('You must be logged in to cancel transactions.');
     return;
   }
 
   const groupId = group.value?.id;
   if (!groupId) {
+    isConfirmModalShown.value = false;
     toastManager.error('Transaction group is not available.');
     return;
   }
 
   try {
+    confirmModalLoadingText.value = 'Canceling...';
+    isConfirmModalLoadingState.value = true;
     loadingStates[cancel] = 'Canceling...';
 
     const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, groupId);
@@ -270,6 +276,9 @@ const handleCancelAll = async (showModal = false) => {
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to cancel transactions'));
   } finally {
+    isConfirmModalShown.value = false;
+    isConfirmModalLoadingState.value = false;
+    confirmModalLoadingText.value = '';
     await fetchGroup(groupId).catch(refreshError => {
       toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transactions'));
     });
@@ -708,6 +717,9 @@ async function fetchGroup(id: string | number) {
               :title="confirmModalTitle"
               :text="confirmModalText"
               :callback="confirmCallback"
+              :button-text="confirmModalButtonText"
+              :loading-text="confirmModalLoadingText"
+              :loading="isConfirmModalLoadingState"
             />
           </div>
         </template>
