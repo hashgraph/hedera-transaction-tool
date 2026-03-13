@@ -5,6 +5,9 @@ import useUserStore from '@renderer/stores/storeUser';
 import { shouldSignInOrganization } from '@renderer/services/organizationCredentials';
 
 import { isUserLoggedIn, isOrganizationActive } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.composable.appVisibility');
 
 export interface UseAppVisibilityOptions {
   debounceMs?: number;
@@ -66,7 +69,7 @@ export default function useAppVisibility(options: UseAppVisibilityOptions = {}) 
         await user.refetchOrganizationTokens();
       }
     } catch (error) {
-      console.error('Error checking token validity on visibility change:', error);
+      logger.error('Error checking token validity on visibility change', { error });
     } finally {
       isCheckingTokens.value = false;
     }

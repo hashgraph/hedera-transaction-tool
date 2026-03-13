@@ -14,6 +14,9 @@ import {
   triggeringOrganizationServerUrl,
 } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.optionalUpgrade');
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
@@ -134,7 +137,7 @@ const runCompatibilityCheck = async () => {
       }
     }
   } catch (error) {
-    console.error('Compatibility check failed:', error);
+    logger.error('Compatibility check failed', { error });
   } finally {
     isCheckingCompatibility.value = false;
   }

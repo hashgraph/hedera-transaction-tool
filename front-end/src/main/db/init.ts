@@ -17,8 +17,6 @@ export default async function initDatabase() {
   );
 
   const databaseLogger = getDatabaseLogger();
-  databaseLogger.errorHandler.startCatching();
-  databaseLogger.transports.console.format = '{text}';
 
   const db = new sqlite3.default(dbPath);
 
@@ -76,9 +74,6 @@ export default async function initDatabase() {
   } else {
     databaseLogger.log('Database ready for usage');
   }
-
-  databaseLogger.errorHandler.stopCatching();
-
   async function getAvailableMigrations() {
     const migrationsData: { name: string; sql: string; created_at: number }[] = [];
 
@@ -150,8 +145,6 @@ export default async function initDatabase() {
 
 export async function deleteDatabase() {
   const databaseLogger = getDatabaseLogger();
-  databaseLogger.errorHandler.startCatching();
-  databaseLogger.transports.console.format = '{text}';
 
   try {
     await fsp.rm(dbPath);
@@ -159,8 +152,6 @@ export async function deleteDatabase() {
   } catch (error) {
     databaseLogger.error(error);
   }
-
-  databaseLogger.errorHandler.stopCatching();
 }
 
 export * from './prisma';

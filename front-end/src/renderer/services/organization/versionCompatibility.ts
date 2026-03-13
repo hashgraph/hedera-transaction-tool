@@ -1,4 +1,7 @@
 import * as semver from 'semver';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.versionCompatibility');
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 
@@ -30,7 +33,7 @@ export async function checkCompatibilityAcrossOrganizations(
 
   const cleanSuggestedVersion = semver.clean(suggestedVersion);
   if (!cleanSuggestedVersion) {
-    console.warn(`Invalid suggested version format: ${suggestedVersion}`);
+    logger.warn('Invalid suggested version format', { suggestedVersion });
     return {
       hasConflict: false,
       conflicts: [],
@@ -53,14 +56,14 @@ export async function checkCompatibilityAcrossOrganizations(
     };
 
     if (!orgLatestVersion) {
-      console.warn(`No version supplied for org ${org.serverUrl}`);
+      logger.warn('No version supplied for organization', { serverUrl: org.serverUrl });
       conflicts.push(conflictVersion);
       continue;
     }
 
     const cleanOrgLatestVersion = semver.clean(orgLatestVersion);
     if (!cleanOrgLatestVersion) {
-      console.warn(`Invalid version format for org ${org.serverUrl}: ${orgLatestVersion}`);
+      logger.warn('Invalid version format for organization', { serverUrl: org.serverUrl, orgLatestVersion });
       conflicts.push(conflictVersion);
       continue;
     }
@@ -71,13 +74,13 @@ export async function checkCompatibilityAcrossOrganizations(
   }
 
   if (conflicts.length > 0) {
-    console.warn(
-      `[${new Date().toISOString()}] COMPATIBILITY_CHECK Suggested version: ${cleanSuggestedVersion}`,
-    );
-    console.warn(
-      `Conflicts found with ${conflicts.length} organization(s):`,
-      conflicts.map(c => `${c.organizationName} (latest: ${c.latestSupportedVersion})`),
-    );
+    logger.warn('Compatibility check found conflicts', {
+      suggestedVersion: cleanSuggestedVersion,
+      conflicts: conflicts.map(c => ({
+        organizationName: c.organizationName,
+        latestSupportedVersion: c.latestSupportedVersion,
+      })),
+    });
   }
 
   return {

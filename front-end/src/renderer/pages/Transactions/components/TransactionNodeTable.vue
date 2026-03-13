@@ -24,7 +24,7 @@ import TransactionNodeHead from '@renderer/pages/Transactions/components/Transac
 import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import { isLoggedInOrganization } from '@renderer/utils';
+import { createLogger, isLoggedInOrganization } from '@renderer/utils';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
@@ -72,6 +72,7 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const toastManager = ToastManager.inject();
+const logger = createLogger('renderer.transactions.nodeTable');
 useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
@@ -138,7 +139,10 @@ const routeToDetails = async (node: ITransactionNode) => {
     } else if (n.groupId) {
       nodeIds.push({ groupId: n.groupId });
     } else {
-      console.log('Malformed transaction node: ' + JSON.stringify(n));
+      logger.warn('Malformed transaction node encountered while routing', {
+        hasGroupId: 'groupId' in n && !!n.groupId,
+        hasTransactionId: 'transactionId' in n && !!n.transactionId,
+      });
     }
   }
   if (node.transactionId) {
@@ -158,7 +162,7 @@ const routeToDetails = async (node: ITransactionNode) => {
       true,
     );
   } else {
-    console.warn(`Malformed transaction node`);
+    logger.warn('Malformed transaction node selected for routing');
   }
 };
 

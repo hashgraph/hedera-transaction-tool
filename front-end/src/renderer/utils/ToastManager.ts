@@ -1,5 +1,8 @@
 import { inject, provide } from 'vue';
 import { useToast } from 'vue-toast-notification';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.toastManager');
 
 export class ToastManager {
   private static readonly injectKey = Symbol();
@@ -35,7 +38,7 @@ export class ToastManager {
   public error(message: string) {
     if (this.isDuplicate(message) || this.displayedErrorCount >= this.maxDisplayedErrorCount) {
       // We display message in console
-      console.log('Hidden error message: "' + message + '"');
+      logger.debug('Hidden error message', { message });
     } else {
       this.displayedErrorCount++;
       this.toast.error(message, {

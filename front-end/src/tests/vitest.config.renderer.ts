@@ -14,6 +14,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    setupFiles: ['src/tests/setup.ts'],
     include: ['src/tests/renderer/**/*.{test,spec}.{ts,js}'],
   },
   plugins: [vue()],

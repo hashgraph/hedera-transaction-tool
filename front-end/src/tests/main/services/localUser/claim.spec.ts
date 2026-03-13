@@ -10,6 +10,18 @@ import prisma from '@main/db/__mocks__/prisma';
 
 import { USE_KEYCHAIN } from '@shared/constants';
 
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+vi.mock('@main/modules/logger', () => ({
+  createLogger: () => mockLogger,
+}));
 vi.mock('@main/db/prisma');
 
 describe('Claim Service', () => {
@@ -52,11 +64,9 @@ describe('Claim Service', () => {
     test('should log a message if the claim already exists', async () => {
       prisma.claim.count.mockResolvedValue(1);
 
-      const consoleSpy = vi.spyOn(console, 'log');
-
       await addClaim('user1', 'key1', 'value1');
 
-      expect(consoleSpy).toHaveBeenCalledWith('Claim already exists, claim will be overwritten');
+      expect(mockLogger.info).toHaveBeenCalledWith('Claim already exists, claim will be overwritten');
     });
   });
 

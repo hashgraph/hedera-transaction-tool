@@ -3,6 +3,9 @@ import type { Network } from '@shared/interfaces';
 import { Prisma } from '@prisma/client';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.accounts');
 
 export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   const prisma = getPrismaClient();
@@ -10,7 +13,7 @@ export const getAccounts = (findArgs: Prisma.HederaAccountFindManyArgs) => {
   try {
     return prisma.hederaAccount.findMany(findArgs);
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get accounts', { error });
     return [];
   }
 };
@@ -28,7 +31,7 @@ export const getAccountById = async (userId: string, accountId: string) => {
 
     return account || null;
   } catch (error) {
-    console.error('Error fetching account:', error);
+    logger.error('Error fetching account', { error });
     return null;
   }
 };

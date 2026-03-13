@@ -7,6 +7,9 @@ import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('shared.transactionFile');
 
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],
@@ -97,8 +100,6 @@ export async function collectMissingSignerKeys(
   );
 
   const signatureKeys = transaction._signerPublicKeys;
-  console.log(`Content of transaction._signerPublicKeys:`);
-  signatureKeys.forEach(key => console.log(`   key: ${key}`));
 
   for (const key of audit.signatureKeys) {
     for (const flatKey of flattenKeyList(key)) {
@@ -107,11 +108,18 @@ export async function collectMissingSignerKeys(
         // => checks if flatKey is part of user public keys
         if (userPublicKeys.includes(flatKey.toStringRaw())) {
           // User is able to sign transaction with flatKey
-          console.log(`Transaction can be signed with key: ${flatKey.toStringRaw()}`);
           result.push(flatKey.toStringRaw());
         }
       }
     }
+  }
+
+  if (result.length > 0) {
+    logger.debug('Collected missing signer keys for transaction file signing', {
+      availableSignerCount: signatureKeys.size,
+      missingSignerCount: result.length,
+      userPublicKeyCount: userPublicKeys.length,
+    });
   }
 
   return result;

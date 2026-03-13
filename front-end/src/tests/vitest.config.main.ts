@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
+    setupFiles: ['src/tests/setup.ts'],
     include: ['src/tests/main/**/*.{test,spec}.{ts,js}'],
     coverage: {
       exclude: ['src/shared', 'src/main/electron-env.d.ts'],

@@ -19,6 +19,9 @@ import { getTransactionById, importSignatures } from '@renderer/services/organiz
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.transactionImportModal');
 
 /* Props */
 const props = defineProps<{
@@ -113,11 +116,7 @@ const importSelectedCandidates = async (): Promise<void> => {
     const tx = allTransactions.find((t: ITransactionFull) => t.id === r.id)!;
     if (r.error) {
       errorResults.set(tx.transactionId, r);
-      console.log('Import failed for ' + tx.transactionId);
-      console.log('error=' + r.error);
-      if (r.error in ErrorCodes) {
-        console.log('ErrorCodes=' + ErrorMessages[r.error as unknown as ErrorCodes]);
-      }
+      logger.error('Import failed', { transactionId: tx.transactionId, error: r.error });
     } else {
       successResults.set(tx.transactionId, r);
     }
@@ -189,7 +188,7 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
           const t = await getTransactionById(serverUrl, transactionId);
           transactionMap.value.set(candidate.transactionId, t);
         } catch (error) {
-          console.log('error=' + error);
+          logger.error('Failed to fetch transaction by id', { error });
         }
       }
     }

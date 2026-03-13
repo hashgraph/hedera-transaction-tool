@@ -4,7 +4,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
-import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import { createLogger, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
 
@@ -16,6 +16,7 @@ export async function disconnectOrganization(
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
   const toastManager = ToastManager.inject();
+  const logger = createLogger('renderer.organization.disconnect');
 
   ws.disconnect(serverUrl);
 
@@ -52,9 +53,10 @@ export async function disconnectOrganization(
     );
   }
 
-  console.log(
-    `[${new Date().toISOString()}] DISCONNECT Organization: ${org?.nickname || serverUrl} (Server: ${serverUrl})`,
-  );
-  console.log(`  - Status: disconnected`);
-  console.log(`  - Reason: ${reason}`);
+  logger.info('Organization disconnected', {
+    organization: org?.nickname || serverUrl,
+    reason,
+    serverUrl,
+    status: 'disconnected',
+  });
 }

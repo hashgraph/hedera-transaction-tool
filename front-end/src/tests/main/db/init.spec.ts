@@ -44,15 +44,6 @@ vi.mock('fs', () => ({
 }));
 vi.mock('@main/modules/logger', () => ({
   getDatabaseLogger: vi.fn(() => ({
-    errorHandler: {
-      startCatching: vi.fn(),
-      stopCatching: vi.fn(),
-    },
-    transports: {
-      console: {
-        format: '',
-      },
-    },
     log: vi.fn(),
     error: vi.fn(),
   })),
@@ -79,8 +70,6 @@ describe('Initialize database', () => {
     const sqliteInstance = vi.mocked(sqlite3.default).mock.results[0].value;
     const loggerResult = vi.mocked(getDatabaseLogger).mock.results[0].value;
 
-    expect(loggerResult.errorHandler.startCatching).toHaveBeenCalled();
-    expect(loggerResult.errorHandler.stopCatching).toHaveBeenCalled();
     expect(loggerResult.log).toHaveBeenCalledWith('Current migration: ');
     expect(loggerResult.log).toHaveBeenNthCalledWith(2, 'Applying migration: 20240207141145_init');
     expect(sqliteInstance.prepare).toHaveBeenCalledWith('BEGIN');
@@ -120,8 +109,6 @@ describe('Initialize database', () => {
     const sqliteInstance = vi.mocked(sqlite3.default).mock.results[0].value;
     const loggerResult = vi.mocked(getDatabaseLogger).mock.results[0].value;
 
-    expect(loggerResult.errorHandler.startCatching).toHaveBeenCalled();
-    expect(loggerResult.errorHandler.stopCatching).toHaveBeenCalled();
     expect(loggerResult.log).toHaveBeenCalledWith('Current migration: 20240207141145_init');
     expect(loggerResult.log).toHaveBeenNthCalledWith(
       2,

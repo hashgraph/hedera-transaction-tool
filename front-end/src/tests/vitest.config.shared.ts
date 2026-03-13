@@ -11,6 +11,7 @@ export default defineConfig({
     watch: false,
     environment: 'node',
     globals: true,
+    setupFiles: ['src/tests/setup.ts'],
     include: ['src/tests/shared/**/*.{test,spec}.{ts,js}'],
   },
 });

@@ -204,18 +204,6 @@ async function executeTransaction(transactionBytes: Uint8Array, groupItem?: Grou
 
     isExecutedModalShown.value = true;
 
-    // if (route.query.draftId) {
-    //   try {
-    //     const draft = await getDraft(route.query.draftId.toString());
-
-    //     if (!draft.isTemplate) {
-    //       await deleteDraft(route.query.draftId.toString());
-    //     }
-    //   } catch (error) {
-    //     console.log(error);
-    //   }
-    // }
-
     if (unmounted.value) {
       toastManager.success('Transaction executed');
     }
@@ -402,14 +390,6 @@ async function uploadApprovers(transactionId: number, seqId: number) {
 async function deleteDraftsIfNotTemplate() {
   // TODO
   /* Delete if draft and not template */
-  // if (route.query.draftId) {
-  //   try {
-  //     const draft = await getDraft(route.query.draftId.toString());
-  //     if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
 }
 
 function resetData() {

@@ -7,6 +7,7 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
+import { createLogger } from '@renderer/utils/logger';
 import {
   BackEndTransactionType,
   type INotificationReceiver,
@@ -587,7 +588,7 @@ async function fetchGroup(id: string | number) {
       throw error;
     }
   } else {
-    console.log('not logged into org');
+    createLogger('renderer.page.transactionGroupDetails').info('Not logged into org');
   }
 }
 

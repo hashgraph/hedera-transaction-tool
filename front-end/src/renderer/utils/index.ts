@@ -25,6 +25,9 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { ToastManager } from '@renderer/utils/ToastManager';
 import type { SignatureItem } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { createLogger } from './logger';
+
+const logger = createLogger('renderer.utils');
 
 export * from './dom';
 export * from './sdk';
@@ -43,6 +46,7 @@ export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './localServices';
 export * from './transactionFile';
+export * from './logger';
 
 export const convertBytes = (
   bytes: number,
@@ -314,7 +318,7 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
       }
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Invalid multiple account input', error);
     throwError('Invalid multiple account input');
   }
 
