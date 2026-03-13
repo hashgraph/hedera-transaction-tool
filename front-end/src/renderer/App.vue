@@ -5,7 +5,6 @@ import { useRouter } from 'vue-router';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useThemeStore from '@renderer/stores/storeTheme';
 
 import {
   provideDynamicLayout,
@@ -13,7 +12,6 @@ import {
   provideUserModalRef,
 } from '@renderer/providers';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
@@ -36,7 +34,6 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
-const theme = useThemeStore();
 
 /* State */
 const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
@@ -46,13 +43,6 @@ const dynamicLayout = reactive({
   shouldSetupAccountClass: false,
   showMenu: false,
 });
-
-/* Handlers */
-async function handleThemeChange() {
-  const isDark = await window.electronAPI.local.theme.isDark();
-  window.electronAPI.local.theme.toggle(isDark ? 'light' : 'dark');
-  theme.changeThemeDark(!isDark);
-}
 
 /* Hooks */
 onMounted(async () => {
@@ -116,11 +106,6 @@ ToastManager.provide();
       <GlobalModalLoader ref="globalModalLoaderRef" />
     </div>
   </Transition>
-
-  <!-- To be removed -->
-  <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
-    <i class="bi bi-sun"></i
-  ></AppButton>
 
   <GlobalAppProcesses />
 </template>
