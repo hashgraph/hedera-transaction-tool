@@ -19,6 +19,7 @@ RUN pnpm install && cd apps/api && pnpm install
 
 COPY libs libs
 COPY apps/api apps/api
+COPY cert cert
 
 RUN pnpm build:api
 
@@ -40,5 +41,6 @@ ENV SKIP_NOTICE_GEN=true
 RUN pnpm install --prod
 
 COPY --from=development /usr/src/app/dist ./dist
+COPY cert cert
 
 CMD ["node", "dist/apps/api/main"]

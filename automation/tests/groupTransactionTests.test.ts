@@ -9,7 +9,7 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 
 let app: ElectronApplication;
 let window: Page;

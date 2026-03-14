@@ -1,0 +1,10 @@
+export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
+export const LOCALNET_OPERATOR_ACCOUNT = '0.0.2';
+export const DEFAULT_LOCALNET_OPERATOR_KEY =
+  '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137';
+export const DEFAULT_NETWORK = 'LOCALNET';
+export const TESTNET = 'TESTNET';
+export const PREVIEWNET = 'PREVIEWNET';
+export const CUSTOM = 'CUSTOM';
+export const PAYER_ACCOUNT_NICKNAME = 'Payer Account';
+export const OPERATOR_ACCOUNT_NICKNAME = 'Operator Account';
