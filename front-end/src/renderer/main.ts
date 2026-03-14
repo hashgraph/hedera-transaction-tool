@@ -6,14 +6,13 @@ import { createPinia } from 'pinia';
 import router from '@renderer/router';
 import { addGuards } from '@renderer/router/guards';
 
-import ToastPlugin, { useToast } from 'vue-toast-notification';
+import ToastPlugin from 'vue-toast-notification';
 
 import DatePicker from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
-import { AutoFocusFirstInputDirective, getErrorMessage } from './utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { AutoFocusFirstInputDirective } from './utils';
 
 const app = createApp(App);
 
@@ -27,14 +26,6 @@ addGuards(router);
 app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 
 app.directive('focus-first-input', AutoFocusFirstInputDirective);
-
-/* App config */
-const toast = useToast();
-
-app.config.errorHandler = (err: unknown) => {
-  console.log(err);
-  toast.error(getErrorMessage(err, 'An error occurred'), errorToastOptions);
-};
 
 /* Custom Components */
 app.component('DatePicker', DatePicker);

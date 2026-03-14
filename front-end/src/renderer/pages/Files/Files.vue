@@ -12,7 +12,7 @@ import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
@@ -30,7 +30,9 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -158,9 +160,6 @@ const allSelected = computed(() => {
   return selectedFileIds.value.length > 0 && selectedFileIds.value.length === files.value.length;
 });
 
-/* Composables */
-const toast = useToast();
-
 /* Handlers */
 const handleSelectFile = (fileId: string) => {
   isNicknameInputShown.value = false;
@@ -208,7 +207,7 @@ const handleUnlinkFile = async () => {
   isUnlinkFileModalShown.value = false;
 
   selectedFileIds.value = [];
-  toast.success('File Unlinked!', successToastOptions);
+  toastManager.success('File Unlinked!');
 };
 
 const handleStartNicknameEdit = () => {

@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 
 import { HTX_USER } from '@shared/constants';
@@ -30,16 +30,17 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
 const router = useRouter();
 const withLoader = useLoader();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const currentPassword = ref('');
@@ -109,9 +110,11 @@ const handleChangePassword = async () => {
 
     await user.refetchAccounts();
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to change password'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to change password'));
   } finally {
     isChangingPassword.value = false;
+    currentPassword.value = '';
+    newPassword.value = '';
   }
 };
 

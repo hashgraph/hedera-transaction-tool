@@ -6,7 +6,7 @@ import { Prisma } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
@@ -25,7 +25,6 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -42,7 +41,7 @@ const user = useUserStore();
 const contacts = useContactsStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -95,11 +94,10 @@ const handleImportExternalKey = async () => {
 
     emit('update:show', false);
 
-    toast.success(`${props.keyType} private key imported successfully`, successToastOptions);
+    toastManager.success(`${props.keyType} private key imported successfully`);
   } catch (error) {
-    toast.error(
+    toastManager.error(
       getErrorMessage(error, `Failed to import ${props.keyType} private key`),
-      errorToastOptions,
     );
   }
 };

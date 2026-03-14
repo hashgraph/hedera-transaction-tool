@@ -11,7 +11,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRoute } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { add } from '@renderer/services/filesService';
 
@@ -24,7 +24,7 @@ import {
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileCreateFormData from './FileCreateFormData.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Stores */
 const user = useUserStore();
@@ -32,7 +32,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const route = useRoute();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -96,7 +96,7 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
   };
 
   await add(file);
-  toast.success(`File ${newFileId} linked`, successToastOptions);
+  toastManager.success(`File ${newFileId} linked`);
 };
 
 /* Functions */

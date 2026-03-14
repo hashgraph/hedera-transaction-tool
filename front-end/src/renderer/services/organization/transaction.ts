@@ -116,9 +116,9 @@ export const uploadSignatures = async (
     });
   }
 
-  await commonRequestHandler(async () => {
-    await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/signers`,
+  return await commonRequestHandler(async () => {
+    return await axiosWithCredentials.post(
+      `${organization.serverUrl}/${controller}/signers?includeNotifications=true`,
       formattedMaps,
     );
   }, 'Failed upload signatures');

@@ -3,7 +3,7 @@ import type { NodeData } from '@renderer/utils/sdk';
 
 import { ref, useTemplateRef, watch } from 'vue';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { sha384, x509BytesFromPem } from '@renderer/services/electronUtilsService';
 
@@ -27,7 +27,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -36,7 +35,7 @@ const props = defineProps<{
 }>();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* State */
 const gossipIpOrDomain = ref('');
@@ -168,7 +167,7 @@ function handleInputValidation(e: Event) {
     validate100CharInput(target.value, 'Transaction Memo');
     nodeDescriptionError.value = false;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Invalid Node Description'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Invalid Node Description'));
     nodeDescriptionError.value = true;
   }
 }
@@ -198,7 +197,7 @@ function handleGrpcProxyDomainBlur() {
   grpcProxyPort.value = result.port;
 
   if (grpcProxyDomain.value && !isValidFqdn(grpcProxyDomain.value)) {
-    toast.error('Invalid gRPC Web Proxy Endpoint: A valid FQDN is required', errorToastOptions);
+    toastManager.error('Invalid gRPC Web Proxy Endpoint: A valid FQDN is required');
   }
 
   emitGrpcProxyEndpoint();

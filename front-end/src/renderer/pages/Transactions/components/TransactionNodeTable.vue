@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import {
   type ITransactionNode,
@@ -25,7 +25,6 @@ import TransactionNodeRow from '@renderer/pages/Transactions/components/Transact
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import { isLoggedInOrganization } from '@renderer/utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
@@ -237,7 +236,7 @@ async function fetchNodes(options?: { silent?: boolean }): Promise<void> {
       sortNodes();
       clampPage();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : loadErrorMessage.value, errorToastOptions);
+      toastManager.error(error instanceof Error ? error.message : loadErrorMessage.value);
     } finally {
       isLoading.value = false;
     }

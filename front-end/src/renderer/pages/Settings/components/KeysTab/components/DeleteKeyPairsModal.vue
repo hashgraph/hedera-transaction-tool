@@ -6,7 +6,7 @@ import { computed, ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { deleteKey } from '@renderer/services/organization';
 import { deleteKeyPair } from '@renderer/services/keyPairService';
@@ -16,7 +16,6 @@ import { getErrorMessage, isLoggedInOrganization, safeAwait } from '@renderer/ut
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -42,8 +41,8 @@ const emit = defineEmits<{
 const user = useUserStore();
 const accountSetupStore = useAccountSetupStore();
 
-/* Composables */
-const toast = useToast();
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const isDeletingKey = ref(false);
@@ -117,9 +116,8 @@ const handleDelete = async () => {
           await deleteKeyPair(keyPairId);
           await deleteOrganization(organizationKeyToDelete?.id || null);
         } catch (error) {
-          toast.error(
+          toastManager.error(
             getErrorMessage(error, 'Unable to delete one or more key pair(s)'),
-            errorToastOptions,
           );
         }
       }
@@ -131,7 +129,7 @@ const handleDelete = async () => {
       }
     }
 
-    toast.success('Private key(s) deleted successfully', successToastOptions);
+    toastManager.success('Private key(s) deleted successfully');
 
     await user.refetchUserState();
     await user.refetchKeys();
@@ -143,9 +141,8 @@ const handleDelete = async () => {
       // => we simulate Skip immediately
       await accountSetupStore.handleSkipRecoveryPhrase();
     }
-
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to delete key pair'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to delete key pair'));
   } finally {
     resetSelection();
     isDeletingKey.value = false;

@@ -17,7 +17,7 @@ import { TransactionStatus } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { add, getAll } from '@renderer/services/accountsService';
 
@@ -35,7 +35,6 @@ import {
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
 
 /* Props */
@@ -49,7 +48,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Injected */
 const transactionByIdCache = TransactionByIdCache.inject();
@@ -78,7 +77,7 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`Account ${entityId.value} linked`, successToastOptions);
+  toastManager.success(`Account ${entityId.value} linked`);
 };
 
 /* Functions */

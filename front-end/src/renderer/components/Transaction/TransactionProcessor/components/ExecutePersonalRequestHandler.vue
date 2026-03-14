@@ -9,7 +9,7 @@ import { Prisma } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useDraft from '@renderer/composables/useDraft';
 
 import { execute, storeTransaction } from '@renderer/services/transactionService';
@@ -20,7 +20,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Emits */
 const emit = defineEmits<{
@@ -38,7 +37,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const draft = useDraft();
 
 /* State */
@@ -95,14 +94,14 @@ async function executeTransaction(transactionBytes: Uint8Array) {
     await draft.deleteIfNotTemplate();
 
     if (unmounted.value) {
-      toast.success('Transaction executed', successToastOptions);
+      toastManager.success('Transaction executed');
     }
   } catch (err: any) {
     const data = JSON.parse(err.message);
     status = data.status;
 
     emit('transaction:executed', false, null, null);
-    toast.error(data.message, errorToastOptions);
+    toastManager.error(data.message);
   } finally {
     isExecuting.value = false;
   }

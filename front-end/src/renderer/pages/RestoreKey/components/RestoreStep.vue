@@ -15,8 +15,7 @@ import {
   getSecretHashFromUploadedKeys,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 /* Emits */
 const emit = defineEmits<{
@@ -27,11 +26,11 @@ const emit = defineEmits<{
   ): void;
 }>();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Stores */
 const user = useUserStore();
-
-/* Composables */
-const toast = useToast();
 
 /* State */
 const index = ref(0);
@@ -88,7 +87,7 @@ const handleRestoreKey = async (): Promise<true | void> => {
 
     emit('next', restoredKey.value, Number(index.value));
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to restore private key'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to restore private key'));
   } finally {
     loadingText.value = null;
   }

@@ -17,7 +17,7 @@ import { TransactionStatus } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { saveFile } from '@renderer/services/electronUtilsService';
 import { add, getAll } from '@renderer/services/filesService';
@@ -27,7 +27,7 @@ import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@rende
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 const props = defineProps<{
@@ -40,7 +40,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Injected */
 const transactionByIdCache = TransactionByIdCache.inject();
@@ -69,7 +69,7 @@ const handleLinkEntity = async () => {
     },
   });
 
-  toast.success(`File ${entityId.value} linked`, successToastOptions);
+  toastManager.success(`File ${entityId.value} linked`);
 };
 
 /* Functions */

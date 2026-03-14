@@ -5,13 +5,12 @@ import { watch, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { addOrganization } from '@renderer/services/organizationsService';
 import { healthCheck } from '@renderer/services/organization';
 
 import { getErrorMessage } from '@renderer/utils';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -34,7 +33,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const { isDismissed } =
   useVersionCheck();
 
@@ -69,11 +68,11 @@ const handleAdd = async () => {
 
     newOrgNickname.value = organization.nickname || serverUrl.value;
 
-    toast.success('Organization Added', successToastOptions);
+    toastManager.success('Organization Added');
     emit('added', organization);
     emit('update:show', false);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to add organization'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to add organization'));
   }
 };
 

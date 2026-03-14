@@ -6,12 +6,11 @@ import useUserStore from '@renderer/stores/storeUser';
 import { showOpenDialog } from '@renderer/services/electronUtilsService';
 import { searchPublicKeys, abortFileSearch } from '@renderer/services/publicKeyMappingService';
 import { getErrorMessage, getPublicKeyMapping, safeAwait } from '@renderer/utils';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import PublicKeysBox from './PublicKeysBox.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +26,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* State */
 const foundKeys = ref<{ publicKey: string; nickname: string }[]>([]);
@@ -57,19 +56,18 @@ const handleSubmit = async () => {
     await Promise.allSettled(newKeys.map(k => user.storePublicKeyMapping(k.publicKey, k.nickname)));
 
     if (skippedKeys === selectedKeys.value.length) {
-      toast.error('All selected keys are already imported in your list', errorToastOptions);
+      toastManager.error('All selected keys are already imported in your list');
     } else if (skippedKeys > 0) {
-      toast.success(
+      toastManager.success(
         `${skippedKeys} of the selected keys were already in your list. The rest were imported successfully.`,
-        successToastOptions,
       );
     } else {
-      toast.success(`Public key(s) imported successfully`, successToastOptions);
+      toastManager.success(`Public key(s) imported successfully`);
     }
 
     handleClose(false);
   } catch (error) {
-    toast.error(getErrorMessage(error, `Failed to import public key(s)`), errorToastOptions);
+    toastManager.error(getErrorMessage(error, `Failed to import public key(s)`));
   }
 };
 

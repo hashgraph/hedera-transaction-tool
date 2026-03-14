@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue';
+import { onErrorCaptured, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useThemeStore from '@renderer/stores/storeTheme';
 
 import {
   provideDynamicLayout,
@@ -13,7 +12,6 @@ import {
   provideUserModalRef,
 } from '@renderer/providers';
 
-import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
@@ -25,13 +23,17 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
+import { ToastManager } from './utils/ToastManager';
+import { getErrorMessage } from '@renderer/utils';
 
 /* Composables */
 const router = useRouter();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Stores */
 const user = useUserStore();
-const theme = useThemeStore();
 
 /* State */
 const userPasswordModalRef = ref<InstanceType<typeof UserPasswordModal> | null>(null);
@@ -41,13 +43,6 @@ const dynamicLayout = reactive({
   shouldSetupAccountClass: false,
   showMenu: false,
 });
-
-/* Handlers */
-async function handleThemeChange() {
-  const isDark = await window.electronAPI.local.theme.isDark();
-  window.electronAPI.local.theme.toggle(isDark ? 'light' : 'dark');
-  theme.changeThemeDark(!isDark);
-}
 
 /* Hooks */
 onMounted(async () => {
@@ -62,6 +57,11 @@ onMounted(async () => {
   });
 });
 
+onErrorCaptured((err: unknown) => {
+  console.log(err);
+  toastManager.error(getErrorMessage(err, 'An error occurred'));
+});
+
 /* Providers */
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
@@ -71,6 +71,7 @@ AccountByPublicKeyCache.provide();
 TransactionByIdCache.provide();
 NodeByIdCache.provide();
 PublicKeyOwnerCache.provide();
+ToastManager.provide();
 </script>
 <template>
   <AppHeader
@@ -105,11 +106,6 @@ PublicKeyOwnerCache.provide();
       <GlobalModalLoader ref="globalModalLoaderRef" />
     </div>
   </Transition>
-
-  <!-- To be removed -->
-  <AppButton class="btn-theme-changer" color="secondary" @click="handleThemeChange">
-    <i class="bi bi-sun"></i
-  ></AppButton>
 
   <GlobalAppProcesses />
 </template>
