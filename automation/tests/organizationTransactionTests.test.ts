@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
@@ -8,18 +8,19 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
+  setDialogMockState,
   setupApp,
   setupEnvironmentForTransactions,
   waitAndReadFile,
   waitForValidStart,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
 import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -33,8 +34,8 @@ let thirdUser: UserDetails;
 let complexKeyAccountId: string;
 
 test.describe('Organization Transaction tests', () => {
+  test.slow();
   test.beforeAll(async () => {
-    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
@@ -68,11 +69,11 @@ test.describe('Organization Transaction tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -92,25 +93,12 @@ test.describe('Organization Transaction tests', () => {
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
-
-    await app.evaluate(({ dialog }) => {
-      (dialog as unknown as { _savePath: string | null })._savePath = null;
-      (dialog as unknown as { _openPaths: string[] })._openPaths = [];
-
-      dialog.showSaveDialog = async () => ({
-        canceled: false,
-        filePath: (dialog as unknown as { _savePath: string | null })?._savePath ?? '',
-      });
-      dialog.showOpenDialog = async () => ({
-        canceled: false,
-        filePaths: (dialog as unknown as { _openPaths: string[] })?._openPaths ?? [],
-      });
-    });
   });
 
   test.beforeEach(async () => {
     // Flush rate limiter before each test to prevent "too many requests" errors
     await flushRateLimiter();
+    await setDialogMockState(window, { savePath: null, openPaths: [] });
 
     await organizationPage.signInOrganization(
       firstUser.email,
@@ -254,7 +242,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 600, true);
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
@@ -293,7 +280,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify transaction is shown "History" after it is executed', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
@@ -461,7 +447,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute transfer transaction with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
       complexKeyAccountId,
       '15',
@@ -491,7 +476,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute approve allowance with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.approveAllowance(complexKeyAccountId, '10');
     await organizationPage.closeDraftModal();
     await transactionPage.clickOnTransactionsMenuButton();
@@ -518,7 +502,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file create with complex account', async () => {
-    test.slow();
     const { txId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -534,7 +517,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file update with complex account', async () => {
-    test.slow();
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -559,7 +541,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute file append with complex account', async () => {
-    test.slow();
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -584,7 +565,6 @@ test.describe('Organization Transaction tests', () => {
   });
 
   test('Verify user can execute account delete with complex account', async () => {
-    test.slow();
     const { txId, validStart } = await organizationPage.deleteAccount(complexKeyAccountId);
     await organizationPage.closeDraftModal();
     await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
@@ -610,12 +590,7 @@ test.describe('Organization Transaction tests', () => {
       await fsp.rm(exportDir, { recursive: true, force: true });
       await fsp.mkdir(exportDir, { recursive: true });
 
-      await app.evaluate(
-        ({ dialog }, { savePath }) => {
-          (dialog as unknown as { _savePath: string })._savePath = savePath;
-        },
-        { savePath },
-      );
+      await setDialogMockState(window, { savePath });
     });
 
     test.afterEach(async () => {
@@ -625,8 +600,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
-      test.slow();
-
       // Create 73 more users, a total of 76
       await organizationPage.createAdditionalUsers(73, globalCredentials.password);
 
@@ -661,12 +634,7 @@ test.describe('Organization Transaction tests', () => {
       }
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
@@ -683,8 +651,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user can import superfluous signatures from TTv1 format', async () => {
-      test.slow();
-
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
@@ -719,12 +685,7 @@ test.describe('Organization Transaction tests', () => {
       await organizationPage.clickOnSignTransactionButton();
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
@@ -741,8 +702,6 @@ test.describe('Organization Transaction tests', () => {
     });
 
     test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
-      test.slow();
-
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
@@ -783,12 +742,7 @@ test.describe('Organization Transaction tests', () => {
       );
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.clickOnTransactionsMenuButton();
       await transactionPage.clickOnImportButton();
       //expect import button is disabled

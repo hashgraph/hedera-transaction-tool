@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -11,10 +11,10 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
@@ -37,8 +37,8 @@ function incrementAccountId(accountId: string) {
 }
 
 test.describe('Organization Group Tx tests', () => {
+  test.slow();
   test.beforeAll(async () => {
-    test.slow();
     await resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
@@ -63,11 +63,15 @@ test.describe('Organization Group Tx tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(
+      window,
+      globalCredentials.password,
+      payerPrivateKey,
+    );
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -132,20 +136,17 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify user can execute group transaction in organization', async () => {
-    test.slow();
     await groupPage.addOrgAllowanceTransactionToGroup(2, complexKeyAccountId, '10');
-
     await groupPage.clickOnSignAndExecuteButton();
-    // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
 
-    const txId = await groupPage.getTransactionTimestamp(0) ?? '';
-    const secondTxId = await groupPage.getTransactionTimestamp(1) ?? '';
+    const txId = await groupPage.getTransactionTimestamp(0, 100) ?? '';
+    const secondTxId = (await groupPage.getTransactionTimestamp(1, 100)) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
     await groupPage.clickOnConfirmGroupActionButton();
-    await loginPage.waitForToastToDisappear();
 
+    await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
     await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password);
@@ -169,9 +170,7 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify user can cancel all items in a transaction group', async () => {
-    test.slow();
     await groupPage.addSingleTransactionToGroup(2);
-
     await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnCancelAllButton();
@@ -183,13 +182,11 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test(`Verify user can import csv with 5 transactions`, async () => {
-    test.slow();
     const isAllTransactionsSuccessful = await executeGroupFromCsvFile(5, false)
     expect(isAllTransactionsSuccessful).toBe(true);
   });
 
   test(`Verify user can import csv with 100 transactions`, async () => {
-    test.slow();
     const isAllTransactionsSuccessful = await executeGroupFromCsvFile(100, true)
     expect(isAllTransactionsSuccessful).toBe(true);
   });
@@ -201,7 +198,6 @@ test.describe('Organization Group Tx tests', () => {
     expect(message).toBe('Import complete');
 
     await groupPage.clickOnSignAndExecuteButton();
-    // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
@@ -215,13 +211,11 @@ test.describe('Organization Group Tx tests', () => {
 
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnHistoryTab();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions);
-
+    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions, 100);
     return groupPage.verifyAllTransactionsAreSuccessful(timestamps);
   }
 
   test('Verify import fails if sender account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     // create a non-existing account Id
     const senderAccountId = incrementAccountId(newAccountId);
@@ -230,7 +224,6 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify import fails if fee payer account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     const feePayerAccountId = incrementAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
@@ -238,7 +231,6 @@ test.describe('Organization Group Tx tests', () => {
   });
 
   test('Verify import fails if receiver account does not exist on network', async () => {
-    test.slow();
     await groupPage.fillDescription('test');
     const receiverAccountId = incrementAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, receiverAccountId, 5);

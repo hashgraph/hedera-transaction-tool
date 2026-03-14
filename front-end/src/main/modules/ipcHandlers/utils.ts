@@ -1,6 +1,15 @@
 import fs from 'fs';
 
-import { BrowserWindow, app, dialog, ipcMain, shell, FileFilter } from 'electron';
+import {
+  BrowserWindow,
+  app,
+  dialog,
+  ipcMain,
+  shell,
+  FileFilter,
+  OpenDialogReturnValue,
+  SaveDialogReturnValue,
+} from 'electron';
 
 import { createHash, X509Certificate } from 'crypto';
 
@@ -9,6 +18,30 @@ import { dualCompareHash, hash } from '@main/utils/crypto';
 
 const createChannelName = (...props: string[]) => ['utils', ...props].join(':');
 let bounceId: number | null = null;
+
+interface DialogMockState {
+  savePath: string | null;
+  openPaths: string[];
+}
+
+const defaultDialogMockState = (): DialogMockState => ({
+  savePath: null,
+  openPaths: [],
+});
+
+let dialogMockState = defaultDialogMockState();
+
+const isPlaywrightTestSession = () => process.env.PLAYWRIGHT_TEST === 'true';
+
+const getMockedSaveDialogResult = (): SaveDialogReturnValue => ({
+  canceled: false,
+  filePath: dialogMockState.savePath ?? '',
+});
+
+const getMockedOpenDialogResult = (): OpenDialogReturnValue => ({
+  canceled: false,
+  filePaths: [...dialogMockState.openPaths],
+});
 
 export default () => {
   ipcMain.on(createChannelName('setDockBounce'), (_e, bounce: boolean) => {
@@ -30,6 +63,25 @@ export default () => {
   ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
 
   ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
+
+  ipcMain.handle(
+    createChannelName('test', 'setDialogMockState'),
+    async (
+      _e,
+      state: Partial<DialogMockState>,
+    ): Promise<void> => {
+      dialogMockState = {
+        savePath:
+          state.savePath !== undefined ? state.savePath : dialogMockState.savePath,
+        openPaths:
+          state.openPaths !== undefined ? [...state.openPaths] : dialogMockState.openPaths,
+      };
+    },
+  );
+
+  ipcMain.handle(createChannelName('test', 'clearDialogMockState'), async (): Promise<void> => {
+    dialogMockState = defaultDialogMockState();
+  });
 
   ipcMain.handle(
     createChannelName('hash'),
@@ -63,9 +115,11 @@ export default () => {
     if (windows.length === 0) return;
 
     try {
-      const { filePath, canceled } = await dialog.showSaveDialog(windows[0], {
-        defaultPath: app.getPath('documents'),
-      });
+      const { filePath, canceled } = isPlaywrightTestSession()
+        ? getMockedSaveDialogResult()
+        : await dialog.showSaveDialog(windows[0], {
+            defaultPath: app.getPath('documents'),
+          });
       if (!filePath.trim() || canceled) return;
 
       const content = Buffer.from(getNumberArrayFromString(uint8ArrayString));
@@ -113,6 +167,10 @@ export default () => {
       const windows = BrowserWindow.getAllWindows();
       if (windows.length === 0) return;
 
+      if (isPlaywrightTestSession()) {
+        return getMockedOpenDialogResult();
+      }
+
       return await dialog.showOpenDialog(windows[0], {
         title,
         buttonLabel,
@@ -135,6 +193,10 @@ export default () => {
     ) => {
       const windows = BrowserWindow.getAllWindows();
       if (windows.length === 0) return;
+
+      if (isPlaywrightTestSession()) {
+        return getMockedSaveDialogResult();
+      }
 
       return await dialog.showSaveDialog(windows[0], {
         title,

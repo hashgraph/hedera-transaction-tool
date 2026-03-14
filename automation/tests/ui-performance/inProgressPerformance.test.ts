@@ -12,9 +12,9 @@
  * - Run: npm run k6:seed:all
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
@@ -35,7 +35,7 @@ dotenv.config();
 // In Progress shows WAITING_FOR_SIGNATURES transactions (same as Ready to Sign)
 const REQUIRED_TOTAL = DATA_VOLUMES.READY_TO_SIGN;
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;

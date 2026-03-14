@@ -5,9 +5,9 @@
  * Data source: Backend PostgreSQL (org users appear as contacts)
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
 import { resetDbState, resetPostgresDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
@@ -29,7 +29,7 @@ dotenv.config();
 const DB_ITEM_COUNT = DATA_VOLUMES.CONTACTS;
 const MIN_CONTACTS = 50; // Strict: require at least 50 contacts rendered
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;

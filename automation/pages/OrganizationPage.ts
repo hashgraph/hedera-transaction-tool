@@ -11,7 +11,7 @@ import {
   setupEnvironmentForTransactions,
   waitForValidStart,
   getPrivateKeyEnv
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { createTestUsersBatch } from '../utils/databaseUtil.js';
 import { Mnemonic } from '@hashgraph/sdk';
 import {
@@ -80,14 +80,18 @@ export class OrganizationPage extends BasePage {
   deleteNextButtonSelector = 'button-delete-next';
   addObserverButtonSelector = 'button-add-observer';
   addUserButtonSelector = 'button-add-user';
-  timePickerIconSelector = '.dp--tp-wrap button[aria-label="Open time picker"]';
-  incrementSecondsButtonSelector = 'button[aria-label="Increment seconds"]';
-  incrementMinutesButtonSelector = 'button[aria-label="Increment minutes"]';
-  incrementHourButtonSelector = 'button[aria-label="Increment hours"]';
-  secondsOverlayButtonSelector = 'button[data-test-id="seconds-toggle-overlay-btn-0"]';
-  minutesOverlayButtonSelector = 'button[data-test-id="minutes-toggle-overlay-btn-0"]';
-  hoursOverlayButtonSelector = 'button[data-test-id="hours-toggle-overlay-btn-0"]';
+  openDatePickerButtonSelector = '[data-test-id="dp-input"]';
+  datePickerCalendarSelector = 'css=.dp__instance_calendar';
+  datePickerInputSelector = 'css=.dp__time_input';
+  timePickerIconSelector = 'css=.dp--tp-wrap button[aria-label="Open time picker"]';
+  incrementSecondsButtonSelector = 'css=button[aria-label="Increment seconds"]';
+  incrementMinutesButtonSelector = 'css=button[aria-label="Increment minutes"]';
+  incrementHourButtonSelector = 'css=button[aria-label="Increment hours"]';
+  secondsOverlayButtonSelector = 'css=button[data-test-id="seconds-toggle-overlay-btn-0"]';
+  minutesOverlayButtonSelector = 'css=button[data-test-id="minutes-toggle-overlay-btn-0"]';
+  hoursOverlayButtonSelector = 'css=button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
+  signTransactionButton = 'css=button:has-text("Sign")';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
   rejectAllTransactionsButtonSelector = 'button-reject-group';
@@ -97,6 +101,9 @@ export class OrganizationPage extends BasePage {
   exportAllTransactionsButtonSelector = 'button-export-group';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
   cancelGroupActionButtonSelector = 'button-cancel-group-action';
+  discardGroupModalButtonSelector = 'button-discard-group-modal';
+  discardDraftForGroupModalButtonSelector = 'button-discard-draft-for-group-modal';
+  deleteGroupModalButtonSelector = 'button-delete-group-modal';
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
   serverUrlInputSelector = 'input-server-url';
@@ -110,6 +117,7 @@ export class OrganizationPage extends BasePage {
   transactionValidStartSelector = 'p-transaction-details-valid-start';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
   spanNotificationNumberSelector = 'span-notification-number';
+  toastMessageSelector = 'css=.v-toast__text';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
   // Indexes
@@ -222,10 +230,13 @@ export class OrganizationPage extends BasePage {
     await createTestUsersBatch(usersData);
   }
 
-  async setUpInitialUsers(window: Page, encryptionPassword: string, setPrivateKey = true) {
+  async setUpInitialUsers(
+    window: Page,
+    encryptionPassword: string,
+    payerPrivateKey: string | null,
+    setPrivateKey = true,
+  ) {
     const user = this.users[0];
-    const privateKey = getPrivateKeyEnv();
-    if (!privateKey) throw new Error('PRIVATE_KEY env variable is not set');
 
     // Full setup for the first user (index 0) who is payer
     await this.signInOrganization(user.email, user.password, encryptionPassword);
@@ -247,9 +258,13 @@ export class OrganizationPage extends BasePage {
     );
     await this.registrationPage.clickOnFinalNextButtonWithRetry();
 
+    if (!payerPrivateKey) {
+      throw new Error('Payer private key was not provided.');
+    }
+
     if (setPrivateKey) {
-      await setupEnvironmentForTransactions(window, privateKey);
-      this.users[0].privateKey = privateKey;
+      await setupEnvironmentForTransactions(window, payerPrivateKey);
+      this.users[0].privateKey = payerPrivateKey;
     }
 
     await this.settingsPage.navigateToLogout();
@@ -381,13 +396,17 @@ export class OrganizationPage extends BasePage {
    * @returns true if the transaction row has the notification indicator, false otherwise
    */
   async hasNotificationForTransaction(transactionId: string): Promise<boolean> {
-    const rows = await this.window.locator(`[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`).all();
+    const rows = await this.window
+      .locator(`[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`)
+      .all();
 
     for (let i = 0; i < rows.length; i++) {
       const rowText = await this.getText(this.transactionNodeTransactionIdIndexSelector + i);
 
       if (rowText && rowText.includes(transactionId)) {
-        return await this.hasBeforePseudoElement(this.transactionNodeTransactionIdIndexSelector + i);
+        return await this.hasBeforePseudoElement(
+          this.transactionNodeTransactionIdIndexSelector + i,
+        );
       }
     }
 
@@ -411,11 +430,10 @@ export class OrganizationPage extends BasePage {
   async logoutFromOrganization() {
     // Close any group-related modals that may appear when navigating away
     // "Save Group?" modal - has "Discard" button
-    await this.closeDraftModal('button-discard-group-modal', 1000);
+    await this.closeDraftModal(this.discardGroupModalButtonSelector);
     // "Leave without saving group" modal - has "Discard Changes" button
-    await this.closeDraftModal('button-delete-group-modal', 1000);
+    await this.closeDraftModal(this.deleteGroupModalButtonSelector);
     await this.selectOrganizationMode();
-    await new Promise(resolve => setTimeout(resolve, 500));
     await this.settingsPage.navigateToLogout();
     await this.click(this.logoutButtonSelector);
   }
@@ -429,8 +447,7 @@ export class OrganizationPage extends BasePage {
     this.organizationRecoveryWords[userIndex] = [];
     for (let i = 1; i <= 24; i++) {
       const selector = this.registrationPage.getRecoveryWordSelector(i);
-      const wordElement = this.window.getByTestId(selector);
-      this.organizationRecoveryWords[userIndex][i] = await wordElement.inputValue();
+      this.organizationRecoveryWords[userIndex][i] = await this.getTextFromInputField(selector);
     }
   }
 
@@ -444,8 +461,7 @@ export class OrganizationPage extends BasePage {
   async fillAllMissingRecoveryPhraseWordsForUser(userIndex: number) {
     for (let i = 1; i <= 24; i++) {
       const selector = this.registrationPage.getRecoveryWordSelector(i);
-      const wordElement = this.window.getByTestId(selector);
-      const value = await wordElement.inputValue();
+      const value = await this.getTextFromInputField(selector);
       if (!value) {
         const word = this.organizationRecoveryWords[userIndex][i];
         if (word) {
@@ -503,7 +519,7 @@ export class OrganizationPage extends BasePage {
       const currentNickname = await this.getOrganizationNicknameText();
       if (currentNickname !== newNickname) {
         await this.clickOnEditNicknameOrganizationButton();
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT));
         await this.fillInNewOrganizationNickname(newNickname);
         await this.settingsPage.clickOnOrganisationsTab();
         retries++;
@@ -569,8 +585,8 @@ export class OrganizationPage extends BasePage {
    * Opens the date picker.
    */
   async openDatePicker() {
-    await this.window.click(`[data-test-id="dp-input"]`);
-    await this.window.waitForSelector('.dp__instance_calendar');
+    await this.click(this.openDatePickerButtonSelector);
+    await this.waitForElementToBeVisible(this.datePickerCalendarSelector);
   }
 
   /**
@@ -578,7 +594,7 @@ export class OrganizationPage extends BasePage {
    */
   async switchToTimePicker() {
     await this.click(this.timePickerIconSelector);
-    await this.window.waitForSelector('.dp__time_input');
+    await this.waitForElementToBeVisible(this.datePickerInputSelector);
   }
 
   /**
@@ -590,24 +606,18 @@ export class OrganizationPage extends BasePage {
     const increment = async (selector: string, count: number) => {
       if (count > 0) {
         for (let i = 0; i < count; i++) {
-          await this.window.click(selector);
+          await this.click(selector);
         }
       } else if (count < 0) {
         for (let i = 0; i > count; i--) {
-          await this.window.click(selector.replace('Increment', 'Decrement'));
+          await this.click(selector.replace('Increment', 'Decrement'));
         }
       }
     };
     // Get the current time values
-    const currentSeconds = parseInt(
-      (await this.window.textContent(this.secondsOverlayButtonSelector)) ?? '',
-    );
-    const currentMinutes = parseInt(
-      (await this.window.textContent(this.minutesOverlayButtonSelector)) ?? '',
-    );
-    const currentHours = parseInt(
-      (await this.window.textContent(this.hoursOverlayButtonSelector)) ?? '',
-    );
+    const currentSeconds = parseInt((await this.getText(this.secondsOverlayButtonSelector)) ?? '');
+    const currentMinutes = parseInt((await this.getText(this.minutesOverlayButtonSelector)) ?? '');
+    const currentHours = parseInt((await this.getText(this.hoursOverlayButtonSelector)) ?? '');
 
     // Calculate the new time values
     const totalSeconds = currentSeconds + seconds;
@@ -658,16 +668,13 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.addPublicKeyAtDepth('0-1', publicKey3);
 
     // Set inner threshold (0-1) to 2 of 2 - both users from threshold group needed
-    await this.selectOptionByValue(
-      this.transactionPage.selectThresholdValueByIndex + '0-1',
-      '2',
-    );
+    await this.selectOptionByValue(this.transactionPage.selectThresholdValueByIndex + '0-1', '2');
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     // Handle password modal if it appears (organization signing flow)
-    if (encryptionPassword && await this.isEncryptPasswordInputVisible()) {
+    if (encryptionPassword && (await this.isEncryptPasswordInputVisible())) {
       await this.fillOrganizationEncryptionPasswordAndContinue(encryptionPassword);
     }
     const transactionId = (await this.getTransactionDetailsId()) ?? '';
@@ -729,7 +736,7 @@ export class OrganizationPage extends BasePage {
     );
 
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     const transactionId = (await this.getTransactionDetailsId()) ?? '';
     await this.clickOnSignTransactionButton();
@@ -744,14 +751,12 @@ export class OrganizationPage extends BasePage {
     for (let i = 1; i < this.users.length; i++) {
       console.log(`Signing transaction for user ${i}`);
       const user = this.users[i];
-      // Close any lingering draft modals before login
-      await this.closeDraftModal('button-discard-draft-for-group-modal', 2000);
+      await this.closeDraftModal(this.discardDraftForGroupModalButtonSelector);
       await this.signInOrganization(user.email, user.password, encryptionPassword);
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.clickOnReadyToSignTab();
       await this.clickOnSubmitSignButtonByTransactionId(txId);
-      await this.waitForElementToDisappear('.v-toast__text');
-
+      await this.waitForElementToDisappear(this.toastMessageSelector);
       await this.logoutFromOrganization();
     }
   }
@@ -845,13 +850,13 @@ export class OrganizationPage extends BasePage {
     // Step 3: Complete the transaction
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
     await this.transactionPage.fillInInitialFunds('100');
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
 
     // Retrieve and store the transaction ID
     const transactionId = (await this.getTransactionDetailsId()) ?? '';
     await this.clickOnSignTransactionButton();
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    await new Promise(resolve => setTimeout(resolve, this.LONG_TIMEOUT));
 
     // Store the complex account ID
     const transactionResponse =
@@ -874,7 +879,7 @@ export class OrganizationPage extends BasePage {
       await this.clickOnAddUserButtonForObserver();
     }
 
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     await this.transactionPage.clickSignTransactionButton();
     if (isSignRequired) {
       await this.clickOnSignTransactionButton();
@@ -897,11 +902,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    // SplitSignButtonDropdown component doesn't have data-testid, find by text
-    // Button text is either "Sign" or "Sign & Next"
-    const signButton = this.window.getByRole('button', { name: /^Sign/ }).first();
-    await signButton.waitFor({ state: 'visible', timeout: 15000 });
-    await signButton.click();
+    await this.click(this.signTransactionButton, 0, this.VERY_LONG_TIMEOUT);
   }
 
   async isSignTransactionButtonVisible() {
@@ -909,7 +910,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async getTransactionDetailsId() {
-    return await this.getText(this.transactionDetailsIdSelector, null, 5000);
+    return await this.getText(this.transactionDetailsIdSelector, null, this.LONG_TIMEOUT);
   }
 
   /**
@@ -927,7 +928,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async getValidStartTimeOnly(dateStr?: string | null): Promise<string | null> {
-    const raw = dateStr ?? await this.getText(this.transactionValidStartSelector);
+    const raw = dateStr ?? (await this.getText(this.transactionValidStartSelector));
     return this.normalizeDateTime(raw);
   }
 
@@ -962,7 +963,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async processTransaction(isSignRequiredFromCreator = false, isDeleteTransaction = false) {
-    await this.transactionPage.clickOnSignAndSubmitButton();
+    await this.transactionPage.clickOnSignAndSubmitButton(true);
     if (isDeleteTransaction) {
       await this.transactionPage.clickOnConfirmDeleteAccountButton();
     }
@@ -992,7 +993,7 @@ export class OrganizationPage extends BasePage {
 
     await this.transactionPage.waitForElementPresentInDOM(
       this.transactionPage.updateAccountIdFetchedDivSelector,
-      30000,
+      this.LONG_TIMEOUT,
     );
 
     return await this.processTransaction(isSignRequiredFromCreator);
@@ -1141,7 +1142,7 @@ export class OrganizationPage extends BasePage {
       await this.transactionPage.clickOnTransactionsMenuButton();
       await waitForValidStart(validStart ?? '');
       // Wait a bit for mirror node to index the executed transaction
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, this.LONG_TIMEOUT));
       await this.clickOnHistoryTab();
       const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId ?? '');
       fileId = txResponse?.entity_id;
@@ -1246,7 +1247,7 @@ export class OrganizationPage extends BasePage {
       // Special processing for large files
       // It does not go through the standard transaction processing
       // Instead it goes into a transaction group
-      await this.transactionPage.clickOnSignAndSubmitButton();
+      await this.transactionPage.clickOnSignAndSubmitButton(true);
       await this.transactionPage.clickSignTransactionButton();
       const txIdArray: string[] = (await this.getGroupTransactionIdText())?.split(',') ?? [];
       const validStartArray = (await this.getGroupValidStartText())?.split(',') ?? [];
@@ -1380,7 +1381,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnSignAllTransactionsButton() {
-    await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, 10000);
+    await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, this.LONG_TIMEOUT * 2);
     await this.click(this.signAllTransactionsButtonSelector);
   }
 
@@ -1495,8 +1496,8 @@ export class OrganizationPage extends BasePage {
       getter: (index: number) => Promise<any>;
     }>,
     maxRetries = 10,
-    retryDelay = 500,
-  ):Promise<{
+    retryDelay = this.SHORT_TIMEOUT,
+  ): Promise<{
     transactionId: string | null;
     transactionType: string | null;
     validStart: string | null;
@@ -1587,8 +1588,8 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSubmitSignButtonByTransactionId(
     transactionId: string,
-    maxRetries = 10,
-    retryDelay = 1000,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
@@ -1601,15 +1602,13 @@ export class OrganizationPage extends BasePage {
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-    throw new Error(
-      `Transaction ${transactionId} not found after ${maxRetries} retries`,
-    );
+    throw new Error(`Transaction ${transactionId} not found after ${maxRetries} retries`);
   }
 
   async clickOnReadyToSignDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 10,
-    retryDelay = 1000,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
@@ -1622,15 +1621,13 @@ export class OrganizationPage extends BasePage {
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-    throw new Error(
-      `Transaction ${transactionId} not found after ${maxRetries} retries`,
-    );
+    throw new Error(`Transaction ${transactionId} not found after ${maxRetries} retries`);
   }
 
   async clickOnReadyForExecutionDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 10,
-    retryDelay = 1000,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
@@ -1647,8 +1644,8 @@ export class OrganizationPage extends BasePage {
 
   async clickOnHistoryDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 10,
-    retryDelay = 1000,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
@@ -1671,7 +1668,7 @@ export class OrganizationPage extends BasePage {
           return true;
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT));
     }
     return false;
   }
@@ -1684,7 +1681,7 @@ export class OrganizationPage extends BasePage {
           return true;
         }
       }
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT));
     }
     return false;
   }
@@ -1765,13 +1762,15 @@ export class OrganizationPage extends BasePage {
       await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
 
       // Poll until the indicator notification is created by the backend (async process)
-      await expect.poll(
-        async () => {
-          const status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
-          return status !== null && !status.isRead;
-        },
-        { timeout: 10000, intervals: [500] },
-      ).toBe(true);
+      await expect
+        .poll(
+          async () => {
+            const status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
+            return status !== null && !status.isRead;
+          },
+          { timeout: this.LONG_TIMEOUT * 2, intervals: [this.SHORT_TIMEOUT] },
+        )
+        .toBe(true);
     }
   }
 

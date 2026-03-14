@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
@@ -10,11 +10,11 @@ import {
   getOperatorKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;

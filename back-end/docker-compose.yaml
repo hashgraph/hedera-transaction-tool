@@ -1,15 +1,4 @@
 services:
-  # traefik-reverse-proxy:
-  #   image: traefik:v3.1
-  #   container_name: traefik-reverse-proxy
-  #   # Enable the Web UI and set provider to docker
-  #   command: --api.insecure=true --providers.docker
-  #   ports:
-  #     - "80:80"
-  #     - "8080:8080" # Web UI Port
-  #   volumes:
-  #     # Listen to the Docker events
-  #     - /var/run/docker.sock:/var/run/docker.sock
   migration:
     build:
       context: .
@@ -28,13 +17,17 @@ services:
     command: pnpm start:dev api
     env_file:
       - ./apps/api/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
-      - '3001:3000'
-    volumes:
-      - .:/usr/src/app
+      - "3001:3000"
     depends_on:
       migration:
         condition: service_completed_successfully
+      nats:
+        condition: service_started
+      redis:
+        condition: service_started
     restart: always
   chain:
     build:
@@ -44,11 +37,15 @@ services:
     command: pnpm start:dev chain
     env_file:
       - ./apps/chain/.env
-    volumes:
-      - .:/usr/src/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       migration:
         condition: service_completed_successfully
+      nats:
+        condition: service_started
+      redis:
+        condition: service_started
     restart: always
   notifications:
     build:
@@ -58,13 +55,19 @@ services:
     command: pnpm start:dev notifications
     env_file:
       - ./apps/notifications/.env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
-      - '3020:3020'
-    volumes:
-      - .:/usr/src/app
+      - "3020:3020"
     depends_on:
       migration:
         condition: service_completed_successfully
+      api:
+        condition: service_started
+      nats:
+        condition: service_started
+      redis:
+        condition: service_started
     restart: always
   nats:
     image: nats:2.10
@@ -90,15 +93,10 @@ services:
     environment:
       - POSTGRES_PASSWORD
     container_name: postgres
-    volumes:
-      - ./pgdata:/var/lib/postgresql
-    # for development, allow postgres to be accessible
     ports:
-      - '5432:5432'
-  #    expose:
-  #      - '5432'
+      - "5432:5432"
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -117,7 +115,7 @@ services:
     build: ./redis
     container_name: cache
     ports:
-      - '6380:6379'
+      - "6380:6379"
     volumes:
       - redis:/data
     restart: always

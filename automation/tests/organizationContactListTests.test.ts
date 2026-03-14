@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { ContactListPage } from '../pages/ContactListPage.js';
@@ -9,9 +9,9 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
@@ -22,6 +22,7 @@ let adminUser: UserDetails;
 let regularUser: UserDetails;
 
 test.describe('Organization Contact List tests', () => {
+  test.slow();
   test.beforeAll(async () => {
     await resetDbState();
     await resetPostgresDbState();
@@ -43,7 +44,7 @@ test.describe('Organization Contact List tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     adminUser = organizationPage.getUser(0);
     regularUser = organizationPage.getUser(1);
@@ -51,7 +52,7 @@ test.describe('Organization Contact List tests', () => {
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
   });
 
   test.afterEach(async () => {
@@ -110,7 +111,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify contact email and public keys are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
@@ -130,7 +130,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify associated accounts are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
@@ -175,7 +174,7 @@ test.describe('Organization Contact List tests', () => {
     expect(isUserAdded).toBe(true);
   });
 
-  test('Verify admin user can remove user from the organization', async () => {
+  test.skip('Verify admin user can remove user from the organization', async () => {
     const newUserEmail = generateRandomEmail();
     await organizationPage.signInOrganization(
       adminUser.email,

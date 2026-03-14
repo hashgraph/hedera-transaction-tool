@@ -183,6 +183,29 @@ export async function verifyPublicKeyExistsByEmail(email: string) {
 }
 
 /**
+ * Retrieves a key pair for the user identified by the given email and key index.
+ *
+ * @param {string} email - The email of the user whose key pair is to be retrieved.
+ * @param {number} index - The key index to retrieve.
+ * @return {Promise<{ public_key?: string; private_key?: string } | null>} A promise that resolves to the
+ * key pair row if found, or null if not found or the query fails.
+ */
+export async function getKeyPairByIndexAndEmail(email: string, index: number) {
+  const query = `
+      SELECT public_key, private_key
+      FROM KeyPair kp
+      JOIN User u ON u.id = kp.user_id
+      WHERE u.email = ? AND kp."index" = ?`;
+
+  try {
+    return await queryDatabase<{ public_key?: string; private_key?: string }>(query, [email, index]);
+  } catch (error) {
+    console.error('Error fetching key pair for index:', error);
+    return null;
+  }
+}
+
+/**
  * Retrieves the public key for a user identified by the given email.
  *
  * @param {string} email - The email of the user whose public key is to be retrieved.
