@@ -1,16 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
-import { emitTransactionUpdate } from '@app/common/utils';
-import { ErrorCodes } from '@app/common';
+import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
 import { CancelFailureCode, CreateTransactionGroupDto } from '../dto';
 
 import { TransactionGroupsService } from './transaction-groups.service';
-import { CancelTransactionOutcome, TransactionsService } from '../transactions.service';
+import { TransactionsService } from '../transactions.service';
 import { NatsPublisherService, SqlBuilderService } from '@app/common';
 
 jest.mock('@app/common/utils');
@@ -358,6 +357,22 @@ describe('TransactionGroupsService', () => {
       return group;
     };
 
+    const mockBulkUpdate = (affected: number) => {
+      const mockQueryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected }),
+      };
+      const mockRepo = {
+        createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
+        find: jest.fn(),
+      };
+      dataSource.getRepository.mockReturnValue(mockRepo as any);
+      return mockRepo;
+    };
+
     it('should throw UnauthorizedException when user does not own all transactions', async () => {
       const group = {
         id: 1,
@@ -381,14 +396,12 @@ describe('TransactionGroupsService', () => {
       );
     });
 
-    it('should cancel all in-progress transactions', async () => {
+    it('should cancel all in-progress transactions with a single bulk update', async () => {
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
       ]);
-      transactionsService.cancelTransactionWithOutcome
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED)
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED);
+      mockBulkUpdate(2);
 
       const result = await service.cancelTransactionGroup(user as User, 1);
 
@@ -401,7 +414,7 @@ describe('TransactionGroupsService', () => {
         alreadyCanceled: 0,
         failed: 0,
       });
-      expect(transactionsService.cancelTransactionWithOutcome).toHaveBeenCalledTimes(2);
+      expect(dataSource.getRepository).toHaveBeenCalledWith(Transaction);
     });
 
     it('should categorize mixed transaction states correctly', async () => {
@@ -410,10 +423,7 @@ describe('TransactionGroupsService', () => {
         { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 3, status: TransactionStatus.EXECUTED },
       ]);
-      transactionsService.cancelTransactionWithOutcome
-        .mockResolvedValueOnce(CancelTransactionOutcome.ALREADY_CANCELED)
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED)
-        .mockRejectedValueOnce(new BadRequestException(ErrorCodes.OTIP));
+      mockBulkUpdate(1); // only tx 2 is cancelable
 
       const result = await service.cancelTransactionGroup(user as User, 1);
 
@@ -434,44 +444,49 @@ describe('TransactionGroupsService', () => {
       });
     });
 
-    it('should handle cancelTransaction throwing for one transaction', async () => {
+    it('should handle race condition when affected < expected', async () => {
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 3, status: TransactionStatus.WAITING_FOR_SIGNATURES },
       ]);
-      transactionsService.cancelTransactionWithOutcome
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED)
-        .mockRejectedValueOnce(new Error('Cancel failed'))
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED);
+      const mockRepo = mockBulkUpdate(1); // only 1 of 3 actually updated
+      mockRepo.find.mockResolvedValue([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.EXECUTED },
+        { id: 3, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
 
       const result = await service.cancelTransactionGroup(user as User, 1);
 
-      expect(result.canceled).toEqual([1, 3]);
-      expect(result.failed).toEqual([
-        {
-          id: 2,
-          code: CancelFailureCode.INTERNAL_ERROR,
-          message: 'Cancellation failed due to an unexpected error.',
-        },
-      ]);
+      expect(result.canceled).toEqual([1]);
+      expect(result.failed).toEqual(
+        expect.arrayContaining([
+          {
+            id: 2,
+            code: CancelFailureCode.NOT_CANCELABLE,
+            message: 'Transaction cannot be canceled in its current state.',
+          },
+          {
+            id: 3,
+            code: CancelFailureCode.CONFLICT,
+            message: 'Transaction state changed during cancellation. Please retry.',
+          },
+        ]),
+      );
       expect(result.summary).toEqual({
         processedCount: 3,
-        canceled: 2,
+        canceled: 1,
         alreadyCanceled: 0,
-        failed: 1,
+        failed: 2,
       });
-      expect(transactionsService.cancelTransactionWithOutcome).toHaveBeenCalledTimes(3);
     });
 
-    it('should return all in alreadyCanceled when all are CANCELED', async () => {
+    it('should return all in alreadyCanceled when all are CANCELED and not issue UPDATE', async () => {
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.CANCELED },
         { id: 2, status: TransactionStatus.CANCELED },
       ]);
-      transactionsService.cancelTransactionWithOutcome
-        .mockResolvedValueOnce(CancelTransactionOutcome.ALREADY_CANCELED)
-        .mockResolvedValueOnce(CancelTransactionOutcome.ALREADY_CANCELED);
 
       const result = await service.cancelTransactionGroup(user as User, 1);
 
@@ -484,69 +499,93 @@ describe('TransactionGroupsService', () => {
         alreadyCanceled: 2,
         failed: 0,
       });
-      expect(transactionsService.cancelTransactionWithOutcome).toHaveBeenCalledTimes(2);
+      // No bulk update should be issued when there are no cancelable transactions
+      expect(dataSource.getRepository).not.toHaveBeenCalled();
     });
 
-    it('should map known errors to safe failure payloads', async () => {
+    it('should emit batch notification once for all canceled transactions', async () => {
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 3, status: TransactionStatus.WAITING_FOR_SIGNATURES },
-        { id: 4, status: TransactionStatus.WAITING_FOR_SIGNATURES },
+      ]);
+      mockBulkUpdate(3);
+
+      await service.cancelTransactionGroup(user as User, 1);
+
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledTimes(1);
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [
+          { entityId: 1 },
+          { entityId: 2 },
+          { entityId: 3 },
+        ],
+      );
+    });
+
+    it('should not emit notification when no transactions are canceled', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.EXECUTED },
       ]);
 
-      transactionsService.cancelTransactionWithOutcome
-        .mockRejectedValueOnce(new BadRequestException(ErrorCodes.TNF))
-        .mockRejectedValueOnce(new UnauthorizedException('Only creator can cancel'))
-        .mockRejectedValueOnce(new BadRequestException(ErrorCodes.OTIP))
-        .mockRejectedValueOnce(new ConflictException('Race conflict'));
+      await service.cancelTransactionGroup(user as User, 1);
+
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should classify terminal statuses as NOT_CANCELABLE', async () => {
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.EXECUTED },
+        { id: 2, status: TransactionStatus.FAILED },
+        { id: 3, status: TransactionStatus.EXPIRED },
+        { id: 4, status: TransactionStatus.REJECTED },
+      ]);
 
       const result = await service.cancelTransactionGroup(user as User, 1);
 
-      expect(result.failed).toEqual([
-        {
-          id: 1,
-          code: CancelFailureCode.NOT_FOUND,
-          message: 'Transaction was not found.',
-        },
-        {
-          id: 2,
-          code: CancelFailureCode.FORBIDDEN,
-          message: 'You do not have permission to cancel this transaction.',
-        },
-        {
-          id: 3,
-          code: CancelFailureCode.NOT_CANCELABLE,
-          message: 'Transaction cannot be canceled in its current state.',
-        },
-        {
-          id: 4,
-          code: CancelFailureCode.CONFLICT,
-          message: 'Transaction state changed during cancellation. Please retry.',
-        },
-      ]);
+      expect(result.failed).toHaveLength(4);
+      for (const failure of result.failed) {
+        expect(failure.code).toBe(CancelFailureCode.NOT_CANCELABLE);
+      }
+      expect(result.canceled).toEqual([]);
+      expect(result.alreadyCanceled).toEqual([]);
     });
 
     it('should converge on retry after partial failure', async () => {
+      // First attempt: tx 1 and 2 are cancelable, but tx 2 races to EXECUTED
       mockGroupWithItems([
         { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
         { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES },
       ]);
-
-      transactionsService.cancelTransactionWithOutcome
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED)
-        .mockRejectedValueOnce(new BadRequestException(ErrorCodes.OTIP))
-        .mockResolvedValueOnce(CancelTransactionOutcome.ALREADY_CANCELED)
-        .mockResolvedValueOnce(CancelTransactionOutcome.CANCELED);
+      const mockRepo = mockBulkUpdate(1);
+      mockRepo.find.mockResolvedValue([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.EXECUTED },
+      ]);
 
       const firstAttempt = await service.cancelTransactionGroup(user as User, 1);
-      const secondAttempt = await service.cancelTransactionGroup(user as User, 1);
 
       expect(firstAttempt.canceled).toEqual([1]);
       expect(firstAttempt.failed).toHaveLength(1);
-      expect(secondAttempt.canceled).toEqual([2]);
+
+      // Second attempt: tx 1 is now CANCELED, tx 2 is EXECUTED
+      mockGroupWithItems([
+        { id: 1, status: TransactionStatus.CANCELED },
+        { id: 2, status: TransactionStatus.EXECUTED },
+      ]);
+
+      const secondAttempt = await service.cancelTransactionGroup(user as User, 1);
+
       expect(secondAttempt.alreadyCanceled).toEqual([1]);
-      expect(secondAttempt.failed).toEqual([]);
+      expect(secondAttempt.failed).toEqual([
+        {
+          id: 2,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        },
+      ]);
     });
 
     it('should propagate error when group is not found', async () => {
@@ -557,82 +596,6 @@ describe('TransactionGroupsService', () => {
       await expect(service.cancelTransactionGroup(user as User, 999)).rejects.toThrow(
         BadRequestException,
       );
-    });
-
-    it('should map BadRequestException with unrecognized code to INTERNAL_ERROR', async () => {
-      mockGroupWithItems([
-        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
-      ]);
-      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(
-        new BadRequestException('UNKNOWN_CODE'),
-      );
-
-      const result = await service.cancelTransactionGroup(user as User, 1);
-
-      expect(result.failed).toEqual([
-        {
-          id: 1,
-          code: CancelFailureCode.INTERNAL_ERROR,
-          message: 'Cancellation failed due to an unexpected error.',
-        },
-      ]);
-    });
-
-    it('should handle BadRequestException with array message response', async () => {
-      mockGroupWithItems([
-        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
-      ]);
-      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(
-        new BadRequestException([ErrorCodes.OTIP, 'extra detail']),
-      );
-
-      const result = await service.cancelTransactionGroup(user as User, 1);
-
-      expect(result.failed).toEqual([
-        {
-          id: 1,
-          code: CancelFailureCode.NOT_CANCELABLE,
-          message: 'Transaction cannot be canceled in its current state.',
-        },
-      ]);
-    });
-
-    it('should handle BadRequestException with object response lacking message', async () => {
-      mockGroupWithItems([
-        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
-      ]);
-      const error = new BadRequestException();
-      jest.spyOn(error, 'getResponse').mockReturnValue({ statusCode: 400 });
-      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(error);
-
-      const result = await service.cancelTransactionGroup(user as User, 1);
-
-      expect(result.failed).toEqual([
-        {
-          id: 1,
-          code: CancelFailureCode.INTERNAL_ERROR,
-          message: 'Cancellation failed due to an unexpected error.',
-        },
-      ]);
-    });
-
-    it('should handle BadRequestException with plain string response', async () => {
-      mockGroupWithItems([
-        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES },
-      ]);
-      const error = new BadRequestException();
-      jest.spyOn(error, 'getResponse').mockReturnValue(ErrorCodes.TNF);
-      transactionsService.cancelTransactionWithOutcome.mockRejectedValueOnce(error);
-
-      const result = await service.cancelTransactionGroup(user as User, 1);
-
-      expect(result.failed).toEqual([
-        {
-          id: 1,
-          code: CancelFailureCode.NOT_FOUND,
-          message: 'Transaction was not found.',
-        },
-      ]);
     });
   });
 });

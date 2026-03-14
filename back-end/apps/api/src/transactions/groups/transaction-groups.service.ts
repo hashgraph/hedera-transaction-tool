@@ -1,11 +1,10 @@
 import {
   BadRequestException,
-  ConflictException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 
 import {
   emitTransactionStatusUpdate,
@@ -15,9 +14,9 @@ import {
   NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionGroupItem, User, UserKey } from '@entities';
+import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
 
-import { CancelTransactionOutcome, TransactionsService } from '../transactions.service';
+import { TransactionsService } from '../transactions.service';
 
 import {
   CancelFailureCode,
@@ -212,35 +211,82 @@ export class TransactionGroupsService {
       throw new UnauthorizedException('Only the creator can cancel all transactions in a group.');
     }
 
+    const cancelableStatuses = [
+      TransactionStatus.NEW,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+      TransactionStatus.WAITING_FOR_EXECUTION,
+    ];
+
+    // Classify transactions in-memory from already-loaded group data
     const canceled: number[] = [];
     const alreadyCanceled: number[] = [];
     const failed: { id: number; code: CancelFailureCode; message: string }[] = [];
+    const cancelableIds: number[] = [];
 
-    // Process in batches to avoid DB connection pool exhaustion
-    const BATCH_SIZE = 10;
-    for (let i = 0; i < group.groupItems.length; i += BATCH_SIZE) {
-      const batch = group.groupItems.slice(i, i + BATCH_SIZE);
-      const results = await Promise.allSettled(
-        batch.map(async (groupItem) => {
-          const txId = groupItem.transactionId;
-          const outcome = await this.transactionsService.cancelTransactionWithOutcome(txId, user);
-          return { txId, outcome };
-        }),
-      );
+    for (const item of group.groupItems) {
+      const tx = item.transaction;
+      if (tx.status === TransactionStatus.CANCELED) {
+        alreadyCanceled.push(item.transactionId);
+      } else if (cancelableStatuses.includes(tx.status)) {
+        cancelableIds.push(item.transactionId);
+      } else {
+        failed.push({
+          id: item.transactionId,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        });
+      }
+    }
 
-      for (let j = 0; j < results.length; j++) {
-        const result = results[j];
-        if (result.status === 'fulfilled') {
-          const { txId, outcome } = result.value;
-          if (outcome === CancelTransactionOutcome.ALREADY_CANCELED) {
-            alreadyCanceled.push(txId);
+    // Bulk UPDATE in a single query
+    if (cancelableIds.length > 0) {
+      const updateResult = await this.dataSource.getRepository(Transaction)
+        .createQueryBuilder()
+        .update(Transaction)
+        .set({ status: TransactionStatus.CANCELED })
+        .where('id IN (:...ids)', { ids: cancelableIds })
+        .andWhere('status IN (:...statuses)', { statuses: cancelableStatuses })
+        .execute();
+
+      if (updateResult.affected === cancelableIds.length) {
+        // All updated successfully
+        canceled.push(...cancelableIds);
+      } else {
+        // Race condition: some transactions changed status between classify and update.
+        // Re-query only those IDs to find out what happened.
+        const latestStatuses = await this.dataSource.getRepository(Transaction).find({
+          where: { id: In(cancelableIds) },
+          select: ['id', 'status'],
+        });
+
+        const latestMap = new Map(latestStatuses.map(t => [t.id, t.status]));
+        for (const id of cancelableIds) {
+          const currentStatus = latestMap.get(id);
+          if (currentStatus === TransactionStatus.CANCELED) {
+            canceled.push(id);
+          } else if (cancelableStatuses.includes(currentStatus)) {
+            // Still cancelable but wasn't affected — treat as conflict
+            failed.push({
+              id,
+              code: CancelFailureCode.CONFLICT,
+              message: 'Transaction state changed during cancellation. Please retry.',
+            });
           } else {
-            canceled.push(txId);
+            failed.push({
+              id,
+              code: CancelFailureCode.NOT_CANCELABLE,
+              message: 'Transaction cannot be canceled in its current state.',
+            });
           }
-        } else {
-          const txId = batch[j].transactionId;
-          failed.push(this.mapCancelError(txId, result.reason));
         }
+      }
+
+      // Batch notification — one publish for all canceled transactions
+      if (canceled.length > 0) {
+        emitTransactionStatusUpdate(
+          this.notificationsPublisher,
+          canceled.map(id => ({ entityId: id })),
+        );
       }
     }
 
@@ -274,68 +320,4 @@ export class TransactionGroupsService {
     return map;
   }
 
-  private mapCancelError(
-    id: number,
-    error: unknown,
-  ): { id: number; code: CancelFailureCode; message: string } {
-    if (error instanceof UnauthorizedException) {
-      return {
-        id,
-        code: CancelFailureCode.FORBIDDEN,
-        message: 'You do not have permission to cancel this transaction.',
-      };
-    }
-
-    if (error instanceof ConflictException) {
-      return {
-        id,
-        code: CancelFailureCode.CONFLICT,
-        message: 'Transaction state changed during cancellation. Please retry.',
-      };
-    }
-
-    if (error instanceof BadRequestException) {
-      const errorCode = this.extractBadRequestCode(error);
-      if (errorCode === ErrorCodes.OTIP) {
-        return {
-          id,
-          code: CancelFailureCode.NOT_CANCELABLE,
-          message: 'Transaction cannot be canceled in its current state.',
-        };
-      }
-
-      if (errorCode === ErrorCodes.TNF) {
-        return {
-          id,
-          code: CancelFailureCode.NOT_FOUND,
-          message: 'Transaction was not found.',
-        };
-      }
-    }
-
-    return {
-      id,
-      code: CancelFailureCode.INTERNAL_ERROR,
-      message: 'Cancellation failed due to an unexpected error.',
-    };
-  }
-
-  private extractBadRequestCode(error: BadRequestException): string | null {
-    const response = error.getResponse();
-    if (typeof response === 'string') {
-      return response;
-    }
-
-    if (response && typeof response === 'object' && 'message' in response) {
-      const message = (response as { message?: string | string[] }).message;
-      if (Array.isArray(message)) {
-        return message.find(m => typeof m === 'string') ?? null;
-      }
-      if (typeof message === 'string') {
-        return message;
-      }
-    }
-
-    return null;
-  }
 }
