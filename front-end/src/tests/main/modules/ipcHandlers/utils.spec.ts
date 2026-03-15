@@ -42,9 +42,11 @@ describe('createChannelName', () => {
 });
 
 describe('registerUtilsListeners', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetAllMocks();
+    delete process.env.PLAYWRIGHT_TEST;
     registerUtilsListeners();
+    await invokeIPCHandler('utils:test:clearDialogMockState');
   });
 
   test('Should register handlers for each util', () => {
@@ -55,10 +57,13 @@ describe('registerUtilsListeners', () => {
       'compareDataToHashes',
       'saveFile',
       'showOpenDialog',
+      'showSaveDialog',
       'saveFileToPath',
       'sha384',
       'x509BytesFromPem',
       'quit',
+      'test:setDialogMockState',
+      'test:clearDialogMockState',
     ];
 
     expect(eventListeners.every(util => getIPCListener(`utils:${util}`))).toBe(true);
@@ -126,6 +131,25 @@ describe('registerUtilsListeners', () => {
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
     await invokeIPCHandler('utils:saveFile', uint8ArrayString);
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
+  });
+
+  test('Should use mocked dialog state in Playwright util:saveFile', async () => {
+    const windows = [{}];
+    const uint8ArrayString = 'testString';
+    const numberArray = [1, 2, 3];
+    const mockedSavePath = '/tmp/playwright-save.bin';
+    const content = Uint8Array.from(numberArray);
+
+    process.env.PLAYWRIGHT_TEST = 'true';
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+    vi.mocked(getNumberArrayFromString).mockReturnValue(numberArray);
+
+    await invokeIPCHandler('utils:test:setDialogMockState', { savePath: mockedSavePath });
+    await invokeIPCHandler('utils:saveFile', uint8ArrayString);
+
+    expect(dialog.showSaveDialog).not.toHaveBeenCalled();
+    expect(app.getPath).not.toHaveBeenCalled();
+    expect(fs.promises.writeFile).toHaveBeenCalledWith(mockedSavePath, content);
   });
 
   test('Should show error in dialog if fail to write in util:saveFile', async () => {
@@ -291,6 +315,33 @@ describe('registerUtilsListeners', () => {
     expect(result).toBe(dialogReturnValue);
   });
 
+  test('Should use mocked dialog state in Playwright util:showOpenDialog', async () => {
+    const windows = [{}];
+    const title = 'Open File';
+    const buttonLabel = 'Open';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const properties = ['openFile'];
+    const message = 'Select a file to open';
+    const filePaths = ['/tmp/first.txt', '/tmp/second.txt'];
+
+    process.env.PLAYWRIGHT_TEST = 'true';
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+
+    await invokeIPCHandler('utils:test:setDialogMockState', { openPaths: filePaths });
+
+    const result = await invokeIPCHandler(
+      'utils:showOpenDialog',
+      title,
+      buttonLabel,
+      filters,
+      properties,
+      message,
+    );
+
+    expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    expect(result).toEqual({ canceled: false, filePaths });
+  });
+
   test('Should save file to a path in util:saveFileToPath', async () => {
     const data = new Uint8Array([1, 2, 3, 4]);
     const filePath = '/path/to/test.txt';
@@ -325,6 +376,46 @@ describe('registerUtilsListeners', () => {
   test('Should invoke app.quit in util:quit', async () => {
     await invokeIPCHandler('utils:quit');
     expect(app.quit).toHaveBeenCalled();
+  });
+
+  test('Should use and clear mocked dialog state in Playwright util:showSaveDialog', async () => {
+    const windows = [{}];
+    const name = 'test.txt';
+    const title = 'Save File';
+    const buttonLabel = 'Save';
+    const filters = [{ name: 'Text Files', extensions: ['txt'] }];
+    const message = 'Select a file to save';
+    const mockedSavePath = '/tmp/playwright-dialog.txt';
+
+    process.env.PLAYWRIGHT_TEST = 'true';
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+
+    await invokeIPCHandler('utils:test:setDialogMockState', { savePath: mockedSavePath });
+
+    const mockedResult = await invokeIPCHandler(
+      'utils:showSaveDialog',
+      name,
+      title,
+      buttonLabel,
+      filters,
+      message,
+    );
+
+    expect(dialog.showSaveDialog).not.toHaveBeenCalled();
+    expect(mockedResult).toEqual({ canceled: false, filePath: mockedSavePath });
+
+    await invokeIPCHandler('utils:test:clearDialogMockState');
+
+    const clearedResult = await invokeIPCHandler(
+      'utils:showSaveDialog',
+      name,
+      title,
+      buttonLabel,
+      filters,
+      message,
+    );
+
+    expect(clearedResult).toEqual({ canceled: false, filePath: '' });
   });
 
   test('Should hash the data in util:sha384', async () => {
