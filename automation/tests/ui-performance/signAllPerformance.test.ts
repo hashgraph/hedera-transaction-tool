@@ -21,7 +21,7 @@
 import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import { setupApp, closeApp } from '../../utils/automationSupport.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
@@ -61,7 +61,7 @@ test.describe('Sign All Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Sign All should complete in under 4 seconds with loading indicator', async () => {

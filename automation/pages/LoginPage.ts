@@ -11,6 +11,7 @@ export class LoginPage extends BasePage {
   // Inputs
   emailInputSelector = 'input-email';
   passwordInputSelector = 'input-password';
+  confirmPasswordInputSelector = 'input-password-confirm';
 
   // Buttons
   signInButtonSelector = 'button-login';
@@ -51,6 +52,18 @@ export class LoginPage extends BasePage {
     const isModal = await this.isElementVisible(this.rejectMigrationButtonSelector);
     if (isModal) {
       await this.click(this.rejectMigrationButtonSelector);
+    }
+  }
+
+  async dismissStartupPrompts(canMigrate: boolean) {
+    await this.closeImportantNoteModal();
+
+    if (canMigrate) {
+      await this.closeMigrationModal();
+    }
+
+    if (process.platform === 'darwin') {
+      await this.closeKeyChainModal();
     }
   }
 
@@ -98,6 +111,48 @@ export class LoginPage extends BasePage {
     await this.typeEmail(email);
     await this.typePassword(password);
     await this.clickSignIn();
+  }
+
+  async getAuthMode(timeout: number = this.LONG_TIMEOUT): Promise<'registration' | 'signIn'> {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      if (await this.isElementVisible(this.confirmPasswordInputSelector, null, this.SHORT_TIMEOUT)) {
+        return 'registration';
+      }
+
+      if (await this.isElementVisible(this.resetStateButtonSelector, null, this.SHORT_TIMEOUT)) {
+        return 'signIn';
+      }
+
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+    }
+
+    throw new Error('Unable to determine auth mode from startup screen');
+  }
+
+  async isRegistrationMode(timeout: number = this.LONG_TIMEOUT) {
+    return (await this.getAuthMode(timeout)) === 'registration';
+  }
+
+  async isSignInMode(timeout: number = this.LONG_TIMEOUT) {
+    return (await this.getAuthMode(timeout)) === 'signIn';
+  }
+
+  async assertRegistrationMode(context = 'startup') {
+    const authMode = await this.getAuthMode();
+
+    if (authMode !== 'registration') {
+      throw new Error(`Expected registration mode during ${context}, but sign-in mode was shown`);
+    }
+  }
+
+  async assertSignInMode(context = 'startup') {
+    const authMode = await this.getAuthMode();
+
+    if (authMode !== 'signIn') {
+      throw new Error(`Expected sign-in mode during ${context}, but registration mode was shown`);
+    }
   }
 
   // Method to reset the application state

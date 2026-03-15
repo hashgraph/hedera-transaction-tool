@@ -1,16 +1,20 @@
 import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
+import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+  flushRateLimiter,
+} from '../utils/databaseUtil.js';
 import { signatureMapToV1Json } from '../utils/transactionUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   setDialogMockState,
   setupApp,
-  setupEnvironmentForTransactions,
   waitAndReadFile,
   waitForValidStart,
 } from '../utils/automationSupport.js';
@@ -19,6 +23,7 @@ import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -27,6 +32,7 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
+let loginPage: LoginPage;
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
@@ -53,27 +59,19 @@ test.describe('Organization Transaction tests', () => {
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
+    loginPage = new LoginPage(window);
 
     organizationPage.complexFileId = [];
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(3);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 3,
+      },
     );
-
-    const payerPrivateKey = await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -81,11 +79,6 @@ test.describe('Organization Transaction tests', () => {
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions();
@@ -124,8 +117,8 @@ test.describe('Organization Transaction tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify required signers are able to see the transaction in "Ready to Sign" status', async () => {

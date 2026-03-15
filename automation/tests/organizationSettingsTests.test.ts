@@ -4,14 +4,18 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
-import { resetDbState, resetPostgresDbState } from '../utils/databaseUtil.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+} from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
   generateRandomPassword,
   setupApp,
-  setupEnvironmentForTransactions,
 } from '../utils/automationSupport.js';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -36,39 +40,23 @@ test.describe('Organization Settings tests', () => {
     organizationPage = new OrganizationPage(window);
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(1);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 1,
+      },
     );
-
-    const payerPrivateKey = await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
-
-    // Log in with the organization user
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
     firstUser = organizationPage.getUser(0);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
   });
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify user can switch between personal and organization mode', async () => {

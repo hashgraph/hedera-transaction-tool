@@ -9,8 +9,8 @@
 
 import { expect, Page, test } from '@playwright/test';
 import { closeApp, setupApp } from '../../utils/automationSupport.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
-import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import { seedLocalPerfData } from './seed-local-perf-data.js';
 import {
   collectPerformanceSamples,
@@ -21,10 +21,10 @@ import {
   PAGE_SIZE,
   setPageSize,
   TARGET_LOAD_TIME_MS,
-  TEST_LOCAL_PASSWORD,
   waitForRowCount,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
+import { createSeededLocalUserSession } from '../../utils/localBaseline.js';
 
 // Volume requirement from k6 constants (SSOT)
 const DB_ITEM_COUNT = DATA_VOLUMES.DRAFTS;
@@ -32,18 +32,19 @@ const REQUIRED_TOTAL = DATA_VOLUMES.DRAFTS;
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
-let registrationPage: RegistrationPage;
 let testEmail: string;
 let seededCount: number;
+let loginPage: LoginPage;
 
 test.describe('Drafts Page Performance', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
-    registrationPage = new RegistrationPage(window);
-
-    testEmail = `perf-drafts-${Date.now()}@test.com`;
-    await registrationPage.completeRegistration(testEmail, TEST_LOCAL_PASSWORD);
+    loginPage = new LoginPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage, {
+      email: `perf-drafts-${Date.now()}@test.com`,
+    });
+    testEmail = seededUser.email;
 
     const result = await seedLocalPerfData(testEmail);
     seededCount = result.drafts;
@@ -53,7 +54,7 @@ test.describe('Drafts Page Performance', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Drafts tab should load in under 1 second (p95)', async () => {

@@ -4,17 +4,14 @@ import {
   setupApp,
   resetAppState,
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
 } from '../utils/automationSupport.js';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
-import { resetDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
+import { createSeededLocalUserSession } from '../utils/localBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
-let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 
 test.describe('Login tests', () => {
@@ -22,20 +19,14 @@ test.describe('Login tests', () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
-    registrationPage = new RegistrationPage(window);
-
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
-    );
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
   });
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test.beforeEach(async () => {
@@ -72,7 +63,7 @@ test.describe('Login tests', () => {
   test('Verify resetting account', async () => {
     await loginPage.logout();
     await resetAppState(window, app);
-    const isConfirmPasswordVisible = await registrationPage.isConfirmPasswordFieldVisible();
-    expect(isConfirmPasswordVisible).toBe(true);
+    await loginPage.assertRegistrationMode('account reset');
+    expect(await loginPage.isRegistrationMode()).toBe(true);
   });
 });

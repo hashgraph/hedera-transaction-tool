@@ -2,11 +2,16 @@ import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
+import { LoginPage } from '../pages/LoginPage.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+  flushRateLimiter,
+} from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   getPrivateKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
@@ -16,6 +21,7 @@ import {
   getLatestInAppNotificationStatusByEmail,
   getNotifiedTransactionIdByEmail,
 } from '../utils/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -24,6 +30,7 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
+let loginPage: LoginPage;
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
@@ -37,36 +44,22 @@ test.describe('Organization Notification tests', () => {
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(3);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    loginPage = new LoginPage(window);
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 3,
+      },
     );
-
-    const payerPrivateKey = await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
 
     // Disable email notifications for test users
     await disableNotificationsForTestUsers(true);
-
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
 
@@ -81,8 +74,8 @@ test.describe('Organization Notification tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify notification is visible in the organization dropdown', async () => {
