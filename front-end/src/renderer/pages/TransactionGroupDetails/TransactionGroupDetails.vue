@@ -274,7 +274,7 @@ const handleSignAll = () => {
 
 const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
   if (groupId !== null) {
-    fetchGroup(groupId);
+    await fetchGroup(groupId);
   }
 };
 
