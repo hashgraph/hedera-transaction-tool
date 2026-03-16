@@ -10,10 +10,12 @@ const props = withDefaults(
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
+    cancel?: ((...args: any[]) => void) | null;
   }>(),
   {
     show: false,
     callback: null,
+    cancel: null,
   },
 );
 
@@ -27,6 +29,7 @@ const handleConfirm = () => {
 };
 const handleCancel = () => {
   emit('update:show', false);
+  props.cancel && props.cancel();
 };
 </script>
 <template>
