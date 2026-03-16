@@ -2,47 +2,25 @@ import { Notification } from '@entities';
 import {
   buildEmailTransactionsList,
   renderTransactionEmailLayout,
-  TransactionNotification,
 } from '@app/common/templates/layout';
 import { getNetworkString } from '@app/common/templates/index';
 
 export const generateTransactionReadyForExecutionContent = (...notifications: Notification[]) => {
-  // if (notifications.length === 0) return null;
-  //
-  // const header =
-  //   notifications.length === 1
-  //     ? `Transaction is ready for execution!`
-  //     : `Multiple transactions are ready for execution!`;
-  //
-  // const details = notifications.map(notification => {
-  //   const transactionId = notification.additionalData?.transactionId;
-  //   const network = notification.additionalData?.network;
-  //
-  //   return `Transaction ID: ${transactionId}\nNetwork: ${getNetworkString(network)}`;
-  // }).join('\n\n');
-  //
-  // return `${header}\n\n${details}`;
-  return transactionsEmail(
-    notifications.map(n => ({
-      transactionId: n.additionalData?.transactionId,
-      network: getNetworkString(n.additionalData?.network),
-      isManual: n.additionalData?.isManual ?? false,
-    }))
-  );
-}
+    if (notifications.length === 0) return "";
 
-export function transactionsEmail(
-  transactions: TransactionNotification[]
-): string {
-  if (transactions.length === 0) return "";
+  const isPlural = notifications.length > 1;
+
+  const transactions = notifications.map(n => ({
+    transactionId: n.additionalData?.transactionId,
+    network: getNetworkString(n.additionalData?.network),
+    isManual: n.additionalData?.isManual ?? false,
+  }));
 
   const manualTransactions = transactions.filter(t => t.isManual);
   const automaticTransactions = transactions.filter(t => !t.isManual);
 
   const hasManual = manualTransactions.length > 0;
   const hasAutomatic = automaticTransactions.length > 0;
-
-  const isPlural = transactions.length > 1;
 
   // ─── Intro ─────────────────────────────────────────────
 

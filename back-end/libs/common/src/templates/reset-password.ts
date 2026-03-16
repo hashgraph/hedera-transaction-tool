@@ -5,19 +5,16 @@ import {
   emailWrapper,
   escapeHtml,
 } from '@app/common/templates/layout';
-import { ELECTRON_APP_PROTOCOL_PREFIX } from '@app/common/constants';
 
 export const generateResetPasswordMessage = (additionalData: Record<string, any>) => {
   const { otp } = additionalData;
-  // return `
-  //     <div>
-  //       <h1 style="margin: 0">Hedera Transaction Tool</h1>
-  //       <p style="margin: 0">Use the following token to reset your password: <b>${otp}</b></p>
-  //       <a href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${otp}" style="text-decoration: none; color: white; background-color: #6600cc; padding: 8px 22px; border-radius: 6px;">Verify</a>
-  //     </div>
-  //     `;
 
-  return resetPasswordEmail(otp);
+  const content = `
+    ${emailHeader("Password Reset", "Hedera Transaction Tool")}
+    ${emailBody(resetPasswordEmailBody(otp))}
+  `;
+
+  return emailWrapper(content);
 }
 
 export function resetPasswordEmailBody(otp: string): string {
@@ -37,13 +34,4 @@ export function resetPasswordEmailBody(otp: string): string {
 
 ${emailWarning("If you didn't request a password reset, you can safely ignore this email.")}
 `;
-}
-
-export function resetPasswordEmail(otp: string): string {
-  const content = `
-    ${emailHeader("Password Reset", "Hedera Transaction Tool")}
-    ${emailBody(resetPasswordEmailBody(otp))}
-  `;
-
-  return emailWrapper(content);
 }

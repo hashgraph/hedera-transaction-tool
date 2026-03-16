@@ -1,52 +1,20 @@
 import { Notification } from '@entities';
 import {
-  buildEmailTransactionsList, emailWarning, renderTransactionEmailLayout,
-  TransactionNotification,
+  buildEmailTransactionsList,
+  emailWarning,
+  renderTransactionEmailLayout,
 } from '@app/common/templates/layout';
 import { getNetworkString } from '@app/common/templates/index';
 
 export const generateRemindSignersContent = (...notifications: Notification[]) => {
-  // if (notifications.length === 0) return null;
-  //
-  // const header =
-  //   notifications.length === 1
-  //     ? `A transaction has not collected the required signatures and requires attention.
-  //     Please visit the Hedera Transaction Tool and locate the transaction.`
-  //     : `Multiple transactions have not collected the required signatures and require attention.
-  //     Please visit the Hedera Transaction Tool and locate the transactions.`;
-  //
-  // const details = notifications.map(notification => {
-  //   const validStartRaw = notification.additionalData?.validStart;
-  //   let validStartDisplay: string;
-  //
-  //   if (validStartRaw == null) {
-  //     validStartDisplay = 'unknown';
-  //   } else {
-  //     const parsed = new Date(validStartRaw);
-  //     validStartDisplay = isNaN(parsed.getTime()) ? String(validStartRaw) : parsed.toUTCString();
-  //   }
-  //
-  //   const transactionId = notification.additionalData?.transactionId;
-  //   const network = notification.additionalData?.network;
-  //
-  //   return `Valid start: ${validStartDisplay}
-  //   Transaction ID: ${transactionId}
-  //   Network: ${getNetworkString(network)}`;
-  // }).join('\n\n');
-  //
-  // return `${header}\n\n${details}`;
-  return remindSignersEmail(
-    notifications.map(n => ({
-      transactionId: n.additionalData?.transactionId,
-      network: getNetworkString(n.additionalData?.network),
-    }))
-  );
-}
+  if (notifications.length === 0) return "";
 
-export function remindSignersEmail(transactions: TransactionNotification[]): string {
-  if (transactions.length === 0) return "";
+  const isPlural = notifications.length > 1;
 
-  const isPlural = transactions.length > 1;
+  const transactions = notifications.map(n => ({
+    transactionId: n.additionalData?.transactionId,
+    network: getNetworkString(n.additionalData?.network),
+  }));
 
   const intro = `
 <p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">

@@ -1,29 +1,3 @@
-// export function emailWrapper(content: string): string {
-//   return `<!DOCTYPE html>
-//     <html lang="en">
-//     <head>
-//       <meta charset="UTF-8" />
-//       <meta name="color-scheme" content="light" />
-//       <meta name="supported-color-schemes" content="light" />
-//       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-//     </head>
-//     <body style="margin:0;padding:0;background-color:#ede8f5;font-family:'Trebuchet MS',Arial,sans-serif;color:#1a1a1a;">
-//     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#ede8f5;padding:48px 0;">
-//       <tr>
-//         <td align="center" valign="top" style="padding:0 16px;">
-//           <table role="presentation" width="580" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 0 0 1px rgba(120,60,255,0.15),0 16px 48px rgba(80,40,160,0.12);">
-//             ${content}
-//           </table>
-//         </td>
-//       </tr>
-//     </table>
-//     </body>
-//     </html>`;
-// }
-
-// Replace these two functions in email-templates.ts
-// Everything else (emailHeader, emailBody, emailWarning, emailUserList, emailTransactionList, etc.) is unchanged.
-
 export function emailWrapper(content: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
