@@ -57,6 +57,7 @@ const performSignAll = async (personalPassword: string | null) => {
 
   if (props.groupOrId !== null) {
     isSigningOnGoing.value = true;
+    const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
@@ -85,11 +86,11 @@ const performSignAll = async (personalPassword: string | null) => {
       } else {
         toastManager.error('Transactions not signed');
       }
+      invokeCallback(groupId, signed);
     } catch {
       toastManager.error('Transactions not signed');
-    } finally {
-      const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
       invokeCallback(groupId, false);
+    } finally {
       progressText.value = 'Loading group items…';
       isSigningOnGoing.value = false;
     }
