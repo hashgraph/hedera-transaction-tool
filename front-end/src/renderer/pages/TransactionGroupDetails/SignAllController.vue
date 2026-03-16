@@ -40,6 +40,7 @@ const progressText = ref<string>('Loading group items…');
 /* Handlers */
 const confirmSigning = () => {
   isConfirmModalShown.value = false;
+  activate.value = false;
 
   getPasswordV2(performSignAll, {
     subHeading: 'Enter your application password to decrypt your private key',
@@ -93,8 +94,6 @@ const performSignAll = async (personalPassword: string | null) => {
       isSigningOnGoing.value = false;
     }
   } // else bug
-
-  activate.value = false;
 };
 
 const invokeCallback = async (groupId: number, signed: boolean) => {
