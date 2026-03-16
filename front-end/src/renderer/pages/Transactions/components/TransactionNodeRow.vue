@@ -22,6 +22,7 @@ import {
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
+import { FEATURE_EXTERNAL_BADGE_ENABLED } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
@@ -242,7 +243,7 @@ watch(
     }
 
     const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
-    isExternal.value = externalSignerKeys.size > 0;
+    isExternal.value = FEATURE_EXTERNAL_BADGE_ENABLED && externalSignerKeys.size > 0;
   },
   { immediate: true },
 );
