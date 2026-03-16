@@ -29,11 +29,16 @@ const handleConfirm = () => {
 };
 const handleCancel = () => {
   emit('update:show', false);
-  props.cancel && props.cancel();
+};
+const handleUpdateShow = (value: boolean) => {
+  emit('update:show', value);
+  if (value === false && props.cancel) {
+    props.cancel();
+  }
 };
 </script>
 <template>
-  <AppModal :show="props.show" class="common-modal" @update:show="emit('update:show')">
+  <AppModal :show="props.show" class="common-modal" @update:show="handleUpdateShow">
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="handleCancel"></i>
       <div class="text-center">
