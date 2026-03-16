@@ -263,7 +263,11 @@ const handleCancelAll = async (showModal = false) => {
     isConfirmModalLoadingState.value = true;
     loadingStates[cancel] = 'Canceling…';
 
-    const result = await cancelTransactionGroup(user.selectedOrganization.serverUrl, currentGroupId);
+    const result = await cancelTransactionGroup(
+      user.selectedOrganization.serverUrl,
+      currentGroupId,
+      group.value?.groupItems ?? [],
+    );
     const toastResult = getCancelGroupToast(result);
 
     isConfirmModalShown.value = false;

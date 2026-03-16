@@ -10,6 +10,7 @@ import {
   getTransactionGroupById,
   getUserShouldApprove,
 } from '@renderer/services/organization';
+import { isUserLoggedIn } from '@renderer/utils';
 
 
 const toastSuccess = vi.fn();
@@ -290,7 +291,7 @@ describe('TransactionGroupDetails.vue', () => {
     await confirmCancelAll(wrapper);
 
     expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
-    expect(cancelTransactionGroup).toHaveBeenCalledWith('https://org.example.com', 10);
+    expect(cancelTransactionGroup).toHaveBeenCalledWith('https://org.example.com', 10, expect.any(Array));
     expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
     expect(toastError).toHaveBeenCalled();
   });
@@ -414,5 +415,71 @@ describe('TransactionGroupDetails.vue', () => {
 
     const cancelButton = wrapper.find('[data-testid="button-cancel-group"]');
     expect(cancelButton.exists()).toBe(false);
+  });
+
+  test('shows error toast when user is not logged in on cancel attempt', async () => {
+    const wrapper = await mountGroupDetails();
+    vi.mocked(isUserLoggedIn).mockReturnValue(false);
+    await confirmCancelAll(wrapper);
+
+    expect(cancelTransactionGroup).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith(
+      'You must be logged in to cancel transactions.',
+      expect.objectContaining({ duration: 0 }),
+    );
+  });
+
+  test('shows error toast when group id is not available', async () => {
+    vi.mocked(getTransactionGroupById).mockResolvedValue({ ...groupResponse, id: 0 } as any);
+    vi.mocked(getUserShouldApprove).mockResolvedValue(false);
+
+    const wrapper = mount(TransactionGroupDetails, {
+      global: {
+        stubs: {
+          AppButton: AppButtonStub,
+          AppConfirmModal: AppConfirmModalStub,
+          AppDropDown: true,
+          AppLoader: true,
+          EmptyTransactions: true,
+          DateTimeString: true,
+          NextTransactionCursor: true,
+          BreadCrumb: true,
+          TransactionId: true,
+          TransactionGroupRow: true,
+        },
+      },
+    });
+    await flushPromises();
+
+    await confirmCancelAll(wrapper);
+
+    expect(cancelTransactionGroup).not.toHaveBeenCalled();
+    expect(toastError).toHaveBeenCalledWith(
+      'Transaction group is not available.',
+      expect.objectContaining({ duration: 0 }),
+    );
+  });
+
+  test('shows error toast when group refresh fails after successful cancel', async () => {
+    vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
+      canceled: [101],
+      alreadyCanceled: [],
+      failed: [],
+      summary: { processedCount: 1, canceled: 1, alreadyCanceled: 0, failed: 0 },
+    } as any);
+
+    const wrapper = await mountGroupDetails();
+    vi.mocked(getTransactionGroupById).mockRejectedValueOnce(new Error('refresh failed'));
+
+    await confirmCancelAll(wrapper);
+
+    expect(toastSuccess).toHaveBeenCalledWith(
+      '1 transaction(s) canceled successfully',
+      { duration: 4000 },
+    );
+    expect(toastError).toHaveBeenCalledWith(
+      'refresh failed',
+      expect.objectContaining({ duration: 0 }),
+    );
   });
 });

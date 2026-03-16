@@ -133,4 +133,15 @@ describe('transactionActionFlow', () => {
     expect(onRefreshError).toHaveBeenCalledWith(expect.any(Error));
     expect(refresh).toHaveBeenCalledTimes(1);
   });
+
+  test('does not throw when refresh fails and onRefreshError is not provided', async () => {
+    const execute = vi.fn().mockResolvedValue(undefined);
+    const refresh = vi.fn().mockRejectedValue(new Error('refresh failed'));
+    const onSuccess = vi.fn();
+    const onError = vi.fn();
+    await executeTransactionActionFlow({ execute, refresh, onSuccess, onError });
+    expect(onError).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+    expect(refresh).toHaveBeenCalledTimes(1);
+  });
 });

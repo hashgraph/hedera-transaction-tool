@@ -1,5 +1,8 @@
 import type { ITransaction } from '@shared/interfaces';
+import axios from 'axios';
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import { cancelTransaction } from './transaction';
+import { cancelGroupFallback } from './cancelGroupFallback';
 
 export interface ApiGroupItem {
   seq: number;
@@ -86,15 +89,22 @@ export interface CancelGroupResult {
 export const cancelTransactionGroup = async (
   serverUrl: string,
   groupId: number,
-): Promise<CancelGroupResult> =>
-  commonRequestHandler(async () => {
+  groupItems: IGroupItem[],
+): Promise<CancelGroupResult> => {
+  try {
     const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
       `${serverUrl}/transaction-groups/${groupId}/cancel`,
       undefined,
       { withCredentials: true },
     );
     return data;
-  }, 'Failed to cancel transactions in group');
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return cancelGroupFallback(serverUrl, groupItems, cancelTransaction);
+    }
+    throw new Error('Failed to cancel transactions in group');
+  }
+};
 
 /* Get transaction groups */
 export const getTransactionGroupById = async (serverUrl: string, id: number, full?: boolean) => {
