@@ -15,6 +15,7 @@ export class UploadSignatureMapDto {
 
   @ApiProperty({
     type: 'object',
+    additionalProperties: true,
     example: {
       '0.0.3': {
         '0.0.2159149@1730378704.000000000': {

@@ -521,7 +521,7 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.create.mockImplementationOnce(
-        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
       );
       jest.mocked(getTransactionSignReminderKey).mockReturnValueOnce('transaction:sign:1');
 
@@ -567,12 +567,12 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       transactionsRepo.create.mockImplementationOnce(
-        (input: DeepPartial<Transaction>) => ({ ...input }) as Transaction,
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
       );
-      transactionsRepo.save.mockImplementationOnce(async (t: Transaction) => {
+      transactionsRepo.save.mockImplementationOnce((async (t: Transaction) => {
         t.id = 1;
         return t;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
@@ -843,10 +843,10 @@ describe('TransactionsService', () => {
       jest.mocked(flattenKeyList).mockReturnValueOnce([newKey]);
 
       let capturedTransaction: any;
-      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
         capturedTransaction = input;
         return { ...input } as Transaction;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
@@ -888,10 +888,10 @@ describe('TransactionsService', () => {
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
       let capturedTransaction: any;
-      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
         capturedTransaction = input;
         return { ...input } as Transaction;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
@@ -933,10 +933,10 @@ describe('TransactionsService', () => {
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
       let capturedTransaction: any;
-      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
         capturedTransaction = input;
         return { ...input } as Transaction;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
@@ -974,10 +974,10 @@ describe('TransactionsService', () => {
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_CREATE);
 
       let capturedTransaction: any;
-      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
         capturedTransaction = input;
         return { ...input } as Transaction;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
@@ -1022,10 +1022,10 @@ describe('TransactionsService', () => {
       });
 
       let capturedTransaction: any;
-      transactionsRepo.create.mockImplementationOnce((input: DeepPartial<Transaction>) => {
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
         capturedTransaction = input;
         return { ...input } as Transaction;
-      });
+      }) as any);
 
       await service.createTransaction(dto, user as User);
 
