@@ -90,7 +90,7 @@ const performSignAll = async (personalPassword: string | null) => {
     } finally {
       const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
       invokeCallback(groupId, false);
-      progressText.value = '';
+      progressText.value = 'Loading group items…';
       isSigningOnGoing.value = false;
     }
   } // else bug
