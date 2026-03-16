@@ -38,7 +38,7 @@ const handleCancel = () => {
 };
 </script>
 <template>
-  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="emit('update:show')">
+  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="emit('update:show', $event)">
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
       <div class="text-center">
