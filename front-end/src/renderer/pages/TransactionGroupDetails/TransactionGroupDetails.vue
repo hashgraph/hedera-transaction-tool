@@ -47,7 +47,6 @@ import {
   isLoggedInOrganization,
   isSignableTransaction,
   isUserLoggedIn,
-  signTransactions,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -64,6 +63,7 @@ import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
+import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -110,6 +110,7 @@ const toastManager = ToastManager.inject();
 /* State */
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
+const signAllStarted = ref(false);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -267,48 +268,13 @@ const handleCancelAll = async (showModal = false) => {
   }
 };
 
-const handleSignAll = async (showModal = false) => {
-  if (showModal) {
-    isConfirmModalShown.value = true;
-    confirmModalTitle.value = 'Sign all transactions?';
-    confirmModalText.value = 'Are you sure you want to sign all transactions?';
-    confirmCallback.value = handleSignAll;
-    return;
-  }
-  isConfirmModalShown.value = false;
+const handleSignAll = () => {
+  signAllStarted.value = true;
+};
 
-  const personalPassword = getPassword(handleSignAll.bind(null, showModal), {
-    subHeading: 'Enter your application password to decrypt your private key',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  try {
-    loadingStates[sign] = 'Signing...';
-
-    let itemsToSign = group.value?.groupItems.map(item => item.transaction) ?? [];
-    itemsToSign = itemsToSign.filter(
-      item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES,
-    );
-    const signed = await signTransactions(
-      itemsToSign,
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      toastManager
-    );
-    await fetchGroup(group.value!.id);
-
-    if (signed) {
-      toastManager.success('Transactions signed successfully');
-    } else {
-      toastManager.error('Transactions not signed');
-    }
-  } catch {
-    toastManager.error('Transactions not signed');
-  } finally {
-    loadingStates[sign] = null;
+const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
+  if (groupId !== null) {
+    fetchGroup(groupId);
   }
 };
 
@@ -364,9 +330,7 @@ const handleApproveAll = async (showModal = false, approved = false) => {
           }
         }
       }
-      toastManager.success(
-        `Transactions ${approved ? 'approved' : 'rejected'} successfully`,
-      );
+      toastManager.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
         await router.push({
@@ -455,7 +419,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === approve) {
     await handleApproveAll(true, true);
   } else if (value === sign) {
-    await handleSignAll(true);
+    handleSignAll();
   } else if (value === cancel) {
     await handleCancelAll(true);
   } else if (value === exportName) {
@@ -699,6 +663,12 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
                 </div>
               </template>
             </Transition>
+
+            <SignAllController
+              v-model:activate="signAllStarted"
+              :groupOrId="group"
+              :callback="didSignAll"
+            />
 
             <AppConfirmModal
               v-model:show="isConfirmModalShown"
