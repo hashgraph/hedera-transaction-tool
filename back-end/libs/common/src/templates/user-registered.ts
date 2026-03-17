@@ -68,25 +68,54 @@ export function emailGettingStarted(): string {
 <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
   <tr>
     <td style="padding:6px 0;border-top:1px solid #eeeeee;">
-      <a href="#" style="font-size:13px;color:#7722ee;text-decoration:none;">How to get started with Hedera Transaction Tool</a>
+      <a href="https://transactiontool.hedera.com"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Hedera Transaction Tool documentation
+      </a>
     </td>
   </tr>
   <tr>
     <td style="padding:6px 0;border-top:1px solid #eeeeee;">
-      <a href="#" style="font-size:13px;color:#7722ee;text-decoration:none;">How to sign a transaction</a>
-    </td>
-  </tr>
-  <tr>
-    <td style="padding:6px 0;border-top:1px solid #eeeeee;">
-      <a href="#" style="font-size:13px;color:#7722ee;text-decoration:none;">How to create a transaction</a>
+      <a href="https://transactiontool.hedera.com/general/install-new-users/account-setup"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Setting up your account
+      </a>
     </td>
   </tr>
   <tr>
     <td style="padding:6px 0;border-top:1px solid #eeeeee;border-bottom:1px solid #eeeeee;">
-      <a href="#" style="font-size:13px;color:#7722ee;text-decoration:none;">Understanding organizations and multi-key signing</a>
+      <a href="https://transactiontool.hedera.com/keys"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Managing keys
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:6px 0;border-top:1px solid #eeeeee;">
+      <a href="https://transactiontool.hedera.com/general/creating-and-signing-a-transaction"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Creating and signing a transaction
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:6px 0;border-top:1px solid #eeeeee;">
+      <a href="https://transactiontool.hedera.com/general/transaction-status-tabs"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Viewing transaction status and history
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding:6px 0;border-top:1px solid #eeeeee;">
+      <a href="https://transactiontool.hedera.com/accounts"
+         style="font-size:13px;color:#7722ee;text-decoration:none;">
+        Managing accounts
+      </a>
     </td>
   </tr>
 </table>
+
 `;
 }
 
