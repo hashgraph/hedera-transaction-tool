@@ -120,6 +120,7 @@ vi.mock('@renderer/stores/storeNotifications.ts', () => ({
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
   default: vi.fn(() => ({
     getPassword: vi.fn(() => null),
+    getPasswordV2: vi.fn((callback: (password: string | null) => void) => callback(null)),
     passwordModalOpened: vi.fn(() => false),
   })),
 }));
@@ -270,7 +271,8 @@ const confirmCancelAll = async (wrapper: ReturnType<typeof mount>) => {
   form.element.dispatchEvent(submitEvent);
   await flushPromises();
 
-  const modal = wrapper.findComponent({ name: 'AppConfirmModal' });
+  const modals = wrapper.findAllComponents({ name: 'AppConfirmModal' });
+  const modal = modals[modals.length - 1];
   const callback = modal.props('callback') as (() => Promise<void>) | null;
   expect(typeof callback).toBe('function');
   await callback?.();
