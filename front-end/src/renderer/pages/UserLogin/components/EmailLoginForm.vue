@@ -109,12 +109,11 @@ const handleOnFormSubmit = async () => {
 
     user.setAccountSetupStarted(true);
     await user.login(id, email, false);
-    await user.refetchOrganizations();
-    await setupStores();
-
     if (isUserLoggedIn(user.personal)) {
       user.setPassword(inputPassword.value);
     }
+    await user.refetchOrganizations();
+    await setupStores();
 
     await router.push({ name: 'accountSetup' });
   } else if (!props.shouldRegister) {
@@ -141,12 +140,11 @@ const handleOnFormSubmit = async () => {
       try {
         globalModalLoaderRef?.value?.open();
         await user.login(userData.id, userData.email.trim(), false);
-        await user.refetchOrganizations();
-        await setupStores();
-
         if (isUserLoggedIn(user.personal)) {
           user.setPassword(inputPassword.value);
         }
+        await user.refetchOrganizations();
+        await setupStores();
 
         if (user.secretHashes.length === 0) {
           await router.push({ name: 'accountSetup' });
