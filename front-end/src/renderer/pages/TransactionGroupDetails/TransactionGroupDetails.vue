@@ -12,7 +12,6 @@ import {
   type INotificationReceiver,
   type ITransactionFull,
   NotificationType,
-  TransactionStatus,
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
