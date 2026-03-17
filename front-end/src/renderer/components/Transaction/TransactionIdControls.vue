@@ -45,7 +45,9 @@ const toastManager = ToastManager.inject();
 const localValidStart = ref<Date>(props.validStart);
 
 /* Computed */
-const isGroupItem = computed(() => route.query.group !== undefined);
+const isGroupItem = computed(
+  () => route.query.group === 'true' || route.query.groupIndex != null,
+);
 
 /* Handlers */
 const handlePayerChange = (payerId: string) => {
