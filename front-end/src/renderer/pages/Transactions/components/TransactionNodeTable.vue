@@ -73,7 +73,7 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {

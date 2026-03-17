@@ -94,7 +94,6 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
