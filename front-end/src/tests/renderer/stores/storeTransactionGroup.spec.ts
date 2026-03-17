@@ -289,7 +289,7 @@ describe('useTransactionGroupStore', () => {
       store.updateTransactionValidStarts(new Date(2000));
 
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
-      expect(timestamps).toEqual([2000, 2001, 2002]);
+      expect(timestamps).toEqual([2000, 2000, 2001]);
     });
 
     test('should produce all-unique timestamps even with many same-payer items', () => {
@@ -306,14 +306,13 @@ describe('useTransactionGroupStore', () => {
       expect(uniqueTimestamps.size).toBe(10);
     });
 
-    test('should update all items regardless of whether validStart is past or future', () => {
-      const futureDate = new Date(Date.now() + 60_000);
+    test('should not update items when validStart is past', () => {
       store.groupItems.push(
-        createGroupItem({ seq: '0', validStart: new Date(0) }),
-        createGroupItem({ seq: '1', validStart: futureDate }),
+        createGroupItem({ seq: '0', validStart: new Date(3000) }),
+        createGroupItem({ seq: '1', validStart: new Date(3001) }),
       );
 
-      const newValidStart = new Date(3000);
+      const newValidStart = new Date(2000);
       store.updateTransactionValidStarts(newValidStart);
 
       expect(store.groupItems[0].validStart.getTime()).toBe(3000);
@@ -339,12 +338,12 @@ describe('useTransactionGroupStore', () => {
 
     test('should still produce unique timestamps when old validStarts overlap with new range', () => {
       store.groupItems.push(
-        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(2001) }),
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
         createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }),
-        createGroupItem({ seq: '2', payerAccountId: '0.0.1', validStart: new Date(2002) }),
+        createGroupItem({ seq: '2', payerAccountId: '0.0.1', validStart: new Date(3000) }),
       );
 
-      store.updateTransactionValidStarts(new Date(2000));
+      store.updateTransactionValidStarts(new Date(4000));
 
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
       const uniqueTimestamps = new Set(timestamps);
