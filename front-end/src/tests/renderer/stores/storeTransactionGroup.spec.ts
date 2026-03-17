@@ -343,15 +343,10 @@ describe('useTransactionGroupStore', () => {
         createGroupItem({ seq: '2', payerAccountId: '0.0.1', validStart: new Date(3000) }),
       );
 
-      store.updateTransactionValidStarts(new Date(4000));
+      store.updateTransactionValidStarts(new Date(2000));
 
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
-      const uniqueTimestamps = new Set(timestamps);
-      expect(uniqueTimestamps.size).toBe(3);
-      // All timestamps must be >= the group valid start
-      for (const ts of timestamps) {
-        expect(ts).toBeGreaterThanOrEqual(2000);
-      }
+      expect(timestamps).toEqual([2001, 2000, 3000]);
     });
   });
 
