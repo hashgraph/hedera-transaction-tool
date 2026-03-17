@@ -11,7 +11,7 @@ import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -117,7 +117,7 @@ const creator = computed(() => {
 });
 
 const showExternal = computed(() => {
-  return isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+  return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 });
 
 const transactionIsInProgress = computed(
