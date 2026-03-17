@@ -35,6 +35,8 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: true,
     [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: true,
     [NotificationType.TRANSACTION_CANCELLED]: true,
+    [NotificationType.TRANSACTION_EXPIRED]: true,
+    [NotificationType.TRANSACTION_EXECUTED]: true,
   });
   const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
 
