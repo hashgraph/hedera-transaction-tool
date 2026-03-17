@@ -26,11 +26,11 @@ import { getTransactionNodes } from '@renderer/services/organization/transaction
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { Transaction } from '@hashgraph/sdk';
 import { createLogger } from '@renderer/utils/logger';
-
-const logger = createLogger('renderer.component.exportTransactionsModal');
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+
+const logger = createLogger('renderer.component.exportTransactionsModal');
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });

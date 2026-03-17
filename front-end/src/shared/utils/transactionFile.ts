@@ -9,7 +9,7 @@ import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.t
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { createLogger } from '@renderer/utils/logger';
 
-const logger = createLogger('shared.transactionFile');
+const logger = createLogger('renderer.transactionFile');
 
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],

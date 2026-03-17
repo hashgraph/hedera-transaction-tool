@@ -166,7 +166,7 @@ describe('Initialize database', () => {
     expect(
       sqliteInstance.prepare.mock.results[sqliteInstance.prepare.mock.results.length - 1].value.run,
     ).toHaveBeenCalled(); // Prepared Rollback
-    expect(loggerResult.error).toHaveBeenCalledWith(new Error('SQL Error'));
+    expect(loggerResult.error).toHaveBeenCalledWith('Failed to apply migration', { error: new Error('SQL Error') });
 
     vi.mocked(getDatabaseLogger).mockClear();
   });
@@ -210,7 +210,7 @@ describe('Initialize database', () => {
     expect(sqliteInstance.prepare).toHaveBeenCalledWith('COMMIT');
     expect(sqliteInstance.prepare).toHaveBeenCalledWith('ROLLBACK');
     expect(sqliteInstance.exec).toHaveBeenCalledWith('ALTER TABLE test;');
-    expect(loggerResult.error).toHaveBeenCalledWith(new Error('File Error'));
+    expect(loggerResult.error).toHaveBeenCalledWith('Failed to read available migrations', { error: new Error('File Error') });
 
     vi.mocked(getDatabaseLogger).mockClear();
   });
@@ -279,7 +279,7 @@ describe('Delete database', () => {
 
     const loggerResult = vi.mocked(getDatabaseLogger).mock.results[0].value;
 
-    expect(loggerResult.error).toHaveBeenCalledWith(new Error('File Error'));
+    expect(loggerResult.error).toHaveBeenCalledWith('Failed to delete database', { error: new Error('File Error') });
     expect(fsp.rm).toHaveBeenCalled();
 
     vi.mocked(getDatabaseLogger).mockClear();

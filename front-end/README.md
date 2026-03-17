@@ -112,7 +112,7 @@ pnpm test:shared:coverage # run tests for the shared utils
 
 ## Frontend Logging
 
-All frontend processes (main, preload, renderer) write structured logs to a single local file via `electron-log`.
+Both main and renderer processes write structured logs to a single local file via `electron-log`.
 
 ### Log file location
 
@@ -130,9 +130,9 @@ Fields: `timestamp` (ISO 8601), `level` (`error` | `warn` | `info` | `debug`), `
 
 ### Component naming
 
-Components follow the convention `<process>.<module>`:
-- `main.*` — main process loggers (e.g., `main.console`, `main.updater`, `main.database`)
-- `renderer.*` — renderer process loggers (e.g., `renderer.console`, `renderer.window`)
+Components follow the convention `<process>.<module>.<submodule>`:
+- `main.*` — main process loggers (e.g., `main.console`, `main.database`, `main.localUser.accounts`)
+- `renderer.*` — renderer process loggers (e.g., `renderer.console`, `renderer.store.user`, `renderer.page.createTransactionGroup`)
 
 Create a logger with `createLogger('renderer.myComponent')` in the renderer or `createLogger('main.myModule')` in the main process.
 
@@ -150,6 +150,6 @@ Available levels: `error`, `warn`, `info`, `debug`.
 
 Logs are automatically sanitized before being written to disk:
 
-- **Key-based redaction**: Values under keys containing `password`, `token`, `jwt`, `authorization`, `cookie`, `secret`, `privatekey`, `mnemonic`, `recoveryphrase`, `seed`, `signature`, `signaturemap`, `transactionbytes`, `body`, `pem`, `encrypted`, or `secrethash` are replaced with `[redacted]`.
+- **Key-based redaction**: Values under keys containing `password`, `accesstoken`, `refreshtoken`, `jwt`, `authorization`, `cookie`, `secret`, `privatekey`, `mnemonic`, `recoveryphrase`, `seed`, `signaturebytes`, `signatureraw`, `signedtransaction`, `signaturemap`, `transactionbytes`, `requestbody`, `responsebody`, `pem`, `encrypted`, or `secrethash` are replaced with `[redacted]`.
 - **Pattern scrubbing**: JWT tokens (`eyJ...`), Bearer tokens, and PEM blocks are stripped from message text.
 - **Payload omission**: Long hex or base64 strings (>128 chars) are summarized as `payload omitted` instead of being logged verbatim.

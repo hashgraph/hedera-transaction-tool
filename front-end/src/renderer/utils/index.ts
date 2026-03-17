@@ -318,7 +318,7 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
       }
     }
   } catch (error) {
-    logger.error('Invalid multiple account input', error);
+    logger.error('Invalid multiple account input', { error });
     throwError('Invalid multiple account input');
   }
 

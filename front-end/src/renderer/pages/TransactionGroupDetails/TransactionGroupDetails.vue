@@ -69,6 +69,8 @@ import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/Transac
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
 
+const logger = createLogger('renderer.page.transactionGroupDetails');
+
 /* Misc */
 const reject: ActionButton = 'Reject All';
 const approve: ActionButton = 'Approve All';
@@ -588,7 +590,7 @@ async function fetchGroup(id: string | number) {
       throw error;
     }
   } else {
-    createLogger('renderer.page.transactionGroupDetails').info('Not logged into org');
+    logger.info('Not logged into org');
   }
 }
 

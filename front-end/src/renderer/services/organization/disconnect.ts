@@ -8,6 +8,8 @@ import { createLogger, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
 
+const logger = createLogger('renderer.organization.disconnect');
+
 export async function disconnectOrganization(
   serverUrl: string,
   reason: DisconnectReason,
@@ -16,7 +18,6 @@ export async function disconnectOrganization(
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
   const toastManager = ToastManager.inject();
-  const logger = createLogger('renderer.organization.disconnect');
 
   ws.disconnect(serverUrl);
 

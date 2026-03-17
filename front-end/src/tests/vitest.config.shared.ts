@@ -13,5 +13,15 @@ export default defineConfig({
     globals: true,
     setupFiles: ['src/tests/setup.ts'],
     include: ['src/tests/shared/**/*.{test,spec}.{ts,js}'],
+    coverage: {
+      provider: 'v8',
+      include: ['src/shared/**/*.ts'],
+      thresholds: {
+        branches: 90,
+        functions: 90,
+        lines: 90,
+        statements: 90,
+      },
+    },
   },
 });

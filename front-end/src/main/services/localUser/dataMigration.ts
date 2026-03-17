@@ -20,11 +20,11 @@ import { createLogger } from '@main/modules/logger';
 import { parseNetwork } from '@main/utils/parsers';
 import { safeAwait } from '@main/utils/safeAwait';
 
-const logger = createLogger('main.dataMigration');
-
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
 import { addPublicKey } from './publicKeyMapping';
+
+const logger = createLogger('main.dataMigration');
 
 export const SALT_LENGTH = 16;
 export const KEY_LENGTH = 32;

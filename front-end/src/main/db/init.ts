@@ -57,7 +57,7 @@ export default async function initDatabase() {
           id: -1,
         };
       } catch (error) {
-        databaseLogger.error(error);
+        databaseLogger.error('Failed to apply migration', { error });
         failed = true;
         ROLLBACK.run();
         break;
@@ -106,7 +106,7 @@ export default async function initDatabase() {
         }
       }
     } catch (error) {
-      databaseLogger.error(error);
+      databaseLogger.error('Failed to read available migrations', { error });
     }
 
     return migrationsData;
@@ -150,7 +150,7 @@ export async function deleteDatabase() {
     await fsp.rm(dbPath);
     databaseLogger.log('Database deleted successfully');
   } catch (error) {
-    databaseLogger.error(error);
+    databaseLogger.error('Failed to delete database', { error });
   }
 }
 

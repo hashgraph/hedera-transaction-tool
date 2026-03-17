@@ -7,10 +7,10 @@ import { encrypt, decrypt } from '@main/utils/crypto';
 import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
 
-const logger = createLogger('main.localUser.keyPairs');
-
 import { getCurrentUser, getOrganization } from '.';
 import { getUseKeychainClaim } from './claim';
+
+const logger = createLogger('main.localUser.keyPairs');
 
 //Get all stored secret hash objects
 export const getSecretHashes = async (

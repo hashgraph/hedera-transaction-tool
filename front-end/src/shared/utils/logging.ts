@@ -10,11 +10,12 @@ export interface LogPayload {
 const REDACTED_VALUE = '[redacted]';
 const CIRCULAR_VALUE = '[circular]';
 const MAX_STRING_LENGTH = 256;
-const MAX_SERIALIZE_DEPTH = 5;
+export const MAX_SERIALIZE_DEPTH = 5;
 
 const SENSITIVE_KEY_MARKERS = [
   'password',
-  'token',
+  'accesstoken',
+  'refreshtoken',
   'jwt',
   'authorization',
   'cookie',
@@ -237,6 +238,8 @@ export function sanitizeLogValue(
       });
     }
 
+    seen.delete(value);
+
     return Object.keys(result).length > 0
       ? result
       : { type: value.constructor?.name || 'Object' };
@@ -260,7 +263,7 @@ function summarizeStringValue(value: string): unknown {
   if (looksLikePayload(scrubbed)) {
     return {
       type: 'string',
-      length: value.length,
+      length: scrubbed.length,
       summary: 'payload omitted',
     };
   }

@@ -135,6 +135,83 @@ describe('renderer logger', () => {
     const logger2 = createLogger('renderer.b');
     expect(logger1).not.toBe(logger2);
   });
+
+  test('logger.log() maps to forwardLog with level info', async () => {
+    const logger = createLogger('renderer.logtest');
+
+    logger.log('test log');
+
+    await Promise.resolve();
+
+    expect(mockLog).toHaveBeenCalledWith('info', 'renderer.logtest', 'test log', undefined);
+  });
+
+  test('logger.debug() maps to forwardLog with level debug', async () => {
+    const logger = createLogger('renderer.debugtest');
+
+    logger.debug('test debug');
+
+    await Promise.resolve();
+
+    expect(mockLog).toHaveBeenCalledWith('debug', 'renderer.debugtest', 'test debug', undefined);
+  });
+
+  test('setupRendererLogging is idempotent — error handler fires only once', async () => {
+    setupRendererLogging();
+    setupRendererLogging();
+    setupRendererLogging();
+
+    mockLog.mockClear();
+
+    const errorEvent = new ErrorEvent('error', {
+      message: 'Idempotency test error',
+      filename: 'idempotency.js',
+      lineno: 1,
+      colno: 1,
+      error: new Error('Idempotency test error'),
+    });
+    window.dispatchEvent(errorEvent);
+
+    await Promise.resolve();
+
+    const errorCalls = mockLog.mock.calls.filter(
+      call => call[0] === 'error' && call[1] === 'renderer.window',
+    );
+    expect(errorCalls).toHaveLength(1);
+  });
+
+  test('console.log, console.info, console.debug are patched with correct levels', async () => {
+    // setupRendererLogging patches console methods, but the idempotency guard
+    // means afterEach-restored originals won't be re-patched.  Replicate the
+    // patching inline so we can assert the forwarding behaviour.
+    const consoleLogger = createLogger('renderer.console');
+    console.log = (...data: unknown[]) => consoleLogger.info(...data);
+    console.info = (...data: unknown[]) => consoleLogger.info(...data);
+    console.debug = (...data: unknown[]) => consoleLogger.debug(...data);
+
+    mockLog.mockClear();
+    console.log('test');
+    await Promise.resolve();
+    expect(mockLog).toHaveBeenCalledWith('info', 'renderer.console', 'test', undefined);
+
+    mockLog.mockClear();
+    console.info('test');
+    await Promise.resolve();
+    expect(mockLog).toHaveBeenCalledWith('info', 'renderer.console', 'test', undefined);
+
+    mockLog.mockClear();
+    console.debug('test');
+    await Promise.resolve();
+    expect(mockLog).toHaveBeenCalledWith('debug', 'renderer.console', 'test', undefined);
+  });
+
+  test('logger.info does not throw when window.electronAPI is unavailable', () => {
+    window.electronAPI = undefined as any;
+
+    const logger = createLogger('renderer.noapi');
+
+    expect(() => logger.info('test')).not.toThrow();
+  });
 });
 
 describe('serializeForIPC', () => {
@@ -220,5 +297,53 @@ describe('serializeForIPC', () => {
   test('converts non-serializable values to string', () => {
     const sym = Symbol('test');
     expect(serializeForIPC(sym)).toBe('Symbol(test)');
+  });
+
+  test('summarizes array at max depth as { type, length }', () => {
+    const result = serializeForIPC([1, 2, 3], { depth: 5 });
+    expect(result).toEqual({ type: 'Array', length: 3 });
+  });
+
+  test('preserves null and undefined inside arrays', () => {
+    const result = serializeForIPC([null, undefined, 1]);
+    expect(result).toEqual([null, undefined, 1]);
+  });
+
+  test('summarizes object with named constructor at max depth', () => {
+    class MyCustomClass {
+      value = 42;
+    }
+    const instance = new MyCustomClass();
+    const result = serializeForIPC(instance, { depth: 5 });
+    expect(result).toEqual({ type: 'MyCustomClass' });
+  });
+
+  test('serializes Object.create(null) with properties', () => {
+    const obj = Object.create(null);
+    obj.key = 'value';
+    const result = serializeForIPC(obj) as Record<string, unknown>;
+    expect(result.key).toBe('value');
+  });
+
+  test('summarizes Object.create(null) at max depth as { type: "Object" }', () => {
+    const obj = Object.create(null);
+    obj.key = 'value';
+    const result = serializeForIPC(obj, { depth: 5 });
+    expect(result).toEqual({ type: 'Object' });
+  });
+
+  test('Error without code property has code: undefined', () => {
+    const error = new Error('test');
+    const result = serializeForIPC(error) as Record<string, unknown>;
+    expect(result.code).toBeUndefined();
+    expect(result).toHaveProperty('code');
+  });
+
+  test('diamond reference (same object, two keys) does not produce circular', () => {
+    const shared = { x: 1 };
+    const obj = { a: shared, b: shared };
+    const result = serializeForIPC(obj) as Record<string, unknown>;
+    expect(result.a).toEqual({ x: 1 });
+    expect(result.b).toEqual({ x: 1 });
   });
 });

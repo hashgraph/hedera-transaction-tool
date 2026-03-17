@@ -1,4 +1,5 @@
 import {
+  MAX_SERIALIZE_DEPTH,
   normalizeLogArguments,
   sanitizeLogPayload,
   type LogLevel,
@@ -91,12 +92,12 @@ function forwardLog(level: LogLevel, component: string, data: unknown[]) {
   const { message, metadata } = normalizeLogArguments(data);
   const serializedMetadata = metadata === undefined ? undefined : serializeForIPC(metadata);
 
-  window.electronAPI.local.logging.log(level, component, message, serializedMetadata).catch(error => {
+  window.electronAPI?.local?.logging?.log(level, component, message, serializedMetadata)?.catch(error => {
     nativeConsole.error('Failed to forward renderer log', serializeForIPC(error));
   });
 
   if (import.meta.env.DEV) {
-    const sanitized = sanitizeLogPayload(metadata === undefined ? [message] : [message, serializedMetadata]);
+    const sanitized = sanitizeLogPayload(metadata === undefined ? [message] : [message, metadata]);
     const consoleMethod = mapLevelToConsole(level);
 
     if (sanitized.metadata === undefined) {
@@ -169,7 +170,7 @@ export function serializeForIPC(
   }
 
   if (Array.isArray(value)) {
-    if (depth >= 5) {
+    if (depth >= MAX_SERIALIZE_DEPTH) {
       return {
         length: value.length,
         type: 'Array',
@@ -186,7 +187,7 @@ export function serializeForIPC(
 
     seen.add(value);
 
-    if (depth >= 5) {
+    if (depth >= MAX_SERIALIZE_DEPTH) {
       return {
         type: value.constructor?.name || 'Object',
       };
@@ -196,6 +197,7 @@ export function serializeForIPC(
     for (const [entryKey, entryValue] of Object.entries(value)) {
       result[entryKey] = serializeForIPC(entryValue, { depth: depth + 1, seen });
     }
+    seen.delete(value);
     return result;
   }
 

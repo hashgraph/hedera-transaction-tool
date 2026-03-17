@@ -30,6 +30,8 @@ import {
   updateOrganizationCredentials,
 } from '../organizationCredentials';
 
+const logger = createLogger('renderer.organization.reconnect');
+
 export async function reconnectOrganization(serverUrl: string): Promise<{
   success: boolean;
   requiresUpdate?: boolean;
@@ -40,7 +42,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
   const toastManager = ToastManager.inject();
-  const logger = createLogger('renderer.organization.reconnect');
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   const user = userStore.personal;
