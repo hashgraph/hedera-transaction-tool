@@ -5,7 +5,7 @@ import { Hbar, HbarUnit } from '@hashgraph/sdk';
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute } from 'vue-router';
 
