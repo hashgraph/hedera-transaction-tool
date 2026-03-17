@@ -21,8 +21,8 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
   });
 
   afterEach(async () => {
-    await dataSource.getRepository(CachedNode).delete({});
-    await dataSource.getRepository(CachedAccount).delete({});
+    await dataSource.getRepository(CachedNode).createQueryBuilder().delete().execute();
+    await dataSource.getRepository(CachedAccount).createQueryBuilder().delete().execute();
   });
 
   describe('INSERT path - new records', () => {
