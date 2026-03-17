@@ -249,9 +249,12 @@ describe('user-registered templates', () => {
 
     it('includes links for key actions', () => {
       const result = emailGettingStarted();
-      expect(result).toContain('How to get started');
-      expect(result).toContain('How to sign a transaction');
-      expect(result).toContain('How to create a transaction');
+      expect(result).toContain('Hedera Transaction Tool documentation');
+      expect(result).toContain('Setting up your account');
+      expect(result).toContain('Managing keys');
+      expect(result).toContain('Creating and signing a transaction');
+      expect(result).toContain('Viewing transaction status and history');
+      expect(result).toContain('Managing accounts');
     });
 
     it('returns a non-empty string', () => {

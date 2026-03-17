@@ -115,7 +115,6 @@ export function emailGettingStarted(): string {
     </td>
   </tr>
 </table>
-
 `;
 }
 
