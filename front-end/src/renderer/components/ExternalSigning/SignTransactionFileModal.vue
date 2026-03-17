@@ -79,7 +79,7 @@ async function handleSignAll() {
         const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
         logger.debug('Signing transaction file entry', {
           missingSignerCount: missingSignerKeys.length,
-          signatureCountBefore: sigMapBefore.sigPair.length,
+          signatureCountBefore: sigMapBefore.getFlatSignatureList().length,
         });
 
         try {
@@ -95,7 +95,7 @@ async function handleSignAll() {
           const signedTransaction = Transaction.fromBytes(signedBytes);
           const sigMapAfter = SignatureMap._fromTransaction(signedTransaction);
           logger.debug('Transaction file entry signed', {
-            signatureCountAfter: sigMapAfter.sigPair.length,
+            signatureCountAfter: sigMapAfter.getFlatSignatureList().length,
           });
         } catch (error) {
           logger.error('Failed to sign transaction file entry', {

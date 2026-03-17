@@ -22,7 +22,7 @@ describe('renderer logger', () => {
           log: mockLog,
         },
       },
-    } as typeof window.electronAPI;
+    } as unknown as typeof window.electronAPI;
   });
 
   afterEach(() => {

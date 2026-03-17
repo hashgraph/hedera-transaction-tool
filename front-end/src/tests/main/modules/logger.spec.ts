@@ -222,6 +222,26 @@ describe('logger', () => {
     fsMock.renameSync.mockClear();
   });
 
+  test('rotateLogFiles skips slots where source file does not exist', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    // Only the current file exists; archived slots do not
+    fsMock.existsSync.mockImplementation((p: string) => p === '/mock-user-data/logs/app.log');
+    fsMock.rmSync.mockClear();
+    fsMock.renameSync.mockClear();
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    // Only slot 1 (source = current file) should be renamed
+    expect(fsMock.renameSync).toHaveBeenCalledTimes(1);
+    expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
+
+    fsMock.existsSync.mockReturnValue(false);
+    fsMock.rmSync.mockClear();
+    fsMock.renameSync.mockClear();
+  });
+
   test('ensureLogsDirectory creates the logs directory', async () => {
     const fsMock = (await import('fs')).default;
 
@@ -237,6 +257,69 @@ describe('logger', () => {
     expect(rootLogger.processMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         logId: 'main.console',
+      }),
+    );
+  });
+
+  test('patchMainConsole routes console.info, warn, error, debug through processMessage', () => {
+    initLogger();
+    rootLogger.processMessage.mockClear();
+
+    console.info('info msg');
+    console.warn('warn msg');
+    console.error('error msg');
+    console.debug('debug msg');
+
+    expect(rootLogger.processMessage).toHaveBeenCalledTimes(4);
+    expect(rootLogger.processMessage).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ data: ['info msg'], level: 'info', logId: 'main.console' }),
+    );
+    expect(rootLogger.processMessage).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ data: ['warn msg'], level: 'warn', logId: 'main.console' }),
+    );
+    expect(rootLogger.processMessage).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ data: ['error msg'], level: 'error', logId: 'main.console' }),
+    );
+    expect(rootLogger.processMessage).toHaveBeenNthCalledWith(
+      4,
+      expect.objectContaining({ data: ['debug msg'], level: 'debug', logId: 'main.console' }),
+    );
+  });
+
+  test('startMainErrorCapture onError callback writes unhandled error log', () => {
+    initLogger();
+    rootLogger.processMessage.mockClear();
+
+    const onError = rootLogger.errorHandler.startCatching.mock.calls[0][0].onError;
+    const result = onError({
+      error: new Error('boom'),
+      errorName: 'TestError',
+      processType: 'browser',
+    });
+
+    expect(result).toBe(false);
+    expect(rootLogger.processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: ['TestError', { error: expect.any(Error), processType: 'browser' }],
+        level: 'error',
+        logId: 'main.unhandled',
+      }),
+    );
+  });
+
+  test('startMainErrorCapture onError falls back to Unhandled error when errorName is empty', () => {
+    initLogger();
+    rootLogger.processMessage.mockClear();
+
+    const onError = rootLogger.errorHandler.startCatching.mock.calls[0][0].onError;
+    onError({ error: new Error('boom'), errorName: '', processType: 'browser' });
+
+    expect(rootLogger.processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: ['Unhandled error', expect.anything()],
       }),
     );
   });
@@ -315,6 +398,26 @@ describe('logger', () => {
     });
 
     expect(result[0]).toContain('[main.unknown]');
+  });
+
+  test('console format includes metadata when present', () => {
+    initLogger();
+
+    const result = rootLogger.transports.console.format({
+      message: { data: ['text', { key: 'value' }], logId: 'main.test', variables: {} },
+    });
+
+    expect(result[0]).toContain('[main.test]');
+    expect(result[1]).toEqual({ key: 'value' });
+  });
+
+  test('logRendererMessage swallows errors from malformed input', () => {
+    // Force processMessage to throw to exercise the catch block
+    rootLogger.processMessage.mockImplementationOnce(() => {
+      throw new Error('unexpected');
+    });
+
+    expect(() => logRendererMessage('info', 'test', 'msg')).not.toThrow();
   });
 
   test('logRendererMessage uses renderer.unknown for empty component', () => {
