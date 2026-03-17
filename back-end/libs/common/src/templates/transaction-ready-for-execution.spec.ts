@@ -1,316 +1,260 @@
-import { generateTransactionReadyForExecutionContent } from '.';
+import { generateTransactionReadyForExecutionContent } from './transaction-ready-for-execution';
 import { Notification } from '@entities';
 
-describe('generateTransactionReadyForExecutionContent', () => {
-  describe('header content', () => {
-    it('should use singular header for one notification', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+jest.mock('@app/common/templates/layout', () => ({
+  buildEmailTransactionsList: jest.fn((transactions) =>
+    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}|${t.isManual}`).join(',')}>`
+  ),
+  renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+}));
 
-      const result = generateTransactionReadyForExecutionContent(notification);
+jest.mock('@app/common/templates/index', () => ({
+  getNetworkString: jest.fn((network: string) => {
+    if (!network) return '';
+    return network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
+  }),
+}));
 
-      expect(result).toContain('Transaction is ready for execution!');
+import {
+  buildEmailTransactionsList,
+  renderTransactionEmailLayout,
+} from '@app/common/templates/layout';
+import { getNetworkString } from '@app/common/templates/index';
+
+const makeNotification = (overrides?: Partial<{
+  transactionId: string;
+  network: string;
+  isManual: boolean;
+}>) =>
+  ({
+    additionalData: {
+      transactionId: overrides?.transactionId ?? 'tx-123',
+      network: overrides?.network ?? 'mainnet',
+      isManual: overrides?.isManual ?? false,
+    },
+  } as unknown as Notification);
+
+describe('transaction-ready-for-execution templates', () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+// ─── Empty input ──────────────────────────────────────────────────────────────
+
+  describe('empty input', () => {
+    it('returns empty string when called with no arguments', () => {
+      expect(generateTransactionReadyForExecutionContent()).toBe('');
+    });
+
+    it('does not call layout utilities when empty', () => {
+      generateTransactionReadyForExecutionContent();
+      expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
+      expect(buildEmailTransactionsList).not.toHaveBeenCalled();
+    });
+  });
+
+// ─── Layout wiring ────────────────────────────────────────────────────────────
+
+  describe('layout integration', () => {
+    it('calls renderTransactionEmailLayout with correct title', () => {
+      generateTransactionReadyForExecutionContent(makeNotification());
+      expect(renderTransactionEmailLayout).toHaveBeenCalledWith(
+        'Transactions Ready for Execution',
+        expect.any(String),
+      );
+    });
+
+    it('returns the output of renderTransactionEmailLayout', () => {
+      const result = generateTransactionReadyForExecutionContent(makeNotification());
+      expect(result).toContain('<LAYOUT title="Transactions Ready for Execution">');
+    });
+  });
+
+// ─── Intro copy — automatic only ─────────────────────────────────────────────
+
+  describe('intro copy — all automatic', () => {
+    it('uses singular automatic copy for one notification', () => {
+      const result = generateTransactionReadyForExecutionContent(makeNotification());
+      expect(result).toContain('A transaction is ready for execution');
       expect(result).not.toContain('Multiple transactions');
+      expect(result).not.toContain('manual submission');
     });
 
-    it('should use plural header for multiple notifications', () => {
-      const notifications = [
-        { additionalData: { transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { transactionId: 'tx-2', network: 'testnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('Multiple transactions are ready for execution!');
-      expect(result).not.toContain('Transaction is ready for');
+    it('uses plural automatic copy for multiple notifications', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification(),
+        makeNotification(),
+      );
+      expect(result).toContain('Multiple transactions are ready for execution');
+      expect(result).not.toContain('manual submission');
     });
   });
 
-  describe('transaction details', () => {
-    it('should include transaction ID', () => {
-      const notification = {
-        additionalData: {
-          transactionId: '0.0.123@1234567890.123456789',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+// ─── Intro copy — manual transactions present ─────────────────────────────────
 
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Transaction ID: 0.0.123@1234567890.123456789');
+  describe('intro copy — manual transactions present', () => {
+    it('uses singular manual copy when one manual transaction', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+      );
+      expect(result).toContain('This transaction requires manual submission');
+      expect(result).not.toContain('Some transactions require');
     });
 
-    it('should include network information', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'testnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Network: Testnet');
+    it('uses plural manual copy when multiple transactions include a manual one', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: false }),
+      );
+      expect(result).toContain('Some transactions require manual submission');
+      expect(result).not.toContain('This transaction requires');
     });
 
-    it('should handle missing transactionId', () => {
-      const notification = {
-        additionalData: {
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Transaction ID: undefined');
-    });
-
-    it('should handle missing network', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Network:');
-    });
-
-    it('should handle missing additionalData', () => {
-      const notification = {} as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Transaction ID: undefined');
-      expect(result).toContain('Network:');
-    });
-
-    it('should handle null values in additionalData', () => {
-      const notification = {
-        additionalData: {
-          transactionId: null,
-          network: null,
-        },
-      } as unknown as any;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toContain('Transaction ID: null');
-      expect(result).toContain('Network:');
+    it('uses plural manual copy when all transactions are manual', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: true }),
+      );
+      expect(result).toContain('Some transactions require manual submission');
     });
   });
 
-  describe('multiple notifications', () => {
-    it('should separate notifications with double newlines', () => {
-      const notifications = [
-        {
-          additionalData: {
-            transactionId: 'tx-1',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            transactionId: 'tx-2',
-            network: 'testnet',
-          },
-        },
-      ] as unknown as Notification[];
+// ─── Section rendering — automatic only ──────────────────────────────────────
 
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('tx-1');
-      expect(result).toContain('tx-2');
-      expect(result).toContain('Mainnet');
-      expect(result).toContain('Testnet');
-
-      // Check for double newline separation between transaction details
-      expect(result).toMatch(/Network:.*\n\nTransaction ID:/);
+  describe('automatic-only section', () => {
+    it('renders "Ready for Automatic Execution" heading', () => {
+      const result = generateTransactionReadyForExecutionContent(makeNotification());
+      expect(result).toContain('Ready for Automatic Execution');
     });
 
-    it('should format each notification with both fields', () => {
-      const notifications = [
-        {
-          additionalData: {
-            transactionId: 'tx-1',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            transactionId: 'tx-2',
-            network: 'testnet',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result.match(/Transaction ID:/g)?.length).toBe(2);
-      expect(result.match(/Network:/g)?.length).toBe(2);
+    it('does not render "Manual Submission Required" heading', () => {
+      const result = generateTransactionReadyForExecutionContent(makeNotification());
+      expect(result).not.toContain('Manual Submission Required');
     });
 
-    it('should handle three or more notifications', () => {
-      const notifications = [
-        { additionalData: { transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { transactionId: 'tx-2', network: 'testnet' } },
-        { additionalData: { transactionId: 'tx-3', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('tx-1');
-      expect(result).toContain('tx-2');
-      expect(result).toContain('tx-3');
-      expect(result).toContain('Mainnet');
-      expect(result).toContain('Testnet');
-      expect(result).toContain('Previewnet');
-    });
-
-    it('should maintain notification order', () => {
-      const notifications = [
-        { additionalData: { transactionId: 'first', network: 'mainnet' } },
-        { additionalData: { transactionId: 'second', network: 'testnet' } },
-        { additionalData: { transactionId: 'third', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      const firstIndex = result.indexOf('first');
-      const secondIndex = result.indexOf('second');
-      const thirdIndex = result.indexOf('third');
-
-      expect(firstIndex).toBeLessThan(secondIndex);
-      expect(secondIndex).toBeLessThan(thirdIndex);
-    });
-
-    it('should call getNetworkString for each notification (implicit via output)', () => {
-      const notifications = [
-        { additionalData: { transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { transactionId: 'tx-2', network: 'testnet' } },
-        { additionalData: { transactionId: 'tx-3', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('Network: Mainnet');
-      expect(result).toContain('Network: Testnet');
-      expect(result).toContain('Network: Previewnet');
+    it('calls buildEmailTransactionsList once with automatic transactions', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'tx-auto', isManual: false }),
+      );
+      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ transactionId: 'tx-auto', isManual: false })]),
+      );
     });
   });
 
-  describe('output format', () => {
-    it('should have header followed by double newline before details', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+// ─── Section rendering — manual only ─────────────────────────────────────────
 
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toMatch(/ready for execution!\n\nTransaction ID:/);
+  describe('manual-only section', () => {
+    it('renders "Manual Submission Required" heading', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+      );
+      expect(result).toContain('Manual Submission Required');
     });
 
-    it('should maintain consistent field order', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      const transactionIdIndex = result.indexOf('Transaction ID:');
-      const networkIndex = result.indexOf('Network:');
-
-      expect(transactionIdIndex).toBeLessThan(networkIndex);
+    it('does not render "Ready for Automatic Execution" heading', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+      );
+      expect(result).not.toContain('Ready for Automatic Execution');
     });
 
-    it('should use single newline between transaction ID and network', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateTransactionReadyForExecutionContent(notification);
-
-      expect(result).toMatch(/Transaction ID: tx-123\nNetwork: Mainnet/);
+    it('calls buildEmailTransactionsList once with manual transactions', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'tx-manual', isManual: true }),
+      );
+      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ transactionId: 'tx-manual', isManual: true })]),
+      );
     });
   });
 
-  describe('edge cases', () => {
-    it('should handle empty notifications array', () => {
-      const result = generateTransactionReadyForExecutionContent();
+// ─── Section rendering — mixed manual and automatic ──────────────────────────
 
-      expect(result).toBeNull();
+  describe('mixed manual and automatic sections', () => {
+    it('renders both section headings', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'tx-manual', isManual: true }),
+        makeNotification({ transactionId: 'tx-auto', isManual: false }),
+      );
+      expect(result).toContain('Manual Submission Required');
+      expect(result).toContain('Ready for Automatic Execution');
     });
 
-    it('should handle mix of complete and incomplete data', () => {
-      const notifications = [
-        {
-          additionalData: {
-            transactionId: 'tx-complete',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            transactionId: 'tx-no-network',
-          },
-        },
-        {
-          additionalData: {
-            network: 'testnet',
-          },
-        },
-        {} as Notification,
-      ] as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('tx-complete');
-      expect(result).toContain('tx-no-network');
-      expect(result.match(/Transaction ID:/g)?.length).toBe(4);
-      expect(result.match(/Network:/g)?.length).toBe(4);
+    it('calls buildEmailTransactionsList twice', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: false }),
+      );
+      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(2);
     });
 
-    it('should handle different network types', () => {
-      const notifications = [
-        { additionalData: { transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { transactionId: 'tx-2', network: 'testnet' } },
-        { additionalData: { transactionId: 'tx-3', network: 'previewnet' } },
-        { additionalData: { transactionId: 'tx-4', network: 'custom-network' } },
-      ] as unknown as Notification[];
-
-      const result = generateTransactionReadyForExecutionContent(...notifications);
-
-      expect(result).toContain('Network: Mainnet');
-      expect(result).toContain('Network: Testnet');
-      expect(result).toContain('Network: Previewnet');
-      expect(result).toContain('custom-network');
+    it('passes only manual transactions to the first buildEmailTransactionsList call', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'tx-manual', isManual: true }),
+        makeNotification({ transactionId: 'tx-auto', isManual: false }),
+      );
+      const [firstCall, secondCall] = (buildEmailTransactionsList as jest.Mock).mock.calls;
+      expect(firstCall[0].every((t: any) => t.isManual === true)).toBe(true);
+      expect(secondCall[0].every((t: any) => t.isManual === false)).toBe(true);
     });
 
-    it('should handle special characters in transaction IDs', () => {
+    it('does not mix manual and automatic in the same list', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'tx-manual', isManual: true }),
+        makeNotification({ transactionId: 'tx-auto', isManual: false }),
+      );
+      const calls = (buildEmailTransactionsList as jest.Mock).mock.calls;
+      calls.forEach(([transactions]) => {
+        const isManualValues = transactions.map((t: any) => t.isManual);
+        expect(new Set(isManualValues).size).toBe(1); // all same value
+      });
+    });
+  });
+
+// ─── Transaction data mapping ─────────────────────────────────────────────────
+
+  describe('transaction data mapping', () => {
+    it('passes network through getNetworkString', () => {
+      generateTransactionReadyForExecutionContent(makeNotification({ network: 'testnet' }));
+      expect(getNetworkString).toHaveBeenCalledWith('testnet');
+    });
+
+    it('defaults isManual to false when not provided', () => {
       const notification = {
-        additionalData: {
-          transactionId: '0.0.123@1234567890.123456789-memo',
-          network: 'mainnet',
-        },
+        additionalData: { transactionId: 'tx-1', network: 'mainnet' },
       } as unknown as Notification;
+      generateTransactionReadyForExecutionContent(notification);
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ isManual: false })]),
+      );
+    });
 
-      const result = generateTransactionReadyForExecutionContent(notification);
+    it('preserves notification order within each section', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ transactionId: 'first', isManual: false }),
+        makeNotification({ transactionId: 'second', isManual: false }),
+        makeNotification({ transactionId: 'third', isManual: false }),
+      );
+      const [transactions] = (buildEmailTransactionsList as jest.Mock).mock.calls[0];
+      expect(transactions[0].transactionId).toBe('first');
+      expect(transactions[1].transactionId).toBe('second');
+      expect(transactions[2].transactionId).toBe('third');
+    });
 
-      expect(result).toContain('Transaction ID: 0.0.123@1234567890.123456789-memo');
+    it('handles missing additionalData gracefully', () => {
+      expect(() =>
+        generateTransactionReadyForExecutionContent({} as Notification)
+      ).not.toThrow();
+    });
+
+    it('handles missing network', () => {
+      const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
+      generateTransactionReadyForExecutionContent(notification);
+      expect(getNetworkString).toHaveBeenCalledWith(undefined);
     });
   });
 });
