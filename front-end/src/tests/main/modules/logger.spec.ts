@@ -129,6 +129,13 @@ describe('logger', () => {
     expect(formatted).not.toContain('secret-token');
   });
 
+  test('createLogger returns cached instance for the same component', () => {
+    const first = createLogger('main.cache-test');
+    const second = createLogger('main.cache-test');
+
+    expect(first).toBe(second);
+  });
+
   test('writes component tagged messages through createLogger', () => {
     createLogger('renderer.websocket').warn('Socket disconnected', {
       reason: 'transport close',
