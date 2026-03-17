@@ -13,6 +13,7 @@ const props = withDefaults(
     buttonText?: string;
     loadingText?: string;
     loading?: boolean;
+    cancel?: ((...args: any[]) => void) | null;
   }>(),
   {
     show: false,
@@ -20,6 +21,7 @@ const props = withDefaults(
     buttonText: 'Confirm',
     loadingText: '',
     loading: false,
+    cancel: null,
   },
 );
 
@@ -36,9 +38,15 @@ const handleCancel = () => {
   if (props.loading) return;
   emit('update:show', false);
 };
+const handleUpdateShow = (value: boolean) => {
+  emit('update:show', value);
+  if (value === false && props.cancel) {
+    props.cancel();
+  }
+};
 </script>
 <template>
-  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="emit('update:show', $event)">
+  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="handleUpdateShow">
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
       <div class="text-center">
