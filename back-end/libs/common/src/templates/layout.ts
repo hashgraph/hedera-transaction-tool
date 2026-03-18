@@ -124,8 +124,14 @@ export function emailWarning(message: string): string {
 </table>`;
 }
 
-export function escapeHtml(str: string): string {
-  return str
+export function escapeHtml(str: string | null | undefined): string {
+  if (str == null) {
+    return "";
+  }
+
+  const value = String(str);
+
+  return value
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
