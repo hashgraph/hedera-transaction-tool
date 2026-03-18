@@ -130,7 +130,7 @@ const isTransactionInProgress = (transaction: ITransaction) => {
       <h3 class="text-center text-title text-bold mt-4">Canceling all transactions</h3>
       <p class="text-center text-small text-secondary mt-4 mb-4">{{ progressText }}</p>
       <p class="text-center text-small text-secondary mt-6 mb-4">
-        <span class="spinner-border spinner-border me-2" role="status" inert></span>{{ ' ' }}
+        <span class="spinner-border me-2" role="status" inert></span>{{ ' ' }}
       </p>
     </div>
   </AppModal>
