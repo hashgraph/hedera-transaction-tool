@@ -68,7 +68,12 @@ const confirmCanceling = async () => {
       progressText.value = '';
       isCancelingOnGoing.value = false;
     }
-  } // else bug
+  } else {
+    // Bug
+    toastManager.error('Unable to cancel transactions because groupOrId is null');
+    progressText.value = '';
+    isCancelingOnGoing.value = false;
+  }
 
   activate.value = false;
 };
