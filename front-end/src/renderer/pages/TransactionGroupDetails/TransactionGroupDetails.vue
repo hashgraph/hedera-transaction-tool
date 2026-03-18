@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
 import {
-  cancelTransactionGroup,
   getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
@@ -30,6 +29,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -40,7 +40,6 @@ import {
   assertUserLoggedIn,
   generateTransactionExportFileName,
   generateTransactionV1ExportContent,
-  getErrorMessage,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
@@ -57,16 +56,15 @@ import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.t
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { getCancelGroupToast } from './cancelGroupResult.ts';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
+import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -96,9 +94,23 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
+  const groupId = Number(Array.isArray(id) ? id[0] : id);
+  if (!parsed) { await fetchGroup(groupId); return; } // Legacy fallback
+
+  // If initial fetch hasn't completed yet, fall back to a full refetch
+  if (!group.value) {
+    await fetchGroup(groupId);
+    return;
+  }
+
+  const isAffected = parsed.groupIds.includes(groupId) ||
+    (group.value.groupItems?.some(item =>
+      parsed.transactionIds.includes(item.transactionId),
+    ) ?? false);
+  if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -114,15 +126,13 @@ const toastManager = ToastManager.inject();
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
 const signAllStarted = ref(false);
+const cancelAllStarted = ref(false);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
 const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
-const confirmModalButtonText = ref('');
-const confirmModalLoadingText = ref('');
-const isConfirmModalLoadingState = ref(false);
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
 const fullyLoaded = ref(false);
@@ -235,64 +245,12 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const handleCancelAll = async (showModal = false) => {
-  if (showModal) {
-    isConfirmModalShown.value = true;
-    confirmModalTitle.value = 'Cancel all transactions?';
-    confirmModalText.value = 'Are you sure you want to cancel all transactions?';
-    confirmModalButtonText.value = 'Confirm';
-    confirmCallback.value = handleCancelAll;
-    return;
-  }
+const handleCancelAll = async () => {
+  cancelAllStarted.value = true;
+};
 
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    isConfirmModalShown.value = false;
-    toastManager.error('You must be logged in to cancel transactions.');
-    return;
-  }
-
-  const currentGroupId = group.value?.id;
-  if (!currentGroupId) {
-    isConfirmModalShown.value = false;
-    toastManager.error('Transaction group is not available.');
-    return;
-  }
-
-  try {
-    confirmModalLoadingText.value = 'Canceling…';
-    isConfirmModalLoadingState.value = true;
-    loadingStates[cancel] = 'Canceling…';
-
-    const result = await cancelTransactionGroup(
-      user.selectedOrganization.serverUrl,
-      currentGroupId,
-      group.value?.groupItems ?? [],
-    );
-    const toastResult = getCancelGroupToast(result);
-
-    isConfirmModalShown.value = false;
-    isConfirmModalLoadingState.value = false;
-    confirmModalLoadingText.value = '';
-
-    if (toastResult.kind === 'success') {
-      toastManager.success(toastResult.message);
-    } else if (toastResult.kind === 'warning') {
-      toastManager.warning(toastResult.message);
-    } else {
-      toastManager.error(toastResult.message);
-    }
-  } catch (error) {
-    isConfirmModalShown.value = false;
-    toastManager.error(getErrorMessage(error, 'Failed to cancel transactions'));
-  } finally {
-    isConfirmModalShown.value = false;
-    isConfirmModalLoadingState.value = false;
-    confirmModalLoadingText.value = '';
-    await fetchGroup(currentGroupId).catch(refreshError => {
-      toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transactions'));
-    });
-    loadingStates[cancel] = null;
-  }
+const didCancelAll = async (groupId: number) => {
+  await fetchGroup(groupId);
 };
 
 const handleSignAll = () => {
@@ -448,7 +406,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === sign) {
     handleSignAll();
   } else if (value === cancel) {
-    await handleCancelAll(true);
+    await handleCancelAll();
   } else if (value === exportName) {
     await handleExportGroup();
   }
@@ -691,14 +649,17 @@ async function fetchGroup(id: string | number) {
               :callback="didSignAll"
             />
 
+            <CancelAllController
+              v-model:activate="cancelAllStarted"
+              :groupOrId="group"
+              :callback="didCancelAll"
+            />
+
             <AppConfirmModal
               v-model:show="isConfirmModalShown"
               :title="confirmModalTitle"
               :text="confirmModalText"
               :callback="confirmCallback"
-              :button-text="confirmModalButtonText"
-              :loading-text="confirmModalLoadingText"
-              :loading="isConfirmModalLoadingState"
             />
           </div>
         </template>
