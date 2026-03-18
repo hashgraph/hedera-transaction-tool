@@ -38,34 +38,40 @@ describe('user-registered templates', () => {
 
   describe('generateUserRegisteredMessage', () => {
     it('returns the output of emailWrapper', () => {
-      const result = generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123' });
+      const result = generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
       expect(result).toContain('<WRAPPER>');
     });
 
     it('calls emailHeader with correct title and subtitle', () => {
-      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123' });
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
       expect(emailHeader).toHaveBeenCalledWith('Welcome to the Transaction Tool!', 'Hedera Transaction Tool');
     });
 
     it('calls emailBody once', () => {
-      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123' });
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
       expect(emailBody).toHaveBeenCalledTimes(1);
     });
 
     it('includes the url in the body', () => {
-      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123' });
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
       const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
       expect(bodyArg).toContain('https://example.com');
     });
 
     it('includes the tempPassword in the body', () => {
-      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'S3cr3t!' });
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'S3cr3t!', downloadUrl: 'https://test.download.com' });
       const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
       expect(bodyArg).toContain('S3cr3t!');
     });
 
+    it('includes the downloadUrl in the body', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).toContain('https://test.download.com');
+    });
+
     it('escapes url and tempPassword', () => {
-      generateUserRegisteredMessage({ url: '<script>', tempPassword: '"pass"' });
+      generateUserRegisteredMessage({ url: '<script>', tempPassword: '"pass"', downloadUrl: 'https://test.download.com' });
       expect(escapeHtml).toHaveBeenCalledWith('<script>');
       expect(escapeHtml).toHaveBeenCalledWith('"pass"');
     });

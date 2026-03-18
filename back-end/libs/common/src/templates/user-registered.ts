@@ -51,7 +51,7 @@ export function emailDownloadButton(downloadUrl: string): string {
 <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:32px;">
   <tr>
     <td>
-      <a href=${downloadUrl}
+      <a href="${downloadUrl}"
          style="display:inline-block;padding:13px 28px;background:linear-gradient(135deg,#6611cc 0%,#8833ee 100%);
                 color:#ffffff;font-family:'Trebuchet MS',Arial,sans-serif;font-size:14px;font-weight:700;
                 text-decoration:none;border-radius:6px;letter-spacing:0.3px;white-space:nowrap;">
