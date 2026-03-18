@@ -57,7 +57,7 @@ export class AuthService {
       user = await this.usersService.createUser(dto.email, tempPassword);
     }
 
-    console.log(`User ${user.email} registered with temporary password: ${tempPassword}`);
+    console.log(`User ${user.email} registered and temporary password generated.`);
 
     emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }])
 
