@@ -20,8 +20,8 @@ export const generateTransactionCancelledContent = (...notifications: Notificati
 <p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">
   ${
     isPlural
-      ? "Multiple transactions have been canceled before being executed. Please visit the Hedera Transaction Tool to review the transactions if necessary."
-      : "A transaction has been canceled before being executed. Please visit the Hedera Transaction Tool to review the transaction if necessary."
+      ? "Multiple transactions have been cancelled before being executed. Please visit the Hedera Transaction Tool to review the transactions if necessary."
+      : "A transaction has been cancelled before being executed. Please visit the Hedera Transaction Tool to review the transaction if necessary."
   }
 </p>`;
 
