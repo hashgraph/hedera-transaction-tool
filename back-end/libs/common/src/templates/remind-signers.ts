@@ -14,7 +14,7 @@ export const generateRemindSignersContent = (...notifications: Notification[]) =
   const transactions = notifications.map(n => ({
     transactionId: n.additionalData?.transactionId,
     network: getNetworkString(n.additionalData?.network),
-    isManaul: undefined,
+    isManual: undefined,
     validStart: n.additionalData?.validStart,
   }));
 

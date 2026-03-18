@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -34,6 +35,8 @@ totp.options = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
@@ -58,7 +61,7 @@ export class AuthService {
       user = await this.usersService.createUser(dto.email, tempPassword);
     }
 
-    console.log(`User ${user.email} registered and temporary password generated.`);
+    this.logger.log(`User ${user.id} registered and temporary password generated.`);
 
     emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }]);
 

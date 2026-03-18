@@ -119,8 +119,9 @@ describe('layout templates', () => {
     });
 
     it('contains a copyright notice', () => {
+      const currentYear = new Date().getFullYear().toString();
       expect(emailFooter()).toContain('Copyright');
-      expect(emailFooter()).toContain('2026');
+      expect(emailFooter()).toContain(currentYear);
     });
 
     it('returns a non-empty string', () => {
