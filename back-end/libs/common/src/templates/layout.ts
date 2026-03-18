@@ -50,6 +50,7 @@ export function emailHeader(title: string, subtitle?: string): string {
 }
 
 export function emailFooter(): string {
+  const currentYear = new Date().getFullYear();
   return `
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:860px;">
   <tr>
@@ -59,7 +60,7 @@ export function emailFooter(): string {
   </tr>
   <tr>
     <td style="padding:0 40px 32px;font-size:11px;line-height:18px;color:#cccccc;text-align:center;letter-spacing:0.3px;">
-      Copyright &copy; 2026 Hedera
+      Copyright &copy; ${currentYear} Hedera
     </td>
   </tr>
 </table>`;
