@@ -56,14 +56,14 @@ describe('transaction-cancelled templates', () => {
   describe('singular vs plural intro text', () => {
     it('uses singular copy for one notification', () => {
       const result = generateTransactionCancelledContent(makeNotification());
-      expect(result).toContain('A transaction has been canceled');
+      expect(result).toContain('A transaction has been cancelled');
       expect(result).not.toContain('Multiple transactions');
     });
 
     it('uses plural copy for two notifications', () => {
       const result = generateTransactionCancelledContent(makeNotification(), makeNotification());
-      expect(result).toContain('Multiple transactions have been canceled');
-      expect(result).not.toContain('A transaction has been canceled');
+      expect(result).toContain('Multiple transactions have been cancelled');
+      expect(result).not.toContain('A transaction has been cancelled');
     });
 
     it('uses plural copy for three or more notifications', () => {
@@ -72,7 +72,7 @@ describe('transaction-cancelled templates', () => {
         makeNotification(),
         makeNotification(),
       );
-      expect(result).toContain('Multiple transactions have been canceled');
+      expect(result).toContain('Multiple transactions have been cancelled');
     });
   });
 
@@ -82,7 +82,7 @@ describe('transaction-cancelled templates', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
       generateTransactionCancelledContent(makeNotification());
       expect(renderTransactionEmailLayout).toHaveBeenCalledWith(
-        'Transaction Signature Request',
+        'Transaction Cancelled',
         expect.any(String),
       );
     });
@@ -101,7 +101,7 @@ describe('transaction-cancelled templates', () => {
 
     it('returns the output of renderTransactionEmailLayout', () => {
       const result = generateTransactionCancelledContent(makeNotification());
-      expect(result).toContain('<LAYOUT title="Transaction Signature Request">');
+      expect(result).toContain('<LAYOUT title="Transaction Cancelled">');
     });
   });
 

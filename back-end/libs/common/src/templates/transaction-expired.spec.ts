@@ -82,7 +82,7 @@ describe('transaction-expired templates', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
       generateTransactionExpiredContent(makeNotification());
       expect(renderTransactionEmailLayout).toHaveBeenCalledWith(
-        'Transaction Signature Request',
+        'Transaction Expired',
         expect.any(String),
       );
     });
@@ -101,7 +101,7 @@ describe('transaction-expired templates', () => {
 
     it('returns the output of renderTransactionEmailLayout', () => {
       const result = generateTransactionExpiredContent(makeNotification());
-      expect(result).toContain('<LAYOUT title="Transaction Signature Request">');
+      expect(result).toContain('<LAYOUT title="Transaction Expired">');
     });
   });
 

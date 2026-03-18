@@ -3,7 +3,7 @@ import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
   buildEmailTransactionsList: jest.fn((transactions) =>
-    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}|${t.isManual}`).join(',')}>`
+    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}|${t.isManual}|${t.validStart}`).join(',')}>`
   ),
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
 }));
@@ -25,12 +25,14 @@ const makeNotification = (overrides?: Partial<{
   transactionId: string;
   network: string;
   isManual: boolean;
+  validStart: string;
 }>) =>
   ({
     additionalData: {
       transactionId: overrides?.transactionId ?? 'tx-123',
       network: overrides?.network ?? 'mainnet',
       isManual: overrides?.isManual ?? false,
+      validStart: overrides?.validStart,
     },
   } as unknown as Notification);
 
@@ -255,6 +257,26 @@ describe('transaction-ready-for-execution templates', () => {
       const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
       generateTransactionReadyForExecutionContent(notification);
       expect(getNetworkString).toHaveBeenCalledWith(undefined);
+    });
+
+    it('passes validStart to buildEmailTransactionsList when provided', () => {
+      generateTransactionReadyForExecutionContent(
+        makeNotification({ validStart: '2024-01-15T10:30:45Z' }),
+      );
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ validStart: '2024-01-15T10:30:45Z' }),
+        ]),
+      );
+    });
+
+    it('passes undefined validStart when not provided', () => {
+      generateTransactionReadyForExecutionContent(makeNotification());
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ validStart: undefined }),
+        ]),
+      );
     });
   });
 });

@@ -86,14 +86,14 @@ describe('transaction-executed templates', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
       generateTransactionExecutedContent(makeNotification());
       expect(renderTransactionEmailLayout).toHaveBeenCalledWith(
-        'Transaction Execution Results',
+        'Transaction Executed',
         expect.any(String),
       );
     });
 
     it('returns the output of renderTransactionEmailLayout', () => {
       const result = generateTransactionExecutedContent(makeNotification());
-      expect(result).toContain('<LAYOUT title="Transaction Execution Results">');
+      expect(result).toContain('<LAYOUT title="Transaction Executed">');
     });
   });
 

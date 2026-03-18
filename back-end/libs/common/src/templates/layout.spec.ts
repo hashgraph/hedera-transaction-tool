@@ -291,6 +291,34 @@ describe('layout templates', () => {
       const result = buildEmailTransactionsList(txs);
       expect(result).toContain('border:1px solid #e2d4f8');
     });
+
+    it('renders validStart when provided', () => {
+      const txs: TransactionNotification[] = [
+        { transactionId: 'tx-1', network: 'mainnet', validStart: '2024-01-15T10:30:45Z' },
+      ];
+      const result = buildEmailTransactionsList(txs);
+      expect(result).toContain('2024-01-15T10:30:45Z');
+    });
+
+    it('omits validStart cell when not provided', () => {
+      const txs: TransactionNotification[] = [
+        { transactionId: 'tx-1', network: 'mainnet' },
+      ];
+      const result = buildEmailTransactionsList(txs);
+      expect(result).toContain('tx-1');
+      expect(result).toContain('mainnet');
+      // only 2 cells: transactionId and network
+      expect(result.match(/<td/g)?.length).toBe(2);
+    });
+
+    it('escapes validStart', () => {
+      const txs: TransactionNotification[] = [
+        { transactionId: 'tx-1', network: 'mainnet', validStart: '<b>bad</b>' },
+      ];
+      const result = buildEmailTransactionsList(txs);
+      expect(result).not.toContain('<b>');
+      expect(result).toContain('&lt;b&gt;');
+    });
   });
 
 // ─── renderTransactionEmailLayout ────────────────────────────────────────────

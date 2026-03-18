@@ -14,6 +14,7 @@ export const generateTransactionReadyForExecutionContent = (...notifications: No
     transactionId: n.additionalData?.transactionId,
     network: getNetworkString(n.additionalData?.network),
     isManual: n.additionalData?.isManual ?? false,
+    validStart: n.additionalData?.validStart,
   }));
 
   const manualTransactions = transactions.filter(t => t.isManual);

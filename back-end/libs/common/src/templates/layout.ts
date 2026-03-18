@@ -186,6 +186,7 @@ export interface TransactionNotification {
   transactionId: string;
   network: string;
   isManual?: boolean;
+  validStart?: string;
 }
 
 export function buildEmailTransactionsList(
@@ -200,6 +201,15 @@ export function buildEmailTransactionsList(
            color:#2d0072;letter-spacing:0.2px;">
   ${escapeHtml(tx.transactionId)}
 </td>
+
+${tx.validStart ? `
+<td width="1%" nowrap align="right"
+    style="padding:13px 18px;__ROW_STYLE__
+           font-size:12px;font-family:Arial,Helvetica,sans-serif;
+           color:#888888;">
+  ${escapeHtml(tx.validStart)}
+</td>
+` : ''}
 
 <td width="1%" nowrap align="right"
     style="padding:13px 18px;__ROW_STYLE__
