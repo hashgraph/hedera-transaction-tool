@@ -1,27 +1,33 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { resetDbState, resetPostgresDbState } from '../utils/databaseUtil.js';
+import { LoginPage } from '../pages/LoginPage.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+} from '../utils/databaseUtil.js';
 import {
   calculateTimeout,
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   getPrivateKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
   waitForValidStart,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
 let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
+let loginPage: LoginPage;
 
 let firstUser: UserDetails;
 let complexKeyAccountId: string;
@@ -39,35 +45,21 @@ test.describe.skip('Organization Regression tests', () => {
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(totalUsers);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    loginPage = new LoginPage(window);
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: totalUsers,
+      },
     );
-
-    await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, false);
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
     firstUser = organizationPage.getUser(0);
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
-
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
 
@@ -93,8 +85,8 @@ test.describe.skip('Organization Regression tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify user can execute update account tx for complex key account similar to council account', async () => {

@@ -5,13 +5,19 @@
  * Data source: Backend PostgreSQL (org users appear as contacts)
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
-import { resetDbState, resetPostgresDbState } from '../../utils/databaseUtil.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+} from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import { ContactListPage } from '../../pages/ContactListPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import {
   TARGET_LOAD_TIME_MS,
   collectPerformanceSamples,
@@ -22,6 +28,7 @@ import {
   TEST_LOCAL_PASSWORD,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
+import { createSeededOrganizationSession } from '../../utils/organizationBaseline.js';
 
 dotenv.config();
 
@@ -29,11 +36,12 @@ dotenv.config();
 const DB_ITEM_COUNT = DATA_VOLUMES.CONTACTS;
 const MIN_CONTACTS = 50; // Strict: require at least 50 contacts rendered
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let contactListPage: ContactListPage;
+let loginPage: LoginPage;
 
 test.describe('Contacts Page Performance', () => {
   test.beforeAll(async () => {
@@ -43,51 +51,32 @@ test.describe('Contacts Page Performance', () => {
     registrationPage = new RegistrationPage(window);
     organizationPage = new OrganizationPage(window);
     contactListPage = new ContactListPage(window);
+    loginPage = new LoginPage(window);
 
     // Create 100+ test users in backend (they will appear as contacts)
+    const password = TEST_LOCAL_PASSWORD;
     if (DEBUG) console.log(`Creating ${DB_ITEM_COUNT} users in backend...`);
-    await organizationPage.createUsers(DB_ITEM_COUNT);
+    await createSeededOrganizationSession(window, loginPage, organizationPage, {
+      userCount: DB_ITEM_COUNT,
+      localUser: {
+        email: `perf-contacts-${Date.now()}@test.com`,
+        password,
+      },
+      signInUserIndex: null,
+      setupPersonalTransactions: false,
+      setupOrganizationTransactions: false,
+    });
     const testUser = organizationPage.getUser(0);
     if (DEBUG) console.log(`Created ${DB_ITEM_COUNT} users`);
 
-    const password = TEST_LOCAL_PASSWORD;
-    await registrationPage.completeRegistration(`perf-contacts-${Date.now()}@test.com`, password);
-
     await contactListPage.upgradeUserToAdmin(testUser.email);
-
-    await organizationPage.setupOrganization();
-
-    // Wait for sign-in form to appear (organization connection may take time)
-    await organizationPage.waitForElementToBeVisible(
-      organizationPage.emailForOrganizationInputSelector,
-    );
-
     await organizationPage.signInOrganization(testUser.email, testUser.password, password);
-
-    // Required for isLoggedInOrganization() to return true
-    await registrationPage.waitForElementToBeVisible(registrationPage.createNewTabSelector);
-    if (DEBUG) console.log('Account Setup screen visible, completing setup...');
-
-    await registrationPage.clickOnCreateNewTab();
-    await registrationPage.clickOnUnderstandCheckbox();
-    await registrationPage.clickOnGenerateButton();
-
-    await registrationPage.captureRecoveryPhraseWords();
-    await registrationPage.clickOnUnderstandCheckbox();
-    await registrationPage.clickOnVerifyButton();
-
-    await registrationPage.fillAllMissingRecoveryPhraseWords();
-    await registrationPage.clickOnNextButton();
-
-    await registrationPage.waitForElementToDisappear(registrationPage.toastMessageSelector);
-    await registrationPage.clickOnFinalNextButtonWithRetry();
-    if (DEBUG) console.log('Account Setup completed');
   });
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Contacts page should load in under 1 second (p95)', async () => {

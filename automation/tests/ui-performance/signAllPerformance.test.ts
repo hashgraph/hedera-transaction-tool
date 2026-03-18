@@ -18,10 +18,10 @@
  * - Backend processing speed
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
@@ -44,7 +44,7 @@ dotenv.config();
 const SIGN_ALL_THRESHOLD_MS = THRESHOLDS.SIGN_ALL_MS;
 const MIN_GROUP_SIZE = DATA_VOLUMES.GROUP_SIZE;
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
@@ -61,7 +61,7 @@ test.describe('Sign All Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Sign All should complete in under 4 seconds with loading indicator', async () => {

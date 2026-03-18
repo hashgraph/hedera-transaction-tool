@@ -12,10 +12,10 @@
  * - Run: npm run k6:seed:all
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
@@ -35,7 +35,7 @@ dotenv.config();
 // Volume requirement from k6 constants (SSOT)
 const REQUIRED_TOTAL = DATA_VOLUMES.READY_FOR_EXECUTION;
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
@@ -52,7 +52,7 @@ test.describe('Ready for Execution Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Ready for Execution tab should load in under 1 second (p95)', async () => {

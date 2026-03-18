@@ -1,17 +1,17 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
+import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
-import { resetDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
+import { createSeededLocalUserSession } from '../utils/localBaseline.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
@@ -22,19 +22,13 @@ test.describe('Group transaction tests', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
-    registrationPage = new RegistrationPage(window);
     transactionPage = new TransactionPage(window);
     groupPage = new GroupPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
-    );
+    const loginPage = new LoginPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
 
     await setupEnvironmentForTransactions(window);
   });
@@ -55,7 +49,7 @@ test.describe('Group transaction tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Verify group transaction elements', async () => {

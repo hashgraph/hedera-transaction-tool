@@ -17,6 +17,7 @@ import { Client } from 'pg';
 import { TEST_USER_POOL, DATA_VOLUMES, COMPLEX_KEY, TEST_LOCAL_PASSWORD } from '../../k6/src/config/constants.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import { DEBUG } from './performanceUtils.js';
 import { PrivateKey } from '@hashgraph/sdk';
 import {
@@ -30,6 +31,7 @@ import {
 } from '../../k6/helpers/seed-perf-data.js';
 import { openDatabase, closeDatabase } from '../../utils/databaseUtil.js';
 import { encrypt, argonHash } from '../../utils/crypto.js';
+import { createSeededOrganizationSession } from '../../utils/organizationBaseline.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -309,27 +311,25 @@ export async function importSeedMnemonic(
  */
 export async function setupOrgModeTestEnvironment(
   window: Page,
-  registrationPage: RegistrationPage,
+  _registrationPage: RegistrationPage,
   organizationPage: OrganizationPage,
   testNamePrefix: string,
 ): Promise<void> {
   await seedOrgPerfData();
 
   const localPassword = TEST_LOCAL_PASSWORD;
-  await registrationPage.completeRegistration(
-    `${testNamePrefix}-${Date.now()}@test.com`,
-    localPassword,
-  );
-
-  // Uses different email per test to avoid backend rate limiting (3 logins/min per email)
   const pooledUser = getPooledTestUser(testNamePrefix);
-  await organizationPage.setupOrganization();
-  await organizationPage.waitForElementToBeVisible(
-    organizationPage.emailForOrganizationInputSelector,
-  );
-  await organizationPage.signInOrganization(pooledUser.email, pooledUser.password, localPassword);
-
-  await importSeedMnemonic(window, registrationPage);
+  const loginPage = new LoginPage(window);
+  await createSeededOrganizationSession(window, loginPage, organizationPage, {
+    localUser: {
+      email: `${testNamePrefix}-${Date.now()}@test.com`,
+      password: localPassword,
+    },
+    organizationUsers: [{ ...pooledUser, privateKey: '' }],
+    organizationUserRecoveryPhraseWords: [readSeedMnemonic()],
+    setupPersonalTransactions: false,
+    setupOrganizationTransactions: false,
+  });
 }
 
 function createPgClient(): Client {
@@ -501,13 +501,14 @@ export async function seedComplexKeyData(
  * and only SQLite is seeded (PostgreSQL already has keys from bootstrap).
  */
 export async function setupComplexKeyTestEnvironment(
-  _window: Page,
-  registrationPage: RegistrationPage,
+  window: Page,
+  _registrationPage: RegistrationPage,
   organizationPage: OrganizationPage,
   testNamePrefix: string,
   useHederaStyle: boolean = false,
 ): Promise<ComplexKeySetupResult> {
   const localPassword = TEST_LOCAL_PASSWORD;
+  const loginPage = new LoginPage(window);
 
   if (isStaging()) {
     // === STAGING PATH ===
@@ -520,17 +521,6 @@ export async function setupComplexKeyTestEnvironment(
     const stagingKeys = loadStagingComplexKeys();
     console.log(`  Loaded ${stagingKeys.metadata.totalKeys} keys from env vars`);
 
-    // Complete local registration
-    await registrationPage.completeRegistration(
-      `${testNamePrefix}-${Date.now()}@test.com`,
-      localPassword,
-    );
-
-    await organizationPage.setupOrganization();
-    await organizationPage.waitForElementToBeVisible(
-      organizationPage.emailForOrganizationInputSelector,
-    );
-
     const stagingEmail = process.env.STAGING_USER_EMAIL;
     const stagingPassword = process.env.STAGING_USER_PASSWORD;
     if (!stagingEmail || !stagingPassword) {
@@ -539,6 +529,18 @@ export async function setupComplexKeyTestEnvironment(
         'Set these from your staging backend user.',
       );
     }
+
+    await createSeededOrganizationSession(window, loginPage, organizationPage, {
+      localUser: {
+        email: `${testNamePrefix}-${Date.now()}@test.com`,
+        password: localPassword,
+      },
+      organizationUsers: [{ email: stagingEmail, password: stagingPassword, privateKey: '' }],
+      seedOrganizationKeys: false,
+      signInUserIndex: null,
+      setupPersonalTransactions: false,
+      setupOrganizationTransactions: false,
+    });
 
     // Generate hash for SQLite (must match what staging user has in PostgreSQL)
     const mnemonicHash = await argonHash('complex-key-seed-hash', true);
@@ -586,17 +588,18 @@ export async function setupComplexKeyTestEnvironment(
   // Seed the regular org data first (creates PostgreSQL users)
   await seedOrgPerfData();
 
-  await registrationPage.completeRegistration(
-    `${testNamePrefix}-${Date.now()}@test.com`,
-    localPassword,
-  );
-
   const pooledUser = getPooledTestUser(testNamePrefix);
-
-  await organizationPage.setupOrganization();
-  await organizationPage.waitForElementToBeVisible(
-    organizationPage.emailForOrganizationInputSelector,
-  );
+  await createSeededOrganizationSession(window, loginPage, organizationPage, {
+    localUser: {
+      email: `${testNamePrefix}-${Date.now()}@test.com`,
+      password: localPassword,
+    },
+    organizationUsers: [{ ...pooledUser, privateKey: '' }],
+    seedOrganizationKeys: false,
+    signInUserIndex: null,
+    setupPersonalTransactions: false,
+    setupOrganizationTransactions: false,
+  });
 
   // Seed complex keys to PostgreSQL BEFORE signing in
   const result = await seedComplexKeyData(pooledUser.email, useHederaStyle);
