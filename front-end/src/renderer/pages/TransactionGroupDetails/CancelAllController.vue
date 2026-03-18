@@ -57,7 +57,7 @@ const confirmCanceling = async () => {
         }
       }
       progressText.value = `Canceling ${itemsToCancel.length} transactions`;
-      for (const groupItem of group.groupItems) {
+      for (const groupItem of itemsToCancel) {
         await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
       }
       toastManager.success('Transactions canceled successfully');
