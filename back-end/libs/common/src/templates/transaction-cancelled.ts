@@ -32,7 +32,7 @@ export const generateTransactionCancelledContent = (...notifications: Notificati
   `;
 
   return renderTransactionEmailLayout(
-    "Transaction Signature Request",
+    "Transaction Cancelled",
     bodyContent
   );
 }

@@ -33,7 +33,7 @@ export function generateTransactionExecutedContent(...notifications: Notificatio
   `;
 
   return renderTransactionEmailLayout(
-    "Transaction Execution Results",
+    "Transaction Executed",
     bodyContent
   );
 }
