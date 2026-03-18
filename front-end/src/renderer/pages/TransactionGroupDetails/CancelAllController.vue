@@ -6,7 +6,7 @@ import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransaction, TransactionStatus } from '@shared/interfaces';
 import {
-  cancelTransaction,
+  cancelTransactionGroup,
   getTransactionGroupById,
   type IGroup,
   type IGroupItem,
@@ -57,9 +57,11 @@ const confirmCanceling = async () => {
         }
       }
       progressText.value = `Canceling ${itemsToCancel.length} transactions`;
-      for (const groupItem of itemsToCancel) {
-        await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
-      }
+      await cancelTransactionGroup(
+        user.selectedOrganization.serverUrl,
+        group.id,
+        itemsToCancel,
+      );
       toastManager.success('Transactions canceled successfully');
     } catch (error) {
       toastManager.error(getErrorMessage(error, 'Transactions not canceled'));
