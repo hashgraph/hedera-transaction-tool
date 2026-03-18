@@ -143,18 +143,6 @@ export class TransactionPage extends BasePage {
   draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
 
-  // Method to close the 'Save Draft' modal if it appears
-  async closeDraftModal() {
-    // Wait for the button to be visible with a timeout
-    const modalButton = this.window.getByTestId(this.discardModalDraftButtonSelector);
-    await modalButton.waitFor({ state: 'visible', timeout: 500 }).catch(() => {});
-
-    // If the modal is visible, then click the button to close the modal
-    if (await modalButton.isVisible()) {
-      await modalButton.click();
-    }
-  }
-
   // Combined method to verify all elements on Create transaction page
   async verifyAccountCreateTransactionElements() {
     const checks = await Promise.all([
