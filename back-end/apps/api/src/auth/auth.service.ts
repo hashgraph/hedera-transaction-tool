@@ -43,8 +43,9 @@ export class AuthService {
 
   /* Register a new user by admins and send an email with the temporary password */
   async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
-    const repoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
-    const downloadUrl = `${repoUrl}/latest`
+    const rawRepoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
+    const repoUrl = rawRepoUrl ? rawRepoUrl.replace(/\/+$/, '') : '';
+    const downloadUrl = `${repoUrl}/latest`;
     const tempPassword = this.generatePassword();
 
     const existingUser = await this.usersService.getUser({ email: dto.email }, true);
@@ -59,7 +60,7 @@ export class AuthService {
 
     console.log(`User ${user.email} registered and temporary password generated.`);
 
-    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }])
+    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }]);
 
     return user;
   }
