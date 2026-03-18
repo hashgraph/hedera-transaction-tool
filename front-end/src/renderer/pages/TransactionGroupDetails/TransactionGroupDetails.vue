@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
 import {
-  cancelTransaction,
   getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
@@ -31,6 +30,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -64,6 +64,7 @@ import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
+import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -93,9 +94,23 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
+  const groupId = Number(Array.isArray(id) ? id[0] : id);
+  if (!parsed) { await fetchGroup(groupId); return; } // Legacy fallback
+
+  // If initial fetch hasn't completed yet, fall back to a full refetch
+  if (!group.value) {
+    await fetchGroup(groupId);
+    return;
+  }
+
+  const isAffected = parsed.groupIds.includes(groupId) ||
+    (group.value.groupItems?.some(item =>
+      parsed.transactionIds.includes(item.transactionId),
+    ) ?? false);
+  if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -111,6 +126,7 @@ const toastManager = ToastManager.inject();
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
 const signAllStarted = ref(false);
+const cancelAllStarted = ref(false);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -234,38 +250,12 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const handleCancelAll = async (showModal = false) => {
-  if (showModal) {
-    isConfirmModalShown.value = true;
-    confirmModalTitle.value = 'Cancel all transactions?';
-    confirmModalText.value = 'Are you sure you want to cancel all transactions?';
-    confirmCallback.value = handleCancelAll;
-    return;
-  }
+const handleCancelAll = async () => {
+  cancelAllStarted.value = true;
+};
 
-  isConfirmModalShown.value = false;
-
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
-  try {
-    loadingStates[cancel] = 'Canceling...';
-    if (group.value != undefined) {
-      for (const groupItem of group.value.groupItems) {
-        if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
-          await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
-        }
-      }
-    }
-
-    await fetchGroup(group.value!.id);
-    toastManager.success('Transactions canceled successfully');
-  } catch {
-    toastManager.error('Transactions not canceled');
-  } finally {
-    loadingStates[cancel] = null;
-  }
+const didCancelAll = async (groupId: number) => {
+  await fetchGroup(groupId);
 };
 
 const handleSignAll = () => {
@@ -421,7 +411,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === sign) {
     handleSignAll();
   } else if (value === cancel) {
-    await handleCancelAll(true);
+    await handleCancelAll();
   } else if (value === exportName) {
     await handleExportGroup();
   }
@@ -668,6 +658,12 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
               v-model:activate="signAllStarted"
               :groupOrId="group"
               :callback="didSignAll"
+            />
+
+            <CancelAllController
+              v-model:activate="cancelAllStarted"
+              :groupOrId="group"
+              :callback="didCancelAll"
             />
 
             <AppConfirmModal
