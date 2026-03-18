@@ -250,9 +250,47 @@ describe('logger', () => {
   });
 
   test('ensureLogsDirectory creates the logs directory', async () => {
-    const fsMock = (await import('fs')).default;
+    vi.resetModules();
+    vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
+    vi.mock('electron', () => ({
+      app: { getPath: vi.fn(() => '/mock-user-data') },
+    }));
+    vi.mock('fs', () => ({
+      default: {
+        existsSync: vi.fn(() => false),
+        mkdirSync: vi.fn(),
+        renameSync: vi.fn(),
+        rmSync: vi.fn(),
+      },
+    }));
+    vi.mock('electron-log', () => {
+      const rl = {
+        errorHandler: { startCatching: vi.fn() },
+        hooks: [] as any[],
+        processMessage: vi.fn(),
+        transports: {
+          console: { format: '', level: 'silly' },
+          file: {
+            archiveLogFn: vi.fn(),
+            fileName: '',
+            format: '',
+            level: 'silly',
+            maxSize: 0,
+            resolvePathFn: vi.fn(),
+          },
+          ipc: { level: 'silly' },
+          remote: { level: 'silly' },
+        },
+      };
+      return { default: { default: rl } };
+    });
 
-    expect(fsMock.mkdirSync).toHaveBeenCalledWith('/mock-user-data/logs', { recursive: true });
+    const freshModule = await import('@main/modules/logger');
+    const freshFs = (await import('fs')).default;
+
+    freshModule.default();
+
+    expect(freshFs.mkdirSync).toHaveBeenCalledWith('/mock-user-data/logs', { recursive: true });
   });
 
   test('patchMainConsole routes console.log through processMessage', () => {
