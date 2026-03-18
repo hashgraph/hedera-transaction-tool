@@ -88,6 +88,7 @@ const invokeCallback = async (groupId: number) => {
 
 const cancelCanceling = () => {
   isConfirmModalShown.value = false;
+  activate.value = false;
 };
 
 /* Hooks */
