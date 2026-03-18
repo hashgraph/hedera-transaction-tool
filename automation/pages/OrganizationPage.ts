@@ -95,8 +95,8 @@ export class OrganizationPage extends BasePage {
   signAllTransactionsButtonSelector = 'button-sign-group';
   cancelAllTransactionsButtonSelector = 'button-cancel-group';
   exportAllTransactionsButtonSelector = 'button-export-group';
-  confirmGroupActionButtonSelector = 'button-confirm-group-action';
-  cancelGroupActionButtonSelector = 'button-cancel-group-action';
+  confirmSignAllButtonSelector = 'button-sign-all-confirm';
+  confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   // Inputs
   organizationNicknameInputSelector = 'input-organization-nickname';
   serverUrlInputSelector = 'input-server-url';
@@ -1253,7 +1253,7 @@ export class OrganizationPage extends BasePage {
       txId = txIdArray.length > 0 ? txIdArray[txIdArray.length - 1] : null; // Get the last item in the array
       validStart = validStartArray.length > 0 ? validStartArray[0] : null;
       await this.clickOnSignAllTransactionsButton();
-      await this.clickOnConfirmGroupActionButton();
+      await this.clickOnConfirmSignAllButton();
     } else {
       // Standard transaction processing
       ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
@@ -1384,8 +1384,13 @@ export class OrganizationPage extends BasePage {
     await this.click(this.signAllTransactionsButtonSelector);
   }
 
-  async clickOnConfirmGroupActionButton() {
-    await this.click(this.confirmGroupActionButtonSelector);
+  async clickOnConfirmSignAllButton() {
+    await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
+    await this.click(this.confirmSignAllButtonSelector);
+  }
+
+  async clickOnConfirmCancelAllButton() {
+    await this.click(this.confirmCancelAllButtonSelector);
   }
 
   async getReadyForSignTransactionIdByIndex(index: number) {

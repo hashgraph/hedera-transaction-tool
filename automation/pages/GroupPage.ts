@@ -337,7 +337,7 @@ export class GroupPage extends BasePage {
       await this.clickOnDetailsGroupButton(0);
       if (signAll) {
         await this.clickOnSignAllButton();
-        await this.clickOnConfirmGroupActionButton();
+        await this.clickOnConfirmSignAllButton();
       } else {
         await this.clickOnTransactionDetailsButton(0);
 
@@ -388,8 +388,12 @@ export class GroupPage extends BasePage {
     await this.click(cancelItemSelector);
   }
 
-  async clickOnConfirmGroupActionButton() {
-    await this.organizationPage.clickOnConfirmGroupActionButton();
+  async clickOnConfirmSignAllButton() {
+    await this.organizationPage.clickOnConfirmSignAllButton();
+  }
+
+  async clickOnConfirmCancelAllButton() {
+    await this.organizationPage.clickOnConfirmCancelAllButton();
   }
 
   /**
