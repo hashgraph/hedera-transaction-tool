@@ -64,7 +64,7 @@ spec:
             - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
               value: '0.23.0'
             - name: FRONTEND_REPO_URL
-              value: 'https://github.com/hashgraph/hedera-transaction-tool/releases/download'
+              value: 'https://github.com/hashgraph/hedera-transaction-tool/releases'
           ports:
             - containerPort: 3000
 ---
