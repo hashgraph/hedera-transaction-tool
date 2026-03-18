@@ -32,7 +32,7 @@ export const generateTransactionExpiredContent = (...notifications: Notification
   `;
 
   return renderTransactionEmailLayout(
-    "Transaction Signature Request",
+    "Transaction has expired",
     bodyContent
   );
 }
