@@ -505,7 +505,8 @@ async function fetchGroup(id: string | number) {
             const notificationGroupId = n.notification.additionalData?.groupId;
 
             return (
-              n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN &&
+              (n.notification.type === NotificationType.TRANSACTION_INDICATOR_SIGN ||
+                n.notification.type === NotificationType.TRANSACTION_INDICATOR_NEW) &&
               notificationGroupId === Number(id)
             );
           })

@@ -73,7 +73,7 @@ const filteringNotificationTypes = computed(() => {
     case TransactionNodeCollection.READY_FOR_REVIEW:
       return [NotificationType.TRANSACTION_INDICATOR_APPROVE];
     case TransactionNodeCollection.READY_TO_SIGN:
-      return [NotificationType.TRANSACTION_INDICATOR_SIGN];
+      return [NotificationType.TRANSACTION_INDICATOR_SIGN, NotificationType.TRANSACTION_INDICATOR_NEW];
     case TransactionNodeCollection.READY_FOR_EXECUTION:
       return [NotificationType.TRANSACTION_INDICATOR_EXECUTABLE];
     case TransactionNodeCollection.HISTORY:

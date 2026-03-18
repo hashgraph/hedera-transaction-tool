@@ -38,8 +38,13 @@ import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 
 const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
-  [TransactionNodeCollection.READY_FOR_REVIEW]: [],
-  [TransactionNodeCollection.READY_TO_SIGN]: [],
+  [TransactionNodeCollection.READY_FOR_REVIEW]: [
+    NotificationType.TRANSACTION_INDICATOR_APPROVE,
+  ],
+  [TransactionNodeCollection.READY_TO_SIGN]: [
+    NotificationType.TRANSACTION_INDICATOR_SIGN,
+    NotificationType.TRANSACTION_INDICATOR_NEW,
+  ],
   [TransactionNodeCollection.IN_PROGRESS]: [],
   [TransactionNodeCollection.READY_FOR_EXECUTION]: [
     NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,

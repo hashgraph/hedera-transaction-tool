@@ -103,6 +103,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   });
 
   let notificationsQueue = Promise.resolve();
+  let listenerCleanups: (() => void)[] = [];
 
   /** Preferences **/
   async function fetchPreferences() {
@@ -155,22 +156,38 @@ const useNotificationsStore = defineStore('notifications', () => {
     await notificationsQueue;
   }
 
+  function cleanupListeners() {
+    listenerCleanups.forEach(cleanup => cleanup());
+    listenerCleanups = [];
+  }
+
   function listenForUpdates() {
-    const serverUrls = user.organizations.map(o => o.serverUrl);
-    for (const serverUrl of serverUrls) {
-      ws.on(serverUrl, NOTIFICATIONS_NEW, e => {
+    cleanupListeners();
+
+    const severUrls = user.organizations.map(o => o.serverUrl);
+    for (const severUrl of severUrls) {
+      if (!notifications.value[severUrl]) {
+        notifications.value[severUrl] = [];
+      }
+
+      const unsubNew = ws.on(severUrl, NOTIFICATIONS_NEW, e => {
         const newNotifications: INotificationReceiver[] = e;
 
-        notifications.value[serverUrl] = [...notifications.value[serverUrl], ...newNotifications];
+        notifications.value[severUrl] = [...(notifications.value[severUrl] || []), ...newNotifications];
         notifications.value = { ...notifications.value };
       });
 
-      ws.on(serverUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        const deleteNotifications: {notificationReceiverIds: number}[] = e;
+      const unsubDelete = ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
+        const deleteNotifications: {notificationReceiverIds: number[]}[] = e;
         const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
 
-        dismissNotifications(serverUrl, notificationReceiverIds);
+        notifications.value[severUrl] = (notifications.value[severUrl] || []).filter(
+          nr => !notificationReceiverIds.includes(nr.id),
+        );
+        notifications.value = { ...notifications.value };
       });
+
+      listenerCleanups.push(unsubNew, unsubDelete);
     }
   }
 
@@ -237,13 +254,48 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   ws.$onAction(ctx => {
     if (ctx.name === 'setup') {
-      ctx.after(() => listenForUpdates());
+      ctx.after(() => {
+        listenForUpdates();
+        fetchNotifications();
+      });
     }
   });
 
+  // If websockets are already connected (store constructed after setup), fetch immediately
+  if (
+    organizationServerUrls.value.length > 0 &&
+    organizationServerUrls.value.some(url => ws.isConnected(url))
+  ) {
+    listenForUpdates();
+    fetchNotifications();
+  }
+
+  // Re-register listeners when a socket reconnects
+  watch(
+    () => ({ ...ws.connectionStates }),
+    (newStates, oldStates) => {
+      if (
+        oldStates &&
+        Object.keys(newStates).some(
+          url => newStates[url] === 'connected' && oldStates[url] !== 'connected',
+        )
+      ) {
+        listenForUpdates();
+      }
+    },
+  );
+
   /* Watchers */
   watch(loggedInOrganization, async () => await fetchPreferences(), { immediate: true });
-  watch(organizationServerUrls, async () => await fetchNotifications(), { immediate: true });
+  watch(
+    () => user.personal,
+    personal => {
+      if (!isUserLoggedIn(personal)) {
+        cleanupListeners();
+        notifications.value = {};
+      }
+    },
+  );
 
   return {
     notificationsPreferences,

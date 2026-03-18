@@ -4,6 +4,7 @@ import type { Organization } from '@prisma/client';
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
@@ -17,6 +18,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const ws = useWebsocketConnection();
 
 /* Composables */
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -41,6 +43,7 @@ const handleAutoLogin = async (password: string | null) => {
     .map(org => ({ id: org.id, nickname: org.nickname, serverUrl: org.serverUrl, key: org.key }));
 
   await user.refetchOrganizations();
+  await ws.setup();
 
   const successfulOrg = loginTriedForOrganizations.value.find(
     org => !loginFailedForOrganizations.value.some(failed => failed.id === org.id),

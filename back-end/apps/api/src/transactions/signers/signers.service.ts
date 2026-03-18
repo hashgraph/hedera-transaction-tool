@@ -15,8 +15,18 @@ import {
   Pagination,
   processTransactionStatus,
   TransactionSignatureService,
+  FAN_OUT_DELETE_NOTIFICATIONS,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import {
+  Notification,
+  NotificationReceiver,
+  NotificationType,
+  Transaction,
+  TransactionSigner,
+  TransactionStatus,
+  User,
+  UserKey,
+} from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -115,7 +125,13 @@ export class SignersService {
     const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user);
 
     // Update transaction statuses and emit notifications
-    await this.updateStatusesAndNotify(transactionsToProcess);
+    await this.updateStatusesAndNotify(transactionsToProcess, user.id);
+
+    // Clear NEW indicator for the signing user
+    const processedTransactionIds = transactionsToProcess.map(t => t.id);
+    if (processedTransactionIds.length > 0) {
+      await this.clearNewIndicatorForUser(user.id, processedTransactionIds);
+    }
 
     return {
       signers: Array.from(signers),
@@ -324,13 +340,13 @@ export class SignersService {
         if (notificationsToUpdate.length > 0) {
           const updatedNotificationReceivers = await this.bulkUpdateNotificationReceivers(manager, notificationsToUpdate);
 
-          // To maintain backwards compatibility and multi-machine support, we send off a dismiss event.
-          emitDismissedNotifications(
-            this.notificationsPublisher,
-            updatedNotificationReceivers,
-          );
-
-          notificationsToDismiss = updatedNotificationReceivers.map(nr => nr.id);
+          if (updatedNotificationReceivers.length > 0) {
+            notificationsToDismiss = updatedNotificationReceivers.map(r => r.id);
+            emitDismissedNotifications(
+              this.notificationsPublisher,
+              updatedNotificationReceivers,
+            );
+          }
         }
 
         // Bulk insert signers
@@ -418,8 +434,94 @@ export class SignersService {
     return result.raw;
   }
 
+  private async clearNewIndicatorForUser(userId: number, transactionIds: number[]) {
+    const maxRetries = 2;
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const deletedReceiverIds = await this.executeClearNewIndicator(userId, transactionIds);
+        if (deletedReceiverIds.length > 0) {
+          await this.notificationsPublisher.publish(FAN_OUT_DELETE_NOTIFICATIONS, [
+            {
+              userId,
+              notificationReceiverIds: deletedReceiverIds,
+            },
+          ]);
+        }
+        return;
+      } catch (error) {
+        console.error(
+          `Attempt ${attempt}/${maxRetries} clearing NEW indicators for user ${userId}, txs [${transactionIds.join(',')}]:`,
+          error,
+        );
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+      }
+    }
+  }
+
+  private async executeClearNewIndicator(userId: number, transactionIds: number[]): Promise<number[]> {
+    let deletedReceiverIds: number[] = [];
+
+    await this.dataSource.transaction(async manager => {
+      // Lock transaction rows to serialize with notification service's NEW indicator creation
+      // (which uses the same FOR UPDATE lock). This prevents the race where we delete the
+      // signing user's receiver while the notification service is re-creating the indicator.
+      if (transactionIds.length > 0) {
+        await manager.query(
+          `SELECT id FROM "transaction" WHERE id = ANY($1) FOR UPDATE`,
+          [transactionIds],
+        );
+      }
+
+      const notifications = await manager.find(Notification, {
+        where: {
+          type: NotificationType.TRANSACTION_INDICATOR_NEW,
+          entityId: In(transactionIds),
+        },
+      });
+
+      if (notifications.length === 0) return;
+
+      const notificationIds = notifications.map(n => n.id);
+
+      const receivers = await manager.find(NotificationReceiver, {
+        where: {
+          notificationId: In(notificationIds),
+          userId,
+          isRead: false,
+        },
+      });
+
+      if (receivers.length === 0) return;
+
+      deletedReceiverIds = receivers.map(r => r.id);
+
+      await manager.delete(NotificationReceiver, {
+        id: In(deletedReceiverIds),
+      });
+
+      // Atomically clean up orphaned Notification entities (no remaining receivers)
+      // so the NEW indicator can be re-created if the transaction re-enters WAITING_FOR_SIGNATURES.
+      // Uses a single atomic query to avoid race conditions when multiple users sign concurrently.
+      if (notificationIds.length > 0) {
+        await manager.query(
+          `DELETE FROM notification
+           WHERE id = ANY($1)
+             AND NOT EXISTS (
+               SELECT 1 FROM notification_receiver WHERE "notificationId" = notification.id
+             )`,
+          [notificationIds],
+        );
+      }
+    });
+
+    return deletedReceiverIds;
+  }
+
   private async updateStatusesAndNotify(
-    transactionsToProcess: Array<{ id: number; transaction: Transaction }>
+    transactionsToProcess: Array<{ id: number; transaction: Transaction }>,
+    signingUserId?: number,
   ) {
     if (transactionsToProcess.length === 0) return;
 
@@ -452,7 +554,10 @@ export class SignersService {
     if (newStatusResults.length > 0) {
       emitTransactionStatusUpdate(
         this.notificationsPublisher,
-        newStatusResults.map(id => ({ entityId: id }))
+        newStatusResults.map(id => ({
+          entityId: id,
+          ...(signingUserId != null ? { additionalData: { signingUserId } } : {}),
+        })),
       );
     }
     if (unchangedResults.length > 0) {
