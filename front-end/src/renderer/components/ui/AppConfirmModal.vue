@@ -51,13 +51,13 @@ const handleUpdateShow = (value: boolean) => {
       <div class="flex-between-centered gap-4">
         <AppButton
           color="borderless"
-          :data-testid="props.dataTestid + '-cancel'"
+          :data-testid="`${props.dataTestid}-cancel`"
           @click="handleCancel"
           >Cancel</AppButton
         >
         <AppButton
           color="primary"
-          :data-testid="props.dataTestid + '-confirm'"
+          :data-testid="`${props.dataTestid}-confirm`"
           @click="handleConfirm"
           >Confirm</AppButton
         >
