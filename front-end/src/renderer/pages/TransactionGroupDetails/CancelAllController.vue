@@ -61,8 +61,8 @@ const confirmCanceling = async () => {
         await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
       }
       toastManager.success('Transactions canceled successfully');
-    } catch {
-      toastManager.error('Transactions not canceled');
+    } catch (error) {
+      toastManager.error(getErrorMessage(error, 'Transactions not canceled'));
     } finally {
       await invokeCallback(groupId);
       progressText.value = '';
