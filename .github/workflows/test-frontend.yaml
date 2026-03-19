@@ -72,18 +72,39 @@ jobs:
           - name: Registration
             command: RegistrationTests
             soloRequired: false
+            backendRequired: false
           - name: Login
             command: LoginTests
             soloRequired: false
+            backendRequired: false
           - name: Settings
             command: SettingsTests
             soloRequired: false
+            backendRequired: false
           - name: Transactions
             command: TransactionTests
             soloRequired: true
+            backendRequired: false
           - name: Workflow
             command: WorkflowTests
             soloRequired: true
+            backendRequired: false
+          - name: GroupTransaction
+            command: GroupTransactionTests
+            soloRequired: true
+            backendRequired: false
+          - name: OrganizationSettings
+            command: OrganizationSettingsTests
+            soloRequired: true
+            backendRequired: true
+          - name: OrganizationContactList
+            command: OrganizationContactListTests
+            soloRequired: true
+            backendRequired: true
+          - name: OrganizationGroup
+            command: OrganizationGroupTests
+            soloRequired: true
+            backendRequired: true
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0
@@ -105,9 +126,20 @@ jobs:
         run: npm install -g pnpm@9.15.3
 
       - name: Install Docker Compose Plugin
+        if: ${{ matrix.test-suite.backendRequired }}
         run: |
-          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
+          set -euo pipefail
+
+          if docker compose version >/dev/null 2>&1; then
+            docker compose version
+            exit 0
+          fi
+
+          sudo install -d /usr/local/lib/docker/cli-plugins
+          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose \
+            https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
+          docker compose version
 
       - name: Install Automation Dependencies
         run: pnpm install --frozen-lockfile
@@ -148,10 +180,204 @@ jobs:
       - name: Check port forwarding
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
-          ps -ef | grep port-forward
-          env
+          set -euo pipefail
+
+          wait_for_tcp() {
+            local host="$1"
+            local port="$2"
+            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
+          }
+
+          ps -ef | grep port-forward || true
+
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
+               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 50211; then
+              echo "Solo port forwarding is ready on attempt ${attempt}"
+              break
+            fi
+
+            if [ "${attempt}" -eq 60 ]; then
+              echo "Solo port forwarding did not become ready in time" >&2
+              ps -ef | grep port-forward || true
+              kubectl get pods -A || true
+              exit 1
+            fi
+
+            echo "Waiting for Solo port forwarding... attempt ${attempt}/60"
+            sleep 5
+          done
+
           curl -fsS http://localhost:8080/api/v1/network/nodes
           curl -fsS http://localhost:8081/api/v1/network/nodes
+          wait_for_tcp 127.0.0.1 50211
+
+      - name: Deploy Back-end
+        if: ${{ matrix.test-suite.backendRequired }}
+        working-directory: back-end
+        env:
+          BACKEND_COMPOSE_FILE: docker-compose.yaml
+        run: |
+          set -euo pipefail
+
+          wait_for_tcp() {
+            local host="$1"
+            local port="$2"
+            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
+          }
+
+          # Install Linux packages required for mkcert and host-to-container port proxies.
+          sudo apt-get update -q
+          sudo apt-get install -y --no-install-recommends libnss3-tools socat
+
+          if ! command -v mkcert >/dev/null 2>&1; then
+            curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
+              -o /tmp/mkcert
+            sudo install -m755 /tmp/mkcert /usr/local/bin/mkcert
+          fi
+
+          mkcert -install
+
+          mkdir -p cert
+          mkcert -key-file cert/key.pem -cert-file cert/cert.pem localhost
+
+          for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
+            cp "${dir}/example.env" "${dir}/.env"
+          done
+
+          FE_VERSION="$(node -p "require('../front-end/package.json').version")"
+          sed -i "s/^LATEST_SUPPORTED_FRONTEND_VERSION=.*/LATEST_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/api/.env
+          sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/notifications/.env
+
+          sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
+
+          export COMPOSE_PARALLEL_LIMIT=4
+
+          if ! docker info &>/dev/null; then
+            echo "Docker daemon is not reachable; attempting to start it..."
+            sudo service docker start || true
+            sudo systemctl start docker || true
+          fi
+
+          for i in $(seq 1 15); do
+            if docker info &>/dev/null; then
+              break
+            fi
+            if [ "${i}" -eq 15 ]; then
+              echo "Docker daemon is unavailable after startup attempts" >&2
+              ls -l /var/run/docker.sock || true
+              sudo ls -l /var/run/docker.sock || true
+              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
+              exit 1
+            fi
+            sleep 2
+          done
+
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 50211; then
+              echo "Solo network endpoints are ready on attempt ${attempt}"
+              break
+            fi
+            if [ "${attempt}" -eq 60 ]; then
+              echo "Solo network endpoints did not become ready in time" >&2
+              exit 1
+            fi
+            echo "Waiting for Solo network endpoints... attempt ${attempt}/60"
+            sleep 5
+          done
+
+          DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
+          if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
+            echo "Failed to resolve the Docker bridge gateway IP" >&2
+            exit 1
+          fi
+          echo "Docker bridge gateway: ${DOCKER_HOST_GATEWAY}"
+
+          # Solo binds its localnet services to localhost on the runner.
+          # Docker containers reach the host via the bridge gateway, so expose the ports there first.
+          for port in 50211 8081; do
+            sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
+          done
+
+          sleep 2
+
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1 || \
+             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 50211; then
+            echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
+            ss -lnt || true
+            sudo tail -n 50 /tmp/socat-50211.log || true
+            sudo tail -n 50 /tmp/socat-8081.log || true
+            exit 1
+          fi
+
+          for service in redis migration api chain notifications; do
+            for attempt in $(seq 1 3); do
+              if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
+                break
+              fi
+
+              if [ "${attempt}" -eq 3 ]; then
+                echo "docker compose build failed for ${service} after 3 attempts" >&2
+                exit 1
+              fi
+
+              echo "Build for ${service} failed on attempt ${attempt}; retrying in 15s..."
+              sleep 15
+            done
+          done
+
+          for attempt in $(seq 1 5); do
+            if docker compose -f "${BACKEND_COMPOSE_FILE}" up -d --no-build api chain notifications; then
+              break
+            fi
+            if [ "${attempt}" -eq 5 ]; then
+              echo "docker compose up failed after 5 attempts" >&2
+              docker compose -f "${BACKEND_COMPOSE_FILE}" ps || true
+              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=200 || true
+              exit 1
+            fi
+            echo "Attempt ${attempt} failed; retrying in 15s..."
+            sleep 15
+          done
+
+          # Wait for the API to become ready.
+          # The API serves HTTPS when NODE_ENV=development and cert files are present.
+          MAX_ATTEMPTS=60
+          for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
+            code="$(curl -k -s -o /dev/null -w '%{http_code}' https://localhost:3001/ 2>/dev/null || echo '000')"
+            if [[ "${code}" == "200" || "${code}" == "426" ]]; then
+              echo "Back-end is ready (attempt ${attempt})"
+              break
+            fi
+            if (( attempt % 10 == 0 )); then
+              echo "Waiting for back-end... attempt ${attempt}/${MAX_ATTEMPTS} (HTTP ${code})"
+              docker compose -f "${BACKEND_COMPOSE_FILE}" ps
+              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=50 api || true
+            fi
+            if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
+              echo "Back-end did not become ready in time" >&2
+              docker compose -f "${BACKEND_COMPOSE_FILE}" ps || true
+              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300 || true
+              exit 1
+            fi
+            sleep 5
+          done
+
+          docker compose -f "${BACKEND_COMPOSE_FILE}" ps
+
+      - name: Test API connectivity
+        if: ${{ matrix.test-suite.backendRequired }}
+        run: |
+          set -euo pipefail
+          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
+          echo "API connectivity check returned HTTP ${code}"
+          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
+            echo "Unexpected HTTP status from API: ${code}" >&2
+            exit 1
+          fi
 
       - name: Restore Build Artifacts
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5.0.3
@@ -172,9 +398,80 @@ jobs:
           PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
           OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
-
+          ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'https://localhost:3001' || '' }}
+          POSTGRES_HOST: ${{ matrix.test-suite.backendRequired && 'localhost' || '' }}
+          POSTGRES_PORT: ${{ matrix.test-suite.backendRequired && '5432' || '' }}
+          POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
+          POSTGRES_USERNAME: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
+          POSTGRES_PASSWORD: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
         working-directory: automation
+
+      - name: Upload Playwright Report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ matrix.test-suite.name }}
+          path: automation/reports/playwright
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Upload Playwright Test Results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-results-${{ matrix.test-suite.name }}
+          path: automation/test-results
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Show Back-end Logs
+        if: ${{ failure() && matrix.test-suite.backendRequired }}
+        env:
+          BACKEND_COMPOSE_FILE: docker-compose.yaml
+        run: docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300
+        working-directory: back-end
+
+      - name: Collect Solo Diagnostics
+        if: ${{ always() && matrix.test-suite.soloRequired }}
+        run: |
+          set -euo pipefail
+          mkdir -p solo-diagnostics
+          kubectl get pods -A -o wide > solo-diagnostics/pods.txt || true
+          kubectl get events -A --sort-by=.lastTimestamp > solo-diagnostics/events.txt || true
+          kubectl describe pods -A > solo-diagnostics/pod-describe.txt || true
+          kubectl logs -A --all-containers --tail=500 > solo-diagnostics/all-pod-logs.txt || true
+          cp solo-deploy.log solo-diagnostics/solo-deploy.log || true
+          cp /tmp/socat-*.log solo-diagnostics/ 2>/dev/null || true
+
+      - name: Upload Solo Diagnostics
+        if: ${{ always() && matrix.test-suite.soloRequired }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: solo-diagnostics-${{ matrix.test-suite.name }}
+          path: solo-diagnostics
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Export Kind Logs
+        if: ${{ always() && matrix.test-suite.soloRequired }}
+        run: kind export logs kind-logs --name solo || true
+
+      - name: Upload Kind Logs
+        if: ${{ failure() && matrix.test-suite.soloRequired }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: kind-logs-${{ matrix.test-suite.name }}
+          path: kind-logs
+          if-no-files-found: warn
+          retention-days: 3
+
+      - name: Stop Back-end Services
+        if: ${{ always() && matrix.test-suite.backendRequired }}
+        env:
+          BACKEND_COMPOSE_FILE: docker-compose.yaml
+        run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
+        working-directory: back-end
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
@@ -189,6 +486,7 @@ jobs:
             command: renderer
           - name: Shared
             command: shared
+
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@fa2e9d605c4eeb9fcad4c99c224cee0c6c7f3594 # v2.16.0

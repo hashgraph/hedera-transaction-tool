@@ -38,8 +38,11 @@ export class GroupPage extends BasePage {
   confirmGroupTransactionButtonSelector = 'button-confirm-group-transaction';
   detailsGroupButtonSelector = 'button-transaction-node-details-';
   importCsvButtonSelector = 'button-import-csv';
+  moreDropdownButtonSelector = 'button-more-dropdown-lg';
+  cancelAllButtonSelector = 'button-more-dropdown-lg-item-Cancel All';
+  firstTransactionDetailsButtonLocator = '[data-testid="button-transaction-node-details-0"]';
   // Text
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   emptyTransactionTextSelector = 'p-empty-transaction-text';
   transactionGroupDetailsIdSelector = 'td-group-transaction-id';
   // Inputs
@@ -53,12 +56,13 @@ export class GroupPage extends BasePage {
   orgTransactionDetailsButtonIndexSelector = 'button-group-transaction-';
 
   async closeModalIfVisible(selector: string) {
-    const modalButton = this.window.getByTestId(selector);
+    const modalButton = this.getElement(selector);
 
-    await modalButton.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {});
+    await this.waitForElementToBeVisible(selector).catch(() => {});
 
     if (await modalButton.isVisible()) {
       await modalButton.click();
+      await this.captureStepScreenshot(`close-modal-${selector}`);
     }
   }
 
@@ -83,8 +87,7 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnSignAndExecuteButton() {
-    // Skip loader wait - it never disappears. Just wait for button to be visible.
-    await this.waitForElementToBeVisible(this.signAndExecuteButtonSelector, 10000);
+    await this.waitForElementToBeVisible(this.signAndExecuteButtonSelector, this.LONG_TIMEOUT);
     await this.click(this.signAndExecuteButtonSelector);
   }
 
@@ -125,7 +128,7 @@ export class GroupPage extends BasePage {
   }
 
   async getToastMessage(dismissToast = false) {
-    const message = await this.getText(this.toastMessageSelector, null, 5000);
+    const message = await this.getText(this.toastMessageSelector, null, this.DEFAULT_TIMEOUT);
     if (dismissToast) {
       await this.click(this.toastMessageSelector);
     }
@@ -133,26 +136,31 @@ export class GroupPage extends BasePage {
   }
 
   async clickAddToGroupButton() {
-    await this.click(this.addToGroupButtonSelector);
+    await this.click(this.addToGroupButtonSelector, 0);
   }
 
   async getTransactionType(index: number) {
     return await this.getText(this.transactionTypeIndexSelector + index);
   }
 
-  async getTransactionTimestamp(index: number) {
-    return await this.getText(this.transactionTimestampIndexSelector + index);
+  async getTransactionTimestamp(index: number, timeout?: number): Promise<string | null> {
+    return await this.getText(this.transactionTimestampIndexSelector + index, null, timeout);
   }
 
-  async getTransactionGroupDetailsId(index: number) {
+  async getTransactionGroupDetailsId(index: number): Promise<string | null> {
     return await this.getText(this.transactionGroupDetailsIdSelector, index);
   }
 
-  async getAllTransactionTimestamps(numberOfTransactions: number) {
-    const timestamps = [];
+  async getAllTransactionTimestamps(
+    numberOfTransactions: number,
+    timeout: number = this.SHORT_TIMEOUT,
+  ): Promise<string[]> {
+    const timestamps: string[] = [];
+
     for (let i = 0; i < numberOfTransactions; i++) {
-      const timestamp = await this.getTransactionTimestamp(i);
-      if (timestamp !== null) {
+      const timestamp = await this.getTransactionTimestamp(i, timeout);
+
+      if (timestamp) {
         timestamps.push(timestamp);
       }
     }
@@ -225,7 +233,7 @@ export class GroupPage extends BasePage {
     );
     // Wait for all transactions to be loaded before proceeding
     const lastTxIndex = numberOfTransactions - 1;
-    await this.waitForElementToBeVisible(`span-transaction-type-${lastTxIndex}`, 10000);
+    await this.waitForElementToBeVisible(this.transactionTypeIndexSelector + lastTxIndex);
   }
 
   async importCsvExpectingError(
@@ -260,7 +268,6 @@ export class GroupPage extends BasePage {
       await this.clickOnAddTransactionButton();
       await this.transactionPage.clickOnApproveAllowanceTransaction();
       await this.transactionPage.fillInMaxTransactionFee('5');
-
       await this.transactionPage.fillInAllowanceOwner(allowanceOwner);
       await this.transactionPage.fillInAllowanceAmount(amount);
       await this.transactionPage.fillInSpenderAccountId(
@@ -285,8 +292,10 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnConfirmGroupTransactionButton() {
-    // Wait for the confirmation modal to appear before clicking
-    await this.waitForElementToBeVisible(this.confirmGroupTransactionButtonSelector, 5000);
+    await this.waitForElementToBeVisible(
+      this.confirmGroupTransactionButtonSelector,
+      this.DEFAULT_TIMEOUT,
+    );
     await this.click(this.confirmGroupTransactionButtonSelector);
   }
 
@@ -302,15 +311,13 @@ export class GroupPage extends BasePage {
 
   async clickOnDetailsGroupButton(index: number) {
     const selector = this.detailsGroupButtonSelector + index;
-    // Wait for the group button to be visible (may take time to load)
-    await this.waitForElementToBeVisible(selector, 10000);
+    await this.waitForElementToBeVisible(selector, this.LONG_TIMEOUT);
     await this.click(selector);
   }
 
   async clickOnTransactionDetailsButton(index: number) {
     const selector = this.orgTransactionDetailsButtonIndexSelector + index;
-    // Skip loader wait - just wait for button to be visible
-    await this.waitForElementToBeVisible(selector, 10000);
+    await this.waitForElementToBeVisible(selector, this.LONG_TIMEOUT);
     await this.click(selector);
   }
 
@@ -326,12 +333,14 @@ export class GroupPage extends BasePage {
       // Backend cache linking can take 10-30s+ depending on mirror node latency
       const found = await this.waitForTransactionInTab(
         this.organizationPage.readyToSignTabSelector,
-        30,   // Max 30 retries (increased from 15)
-        2000  // 2 seconds between retries = max 60s wait
+        30, // Max 30 retries (increased from 15)
+        2000, // 2 seconds between retries = max 60s wait
       );
 
       if (!found) {
-        throw new Error(`User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`);
+        throw new Error(
+          `User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`,
+        );
       }
 
       await this.clickOnDetailsGroupButton(0);
@@ -381,11 +390,9 @@ export class GroupPage extends BasePage {
   }
 
   async clickOnCancelAllButton() {
-    const dropdownSelector = 'button-more-dropdown-lg';
-    const cancelItemSelector = 'button-more-dropdown-lg-item-Cancel All';
-    await this.waitForElementToBeVisible(dropdownSelector, 15000);
-    await this.click(dropdownSelector);
-    await this.click(cancelItemSelector);
+    await this.waitForElementToBeVisible(this.moreDropdownButtonSelector, this.VERY_LONG_TIMEOUT);
+    await this.click(this.moreDropdownButtonSelector);
+    await this.click(this.cancelAllButtonSelector);
   }
 
   async clickOnConfirmSignAllButton() {
@@ -414,8 +421,8 @@ export class GroupPage extends BasePage {
    */
   async waitForTransactionInTab(
     tabSelector: string,
-    maxRetries: number = 30,
-    delayMs: number = 2000
+    maxRetries: number = 60,
+    delayMs: number = this.DEFAULT_TIMEOUT,
   ): Promise<boolean> {
     for (let i = 0; i < maxRetries; i++) {
       try {
@@ -425,14 +432,17 @@ export class GroupPage extends BasePage {
         // SKIP loader wait - it never disappears (stays visible in DOM with display:block)
         // Transaction renders immediately even with loader visible
 
-        // Use Playwright's native waitFor for better reliability
-        await this.window.locator('[data-testid="button-transaction-node-details-0"]')
-          .waitFor({ state: 'visible', timeout: 3000 });
+        await this.waitForElementToBeVisible(
+          this.firstTransactionDetailsButtonLocator,
+          this.LONG_TIMEOUT,
+        );
 
         console.log(`Transaction found in tab after ${i + 1} attempt(s)`);
         return true;
       } catch (error: any) {
-        console.log(`Transaction not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${maxRetries})`);
+        console.log(
+          `Transaction not found, retrying in ${delayMs}ms... (attempt ${i + 1}/${maxRetries})`,
+        );
         if (i < maxRetries - 1) {
           await new Promise(resolve => setTimeout(resolve, delayMs));
         }
