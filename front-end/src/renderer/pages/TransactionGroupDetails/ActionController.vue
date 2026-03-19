@@ -13,6 +13,7 @@ const props = defineProps<{
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
+  dataTestid: string;
 }>();
 
 /* State */
@@ -49,6 +50,7 @@ watch(activate, () => {
     :text="props.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
+    :dataTestid="props.dataTestid"
   />
 
   <AppModal
