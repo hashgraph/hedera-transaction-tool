@@ -204,7 +204,7 @@ test.describe('Organization Group Tx tests', () => {
     // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
     await groupPage.clickOnConfirmGroupTransactionButton();
-    await groupPage.clickOnSignAllButton();
+    await groupPage.clickOnSignAllButton(numberOfTransactions >= 100 ? 3000 : 600);
     await groupPage.clickOnConfirmSignAllButton();
     await loginPage.waitForToastToDisappear();
 

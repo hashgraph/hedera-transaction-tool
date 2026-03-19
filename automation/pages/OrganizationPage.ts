@@ -1379,7 +1379,12 @@ export class OrganizationPage extends BasePage {
     return await this.getText(this.validStartTimeInGroupSelector);
   }
 
-  async clickOnSignAllTransactionsButton() {
+  async clickOnSignAllTransactionsButton(holdTimeout: number = 600) {
+    // Experimental observation: Sign All button becomes visible but clicking is ineffective.
+    // => may be because button appears, disappears and re-appears
+    // => we wait a little bit before checking button visibility
+    // => to be revisited once button state computation has been re-worked in transaction group details.
+    await this.window.waitForTimeout(holdTimeout);
     await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, 10000);
     await this.click(this.signAllTransactionsButtonSelector);
   }
