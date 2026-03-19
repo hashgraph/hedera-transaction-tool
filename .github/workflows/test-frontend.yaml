@@ -409,7 +409,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
           path: automation/reports/playwright
@@ -418,7 +418,7 @@ jobs:
 
       - name: Upload Playwright Test Results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results-${{ matrix.test-suite.name }}
           path: automation/test-results
@@ -446,7 +446,7 @@ jobs:
 
       - name: Upload Solo Diagnostics
         if: ${{ always() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: solo-diagnostics-${{ matrix.test-suite.name }}
           path: solo-diagnostics
@@ -459,7 +459,7 @@ jobs:
 
       - name: Upload Kind Logs
         if: ${{ failure() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: kind-logs-${{ matrix.test-suite.name }}
           path: kind-logs
