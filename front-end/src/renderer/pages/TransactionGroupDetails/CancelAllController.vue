@@ -34,8 +34,6 @@ const progressText = ref<string>('');
 
 /* Handlers */
 const confirmCanceling = async () => {
-  isConfirmModalShown.value = false;
-
   if (props.groupOrId !== null) {
     isCancelingOnGoing.value = true;
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
@@ -89,7 +87,6 @@ const invokeCallback = async (groupId: number) => {
 };
 
 const cancelCanceling = () => {
-  isConfirmModalShown.value = false;
   activate.value = false;
 };
 

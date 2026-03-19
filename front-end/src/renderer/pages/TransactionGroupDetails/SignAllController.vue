@@ -39,7 +39,6 @@ const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
 const confirmSigning = () => {
-  isConfirmModalShown.value = false;
   activate.value = false;
 
   getPasswordV2(performSignAll, {
@@ -48,13 +47,10 @@ const confirmSigning = () => {
 };
 
 const cancelSigning = () => {
-  isConfirmModalShown.value = false;
   activate.value = false;
 };
 
 const performSignAll = async (personalPassword: string | null) => {
-  //  if (passwordModalOpened(personalPassword)) return;
-
   if (props.groupOrId !== null) {
     isSigningOnGoing.value = true;
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;

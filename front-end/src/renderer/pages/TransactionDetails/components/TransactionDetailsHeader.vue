@@ -365,7 +365,6 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         router.back();
       }
     } catch (error) {
-      isConfirmModalShown.value = false;
       throw error;
     } finally {
       loadingStates[approve] = null;
@@ -448,7 +447,6 @@ const handleTransactionAction = async (
         toastManager.success(successMessage);
       },
       onError: error => {
-        isConfirmModalShown.value = false;
         toastManager.error(getErrorMessage(error, `Failed to ${action} transaction`));
       },
       onRefreshError: refreshError => {
@@ -456,7 +454,6 @@ const handleTransactionAction = async (
       },
     });
   } finally {
-    isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }

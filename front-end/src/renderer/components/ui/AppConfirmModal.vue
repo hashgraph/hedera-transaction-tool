@@ -34,13 +34,15 @@ const handleConfirm = () => {
   emit('update:show', false);
   props.callback && props.callback();
 };
+
 const handleCancel = () => {
   if (props.loading) return;
   emit('update:show', false);
 };
+
 const handleUpdateShow = (value: boolean) => {
   emit('update:show', value);
-  if (value === false && props.cancel) {
+  if (!value && props.cancel) {
     props.cancel();
   }
 };
