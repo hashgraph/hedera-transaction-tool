@@ -98,5 +98,6 @@ const invokeCallback = async (groupId: number, signed: boolean) => {
     progress-icon-name="group"
     progress-title="Sign all transactions"
     :progress-text="progressText"
+    data-testid="button-sign-all"
   />
 </template>

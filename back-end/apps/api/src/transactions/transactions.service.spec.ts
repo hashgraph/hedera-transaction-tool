@@ -2370,6 +2370,26 @@ describe('TransactionsService', () => {
         }),
       );
     });
+
+    it('should return default where if filtering has no status filter', async () => {
+      const queryBuilder = mockQueryBuilder();
+
+      await service.getHistoryTransactions(defaultPagination, [
+        {
+          property: 'name',  // any property that isn't 'status'
+          rule: 'eq',
+          value: 'some transaction name',
+        },
+      ]);
+
+      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            status: Not(In(forbiddenStatuses)),
+          }),
+        }),
+      );
+    });
   });
 
   describe('getTransactionForCreator', () => {

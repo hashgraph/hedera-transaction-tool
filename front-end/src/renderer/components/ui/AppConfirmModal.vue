@@ -14,6 +14,7 @@ const props = withDefaults(
     loadingText?: string;
     loading?: boolean;
     cancel?: ((...args: any[]) => void) | null;
+    dataTestid: string;
   }>(),
   {
     show: false,
@@ -58,10 +59,19 @@ const handleUpdateShow = (value: boolean) => {
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
       <hr class="separator my-5" />
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" :disabled="props.loading" data-testid="button-modal-cancel" @click="handleCancel"
+        <AppButton
+          color="borderless"
+          :disabled="props.loading"
+          :data-testid="`${props.dataTestid}-cancel`"
+          @click="handleCancel"
           >Cancel</AppButton
         >
-        <AppButton color="primary" :loading="props.loading" :loading-text="props.loadingText" data-testid="button-modal-confirm" @click="handleConfirm"
+        <AppButton
+          color="primary"
+          :loading="props.loading"
+          :loading-text="props.loadingText"
+          :data-testid="`${props.dataTestid}-confirm`"
+          @click="handleConfirm"
           >{{ props.buttonText }}</AppButton
         >
       </div>

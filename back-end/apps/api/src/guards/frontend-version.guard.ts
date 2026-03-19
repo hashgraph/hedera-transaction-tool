@@ -30,7 +30,7 @@ export class FrontendVersionGuard implements CanActivate {
 
     const baseUrl = repoUrl.replace(/\/+$/, '');
 
-    return `${baseUrl}/v${cleanLatest}/`;
+    return `${baseUrl}/download/v${cleanLatest}/`;
   }
 
   canActivate(context: ExecutionContext): boolean {

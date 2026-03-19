@@ -679,6 +679,7 @@ watch(
 
   <AppConfirmModal
     v-model:show="isConfirmModalShown"
+    data-testid="button-group-action"
     :callback="confirmCallback"
     :text="confirmModalText"
     :title="confirmModalTitle"

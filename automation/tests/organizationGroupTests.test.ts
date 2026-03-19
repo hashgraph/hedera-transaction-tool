@@ -143,7 +143,7 @@ test.describe('Organization Group Tx tests', () => {
     const secondTxId = await groupPage.getTransactionTimestamp(1) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
-    await groupPage.clickOnConfirmGroupActionButton();
+    await groupPage.clickOnConfirmSignAllButton();
     await loginPage.waitForToastToDisappear();
 
     await transactionPage.clickOnTransactionsMenuButton();
@@ -175,7 +175,7 @@ test.describe('Organization Group Tx tests', () => {
     await groupPage.clickOnSignAndExecuteButton();
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnCancelAllButton();
-    await groupPage.clickOnConfirmGroupActionButton()
+    await groupPage.clickOnConfirmCancelAllButton()
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyToSignTab()
@@ -204,8 +204,8 @@ test.describe('Organization Group Tx tests', () => {
     // Handle "Save Group?" modal if it appears (can happen with fast test execution)
     await groupPage.closeGroupDraftModal();
     await groupPage.clickOnConfirmGroupTransactionButton();
-    await groupPage.clickOnSignAllButton();
-    await groupPage.clickOnConfirmGroupActionButton();
+    await groupPage.clickOnSignAllButton(numberOfTransactions >= 100 ? 3000 : 600);
+    await groupPage.clickOnConfirmSignAllButton();
     await loginPage.waitForToastToDisappear();
 
     await transactionPage.clickOnTransactionsMenuButton();

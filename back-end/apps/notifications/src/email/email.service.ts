@@ -86,7 +86,7 @@ export class EmailService {
         const html = generateMessage(event.additionalData);
 
         await this.transporter.sendMail({
-          from: `"Transaction Tool" ${this.sender}`,
+          from: `"Transaction Tool" <${this.sender}>`,
           to: event.email,
           subject: subject,
           text: html.replace(/<\/?[^>]+(>|$)/g, ''), // Plain text fallback
@@ -153,11 +153,14 @@ export class EmailService {
     console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
 
     for (const [type, notifs] of groupedNotifications.entries()) {
+      const htmlContent = generateEmailContent(type, ...notifs);
+
       const mailOptions: SendMailOptions = {
-        from: `"Transaction Tool" ${this.sender}`,
+        from: `"Transaction Tool" <${this.sender}>`,
         to: groupKey,
         subject: NotificationTypeEmailSubjects[type],
-        text: generateEmailContent(type, ...notifs),
+        text: htmlContent.replace(/<\/?[^>]+(>|$)/g, ''),
+        html: htmlContent,
       };
 
       try {
