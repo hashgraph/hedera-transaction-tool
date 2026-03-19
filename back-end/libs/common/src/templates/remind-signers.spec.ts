@@ -1,291 +1,172 @@
-import { generateRemindSignersContent } from '.';
+import { generateRemindSignersContent } from './remind-signers';
 import { Notification } from '@entities';
 
-describe('generateRemindSignersContent', () => {
-  describe('header content', () => {
-    it('should use singular header for one notification', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-01T00:00:00Z',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+// Mock layout utilities so tests focus on content logic, not HTML rendering details
+jest.mock('@app/common/templates/layout', () => ({
+  buildEmailTransactionsList: jest.fn((transactions) =>
+    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}`).join(',')}>`
+  ),
+  emailWarning: jest.fn((msg) => `<WARNING:${msg}>`),
+  renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+}));
 
-      const result = generateRemindSignersContent(notification);
+jest.mock('@app/common/templates/index', () => ({
+  getNetworkString: jest.fn((network: string) => {
+    if (!network) return '';
+    return network.charAt(0).toUpperCase() + network.slice(1).toLowerCase();
+  }),
+}));
 
-      expect(result).toContain('A transaction has not collected');
-      expect(result).toContain('locate the transaction.');
-      expect(result).not.toContain('Multiple transactions');
-    });
+import {
+  buildEmailTransactionsList,
+  emailWarning,
+  renderTransactionEmailLayout,
+} from '@app/common/templates/layout';
+import { getNetworkString } from '@app/common/templates/index';
 
-    it('should use plural header for multiple notifications', () => {
-      const notifications = [
-        { additionalData: { validStart: '2024-01-01', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { validStart: '2024-01-02', transactionId: 'tx-2', network: 'testnet' } },
-      ] as unknown as Notification[];
+const makeNotification = (overrides?: Partial<{
+  transactionId: string;
+  network: string;
+}>) =>
+  ({
+    additionalData: {
+      transactionId: overrides?.transactionId ?? 'tx-123',
+      network: overrides?.network ?? 'mainnet',
+    },
+  } as unknown as Notification);
 
-      const result = generateRemindSignersContent(...notifications);
+describe('remind-signers templates', () => {
 
-      expect(result).toContain('Multiple transactions have not collected');
-      expect(result).toContain('locate the transactions.');
-      expect(result).not.toContain('A transaction has not');
-    });
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  describe('validStart date handling', () => {
-    it('should format valid ISO date string to UTC string', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-15T10:30:45Z',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
+// ─── Empty input ──────────────────────────────────────────────────────────────
 
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: Mon, 15 Jan 2024 10:30:45 GMT');
-    });
-
-    it('should display "unknown" when validStart is null', () => {
-      const notification = {
-        additionalData: {
-          validStart: null,
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: unknown');
-    });
-
-    it('should display "unknown" when validStart is undefined', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: unknown');
-    });
-
-    it('should display raw value when validStart is an invalid date string', () => {
-      const notification = {
-        additionalData: {
-          validStart: 'invalid-date',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: invalid-date');
-    });
-
-    it('should handle numeric timestamp', () => {
-      const timestamp = 1705315845000; // 2024-01-15T10:50:45Z
-      const notification = {
-        additionalData: {
-          validStart: timestamp,
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: Mon, 15 Jan 2024 10:50:45 GMT');
-    });
-  });
-
-  describe('transaction details', () => {
-    it('should include transaction ID', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-01',
-          transactionId: '0.0.123@1234567890.123456789',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Transaction ID: 0.0.123@1234567890.123456789');
-    });
-
-    it('should include network information', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-01',
-          transactionId: 'tx-123',
-          network: 'testnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Network: Testnet');
-    });
-
-    it('should handle missing additionalData gracefully', () => {
-      const notification = {} as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toContain('Valid start: unknown');
-      expect(result).toContain('Transaction ID: undefined');
-      expect(result).toContain('Network:');
-    });
-  });
-
-  describe('multiple notifications', () => {
-    it('should separate multiple notifications with double newlines', () => {
-      const notifications = [
-        {
-          additionalData: {
-            validStart: '2024-01-01T00:00:00Z',
-            transactionId: 'tx-1',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            validStart: '2024-01-02T00:00:00Z',
-            transactionId: 'tx-2',
-            network: 'testnet',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateRemindSignersContent(...notifications);
-
-      // Should have details for both transactions
-      expect(result).toContain('tx-1');
-      expect(result).toContain('tx-2');
-      expect(result).toContain('Mainnet');
-      expect(result).toContain('Testnet');
-
-      // Should be separated by double newlines
-      const detailsSections = result.split('\n\n');
-      expect(detailsSections.length).toBeGreaterThan(2); // Header + at least 2 transactions
-    });
-
-    it('should format each notification with proper structure', () => {
-      const notifications = [
-        {
-          additionalData: {
-            validStart: '2024-01-01T00:00:00Z',
-            transactionId: 'tx-1',
-            network: 'mainnet',
-          },
-        },
-        {
-          additionalData: {
-            validStart: '2024-01-02T00:00:00Z',
-            transactionId: 'tx-2',
-            network: 'testnet',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateRemindSignersContent(...notifications);
-
-      // Each notification should have all three fields
-      expect(result.match(/Valid start:/g)?.length).toBe(2);
-      expect(result.match(/Transaction ID:/g)?.length).toBe(2);
-      expect(result.match(/Network:/g)?.length).toBe(2);
-    });
-
-    it('should handle three or more notifications', () => {
-      const notifications = [
-        { additionalData: { validStart: '2024-01-01', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { validStart: '2024-01-02', transactionId: 'tx-2', network: 'testnet' } },
-        { additionalData: { validStart: '2024-01-03', transactionId: 'tx-3', network: 'previewnet' } },
-      ] as unknown as Notification[];
-
-      const result = generateRemindSignersContent(...notifications);
-
-      expect(result).toContain('tx-1');
-      expect(result).toContain('tx-2');
-      expect(result).toContain('tx-3');
-      expect(result).toContain('Multiple transactions');
-    });
-  });
-
-  describe('output format', () => {
-    it('should have header followed by double newline before details', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-01',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      expect(result).toMatch(/Please visit.*\n\nValid start:/);
-    });
-
-    it('should maintain consistent field order', () => {
-      const notification = {
-        additionalData: {
-          validStart: '2024-01-01',
-          transactionId: 'tx-123',
-          network: 'mainnet',
-        },
-      } as unknown as Notification;
-
-      const result = generateRemindSignersContent(notification);
-
-      const validStartIndex = result.indexOf('Valid start:');
-      const transactionIdIndex = result.indexOf('Transaction ID:');
-      const networkIndex = result.indexOf('Network:');
-
-      expect(validStartIndex).toBeLessThan(transactionIdIndex);
-      expect(transactionIdIndex).toBeLessThan(networkIndex);
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle empty notifications array', () => {
+  describe('empty input', () => {
+    it('returns empty string when called with no arguments', () => {
       const result = generateRemindSignersContent();
-
-      expect(result).toBeNull();
+      expect(result).toBe('');
     });
 
-    it('should handle notifications with partial data', () => {
-      const notification = {
-        additionalData: {
-          transactionId: 'tx-123',
-          // missing validStart and network
-        },
-      } as unknown as Notification;
+    it('does not call any layout utilities when empty', () => {
+      generateRemindSignersContent();
+      expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
+      expect(buildEmailTransactionsList).not.toHaveBeenCalled();
+    });
+  });
 
-      const result = generateRemindSignersContent(notification);
+// ─── Singular vs plural copy ──────────────────────────────────────────────────
 
-      expect(result).toContain('Valid start: unknown');
-      expect(result).toContain('Transaction ID: tx-123');
-      expect(result).toContain('Network:');
+  describe('singular vs plural intro text', () => {
+    it('uses singular copy for one notification', () => {
+      const result = generateRemindSignersContent(makeNotification());
+      expect(result).toContain('The following transaction is still waiting');
+      expect(result).not.toContain('transactions are');
     });
 
-    it('should call getNetworkString for each notification', () => {
-      const notifications = [
-        { additionalData: { validStart: '2024-01-01', transactionId: 'tx-1', network: 'mainnet' } },
-        { additionalData: { validStart: '2024-01-02', transactionId: 'tx-2', network: 'testnet' } },
-      ] as unknown as Notification[];
+    it('uses plural copy for two notifications', () => {
+      const result = generateRemindSignersContent(makeNotification(), makeNotification());
+      expect(result).toContain('The following transactions are still waiting');
+      expect(result).not.toContain('transaction is still');
+    });
 
-      const result = generateRemindSignersContent(...notifications);
+    it('uses plural copy for three or more notifications', () => {
+      const result = generateRemindSignersContent(
+        makeNotification(),
+        makeNotification(),
+        makeNotification()
+      );
+      expect(result).toContain('The following transactions are still waiting');
+    });
+  });
 
-      expect(result).toContain('Network: Mainnet');
-      expect(result).toContain('Network: Testnet');
+// ─── Layout wiring ────────────────────────────────────────────────────────────
+
+  describe('layout integration', () => {
+    it('calls renderTransactionEmailLayout with "Signature Reminder" as the title', () => {
+      generateRemindSignersContent(makeNotification());
+      expect(renderTransactionEmailLayout).toHaveBeenCalledWith(
+        'Signature Reminder',
+        expect.any(String)
+      );
+    });
+
+    it('calls buildEmailTransactionsList once', () => {
+      generateRemindSignersContent(makeNotification());
+      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
+    });
+
+    it('calls emailWarning with the admin contact message', () => {
+      generateRemindSignersContent(makeNotification());
+      expect(emailWarning).toHaveBeenCalledWith(
+        "If this wasn't expected, please contact your administrator."
+      );
+    });
+
+    it('returns the output of renderTransactionEmailLayout', () => {
+      const result = generateRemindSignersContent(makeNotification());
+      expect(result).toContain('<LAYOUT title="Signature Reminder">');
+    });
+  });
+
+// ─── Transaction data passed to buildEmailTransactionsList ───────────────────
+
+  describe('transaction data mapping', () => {
+    it('passes transactionId to buildEmailTransactionsList', () => {
+      generateRemindSignersContent(makeNotification({ transactionId: '0.0.999@1234567890.000' }));
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ transactionId: '0.0.999@1234567890.000' }),
+        ])
+      );
+    });
+
+    it('passes network through getNetworkString', () => {
+      generateRemindSignersContent(makeNotification({ network: 'testnet' }));
+      expect(getNetworkString).toHaveBeenCalledWith('testnet');
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ network: 'Testnet' }),
+        ])
+      );
+    });
+
+    it('passes all notifications to buildEmailTransactionsList', () => {
+      generateRemindSignersContent(
+        makeNotification({ transactionId: 'tx-1', network: 'mainnet' }),
+        makeNotification({ transactionId: 'tx-2', network: 'testnet' }),
+      );
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith([
+        { transactionId: 'tx-1', network: 'Mainnet' },
+        { transactionId: 'tx-2', network: 'Testnet' },
+      ]);
+    });
+
+    it('handles missing additionalData gracefully', () => {
+      const notification = {} as Notification;
+      expect(() => generateRemindSignersContent(notification)).not.toThrow();
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ transactionId: undefined }),
+        ])
+      );
+    });
+
+    it('handles missing transactionId', () => {
+      const notification = { additionalData: { network: 'mainnet' } } as unknown as Notification;
+      generateRemindSignersContent(notification);
+      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ transactionId: undefined }),
+        ])
+      );
+    });
+
+    it('handles missing network', () => {
+      const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
+      generateRemindSignersContent(notification);
+      expect(getNetworkString).toHaveBeenCalledWith(undefined);
     });
   });
 });
