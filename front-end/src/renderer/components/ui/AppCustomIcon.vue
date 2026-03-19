@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /* Types */
-type CustomIcon =
+export type CustomIcon =
   | 'bin'
   | 'contact'
   | 'draft'
