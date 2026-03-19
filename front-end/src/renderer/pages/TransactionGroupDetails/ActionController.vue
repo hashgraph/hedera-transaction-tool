@@ -50,7 +50,7 @@ watch(activate, () => {
     :text="props.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :dataTestid="props.dataTestid"
+    :data-testid="props.dataTestid"
   />
 
   <AppModal
