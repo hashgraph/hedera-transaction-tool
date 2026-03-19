@@ -1,416 +1,270 @@
 import {
   generateUserRegisteredMessage,
-  generateNotifyUserRegisteredContentV2,
   generateNotifyUserRegisteredContent,
+  emailUserList,
+  userInvitedEmailBody,
+  emailDownloadButton,
+  emailGettingStarted,
 } from '.';
 import { Notification } from '@entities';
 
-describe('generateUserRegisteredMessage', () => {
-  it('should generate message with URL and temporary password', () => {
-    const additionalData = {
-      url: 'https://example.com',
-      tempPassword: 'TempPass123',
-    };
+jest.mock('@app/common/templates/layout', () => ({
+  emailHeader: jest.fn((title, subtitle) => `<HEADER title="${title}" subtitle="${subtitle}">`),
+  emailBody: jest.fn((content) => `<BODY>${content}</BODY>`),
+  emailWarning: jest.fn((msg) => `<WARNING:${msg}>`),
+  emailWrapper: jest.fn((content) => `<WRAPPER>${content}</WRAPPER>`),
+  emailCardRow: jest.fn((cells, index) => `<ROW index="${index}">${cells}</ROW>`),
+  emailCardTable: jest.fn((rows) => `<TABLE>${rows}</TABLE>`),
+  escapeHtml: jest.fn((str) => str ?? ''),
+}));
 
-    const result = generateUserRegisteredMessage(additionalData);
+import {
+  emailHeader,
+  emailBody,
+  emailWarning,
+  emailWrapper,
+  emailCardRow,
+  emailCardTable,
+  escapeHtml,
+} from '@app/common/templates/layout';
 
-    expect(result).toContain('You have been registered in Hedera Transaction Tool.');
-    expect(result).toContain('<b>https://example.com</b>');
-    expect(result).toContain('<b>TempPass123</b>');
+describe('user-registered templates', () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should include organization URL label', () => {
-    const additionalData = {
-      url: 'https://example.com',
-      tempPassword: 'TempPass123',
-    };
+// ─── generateUserRegisteredMessage ───────────────────────────────────────────
 
-    const result = generateUserRegisteredMessage(additionalData);
+  describe('generateUserRegisteredMessage', () => {
+    it('returns the output of emailWrapper', () => {
+      const result = generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      expect(result).toContain('<WRAPPER>');
+    });
 
-    expect(result).toContain('The Organization URL is:');
-  });
+    it('calls emailHeader with correct title and subtitle', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      expect(emailHeader).toHaveBeenCalledWith('Welcome to the Transaction Tool!', 'Hedera Transaction Tool');
+    });
 
-  it('should include temporary password label', () => {
-    const additionalData = {
-      url: 'https://example.com',
-      tempPassword: 'TempPass123',
-    };
+    it('calls emailBody once', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      expect(emailBody).toHaveBeenCalledTimes(1);
+    });
 
-    const result = generateUserRegisteredMessage(additionalData);
+    it('includes the url in the body', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).toContain('https://example.com');
+    });
 
-    expect(result).toContain('Your temporary password is:');
-  });
+    it('includes the tempPassword in the body', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'S3cr3t!', downloadUrl: 'https://test.download.com' });
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).toContain('S3cr3t!');
+    });
 
-  it('should handle different URL formats', () => {
-    const testCases = [
-      'https://example.com',
-      'http://localhost:3000',
-      'https://app.example.com/path',
-    ];
+    it('includes the downloadUrl in the body', () => {
+      generateUserRegisteredMessage({ url: 'https://example.com', tempPassword: 'pass123', downloadUrl: 'https://test.download.com' });
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).toContain('https://test.download.com');
+    });
 
-    testCases.forEach(url => {
-      const result = generateUserRegisteredMessage({ url, tempPassword: 'pass' });
-      expect(result).toContain(`<b>${url}</b>`);
+    it('escapes url and tempPassword', () => {
+      generateUserRegisteredMessage({ url: '<script>', tempPassword: '"pass"', downloadUrl: 'https://test.download.com' });
+      expect(escapeHtml).toHaveBeenCalledWith('<script>');
+      expect(escapeHtml).toHaveBeenCalledWith('"pass"');
+    });
+
+    it('handles undefined url and tempPassword without throwing', () => {
+      expect(() => generateUserRegisteredMessage({ url: undefined, tempPassword: undefined })).not.toThrow();
     });
   });
 
-  it('should handle different password formats', () => {
-    const testCases = [
-      'Simple123',
-      'C0mpl3x!P@ssw0rd',
-      'temp-pass-456',
-    ];
+// ─── generateNotifyUserRegisteredContent ─────────────────────────────────────
 
-    testCases.forEach(tempPassword => {
-      const result = generateUserRegisteredMessage({ url: 'https://example.com', tempPassword });
-      expect(result).toContain(`<b>${tempPassword}</b>`);
+  describe('generateNotifyUserRegisteredContent', () => {
+    it('returns null for empty notifications array', () => {
+      expect(generateNotifyUserRegisteredContent()).toBeNull();
     });
-  });
 
-  it('should handle undefined values', () => {
-    const additionalData = {
-      url: undefined,
-      tempPassword: undefined,
-    };
+    it('does not call layout utilities when empty', () => {
+      generateNotifyUserRegisteredContent();
+      expect(emailWrapper).not.toHaveBeenCalled();
+    });
 
-    const result = generateUserRegisteredMessage(additionalData);
+    it('returns the output of emailWrapper', () => {
+      const notification = { additionalData: { username: 'user@example.com' } } as unknown as Notification;
+      const result = generateNotifyUserRegisteredContent(notification);
+      expect(result).toContain('<WRAPPER>');
+    });
 
-    expect(result).toContain('<b>undefined</b>');
-  });
-});
+    it('calls emailHeader with correct title and subtitle', () => {
+      const notification = { additionalData: { username: 'user@example.com' } } as unknown as Notification;
+      generateNotifyUserRegisteredContent(notification);
+      expect(emailHeader).toHaveBeenCalledWith('New User Registration', 'Hedera Transaction Tool');
+    });
 
-describe('generateNotifyUserRegisteredContent', () => {
-  it('should return null for empty notifications array', () => {
-    expect(generateNotifyUserRegisteredContent([] as unknown as Notification[])).toBeNull();
-  });
+    it('uses singular copy for one valid email', () => {
+      const notification = { additionalData: { username: 'user@example.com' } } as unknown as Notification;
+      const result = generateNotifyUserRegisteredContent(notification);
+      expect(result).toContain('account has');
+      expect(result).not.toContain('accounts have');
+    });
 
-  it('should generate singular header and a single email', () => {
-    const notifications = [
-      { additionalData: { username: 'user1@example.com' } },
-    ] as unknown as Notification[];
+    it('uses plural copy for multiple valid emails', () => {
+      const n1 = { additionalData: { username: 'a@example.com' } } as unknown as Notification;
+      const n2 = { additionalData: { username: 'b@example.com' } } as unknown as Notification;
+      const result = generateNotifyUserRegisteredContent(n1, n2);
+      expect(result).toContain('accounts have');
+      expect(result).not.toContain('account has');
+    });
 
-    const result = generateNotifyUserRegisteredContent(notifications);
+    it('calls emailWarning with the expected message', () => {
+      const notification = { additionalData: { username: 'user@example.com' } } as unknown as Notification;
+      generateNotifyUserRegisteredContent(notification);
+      expect(emailWarning).toHaveBeenCalledWith(
+        "If this wasn't expected, review the list of contacts in the Transaction Tool."
+      );
+    });
 
-    expect(result).toBe(`A new user has successfully registered.\n\nuser1@example.com`);
-  });
-
-  it('should generate plural header and list all emails on new lines', () => {
-    const notifications = [
-      { additionalData: { username: 'user1@example.com' } },
-      { additionalData: { username: 'user2@example.com' } },
-    ] as unknown as Notification[];
-
-    const result = generateNotifyUserRegisteredContent(notifications);
-
-    expect(result).toBe(
-      `Multiple users have successfully registered.\n\nuser1@example.com\nuser2@example.com`
-    );
-  });
-
-  it('should filter out notifications missing username', () => {
-    const notifications = [
-      { additionalData: { username: 'user1@example.com' } },
-      { additionalData: {} },
-      {} as unknown as Notification,
-      { additionalData: { username: null } },
-      { additionalData: { username: undefined } },
-      { additionalData: { username: 'user2@example.com' } },
-    ] as unknown as Notification[];
-
-    const result = generateNotifyUserRegisteredContent(notifications);
-
-    expect(result).toBe(
-      `Multiple users have successfully registered.\n\nuser1@example.com\nuser2@example.com`
-    );
-  });
-
-  it('should still return a message if all usernames are filtered out', () => {
-    const notifications = [
-      { additionalData: {} },
-      {} as unknown as Notification,
-      { additionalData: { username: null } },
-    ] as unknown as Notification[];
-
-    const result = generateNotifyUserRegisteredContent(notifications);
-
-    expect(result).toBe(`Multiple users have successfully registered.\n\n`);
-  });
-});
-
-describe('generateNotifyUserRegisteredContentV2', () => {
-  describe('single user registration', () => {
-    it('should use singular title for one user', () => {
+    it('filters out notifications with missing username', () => {
       const notifications = [
-        {
-          additionalData: {
-            username: 'user1@example.com',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<title>New user registration</title>');
-      expect(result).toContain('<h1 style="margin:0;font-size:20px;">New user registration</h1>');
-    });
-
-    it('should show user email in intro text', () => {
-      const notifications = [
-        {
-          additionalData: {
-            username: 'user1@example.com',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('A user user1@example.com has successfully registered.');
-    });
-
-    it('should not include list for single user', () => {
-      const notifications = [
-        {
-          additionalData: {
-            username: 'user1@example.com',
-          },
-        },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).not.toContain('<ul');
-      expect(result).not.toContain('<li');
-    });
-  });
-
-  describe('multiple user registrations', () => {
-    it('should use plural title for multiple users', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-        { additionalData: { username: 'user2@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<title>New user registrations</title>');
-      expect(result).toContain('<h1 style="margin:0;font-size:20px;">New user registrations</h1>');
-    });
-
-    it('should show plural intro text', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-        { additionalData: { username: 'user2@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('The following users have successfully registered:');
-    });
-
-    it('should include list of all users', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-        { additionalData: { username: 'user2@example.com' } },
-        { additionalData: { username: 'user3@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<ul style="margin:8px 0 0 18px;padding:0;">');
-      expect(result).toContain('user1@example.com</li>');
-      expect(result).toContain('user2@example.com</li>');
-      expect(result).toContain('user3@example.com</li>');
-    });
-
-    it('should format list items with correct styling', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-        { additionalData: { username: 'user2@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<li style="margin:4px 0;font-size:14px;color:#333333;">user1@example.com</li>');
-      expect(result).toContain('<li style="margin:4px 0;font-size:14px;color:#333333;">user2@example.com</li>');
-    });
-  });
-
-  describe('email filtering', () => {
-    it('should filter out notifications without username', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
+        { additionalData: { username: 'user@example.com' } },
         { additionalData: {} },
-        { additionalData: { username: 'user2@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('user1@example.com');
-      expect(result).toContain('user2@example.com');
-      // Should still be plural since we have 2 valid emails
-      expect(result).toContain('New user registrations');
-    });
-
-    it('should filter out null usernames', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-        { additionalData: { username: null } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('user1@example.com');
-      expect(result).toContain('New user registration'); // Singular
-    });
-
-    it('should filter out undefined usernames', () => {
-      const notifications = [
-        { additionalData: { username: undefined } },
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('user1@example.com');
-      expect(result).toContain('New user registration'); // Singular
-    });
-
-    it('should handle notifications with missing additionalData', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
         {} as unknown as Notification,
-        { additionalData: { username: 'user2@example.com' } },
       ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('user1@example.com');
-      expect(result).toContain('user2@example.com');
+      generateNotifyUserRegisteredContent(...notifications);
+      // emailUserList is called via emailCardTable — check escapeHtml was only called once for one email
+      expect(escapeHtml).toHaveBeenCalledWith('user@example.com');
+      expect(escapeHtml).not.toHaveBeenCalledWith(undefined);
     });
-  });
 
-  describe('HTML structure', () => {
-    it('should generate valid HTML document', () => {
+    it('filters out null and undefined usernames', () => {
       const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).toContain('<html lang="en">');
-      expect(result).toContain('</html>');
-      expect(result).toContain('<head>');
-      expect(result).toContain('</head>');
-      expect(result).toContain('<body');
-      expect(result).toContain('</body>');
-    });
-
-    it('should include meta charset', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<meta charset="UTF-8" />');
-    });
-
-    it('should use table-based layout', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('<table role="presentation"');
-      expect(result).toContain('width="600"');
-    });
-
-    it('should include header section with brand color', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('background-color:#0b6efd');
-      expect(result).toContain('color:#ffffff');
-    });
-
-    it('should include footer with automated message disclaimer', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('This is an automated message. Please do not reply.');
-    });
-
-    it('should have proper responsive styling', () => {
-      const notifications = [
-        { additionalData: { username: 'user1@example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('background-color:#f5f5f5');
-      expect(result).toContain('border-radius:8px');
-      expect(result).toContain('padding:24px');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle empty notifications array', () => {
-      const notifications: Notification[] = [];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toBeNull();
-    });
-
-    it('should handle all notifications without usernames', () => {
-      const notifications = [
-        { additionalData: {} },
         { additionalData: { username: null } },
+        { additionalData: { username: undefined } },
+        { additionalData: { username: 'valid@example.com' } },
       ] as unknown as Notification[];
+      generateNotifyUserRegisteredContent(...notifications);
+      expect(escapeHtml).toHaveBeenCalledWith('valid@example.com');
+      expect(escapeHtml).not.toHaveBeenCalledWith(null);
+    });
+  });
 
-      const result = generateNotifyUserRegisteredContentV2(notifications);
+// ─── emailUserList ────────────────────────────────────────────────────────────
 
-      // Should still generate valid HTML
-      expect(result).toContain('<!DOCTYPE html>');
-      expect(result).not.toContain('<li');
+  describe('emailUserList', () => {
+    it('wraps output in a card table', () => {
+      const result = emailUserList(['a@example.com']);
+      expect(emailCardTable).toHaveBeenCalledTimes(1);
+      expect(result).toContain('<TABLE>');
     });
 
-    it('should handle special characters in email addresses', () => {
-      const notifications = [
-        { additionalData: { username: 'user+tag@example.com' } },
-        { additionalData: { username: 'user.name@sub.example.com' } },
-      ] as unknown as Notification[];
-
-      const result = generateNotifyUserRegisteredContentV2(notifications);
-
-      expect(result).toContain('user+tag@example.com');
-      expect(result).toContain('user.name@sub.example.com');
+    it('calls emailCardRow for each email', () => {
+      emailUserList(['a@example.com', 'b@example.com', 'c@example.com']);
+      expect(emailCardRow).toHaveBeenCalledTimes(3);
     });
 
-    it('should maintain order of users', () => {
-      const notifications = [
-        { additionalData: { username: 'alice@example.com' } },
-        { additionalData: { username: 'bob@example.com' } },
-        { additionalData: { username: 'charlie@example.com' } },
-      ] as unknown as Notification[];
+    it('passes correct row index to emailCardRow', () => {
+      emailUserList(['a@example.com', 'b@example.com']);
+      expect((emailCardRow as jest.Mock).mock.calls[0][1]).toBe(0);
+      expect((emailCardRow as jest.Mock).mock.calls[1][1]).toBe(1);
+    });
 
-      const result = generateNotifyUserRegisteredContentV2(notifications);
+    it('escapes each email address', () => {
+      emailUserList(['<test>@example.com', 'user@example.com']);
+      expect(escapeHtml).toHaveBeenCalledWith('<test>@example.com');
+      expect(escapeHtml).toHaveBeenCalledWith('user@example.com');
+    });
 
-      const aliceIndex = result.indexOf('alice@example.com');
-      const bobIndex = result.indexOf('bob@example.com');
-      const charlieIndex = result.indexOf('charlie@example.com');
+    it('handles empty array', () => {
+      const result = emailUserList([]);
+      expect(emailCardTable).toHaveBeenCalledWith('');
+      expect(result).toContain('<TABLE>');
+    });
+  });
 
-      expect(aliceIndex).toBeLessThan(bobIndex);
-      expect(bobIndex).toBeLessThan(charlieIndex);
+// ─── userInvitedEmailBody ─────────────────────────────────────────────────────
+
+  describe('userInvitedEmailBody', () => {
+    it('includes the organization url', () => {
+      const result = userInvitedEmailBody('https://example.com', 'pass123', 'https://download.com');
+      expect(result).toContain('https://example.com');
+    });
+
+    it('includes the temp password', () => {
+      const result = userInvitedEmailBody('https://example.com', 'MyP@ss!', 'https://download.com');
+      expect(result).toContain('MyP@ss!');
+    });
+
+    it('escapes url and tempPassword', () => {
+      userInvitedEmailBody('<url>', '"pass"', 'https://download.com');
+      expect(escapeHtml).toHaveBeenCalledWith('<url>');
+      expect(escapeHtml).toHaveBeenCalledWith('"pass"');
+    });
+
+    it('includes Organization URL label', () => {
+      const result = userInvitedEmailBody('https://example.com', 'pass', 'https://download.com');
+      expect(result).toContain('Organization URL');
+    });
+
+    it('includes Temporary Password label', () => {
+      const result = userInvitedEmailBody('https://example.com', 'pass', 'https://download.com');
+      expect(result).toContain('Temporary Password');
+    });
+
+    it('includes a download button', () => {
+      const result = userInvitedEmailBody('https://example.com', 'pass', 'https://download.com');
+      expect(result).toContain('https://download.com');
+      expect(result).toContain('Download App');
+    });
+
+    it('includes getting started links', () => {
+      const result = userInvitedEmailBody('https://example.com', 'pass', 'https://download.com');
+      expect(result).toContain('Get started');
+    });
+  });
+
+// ─── emailDownloadButton ──────────────────────────────────────────────────────
+
+  describe('emailDownloadButton', () => {
+    it('includes the download url in the href', () => {
+      const result = emailDownloadButton('https://download.example.com');
+      expect(result).toContain('https://download.example.com');
+    });
+
+    it('renders "Download App" label', () => {
+      const result = emailDownloadButton('https://download.example.com');
+      expect(result).toContain('Download App');
+    });
+
+    it('renders an anchor tag', () => {
+      const result = emailDownloadButton('https://download.example.com');
+      expect(result).toContain('<a ');
+      expect(result).toContain('</a>');
+    });
+  });
+
+// ─── emailGettingStarted ──────────────────────────────────────────────────────
+
+  describe('emailGettingStarted', () => {
+    it('includes the "Get started" heading', () => {
+      expect(emailGettingStarted()).toContain('Get started');
+    });
+
+    it('includes links for key actions', () => {
+      const result = emailGettingStarted();
+      expect(result).toContain('Hedera Transaction Tool documentation');
+      expect(result).toContain('Setting up your account');
+      expect(result).toContain('Managing keys');
+      expect(result).toContain('Creating and signing a transaction');
+      expect(result).toContain('Viewing transaction status and history');
+      expect(result).toContain('Managing accounts');
+    });
+
+    it('returns a non-empty string', () => {
+      expect(emailGettingStarted().length).toBeGreaterThan(0);
     });
   });
 });

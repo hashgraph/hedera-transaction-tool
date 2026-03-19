@@ -3,6 +3,7 @@ import {
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -34,6 +35,8 @@ totp.options = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
@@ -43,6 +46,9 @@ export class AuthService {
 
   /* Register a new user by admins and send an email with the temporary password */
   async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
+    const rawRepoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
+    const repoUrl = rawRepoUrl ? rawRepoUrl.replace(/\/+$/, '') : '';
+    const downloadUrl = `${repoUrl}/latest`;
     const tempPassword = this.generatePassword();
 
     const existingUser = await this.usersService.getUser({ email: dto.email }, true);
@@ -55,7 +61,9 @@ export class AuthService {
       user = await this.usersService.createUser(dto.email, tempPassword);
     }
 
-    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword } }])
+    this.logger.log(`User ${user.id} registered and temporary password generated.`);
+
+    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }]);
 
     return user;
   }
