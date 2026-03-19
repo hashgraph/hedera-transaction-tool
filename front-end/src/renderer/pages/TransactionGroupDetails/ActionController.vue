@@ -4,6 +4,8 @@ import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
+const dohertyThreshold = 4000; // milliseconds
+
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
@@ -18,15 +20,29 @@ const props = defineProps<{
 
 /* State */
 const isConfirmModalShown = ref(false);
-const isActionOnGoing = ref(false);
+const startDate = ref<Date | null>(null);
+const timeoutID = ref<number | null>(null);
+const showProgress = ref<boolean>(false);
 
 /* Handlers */
 const handleConfirm = async () => {
-  isActionOnGoing.value = true;
+  document.documentElement.inert = true;
+  startDate.value = new Date();
+  timeoutID.value = window.setTimeout(() => {
+    document.documentElement.inert = false;
+    timeoutID.value = null;
+    showProgress.value = true;
+  }, dohertyThreshold);
   try {
     await props.actionCallback();
   } finally {
-    isActionOnGoing.value = false;
+    showProgress.value = false;
+    document.documentElement.inert = false;
+    if (timeoutID.value !== null) {
+      clearTimeout(timeoutID.value);
+      timeoutID.value = null;
+    }
+    startDate.value = null;
     activate.value = false;
   }
 };
