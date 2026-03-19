@@ -4,33 +4,74 @@ import retry from 'async-retry';
 import { formatTransactionId, getNetworkEnv } from './util.js';
 import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interfaces/index.js';
 
- const getBaseURL = () => {
-   const network = getNetworkEnv().toUpperCase();
-   switch (network) {
-     case 'TESTNET':
-       return 'https://testnet.mirrornode.hedera.com/api/v1';
-     case 'PREVIEWNET':
-       return 'https://previewnet.mirrornode.hedera.com/api/v1';
-     case 'LOCALNET':
-     default:
-       return 'http://localhost:8081/api/v1';
-   }
- };
+const getBaseURL = () => {
+  const network = getNetworkEnv().toUpperCase();
+  switch (network) {
+    case 'TESTNET':
+      return 'https://testnet.mirrornode.hedera.com/api/v1';
+    case 'PREVIEWNET':
+      return 'https://previewnet.mirrornode.hedera.com/api/v1';
+    case 'LOCALNET':
+    default:
+      return 'http://localhost:8081/api/v1';
+  }
+};
 
- const apiCall = async (endpoint: string, params: Object) => {
-   const baseURL = getBaseURL();
-   const fullURL = `${baseURL}/${endpoint}`;
-   console.log(`Executing API Call: ${fullURL} with params:`, params);
-   try {
-     const response = await axios.get(fullURL, { params });
-     console.log(`API Call successful: ${fullURL}`);
-     return response.data;
-   } catch (error: unknown) {
-     throw new Error(
-       error instanceof Error ? `API call failed: ${error.message}` : 'API call failed',
-     );
-   }
- };
+const apiCall = async (endpoint: string, params: Object) => {
+  const baseURL = getBaseURL();
+  const fullURL = `${baseURL}/${endpoint}`;
+  console.log(`Executing API Call: ${fullURL} with params:`, params);
+  try {
+    const response = await axios.get(fullURL, { params });
+    console.log(`API Call successful: ${fullURL}`);
+    return response.data;
+  } catch (error: unknown) {
+    throw new Error(
+      error instanceof Error ? `API call failed: ${error.message}` : 'API call failed',
+    );
+  }
+};
+
+const summarizeTransactions = (response: any) => {
+  return (response?.transactions ?? []).map((transaction: any) => ({
+    transaction_id: transaction.transaction_id,
+    consensus_timestamp: transaction.consensus_timestamp,
+    name: transaction.name,
+    result: transaction.result,
+  }));
+};
+
+const logRecentTransactionsForDebug = async (payerAccountId: string) => {
+  try {
+    const allTransactions = await apiCall('transactions', { limit: 10, order: 'desc' });
+    console.log(
+      '[mirror-node-debug] Recent transactions from /transactions:',
+      summarizeTransactions(allTransactions),
+    );
+  } catch (listError) {
+    console.log(
+      '[mirror-node-debug] Failed to fetch recent transactions from /transactions:',
+      listError instanceof Error ? listError.message : listError,
+    );
+  }
+
+  try {
+    const payerTransactions = await apiCall('transactions', {
+      'account.id': payerAccountId,
+      limit: 10,
+      order: 'desc',
+    });
+    console.log(
+      `[mirror-node-debug] Recent transactions from /transactions for payer ${payerAccountId}:`,
+      summarizeTransactions(payerTransactions),
+    );
+  } catch (listError) {
+    console.log(
+      `[mirror-node-debug] Failed to fetch payer transactions from /transactions for ${payerAccountId}:`,
+      listError instanceof Error ? listError.message : listError,
+    );
+  }
+};
 
 /**
  * Performs a polling with retry mechanism on the mirror node API endpoint until a condition is met.
@@ -44,8 +85,8 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
  * @param {Object} params - The parameters to pass with the API call, usually query parameters.
  * @param {Function} validateResult - A function to validate the result of the API call.
  *    Should return `true` if the result meets the expected conditions, `false` otherwise.
- * @param {number} [timeout=15000] - The maximum time in milliseconds to keep retrying the API call.
- * @param {number} [interval=2500] - The interval in milliseconds between retries.
+ * @param {number} [timeout=30000] - The maximum time in milliseconds to keep retrying the API call.
+ * @param {number} [interval=2000] - The interval in milliseconds between retries.
  * @returns {Promise<Object>} - A promise that resolves with the data from the API once the validation condition is met.
  *    If the timeout is reached without successful validation, the promise rejects.
  *
@@ -56,52 +97,79 @@ import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interf
  *   .catch(error => console.error('Failed to fetch account details:', error));
  * ```
  */
- const pollWithRetry = async (
-   endpoint: string,
-   params: Object,
-   validateResult: (result: any) => boolean,
-   timeout: number = 20000,
-   interval: number = 2500,
- ): Promise<any> => {
-   return retry(
-     async () => {
-       console.log(`Fetching data from ${endpoint}`);
-       const result = await apiCall(endpoint, params);
-       if (validateResult(result)) {
-         console.log(`Validation successful for data from ${endpoint}`);
-         return result;
-       }
-       throw new Error('Data not ready or condition not met');
-     },
-     {
-       retries: Math.floor(timeout / interval),
-       minTimeout: interval,
-       maxTimeout: interval,
-       onRetry: (error: any) => {
-         console.log(`Retrying due to: ${error.message}`);
-       },
-     },
-   );
- };
+const pollWithRetry = async (
+  endpoint: string,
+  params: Object,
+  validateResult: (result: any) => boolean,
+  timeout: number = 30000,
+  interval: number = 2000,
+): Promise<any> => {
+  return retry(
+    async () => {
+      console.log(`Fetching data from ${endpoint}`);
+      const result = await apiCall(endpoint, params);
+      if (validateResult(result)) {
+        console.log(`Validation successful for data from ${endpoint}`);
+        return result;
+      }
+      throw new Error('Data not ready or condition not met');
+    },
+    {
+      retries: Math.floor(timeout / interval),
+      minTimeout: interval,
+      maxTimeout: interval,
+      onRetry: (error: any) => {
+        console.log(`Retrying due to: ${error.message}`);
+      },
+    },
+  );
+};
 
-export const getAccountDetails = async (accountId: string) => {
+export const getAccountDetails = async (
+  accountId: string,
+  timeout: number = 180000,
+  interval: number = 3000,
+) => {
   return pollWithRetry(
     'accounts',
     { 'account.id': accountId },
     result => result && result.accounts && result.accounts.length > 0,
+    timeout,
+    interval,
   );
 };
 
-export const getTransactionDetails = async (transactionId: string) => {
+export const getTransactionDetails = async (
+  transactionId: string,
+  timeout: number = 180000,
+  interval: number = 3000,
+) => {
   const formatedTransactionId = formatTransactionId(transactionId);
-  return pollWithRetry(
-    `transactions/${formatedTransactionId}`,
-    {},
-    result => result && result.transactions && result.transactions.length > 0,
-  );
+  const payerAccountId = transactionId.split('@')[0];
+
+  try {
+    return await pollWithRetry(
+      `transactions/${formatedTransactionId}`,
+      {},
+      result => result && result.transactions && result.transactions.length > 0,
+      timeout,
+      interval,
+    );
+  } catch (error) {
+    console.log(
+      `[mirror-node-debug] Exact transaction lookup failed for ${formatedTransactionId}. Fetching transaction lists for comparison.`,
+    );
+    await logRecentTransactionsForDebug(payerAccountId);
+
+    throw error;
+  }
 };
 
-export const getAssociatedAccounts = async (publicKey: string) => {
+export const getAssociatedAccounts = async (
+  publicKey: string,
+  timeout: number = 90000,
+  interval: number = 3000,
+) => {
   let allAccounts: string[] = [];
   let params: Object | null = { 'account.publickey': publicKey, order: 'asc' };
   let endpoint = 'accounts';
@@ -112,6 +180,8 @@ export const getAssociatedAccounts = async (publicKey: string) => {
       endpoint,
       params,
       result => result && result.accounts && result.accounts.length > 0,
+      timeout,
+      interval,
     );
 
     // Extract the account IDs from the response

@@ -11,6 +11,7 @@ const props = withDefaults(
     text: string;
     callback?: ((...args: any[]) => void) | null;
     cancel?: ((...args: any[]) => void) | null;
+    dataTestid: string;
   }>(),
   {
     show: false,
@@ -48,10 +49,16 @@ const handleUpdateShow = (value: boolean) => {
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
       <hr class="separator my-5" />
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" data-testid="button-cancel-group-action" @click="handleCancel"
+        <AppButton
+          color="borderless"
+          :data-testid="`${props.dataTestid}-cancel`"
+          @click="handleCancel"
           >Cancel</AppButton
         >
-        <AppButton color="primary" data-testid="button-confirm-group-action" @click="handleConfirm"
+        <AppButton
+          color="primary"
+          :data-testid="`${props.dataTestid}-confirm`"
+          @click="handleConfirm"
           >Confirm</AppButton
         >
       </div>
