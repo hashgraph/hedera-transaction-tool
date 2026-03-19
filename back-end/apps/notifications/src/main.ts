@@ -4,7 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import { NotificationsModule } from './notifications.module';
 
 import { setupApp } from './setup-app';
-
+// test for pr request
 async function bootstrap() {
   const app = await NestFactory.create(NotificationsModule);
 
