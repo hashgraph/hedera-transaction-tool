@@ -11,7 +11,6 @@ import {
   type INotificationReceiver,
   type ITransactionFull,
   NotificationType,
-  TransactionStatus,
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
@@ -62,6 +61,7 @@ import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vu
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
@@ -200,14 +200,9 @@ const isCreator = computed(() => {
 });
 
 const groupIsInProgress = computed(() => {
-  let result = false;
-  for (const item of group.value?.groupItems ?? []) {
-    if (isTransactionInProgress(item.transaction as ITransactionFull)) {
-      result = true;
-      break;
-    }
-  }
-  return result;
+  return group.value?.groupItems?.some(item =>
+    isInProgressStatus(item.transaction.status),
+  ) ?? false;
 });
 
 const canCancelAll = computed(() => {
@@ -279,7 +274,7 @@ const handleApproveAll = async (showModal = false, approved = false) => {
 
   const callback = async () => {
     if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in organization');
+      throw new Error('You must be logged in to cancel transactions.');
     }
 
     const personalPassword = getPassword(callback, {
@@ -545,13 +540,6 @@ async function fetchGroup(id: string | number) {
   }
 }
 
-const isTransactionInProgress = (transaction: ITransactionFull) => {
-  return [
-    TransactionStatus.NEW,
-    TransactionStatus.WAITING_FOR_EXECUTION,
-    TransactionStatus.WAITING_FOR_SIGNATURES,
-  ].includes(transaction.status);
-};
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
@@ -578,6 +566,7 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
                 <div>
                   <AppButton
                     :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                    :disabled="Boolean(loadingStates[visibleButtons[0]])"
                     :loading="Boolean(loadingStates[visibleButtons[0]])"
                     :loading-text="loadingStates[visibleButtons[0]] || ''"
                     :data-testid="buttonsDataTestIds[visibleButtons[0]]"

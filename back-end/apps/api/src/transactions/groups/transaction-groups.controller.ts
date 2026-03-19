@@ -6,6 +6,7 @@ import {
   Param,
   ParseBoolPipe,
   ParseIntPipe,
+  Patch,
   Post,
   Query,
   UseGuards,
@@ -16,7 +17,7 @@ import { Serialize } from '@app/common';
 import { TransactionGroup, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
-import { CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
+import { CancelGroupResultDto, CreateTransactionGroupDto, TransactionGroupDto } from '../dto';
 import { GetUser } from '../../decorators';
 
 import { TransactionGroupsService } from './transaction-groups.service';
@@ -24,7 +25,6 @@ import { TransactionGroupsService } from './transaction-groups.service';
 @ApiTags('Transaction Groups')
 @Controller('transaction-groups')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
-@Serialize(TransactionGroupDto)
 export class TransactionGroupsController {
   constructor(private readonly transactionGroupsService: TransactionGroupsService) {}
 
@@ -41,6 +41,7 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Post()
+  @Serialize(TransactionGroupDto)
   createTransactionGroup(
     @GetUser() user: User,
     @Body() dto: CreateTransactionGroupDto,
@@ -50,6 +51,7 @@ export class TransactionGroupsController {
 
   /* TESTING ONLY: Get all transactions groups */
   @Get()
+  @Serialize(TransactionGroupDto)
   getTransactionGroups(): Promise<TransactionGroup[]> {
     return this.transactionGroupsService.getTransactionGroups();
   }
@@ -63,12 +65,33 @@ export class TransactionGroupsController {
     type: TransactionGroupDto,
   })
   @Get('/:id')
+  @Serialize(TransactionGroupDto)
   getTransactionGroup(
     @GetUser() user: User,
     @Param('id', ParseIntPipe) groupId: number,
     @Query('full', new ParseBoolPipe({ optional: true })) full?: boolean,
   ): Promise<TransactionGroup> {
     return this.transactionGroupsService.getTransactionGroup(user, groupId, full ?? true);
+  }
+
+  /* Cancel all transactions in a group */
+  @ApiOperation({
+    summary: 'Cancel a transaction group',
+    description: 'Cancel all in-progress transactions in the transaction group.',
+  })
+  @ApiResponse({
+    status: 200,
+    type: CancelGroupResultDto,
+  })
+  @ApiResponse({ status: 400, description: 'Transaction group not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @Patch('/:id/cancel')
+  @Serialize(CancelGroupResultDto)
+  cancelTransactionGroup(
+    @GetUser() user: User,
+    @Param('id', ParseIntPipe) groupId: number,
+  ): Promise<CancelGroupResultDto> {
+    return this.transactionGroupsService.cancelTransactionGroup(user, groupId);
   }
 
   /* Delete a transaction group */
