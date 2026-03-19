@@ -36,7 +36,7 @@ const handleConfirm = async () => {
   }, dohertyThreshold);
   try {
     await props.actionCallback();
-    if (showProgress.value !== null) {
+    if (showProgress.value) {
       // Progress dialog is visible.
       // We make sure it's visible long enough for the user to identify it.
       const elapsedTime = Date.now() - startDate.value.getTime();
