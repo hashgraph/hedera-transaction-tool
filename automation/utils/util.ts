@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page } from '@playwright/test';
+import { ElectronApplication, Page } from '@playwright/test';
 import { launchHederaTransactionTool } from './electronAppLauncher.js';
 import { migrationDataExists } from './oldTools.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -6,8 +6,8 @@ import { SettingsPage } from '../pages/SettingsPage.js';
 import * as fsp from 'fs/promises';
 import _ from 'lodash';
 import Diff from 'deep-diff';
-import { TransactionPage } from '../pages/TransactionPage.js';
 import { generateEd25519KeyPair } from './keyUtil.js';
+import { TransactionPage } from '../pages/TransactionPage.js';
 
 /**
  * Localnet payer account ID corresponding to the PRIVATE_KEY in .env
@@ -17,31 +17,48 @@ import { generateEd25519KeyPair } from './keyUtil.js';
 export const LOCALNET_PAYER_ACCOUNT_ID = '0.0.1022';
 
 export async function setupApp() {
-  console.log(asciiArt); // Display ASCII art as the app starts
+  console.log(asciiArt);
+
+  console.log('[setupApp] Launching Hedera Transaction Tool...');
   const app = await launchHederaTransactionTool();
+
   const window = await app.firstWindow();
+  await window.waitForLoadState('domcontentloaded');
+
   const loginPage = new LoginPage(window);
 
+  console.log('[setupApp] Clearing browser storage...');
   await window.evaluate(() => {
-    (window as any).localStorage.clear();
-    // window.localStorage.setItem('important-note-accepted', 'true');
+    globalThis.localStorage.clear();
+    globalThis.sessionStorage.clear();
   });
 
-  expect(window).not.toBeNull();
+  console.log('[setupApp] Handling startup modals...');
+
   await loginPage.closeImportantNoteModal();
+
   const canMigrate = await migrationDataExists(app);
+  console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
+
   if (canMigrate) {
     await loginPage.closeMigrationModal();
   }
+
   if (process.platform === 'darwin') {
+    console.log('[setupApp] macOS detected → checking Keychain modal...');
     await loginPage.closeKeyChainModal();
   }
 
-  // Check if we need to reset app state (if user exists from previous run)
+  console.log('[setupApp] Checking if existing user session exists...');
   const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
+  console.log(`[setupApp] isSettingsButtonVisible: ${isSettingsButtonVisible}`);
+
   if (isSettingsButtonVisible) {
+    console.log('[setupApp] Existing session detected → resetting app state...');
     await resetAppState(window, app);
   }
+
+  console.log('[setupApp] App ready.');
 
   return { app, window };
 }
@@ -62,19 +79,24 @@ export async function closeApp(app: ElectronApplication) {
 const LOCALNET_OPERATOR_KEY = '0x91132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137'; // genesis account key
 const LOCALNET_OPERATOR_ACCOUNT = '0.0.2'; // genesis account ID
 
-// Retrieves the private key from environment variables
 export function getPrivateKeyEnv(): string | null {
   return process.env.PRIVATE_KEY && process.env.PRIVATE_KEY !== '' ? process.env.PRIVATE_KEY : null;
 }
 
-// Retrieves the operator private key from environment variables
 export function getOperatorKeyEnv(): string {
-  return process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== '' ? process.env.OPERATOR_KEY : LOCALNET_OPERATOR_KEY;
+  return process.env.OPERATOR_KEY && process.env.OPERATOR_KEY !== ''
+    ? process.env.OPERATOR_KEY
+    : LOCALNET_OPERATOR_KEY;
 }
 
-// Retrieves the network used from environment variables
 export function getNetworkEnv(): string {
-  return process.env.ENVIRONMENT && process.env.ENVIRONMENT !== '' ? process.env.ENVIRONMENT : 'LOCALNET';
+  return process.env.ENVIRONMENT && process.env.ENVIRONMENT !== ''
+    ? process.env.ENVIRONMENT
+    : 'LOCALNET';
+}
+
+export function isLocalnetEnvironment(environment = getNetworkEnv()): boolean {
+  return environment.toUpperCase() === 'LOCALNET';
 }
 
 export async function setupEnvironmentForTransactions(
@@ -82,7 +104,12 @@ export async function setupEnvironmentForTransactions(
   privateKey = getPrivateKeyEnv(),
 ) {
   const network = getNetworkEnv().toUpperCase();
-  if (network === 'LOCALNET') {
+  let resolvedPrivateKey = privateKey;
+  console.log('[setupEnvironmentForTransactions] resolvedPrivateKey:', resolvedPrivateKey
+    ? '[configured]'
+    : '[missing]');
+
+  if (isLocalnetEnvironment(network)) {
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnLocalNodeTab();
@@ -116,12 +143,12 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.clickOnKeysTab();
       await settingsPage.clickOnDeleteButtonAtIndex(1);
       await settingsPage.clickOnDeleteKeyPairButton();
-
       await settingsPage.clickOnImportButton();
       await settingsPage.clickOnED25519DropDown();
       await settingsPage.fillInED25519PrivateKey(privateKey);
       await settingsPage.fillInED25519Nickname('Payer Account');
       await settingsPage.clickOnED25519ImportButton();
+      resolvedPrivateKey = privateKey;
     } else {
       // The private key is configured so this is the one which will be used as payer for all transactions
       await settingsPage.fillInED25519PrivateKey(privateKey);
@@ -129,6 +156,7 @@ export async function setupEnvironmentForTransactions(
       await settingsPage.clickOnED25519ImportButton();
     }
   } else if (network === 'TESTNET') {
+    console.log('[setupEnvironmentForTransactions] branch: TESTNET');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnTestnetTab();
@@ -139,6 +167,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else if (network === 'PREVIEWNET') {
+    console.log('[setupEnvironmentForTransactions] branch: PREVIEWNET');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnPreviewnetTab();
@@ -149,6 +178,7 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInECDSANickname('Payer Account');
     await settingsPage.clickOnECDSAImportButton();
   } else {
+    console.log('[setupEnvironmentForTransactions] branch: CUSTOM');
     const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnCustomNodeTab();
@@ -160,6 +190,8 @@ export async function setupEnvironmentForTransactions(
     await settingsPage.fillInED25519Nickname('Payer Account');
     await settingsPage.clickOnED25519ImportButton();
   }
+
+  return resolvedPrivateKey;
 }
 
 export const generateRandomEmail = (domain = 'test.com') => {
@@ -228,12 +260,11 @@ export async function waitForValidStart(
     normalizedDate = normalizedDate.replace(' UTC', ' GMT');
   }
 
+  // Treat explicit timezone suffixes as already normalized.
+  const hasTimezoneSuffix = /(?:Z|GMT|[+-]\d{2}:\d{2}|[+-]\d{4})$/i.test(normalizedDate);
+
   // Handle ISO strings missing timezone
-  if (
-    !normalizedDate.endsWith('Z') &&
-    !normalizedDate.includes('GMT') &&
-    !normalizedDate.includes('+')
-  ) {
+  if (!hasTimezoneSuffix) {
     normalizedDate = `${normalizedDate}Z`;
   }
 

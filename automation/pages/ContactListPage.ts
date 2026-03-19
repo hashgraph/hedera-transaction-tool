@@ -60,7 +60,7 @@ export class ContactListPage extends BasePage {
   async isExpandAssociatedAccountsButtonVisible(index: number) {
     return await this.isElementVisible(
       this.contactListExpandAssociatedAccountsButtonSelector + index.toString(),
-      10000,
+      this.LONG_TIMEOUT,
     );
   }
 
@@ -70,12 +70,10 @@ export class ContactListPage extends BasePage {
 
   async clickOnChangeNicknameButton() {
     await this.click(this.changeContactNicknameButtonSelector);
-    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   async fillInContactNickname(nickname: string) {
     await this.fill(this.inputChangeNicknameSelector, nickname);
-    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   async getContactNicknameText(nickname: string) {
@@ -227,7 +225,11 @@ export class ContactListPage extends BasePage {
 
   // This method will get the associated accounts from the Mirror node.
   async mirrorGetAssociatedAccounts(publicKey: string) {
-    const accountIds = await getAssociatedAccounts(publicKey);
+    const accountIds = await getAssociatedAccounts(
+      publicKey,
+      this.VERY_LONG_TIMEOUT,
+      this.SHORT_TIMEOUT,
+    );
 
     if (accountIds.length > 0) {
       console.log('Associated accounts:', accountIds);
@@ -257,12 +259,12 @@ export class ContactListPage extends BasePage {
   }
 
   async verifyUserExistsInOrganization(email: string) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT));
     return await verifyUserExistsInOrganization(email);
   }
 
   async isUserDeleted(email: string) {
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT));
     return await isUserDeleted(email);
   }
 }

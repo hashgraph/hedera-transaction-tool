@@ -51,11 +51,11 @@ test.describe('Organization Notification tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, false);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
 

@@ -34,7 +34,7 @@ export class FilePage extends BasePage {
   fileExpirationTextSelector = 'p-file-expires-at';
   fileDescriptionTextSelector = 'p-file-description';
   fileIdListPrefixSelector = 'p-file-id-';
-  toastMessageSelector = '.v-toast__text';
+  toastMessageSelector = 'css=.v-toast__text';
   private readonly unlikedFiles: string[]; // Store unlinked files
   private transactionPage: TransactionPage;
 

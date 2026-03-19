@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
-import { queryDatabase } from '../utils/databaseUtil.js';
+import { getKeyPairByIndexAndEmail } from '../utils/databaseQueries.js';
 
 export class SettingsPage extends BasePage {
   constructor(window: Page, public currentIndex = "1") {
@@ -101,19 +101,8 @@ export class SettingsPage extends BasePage {
 
   // Function to verify keys exist for a given index and user's email
   async verifyKeysExistByIndexAndEmail(email: string, index: number): Promise<boolean> {
-    const query = `
-      SELECT public_key, private_key
-      FROM KeyPair kp
-      JOIN User u ON u.id = kp.user_id
-      WHERE u.email = ? AND kp."index" = ?`;
-
-    try {
-      const row = await queryDatabase(query, [email, index]) as { public_key: string|undefined, private_key: string|undefined};
-      return row !== undefined && row.public_key !== undefined && row.private_key !== undefined;
-    } catch (error) {
-      console.error('Error verifying keys for index:', error);
-      return false;
-    }
+    const row = await getKeyPairByIndexAndEmail(email, index);
+    return row?.public_key !== undefined && row?.private_key !== undefined;
   }
 
   async getKeyRowCount(): Promise<number> {
@@ -143,16 +132,21 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnRestoreButton(): Promise<void> {
-    const maxRetries = 10;
+    const maxRetries = 30;
     let attempt = 0;
 
     while (attempt < maxRetries) {
       await this.click(this.restoreButtonSelector);
-      if (await this.isElementVisible(this.continuePhraseButtonSelector, null, 3000)) {
+      try {
+        await this.waitForElementToBeVisible(
+          this.continuePhraseButtonSelector,
+          this.LONG_TIMEOUT,
+        );
         return;
+      } catch {
+        attempt++;
+        await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT / 2));
       }
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      attempt++;
     }
 
     throw new Error(
@@ -161,7 +155,7 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnContinueButton(): Promise<void> {
-    await this.click(this.continueButtonSelector, null, 25000);
+    await this.click(this.continueButtonSelector, null, this.VERY_LONG_TIMEOUT);
   }
 
   async clickOnDeleteKeyAllButton(): Promise<void> {
@@ -181,7 +175,7 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnNicknameContinueButton(): Promise<void> {
-    await this.click(this.continueNicknameButtonSelector, null, 12000);
+    await this.click(this.continueNicknameButtonSelector, null, this.LONG_TIMEOUT);
   }
 
   async clickOnContinuePhraseButton(): Promise<void> {
@@ -242,7 +236,7 @@ export class SettingsPage extends BasePage {
 
   async clickOnECDSAImportButton(): Promise<void> {
     await this.click(this.ecdsaImportButtonSelector);
-    if (!(await this.isElementHidden(this.ecdsaImportButtonSelector, null, 10000))) {
+    if (!(await this.isElementHidden(this.ecdsaImportButtonSelector, null, this.LONG_TIMEOUT))) {
       throw new Error('Import modal did not close within 10 seconds');
     }
 
@@ -250,7 +244,7 @@ export class SettingsPage extends BasePage {
 
   async clickOnED25519ImportButton(): Promise<void> {
     await this.click(this.ed25519ImportButtonSelector);
-    if (!(await this.isElementHidden(this.ed25519ImportButtonSelector, null, 10000))) {
+    if (!(await this.isElementHidden(this.ed25519ImportButtonSelector, null, this.LONG_TIMEOUT))) {
       throw new Error('Import modal did not close within 10 seconds');
     }
   }
@@ -288,7 +282,7 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnCloseButton(): Promise<void> {
-    await this.waitForElementToBeVisible(this.closeButtonSelector, 15000);
+    await this.waitForElementToBeVisible(this.closeButtonSelector, this.LONG_TIMEOUT * 2);
     await this.click(this.closeButtonSelector);
   }
 
