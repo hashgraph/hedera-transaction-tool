@@ -54,7 +54,7 @@ watch(activate, () => {
   />
 
   <AppModal
-    :show="isActionOnGoing"
+    v-model:show="showProgress"
     :close-on-click-outside="false"
     :close-on-escape="false"
     class="small-modal"
