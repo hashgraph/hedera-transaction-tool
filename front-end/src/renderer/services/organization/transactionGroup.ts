@@ -91,19 +91,22 @@ export const cancelTransactionGroup = async (
   groupId: number,
   groupItems: IGroupItem[],
 ): Promise<CancelGroupResult> => {
-  try {
-    const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
-      `${serverUrl}/transaction-groups/${groupId}/cancel`,
-      undefined,
-      { withCredentials: true },
-    );
-    return data;
-  } catch (error) {
-    if (axios.isAxiosError(error) && error.response?.status === 404) {
-      return cancelGroupFallback(serverUrl, groupItems, cancelTransaction);
+  return commonRequestHandler(async () => {
+    try {
+      const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
+        `${serverUrl}/transaction-groups/${groupId}/cancel`,
+        undefined,
+        { withCredentials: true },
+      );
+      return data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response?.status === 404) {
+        return cancelGroupFallback(serverUrl, groupItems, cancelTransaction);
+      }
+      // Let commonRequestHandler handle non-404 errors and map them consistently.
+      throw error;
     }
-    throw new Error('Failed to cancel transactions in group');
-  }
+  }, 'Failed to cancel transactions in group');
 };
 
 /* Get transaction groups */
