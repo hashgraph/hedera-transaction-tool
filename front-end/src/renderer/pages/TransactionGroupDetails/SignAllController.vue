@@ -118,6 +118,7 @@ watch(activate, () => {
     v-model:show="isConfirmModalShown"
     title="Sign all transactions?"
     text="Are you sure you want to sign all transactions?"
+    data-testid="button-sign-all"
     :callback="confirmSigning"
     :cancel="cancelSigning"
   />
