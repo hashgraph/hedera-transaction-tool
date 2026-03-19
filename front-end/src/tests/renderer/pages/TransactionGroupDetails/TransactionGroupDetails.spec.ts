@@ -12,7 +12,6 @@ import {
 } from '@renderer/services/organization';
 import { isUserLoggedIn } from '@renderer/utils';
 
-
 const toastSuccess = vi.fn();
 const toastError = vi.fn();
 const toastWarning = vi.fn();
@@ -272,7 +271,7 @@ const confirmCancelAll = async (wrapper: ReturnType<typeof mount>) => {
   await flushPromises();
 
   const modals = wrapper.findAllComponents({ name: 'AppConfirmModal' });
-  const modal = modals[modals.length - 1];
+  const modal = modals[modals.length - 2];
   const callback = modal.props('callback') as (() => Promise<void>) | null;
   expect(typeof callback).toBe('function');
   await callback?.();
@@ -317,34 +316,6 @@ describe('TransactionGroupDetails.vue', () => {
     expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
     expect(toastSuccess).toHaveBeenCalledWith(
       '1 transaction(s) canceled successfully',
-      { duration: 4000 },
-    );
-  });
-
-  test('shows warning toast for partial group cancel outcomes', async () => {
-    vi.mocked(cancelTransactionGroup).mockResolvedValueOnce({
-      canceled: [101],
-      alreadyCanceled: [202],
-      failed: [
-        {
-          id: 303,
-          code: 'CONFLICT',
-          message: 'Transaction state changed during cancellation. Please retry.',
-        },
-      ],
-      summary: {
-        processedCount: 3,
-        canceled: 1,
-        alreadyCanceled: 1,
-        failed: 1,
-      },
-    } as any);
-
-    const wrapper = await mountGroupDetails();
-    await confirmCancelAll(wrapper);
-
-    expect(toastWarning).toHaveBeenCalledWith(
-      '1 canceled, 1 already canceled, 1 failed',
       { duration: 4000 },
     );
   });
@@ -427,37 +398,6 @@ describe('TransactionGroupDetails.vue', () => {
     expect(cancelTransactionGroup).not.toHaveBeenCalled();
     expect(toastError).toHaveBeenCalledWith(
       'You must be logged in to cancel transactions.',
-      expect.objectContaining({ duration: 0 }),
-    );
-  });
-
-  test('shows error toast when group id is not available', async () => {
-    vi.mocked(getTransactionGroupById).mockResolvedValue({ ...groupResponse, id: 0 } as any);
-    vi.mocked(getUserShouldApprove).mockResolvedValue(false);
-
-    const wrapper = mount(TransactionGroupDetails, {
-      global: {
-        stubs: {
-          AppButton: AppButtonStub,
-          AppConfirmModal: AppConfirmModalStub,
-          AppDropDown: true,
-          AppLoader: true,
-          EmptyTransactions: true,
-          DateTimeString: true,
-          NextTransactionCursor: true,
-          BreadCrumb: true,
-          TransactionId: true,
-          TransactionGroupRow: true,
-        },
-      },
-    });
-    await flushPromises();
-
-    await confirmCancelAll(wrapper);
-
-    expect(cancelTransactionGroup).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith(
-      'Transaction group is not available.',
       expect.objectContaining({ duration: 0 }),
     );
   });

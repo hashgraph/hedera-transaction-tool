@@ -13,6 +13,7 @@ import {
 } from '@renderer/services/organization';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import { getCancelGroupToast } from '@renderer/pages/TransactionGroupDetails/cancelGroupResult.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,7 +40,7 @@ const confirmCanceling = async () => {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
       if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-        throw new Error('User is not logged in organization');
+        throw new Error('You must be logged in to cancel transactions.');
       }
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
@@ -55,12 +56,20 @@ const confirmCanceling = async () => {
         }
       }
       progressText.value = `Canceling ${itemsToCancel.length} transactions`;
-      await cancelTransactionGroup(
+      const results = await cancelTransactionGroup(
         user.selectedOrganization.serverUrl,
         group.id,
         itemsToCancel,
       );
-      toastManager.success('Transactions canceled successfully');
+      const toastResult = getCancelGroupToast(results);
+
+      if (toastResult.kind === 'success') {
+        toastManager.success(toastResult.message);
+      } else if (toastResult.kind === 'warning') {
+        toastManager.warning(toastResult.message);
+      } else {
+        toastManager.error(toastResult.message);
+      }
     } catch (error) {
       toastManager.error(getErrorMessage(error, 'Transactions not canceled'));
     } finally {

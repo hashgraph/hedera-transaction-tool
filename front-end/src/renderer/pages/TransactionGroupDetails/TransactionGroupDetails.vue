@@ -274,7 +274,7 @@ const handleApproveAll = async (showModal = false, approved = false) => {
 
   const callback = async () => {
     if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in organization');
+      throw new Error('You must be logged in to cancel transactions.');
     }
 
     const personalPassword = getPassword(callback, {
