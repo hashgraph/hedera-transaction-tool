@@ -4,7 +4,8 @@ import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
-const dohertyThreshold = 4000; // milliseconds
+const dohertyThreshold = 400; // milliseconds
+const persistenceTime = dohertyThreshold * 3;
 
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
@@ -26,7 +27,7 @@ const showProgress = ref<boolean>(false);
 
 /* Handlers */
 const handleConfirm = async () => {
-  document.documentElement.inert = true;
+  document.documentElement.inert = true; // Before Doherty threshold, we render document inert
   startDate.value = new Date();
   timeoutID.value = window.setTimeout(() => {
     document.documentElement.inert = false;
@@ -35,6 +36,17 @@ const handleConfirm = async () => {
   }, dohertyThreshold);
   try {
     await props.actionCallback();
+    if (showProgress.value !== null) {
+      // Progress dialog is visible.
+      // We make sure it's visible long enough for the user to identify it.
+      const elapsedTime = Date.now() - startDate.value.getTime();
+      const waitingTime = dohertyThreshold + persistenceTime - elapsedTime;
+      if (waitingTime > 0) {
+        // => elapsedTime < dohertyThreshold + visibleMinTime
+        console.log("Waiting for " + waitingTime + " ms");
+        await new Promise(resolve => setTimeout(resolve, waitingTime));
+      }
+    }
   } finally {
     showProgress.value = false;
     document.documentElement.inert = false;
