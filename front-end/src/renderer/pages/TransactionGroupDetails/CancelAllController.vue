@@ -113,6 +113,7 @@ const isTransactionInProgress = (transaction: ITransaction) => {
     v-model:show="isConfirmModalShown"
     title="Cancel all transactions?"
     text="Are you sure you want to cancel all transactions?"
+    data-testid="button-cancel-all"
     :callback="confirmCanceling"
     :cancel="cancelCanceling"
   />

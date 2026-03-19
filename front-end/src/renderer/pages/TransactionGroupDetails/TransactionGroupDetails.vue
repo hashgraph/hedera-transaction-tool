@@ -668,6 +668,7 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
 
             <AppConfirmModal
               v-model:show="isConfirmModalShown"
+              data-testid="button-group-action"
               :title="confirmModalTitle"
               :text="confirmModalText"
               :callback="confirmCallback"
