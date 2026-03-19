@@ -201,44 +201,62 @@ export function calculateTimeout(totalUsers: number, timePerUser: number): numbe
 }
 
 /**
- * Waits for a valid start time to continue the test.
- * @param dateTimeString - The target date and time in string format.
- * @param bufferSeconds - The buffer time in seconds to wait before the target time.
- * @returns {Promise<void>} - A promise that resolves after the wait time.
+ * Waits until a transaction start time becomes valid.
+ * Supports both Hedera UI format and ISO date formats.
+ *
+ * Examples supported:
+ *  - "Wed, Feb 04, 2026 16:05:05 UTC"
+ *  - "2026-02-04T16:05:05"
+ *  - "2026-02-04T16:05:05Z"
+ *
+ * @param dateTimeString - The target date/time string.
+ * @param bufferSeconds - Additional seconds to wait before execution.
  */
-export async function waitForValidStart(dateTimeString: string, bufferSeconds = 15): Promise<void> {
-  // Convert the dateTimeString to a Date object
-  // Handle both "Wed, Feb 04, 2026 16:05:05 UTC" and ISO formats
-  let dateStr = dateTimeString;
-  if (dateStr.endsWith(' UTC')) {
-    // Replace " UTC" with " GMT" - JS Date understands GMT as UTC timezone
-    dateStr = dateStr.replace(' UTC', ' GMT');
-  } else if (!dateStr.endsWith('Z')) {
-    // Add Z suffix for ISO format strings that don't have timezone
-    dateStr = dateStr + 'Z';
+export async function waitForValidStart(
+  dateTimeString: string,
+  bufferSeconds: number = 15,
+): Promise<void> {
+  if (!dateTimeString || !dateTimeString.trim()) {
+    console.log('waitForValidStart: start time is empty. Skipping wait.');
+    return;
   }
-  const targetDate = new Date(dateStr);
+
+  let normalizedDate = dateTimeString.trim();
+
+  // Handle Hedera UI format: "Wed, Feb 04, 2026 16:05:05 UTC"
+  if (normalizedDate.endsWith(' UTC')) {
+    normalizedDate = normalizedDate.replace(' UTC', ' GMT');
+  }
+
+  // Handle ISO strings missing timezone
+  if (
+    !normalizedDate.endsWith('Z') &&
+    !normalizedDate.includes('GMT') &&
+    !normalizedDate.includes('+')
+  ) {
+    normalizedDate = `${normalizedDate}Z`;
+  }
+
+  const targetDate = new Date(normalizedDate);
+
   if (isNaN(targetDate.getTime())) {
     throw new Error(
-      `waitForValidStart: invalid date string. Original: "${dateTimeString}", normalized: "${dateStr}"`,
+      `waitForValidStart: invalid date string. Original: "${dateTimeString}", normalized: "${normalizedDate}"`,
     );
   }
 
-  // Get the current time
-  const currentDate = new Date();
+  const now = new Date();
+  const timeDifference = targetDate.getTime() - now.getTime();
 
-  // Calculate the difference in milliseconds
-  const timeDifference = targetDate.getTime() - currentDate.getTime();
+  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0);
 
-  // Add buffer time (in milliseconds)
-  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0); // Ensure non-negative
-
-  // Wait for the calculated time
   if (waitTime > 0) {
-    console.log(`Waiting for ${waitTime / 1000} seconds until the valid start time...`);
+    const seconds = Math.ceil(waitTime / 1000);
+    console.log(`Waiting ${seconds} seconds until transaction start time becomes valid...`);
+
     await new Promise(resolve => setTimeout(resolve, waitTime));
   } else {
-    console.log('The target time has already passed.');
+    console.log('The target start time has already passed.');
   }
 }
 

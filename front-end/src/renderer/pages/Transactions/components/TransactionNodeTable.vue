@@ -33,7 +33,9 @@ import {
   TRANSACTION_NODE_SORT_URL_VALUES,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
+import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 
@@ -72,8 +74,38 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const toastManager = ToastManager.inject();
-const logger = createLogger('renderer.transactions.nodeTable');
-useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
+const logger = createLogger('renderer.transactions.nodeTable');                                                                                                           
+const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+  
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {                                                                                               
+  const parsed = parseTransactionActionPayload(payload);                                                                                                                  
+  if (!parsed) { await fetchNodes(); return; }                                                                                                     
+
+  const silentFetch = () => fetchNodes({ silent: true });                                                                                                                 
+
+  // Status updates can move items between collections — always refetch                                                                                                   
+  if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
+    return;                                                                                                                                                               
+  }                                                                                                                                                                       
+
+  // For non-status updates, only refetch if current items are affected                                                                                                   
+  const txIds = new Set(parsed.transactionIds);                  
+  const grpIds = new Set(parsed.groupIds);                                                                                                                                
+  const hasMatch = nodes.value.some(n =>                                                                                                                                  
+    (n.transactionId && txIds.has(n.transactionId)) ||                                                                                                                    
+    (n.groupId && grpIds.has(n.groupId)),                                                                                                                                 
+  );                                                                                                                                                                      
+  if (hasMatch) {                                                                                                                                                         
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
+    return;                                                                                                                                                               
+  }                                                                                                                                                                       
+
+  // Edge case: during initial load, nodes are still empty while isLoading is true.                                                                                       
+  if (isLoading.value && nodes.value.length === 0) {             
+    await silentFetch();                                                                                                                                                  
+  }                                                              
+});     
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
@@ -192,9 +224,9 @@ function initialSort() {
   return result;
 }
 
-async function fetchNodes(): Promise<void> {
+async function fetchNodes(options?: { silent?: boolean }): Promise<void> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    isLoading.value = true;
+    if (!options?.silent) isLoading.value = true;
     try {
       nodes.value = await getTransactionNodes(
         user.selectedOrganization.serverUrl,
@@ -274,9 +306,13 @@ onMounted(fetchNodes);
                 :node="node"
                 :index="index"
                 :old-notifications="oldNotifications"
+                :recently-updated="
+                  (node.transactionId != null && recentlyUpdatedTxIds.has(node.transactionId)) ||
+                  (node.groupId != null && recentlyUpdatedGroupIds.has(node.groupId))
+                "
                 @route-to-details="routeToDetails"
-                @transaction-signed="fetchNodes"
-                @transaction-group-signed="fetchNodes"
+                @transaction-signed="() => fetchNodes()"
+                @transaction-group-signed="() => fetchNodes()"
               />
             </template>
           </tbody>
