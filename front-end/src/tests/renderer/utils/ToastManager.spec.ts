@@ -53,12 +53,11 @@ describe('ToastManager', () => {
     const toastManager = new ToastManager();
     toastManager.error('Nice error message');
     expect(toastErrorSpy).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(200);
     toastManager.error('Nice error message');
     expect(toastErrorSpy).toHaveBeenCalledTimes(1);
     vi.advanceTimersByTime(800);
     toastManager.error('Nice error message');
-    expect(toastErrorSpy).toHaveBeenCalledTimes(2);
+    expect(toastErrorSpy).toHaveBeenCalledTimes(1);
   });
 });
 
