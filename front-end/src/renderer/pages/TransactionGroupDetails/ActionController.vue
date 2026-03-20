@@ -43,7 +43,6 @@ const handleConfirm = async () => {
       const waitingTime = dohertyThreshold + persistenceTime - elapsedTime;
       if (waitingTime > 0) {
         // => elapsedTime < dohertyThreshold + visibleMinTime
-        console.log("Waiting for " + waitingTime + " ms");
         await new Promise(resolve => setTimeout(resolve, waitingTime));
       }
     }
