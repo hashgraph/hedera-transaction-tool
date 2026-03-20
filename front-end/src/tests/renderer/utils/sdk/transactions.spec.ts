@@ -9,6 +9,19 @@ import {
 } from '@renderer/utils/sdk/transactions';
 import * as organizationService from '@renderer/services/organization';
 
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+vi.mock('@renderer/utils/logger', () => ({
+  createLogger: () => mockLogger,
+}));
+
 vi.mock('@renderer/services/organization', () => ({
   getTransactionById: vi.fn(),
 }));
@@ -369,8 +382,6 @@ describe('getFreezeTypeForTransaction', () => {
     });
 
     test('returns null and logs error when API fails', async () => {
-      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
       vi.mocked(organizationService.getTransactionById).mockRejectedValueOnce(
         new Error('Network error'),
       );
@@ -378,12 +389,7 @@ describe('getFreezeTypeForTransaction', () => {
       const result = await getFreezeTypeForTransaction(serverUrl, transactionId);
 
       expect(result).toBeNull();
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        'Failed to fetch freeze type:',
-        expect.any(Error),
-      );
-
-      consoleErrorSpy.mockRestore();
+      expect(mockLogger.error).toHaveBeenCalled();
     });
 
     test('returns null for freeze transaction without freezeType set', async () => {

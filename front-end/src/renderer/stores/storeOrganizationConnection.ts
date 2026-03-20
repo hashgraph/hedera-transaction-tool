@@ -2,6 +2,9 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 
 import type { ConnectionStatus, DisconnectReason } from '@renderer/types/userStore';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.store.organizationConnection');
 
 const useOrganizationConnection = defineStore('organizationConnection', () => {
   /* State */
@@ -18,16 +21,12 @@ const useOrganizationConnection = defineStore('organizationConnection', () => {
 
     if (status === 'disconnected' && reason) {
       disconnectReasons.value[serverUrl] = reason;
-      console.log(
-        `[${new Date().toISOString()}] Organization disconnected: ${serverUrl}, Reason: ${reason}`,
-      );
+      logger.info('Organization disconnected', { serverUrl, reason });
     } else if (status !== 'disconnected') {
       delete disconnectReasons.value[serverUrl];
     }
 
-    console.log(
-      `[${new Date().toISOString()}] Connection status updated: ${serverUrl} -> ${status}`,
-    );
+    logger.info('Connection status updated', { serverUrl, status });
   }
 
   function getConnectionStatus(serverUrl: string): ConnectionStatus | null {

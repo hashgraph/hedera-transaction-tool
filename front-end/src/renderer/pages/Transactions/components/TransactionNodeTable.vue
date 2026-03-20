@@ -24,7 +24,7 @@ import TransactionNodeHead from '@renderer/pages/Transactions/components/Transac
 import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import { isLoggedInOrganization } from '@renderer/utils';
+import { createLogger, isLoggedInOrganization } from '@renderer/utils';
 import {
   sortTransactionNodes,
   TransactionNodeSortField,
@@ -74,39 +74,38 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const toastManager = ToastManager.inject();
+const logger = createLogger('renderer.transactions.nodeTable');                                                                                                           
 const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+  
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {                                                                                               
+  const parsed = parseTransactionActionPayload(payload);                                                                                                                  
+  if (!parsed) { await fetchNodes(); return; }                                                                                                     
 
-useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
-  const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchNodes(); return; } // Legacy fallback
+  const silentFetch = () => fetchNodes({ silent: true });                                                                                                                 
 
-  const silentFetch = () => fetchNodes({ silent: true });
-
-  // Status updates can move items between collections — always refetch
+  // Status updates can move items between collections — always refetch                                                                                                   
   if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
-    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
-    return;
-  }
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
+    return;                                                                                                                                                               
+  }                                                                                                                                                                       
 
-  // For non-status updates, only refetch if current items are affected
-  const txIds = new Set(parsed.transactionIds);
-  const grpIds = new Set(parsed.groupIds);
-  const hasMatch = nodes.value.some(n =>
-    (n.transactionId && txIds.has(n.transactionId)) ||
-    (n.groupId && grpIds.has(n.groupId)),
-  );
-  if (hasMatch) {
-    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
-    return;
-  }
+  // For non-status updates, only refetch if current items are affected                                                                                                   
+  const txIds = new Set(parsed.transactionIds);                  
+  const grpIds = new Set(parsed.groupIds);                                                                                                                                
+  const hasMatch = nodes.value.some(n =>                                                                                                                                  
+    (n.transactionId && txIds.has(n.transactionId)) ||                                                                                                                    
+    (n.groupId && grpIds.has(n.groupId)),                                                                                                                                 
+  );                                                                                                                                                                      
+  if (hasMatch) {                                                                                                                                                         
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
+    return;                                                                                                                                                               
+  }                                                                                                                                                                       
 
-  // Edge case: during initial load, nodes are still empty while isLoading is true.
-  // In that case, the targeted-refetch path above cannot match; fall back to a silent full refetch.
-  if (isLoading.value && nodes.value.length === 0) {
-    await silentFetch();
-  }
-});
-
+  // Edge case: during initial load, nodes are still empty while isLoading is true.                                                                                       
+  if (isLoading.value && nodes.value.length === 0) {             
+    await silentFetch();                                                                                                                                                  
+  }                                                              
+});     
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
@@ -172,7 +171,10 @@ const routeToDetails = async (node: ITransactionNode) => {
     } else if (n.groupId) {
       nodeIds.push({ groupId: n.groupId });
     } else {
-      console.log('Malformed transaction node: ' + JSON.stringify(n));
+      logger.warn('Malformed transaction node encountered while routing', {
+        hasGroupId: 'groupId' in n && !!n.groupId,
+        hasTransactionId: 'transactionId' in n && !!n.transactionId,
+      });
     }
   }
   if (node.transactionId) {
@@ -192,7 +194,7 @@ const routeToDetails = async (node: ITransactionNode) => {
       true,
     );
   } else {
-    console.warn(`Malformed transaction node`);
+    logger.warn('Malformed transaction node selected for routing');
   }
 };
 

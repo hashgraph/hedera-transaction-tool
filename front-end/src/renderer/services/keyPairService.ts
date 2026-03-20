@@ -6,6 +6,9 @@ import { KeyType } from '@renderer/types';
 
 import { commonIPCHandler } from '@renderer/utils';
 import { getPublicKeyAndType } from '../utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.keyPairService');
 
 /* Key Pairs Service */
 
@@ -195,7 +198,7 @@ export const generateExternalKeyPairFromString = (
       index: index || -1,
     };
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to generate external key pair', { error });
     throw new Error(`Invalid ${type} Private key`);
   }
 };
@@ -267,7 +270,7 @@ export const verifyKeyPair = (
 
     return privateKey.publicKey.toString() === resolvedPublicKey.toString();
   } catch (error) {
-    console.error('Failed to verify key pair:', error);
+    logger.error('Failed to verify key pair', { error });
     return false;
   }
 };

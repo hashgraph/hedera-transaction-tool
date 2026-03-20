@@ -88,6 +88,7 @@ export default defineConfig(({ command }) => {
     },
     test: {
       globals: true,
+      setupFiles: ['src/tests/setup.ts'],
     },
     clearScreen: false,
   };
