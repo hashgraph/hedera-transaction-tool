@@ -16,7 +16,7 @@ const DetailsPage = require('../pages/DetailsPage');
 const { resetDbState } = require('../utils/databaseUtil');
 */
 
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
@@ -32,7 +32,7 @@ import { AccountPage } from '../pages/AccountPage.js';
 import { FilePage } from '../pages/FilePage.js';
 import { DetailsPage } from '../pages/DetailsPage.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;

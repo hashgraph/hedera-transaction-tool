@@ -7,7 +7,7 @@
  * Note: UI paginates at max 50 items per page.
  */
 
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { closeApp, setupApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
@@ -30,7 +30,7 @@ import { SELECTORS } from './selectors.js';
 const DB_ITEM_COUNT = DATA_VOLUMES.DRAFTS;
 const REQUIRED_TOTAL = DATA_VOLUMES.DRAFTS;
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let testEmail: string;

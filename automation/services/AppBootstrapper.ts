@@ -1,5 +1,9 @@
-import { ElectronApplication, Page } from '@playwright/test';
-import { launchHederaTransactionTool as defaultLaunchHederaTransactionTool } from '../utils/electronAppLauncher.js';
+import { Page } from '@playwright/test';
+import {
+  launchHederaTransactionTool as defaultLaunchHederaTransactionTool,
+  type LaunchHederaTransactionToolOptions,
+  type TransactionToolApp,
+} from '../utils/electronAppLauncher.js';
 import { migrationDataExists as defaultMigrationDataExists } from '../utils/oldTools.js';
 import { LoginPage as DefaultLoginPage } from '../pages/LoginPage.js';
 
@@ -24,9 +28,11 @@ interface AppBootstrapperDependencies {
 }
 
 export interface SetupAppResult {
-  app: ElectronApplication;
+  app: TransactionToolApp;
   window: Page;
 }
+
+export interface SetupAppOptions extends LaunchHederaTransactionToolOptions {}
 
 export class AppBootstrapper {
   private readonly launchApp: typeof defaultLaunchHederaTransactionTool;
@@ -43,11 +49,11 @@ export class AppBootstrapper {
     this.LoginPageClass = LoginPage;
   }
 
-  async setupApp(): Promise<SetupAppResult> {
+  async setupApp(options: SetupAppOptions = {}): Promise<SetupAppResult> {
     console.log(asciiArt);
 
-    console.log('[setupApp] Launching Hedera Transaction Tool...');
-    const app = await this.launchApp();
+    console.log('[setupApp] Initializing Hedera Transaction Tool session...');
+    const app = await this.launchApp(options);
 
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
@@ -63,7 +69,7 @@ export class AppBootstrapper {
     console.log('[setupApp] Handling startup modals...');
     await loginPage.closeImportantNoteModal();
 
-    const canMigrate = await this.canMigrateData(app);
+    const canMigrate = await this.canMigrateData(window);
     console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
 
     if (canMigrate) {
@@ -89,16 +95,20 @@ export class AppBootstrapper {
     return { app, window };
   }
 
-  async resetAppState(window: Page, app: ElectronApplication): Promise<void> {
+  async resetAppState(window: Page, _app: TransactionToolApp): Promise<void> {
     const loginPage = this.createLoginPage(window);
     await loginPage.resetState();
-    const canMigrate = await this.canMigrateData(app);
+    const canMigrate = await this.canMigrateData(window);
     if (canMigrate) {
       await loginPage.closeMigrationModal();
     }
   }
 
-  async closeApp(app: ElectronApplication): Promise<void> {
+  async closeApp(app?: TransactionToolApp | null): Promise<void> {
+    if (!app) {
+      return;
+    }
+
     await app.close();
   }
 

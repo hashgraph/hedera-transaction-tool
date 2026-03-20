@@ -11,7 +11,7 @@
  * - NO backend required (local SQLite only)
  */
 
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { closeApp, setupApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
@@ -32,7 +32,7 @@ import { SELECTORS } from './selectors.js';
 const DB_ITEM_COUNT = DATA_VOLUMES.HISTORY;
 const MIN_ROWS = 10; // Minimum rows to verify rendering
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let testEmail: string;
