@@ -12,7 +12,7 @@ import {
   setupEnvironmentForTransactions,
   waitAndReadFile,
   waitForValidStart,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
 import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';

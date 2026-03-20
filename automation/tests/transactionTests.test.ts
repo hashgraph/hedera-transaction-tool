@@ -10,7 +10,7 @@ import {
   getOperatorKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 

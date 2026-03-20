@@ -54,15 +54,13 @@ export class GroupPage extends BasePage {
   transactionDuplicateButtonIndexSelector = 'button-transaction-duplicate-';
   transactionEditButtonIndexSelector = 'button-transaction-edit-';
   orgTransactionDetailsButtonIndexSelector = 'button-group-transaction-';
+  closeModalScreenshotPrefixSelector = 'close-modal-';
 
   async closeModalIfVisible(selector: string) {
     const modalButton = this.getElement(selector);
-
-    await this.waitForElementToBeVisible(selector).catch(() => {});
-
-    if (await modalButton.isVisible()) {
+    if (await this.isElementVisible(selector, null, this.LONG_TIMEOUT)) {
       await modalButton.click();
-      await this.captureStepScreenshot(`close-modal-${selector}`);
+      await this.captureStepScreenshot(`${this.closeModalScreenshotPrefixSelector}${selector}`);
     }
   }
 
@@ -322,6 +320,9 @@ export class GroupPage extends BasePage {
   }
 
   async logInAndSignGroupTransactionsByAllUsers(encryptionPassword: string, signAll = true) {
+    const readyToSignMaxRetries = 30;
+    const readyToSignRetryDelayMs = this.DEFAULT_TIMEOUT;
+
     for (let i = 1; i < this.organizationPage.users.length; i++) {
       console.log(`Signing transaction for user ${i}`);
       const user = this.organizationPage.users[i];
@@ -333,13 +334,13 @@ export class GroupPage extends BasePage {
       // Backend cache linking can take 10-30s+ depending on mirror node latency
       const found = await this.waitForTransactionInTab(
         this.organizationPage.readyToSignTabSelector,
-        30, // Max 30 retries (increased from 15)
-        2000, // 2 seconds between retries = max 60s wait
+        readyToSignMaxRetries,
+        readyToSignRetryDelayMs,
       );
 
       if (!found) {
         throw new Error(
-          `User ${i} (${user.email}) could not find transaction in Ready to Sign tab after 30 retries (60s timeout)`,
+          `User ${i} (${user.email}) could not find a transaction in Ready to Sign after ${readyToSignMaxRetries} attempts with a ${readyToSignRetryDelayMs}ms retry delay`,
         );
       }
 
@@ -378,8 +379,6 @@ export class GroupPage extends BasePage {
           }
         } while (true);
       }
-
-      // Wait for backend to process signatures before next user logs in
       await this.waitForElementToDisappear(this.toastMessageSelector);
       await this.organizationPage.logoutFromOrganization();
     }

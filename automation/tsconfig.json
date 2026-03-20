@@ -1,8 +1,10 @@
 {
   "include": [
     "pages/**/*.ts",
+    "services/**/*.ts",
     "tests/**/*.ts",
     "utils/**/*.ts",
+    "constants/**/*.ts",
   ],
   "compilerOptions": {
     "noEmit": true,

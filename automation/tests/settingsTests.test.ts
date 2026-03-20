@@ -10,7 +10,7 @@ import {
   generateRandomEmail,
   generateRandomPassword,
   setupApp,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
 
 let app: ElectronApplication;

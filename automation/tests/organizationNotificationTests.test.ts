@@ -10,7 +10,7 @@ import {
   getPrivateKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import {
   disableNotificationsForTestUsers,
   getLatestInAppNotificationStatusByEmail,

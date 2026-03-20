@@ -71,8 +71,6 @@ export class BasePage {
           contentType: 'image/png',
         });
       }
-
-      console.log(`[step-screenshot] ${screenshotPath}`);
     } catch (error) {
       console.error(`Failed to capture step screenshot for ${stepName}:`, error);
     }

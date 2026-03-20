@@ -6,7 +6,7 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { resetDbState } from '../utils/databaseUtil.js';
@@ -24,11 +24,9 @@ test.describe('Login tests', () => {
     loginPage = new LoginPage(window);
     registrationPage = new RegistrationPage(window);
 
-    // Generate credentials and store them globally
     globalCredentials.email = generateRandomEmail();
     globalCredentials.password = generateRandomPassword();
 
-    // Perform registration with the generated credentials
     await registrationPage.completeRegistration(
       globalCredentials.email,
       globalCredentials.password,
@@ -49,7 +47,6 @@ test.describe('Login tests', () => {
     await loginPage.waitForToastToDisappear();
     await loginPage.login(globalCredentials.email, incorrectPassword);
     const passwordErrorMessage = (await loginPage.getLoginPasswordErrorMessage())?.trim();
-
     expect(passwordErrorMessage).toBe('Invalid password');
   });
 
@@ -58,28 +55,23 @@ test.describe('Login tests', () => {
     await loginPage.waitForToastToDisappear();
     await loginPage.login(incorrectEmail, globalCredentials.password);
     const passwordErrorMessage = (await loginPage.getLoginEmailErrorMessage())?.trim();
-
     expect(passwordErrorMessage).toBe('Invalid e-mail');
   });
 
   test('Verify all essential elements are present on the login page', async () => {
     const allElementsAreCorrect = await loginPage.verifyLoginElements();
-
     expect(allElementsAreCorrect).toBe(true);
   });
 
   test('Verify successful login', async () => {
     await loginPage.login(globalCredentials.email, globalCredentials.password);
-    // Assuming we have logged in, user should see the settings button
     const isButtonVisible = await loginPage.isSettingsButtonVisible();
-
     expect(isButtonVisible).toBe(true);
   });
 
   test('Verify resetting account', async () => {
     await loginPage.logout();
     await resetAppState(window, app);
-    // Assuming we have reset the account, and we land on the registration page, we confirm that we see password field.
     const isConfirmPasswordVisible = await registrationPage.isConfirmPasswordFieldVisible();
     expect(isConfirmPasswordVisible).toBe(true);
   });

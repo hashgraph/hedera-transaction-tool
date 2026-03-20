@@ -6,7 +6,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
-} = require('../utils/util');
+} = require('../utils/automationSupport');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
@@ -27,7 +27,7 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { AccountPage } from '../pages/AccountPage.js';
 import { FilePage } from '../pages/FilePage.js';
 import { DetailsPage } from '../pages/DetailsPage.js';
