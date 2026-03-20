@@ -228,7 +228,7 @@ export class ContactListPage extends BasePage {
     const accountIds = await getAssociatedAccounts(
       publicKey,
       this.VERY_LONG_TIMEOUT,
-      this.SHORT_TIMEOUT,
+      this.DEFAULT_TIMEOUT,
     );
 
     if (accountIds.length > 0) {

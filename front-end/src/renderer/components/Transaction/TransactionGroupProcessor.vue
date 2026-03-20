@@ -5,7 +5,13 @@ import type { ApiGroupItem, IGroup } from '@renderer/services/organization';
 
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue';
 
-import { Key, KeyList, Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import {
+  Key,
+  KeyList,
+  Transaction,
+  TransactionReceipt,
+  TransactionResponse,
+} from '@hashgraph/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -38,6 +44,7 @@ import {
   isLoggedInOrganization,
   isUserLoggedIn,
   getErrorMessage,
+  hasTransfersOutOfStaking,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -90,6 +97,16 @@ const flattenedSignatureKey = computed(() =>
 const localPublicKeysReq = computed(() =>
   flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
 );
+
+const transfersOutOfStaking = computed(() => {
+  const result = Array<string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    if (hasTransfersOutOfStaking(Transaction.fromBytes(groupItem.transactionBytes))) {
+      result.push(groupItem.seq);
+    }
+  }
+  return result;
+});
 
 /* Handlers */
 async function handleConfirmTransaction(e: Event) {
@@ -433,6 +450,22 @@ defineExpose({
           </div>
           <h3 class="text-center text-title text-bold mt-5">Confirm Transaction Group</h3>
           <hr class="separator my-5" />
+
+          <div
+            v-if="transfersOutOfStaking.length > 0"
+            class="container-main-bg text-small text-center text-warning border-warning p-4 mb-5"
+          >
+            <p class="text-title">Transfer out of staking accounts</p>
+            <p v-if="transfersOutOfStaking.length > 1" class="mt-3">
+              This group contains
+              {{ transfersOutOfStaking.length }} transactions moving funds out of the staking
+              accounts.
+            </p>
+            <p v-else class="mt-3">
+              This group contains 1 transaction moving funds out of the staking accounts.
+            </p>
+            <p class="mt-1">Please review carefully where these hbars are being sent.</p>
+          </div>
         </div>
       </template>
       <template #default>
@@ -441,7 +474,10 @@ defineExpose({
           :key="groupItem.transactionBytes.toString()"
           class="px-5"
         >
-          <div class="d-flex p-4 transaction-group-row justify-content-between">
+          <div
+            :class="{ 'text-bold text-warning': transfersOutOfStaking.includes(groupItem.seq) }"
+            class="d-flex p-4 transaction-group-row justify-content-between"
+          >
             <div>{{ getTransactionType(groupItem.transactionBytes) }}</div>
             <div :data-testid="'div-transaction-id-' + index">
               {{

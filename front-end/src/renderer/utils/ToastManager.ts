@@ -8,10 +8,8 @@ export class ToastManager {
   private static readonly injectKey = Symbol();
 
   private readonly toast = useToast();
-  private readonly timers = new Map<string, number>();
-  private readonly duplicateTimeout = 700; // If two same errors occurred during that time, second is a duplicate
+  private readonly displayedErrors = new Set<string>();
   private readonly maxDisplayedErrorCount = 4;
-  private displayedErrorCount = 0;
 
   //
   // Public
@@ -36,15 +34,15 @@ export class ToastManager {
   }
 
   public error(message: string) {
-    if (this.isDuplicate(message) || this.displayedErrorCount >= this.maxDisplayedErrorCount) {
+    if (this.displayedErrors.has(message) || this.displayedErrors.size >= this.maxDisplayedErrorCount) {
       // We display message in console
       logger.debug('Hidden error message', { message });
     } else {
-      this.displayedErrorCount++;
+      this.displayedErrors.add(message);
       this.toast.error(message, {
         duration: 0,
         onDismiss: () => {
-          this.displayedErrorCount--;
+          this.displayedErrors.delete(message);
         },
       });
     }
@@ -61,26 +59,5 @@ export class ToastManager {
   public static inject(): ToastManager {
     const defaultFactory = () => new ToastManager();
     return inject<ToastManager>(ToastManager.injectKey, defaultFactory, true);
-  }
-
-  //
-  // Private
-  //
-
-  private isDuplicate(message: string): boolean {
-    let result: boolean;
-    const tid = this.timers.get(message);
-    if (tid !== undefined) {
-      // message is a duplicate
-      result = true;
-      clearTimeout(tid);
-    } else {
-      result = false;
-    }
-    const newTID = window.setTimeout(() => {
-      this.timers.delete(message);
-    }, this.duplicateTimeout);
-    this.timers.set(message, newTID);
-    return result;
   }
 }

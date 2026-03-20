@@ -1,6 +1,6 @@
 import { ElectronApplication, expect, Page, test } from '@playwright/test';
 import { resetDbState } from '../utils/databaseUtil.js';
-import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/util.js';
+import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/automationSupport.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 
 let app: ElectronApplication;

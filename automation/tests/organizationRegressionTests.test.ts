@@ -12,7 +12,7 @@ import {
   setupApp,
   setupEnvironmentForTransactions,
   waitForValidStart,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
 
 let app: ElectronApplication;

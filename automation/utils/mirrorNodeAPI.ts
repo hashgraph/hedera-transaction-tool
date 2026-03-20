@@ -1,36 +1,37 @@
 import axios from 'axios';
 import retry from 'async-retry';
 
-import { formatTransactionId, getNetworkEnv } from './util.js';
+import { DEFAULT_NETWORK, PREVIEWNET, TESTNET } from '../constants/index.js';
+import { formatTransactionId, getNetworkEnv } from './automationSupport.js';
 import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interfaces/index.js';
 
-const getBaseURL = () => {
-  const network = getNetworkEnv().toUpperCase();
-  switch (network) {
-    case 'TESTNET':
-      return 'https://testnet.mirrornode.hedera.com/api/v1';
-    case 'PREVIEWNET':
-      return 'https://previewnet.mirrornode.hedera.com/api/v1';
-    case 'LOCALNET':
-    default:
-      return 'http://localhost:8081/api/v1';
-  }
-};
+ const getBaseURL = () => {
+   const network = getNetworkEnv().toUpperCase();
+   switch (network) {
+     case TESTNET:
+       return 'https://testnet.mirrornode.hedera.com/api/v1';
+     case PREVIEWNET:
+       return 'https://previewnet.mirrornode.hedera.com/api/v1';
+     case DEFAULT_NETWORK:
+     default:
+       return 'http://localhost:8081/api/v1';
+   }
+ };
 
-const apiCall = async (endpoint: string, params: Object) => {
-  const baseURL = getBaseURL();
-  const fullURL = `${baseURL}/${endpoint}`;
-  console.log(`Executing API Call: ${fullURL} with params:`, params);
-  try {
-    const response = await axios.get(fullURL, { params });
-    console.log(`API Call successful: ${fullURL}`);
-    return response.data;
-  } catch (error: unknown) {
-    throw new Error(
-      error instanceof Error ? `API call failed: ${error.message}` : 'API call failed',
-    );
-  }
-};
+ const apiCall = async (endpoint: string, params: Object) => {
+   const baseURL = getBaseURL();
+   const fullURL = `${baseURL}/${endpoint}`;
+   console.log(`Executing API Call: ${fullURL} with params:`, params);
+   try {
+     const response = await axios.get(fullURL, { params });
+     console.log(`API Call successful: ${fullURL}`);
+     return response.data;
+   } catch (error: unknown) {
+     throw new Error(
+       error instanceof Error ? `API call failed: ${error.message}` : 'API call failed',
+     );
+   }
+ };
 
 const summarizeTransactions = (response: any) => {
   return (response?.transactions ?? []).map((transaction: any) => ({
@@ -86,7 +87,7 @@ const logRecentTransactionsForDebug = async (payerAccountId: string) => {
  * @param {Function} validateResult - A function to validate the result of the API call.
  *    Should return `true` if the result meets the expected conditions, `false` otherwise.
  * @param {number} [timeout=30000] - The maximum time in milliseconds to keep retrying the API call.
- * @param {number} [interval=2000] - The interval in milliseconds between retries.
+ * @param {number} [interval=3000] - The interval in milliseconds between retries.
  * @returns {Promise<Object>} - A promise that resolves with the data from the API once the validation condition is met.
  *    If the timeout is reached without successful validation, the promise rejects.
  *
@@ -97,37 +98,37 @@ const logRecentTransactionsForDebug = async (payerAccountId: string) => {
  *   .catch(error => console.error('Failed to fetch account details:', error));
  * ```
  */
-const pollWithRetry = async (
-  endpoint: string,
-  params: Object,
-  validateResult: (result: any) => boolean,
-  timeout: number = 30000,
-  interval: number = 2000,
-): Promise<any> => {
-  return retry(
-    async () => {
-      console.log(`Fetching data from ${endpoint}`);
-      const result = await apiCall(endpoint, params);
-      if (validateResult(result)) {
-        console.log(`Validation successful for data from ${endpoint}`);
-        return result;
-      }
-      throw new Error('Data not ready or condition not met');
-    },
-    {
-      retries: Math.floor(timeout / interval),
-      minTimeout: interval,
-      maxTimeout: interval,
-      onRetry: (error: any) => {
-        console.log(`Retrying due to: ${error.message}`);
-      },
-    },
-  );
-};
+ const pollWithRetry = async (
+   endpoint: string,
+   params: Object,
+   validateResult: (result: any) => boolean,
+   timeout: number = 30000,
+   interval: number = 3000,
+ ): Promise<any> => {
+   return retry(
+     async () => {
+       console.log(`Fetching data from ${endpoint}`);
+       const result = await apiCall(endpoint, params);
+       if (validateResult(result)) {
+         console.log(`Validation successful for data from ${endpoint}`);
+         return result;
+       }
+       throw new Error('Data not ready or condition not met');
+     },
+     {
+       retries: Math.floor(timeout / interval),
+       minTimeout: interval,
+       maxTimeout: interval,
+       onRetry: (error: any) => {
+         console.log(`Retrying due to: ${error.message}`);
+       },
+     },
+   );
+ };
 
 export const getAccountDetails = async (
   accountId: string,
-  timeout: number = 180000,
+  timeout: number = 90000,
   interval: number = 3000,
 ) => {
   return pollWithRetry(
@@ -141,7 +142,7 @@ export const getAccountDetails = async (
 
 export const getTransactionDetails = async (
   transactionId: string,
-  timeout: number = 180000,
+  timeout: number = 90000,
   interval: number = 3000,
 ) => {
   const formatedTransactionId = formatTransactionId(transactionId);

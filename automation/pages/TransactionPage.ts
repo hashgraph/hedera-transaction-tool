@@ -11,7 +11,7 @@ import {
   getCleanAccountId,
   isLocalnetEnvironment,
   LOCALNET_PAYER_ACCOUNT_ID,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import * as path from 'node:path';
 
@@ -206,7 +206,7 @@ export class TransactionPage extends BasePage {
     const accountDetails = await getAccountDetails(
       accountId,
       this.VERY_LONG_TIMEOUT,
-      this.SHORT_TIMEOUT,
+      this.DEFAULT_TIMEOUT,
     );
     console.log('Account Details:', accountDetails);
     return accountDetails;
@@ -216,7 +216,7 @@ export class TransactionPage extends BasePage {
     const transactionDetails = await getTransactionDetails(
       transactionId,
       this.VERY_LONG_TIMEOUT * 2,
-      this.SHORT_TIMEOUT,
+      this.DEFAULT_TIMEOUT,
     );
     const firstTransaction = transactionDetails.transactions.find(
       (tx: Transaction) => typeof tx.nonce === 'undefined' || tx.nonce === 0,
