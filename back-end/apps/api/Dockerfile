@@ -1,4 +1,4 @@
-FROM node:22-alpine AS development
+FROM node:22.12.0-alpine AS development
 
 WORKDIR /usr/src/app
 
@@ -19,10 +19,11 @@ RUN pnpm install && cd apps/api && pnpm install
 
 COPY libs libs
 COPY apps/api apps/api
+COPY cert cert
 
 RUN pnpm build:api
 
-FROM node:22-alpine AS production
+FROM node:22.12.0-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
@@ -40,5 +41,6 @@ ENV SKIP_NOTICE_GEN=true
 RUN pnpm install --prod
 
 COPY --from=development /usr/src/app/dist ./dist
+COPY cert cert
 
 CMD ["node", "dist/apps/api/main"]

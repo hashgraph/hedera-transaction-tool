@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 import { Brackets, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import {
   AccountCreateTransaction,
@@ -50,7 +51,7 @@ import {
   UserStatus,
 } from '@entities';
 
-import { TransactionsService } from './transactions.service';
+import { CancelTransactionOutcome, TransactionsService } from './transactions.service';
 import { ApproversService } from './approvers';
 import { CreateTransactionDto } from './dto';
 
@@ -1563,6 +1564,22 @@ describe('TransactionsService', () => {
   });
 
   describe('cancelTransaction', () => {
+    const mockCancelUpdateQueryBuilder = (affected: number = 1) => {
+      const queryBuilder = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ affected }),
+      };
+
+      transactionsRepo.createQueryBuilder.mockReturnValue(
+        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
+      );
+
+      return queryBuilder;
+    };
+
     beforeEach(() => {
       jest.resetAllMocks();
     });
@@ -1595,12 +1612,12 @@ describe('TransactionsService', () => {
         .spyOn(service, 'getTransactionForCreator')
         .mockResolvedValueOnce(transaction as Transaction);
 
+      const queryBuilder = mockCancelUpdateQueryBuilder();
       const result = await service.cancelTransaction(123, { id: 1 } as User);
 
-      expect(transactionsRepo.update).toHaveBeenCalledWith(
-        { id: 123 },
-        { status: TransactionStatus.CANCELED },
-      );
+      expect(queryBuilder.update).toHaveBeenCalledWith(Transaction);
+      expect(queryBuilder.set).toHaveBeenCalledWith({ status: TransactionStatus.CANCELED });
+      expect(queryBuilder.where).toHaveBeenCalledWith('id = :id', { id: 123 });
       expect(result).toBe(true);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
@@ -1629,6 +1646,7 @@ describe('TransactionsService', () => {
         .spyOn(service, 'getTransactionForCreator')
         .mockResolvedValueOnce(transaction as Transaction);
 
+      mockCancelUpdateQueryBuilder();
       await service.cancelTransaction(123, { id: 1 } as User);
 
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
@@ -1641,6 +1659,110 @@ describe('TransactionsService', () => {
           },
         }],
       );
+    });
+
+    it('should return true without updating when transaction is already CANCELED', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.CANCELED,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.cancelTransaction(123, { id: 1 } as User);
+
+      expect(result).toBe(true);
+      expect(transactionsRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should return ALREADY_CANCELED outcome for already canceled transaction', async () => {
+      const transaction = {
+        id: 123,
+        creatorKey: { userId: 1 },
+        status: TransactionStatus.CANCELED,
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as Transaction);
+
+      const outcome = await service.cancelTransactionWithOutcome(123, { id: 1 } as User);
+
+      expect(outcome).toBe(CancelTransactionOutcome.ALREADY_CANCELED);
+      expect(transactionsRepo.createQueryBuilder).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should return ALREADY_CANCELED when update affects zero rows and transaction is now canceled', async () => {
+      const transaction = {
+        id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
+        creatorKey: { userId: 1, user: { id: 1 } },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+      };
+      const canceled = { ...transaction, status: TransactionStatus.CANCELED };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as unknown as Transaction)
+        .mockResolvedValueOnce(canceled as unknown as Transaction);
+
+      mockCancelUpdateQueryBuilder(0);
+
+      const outcome = await service.cancelTransactionWithOutcome(123, { id: 1 } as User);
+
+      expect(outcome).toBe(CancelTransactionOutcome.ALREADY_CANCELED);
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should throw conflict when update affects zero rows and transaction is still cancelable', async () => {
+      const transaction = {
+        id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
+        creatorKey: { userId: 1, user: { id: 1 } },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+      };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as unknown as Transaction)
+        .mockResolvedValueOnce(transaction as unknown as Transaction);
+
+      mockCancelUpdateQueryBuilder(0);
+
+      await expect(service.cancelTransactionWithOutcome(123, { id: 1 } as User)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should throw BadRequestException when update affects zero rows and transaction moved to non-cancelable status', async () => {
+      const transaction = {
+        id: 123,
+        transactionId: '0.0.12345@1232351234.0123',
+        creatorKey: { userId: 1, user: { id: 1 } },
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+      };
+      const executed = { ...transaction, status: TransactionStatus.EXECUTED };
+
+      jest
+        .spyOn(service, 'getTransactionForCreator')
+        .mockResolvedValueOnce(transaction as unknown as Transaction)
+        .mockResolvedValueOnce(executed as unknown as Transaction);
+
+      mockCancelUpdateQueryBuilder(0);
+
+      await expect(service.cancelTransactionWithOutcome(123, { id: 1 } as User)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
     });
   });
 
@@ -1996,10 +2118,12 @@ describe('TransactionsService', () => {
 
     it('should return true if user has not sent an approve signature', async () => {
       const transactionId = 123;
+      const transaction = { id: transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
       const approvers: TransactionApprover[] = [
         { userId: user.id },
       ] as unknown as TransactionApprover[];
 
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(transaction as Transaction);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
 
       const result = await service.shouldApproveTransaction(transactionId, user as User);
@@ -2009,10 +2133,12 @@ describe('TransactionsService', () => {
 
     it('should return false if a user has already send approval', async () => {
       const transactionId = 123;
+      const transaction = { id: transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
       const approvers: TransactionApprover[] = [
         { userId: user.id, signature: '0x' },
       ] as unknown as TransactionApprover[];
 
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(transaction as Transaction);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
 
       const result = await service.shouldApproveTransaction(transactionId, user as User);
@@ -2020,15 +2146,38 @@ describe('TransactionsService', () => {
       expect(result).toBe(false);
     });
 
-    it('should reeturn false if a user is not in the approvers list', async () => {
+    it('should return false if a user is not in the approvers list', async () => {
       const transactionId = 123;
+      const transaction = { id: transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
       const approvers: TransactionApprover[] = [];
 
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(transaction as Transaction);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
 
       const result = await service.shouldApproveTransaction(transactionId, user as User);
 
       expect(result).toBe(false);
+    });
+
+    it('should throw BadRequestException when transaction is not found', async () => {
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(null);
+
+      await expect(service.shouldApproveTransaction(999, user as User)).rejects.toThrow(
+        BadRequestException,
+      );
+      expect(approversService.getApproversByTransactionId).not.toHaveBeenCalled();
+    });
+
+    it('should return false for canceled transaction even when user is an approver', async () => {
+      const transactionId = 123;
+      const transaction = { id: transactionId, status: TransactionStatus.CANCELED };
+
+      jest.spyOn(service, 'getTransactionById').mockResolvedValueOnce(transaction as Transaction);
+
+      const result = await service.shouldApproveTransaction(transactionId, user as User);
+
+      expect(result).toBe(false);
+      expect(approversService.getApproversByTransactionId).not.toHaveBeenCalled();
     });
   });
 

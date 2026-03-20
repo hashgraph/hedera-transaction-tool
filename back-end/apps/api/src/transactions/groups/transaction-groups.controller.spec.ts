@@ -5,6 +5,7 @@ import { BlacklistService, guardMock } from '@app/common';
 import { TransactionGroup, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
+import { CancelFailureCode, CancelGroupResultDto } from '../dto';
 
 import { TransactionGroupsController } from './transaction-groups.controller';
 import { TransactionGroupsService } from './transaction-groups.service';
@@ -106,6 +107,49 @@ describe('TransactionGroupsController', () => {
       transactionGroupsService.removeTransactionGroup.mockReturnValue(undefined);
 
       expect(await controller.removeTransactionGroup(user, 1)).toBeUndefined();
+    });
+  });
+
+  describe('cancelTransactionGroup', () => {
+    const cancelResult: CancelGroupResultDto = {
+      canceled: [1],
+      alreadyCanceled: [2],
+      failed: [
+        {
+          id: 3,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        },
+      ],
+      summary: {
+        processedCount: 3,
+        canceled: 1,
+        alreadyCanceled: 1,
+        failed: 1,
+      },
+    };
+
+    it('should delegate to service with user and group id', async () => {
+      transactionGroupsService.cancelTransactionGroup.mockResolvedValue(cancelResult);
+
+      await controller.cancelTransactionGroup(user, 42);
+
+      expect(transactionGroupsService.cancelTransactionGroup).toHaveBeenCalledWith(user, 42);
+    });
+
+    it('should return service payload as-is', async () => {
+      transactionGroupsService.cancelTransactionGroup.mockResolvedValue(cancelResult);
+
+      await expect(controller.cancelTransactionGroup(user, 1)).resolves.toEqual(cancelResult);
+    });
+
+    it('should propagate service errors', async () => {
+      const error = new Error('Cancellation failed');
+      transactionGroupsService.cancelTransactionGroup.mockRejectedValue(error);
+
+      await expect(controller.cancelTransactionGroup(user, 1)).rejects.toThrow(
+        'Cancellation failed',
+      );
     });
   });
 });

@@ -58,6 +58,11 @@ import { writeTransactionFile } from '@renderer/services/transactionFileService.
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import {
+  executeTransactionActionFlow,
+  type TransactionAction,
+} from './transactionActionFlow.ts';
+import { isApprovableStatus, isInProgressStatus, isSignableStatus } from '@renderer/utils/transactionStatusGuards.ts';
 
 /* Types */
 type ActionButton =
@@ -174,13 +179,7 @@ const isCreator = computed(() => {
 });
 
 const transactionIsInProgress = computed(
-  () =>
-    props.organizationTransaction &&
-    [
-      TransactionStatus.NEW,
-      TransactionStatus.WAITING_FOR_EXECUTION,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-    ].includes(props.organizationTransaction.status),
+  () => isInProgressStatus(props.organizationTransaction?.status),
 );
 
 const canCancel = computed(() => {
@@ -190,6 +189,7 @@ const canCancel = computed(() => {
 const canSign = computed(() => {
   if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+  if (!isSignableStatus(props.organizationTransaction.status)) return false;
 
   if (isTransactionVersionMismatch.value) {
     toastManager.error('Transaction version mismatch. Cannot sign.');
@@ -199,6 +199,16 @@ const canSign = computed(() => {
   const userShouldSign = publicKeysRequiredToSign.value.length > 0;
 
   return userShouldSign;
+});
+
+const canApprove = computed(() => {
+  const status = props.organizationTransaction?.status;
+
+  return (
+    FEATURE_APPROVERS_ENABLED &&
+    shouldApprove.value &&
+    isApprovableStatus(status)
+  );
 });
 
 const canExecute = computed(() => {
@@ -224,8 +234,8 @@ const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
-  canSign.value && !(FEATURE_APPROVERS_ENABLED && shouldApprove.value) && buttons.push(sign);
+  canApprove.value && buttons.push(reject, approve);
+  canSign.value && !canApprove.value && buttons.push(sign);
   canExecute.value && buttons.push(execute);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
@@ -355,7 +365,6 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         router.back();
       }
     } catch (error) {
-      isConfirmModalShown.value = false;
       throw error;
     } finally {
       loadingStates[approve] = null;
@@ -369,13 +378,15 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
 };
 
 const handleTransactionAction = async (
-  action: 'cancel' | 'archive' | 'execute' | 'remindSigners',
+  action: TransactionAction,
   showModal?: boolean,
 ) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (!props.organizationTransaction) {
     throw new Error('Transaction is not available');
   }
+  const serverUrl = user.selectedOrganization.serverUrl;
+  const transactionId = props.organizationTransaction.id;
 
   const actionDetails = {
     cancel: {
@@ -427,14 +438,22 @@ const handleTransactionAction = async (
   try {
     confirmModalLoadingText.value = loadingText;
     isConfirmModalLoadingState.value = true;
-    await actionFunction(user.selectedOrganization.serverUrl, props.organizationTransaction.id);
-    await props.onAction();
-    toastManager.success(successMessage);
-  } catch (error) {
-    isConfirmModalShown.value = false;
-    throw error;
+    await executeTransactionActionFlow({
+      execute: async () => {
+        await actionFunction(serverUrl, transactionId);
+      },
+      refresh: props.onAction,
+      onSuccess: () => {
+        toastManager.success(successMessage);
+      },
+      onError: error => {
+        toastManager.error(getErrorMessage(error, `Failed to ${action} transaction`));
+      },
+      onRefreshError: refreshError => {
+        toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transaction'));
+      },
+    });
   } finally {
-    isConfirmModalShown.value = false;
     isConfirmModalLoadingState.value = false;
     confirmModalLoadingText.value = '';
   }
@@ -664,5 +683,8 @@ watch(
     :callback="confirmCallback"
     :text="confirmModalText"
     :title="confirmModalTitle"
+    :button-text="confirmModalButtonText"
+    :loading-text="confirmModalLoadingText"
+    :loading="isConfirmModalLoadingState"
   />
 </template>

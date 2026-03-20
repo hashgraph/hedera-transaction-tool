@@ -1,17 +1,15 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 import { assertIsLoggedInOrganization, getErrorMessage, signTransactions } from '@renderer/utils';
-import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { TransactionStatus } from '@shared/interfaces';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
-import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import ActionController from './ActionController.vue';
 
 /* Props */
 const props = defineProps<{
@@ -33,30 +31,16 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* State */
-const isConfirmModalShown = ref(false);
-const isSigningOnGoing = ref(false);
 const progressText = ref<string>('Loading group items…');
 
-/* Handlers */
-const confirmSigning = () => {
-  isConfirmModalShown.value = false;
-  activate.value = false;
-
+const handleSignAll = async () => {
   getPasswordV2(performSignAll, {
     subHeading: 'Enter your application password to decrypt your private key',
   });
 };
 
-const cancelSigning = () => {
-  isConfirmModalShown.value = false;
-  activate.value = false;
-};
-
 const performSignAll = async (personalPassword: string | null) => {
-  //  if (passwordModalOpened(personalPassword)) return;
-
   if (props.groupOrId !== null) {
-    isSigningOnGoing.value = true;
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
       let group: IGroup;
@@ -92,7 +76,6 @@ const performSignAll = async (personalPassword: string | null) => {
       invokeCallback(groupId, false);
     } finally {
       progressText.value = 'Loading group items…';
-      isSigningOnGoing.value = false;
     }
   } // else bug
 };
@@ -104,40 +87,17 @@ const invokeCallback = async (groupId: number, signed: boolean) => {
     toastManager.error(getErrorMessage(error, 'Transactions not signed'));
   }
 };
-
-/* Hooks */
-watch(activate, () => {
-  if (activate.value) {
-    isConfirmModalShown.value = true;
-  }
-});
 </script>
 
 <template>
-  <AppConfirmModal
-    v-model:show="isConfirmModalShown"
-    title="Sign all transactions?"
-    text="Are you sure you want to sign all transactions?"
+  <ActionController
+    v-model:activate="activate"
+    :actionCallback="handleSignAll"
+    confirm-title="Sign all transactions?"
+    confirm-text="Are you sure you want to sign all transactions?"
+    progress-icon-name="group"
+    progress-title="Sign all transactions"
+    :progress-text="progressText"
     data-testid="button-sign-all"
-    :callback="confirmSigning"
-    :cancel="cancelSigning"
   />
-
-  <AppModal
-    :show="isSigningOnGoing"
-    :close-on-click-outside="false"
-    :close-on-escape="false"
-    class="small-modal"
-  >
-    <div class="p-4">
-      <div class="text-center">
-        <AppCustomIcon :name="'group'" style="height: 80px" />
-      </div>
-      <h3 class="text-center text-title text-bold mt-4">Signing all transactions</h3>
-      <p class="text-center text-small text-secondary mt-4 mb-4">{{ progressText }}</p>
-      <p class="text-center text-small text-secondary mt-6 mb-4">
-        <span class="spinner-border me-2" role="status" inert></span>{{ ' ' }}
-      </p>
-    </div>
-  </AppModal>
 </template>

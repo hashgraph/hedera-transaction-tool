@@ -1,0 +1,16 @@
+services:
+  api:
+    volumes:
+      - .:/usr/src/app
+
+  chain:
+    volumes:
+      - .:/usr/src/app
+
+  notifications:
+    volumes:
+      - .:/usr/src/app
+
+  database:
+    volumes:
+      - ./pgdata:/var/lib/postgresql
