@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
@@ -8,6 +8,7 @@ import {
   closeApp,
   generateRandomEmail,
   generateRandomPassword,
+  setDialogMockState,
   setupApp,
   setupEnvironmentForTransactions,
   waitAndReadFile,
@@ -19,7 +20,7 @@ import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -92,25 +93,12 @@ test.describe('Organization Transaction tests', () => {
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
-
-    await app.evaluate(({ dialog }) => {
-      (dialog as unknown as { _savePath: string | null })._savePath = null;
-      (dialog as unknown as { _openPaths: string[] })._openPaths = [];
-
-      dialog.showSaveDialog = async () => ({
-        canceled: false,
-        filePath: (dialog as unknown as { _savePath: string | null })?._savePath ?? '',
-      });
-      dialog.showOpenDialog = async () => ({
-        canceled: false,
-        filePaths: (dialog as unknown as { _openPaths: string[] })?._openPaths ?? [],
-      });
-    });
   });
 
   test.beforeEach(async () => {
     // Flush rate limiter before each test to prevent "too many requests" errors
     await flushRateLimiter();
+    await setDialogMockState(window, { savePath: null, openPaths: [] });
 
     await organizationPage.signInOrganization(
       firstUser.email,
@@ -602,12 +590,7 @@ test.describe('Organization Transaction tests', () => {
       await fsp.rm(exportDir, { recursive: true, force: true });
       await fsp.mkdir(exportDir, { recursive: true });
 
-      await app.evaluate(
-        ({ dialog }, { savePath }) => {
-          (dialog as unknown as { _savePath: string })._savePath = savePath;
-        },
-        { savePath },
-      );
+      await setDialogMockState(window, { savePath });
     });
 
     test.afterEach(async () => {
@@ -651,12 +634,7 @@ test.describe('Organization Transaction tests', () => {
       }
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
@@ -707,12 +685,7 @@ test.describe('Organization Transaction tests', () => {
       await organizationPage.clickOnSignTransactionButton();
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.importV1Signatures();
 
       // Wait for the transaction to execute
@@ -769,12 +742,7 @@ test.describe('Organization Transaction tests', () => {
       );
 
       // import signatures
-      await app.evaluate(
-        ({ dialog }, { openPaths }) => {
-          (dialog as unknown as { _openPaths: string[] })._openPaths = openPaths;
-        },
-        { openPaths },
-      );
+      await setDialogMockState(window, { openPaths });
       await transactionPage.clickOnTransactionsMenuButton();
       await transactionPage.clickOnImportButton();
       //expect import button is disabled
