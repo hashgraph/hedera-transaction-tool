@@ -454,6 +454,14 @@ describe('BaseNatsConsumerService', () => {
   });
 
   describe('reconnection', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
     it('should reconnect after consumer loop error', async () => {
       let callCount = 0;
       mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
@@ -467,8 +475,9 @@ describe('BaseNatsConsumerService', () => {
       });
 
       await service.onModuleInit();
-      // Wait for first failure + 1s reconnect delay + second attempt
-      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Advance past the 1s reconnect delay after first failure
+      await jest.advanceTimersByTimeAsync(1500);
 
       expect(callCount).toBeGreaterThanOrEqual(2);
     });
@@ -479,7 +488,9 @@ describe('BaseNatsConsumerService', () => {
       const warnSpy = jest.spyOn(service['logger'], 'warn');
 
       await service.onModuleInit();
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Advance past the 2s waitForConnection poll interval
+      await jest.advanceTimersByTimeAsync(100);
 
       expect(warnSpy).toHaveBeenCalledWith(
         'Waiting for NATS connection before starting consumer...',
@@ -490,7 +501,8 @@ describe('BaseNatsConsumerService', () => {
       mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      // Advance past the 2s poll + consumer setup
+      await jest.advanceTimersByTimeAsync(2500);
 
       expect(mockConsumer.consume).toHaveBeenCalled();
     });
@@ -507,8 +519,9 @@ describe('BaseNatsConsumerService', () => {
       const errorSpy = jest.spyOn(service['logger'], 'error');
 
       await service.onModuleInit();
-      // Wait enough for at least 2 retries (1s + 2s = 3s)
-      await new Promise(resolve => setTimeout(resolve, 3500));
+
+      // Advance past first retry (1s) + second retry (2s)
+      await jest.advanceTimersByTimeAsync(3500);
 
       // Should have attempted multiple reconnections with increasing delays
       expect(callCount).toBeGreaterThanOrEqual(2);

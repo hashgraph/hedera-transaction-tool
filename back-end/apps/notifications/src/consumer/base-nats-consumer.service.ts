@@ -30,6 +30,7 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
   protected readonly logger: Logger;
   private consumePromise: Promise<void>;
   private running = true;
+  private sleepAbort: (() => void) | null = null;
 
   constructor(
     protected readonly natsService: NatsJetStreamService,
@@ -93,6 +94,10 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
         this.logger.log('Consumer loop started');
         await this.startConsuming(config.maxMessages ?? 100, handlerMap);
         this.logger.log('Consumer loop ended');
+
+        // Consumer exited normally (stream closed or idle timeout).
+        // Brief delay before recreating to avoid a tight loop.
+        await this.sleep(INITIAL_RECONNECT_DELAY_MS);
       } catch (error) {
         if (!this.running) break;
 
@@ -167,6 +172,9 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
     this.logger.log('Shutting down consumer');
     this.running = false;
 
+    // Wake up any pending sleep so the loop exits immediately
+    if (this.sleepAbort) this.sleepAbort();
+
     if (this.consumePromise) {
       try {
         await this.consumePromise;
@@ -208,6 +216,17 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        this.sleepAbort = null;
+        resolve();
+      }, ms);
+
+      this.sleepAbort = () => {
+        clearTimeout(timer);
+        this.sleepAbort = null;
+        resolve();
+      };
+    });
   }
 }
