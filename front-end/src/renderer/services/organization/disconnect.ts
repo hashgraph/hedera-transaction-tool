@@ -4,7 +4,8 @@ import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
-import { createLogger, toggleAuthTokenInSessionStorage } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
 

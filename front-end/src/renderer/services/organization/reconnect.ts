@@ -18,7 +18,7 @@ import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organi
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
 import { checkVersion, login } from '@renderer/services/organization';
 
-import { createLogger } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 import {
   getAuthTokenFromSessionStorage,
