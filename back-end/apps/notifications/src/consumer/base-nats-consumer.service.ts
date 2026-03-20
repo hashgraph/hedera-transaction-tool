@@ -4,6 +4,9 @@ import { AckPolicy, Consumer, DeliverPolicy, JsMsg } from 'nats';
 import { ClassConstructor } from 'class-transformer';
 import { MessageValidator } from './message-validator.util';
 
+const MAX_RECONNECT_DELAY_MS = 30_000;
+const INITIAL_RECONNECT_DELAY_MS = 1_000;
+
 export interface ConsumerConfig {
   streamName: string;
   durableName: string;
@@ -23,9 +26,11 @@ export interface MessageHandler<T = any> {
 }
 
 export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleDestroy {
-  protected consumer: Consumer;
+  protected consumer: Consumer | null = null;
   protected readonly logger: Logger;
   private consumePromise: Promise<void>;
+  private running = true;
+  private sleepAbort: (() => void) | null = null;
 
   constructor(
     protected readonly natsService: NatsJetStreamService,
@@ -45,42 +50,92 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
   protected abstract getMessageHandlers(): MessageHandler[];
 
   async onModuleInit() {
-    const config = this.getConsumerConfig();
-
-    this.consumer = await this.createOrUpdateConsumer(
-      config.streamName,
-      {
-        durable_name: config.durableName,
-        ack_policy: config.ackPolicy ?? AckPolicy.Explicit,
-        deliver_policy: config.deliverPolicy ?? DeliverPolicy.All,
-        filter_subject: config.filterSubject,
-        filter_subjects: config.filterSubjects,
-        max_ack_pending: config.maxAckPending ?? 1000,
-        inactive_threshold: config.inactiveThreshold ?? 600_000_000_000,
-      }
-    );
-
-    this.consumePromise = this.startConsuming(config.maxMessages ?? 100);
+    this.consumePromise = this.consumeWithReconnect();
   }
 
-  private async startConsuming(maxMessages: number) {
+  /**
+   * Main consume loop with automatic reconnection on failure.
+   *
+   * When NATS drops, the `for await` loop exits. This outer while-loop
+   * catches the error, waits with exponential backoff, recreates the
+   * consumer, and resumes consuming. JetStream guarantees that messages
+   * published during the outage are persisted and delivered once the
+   * consumer reconnects (within the 5-minute retention window).
+   */
+  private async consumeWithReconnect() {
+    const config = this.getConsumerConfig();
     const handlers = this.getMessageHandlers();
     const handlerMap = new Map(handlers.map(h => [h.subject, h]));
+    let reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
 
-    try {
-      const messages = await this.consumer.consume({ max_messages: maxMessages });
+    while (this.running) {
+      try {
+        // Wait for NATS to be connected before attempting consumer creation
+        await this.waitForConnection();
 
-      for await (const msg of messages) {
-        await this.processMessage(msg, handlerMap);
+        if (!this.running) break;
+
+        this.consumer = await this.createOrUpdateConsumer(
+          config.streamName,
+          {
+            durable_name: config.durableName,
+            ack_policy: config.ackPolicy ?? AckPolicy.Explicit,
+            deliver_policy: config.deliverPolicy ?? DeliverPolicy.All,
+            filter_subject: config.filterSubject,
+            filter_subjects: config.filterSubjects,
+            max_ack_pending: config.maxAckPending ?? 1000,
+            inactive_threshold: config.inactiveThreshold ?? 600_000_000_000,
+          },
+        );
+
+        // Reset delay on successful connection
+        reconnectDelay = INITIAL_RECONNECT_DELAY_MS;
+
+        this.logger.log('Consumer loop started');
+        await this.startConsuming(config.maxMessages ?? 100, handlerMap);
+        this.logger.log('Consumer loop ended');
+
+        // Consumer exited normally (stream closed or idle timeout).
+        // Brief delay before recreating to avoid a tight loop.
+        await this.sleep(INITIAL_RECONNECT_DELAY_MS);
+      } catch (error) {
+        if (!this.running) break;
+
+        this.logger.error(
+          `Consumer error, reconnecting in ${reconnectDelay}ms: ${error.message}`,
+          error.stack,
+        );
+
+        await this.sleep(reconnectDelay);
+        reconnectDelay = Math.min(reconnectDelay * 2, MAX_RECONNECT_DELAY_MS);
       }
-    } catch (error) {
-      this.logger.error(`Consumer loop error: ${error.message}`, error.stack);
+    }
+
+    this.logger.log('Consumer loop stopped (shutdown)');
+  }
+
+  private async waitForConnection() {
+    while (this.running && !this.natsService.isConnected()) {
+      this.logger.warn('Waiting for NATS connection before starting consumer...');
+      await this.sleep(2000);
+    }
+  }
+
+  private async startConsuming(
+    maxMessages: number,
+    handlerMap: Map<string, MessageHandler>,
+  ) {
+    const messages = await this.consumer.consume({ max_messages: maxMessages });
+
+    for await (const msg of messages) {
+      if (!this.running) break;
+      await this.processMessage(msg, handlerMap);
     }
   }
 
   private async processMessage(
     msg: JsMsg,
-    handlerMap: Map<string, MessageHandler>
+    handlerMap: Map<string, MessageHandler>,
   ) {
     try {
       const subject = msg.subject;
@@ -95,7 +150,7 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       const data = await MessageValidator.parseAndValidate(
         msg,
         handler.dtoClass,
-        this.logger
+        this.logger,
       );
 
       if (!data) {
@@ -108,13 +163,18 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       msg.ack();
     } catch (error) {
       this.logger.error(`Error processing message: ${error.message}`, error.stack);
-      msg.ack(); // Still ack to avoid redelivery - adjust based on your needs
+      msg.ack(); // Still ack to avoid redelivery loops
     }
   }
 
   /* Consumer should not be deleted at this point, or may break other replicas */
   async onModuleDestroy() {
     this.logger.log('Shutting down consumer');
+    this.running = false;
+
+    // Wake up any pending sleep so the loop exits immediately
+    if (this.sleepAbort) this.sleepAbort();
+
     if (this.consumePromise) {
       try {
         await this.consumePromise;
@@ -127,6 +187,10 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
   private async createOrUpdateConsumer(streamName: string, consumerConfig: any) {
     const jsm = this.natsService.getManager();
     const js = this.natsService.getJetStream();
+
+    if (!jsm || !js) {
+      throw new Error('NATS JetStream not available');
+    }
 
     try {
       await jsm.consumers.info(streamName, consumerConfig.durable_name);
@@ -149,5 +213,20 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       this.logger.error(`Failed to get runtime consumer ${consumerConfig.durable_name}`, err?.stack);
       throw err;
     }
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => {
+      const timer = setTimeout(() => {
+        this.sleepAbort = null;
+        resolve();
+      }, ms);
+
+      this.sleepAbort = () => {
+        clearTimeout(timer);
+        this.sleepAbort = null;
+        resolve();
+      };
+    });
   }
 }
