@@ -11,7 +11,7 @@
 
 import { test, expect, ElectronApplication, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
