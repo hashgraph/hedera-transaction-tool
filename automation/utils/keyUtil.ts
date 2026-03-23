@@ -42,6 +42,7 @@ export function generateEd25519KeyPair() {
 export const decodeProtobuffKey = (protobuffEncodedKey: string) => {
   const buffer = Buffer.from(protobuffEncodedKey, 'hex');
   const protoKey = proto.Key.decode(buffer);
+  // @ts-ignore
   return Key._fromProtobufKey(protoKey);
 };
 

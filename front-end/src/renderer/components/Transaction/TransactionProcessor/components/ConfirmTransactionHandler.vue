@@ -10,7 +10,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { getDollarAmount } from '@renderer/services/mirrorNodeDataService';
 
-import { stringifyHbar } from '@renderer/utils';
+import { hasTransfersOutOfStaking, stringifyHbar } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -37,6 +37,10 @@ const transaction = computed(() =>
   request.value instanceof TransactionRequest
     ? Transaction.fromBytes(request.value.transactionBytes)
     : null,
+);
+
+const isTransferOutOfStaking = computed(() =>
+  transaction.value && hasTransfersOutOfStaking(transaction.value),
 );
 
 /* Actions */
@@ -126,6 +130,15 @@ defineExpose({
               </span>
             </p>
           </div>
+        </div>
+
+        <div
+          v-if="isTransferOutOfStaking"
+          class="container-main-bg text-small text-center text-warning border-warning p-4 mt-5"
+        >
+          <p class="text-title">Transfer out of staking accounts</p>
+          <p class="mt-3">This transaction is moving funds out of the staking accounts.</p>
+          <p class="mt-1">Please review carefully where these hbars are being sent.</p>
         </div>
 
         <hr class="separator my-5" />

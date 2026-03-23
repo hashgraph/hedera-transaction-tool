@@ -1,4 +1,4 @@
-FROM node:22-alpine AS builder
+FROM node:22.12.0-alpine AS builder
 
 WORKDIR /usr/src/app
 
@@ -24,7 +24,7 @@ RUN pnpm build:common
 RUN pnpm build:migrations
 
 # Production stage - minimal runtime image
-FROM node:22-alpine
+FROM node:22.12.0-alpine
 
 WORKDIR /usr/src/app
 

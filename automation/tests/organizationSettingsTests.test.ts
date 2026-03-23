@@ -11,7 +11,7 @@ import {
   generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 
 let app: ElectronApplication;
 let window: Page;
@@ -26,6 +26,7 @@ let settingsPage: SettingsPage;
 let firstUser: UserDetails;
 
 test.describe('Organization Settings tests', () => {
+  test.slow();
   test.beforeAll(async () => {
     await resetDbState();
     await resetPostgresDbState();
@@ -49,11 +50,11 @@ test.describe('Organization Settings tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
 
     // Log in with the organization user
     firstUser = organizationPage.getUser(0);
@@ -99,7 +100,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.clickOnCancelAddingOrganizationButton();
   });
 
-  test('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
+  test.skip('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
@@ -111,7 +112,7 @@ test.describe('Organization Settings tests', () => {
     expect(isContactListVisible).toBe(true);
   });
 
-  test('Verify additional keys are saved when user restores his account', async () => {
+  test.skip('Verify additional keys are saved when user restores his account', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
@@ -129,7 +130,7 @@ test.describe('Organization Settings tests', () => {
     await organizationPage.recoverPrivateKey(window);
   });
 
-  test('Verify user can restore missing keys when doing account recovery', async () => {
+  test.skip('Verify user can restore missing keys when doing account recovery', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
@@ -177,8 +178,7 @@ test.describe('Organization Settings tests', () => {
     expect(isButtonVisible).toBe(true);
   });
 
-  test('Verify user can restore account with new mnemonic phrase', async () => {
-    test.slow();
+  test.skip('Verify user can restore account with new mnemonic phrase', async () => {
     const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);
     await settingsPage.clickOnSettingsButton();

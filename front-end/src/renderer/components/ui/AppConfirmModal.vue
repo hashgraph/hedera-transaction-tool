@@ -10,11 +10,18 @@ const props = withDefaults(
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
+    buttonText?: string;
+    loadingText?: string;
+    loading?: boolean;
     cancel?: ((...args: any[]) => void) | null;
+    dataTestid: string;
   }>(),
   {
     show: false,
     callback: null,
+    buttonText: 'Confirm',
+    loadingText: '',
+    loading: false,
     cancel: null,
   },
 );
@@ -24,23 +31,27 @@ const emit = defineEmits(['update:show']);
 
 /* Handlers */
 const handleConfirm = () => {
+  if (props.loading) return;
   emit('update:show', false);
   props.callback && props.callback();
 };
+
 const handleCancel = () => {
+  if (props.loading) return;
   emit('update:show', false);
 };
+
 const handleUpdateShow = (value: boolean) => {
   emit('update:show', value);
-  if (value === false && props.cancel) {
+  if (!value && props.cancel) {
     props.cancel();
   }
 };
 </script>
 <template>
-  <AppModal :show="props.show" class="common-modal" @update:show="handleUpdateShow">
+  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="handleUpdateShow">
     <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="handleCancel"></i>
+      <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
       <div class="text-center">
         <AppCustomIcon :name="'questionMark'" style="height: 160px" />
       </div>
@@ -48,11 +59,20 @@ const handleUpdateShow = (value: boolean) => {
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
       <hr class="separator my-5" />
       <div class="flex-between-centered gap-4">
-        <AppButton color="borderless" data-testid="button-cancel-group-action" @click="handleCancel"
+        <AppButton
+          color="borderless"
+          :disabled="props.loading"
+          :data-testid="`${props.dataTestid}-cancel`"
+          @click="handleCancel"
           >Cancel</AppButton
         >
-        <AppButton color="primary" data-testid="button-confirm-group-action" @click="handleConfirm"
-          >Confirm</AppButton
+        <AppButton
+          color="primary"
+          :loading="props.loading"
+          :loading-text="props.loadingText"
+          :data-testid="`${props.dataTestid}-confirm`"
+          @click="handleConfirm"
+          >{{ props.buttonText }}</AppButton
         >
       </div>
     </div>

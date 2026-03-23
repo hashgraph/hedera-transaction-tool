@@ -1,4 +1,4 @@
-FROM node:22-alpine AS development
+FROM node:22.12.0-alpine AS development
 
 WORKDIR /usr/src/app
 
@@ -22,7 +22,7 @@ COPY apps/notifications apps/notifications
 
 RUN pnpm build:notifications
 
-FROM node:22-alpine AS production
+FROM node:22.12.0-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
