@@ -1,11 +1,21 @@
-import { ElectronApplication, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
 import * as fsp from 'fs/promises';
 import _ from 'lodash';
 import Diff from 'deep-diff';
 import { AppBootstrapper } from '../services/AppBootstrapper.js';
+import type { SetupAppOptions } from '../services/AppBootstrapper.js';
 import { TransactionEnvironmentConfig } from '../services/TransactionEnvironmentConfig.js';
 import { TransactionEnvironmentService } from '../services/TransactionEnvironmentService.js';
 import { ENVIRONMENT_ENV_VAR } from '../constants/index.js';
+import type { TransactionToolApp } from './electronAppLauncher.js';
+export { clearDialogMockState, setDialogMockState } from './dialogMocks.js';
+export type { DialogMockState } from './dialogMocks.js';
+export type { SetupAppOptions } from '../services/AppBootstrapper.js';
+export type {
+  LaunchHederaTransactionToolOptions,
+  TransactionToolApp,
+  TransactionToolAppMode,
+} from './electronAppLauncher.js';
 
 export { asciiArt, AppBootstrapper } from '../services/AppBootstrapper.js';
 export { TransactionEnvironmentConfig } from '../services/TransactionEnvironmentConfig.js';
@@ -23,15 +33,15 @@ export * from '../constants/index.js';
 const defaultAppBootstrapper = new AppBootstrapper();
 const defaultTransactionEnvironmentConfig = new TransactionEnvironmentConfig();
 
-export async function setupApp() {
-  return defaultAppBootstrapper.setupApp();
+export async function setupApp(options: SetupAppOptions = {}) {
+  return defaultAppBootstrapper.setupApp(options);
 }
 
-export async function resetAppState(window: Page, app: ElectronApplication) {
+export async function resetAppState(window: Page, app: TransactionToolApp) {
   await defaultAppBootstrapper.resetAppState(window, app);
 }
 
-export async function closeApp(app: ElectronApplication) {
+export async function closeApp(app?: TransactionToolApp | null) {
   await defaultAppBootstrapper.closeApp(app);
 }
 

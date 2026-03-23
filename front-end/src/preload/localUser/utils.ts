@@ -35,6 +35,14 @@ export default {
       filePath: string,
     ): Promise<void> =>
       ipcRenderer.invoke('utils:saveFileToPath', data, filePath),
+    setDialogMockState: (
+      state: {
+        savePath?: string | null;
+        openPaths?: string[];
+      },
+    ): Promise<void> => ipcRenderer.invoke('utils:test:setDialogMockState', state),
+    clearDialogMockState: (): Promise<void> =>
+      ipcRenderer.invoke('utils:test:clearDialogMockState'),
     sha384: (str: string): Promise<string> => ipcRenderer.invoke('utils:sha384', str),
     x509BytesFromPem: (
       pem: string | Uint8Array,
