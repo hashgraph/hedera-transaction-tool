@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BaseNatsConsumerService, ConsumerConfig, MessageHandler } from './base-nats-consumer.service';
+import {
+  BaseNatsConsumerService,
+  ConsumerConfig,
+  MessageHandler,
+} from './base-nats-consumer.service';
 import { NatsJetStreamService } from '@app/common/nats/nats-jetstream.service';
 import { AckPolicy, DeliverPolicy } from 'nats';
 import { MessageValidator } from './message-validator.util';
@@ -505,6 +509,22 @@ describe('BaseNatsConsumerService', () => {
       await jest.advanceTimersByTimeAsync(2500);
 
       expect(mockConsumer.consume).toHaveBeenCalled();
+    });
+
+    it('should handle JetStream not available after connection established', async () => {
+      natsService.getManager.mockReturnValue(null);
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Consumer error, reconnecting in'),
+        expect.any(String),
+      );
     });
 
     it('should use exponential backoff on repeated failures', async () => {
