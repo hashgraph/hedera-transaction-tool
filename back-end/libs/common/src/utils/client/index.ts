@@ -26,7 +26,7 @@ export const emitTransactionStatusUpdate = async (
   dtos: NotificationEventDto[],
 ) => {
   const result = await publisher.publish(TRANSACTION_STATUS_UPDATE, dtos);
-  if (!result.success) logPublishFailure(TRANSACTION_STATUS_UPDATE, result.response);
+  if (!result?.success) logPublishFailure(TRANSACTION_STATUS_UPDATE, result?.response);
 };
 
 export const emitTransactionUpdate = async (
@@ -34,7 +34,7 @@ export const emitTransactionUpdate = async (
   dtos: NotificationEventDto[],
 ) => {
   const result = await publisher.publish(TRANSACTION_UPDATE, dtos);
-  if (!result.success) logPublishFailure(TRANSACTION_UPDATE, result.response);
+  if (!result?.success) logPublishFailure(TRANSACTION_UPDATE, result?.response);
 };
 
 export const emitTransactionRemindSigners = async (
@@ -44,7 +44,7 @@ export const emitTransactionRemindSigners = async (
 ) => {
   const subject = isManual ? TRANSACTION_REMIND_SIGNERS_MANUAL : TRANSACTION_REMIND_SIGNERS;
   const result = await publisher.publish(subject, dtos);
-  if (!result.success) logPublishFailure(subject, result.response);
+  if (!result?.success) logPublishFailure(subject, result?.response);
 };
 
 export const emitUserRegistrationEmail = async (
@@ -52,7 +52,7 @@ export const emitUserRegistrationEmail = async (
   dtos: EmailDto[],
 ) => {
   const result = await publisher.publish(USER_INVITE, dtos);
-  if (!result.success) logPublishFailure(USER_INVITE, result.response);
+  if (!result?.success) logPublishFailure(USER_INVITE, result?.response);
 };
 
 export const emitUserPasswordResetEmail = async (
@@ -60,7 +60,7 @@ export const emitUserPasswordResetEmail = async (
   dtos: EmailDto[],
 ) => {
   const result = await publisher.publish(USER_PASSWORD_RESET, dtos);
-  if (!result.success) logPublishFailure(USER_PASSWORD_RESET, result.response);
+  if (!result?.success) logPublishFailure(USER_PASSWORD_RESET, result?.response);
 };
 
 export const emitUserStatusUpdateNotifications = async (
@@ -68,7 +68,7 @@ export const emitUserStatusUpdateNotifications = async (
   dto: NotificationEventDto,
 ) => {
   const result = await publisher.publish(USER_REGISTERED, dto);
-  if (!result.success) logPublishFailure(USER_REGISTERED, result.response);
+  if (!result?.success) logPublishFailure(USER_REGISTERED, result?.response);
 };
 
 export const emitDismissedNotifications = async (
@@ -76,5 +76,5 @@ export const emitDismissedNotifications = async (
   dtos: DismissedNotificationReceiverDto[],
 ) => {
   const result = await publisher.publish(DISMISSED_NOTIFICATIONS, dtos);
-  if (!result.success) logPublishFailure(DISMISSED_NOTIFICATIONS, result.response);
+  if (!result?.success) logPublishFailure(DISMISSED_NOTIFICATIONS, result?.response);
 };
