@@ -137,16 +137,10 @@ export class SettingsPage extends BasePage {
 
     while (attempt < maxRetries) {
       await this.click(this.restoreButtonSelector);
-      try {
-        await this.waitForElementToBeVisible(
-          this.continuePhraseButtonSelector,
-          this.LONG_TIMEOUT,
-        );
+      if (await this.isElementVisible(this.continuePhraseButtonSelector)) {
         return;
-      } catch {
-        attempt++;
-        await new Promise(resolve => setTimeout(resolve, this.SHORT_TIMEOUT / 2));
       }
+      attempt++;
     }
 
     throw new Error(
