@@ -1,12 +1,12 @@
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { join } from 'path';
 import { execSync } from 'child_process';
+import { createTestPostgresContainer } from '../test-utils/postgres-test-db';
 
 async function generateMigration(name: string) {
   console.log('Starting temporary Postgres container...');
 
-  const container = await new PostgreSqlContainer("postgres:13.3-alpine")
+  const container = await createTestPostgresContainer()
     .withDatabase('migration_gen')
     .withUsername('postgres')
     .withPassword('postgres')

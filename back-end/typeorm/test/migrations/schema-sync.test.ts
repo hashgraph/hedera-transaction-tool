@@ -1,6 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from '../../data-source';
+import { createTestPostgresContainer } from '../../../test-utils/postgres-test-db';
 
 describe('Schema Synchronization', () => {
   jest.setTimeout(60000);
@@ -10,7 +11,7 @@ describe('Schema Synchronization', () => {
 
   beforeAll(async () => {
     // Start ephemeral Postgres
-    container = await new PostgreSqlContainer("postgres:13.3-alpine")
+    container = await createTestPostgresContainer()
       .withDatabase('testdb')
       .withUsername('testuser')
       .withPassword('testpass')

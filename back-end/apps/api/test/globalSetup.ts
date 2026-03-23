@@ -2,11 +2,11 @@ import { exec } from 'child_process';
 import * as util from 'util';
 
 import { StartedTestContainer } from 'testcontainers';
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { RabbitMQContainer } from '@testcontainers/rabbitmq';
 
 import { addUsers } from './utils/databaseUtil';
+import { createTestPostgresContainer } from '../../../test-utils/postgres-test-db';
 
 const execPromise = util.promisify(exec);
 
@@ -54,7 +54,7 @@ async function startRedis() {
 async function startPostgres() {
   /* For more information visit: https://node.testcontainers.org/modules/postgresql/ */
   console.log(`Starting ${postgresContainerName} container...`);
-  global.POSTGRES_CONTAINER = await new PostgreSqlContainer("postgres:13.3-alpine")
+  global.POSTGRES_CONTAINER = await createTestPostgresContainer()
     .withName(`${postgresContainerName}`)
     .start();
   console.log(

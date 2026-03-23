@@ -1,5 +1,6 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { AppDataSource } from '../../data-source';
+import { createTestPostgresContainer } from '../../../test-utils/postgres-test-db';
 
 describe('Post-Migration Database Validation', () => {
   jest.setTimeout(60000);
@@ -7,7 +8,7 @@ describe('Post-Migration Database Validation', () => {
   let container: Awaited<ReturnType<PostgreSqlContainer['start']>>;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer("postgres:13.3-alpine")
+    container = await createTestPostgresContainer()
       .withDatabase('testdb')
       .withUsername('testuser')
       .withPassword('testpass')
