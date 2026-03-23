@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { AppDataSource } from '../typeorm/data-source';
 
 export async function createTestPostgresDataSource() {
-  const container = await new PostgreSqlContainer()
+  const container = await new PostgreSqlContainer("postgres:13.3-alpine")
     .withDatabase('testdb')
     .withUsername('testuser')
     .withPassword('testpass')

@@ -10,7 +10,7 @@ describe('Schema Synchronization', () => {
 
   beforeAll(async () => {
     // Start ephemeral Postgres
-    container = await new PostgreSqlContainer()
+    container = await new PostgreSqlContainer("postgres:13.3-alpine")
       .withDatabase('testdb')
       .withUsername('testuser')
       .withPassword('testpass')
