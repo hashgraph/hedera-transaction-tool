@@ -18,6 +18,19 @@ import { initializeUpdaterService } from '@main/services/electronUpdater';
 let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
 
+function configureAutomationCommandLineSwitches() {
+  const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === 'true';
+  const remoteDebuggingPort = process.env.ELECTRON_REMOTE_DEBUGGING_PORT?.trim();
+
+  if (isPlaywrightTest && remoteDebuggingPort) {
+    app.commandLine.appendSwitch('remote-debugging-port', remoteDebuggingPort);
+  }
+
+  if (isPlaywrightTest) {
+    app.commandLine.appendSwitch('ignore-certificate-errors');
+  }
+}
+
 async function run() {
   await initDatabase();
 
@@ -106,6 +119,7 @@ function setupDeepLink() {
 }
 
 initLogger();
+configureAutomationCommandLineSwitches();
 
 const gotTheLock = app.requestSingleInstanceLock();
 
