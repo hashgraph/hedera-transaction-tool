@@ -7,7 +7,13 @@
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
     "src/preload/**/*.ts",
-    "src/tests/renderer",
+
+    "src/tests/renderer/**/*",
+    "src/tests/**/*.ts",
+    "src/tests/**/*.tsx",
+    "**/*.spec.ts",
+    "**/*.test.ts",
+
     "../shared/src/**/*.ts"
   ],
   "compilerOptions": {
@@ -42,7 +48,6 @@
     "checkUnknownProps": false,
     "checkUnknownEvents": true,
     "checkUnknownDirectives": true,
-    "checkUnknownComponents": true,
-    "checkUnknownDirectives": true
+    "checkUnknownComponents": true
   }
 }

@@ -103,7 +103,7 @@ export function logRendererMessage(
   try {
     const validLevel = isLogLevel(level) ? level : 'info';
 
-    const rawComponent = typeof component === 'string' && component.trim().length > 0
+    const rawComponent = component.trim().length > 0
       ? component.trim().slice(0, MAX_IPC_COMPONENT_LENGTH)
       : 'unknown';
     const normalizedComponent = rawComponent.startsWith('renderer.')
@@ -162,6 +162,7 @@ function writeLog(
 ) {
   rootLogger.processMessage({
     data,
+    date: new Date(),
     level,
     logId: component,
     variables: variables
