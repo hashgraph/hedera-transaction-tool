@@ -20,8 +20,12 @@ describe('IPC handlers Logging', () => {
 
   test('Should set up logRendererMessage handler', async () => {
     const level = 'info';
+    const component = 'MyComponent';
     const message = 'test message';
-    await invokeIPCHandler('logging:log', level, message);
-    expect(logRendererMessage).toHaveBeenCalledWith(level, message);
+    const metadata = { userId: '123' };
+
+    await invokeIPCHandler('logging:log', level, component, message, metadata);
+
+    expect(logRendererMessage).toHaveBeenCalledWith(level, component, message, metadata);
   });
 });

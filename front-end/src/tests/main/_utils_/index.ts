@@ -3,7 +3,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import { ipcMain } from 'electron';
 
 vi.mock('electron', () => {
-  const mocked = mockDeep();
+  const mocked = mockDeep<typeof import('electron')>();
   // Provide a real return value for app.getPath so that modules calling
   // createLogger at import-time (which uses path.join(app.getPath(...)))
   // don't fail with a proxy object.
