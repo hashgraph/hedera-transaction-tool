@@ -2,10 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import {
-  type ITransactionNode,
-  TransactionNodeCollection,
-} from '../../../../../../shared/src/ITransactionNode.ts';
+import { type ITransactionNode, TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
 
@@ -14,9 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
-import useNextTransactionV2, {
-  type TransactionNodeId,
-} from '@renderer/stores/storeNextTransactionV2.ts';
+import useNextTransactionV2, { type TransactionNodeId } from '@renderer/stores/storeNextTransactionV2.ts';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -26,11 +21,11 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import { createLogger, isLoggedInOrganization } from '@renderer/utils';
 import {
-  sortTransactionNodes,
-  TransactionNodeSortField,
-  sortFieldToUrl,
   sortFieldFromUrl,
+  sortFieldToUrl,
+  sortTransactionNodes,
   TRANSACTION_NODE_SORT_URL_VALUES,
+  TransactionNodeSortField,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
 import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
@@ -74,38 +69,41 @@ const nextTransaction = useNextTransactionV2();
 /* Composables */
 const router = useRouter();
 const toastManager = ToastManager.inject();
-const logger = createLogger('renderer.transactions.nodeTable');                                                                                                           
+const logger = createLogger('renderer.transactions.nodeTable');
 const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
-  
-useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {                                                                                               
-  const parsed = parseTransactionActionPayload(payload);                                                                                                                  
-  if (!parsed) { await fetchNodes(); return; }                                                                                                     
 
-  const silentFetch = () => fetchNodes({ silent: true });                                                                                                                 
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) {
+    await fetchNodes();
+    return;
+  }
 
-  // Status updates can move items between collections — always refetch                                                                                                   
+  const silentFetch = () => fetchNodes({ silent: true });
+
+  // Status updates can move items between collections — always refetch
   if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
-    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
-    return;                                                                                                                                                               
-  }                                                                                                                                                                       
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
 
-  // For non-status updates, only refetch if current items are affected                                                                                                   
-  const txIds = new Set(parsed.transactionIds);                  
-  const grpIds = new Set(parsed.groupIds);                                                                                                                                
-  const hasMatch = nodes.value.some(n =>                                                                                                                                  
-    (n.transactionId && txIds.has(n.transactionId)) ||                                                                                                                    
-    (n.groupId && grpIds.has(n.groupId)),                                                                                                                                 
-  );                                                                                                                                                                      
-  if (hasMatch) {                                                                                                                                                         
-    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);                                                                                         
-    return;                                                                                                                                                               
-  }                                                                                                                                                                       
+  // For non-status updates, only refetch if current items are affected
+  const txIds = new Set(parsed.transactionIds);
+  const grpIds = new Set(parsed.groupIds);
+  const hasMatch = nodes.value.some(n =>
+    (n.transactionId && txIds.has(n.transactionId)) ||
+    (n.groupId && grpIds.has(n.groupId)),
+  );
+  if (hasMatch) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
 
-  // Edge case: during initial load, nodes are still empty while isLoading is true.                                                                                       
-  if (isLoading.value && nodes.value.length === 0) {             
-    await silentFetch();                                                                                                                                                  
-  }                                                              
-});     
+  // Edge case: during initial load, nodes are still empty while isLoading is true.
+  if (isLoading.value && nodes.value.length === 0) {
+    await silentFetch();
+  }
+});
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
