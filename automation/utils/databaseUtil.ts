@@ -145,6 +145,15 @@ export async function resetDbState() {
   }
 }
 
+export async function resetDbStateForTeardown() {
+  if (process.env.CI) {
+    console.log('Skipping SQLite teardown reset in CI.');
+    return;
+  }
+
+  await resetDbState();
+}
+
 // PostgreSQL Functions
 export async function connectPostgresDatabase(): Promise<Client> {
   const client = new Client({
@@ -243,6 +252,15 @@ export async function resetPostgresDbState() {
   } finally {
     await disconnectPostgresDatabase(client);
   }
+}
+
+export async function resetPostgresDbStateForTeardown() {
+  if (process.env.CI) {
+    console.log('Skipping PostgreSQL teardown reset in CI.');
+    return;
+  }
+
+  await resetPostgresDbState();
 }
 
 export async function flushRateLimiter() {

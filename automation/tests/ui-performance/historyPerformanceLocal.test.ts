@@ -13,8 +13,8 @@
 
 import { expect, Page, test } from '@playwright/test';
 import { closeApp, setupApp } from '../../utils/automationSupport.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
-import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import { seedLocalPerfData } from './seed-local-perf-data.js';
 import {
   collectPerformanceSamples,
@@ -22,11 +22,11 @@ import {
   DEBUG,
   formatDuration,
   TARGET_LOAD_TIME_MS,
-  TEST_LOCAL_PASSWORD,
   TRANSACTION_ROW_SELECTOR,
   waitForRowCount,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
+import { createSeededLocalUserSession } from '../../utils/localBaseline.js';
 
 // Volume requirement from k6 constants (SSOT)
 const DB_ITEM_COUNT = DATA_VOLUMES.HISTORY;
@@ -34,18 +34,19 @@ const MIN_ROWS = 10; // Minimum rows to verify rendering
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
-let registrationPage: RegistrationPage;
 let testEmail: string;
 let seededCount: number;
+let loginPage: LoginPage;
 
 test.describe('History Page Performance (Local Mode)', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
-    registrationPage = new RegistrationPage(window);
-
-    testEmail = `perf-history-local-${Date.now()}@test.com`;
-    await registrationPage.completeRegistration(testEmail, TEST_LOCAL_PASSWORD);
+    loginPage = new LoginPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage, {
+      email: `perf-history-local-${Date.now()}@test.com`,
+    });
+    testEmail = seededUser.email;
 
     const result = await seedLocalPerfData(testEmail);
     seededCount = result.history;
@@ -55,7 +56,7 @@ test.describe('History Page Performance (Local Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('History tab (local mode) should load in under 1 second (p95)', async () => {

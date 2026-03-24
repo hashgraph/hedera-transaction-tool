@@ -69,40 +69,32 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Registration
-            command: RegistrationTests
+          - name: Local Basic
+            command: >-
+              tests/registrationTests.test.ts
+              tests/loginTests.test.ts
+              tests/settingsTests.test.ts
             soloRequired: false
             backendRequired: false
-          - name: Login
-            command: LoginTests
-            soloRequired: false
-            backendRequired: false
-          - name: Settings
-            command: SettingsTests
-            soloRequired: false
-            backendRequired: false
-          - name: Transactions
-            command: TransactionTests
+          - name: Local Transactions
+            command: >-
+              tests/transactionTests.test.ts
+              tests/workflowTests.test.ts
+              tests/groupTransactionTests.test.ts
             soloRequired: true
             backendRequired: false
-          - name: Workflow
-            command: WorkflowTests
-            soloRequired: true
-            backendRequired: false
-          - name: GroupTransaction
-            command: GroupTransactionTests
-            soloRequired: true
-            backendRequired: false
-          - name: OrganizationSettings
-            command: OrganizationSettingsTests
+          - name: Organization Basic
+            command: >-
+              tests/organizationSettingsTests.test.ts
+              tests/organizationContactListTests.test.ts
+              tests/organizationNotificationTests.test.ts
             soloRequired: true
             backendRequired: true
-          - name: OrganizationContactList
-            command: OrganizationContactListTests
-            soloRequired: true
-            backendRequired: true
-          - name: OrganizationGroup
-            command: OrganizationGroupTests
+          - name: Organization Advanced
+            command: >-
+              tests/organizationTransactionTests.test.ts
+              tests/organizationRegressionTests.test.ts
+              tests/organizationGroupTests.test.ts
             soloRequired: true
             backendRequired: true
     steps:
