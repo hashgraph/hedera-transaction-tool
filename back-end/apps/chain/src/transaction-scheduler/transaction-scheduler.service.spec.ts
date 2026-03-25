@@ -29,6 +29,7 @@ import {
   TransactionStatus,
 } from '@entities';
 
+import Redis from 'ioredis';
 import { TransactionSchedulerService } from './transaction-scheduler.service';
 import {
   AccountCreateTransaction,
@@ -78,6 +79,12 @@ describe('TransactionStatusService', () => {
 
   beforeEach(async () => {
     jest.resetAllMocks();
+
+    (Redis as unknown as jest.Mock).mockImplementation(() => ({
+      set: jest.fn().mockResolvedValue('OK'),
+      on: jest.fn().mockReturnThis(),
+      quit: jest.fn(),
+    }));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
