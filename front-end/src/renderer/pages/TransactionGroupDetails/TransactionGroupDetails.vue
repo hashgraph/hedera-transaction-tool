@@ -364,13 +364,13 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
+      const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
         orgTransaction,
         privateKey,
         group.value.description,
       );
 
-      zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP
+      zip.file(`${baseName}.tx`, transactionBytes); // Add .tx file content to ZIP
       zip.file(`${baseName}.txt`, jsonContent); // Add .txt  file content to ZIP
     }
     // Generate the ZIP file in-memory as a Uint8Array
