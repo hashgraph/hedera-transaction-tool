@@ -98,7 +98,10 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
   const groupId = Number(Array.isArray(id) ? id[0] : id);
-  if (!parsed) { await fetchGroup(groupId); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchGroup(groupId);
+    return;
+  } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!group.value) {
@@ -106,10 +109,10 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
     return;
   }
 
-  const isAffected = parsed.groupIds.includes(groupId) ||
-    (group.value.groupItems?.some(item =>
-      parsed.transactionIds.includes(item.transactionId),
-    ) ?? false);
+  const isAffected =
+    parsed.groupIds.includes(groupId) ||
+    (group.value.groupItems?.some(item => parsed.transactionIds.includes(item.transactionId)) ??
+      false);
   if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -200,9 +203,9 @@ const isCreator = computed(() => {
 });
 
 const groupIsInProgress = computed(() => {
-  return group.value?.groupItems?.some(item =>
-    isInProgressStatus(item.transaction.status),
-  ) ?? false;
+  return (
+    group.value?.groupItems?.some(item => isInProgressStatus(item.transaction.status)) ?? false
+  );
 });
 
 const canCancelAll = computed(() => {
@@ -233,7 +236,7 @@ const flatBreadCrumb = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp(router);
+  await router.push({ name: 'transactions', query: { tab: router.previousTab ?? undefined } });
 };
 
 const handleDetails = async (id: number) => {
@@ -539,7 +542,6 @@ async function fetchGroup(id: string | number) {
     console.log('not logged into org');
   }
 }
-
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
