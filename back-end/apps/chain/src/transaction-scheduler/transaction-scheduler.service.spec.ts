@@ -1,8 +1,10 @@
 jest.mock('ioredis', () => {
-  return jest.fn().mockImplementation(() => ({
+  const MockRedis = jest.fn().mockImplementation(() => ({
     set: jest.fn().mockResolvedValue('OK'),
+    on: jest.fn().mockReturnThis(),
     quit: jest.fn(),
   }));
+  return { __esModule: true, default: MockRedis };
 });
 
 import { Test, TestingModule } from '@nestjs/testing';
