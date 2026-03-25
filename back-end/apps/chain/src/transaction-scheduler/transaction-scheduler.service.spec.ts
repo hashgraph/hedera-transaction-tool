@@ -1,5 +1,13 @@
+jest.mock('ioredis', () => {
+  return jest.fn().mockImplementation(() => ({
+    set: jest.fn().mockResolvedValue('OK'),
+    quit: jest.fn(),
+  }));
+});
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { SchedulerRegistry } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mockDeep } from 'jest-mock-extended';
 import { Repository } from 'typeorm';
@@ -96,10 +104,17 @@ describe('TransactionStatusService', () => {
           provide: TransactionSignatureService,
           useValue: transactionSignatureService,
         },
+        {
+          provide: ConfigService,
+          useValue: {
+            getOrThrow: jest.fn().mockReturnValue('redis://localhost:6379'),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<TransactionSchedulerService>(TransactionSchedulerService);
+    service.onModuleInit();
   });
 
   it('should be defined', () => {
