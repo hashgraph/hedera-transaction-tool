@@ -40,7 +40,7 @@ const truncate = (item: string) => {
         :data-testid="`breadcrumb-item-${index}`"
         class="path-item"
         href="#"
-        @click="handleClick(index)"
+        @click.prevent="handleClick(index)"
         >{{ item }}</a
       >
       <span v-if="index < items.length - 1 || props.leaf" class="item-separator">{{
