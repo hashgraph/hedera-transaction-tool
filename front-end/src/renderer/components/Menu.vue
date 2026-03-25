@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -12,7 +12,11 @@ type MenuItem = {
   title: string;
   icon: string;
   notifications?: number;
+  activePrefix?: string;
 };
+
+/* Composables */
+const router = useRouter();
 
 /* Store */
 const user = useUserStore();
@@ -24,6 +28,7 @@ const getMenuItems = (): MenuItem[] => [
     testid: 'button-menu-transactions',
     title: 'Transactions',
     icon: 'bi bi-arrow-left-right',
+    activePrefix: '/transaction',
   },
   {
     link: '/accounts',
@@ -50,6 +55,10 @@ const getMenuItems = (): MenuItem[] => [
   // },
 ];
 
+const handleClick = (item: MenuItem) => {
+  router.appMenuItem = item.title.toLowerCase();
+};
+
 /* Misc */
 const organizationOnly = ['/contact-list'];
 </script>
@@ -66,9 +75,16 @@ const organizationOnly = ['/contact-list'];
       >
         <RouterLink
           class="link-menu mt-2"
+          :class="{
+            active:
+              $router.appMenuItem === item.title.toLowerCase() ||
+              ($router.appMenuItem === undefined &&
+                $route.path.startsWith(item.activePrefix || item.link)),
+          }"
           :to="item.link"
           draggable="false"
           :data-testid="item.testid"
+          @click="handleClick(item)"
           ><i :class="item.icon"></i>
           <span>{{ item.title }}</span>
         </RouterLink>
