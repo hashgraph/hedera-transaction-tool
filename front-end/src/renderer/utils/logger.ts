@@ -148,7 +148,9 @@ export function serializeForIPC(
 
   if (value instanceof Error) {
     return {
-      code: 'code' in value ? (value as Error & { code?: unknown }).code : undefined,
+      code: 'code' in value
+        ? serializeForIPC((value as Error & { code?: unknown }).code, { depth: depth + 1, seen })
+        : undefined,
       message: value.message,
       name: value.name,
       stack: value.stack,
