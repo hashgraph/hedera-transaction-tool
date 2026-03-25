@@ -7,8 +7,6 @@
     "src/preload/**/*",
     "src/tests/main/**/*",
 
-    "src/shared/**/*",
-
     "../shared/src/**/*.ts"
   ],
   "compilerOptions": {
