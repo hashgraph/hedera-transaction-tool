@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -14,7 +14,7 @@ import {
 } from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;

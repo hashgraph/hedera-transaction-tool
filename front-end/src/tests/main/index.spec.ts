@@ -37,6 +37,32 @@ vi.mock('@main/services/electronUpdater', () => ({
   initializeUpdaterService: vi.fn(),
 }));
 
+const mockIndexDependenciesForImport = (requestSingleInstanceLock: boolean) => {
+  vi.doMock('electron', () => {
+    const mocked = mockDeep<typeof import('electron')>();
+    mocked.app.requestSingleInstanceLock.mockReturnValue(requestSingleInstanceLock);
+    mocked.app.whenReady.mockResolvedValue();
+    return mocked;
+  });
+
+  vi.doMock('path', () => mockDeep());
+  vi.doMock('@electron-toolkit/utils', () => mockDeep());
+  vi.doMock('@main/db/init', () => mockDeep());
+  vi.doMock('@main/services/localUser', () => mockDeep());
+  vi.doMock('@main/modules/logger', () => mockDeep());
+  vi.doMock('@main/modules/menu', () => mockDeep());
+  vi.doMock('@main/modules/deepLink', () => ({
+    default: vi.fn(),
+    PROTOCOL_NAME: 'test-protocol',
+  }));
+  vi.doMock('@main/modules/ipcHandlers', () => mockDeep());
+  vi.doMock('@main/windows/mainWindow', () => mockDeep());
+  vi.doMock('@main/services/electronUpdater', () => ({
+    getUpdaterService: vi.fn(() => null),
+    initializeUpdaterService: vi.fn(),
+  }));
+};
+
 describe('Electron entry file', async () => {
   const processOnSpy = vi.spyOn(process, 'on');
   await import('@main/index');
@@ -313,5 +339,77 @@ describe('Electron entry file - single instance lock not acquired', async () => 
   test('Should not set up app event handlers when lock is not acquired', () => {
     expect(freshApp.on).not.toHaveBeenCalledWith('ready', expect.any(Function));
     expect(freshApp.on).not.toHaveBeenCalledWith('second-instance', expect.any(Function));
+  });
+});
+
+describe('configureAutomationCommandLineSwitches', () => {
+  const originalPlaywrightTest = process.env.PLAYWRIGHT_TEST;
+  const originalRemoteDebuggingPort = process.env.ELECTRON_REMOTE_DEBUGGING_PORT;
+
+  afterEach(() => {
+    vi.resetModules();
+
+    if (originalPlaywrightTest === undefined) {
+      delete process.env.PLAYWRIGHT_TEST;
+    } else {
+      process.env.PLAYWRIGHT_TEST = originalPlaywrightTest;
+    }
+
+    if (originalRemoteDebuggingPort === undefined) {
+      delete process.env.ELECTRON_REMOTE_DEBUGGING_PORT;
+    } else {
+      process.env.ELECTRON_REMOTE_DEBUGGING_PORT = originalRemoteDebuggingPort;
+    }
+  });
+
+  test('Should append automation switches when Playwright env vars are set', async () => {
+    vi.resetModules();
+    process.env.PLAYWRIGHT_TEST = 'true';
+    process.env.ELECTRON_REMOTE_DEBUGGING_PORT = ' 9333 ';
+
+    mockIndexDependenciesForImport(false);
+
+    const { app: freshApp } = await import('electron');
+    await import('@main/index');
+
+    expect(freshApp.commandLine.appendSwitch).toHaveBeenCalledWith(
+      'remote-debugging-port',
+      '9333',
+    );
+    expect(freshApp.commandLine.appendSwitch).toHaveBeenCalledWith(
+      'ignore-certificate-errors',
+    );
+  });
+
+  test('Should skip automation switches when Playwright env vars are unset', async () => {
+    vi.resetModules();
+    delete process.env.PLAYWRIGHT_TEST;
+    process.env.ELECTRON_REMOTE_DEBUGGING_PORT = '   ';
+
+    mockIndexDependenciesForImport(false);
+
+    const { app: freshApp } = await import('electron');
+    await import('@main/index');
+
+    expect(freshApp.commandLine.appendSwitch).not.toHaveBeenCalled();
+  });
+
+  test('Should not append remote debugging port outside Playwright sessions', async () => {
+    vi.resetModules();
+    delete process.env.PLAYWRIGHT_TEST;
+    process.env.ELECTRON_REMOTE_DEBUGGING_PORT = '9222';
+
+    mockIndexDependenciesForImport(false);
+
+    const { app: freshApp } = await import('electron');
+    await import('@main/index');
+
+    expect(freshApp.commandLine.appendSwitch).not.toHaveBeenCalledWith(
+      'remote-debugging-port',
+      '9222',
+    );
+    expect(freshApp.commandLine.appendSwitch).not.toHaveBeenCalledWith(
+      'ignore-certificate-errors',
+    );
   });
 });

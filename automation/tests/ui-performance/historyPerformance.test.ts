@@ -12,7 +12,7 @@
  * If pagination is used, it verifies at least the first page loads quickly.
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import { setupApp, closeApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
@@ -35,7 +35,7 @@ dotenv.config();
 // Volume requirement from k6 constants (SSOT)
 const REQUIRED_TOTAL = DATA_VOLUMES.HISTORY;
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
