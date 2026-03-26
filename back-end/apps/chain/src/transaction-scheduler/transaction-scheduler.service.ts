@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
-import { In, Between, MoreThan, Repository, LessThan } from 'typeorm';
+import { In, Between, MoreThan, Repository } from 'typeorm';
 import { Status } from '@hashgraph/sdk';
 
 import {
@@ -101,38 +101,30 @@ export class TransactionSchedulerService {
     name: 'status_update_expired_transactions',
   })
   async handleExpiredTransactions() {
-    await this.transactionRepo.manager.transaction(async transactionalEntityManager => {
-      const transactions = await transactionalEntityManager.find(Transaction, {
-        where: {
-          status: In([
-            TransactionStatus.NEW,
-            TransactionStatus.REJECTED,
-            TransactionStatus.WAITING_FOR_EXECUTION,
-            TransactionStatus.WAITING_FOR_SIGNATURES,
-          ]),
-          validStart: LessThan(this.getThreeMinutesBefore()),
-        },
-        select: { id: true, mirrorNetwork: true },
-      });
+    const result = await this.transactionRepo
+      .createQueryBuilder()
+      .update(Transaction)
+      .set({ status: TransactionStatus.EXPIRED })
+      .where('status IN (:...statuses) AND validStart < :before', {
+        statuses: [
+          TransactionStatus.NEW,
+          TransactionStatus.REJECTED,
+          TransactionStatus.WAITING_FOR_EXECUTION,
+          TransactionStatus.WAITING_FOR_SIGNATURES,
+        ],
+        before: this.getThreeMinutesBefore(),
+      })
+      .returning('id, mirrorNetwork, transactionId')
+      .execute();
 
-      for (const transaction of transactions) {
-        await transactionalEntityManager.update(
-          Transaction,
-          { id: transaction.id },
-          { status: TransactionStatus.EXPIRED },
-        );
-      }
-
-      if (transactions.length > 0) {
-        emitTransactionStatusUpdate(this.notificationsPublisher, transactions.map(t => ({
+    if (result.raw.length > 0) {
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        result.raw.map(t => ({
           entityId: t.id,
-          additionalData: {
-            transactionId: t.transactionId,
-            network: t.mirrorNetwork,
-          },
-        })));
-      }
-    });
+        })),
+      );
+    }
   }
 
   /* Checks if the signers are enough to sign the transactions and update their statuses */
@@ -240,23 +232,27 @@ export class TransactionSchedulerService {
         }
 
         if (smartCollateFailed) {
-          for (const groupItem of transactionGroup.groupItems) {
-            await this.transactionRepo.update(
-              {
-                id: groupItem.transaction.id,
-              },
-              {
-                status: TransactionStatus.FAILED,
-                executedAt: new Date(),
-                statusCode: Status.TransactionOversize._code,
-              },
+          const result = await this.transactionRepo
+            .createQueryBuilder()
+            .update(Transaction)
+            .set({
+              status: TransactionStatus.FAILED,
+              executedAt: new Date(),
+              statusCode: Status.TransactionOversize._code,
+            })
+            .where('id IN (:...ids) AND status = :currentStatus', {
+              ids: transactionGroup.groupItems.map(gi => gi.transaction.id),
+              currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+            })
+            .returning('id')
+            .execute();
+
+          if (result.raw.length > 0) {
+            emitTransactionStatusUpdate(
+              this.notificationsPublisher,
+              result.raw.map(row => ({ entityId: row.id })),
             );
           }
-
-          emitTransactionStatusUpdate(
-            this.notificationsPublisher,
-            transactionGroup.groupItems.map(gi => ({ entityId: gi.transaction.id })),
-          );
           return;
         }
 
@@ -299,6 +295,7 @@ export class TransactionSchedulerService {
               statusCode: Status.TransactionOversize._code,
             },
           );
+          //TODO is this one?
           emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transaction.id }]);
           return;
         }

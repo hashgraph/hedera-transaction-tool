@@ -120,12 +120,12 @@ export class ExecuteService {
     transaction: Transaction,
     sdkTransaction: SDKTransaction,
   ) {
-    /* Execute the transaction */
     const client = await getClientFromNetwork(transaction.mirrorNetwork);
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
     let transactionStatusCode = null;
+    let isDuplicate = false;
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
@@ -154,27 +154,40 @@ export class ExecuteService {
         }
       }
 
-      transactionStatus = TransactionStatus.FAILED;
-      transactionStatusCode = statusCode;
-      result.error = message;
+      // Another pod already submitted this — don't touch the row, let the
+      // successful pod win the update and emit the change
+      if (statusCode === Status.DuplicateTransaction._code) {
+        isDuplicate = true;
+      } else {
+        transactionStatus = TransactionStatus.FAILED;
+        transactionStatusCode = statusCode;
+        result.error = message;
+      }
 
       this.logger.error(
         `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
       );
     } finally {
-      result.status = transactionStatus;
+      if (!isDuplicate) {
+        const updateResult = await this.transactionsRepo
+          .createQueryBuilder()
+          .update(Transaction)
+          .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
+          .where('id = :id AND status = :currentStatus', {
+            id: transaction.id,
+            currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+          })
+          .returning('id')
+          .execute();
 
-      await this.transactionsRepo.update(
-        { id: transaction.id },
-        {
-          status: transactionStatus,
-          executedAt,
-          statusCode: transactionStatusCode,
-        },
-      );
+        if (updateResult.raw.length === 1) {
+          result.status = transactionStatus;
+        }
+      }
 
       client.close();
     }
+
     return result;
   }
 
