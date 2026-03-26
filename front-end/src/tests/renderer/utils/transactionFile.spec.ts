@@ -13,6 +13,7 @@ import {
 } from '@renderer/utils';
 
 import type { ITransaction, ITransactionFull } from '@shared/interfaces';
+import { format } from 'date-fns';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -72,10 +73,11 @@ describe('generateTransactionV1ExportContent', () => {
 
   test('returns correct jsonContent with description from orgTransaction', async () => {
     const key = makeKey();
+    const createdAt = '2024-06-15T12:00:00.000Z';
     const orgTx = makeOrgTransaction({
       description: 'My description',
       creatorEmail: 'bob@example.com',
-      createdAt: '2024-06-15T12:00:00.000Z',
+      createdAt,
     });
 
     const { jsonContent } = await generateTransactionV1ExportContent(orgTx, key);
@@ -83,7 +85,7 @@ describe('generateTransactionV1ExportContent', () => {
 
     expect(parsed.Author).toBe('bob@example.com');
     expect(parsed.Contents).toBe('My description');
-    expect(parsed.Timestamp).toBe('2024-06-15 05:00:00');
+    expect(parsed.Timestamp).toBe(format(new Date(createdAt), 'yyyy-MM-dd HH:mm:ss'));
   });
 
   test('falls back to defaultDescription when orgTransaction.description is empty', async () => {
@@ -112,12 +114,13 @@ describe('generateTransactionV1ExportContent', () => {
 
   test('formats timestamp correctly', async () => {
     const key = makeKey();
-    const orgTx = makeOrgTransaction({ createdAt: '2024-01-05T08:03:07.000Z' });
+    const createdAt = '2024-01-05T08:03:07.000Z';
+    const orgTx = makeOrgTransaction({ createdAt });
 
     const { jsonContent } = await generateTransactionV1ExportContent(orgTx, key);
     const parsed = JSON.parse(jsonContent);
 
-    expect(parsed.Timestamp).toBe('2024-01-05 00:03:07');
+    expect(parsed.Timestamp).toBe(format(new Date(createdAt), 'yyyy-MM-dd HH:mm:ss'));
   });
 });
 
