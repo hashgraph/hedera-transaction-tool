@@ -511,12 +511,12 @@ const handleExport = async () => {
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
+    const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
       props.organizationTransaction,
       privateKey,
     );
 
-    await saveFileToPath(signedBytes, filePath);
+    await saveFileToPath(transactionBytes, filePath);
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
