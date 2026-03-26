@@ -722,21 +722,13 @@ describe('BaseNatsConsumerService', () => {
   });
 
   describe('onModuleDestroy error handling', () => {
-    it('should log error when consumePromise rejects with unhandled error', async () => {
-      const fatalError = new Error('Unhandled fatal error');
+    it('should log error when consumePromise rejects during shutdown', async () => {
+      const fatalError = new Error('Shutdown failure');
 
-      service.mockConfig = null as any;
-      jest
-        .spyOn(service as any, 'getConsumerConfig')
-        .mockImplementation(() => {
-          throw fatalError;
-        });
+      (service as any).consumePromise = Promise.reject(fatalError);
+      (service as any).consumePromise.catch(() => {});
 
       const errorSpy = jest.spyOn(service['logger'], 'error');
-
-      await service.onModuleInit();
-
-      await new Promise(resolve => setTimeout(resolve, 50));
 
       await service.onModuleDestroy();
 
