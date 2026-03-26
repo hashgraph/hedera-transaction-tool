@@ -12,14 +12,19 @@ export const generateTransactionV1ExportContent = async (
   const originalBytes = hexToUint8Array(orgTransaction.transactionBytes);
   const sdkTransaction = Transaction.fromBytes(originalBytes);
 
-  const transactionBytes = sdkTransaction.getSignatures().size === 0
+  const hasNoSignatures = (tx: Transaction) =>
+    [...tx.getSignatures().values()]                    // SignatureMap -> NodeAccountIdSignatureMaps
+      .flatMap(nodeMap => [...nodeMap.values()])        // NodeAccountIdSignatureMap -> SignaturePairMaps
+      .every(signaturePairMap => signaturePairMap.size === 0);
+
+  const transactionBytes = hasNoSignatures(sdkTransaction)
     ? (await sdkTransaction.sign(key)).toBytes()
     : originalBytes;
 
   const jsonContent = JSON.stringify({
     Author: orgTransaction.creatorEmail,
     Contents: orgTransaction.description || defaultDescription || '',
-    Timestamp: format(new Date(orgTransaction.createdAt), 'yyyy-MM-dd HH:mm:ss'),
+    Timestamp: format(new Date(orgTransaction.createdAt), 'yyyy-MM-dd HH:mm:ss'), // The Timestamp is always formatted in local time in TTv1.
   });
 
   return { transactionBytes, jsonContent };
