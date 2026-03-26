@@ -130,6 +130,94 @@ describe('TransactionStatusService', () => {
     expect(service).toBeDefined();
   });
 
+  it('should disconnect Redis on module destroy', () => {
+    service.onModuleDestroy();
+    expect((service as any).redis.quit).toHaveBeenCalled();
+  });
+
+  it('should skip cron job when lock is not acquired', async () => {
+    (service as any).redis.set.mockResolvedValueOnce(null);
+
+    jest.spyOn(service, 'updateTransactions');
+
+    await service.handleTransactionsAfterOneWeek();
+
+    expect(service.updateTransactions).not.toHaveBeenCalled();
+  });
+
+  it('should run cron job when Redis lock fails and fallback to true', async () => {
+    (service as any).redis.set.mockRejectedValueOnce(new Error('Redis connection refused'));
+
+    const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+    transactionRepo.find.mockResolvedValue([]);
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+    jest.spyOn(service, 'updateTransactions');
+
+    await service.handleTransactionsAfterOneWeek();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Error acquiring cron lock'),
+    );
+    expect(service.updateTransactions).toHaveBeenCalled();
+  });
+
+  it('should handle onModuleDestroy gracefully when redis is not initialized', () => {
+    (service as any).redis = undefined;
+    expect(() => service.onModuleDestroy()).not.toThrow();
+  });
+
+  it('should log error message including the lock key name on Redis failure', async () => {
+    (service as any).redis.set.mockRejectedValueOnce(new Error('READONLY'));
+
+    const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+    transactionRepo.find.mockResolvedValue([]);
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+    await service.handleTransactionsBetweenOneDayAndOneWeek();
+
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('status_update_between_one_day_and_one_week'),
+    );
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('READONLY'),
+    );
+  });
+
+  it('should skip all cron methods when another pod holds the lock', async () => {
+    (service as any).redis.set.mockResolvedValue(null);
+
+    jest.spyOn(service, 'updateTransactions');
+    jest.spyOn(service, 'prepareTransactions');
+
+    await service.handleInitialTransactionStatusUpdate();
+    await service.handleTransactionsAfterOneWeek();
+    await service.handleTransactionsBetweenOneDayAndOneWeek();
+    await service.handleTransactionsBetweenOneHourAndOneDay();
+    await service.handleTransactionsBetweenTenMinutesAndOneHour();
+    await service.handleTransactionsBetweenThreeMinutesAndTenMinutes();
+    await service.handleTransactionsBetweenNowAndAfterThreeMinutes();
+    await service.handleExpiredTransactions();
+
+    expect(service.updateTransactions).not.toHaveBeenCalled();
+    expect(service.prepareTransactions).not.toHaveBeenCalled();
+  });
+
+  it('should acquire lock and proceed when Redis returns OK', async () => {
+    (service as any).redis.set.mockResolvedValueOnce('OK');
+
+    transactionRepo.find.mockResolvedValue([]);
+    jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+    jest.spyOn(service, 'updateTransactions');
+
+    await service.handleTransactionsAfterOneWeek();
+
+    expect(service.updateTransactions).toHaveBeenCalled();
+  });
+
   it('should request update for transactions that have started in initial cron', async () => {
     const transactions = [];
     transactionRepo.find.mockResolvedValue(transactions);
