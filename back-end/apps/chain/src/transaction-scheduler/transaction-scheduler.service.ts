@@ -1,4 +1,4 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
@@ -23,6 +23,7 @@ import {
 
 @Injectable()
 export class TransactionSchedulerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(TransactionSchedulerService.name);
   private redis: Redis;
 
   constructor(
@@ -38,7 +39,7 @@ export class TransactionSchedulerService implements OnModuleInit, OnModuleDestro
   onModuleInit() {
     const redisUrl = this.configService.getOrThrow('REDIS_URL');
     this.redis = new Redis(redisUrl);
-    this.redis.on('error', (err) => console.error('[CronLock] Redis error:', err.message));
+    this.redis.on('error', (err) => this.logger.error(`Redis error: ${err.message}`));
   }
 
   onModuleDestroy() {
@@ -54,7 +55,7 @@ export class TransactionSchedulerService implements OnModuleInit, OnModuleDestro
       const result = await this.redis.set(`cron:${key}`, '1', 'PX', ttlMs, 'NX');
       return result === 'OK';
     } catch (error) {
-      console.error(`[CronLock] Error acquiring lock for ${key}:`, error.message);
+      this.logger.error(`Error acquiring cron lock for ${key}: ${error.message}`);
       return true; // Fallback: run the job if Redis fails
     }
   }
