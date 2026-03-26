@@ -703,5 +703,44 @@ describe('BaseNatsConsumerService', () => {
         expect.anything(),
       );
     });
+
+    it('should re-throw non-404 errors from consumers.info', async () => {
+      mockJsm.consumers.info.mockRejectedValue(new Error('Permission denied'));
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Consumer error, reconnecting in'),
+        expect.any(String),
+      );
+    });
+  });
+
+  describe('onModuleDestroy error handling', () => {
+    it('should log error when consumePromise rejects with unhandled error', async () => {
+      const fatalError = new Error('Unhandled fatal error');
+
+      service.mockConfig = null as any;
+      jest
+        .spyOn(service as any, 'getConsumerConfig')
+        .mockImplementation(() => {
+          throw fatalError;
+        });
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      await service.onModuleDestroy();
+
+      expect(errorSpy).toHaveBeenCalledWith('Error closing consumer', fatalError);
+    });
   });
 });
