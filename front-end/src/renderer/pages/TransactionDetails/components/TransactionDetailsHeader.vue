@@ -58,11 +58,12 @@ import { writeTransactionFile } from '@renderer/services/transactionFileService.
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { executeTransactionActionFlow, type TransactionAction } from './transactionActionFlow.ts';
 import {
-  executeTransactionActionFlow,
-  type TransactionAction,
-} from './transactionActionFlow.ts';
-import { isApprovableStatus, isInProgressStatus, isSignableStatus } from '@renderer/utils/transactionStatusGuards.ts';
+  isApprovableStatus,
+  isInProgressStatus,
+  isSignableStatus,
+} from '@renderer/utils/transactionStatusGuards.ts';
 
 /* Types */
 type ActionButton =
@@ -178,8 +179,8 @@ const isCreator = computed(() => {
   return creator.value.user.id === user.selectedOrganization.userId;
 });
 
-const transactionIsInProgress = computed(
-  () => isInProgressStatus(props.organizationTransaction?.status),
+const transactionIsInProgress = computed(() =>
+  isInProgressStatus(props.organizationTransaction?.status),
 );
 
 const canCancel = computed(() => {
@@ -204,11 +205,7 @@ const canSign = computed(() => {
 const canApprove = computed(() => {
   const status = props.organizationTransaction?.status;
 
-  return (
-    FEATURE_APPROVERS_ENABLED &&
-    shouldApprove.value &&
-    isApprovableStatus(status)
-  );
+  return FEATURE_APPROVERS_ENABLED && shouldApprove.value && isApprovableStatus(status);
 });
 
 const canExecute = computed(() => {
@@ -255,7 +252,7 @@ const flatBreadCrumb = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp(router);
+  router.back();
 };
 
 const handleSign = async (goNext = false) => {
@@ -357,9 +354,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
         approved,
       );
       await props.onAction();
-      toastManager.success(
-        `Transaction ${approved ? 'approved' : 'rejected'} successfully`,
-      );
+      toastManager.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
 
       if (!approved) {
         router.back();
@@ -377,10 +372,7 @@ const handleApprove = async (approved: boolean, showModal?: boolean) => {
   await callback();
 };
 
-const handleTransactionAction = async (
-  action: TransactionAction,
-  showModal?: boolean,
-) => {
+const handleTransactionAction = async (action: TransactionAction, showModal?: boolean) => {
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (!props.organizationTransaction) {
     throw new Error('Transaction is not available');
@@ -530,12 +522,12 @@ const handleExport = async () => {
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
+    const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
       props.organizationTransaction,
       privateKey,
     );
 
-    await saveFileToPath(signedBytes, filePath);
+    await saveFileToPath(transactionBytes, filePath);
     const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
     await saveFileToPath(jsonContent, txtFilePath);
 
@@ -611,9 +603,7 @@ watch(
     results.forEach(
       r =>
         r.status === 'rejected' &&
-        toastManager.error(
-          getErrorMessage(r.reason, 'Failed to load transaction details'),
-        ),
+        toastManager.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
     );
   },
 );

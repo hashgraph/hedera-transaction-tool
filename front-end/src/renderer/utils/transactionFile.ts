@@ -9,28 +9,25 @@ export const generateTransactionV1ExportContent = async (
   key: PrivateKey,
   defaultDescription?: string,
 ) => {
-  const transactionBytes = hexToUint8Array(orgTransaction.transactionBytes);
-  const sdkTransaction = Transaction.fromBytes(transactionBytes);
+  const originalBytes = hexToUint8Array(orgTransaction.transactionBytes);
+  const sdkTransaction = Transaction.fromBytes(originalBytes);
 
-  // create .tx file contents
-  const signedBytes = (await sdkTransaction.sign(key)).toBytes();
+  const hasNoSignatures = (tx: Transaction) =>
+    [...tx.getSignatures().values()]                    // SignatureMap -> NodeAccountIdSignatureMaps
+      .flatMap(nodeMap => [...nodeMap.values()])        // NodeAccountIdSignatureMap -> SignaturePairMaps
+      .every(signaturePairMap => signaturePairMap.size === 0);
 
-  // create .txt file contents
-  const author = orgTransaction.creatorEmail;
-  const contents = orgTransaction.description || defaultDescription || '';
-  const timestamp = new Date(orgTransaction.createdAt);
-  const formattedTimestamp = format(timestamp, 'yyyy-MM-dd HH:mm:ss');
+  const transactionBytes = hasNoSignatures(sdkTransaction)
+    ? (await sdkTransaction.sign(key)).toBytes()
+    : originalBytes;
 
   const jsonContent = JSON.stringify({
-    Author: author,
-    Contents: contents,
-    Timestamp: formattedTimestamp,
+    Author: orgTransaction.creatorEmail,
+    Contents: orgTransaction.description || defaultDescription || '',
+    Timestamp: format(new Date(orgTransaction.createdAt), 'yyyy-MM-dd HH:mm:ss'), // The Timestamp is always formatted in local time in TTv1.
   });
 
-  return Promise.resolve({
-    signedBytes,
-    jsonContent,
-  });
+  return { transactionBytes, jsonContent };
 };
 
 export const generateTransactionV2ExportContent = (

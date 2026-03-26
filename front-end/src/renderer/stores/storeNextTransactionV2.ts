@@ -5,6 +5,13 @@ import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNo
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.store.nextTransactionV2');
+import {
+  historyTitle,
+  inProgressTitle,
+  readyForExecutionTitle,
+  readyForReviewTitle,
+  readyToSignTitle,
+} from '@shared/constants';
 
 export type TransactionNodeId =
   | {
@@ -139,19 +146,19 @@ const useNextTransactionV2 = defineStore(
       let result: string;
       switch (collection) {
         case TransactionNodeCollection.READY_FOR_REVIEW:
-          result = 'Ready for Review';
+          result = readyForReviewTitle;
           break;
         case TransactionNodeCollection.READY_TO_SIGN:
-          result = 'Ready to Sign';
+          result = readyToSignTitle;
           break;
         case TransactionNodeCollection.READY_FOR_EXECUTION:
-          result = 'Ready for Execution';
+          result = readyForExecutionTitle;
           break;
         case TransactionNodeCollection.IN_PROGRESS:
-          result = 'In Progress';
+          result = inProgressTitle;
           break;
         case TransactionNodeCollection.HISTORY:
-          result = 'History';
+          result = historyTitle;
           break;
       }
       return result;
