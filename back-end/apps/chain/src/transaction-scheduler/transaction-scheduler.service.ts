@@ -1,6 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
+import { ConfigService } from '@nestjs/config';
+import Redis from 'ioredis';
 
 import { In, Between, MoreThan, Repository, LessThan } from 'typeorm';
 import { Status } from '@hashgraph/sdk';
@@ -20,7 +22,10 @@ import {
 } from '@entities';
 
 @Injectable()
-export class TransactionSchedulerService {
+export class TransactionSchedulerService implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(TransactionSchedulerService.name);
+  private redis: Redis;
+
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
     @InjectRepository(TransactionGroup) private transactionGroupRepo: Repository<TransactionGroup>,
@@ -28,7 +33,32 @@ export class TransactionSchedulerService {
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
     private readonly transactionSignatureService: TransactionSignatureService,
+    private readonly configService: ConfigService,
   ) {}
+
+  onModuleInit() {
+    const redisUrl = this.configService.getOrThrow('REDIS_URL');
+    this.redis = new Redis(redisUrl);
+    this.redis.on('error', (err) => this.logger.error(`Redis error: ${err.message}`));
+  }
+
+  onModuleDestroy() {
+    this.redis?.quit();
+  }
+
+  /**
+   * Tries to acquire a distributed lock using Redis SET NX.
+   * Returns true if the lock was acquired, false if another pod already holds it.
+   */
+  private async tryAcquireCronLock(key: string, ttlMs: number): Promise<boolean> {
+    try {
+      const result = await this.redis.set(`cron:${key}`, '1', 'PX', ttlMs, 'NX');
+      return result === 'OK';
+    } catch (error) {
+      this.logger.error(`Error acquiring cron lock for ${key}: ${error.message}`);
+      return true; // Fallback: run the job if Redis fails
+    }
+  }
 
   /* UPDATES THE TRANSACTIONS STATUSES */
 
@@ -37,6 +67,8 @@ export class TransactionSchedulerService {
     name: 'initial_status_update',
   })
   async handleInitialTransactionStatusUpdate() {
+    if (!(await this.tryAcquireCronLock('initial_status_update', 5000))) return;
+
     /* Valid start now minus 180 seconds */
     const transactions = await this.updateTransactions(this.getThreeMinutesBefore());
 
@@ -48,6 +80,8 @@ export class TransactionSchedulerService {
     name: 'status_update_after_one_week',
   })
   async handleTransactionsAfterOneWeek() {
+    if (!(await this.tryAcquireCronLock('status_update_after_one_week', 5000))) return;
+
     await this.updateTransactions(this.getOneWeekLater());
   }
 
@@ -56,6 +90,8 @@ export class TransactionSchedulerService {
     name: 'status_update_between_one_day_and_one_week',
   })
   async handleTransactionsBetweenOneDayAndOneWeek() {
+    if (!(await this.tryAcquireCronLock('status_update_between_one_day_and_one_week', 5000))) return;
+
     await this.updateTransactions(this.getOneDayLater(), this.getOneWeekLater());
   }
 
@@ -64,6 +100,8 @@ export class TransactionSchedulerService {
     name: 'status_update_between_one_hour_and_one_day',
   })
   async handleTransactionsBetweenOneHourAndOneDay() {
+    if (!(await this.tryAcquireCronLock('status_update_between_one_hour_and_one_day', 5000))) return;
+
     await this.updateTransactions(this.getOneHourLater(), this.getOneDayLater());
   }
 
@@ -72,6 +110,8 @@ export class TransactionSchedulerService {
     name: 'status_update_between_ten_minutes_and_one_hour',
   })
   async handleTransactionsBetweenTenMinutesAndOneHour() {
+    if (!(await this.tryAcquireCronLock('status_update_between_ten_minutes_and_one_hour', 5000))) return;
+
     await this.updateTransactions(this.getTenMinutesLater(), this.getOneHourLater());
   }
 
@@ -80,6 +120,8 @@ export class TransactionSchedulerService {
     name: 'status_update_between_three_minutes_and_10_minutes',
   })
   async handleTransactionsBetweenThreeMinutesAndTenMinutes() {
+    if (!(await this.tryAcquireCronLock('status_update_between_three_minutes_and_10_minutes', 5000))) return;
+
     await this.updateTransactions(this.getThreeMinutesLater(), this.getTenMinutesLater());
   }
 
@@ -88,6 +130,8 @@ export class TransactionSchedulerService {
     name: 'status_update_between_now_and_three_minutes',
   })
   async handleTransactionsBetweenNowAndAfterThreeMinutes() {
+    if (!(await this.tryAcquireCronLock('status_update_between_now_and_three_minutes', 9000))) return;
+
     const transactions = await this.updateTransactions(
       this.getThreeMinutesBefore(),
       this.getThreeMinutesLater(),
@@ -101,6 +145,8 @@ export class TransactionSchedulerService {
     name: 'status_update_expired_transactions',
   })
   async handleExpiredTransactions() {
+    if (!(await this.tryAcquireCronLock('status_update_expired_transactions', 9000))) return;
+
     await this.transactionRepo.manager.transaction(async transactionalEntityManager => {
       const transactions = await transactionalEntityManager.find(Transaction, {
         where: {
