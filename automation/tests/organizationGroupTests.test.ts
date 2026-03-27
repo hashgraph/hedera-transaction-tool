@@ -40,7 +40,7 @@ function incrementAccountId(accountId: string) {
   return parts.join('.');
 }
 
-test.describe('Organization Group Tx tests', () => {
+test.describe('Organization Group Tx tests @organization-advanced', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();

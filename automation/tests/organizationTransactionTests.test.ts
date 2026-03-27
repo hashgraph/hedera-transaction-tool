@@ -39,7 +39,7 @@ let secondUser: UserDetails;
 let thirdUser: UserDetails;
 let complexKeyAccountId: string;
 
-test.describe('Organization Transaction tests', () => {
+test.describe('Organization Transaction tests @organization-advanced', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();

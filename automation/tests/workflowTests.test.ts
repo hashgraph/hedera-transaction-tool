@@ -41,7 +41,7 @@ let accountPage: AccountPage;
 let filePage: FilePage;
 let detailsPage: DetailsPage;
 
-test.describe('Workflow tests', () => {
+test.describe('Workflow tests @local-transactions', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());

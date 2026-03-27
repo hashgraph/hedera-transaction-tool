@@ -481,7 +481,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnContactListButton() {
-    await this.click(this.contactListButton);
+    await this.click(this.contactListButton, 0, this.LONG_TIMEOUT);
   }
 
   async isContactListButtonVisible() {

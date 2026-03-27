@@ -29,7 +29,7 @@ let settingsPage: SettingsPage;
 
 let firstUser: UserDetails;
 
-test.describe('Organization Settings tests', () => {
+test.describe('Organization Settings tests @organization-basic', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();

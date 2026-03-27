@@ -21,7 +21,7 @@ let loginPage: LoginPage;
 let settingsPage: SettingsPage;
 let transactionPage: TransactionPage;
 
-test.describe('Settings tests', () => {
+test.describe('Settings tests @local-basic', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());

@@ -186,7 +186,7 @@ export class LoginPage extends BasePage {
   }
 
   async clickSignIn() {
-    await this.click(this.signInButtonSelector);
+    await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
   }
 
   async waitForToastToDisappear() {

@@ -10,7 +10,7 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 
-test.describe('Registration tests', () => {
+test.describe('Registration tests @local-basic', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());

@@ -167,15 +167,33 @@ export function indexRecoveryPhraseWords(words: string[]): string[] {
   return indexedWords;
 }
 
-function resolveSignInUserIndex(
+export function resolveSignInUserIndex(
   requestedIndex: number | null | undefined,
   usersLength: number,
 ): number | null {
-  if (usersLength === 0) {
+  if (requestedIndex === null) {
     return null;
   }
 
-  return requestedIndex === undefined ? 0 : requestedIndex;
+  if (requestedIndex === undefined) {
+    return usersLength === 0 ? null : 0;
+  }
+
+  if (usersLength === 0) {
+    throw new Error(
+      `Invalid signInUserIndex ${requestedIndex}. No organization users are available to sign in.`,
+    );
+  }
+
+  if (!Number.isInteger(requestedIndex) || requestedIndex < 0 || requestedIndex >= usersLength) {
+    throw new Error(
+      `Invalid signInUserIndex ${requestedIndex}. Expected an integer between 0 and ${
+        usersLength - 1
+      }.`,
+    );
+  }
+
+  return requestedIndex;
 }
 
 async function generateRecoveryPhraseWords(): Promise<string[]> {

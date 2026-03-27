@@ -14,7 +14,7 @@ let window: Page;
 const globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
 
-test.describe('Login tests', () => {
+test.describe('Login tests @local-basic', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());

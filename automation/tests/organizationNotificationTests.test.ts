@@ -35,7 +35,7 @@ let loginPage: LoginPage;
 let firstUser: UserDetails;
 let secondUser: UserDetails;
 
-test.describe.skip('Organization Notification tests', () => {
+test.describe.skip('Organization Notification tests @organization-basic', () => {
   test.beforeAll(async () => {
     test.slow();
     await resetDbState();

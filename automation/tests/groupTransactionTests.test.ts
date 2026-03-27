@@ -18,7 +18,7 @@ let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
 
-test.describe('Group transaction tests', () => {
+test.describe('Group transaction tests @local-transactions', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());

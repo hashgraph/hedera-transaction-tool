@@ -27,7 +27,7 @@ let loginPage: LoginPage;
 let adminUser: UserDetails;
 let regularUser: UserDetails;
 
-test.describe('Organization Contact List tests', () => {
+test.describe('Organization Contact List tests @organization-basic', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();

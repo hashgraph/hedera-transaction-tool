@@ -20,7 +20,7 @@ let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 
-test.describe('Transaction tests', () => {
+test.describe('Transaction tests @local-transactions', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
