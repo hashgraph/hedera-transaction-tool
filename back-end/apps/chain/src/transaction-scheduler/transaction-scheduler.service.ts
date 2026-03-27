@@ -285,18 +285,27 @@ export class TransactionSchedulerService {
         // set it to failed with the TRANSACTION_OVERSIZE status code
         // update the transaction, emit the event, and delete the timeout
         if (sdkTransaction === null) {
-          await this.transactionRepo.update(
-            {
-              id: transaction.id,
-            },
-            {
+          const result = await this.transactionRepo
+            .createQueryBuilder()
+            .update(Transaction)
+            .set({
               status: TransactionStatus.FAILED,
               executedAt: new Date(),
               statusCode: Status.TransactionOversize._code,
-            },
-          );
-          //TODO is this one?
-          emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transaction.id }]);
+            })
+            .where('id = :id AND status = :currentStatus', {
+              id: transaction.id,
+              currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+            })
+            .returning('id')
+            .execute();
+
+          if (result.raw.length > 0) {
+            emitTransactionStatusUpdate(
+              this.notificationsPublisher,
+              result.raw.map(row => ({ entityId: row.id })),
+            );
+          }
           return;
         }
 

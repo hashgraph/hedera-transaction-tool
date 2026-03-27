@@ -43,17 +43,19 @@ export class ExecuteService {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
     const results = await this._executeTransaction(transaction, sdkTransaction);
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      [{
-        entityId: transaction.id,
-        additionalData: {
-          network: transaction.mirrorNetwork,
-          transactionId: sdkTransaction.transactionId,
-          status: results.status,
-        }
-      }],
-    );
+    if (results.dbUpdateSucceeded) {
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            network: transaction.mirrorNetwork,
+            transactionId: sdkTransaction.transactionId,
+            status: results.status,
+          }
+        }],
+      );
+    }
     return results;
   }
 
@@ -98,20 +100,24 @@ export class ExecuteService {
       results.transactions.push(...(await Promise.all(executionPromises)));
     }
 
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      transactions.map(({ sdkTransaction, transaction }, i) => {
-        const result = results.transactions[i];
+    const successfulEvents = transactions
+      .map(({ sdkTransaction, transaction }, i) => {
+        const txResult = results.transactions[i];
+        if (!txResult?.dbUpdateSucceeded) return null;
         return {
           entityId: transaction.id,
           additionalData: {
             network: transaction.mirrorNetwork,
             transactionId: sdkTransaction.transactionId?.toString?.() ?? String(sdkTransaction.transactionId),
-            status: result?.status,
+            status: txResult?.status,
           },
         };
-      }),
-    );
+      })
+      .filter(Boolean);
+
+    if (successfulEvents.length > 0) {
+      emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
+    }
 
     return results;
   }
@@ -129,6 +135,7 @@ export class ExecuteService {
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
+      dbUpdateSucceeded: false,
     };
 
     try {
@@ -182,6 +189,7 @@ export class ExecuteService {
 
         if (updateResult.raw.length === 1) {
           result.status = transactionStatus;
+          result.dbUpdateSucceeded = true;
         }
       }
 
