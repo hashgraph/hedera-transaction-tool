@@ -4,14 +4,14 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
   generateRandomPassword,
   setupApp,
 } from '../utils/automationSupport.js';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
+import { createSeededLocalUserSession } from '../utils/localBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -21,29 +21,22 @@ let loginPage: LoginPage;
 let settingsPage: SettingsPage;
 let transactionPage: TransactionPage;
 
-test.describe('Settings tests', () => {
+test.describe('Settings tests @local-basic', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
-    registrationPage = new RegistrationPage(window);
     settingsPage = new SettingsPage(window);
     transactionPage = new TransactionPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
-    );
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
   });
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test.beforeEach(async () => {

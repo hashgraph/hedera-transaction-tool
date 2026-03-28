@@ -67,19 +67,7 @@ export class AppBootstrapper {
     });
 
     console.log('[setupApp] Handling startup modals...');
-    await loginPage.closeImportantNoteModal();
-
-    const canMigrate = await this.canMigrateData(window);
-    console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
-
-    if (canMigrate) {
-      await loginPage.closeMigrationModal();
-    }
-
-    if (process.platform === 'darwin') {
-      console.log('[setupApp] macOS detected -> checking Keychain modal...');
-      await loginPage.closeKeyChainModal();
-    }
+    await this.dismissStartupPrompts(window, loginPage);
 
     console.log('[setupApp] Checking if existing user session exists...');
     const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
@@ -98,10 +86,7 @@ export class AppBootstrapper {
   async resetAppState(window: Page, _app: TransactionToolApp): Promise<void> {
     const loginPage = this.createLoginPage(window);
     await loginPage.resetState();
-    const canMigrate = await this.canMigrateData(window);
-    if (canMigrate) {
-      await loginPage.closeMigrationModal();
-    }
+    await this.dismissStartupPrompts(window, loginPage);
   }
 
   async closeApp(app?: TransactionToolApp | null): Promise<void> {
@@ -114,5 +99,16 @@ export class AppBootstrapper {
 
   private createLoginPage(window: Page): DefaultLoginPage {
     return new this.LoginPageClass(window);
+  }
+
+  private async dismissStartupPrompts(window: Page, loginPage: DefaultLoginPage): Promise<void> {
+    const canMigrate = await this.canMigrateData(window);
+    console.log(`[setupApp] migrationDataExists: ${canMigrate}`);
+
+    if (process.platform === 'darwin') {
+      console.log('[setupApp] macOS detected -> checking Keychain modal...');
+    }
+
+    await loginPage.dismissStartupPrompts(canMigrate);
   }
 }

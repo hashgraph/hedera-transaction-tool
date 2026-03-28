@@ -1,23 +1,27 @@
 import { expect, Page, test } from '@playwright/test';
-import { resetDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/automationSupport.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
+import { LoginPage } from '../pages/LoginPage.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
 
-test.describe('Registration tests', () => {
+test.describe('Registration tests @local-basic', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
+    loginPage = new LoginPage(window);
+    await loginPage.assertRegistrationMode('registration suite bootstrap');
   });
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test.beforeEach(async () => {
@@ -27,6 +31,8 @@ test.describe('Registration tests', () => {
     await resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
+    loginPage = new LoginPage(window);
+    await loginPage.assertRegistrationMode('registration test bootstrap');
   });
 
   test('Verify all elements are present on the registration page', async () => {
