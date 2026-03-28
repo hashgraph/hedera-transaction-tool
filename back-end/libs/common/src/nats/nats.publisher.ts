@@ -7,7 +7,7 @@ type PublishResult = { success: boolean; response: PubAck | any };
 @Injectable()
 export class NatsPublisherService implements OnModuleInit {
   private readonly logger = new Logger(NatsPublisherService.name);
-  private js: JetStreamClient;
+  private js: JetStreamClient | null = null;
 
   constructor(private nats: NatsJetStreamService) {}
 
@@ -17,15 +17,26 @@ export class NatsPublisherService implements OnModuleInit {
 
   /* Returns ack once Jetstream has the message, NOT when the message is processed */
   async publish(subject: string, payload: any): Promise<PublishResult> {
+    if (!this.nats.isConnected() || !this.js) {
+      this.logger.warn(
+        `NATS not connected, cannot publish to: ${subject}. Message will be lost.`,
+      );
+      return {
+        success: false,
+        response: { name: 'ConnectionError', message: 'NATS not connected' },
+      };
+    }
+
     try {
       const ack = await this.js.publish(subject, this.encodePayload(payload));
       this.logger.debug(`Published to: ${subject}, seq: ${ack.seq}`);
       return { success: true, response: ack };
     } catch (err) {
-      this.logger.error(`Error publishing: ${subject}`, err);
-      const normalized = err instanceof Error
-        ? { name: err.name, message: err.message, stack: err.stack }
-        : err;
+      this.logger.warn(`Failed to publish to ${subject}: ${err.message}`);
+      const normalized =
+        err instanceof Error
+          ? { name: err.name, message: err.message, stack: err.stack }
+          : err;
       return { success: false, response: normalized };
     }
   }
