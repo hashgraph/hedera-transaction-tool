@@ -7,7 +7,9 @@
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
     "src/preload/**/*.ts",
-    "src/tests/renderer",
+
+    "src/tests/renderer/**/*",
+
     "../shared/src/**/*.ts"
   ],
   "compilerOptions": {
@@ -42,7 +44,6 @@
     "checkUnknownProps": false,
     "checkUnknownEvents": true,
     "checkUnknownDirectives": true,
-    "checkUnknownComponents": true,
-    "checkUnknownDirectives": true
+    "checkUnknownComponents": true
   }
 }

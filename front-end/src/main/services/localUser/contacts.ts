@@ -1,5 +1,8 @@
 import { getPrismaClient } from '@main/db/prisma';
 import { Prisma } from '@prisma/client';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.contacts');
 
 export async function getOrganizationContacts(
   user_id: string,
@@ -17,7 +20,7 @@ export async function getOrganizationContacts(
       },
     });
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organization contacts', { error });
     return [];
   }
 }

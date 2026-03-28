@@ -34,4 +34,15 @@ module.exports = [
       'newline-per-chained-call': 'off',
     },
   },
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx,cts,mts,vue}'],
+    ignores: [
+      'src/tests/**/*',
+      'src/main/modules/logger.ts',
+      'src/renderer/utils/logger.ts',
+    ],
+    rules: {
+      'no-console': 'error',
+    },
+  },
 ];

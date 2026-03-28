@@ -629,7 +629,6 @@ describe('Services Local User Transactions', () => {
       );
 
       await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
-      console.log(getClient()._operator);
 
       expect(getClient()._operator).toBeNull();
     });

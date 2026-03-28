@@ -5,6 +5,10 @@ import * as fsp from 'fs/promises';
 import * as unzipper from 'unzipper';
 import { app } from 'electron';
 
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.utils.files');
+
 /* Abort controller for public key search */
 let currentController: AbortController | null = null;
 
@@ -29,7 +33,7 @@ export const searchFiles = async (
 
     for (const result of results) {
       if (result.status === 'rejected') {
-        console.log(`Delete search dirs error:`, result.reason);
+        logger.error('Delete search dirs error', { error: result.reason });
       }
     }
   };
@@ -63,12 +67,12 @@ export const searchFiles = async (
           return [await processor(fileDist)];
         } catch (error) {
           await fsp.rm(fileDist);
-          console.log(`Error processing file ${fileDist}:`, error);
+          logger.error('Error processing file', { filePath: fileDist, error });
           return [];
         }
       }
     } catch (error) {
-      console.log(`Error processing ${filePath}:`, error);
+      logger.error('Error processing path', { filePath, error });
     }
 
     return [];

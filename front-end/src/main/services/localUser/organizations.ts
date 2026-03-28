@@ -1,5 +1,8 @@
 import { getPrismaClient } from '@main/db/prisma';
 import { Prisma } from '@prisma/client';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.organizations');
 
 export const getOrganizations = async () => {
   const prisma = getPrismaClient();
@@ -7,7 +10,7 @@ export const getOrganizations = async () => {
   try {
     return await prisma.organization.findMany();
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organizations', { error });
     return [];
   }
 };
@@ -18,7 +21,7 @@ export const getOrganization = async (id: string) => {
   try {
     return await prisma.organization.findFirst({ where: { id } });
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organization', { error });
     return null;
   }
 };

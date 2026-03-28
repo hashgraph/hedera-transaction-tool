@@ -17,6 +17,9 @@ import {
   assertUserLoggedIn,
   assertIsLoggedInOrganization,
 } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.signUpUser');
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -62,7 +65,7 @@ const handleLinkAccount = async () => {
       try {
         await signUpUser(email);
       } catch (error) {
-        console.error(error);
+        logger.error('Failed to sign up user', { email, error });
         failedEmails.push(email);
       }
     }
@@ -96,7 +99,7 @@ const handleLinkAccount = async () => {
         await contacts.fetch();
       }
     } catch (error) {
-      console.error(error);
+      logger.error('Failed to sign up user', { error });
       toastManager.error('Failed to sign up user');
     }
   }

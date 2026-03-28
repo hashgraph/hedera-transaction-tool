@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.globalAppProcesses');
 
 import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
@@ -97,7 +100,7 @@ async function checkAllOrganizationVersions(): Promise<void> {
       await checkCompatibilityForUpgrades(orgsRequiringUpdate);
     }
   } catch (error) {
-    console.error('Failed to check organization versions on launch:', error);
+    logger.error('Failed to check organization versions on launch', { error });
   }
 }
 
@@ -121,35 +124,30 @@ async function checkCompatibilityForUpgrades(
       organizationCompatibilityResults.value[org.serverUrl] = compatibilityResult;
 
       if (compatibilityResult.hasConflict) {
-        console.warn(
-          `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}`,
-        );
-        console.warn(
-          `Conflicts found with ${compatibilityResult.conflicts.length} organization(s):`,
-        );
-        compatibilityResult.conflicts.forEach(conflict => {
-          console.warn(
-            `  - ${conflict.organizationName} (${conflict.serverUrl}): Latest supported: ${conflict.latestSupportedVersion}`,
-          );
+        logger.warn('Compatibility check found conflicts on launch', {
+          serverUrl: org.serverUrl,
+          conflicts: compatibilityResult.conflicts.map(conflict => ({
+            organizationName: conflict.organizationName,
+            serverUrl: conflict.serverUrl,
+            latestSupportedVersion: conflict.latestSupportedVersion,
+          })),
         });
       } else {
-        console.log(
-          `[${new Date().toISOString()}] COMPATIBILITY_CHECK App launch check for ${org.serverUrl}: No conflicts`,
-        );
+        logger.info('Compatibility check passed on launch', { serverUrl: org.serverUrl });
       }
     } catch (error) {
-      console.error(`Failed to check compatibility for ${org.serverUrl}:`, error);
+      logger.error('Failed to check compatibility for organization', { serverUrl: org.serverUrl, error });
       organizationCompatibilityResults.value[org.serverUrl] = null;
     }
   }
 
   if (orgsRequiringUpdate.length > 1) {
-    console.log(
-      `[${new Date().toISOString()}] MULTIPLE_ORGS_REQUIRING_UPDATE: ${orgsRequiringUpdate.length} organization(s) require updates`,
-    );
-    orgsRequiringUpdate.forEach(org => {
-      const status = getVersionStatusForOrg(org.serverUrl);
-      console.log(`  - ${org.nickname || org.serverUrl}: ${status}`);
+    logger.info('Multiple organizations require updates', {
+      count: orgsRequiringUpdate.length,
+      organizations: orgsRequiringUpdate.map(org => ({
+        name: org.nickname || org.serverUrl,
+        status: getVersionStatusForOrg(org.serverUrl),
+      })),
     });
   }
 }

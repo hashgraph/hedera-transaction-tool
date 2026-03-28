@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.mandatoryUpgrade');
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
@@ -117,7 +120,7 @@ const handleDisconnect = async () => {
       try {
         await logout(org.serverUrl);
       } catch (logoutError) {
-        console.warn('Logout failed (may already be disconnected):', logoutError);
+        logger.warn('Logout failed (may already be disconnected)', { error: logoutError });
       }
 
       await user.selectOrganization(null);
@@ -125,16 +128,14 @@ const handleDisconnect = async () => {
 
       resetVersionStatusForOrg(org.serverUrl);
 
-      console.log(
-        `[${new Date().toISOString()}] DISCONNECT Organization: ${org.nickname || org.serverUrl} (Server: ${org.serverUrl})`,
-      );
-      console.log(`  - Status: disconnected`);
-      console.log(`  - Reason: upgradeRequired`);
-      console.log(
-        `  - Remaining orgs requiring update: ${user.organizations.filter(o => getVersionStatusForOrg(o.serverUrl) === 'belowMinimum').length}`,
-      );
+      logger.info('Disconnected organization due to upgrade requirement', {
+        organization: org.nickname || org.serverUrl,
+        serverUrl: org.serverUrl,
+        reason: 'upgradeRequired',
+        remainingOrgsRequiringUpdate: user.organizations.filter(o => getVersionStatusForOrg(o.serverUrl) === 'belowMinimum').length,
+      });
     } catch (error) {
-      console.error('Failed to disconnect organization:', error);
+      logger.error('Failed to disconnect organization', { error });
       toastManager.error('Failed to disconnect organization');
     }
   }

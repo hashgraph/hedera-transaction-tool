@@ -5,9 +5,12 @@ import { KeyPair, Prisma } from '@prisma/client';
 import { encrypt, decrypt } from '@main/utils/crypto';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
 
 import { getCurrentUser, getOrganization } from '.';
 import { getUseKeychainClaim } from './claim';
+
+const logger = createLogger('main.localUser.keyPairs');
 
 //Get all stored secret hash objects
 export const getSecretHashes = async (
@@ -79,7 +82,7 @@ export const storeKeyPair = async (
       data: keyPair,
     });
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Failed to store key pair', { error });
     throw new Error(error instanceof Error ? error.message : 'Failed to store key pair');
   }
 };

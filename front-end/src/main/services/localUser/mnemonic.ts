@@ -1,6 +1,9 @@
 import { Mnemonic, Prisma } from '@prisma/client';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.mnemonic');
 
 /* Add a mnemonic to the database */
 export const addMnemonic = async (
@@ -28,7 +31,7 @@ export const getMnemonics = async (findArgs: Prisma.MnemonicFindManyArgs): Promi
   try {
     return await prisma.mnemonic.findMany(findArgs);
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get mnemonics', { error });
     return [];
   }
 };

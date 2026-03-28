@@ -49,8 +49,7 @@ const updateEntries = async () => {
 watch(() => props.items, updateEntries, { immediate: true });
 
 onMounted(() => {
-  // console.log('items=' + JSON.stringify(props.items));
-  // console.log('index=' + index.value);
+  // items and index logged via framework
 });
 </script>
 

@@ -18,6 +18,9 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.page.createTransactionGroup');
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
@@ -276,7 +279,7 @@ async function handleOnFileChanged(e: Event) {
             toastManager.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Sender account lookup failed', { senderAccount, error });
             return;
           }
           break;
@@ -288,7 +291,7 @@ async function handleOnFileChanged(e: Event) {
             toastManager.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Fee payer account lookup failed', { feePayer, error });
             return;
           }
           break;
@@ -331,7 +334,7 @@ async function handleOnFileChanged(e: Event) {
             toastManager.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
             return;
           }
@@ -380,7 +383,7 @@ async function handleOnFileChanged(e: Event) {
     toastManager.success('Import complete');
   } catch (error) {
     toastManager.error('Failed to import CSV file');
-    console.log(error);
+    logger.error('Failed to import CSV file', { error });
   } finally {
     if (file.value != null) {
       file.value.value = '';

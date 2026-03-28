@@ -1,6 +1,9 @@
 import { useRoute } from 'vue-router';
 
 import { deleteDraft, getDraft } from '@renderer/services/transactionDraftsService';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.composable.draft');
 
 export default function useDraft() {
   /* Composables */
@@ -13,7 +16,7 @@ export default function useDraft() {
         const draft = await getDraft(route.query.draftId.toString());
         if (!draft.isTemplate) await deleteDraft(route.query.draftId.toString());
       } catch (error) {
-        console.log(error);
+        logger.error('Failed to delete draft', { error });
       }
     }
   }
