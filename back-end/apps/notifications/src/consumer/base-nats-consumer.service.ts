@@ -56,11 +56,13 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
   /**
    * Main consume loop with automatic reconnection on failure.
    *
-   * When NATS drops, the `for await` loop exits. This outer while-loop
-   * catches the error, waits with exponential backoff, recreates the
-   * consumer, and resumes consuming. JetStream guarantees that messages
-   * published during the outage are persisted and delivered once the
-   * consumer reconnects (within the 5-minute retention window).
+   * When NATS drops (for this consumer), the `for await` loop exits. This
+   * outer while-loop catches the error, waits with exponential backoff,
+   * recreates the consumer, and resumes consuming. JetStream will persist
+   * and deliver, upon reconnection and within the 5-minute retention window,
+   * any messages that were successfully published to NATS by other connected
+   * clients during this consumer's outage; if publishers cannot reach NATS,
+   * those messages cannot be persisted and will be lost.
    */
   private async consumeWithReconnect() {
     const config = this.getConsumerConfig();
