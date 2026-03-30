@@ -257,7 +257,9 @@ test.describe('Organization Transaction tests', () => {
     await organizationPage.clickOnInProgressDetailsButtonByTransactionId(txId ?? '');
     await organizationPage.clickOnCancelTransactionButton();
     await organizationPage.clickOnConfirmCancelButton();
-    expect(await organizationPage.isSignTransactionButtonVisible()).toBe(false);
+    await expect
+      .poll(() => organizationPage.isSignTransactionButtonVisible(), { timeout: 10000 })
+      .toBe(false);
 
     await organizationPage.logoutFromOrganization();
     // Now signs in as every user and verifies that no sign action is enabled for txId
