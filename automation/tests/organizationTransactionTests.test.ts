@@ -271,6 +271,7 @@ test.describe('Organization Transaction tests', () => {
       expect(historyDetails?.transactionId).toBe(txId);
       expect(historyDetails?.transactionType).toBe('Account Update');
       expect(historyDetails?.validStart).toBe('N/A');
+      expect(historyDetails?.status).toBe('CANCELED');
       expect(historyDetails?.detailsButton).toBe(true);
       await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
       expect(await organizationPage.isSignTransactionButtonVisible()).toBe(false);
