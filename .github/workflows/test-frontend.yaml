@@ -128,7 +128,7 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npm install -g @hashgraph/solo@0.63.0
+          npm install -g @hashgraph/solo@0.64.0
           solo --version
           kind --version
 
@@ -169,8 +169,6 @@ jobs:
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
-          OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
 
         run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
