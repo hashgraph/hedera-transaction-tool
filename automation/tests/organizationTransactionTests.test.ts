@@ -254,7 +254,7 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails?.validStart).toBe(validStartTime);
     expect(transactionDetails?.detailsButton).toBe(true);
 
-    await organizationPage.clickOnInProgressDetailsButtonByIndex(0);
+    await organizationPage.clickOnInProgressDetailsButtonByTransactionId(txId ?? '');
     await organizationPage.clickOnCancelTransactionButton();
     await organizationPage.clickOnConfirmCancelButton();
     expect(await organizationPage.isSignTransactionButtonVisible()).toBe(false);
