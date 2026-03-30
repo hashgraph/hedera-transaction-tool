@@ -72,11 +72,12 @@ export const deleteUser = (organizationServerUrl: string, id: number) =>
   }, 'Failed to delete user');
 
 export const getPublicKeyOwner = async (organizationServerUrl: string, publicKey: string): Promise<string|null> => {
-  return commonRequestHandler(async () => {
+  try {
     const response = await axiosWithCredentials.get(
       `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
     );
-    // response.data == "" when there is no matching user => fixing
     return response.data === "" ? null : response.data;
-  }, 'Failed to get owner of the public key');
+  } catch {
+    return null;
+  }
 };
