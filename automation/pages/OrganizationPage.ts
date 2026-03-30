@@ -1708,6 +1708,24 @@ export class OrganizationPage extends BasePage {
     }
   }
 
+  async clickOnInProgressDetailsButtonByTransactionId(
+    transactionId: string,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
+  ) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        const id = await this.getInProgressTransactionIdByIndex(i);
+        if (id === transactionId) {
+          await this.clickOnInProgressDetailsButtonByIndex(i);
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+
   async isTransactionIdVisibleInProgress(transactionId: string, attempts = 10) {
     for (let attempt = 0; attempt < attempts; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
