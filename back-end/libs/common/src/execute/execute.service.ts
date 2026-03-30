@@ -42,8 +42,8 @@ export class ExecuteService {
   async executeTransaction(transaction: Transaction) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-    const results = await this._executeTransaction(transaction, sdkTransaction);
-    if (results.dbUpdateSucceeded) {
+    const result = await this._executeTransaction(transaction, sdkTransaction);
+    if (result) {
       emitTransactionStatusUpdate(
         this.notificationsPublisher,
         [{
@@ -51,12 +51,12 @@ export class ExecuteService {
           additionalData: {
             network: transaction.mirrorNetwork,
             transactionId: sdkTransaction.transactionId,
-            status: results.status,
+            status: result.status,
           }
         }],
       );
     }
-    return results;
+    return result;
   }
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
@@ -80,16 +80,14 @@ export class ExecuteService {
       }
     }
 
-    const results: TransactionGroupExecutedDto = {
-      transactions: [],
-    };
+    // Execute all transactions, collecting raw results (may contain nulls for pods that lost the race)
+    const rawResults: (TransactionExecutedDto | null)[] = [];
 
-    // now we can execute all the transactions
     if (transactionGroup.sequential) {
       for (const { sdkTransaction, transaction } of transactions) {
         const delay = transaction.validStart.getTime() - Date.now();
         await sleep(delay);
-        results.transactions.push(await this._executeTransaction(transaction, sdkTransaction));
+        rawResults.push(await this._executeTransaction(transaction, sdkTransaction));
       }
     } else {
       const executionPromises = transactions.map(async ({ sdkTransaction, transaction }) => {
@@ -97,19 +95,19 @@ export class ExecuteService {
         await sleep(delay);
         return this._executeTransaction(transaction, sdkTransaction);
       });
-      results.transactions.push(...(await Promise.all(executionPromises)));
+      rawResults.push(...(await Promise.all(executionPromises)));
     }
 
     const successfulEvents = transactions
       .map(({ sdkTransaction, transaction }, i) => {
-        const txResult = results.transactions[i];
-        if (!txResult?.dbUpdateSucceeded) return null;
+        const txResult = rawResults[i];
+        if (!txResult) return null;
         return {
           entityId: transaction.id,
           additionalData: {
             network: transaction.mirrorNetwork,
             transactionId: sdkTransaction.transactionId?.toString?.() ?? String(sdkTransaction.transactionId),
-            status: txResult?.status,
+            status: txResult.status,
           },
         };
       })
@@ -119,13 +117,18 @@ export class ExecuteService {
       emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
     }
 
+    // Return only successful results — filter out nulls from pods that lost the race
+    const results: TransactionGroupExecutedDto = {
+      transactions: rawResults.filter((r): r is TransactionExecutedDto => r !== null),
+    };
+
     return results;
   }
 
   private async _executeTransaction(
     transaction: Transaction,
     sdkTransaction: SDKTransaction,
-  ) {
+  ): Promise<TransactionExecutedDto | null> {
     const client = await getClientFromNetwork(transaction.mirrorNetwork);
 
     const executedAt = new Date();
@@ -135,7 +138,6 @@ export class ExecuteService {
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
-      dbUpdateSucceeded: false,
     };
 
     try {
@@ -175,27 +177,25 @@ export class ExecuteService {
         `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
       );
     } finally {
-      if (!isDuplicate) {
-        const updateResult = await this.transactionsRepo
-          .createQueryBuilder()
-          .update(Transaction)
-          .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
-          .where('id = :id AND status = :currentStatus', {
-            id: transaction.id,
-            currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
-          })
-          .returning('id')
-          .execute();
-
-        if (updateResult.raw.length === 1) {
-          result.status = transactionStatus;
-          result.dbUpdateSucceeded = true;
-        }
-      }
-
       client.close();
     }
 
+    if (isDuplicate) return null;
+
+    const updateResult = await this.transactionsRepo
+      .createQueryBuilder()
+      .update(Transaction)
+      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
+      .where('id = :id AND status = :currentStatus', {
+        id: transaction.id,
+        currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      })
+      .returning('id')
+      .execute();
+
+    if (updateResult.raw.length === 0) return null;
+
+    result.status = transactionStatus;
     return result;
   }
 

@@ -18,7 +18,4 @@ export class TransactionExecutedDto {
 
   @Expose()
   error?: string;
-
-  /** Internal flag — true when this pod's UPDATE actually changed the row */
-  dbUpdateSucceeded?: boolean;
 }
