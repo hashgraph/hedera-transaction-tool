@@ -1,23 +1,20 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NatsJetStreamService } from './nats-jetstream.service';
-import { JetStreamClient, PubAck } from 'nats';
+import { PubAck } from 'nats';
 
 type PublishResult = { success: boolean; response: PubAck | any };
 
 @Injectable()
-export class NatsPublisherService implements OnModuleInit {
+export class NatsPublisherService {
   private readonly logger = new Logger(NatsPublisherService.name);
-  private js: JetStreamClient | null = null;
 
   constructor(private nats: NatsJetStreamService) {}
 
-  async onModuleInit() {
-    this.js = this.nats.getJetStream();
-  }
-
   /* Returns ack once Jetstream has the message, NOT when the message is processed */
   async publish(subject: string, payload: any): Promise<PublishResult> {
-    if (!this.nats.isConnected() || !this.js) {
+    const js = this.nats.getJetStream();
+
+    if (!this.nats.isConnected() || !js) {
       this.logger.warn(
         `NATS not connected, cannot publish to: ${subject}. Message will be lost.`,
       );
@@ -28,7 +25,7 @@ export class NatsPublisherService implements OnModuleInit {
     }
 
     try {
-      const ack = await this.js.publish(subject, this.encodePayload(payload));
+      const ack = await js.publish(subject, this.encodePayload(payload));
       this.logger.debug(`Published to: ${subject}, seq: ${ack.seq}`);
       return { success: true, response: ack };
     } catch (err) {
