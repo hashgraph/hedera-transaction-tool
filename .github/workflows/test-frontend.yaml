@@ -160,7 +160,7 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npm install -g @hashgraph/solo
+          npm install -g @hashgraph/solo@0.63.0
           solo --version
           kind --version
 
