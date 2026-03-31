@@ -543,7 +543,6 @@ onBeforeRouteLeave(async to => {
       </div>
     </AppModal>
     <ImportCSVController
-      v-if="selectedFile"
       v-model:activate="importCsvStarted"
       v-model:description="groupDescription"
       :callback="didImportCsv"

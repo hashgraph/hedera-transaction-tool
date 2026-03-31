@@ -11,7 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId.ts';
 
 /* Props */
 const props = defineProps<{
-  selectedFile: File;
+  selectedFile?: File;
   callback: () => Promise<void>;
 }>();
 
@@ -31,6 +31,7 @@ const network = useNetworkStore();
 
 /* Handlers */
 async function handleImportCsv() {
+  if (!props.selectedFile) return;
   try {
     const result = await readFileAsText(props.selectedFile);
     const rows = result.split(/\r?\n|\r|\n/g);
