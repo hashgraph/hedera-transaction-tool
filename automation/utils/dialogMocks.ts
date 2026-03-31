@@ -18,7 +18,15 @@ type RendererElectronAPI = typeof globalThis & {
 
 export async function clearDialogMockState(window: Page): Promise<void> {
   await window.evaluate(async () => {
-    await (globalThis as RendererElectronAPI).electronAPI.local.utils.clearDialogMockState();
+    const dialogUtils = (globalThis as RendererElectronAPI).electronAPI.local.utils;
+
+    if (typeof dialogUtils.clearDialogMockState !== 'function') {
+      throw new Error(
+        'Dialog mock API is unavailable in the launched app. Rebuild or relaunch the app from a build that includes the current preload test hooks.',
+      );
+    }
+
+    await dialogUtils.clearDialogMockState();
   });
 }
 
@@ -27,6 +35,14 @@ export async function setDialogMockState(
   dialogMockState: DialogMockState,
 ): Promise<void> {
   await window.evaluate(async state => {
-    await (globalThis as RendererElectronAPI).electronAPI.local.utils.setDialogMockState(state);
+    const dialogUtils = (globalThis as RendererElectronAPI).electronAPI.local.utils;
+
+    if (typeof dialogUtils.setDialogMockState !== 'function') {
+      throw new Error(
+        'Dialog mock API is unavailable in the launched app. Rebuild or relaunch the app from a build that includes the current preload test hooks.',
+      );
+    }
+
+    await dialogUtils.setDialogMockState(state);
   }, dialogMockState);
 }

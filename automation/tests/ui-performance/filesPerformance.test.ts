@@ -9,8 +9,8 @@
 
 import { expect, Page, test } from '@playwright/test';
 import { closeApp, setupApp } from '../../utils/automationSupport.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
-import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import { seedLocalPerfData } from './seed-local-perf-data.js';
 import {
   collectPerformanceSamples,
@@ -18,10 +18,10 @@ import {
   DEBUG,
   formatDuration,
   TARGET_LOAD_TIME_MS,
-  TEST_LOCAL_PASSWORD,
   waitForRowCount,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
+import { createSeededLocalUserSession } from '../../utils/localBaseline.js';
 
 // Volume requirement from k6 constants (SSOT)
 const DB_ITEM_COUNT = DATA_VOLUMES.FILES;
@@ -29,18 +29,19 @@ const MIN_ROWS = 50; // Strict: require at least 50 rows rendered
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
-let registrationPage: RegistrationPage;
 let testEmail: string;
 let seededCount: number;
+let loginPage: LoginPage;
 
 test.describe('Files Page Performance', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
-    registrationPage = new RegistrationPage(window);
-
-    testEmail = `perf-files-${Date.now()}@test.com`;
-    await registrationPage.completeRegistration(testEmail, TEST_LOCAL_PASSWORD);
+    loginPage = new LoginPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage, {
+      email: `perf-files-${Date.now()}@test.com`,
+    });
+    testEmail = seededUser.email;
 
     const result = await seedLocalPerfData(testEmail);
     seededCount = result.files;
@@ -50,7 +51,7 @@ test.describe('Files Page Performance', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Files page should load in under 1 second (p95)', async () => {

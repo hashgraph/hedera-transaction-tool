@@ -69,40 +69,20 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Registration
-            command: RegistrationTests
+          - name: Local Basic
+            tag: '@local-basic'
             soloRequired: false
             backendRequired: false
-          - name: Login
-            command: LoginTests
-            soloRequired: false
-            backendRequired: false
-          - name: Settings
-            command: SettingsTests
-            soloRequired: false
-            backendRequired: false
-          - name: Transactions
-            command: TransactionTests
+          - name: Local Transactions
+            tag: '@local-transactions'
             soloRequired: true
             backendRequired: false
-          - name: Workflow
-            command: WorkflowTests
-            soloRequired: true
-            backendRequired: false
-          - name: GroupTransaction
-            command: GroupTransactionTests
-            soloRequired: true
-            backendRequired: false
-          - name: OrganizationSettings
-            command: OrganizationSettingsTests
+          - name: Organization Basic
+            tag: '@organization-basic'
             soloRequired: true
             backendRequired: true
-          - name: OrganizationContactList
-            command: OrganizationContactListTests
-            soloRequired: true
-            backendRequired: true
-          - name: OrganizationGroup
-            command: OrganizationGroupTests
+          - name: Organization Advanced
+            tag: '@organization-advanced'
             soloRequired: true
             backendRequired: true
     steps:
@@ -402,7 +382,7 @@ jobs:
           POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_USERNAME: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_PASSWORD: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
-        run: xvfb-run -a npx playwright test tests/${{ matrix.test-suite.command }}
+        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.tag }}"
         working-directory: automation
 
       - name: Upload Playwright Report
