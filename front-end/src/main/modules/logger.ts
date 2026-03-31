@@ -271,7 +271,22 @@ function rotateLogFiles(currentPath: string) {
       continue;
     }
 
-    fs.rmSync(targetPath, { force: true });
-    fs.renameSync(sourcePath, targetPath);
+    try {
+      if (fs.existsSync(targetPath)) {
+        fs.rmSync(targetPath, { force: true });
+      }
+      fs.renameSync(sourcePath, targetPath);
+    } catch (error) {
+      // Do not let log rotation failures crash the process; log and continue.
+      try {
+        electronLog.error('Failed to rotate log file', {
+          sourcePath,
+          targetPath,
+          error,
+        });
+      } catch {
+        // If logging the rotation failure itself fails, swallow the error.
+      }
+    }
   }
 }
