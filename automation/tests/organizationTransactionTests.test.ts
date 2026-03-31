@@ -234,6 +234,48 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
     expect(transactionDetails?.detailsButton).toBe(true);
   });
 
+  test('Verify transaction is shown "History" tab after canceling and cannot be signed again', async () => {
+    const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 30, true);
+    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
+    await organizationPage.closeDraftModal();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnInProgressTab();
+
+    const transactionDetails = await organizationPage.getInProgressTransactionDetails(txId ?? '');
+    expect(transactionDetails?.transactionId).toBe(txId);
+    expect(transactionDetails?.transactionType).toBe('Account Update');
+    expect(transactionDetails?.validStart).toBe(validStartTime);
+    expect(transactionDetails?.detailsButton).toBe(true);
+
+    await organizationPage.clickOnInProgressDetailsButtonByTransactionId(txId ?? '');
+    await organizationPage.clickOnCancelTransactionButton();
+    await organizationPage.clickOnConfirmCancelButton();
+    await expect
+      .poll(() => organizationPage.isSignTransactionButtonVisible(), { timeout: 10000 })
+      .toBe(false);
+
+    await organizationPage.logoutFromOrganization();
+    // Now signs in as every user and verifies that no sign action is enabled for txId
+    for (const user of organizationPage.users) {
+      await organizationPage.fillInLoginDetailsAndClickSignIn(user.email, user.password);
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.clickOnHistoryTab();
+      const historyDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+      expect(historyDetails?.transactionId).toBe(txId);
+      expect(historyDetails?.transactionType).toBe('Account Update');
+      expect(historyDetails?.validStart).toBe('N/A');
+      expect(historyDetails?.status).toBe('CANCELED');
+      expect(historyDetails?.detailsButton).toBe(true);
+      await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
+      expect(await organizationPage.isSignTransactionButtonVisible()).toBe(false);
+      await organizationPage.logoutFromOrganization();
+    }
+
+    // Signs in again as user 0 to enable logout in afterEach() callback
+    const user0 = organizationPage.users[0];
+    await organizationPage.fillInLoginDetailsAndClickSignIn(user0.email, user0.password);
+  });
+
   test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 600, true);
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
