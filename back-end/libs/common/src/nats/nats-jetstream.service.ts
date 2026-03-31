@@ -23,19 +23,22 @@ export class NatsJetStreamService implements OnModuleDestroy {
 
   private async connectWithTimeout() {
     try {
+      let timedOut = false;
       const connectionPromise = this.connect();
       connectionPromise.catch((err) => {
-        this.logger.error(
-          `Background NATS connection attempt failed after timeout: ${err.message}`,
-        );
+        if (timedOut) {
+          this.logger.error(
+            `Background NATS connection attempt failed after startup timeout: ${err.message}`,
+          );
+        }
       });
 
       let timeoutId: ReturnType<typeof setTimeout>;
       const timeoutPromise = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(
-          () => reject(new Error(`NATS connection timed out after ${CONNECTION_TIMEOUT_MS}ms`)),
-          CONNECTION_TIMEOUT_MS,
-        );
+        timeoutId = setTimeout(() => {
+          timedOut = true;
+          reject(new Error(`NATS connection timed out after ${CONNECTION_TIMEOUT_MS}ms`));
+        }, CONNECTION_TIMEOUT_MS);
       });
 
       try {

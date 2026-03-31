@@ -29,7 +29,8 @@ export class NatsPublisherService {
       this.logger.debug(`Published to: ${subject}, seq: ${ack.seq}`);
       return { success: true, response: ack };
     } catch (err) {
-      this.logger.warn(`Failed to publish to ${subject}: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to publish to ${subject}: ${message}`);
       const normalized =
         err instanceof Error
           ? { name: err.name, message: err.message, stack: err.stack }
