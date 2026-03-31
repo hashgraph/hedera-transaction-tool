@@ -214,6 +214,8 @@ describe('logger', () => {
 
     const fsMock = (await import('fs')).default;
     fsMock.existsSync.mockReturnValue(true);
+    fsMock.rmSync.mockClear();
+    fsMock.renameSync.mockClear();
 
     rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
 
@@ -233,10 +235,11 @@ describe('logger', () => {
     initLogger();
 
     const fsMock = (await import('fs')).default;
-    // Only the current file exists; archived slots do not
-    fsMock.existsSync.mockImplementation((p: string) => p === '/mock-user-data/logs/app.log');
     fsMock.rmSync.mockClear();
     fsMock.renameSync.mockClear();
+
+    // Only the current file exists; archived slots do not
+    fsMock.existsSync.mockImplementation((p: string) => p === '/mock-user-data/logs/app.log');
 
     rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
 
