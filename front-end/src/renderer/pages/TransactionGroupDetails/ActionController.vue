@@ -11,8 +11,8 @@ const persistenceTime = dohertyThreshold * 3;
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
   actionCallback: () => Promise<void>;
-  confirmTitle: string;
-  confirmText: string;
+  confirmTitle: string | null;
+  confirmText: string | null;
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
@@ -27,6 +27,15 @@ const showProgress = ref<boolean>(false);
 
 /* Handlers */
 const handleConfirm = async () => {
+  await performAction();
+};
+
+const handleCancel = () => {
+  activate.value = false;
+};
+
+/* Functions */
+const performAction = async () => {
   document.documentElement.inert = true; // Before Doherty threshold, we render document inert
   startDate.value = new Date();
   timeoutID.value = window.setTimeout(() => {
@@ -43,7 +52,7 @@ const handleConfirm = async () => {
       const waitingTime = dohertyThreshold + persistenceTime - elapsedTime;
       if (waitingTime > 0) {
         // => elapsedTime < dohertyThreshold + visibleMinTime
-        console.log("Waiting for " + waitingTime + " ms");
+        console.log('Waiting for ' + waitingTime + ' ms');
         await new Promise(resolve => setTimeout(resolve, waitingTime));
       }
     }
@@ -59,20 +68,21 @@ const handleConfirm = async () => {
   }
 };
 
-const handleCancel = () => {
-  activate.value = false;
-};
-
 /* Hooks */
-watch(activate, () => {
+watch(activate, async () => {
   if (activate.value) {
+    if (props.confirmTitle !== null && props.confirmText !== null) {
     isConfirmModalShown.value = true;
+    } else {
+      await performAction();
+    }
   }
 });
 </script>
 
 <template>
   <AppConfirmModal
+    v-if="props.confirmTitle !== null && props.confirmText !== null"
     v-model:show="isConfirmModalShown"
     :title="props.confirmTitle"
     :text="props.confirmText"
