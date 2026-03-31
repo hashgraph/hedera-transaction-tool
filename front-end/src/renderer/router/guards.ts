@@ -57,8 +57,8 @@ export function addGuards(router: Router) {
       return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
     }
 
-    if (!excludedPreviousPaths.includes(to.name?.toString() || '')) {
-      router.previousPath = to.path;
+    if (!excludedPreviousPaths.includes(from.name?.toString() || '')) {
+      router.previousPath = from.path;
     }
 
     if (from.name === 'transactions') {
