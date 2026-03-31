@@ -121,16 +121,16 @@ export async function processTransactionStatus(
   transactions: Transaction[],
 ): Promise<Map<number, TransactionStatus>> {
   const statusChanges = new Map<number, TransactionStatus>();
-  const updatesByStatus = new Map<TransactionStatus, number[]>();
 
-  // Process all transactions and group updates as we go
+  // Group intended updates by [newStatus, oldStatus] so we can bulk update
+  // only rows that still have the expected current status
+  const updatesByStatus = new Map<string, { newStatus: TransactionStatus, oldStatus: TransactionStatus, ids: number[] }>();
+
   for (const transaction of transactions) {
     if (!transaction) continue;
 
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
     const signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
-
     const isAbleToSign = hasValidSignatureKey(
       [...sdkTransaction._signerPublicKeys],
       signatureKey
@@ -140,30 +140,35 @@ export async function processTransactionStatus(
 
     if (isAbleToSign) {
       const collatedTx = await smartCollate(transaction, signatureKey);
-
       if (collatedTx !== null) {
         newStatus = TransactionStatus.WAITING_FOR_EXECUTION;
       }
     }
 
     if (transaction.status !== newStatus) {
-      // Track what changed (for return value)
-      statusChanges.set(transaction.id, newStatus);
-
-      // Group by status for bulk update
-      if (!updatesByStatus.has(newStatus)) {
-        updatesByStatus.set(newStatus, []);
+      const key = `${transaction.status}->${newStatus}`;
+      if (!updatesByStatus.has(key)) {
+        updatesByStatus.set(key, { newStatus, oldStatus: transaction.status, ids: [] });
       }
-      updatesByStatus.get(newStatus)!.push(transaction.id);
+      updatesByStatus.get(key)!.ids.push(transaction.id);
     }
   }
 
-  // Execute one update per unique status
   if (updatesByStatus.size > 0) {
     await Promise.all(
-      Array.from(updatesByStatus.entries()).map(([status, ids]) =>
-        transactionRepo.update({ id: In(ids) }, { status })
-      )
+      Array.from(updatesByStatus.values()).map(async ({ newStatus, oldStatus, ids }) => {
+        const result = await transactionRepo
+          .createQueryBuilder()
+          .update(Transaction)
+          .set({ status: newStatus })
+          .where('id IN (:...ids) AND status = :oldStatus', { ids, oldStatus })
+          .returning('id')
+          .execute();
+
+        for (const row of result.raw) {
+          statusChanges.set(row.id, newStatus);
+        }
+      })
     );
   }
 
