@@ -39,11 +39,29 @@ let thirdUser: UserDetails
 let complexKeyAccountId: string;
 let newAccountId: string;
 
-function incrementAccountId(accountId: string) {
+async function findMissingAccountId(accountId: string): Promise<string> {
   const parts = accountId.split('.');
   const lastIndex = parts.length - 1;
-  parts[lastIndex] = (parseInt(parts[lastIndex], 10) + 1).toString();
-  return parts.join('.');
+  const baseAccountNumber = Number(parts[lastIndex]);
+
+  if (!Number.isInteger(baseAccountNumber)) {
+    throw new Error(`Invalid account id: ${accountId}`);
+  }
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    parts[lastIndex] = String(baseAccountNumber + 1_000_000 + attempt);
+    const candidateAccountId = parts.join('.');
+    const accountExists = await transactionPage
+      .mirrorGetAccountResponse(candidateAccountId, 300, 150)
+      .then(response => Array.isArray(response?.accounts) && response.accounts.length > 0)
+      .catch(() => false);
+
+    if (!accountExists) {
+      return candidateAccountId;
+    }
+  }
+
+  throw new Error(`Failed to find a missing account id derived from ${accountId}`);
 }
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
@@ -212,22 +230,21 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
 
   test('Verify import fails if sender account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    // create a non-existing account Id
-    const senderAccountId = incrementAccountId(newAccountId);
+    const senderAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(senderAccountId, newAccountId, 5);
     expect(message).toBe(`Sender account ${senderAccountId} does not exist on network. Review the CSV file.`);
   });
 
   test('Verify import fails if fee payer account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    const feePayerAccountId = incrementAccountId(newAccountId);
+    const feePayerAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
     expect(message).toBe(`Fee payer account ${feePayerAccountId} does not exist on network. Review the CSV file.`);
   });
 
   test('Verify import fails if receiver account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    const receiverAccountId = incrementAccountId(newAccountId);
+    const receiverAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, receiverAccountId, 5);
     expect(message).toBe(`Receiver account ${receiverAccountId} does not exist on network. Review the CSV file.`);
   });
