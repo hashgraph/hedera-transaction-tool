@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -11,12 +11,12 @@ const persistenceTime = dohertyThreshold * 3;
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
   actionCallback: () => Promise<void>;
-  confirmTitle: string | null;
-  confirmText: string | null;
+  confirmTitle?: string;
+  confirmText?: string;
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
-  dataTestid: string;
+  dataTestid?: string;
 }>();
 
 /* State */
@@ -24,6 +24,15 @@ const isConfirmModalShown = ref(false);
 const startDate = ref<Date | null>(null);
 const timeoutID = ref<number | null>(null);
 const showProgress = ref<boolean>(false);
+
+/* Computed */
+const confirmationProps = computed(() => {
+  const { confirmTitle, confirmText, dataTestid } = props;
+  if (confirmTitle !== undefined && confirmText !== undefined && dataTestid !== undefined) {
+    return { confirmTitle, confirmText, dataTestid };
+  }
+  return null;
+});
 
 /* Handlers */
 const handleConfirm = async () => {
@@ -71,8 +80,8 @@ const performAction = async () => {
 /* Hooks */
 watch(activate, async () => {
   if (activate.value) {
-    if (props.confirmTitle !== null && props.confirmText !== null) {
-    isConfirmModalShown.value = true;
+    if (confirmationProps.value) {
+      isConfirmModalShown.value = true;
     } else {
       await performAction();
     }
@@ -82,13 +91,13 @@ watch(activate, async () => {
 
 <template>
   <AppConfirmModal
-    v-if="props.confirmTitle !== null && props.confirmText !== null"
+    v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :title="props.confirmTitle"
-    :text="props.confirmText"
+    :title="confirmationProps.confirmTitle"
+    :text="confirmationProps.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :data-testid="props.dataTestid"
+    :data-testid="confirmationProps.dataTestid"
   />
 
   <AppModal
