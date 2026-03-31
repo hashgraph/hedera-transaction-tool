@@ -91,6 +91,7 @@ export class OrganizationPage extends BasePage {
   minutesOverlayButtonSelector = 'css=button[data-test-id="minutes-toggle-overlay-btn-0"]';
   hoursOverlayButtonSelector = 'css=button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
+  cancelTransactionButtonSelector = 'button-cancel-org-transaction';
   signTransactionButton = 'css=button:has-text("Sign")';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
@@ -101,6 +102,7 @@ export class OrganizationPage extends BasePage {
   confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
   cancelGroupActionButtonSelector = 'button-cancel-group-action';
+  confirmCancelButtonSelector = 'button-group-action-confirm';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   confirmTransactionModalTitleSelector = 'h3';
   signAllTransactionsModalTitle = 'Sign all transactions?';
@@ -195,6 +197,8 @@ export class OrganizationPage extends BasePage {
   }
 
   async fillInLoginDetailsAndClickSignIn(email: string, password: string) {
+    // Wait for login form to be visible (handles transition after logout)
+    await this.waitForElementToBeVisible(this.emailForOrganizationInputSelector);
     await this.fill(this.emailForOrganizationInputSelector, email);
     await this.fill(this.passwordForOrganizationInputSelector, password);
     await this.click(this.signInOrganizationButtonSelector);
@@ -914,6 +918,10 @@ export class OrganizationPage extends BasePage {
     return await this.isElementVisible(this.signTransactionButtonSelector);
   }
 
+  async clickOnCancelTransactionButton() {
+    await this.click(this.cancelTransactionButtonSelector, 0, this.VERY_LONG_TIMEOUT);
+  }
+
   async getTransactionDetailsId() {
     return await this.getText(this.transactionDetailsIdSelector, null, this.LONG_TIMEOUT);
   }
@@ -1416,6 +1424,11 @@ export class OrganizationPage extends BasePage {
     await this.click(this.confirmSignAllButtonSelector);
   }
 
+  async clickOnConfirmCancelButton() {
+    await this.waitForElementToBeVisible(this.confirmCancelButtonSelector, 10000);
+    await this.click(this.confirmCancelButtonSelector);
+  }
+
   async clickOnConfirmCancelAllButton() {
     await this.click(this.confirmCancelAllButtonSelector);
   }
@@ -1484,6 +1497,10 @@ export class OrganizationPage extends BasePage {
 
   async isReadyForExecutionDetailsButtonVisibleByIndex(index: number) {
     return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
+  }
+
+  async clickOnInProgressDetailsButtonByIndex(index: number) {
+    await this.click(this.transactionNodeDetailsButtonIndexSelector + index);
   }
 
   async clickOnReadyForExecutionDetailsButtonByIndex(index: number) {
@@ -1684,6 +1701,24 @@ export class OrganizationPage extends BasePage {
         const id = await this.getHistoryTransactionIdByIndex(i);
         if (id === transactionId) {
           await this.clickOnHistoryDetailsButtonByIndex(i);
+          return;
+        }
+      }
+      await new Promise(resolve => setTimeout(resolve, retryDelay));
+    }
+  }
+
+  async clickOnInProgressDetailsButtonByTransactionId(
+    transactionId: string,
+    maxRetries = 20,
+    retryDelay = this.SHORT_TIMEOUT,
+  ) {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      for (let i = 0; i < count; i++) {
+        const id = await this.getInProgressTransactionIdByIndex(i);
+        if (id === transactionId) {
+          await this.clickOnInProgressDetailsButtonByIndex(i);
           return;
         }
       }
