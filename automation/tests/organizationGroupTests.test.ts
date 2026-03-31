@@ -4,19 +4,23 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-  flushRateLimiter,
-} from '../utils/databaseUtil.js';
+import { flushRateLimiter } from '../utils/databaseUtil.js';
 import {
   closeApp,
   setupApp,
 } from '../utils/automationSupport.js';
-import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
+import { disableNotificationsForUsers } from '../utils/databaseQueries.js';
 import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  createNamespacedLabel,
+  resetBackendStateForSuite,
+  resetBackendStateForTeardown,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -26,6 +30,8 @@ let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails
 let secondUser: UserDetails
@@ -41,10 +47,14 @@ function incrementAccountId(accountId: string) {
 }
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.slow();
   test.beforeAll(async () => {
-    await resetDbState();
-    await resetPostgresDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
+    await resetLocalStateForSuite();
+    await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
@@ -59,17 +69,16 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
       organizationPage,
       {
         userCount: 3,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
     globalCredentials.password = seededSession.localUser.password;
 
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
-
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
+    await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
@@ -117,8 +126,9 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await resetBackendStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify user can execute group transaction in organization', async () => {

@@ -3,13 +3,7 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-  flushRateLimiter,
-} from '../utils/databaseUtil.js';
+import { flushRateLimiter } from '../utils/databaseUtil.js';
 import { signatureMapToV1Json } from '../utils/transactionUtil.js';
 import {
   closeApp,
@@ -18,12 +12,22 @@ import {
   waitAndReadFile,
   waitForValidStart,
 } from '../utils/automationSupport.js';
-import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
+import { disableNotificationsForUsers } from '../utils/databaseQueries.js';
 import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
 import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  createNamespacedLabel,
+  resetBackendStateForSuite,
+  resetBackendStateForTeardown,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -33,6 +37,8 @@ let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
@@ -40,10 +46,14 @@ let thirdUser: UserDetails;
 let complexKeyAccountId: string;
 
 test.describe('Organization Transaction tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.slow();
   test.beforeAll(async () => {
-    await resetDbState();
-    await resetPostgresDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
+    await resetLocalStateForSuite();
+    await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     // Capture browser console logs to see [TXD-DBG] instrumentation
     window.on('console', msg => {
@@ -68,17 +78,16 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
       organizationPage,
       {
         userCount: 3,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
     globalCredentials.password = seededSession.localUser.password;
 
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
-
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
+    await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions();
@@ -117,8 +126,9 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await resetBackendStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify required signers are able to see the transaction in "Ready to Sign" status', async () => {

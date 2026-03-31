@@ -4,7 +4,6 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
   generateRandomPassword,
@@ -12,6 +11,13 @@ import {
 } from '../utils/automationSupport.js';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
 import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -20,10 +26,14 @@ let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 let settingsPage: SettingsPage;
 let transactionPage: TransactionPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Settings tests @local-basic', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeAll(async () => {
-    await resetDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     settingsPage = new SettingsPage(window);
@@ -36,7 +46,8 @@ test.describe('Settings tests @local-basic', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test.beforeEach(async () => {

@@ -201,15 +201,13 @@ export class OrganizationPage extends BasePage {
     await this.click(this.signInOrganizationButtonSelector);
   }
 
-  async setupOrganization() {
-    const organizationNickname = 'Test Organization';
+  async setupOrganization(organizationNickname = 'Test Organization') {
     const serverUrl = process.env.ORGANIZATION_URL ?? '';
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
   }
 
-  async setupWrongOrganization() {
-    const organizationNickname = 'Bad Organization';
+  async setupWrongOrganization(organizationNickname = 'Bad Organization') {
     const serverUrl = (process.env.ORGANIZATION_URL ?? '') + Math.floor(Math.random() * 10);
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);

@@ -6,7 +6,9 @@ import { PrismaClient } from '@prisma/client';
 
 let prisma: PrismaClient;
 
-export const dbPath = path.join(app.getPath('userData'), 'database.db');
+export function getDatabasePath() {
+  return path.join(app.getPath('userData'), 'database.db');
+}
 
 export function getPrismaClient() {
   if (!prisma) {
@@ -23,7 +25,7 @@ export function createPrismaClient() {
   return new PrismaClient({
     datasources: {
       db: {
-        url: `file:${dbPath}`,
+        url: `file:${getDatabasePath()}`,
       },
     },
   });

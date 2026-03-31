@@ -24,6 +24,7 @@ export interface CreateSeededOrganizationSessionOptions {
   userCount?: number;
   organizationUsers?: UserDetails[];
   organizationUserRecoveryPhraseWords?: string[][];
+  organizationNickname?: string;
   localUser?: SeedLocalUserOptions;
   signInUserIndex?: number | null;
   leaveSignedIn?: boolean;
@@ -103,7 +104,7 @@ export async function createSeededOrganizationSession(
     await organizationPage.createUsers(options.userCount ?? 1);
   }
 
-  await organizationPage.setupOrganization();
+  await organizationPage.setupOrganization(options.organizationNickname);
   await organizationPage.waitForElementToBeVisible(
     organizationPage.emailForOrganizationInputSelector,
   );
