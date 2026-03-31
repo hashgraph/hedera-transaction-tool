@@ -70,6 +70,38 @@ export default function usePersonalPassword() {
     }
   }
 
+  async function getPasswordAsync(modalOptions?: {
+    heading?: string | null;
+    subHeading?: string | null;
+  }): Promise<string | null | false> {
+    assertUserLoggedIn(user.personal);
+
+    if (user.personal.useKeychain) {
+      return null;
+    } else {
+      const personalPassword = user.getPassword();
+      if (personalPassword) {
+        // User is already authenticated
+        return personalPassword;
+      } else {
+        const userPasswordModal = userPasswordModalRef?.value;
+        if (!userPasswordModal) throw new Error('User password modal ref is not provided');
+        return await new Promise(resolve => {
+          userPasswordModal.open(
+            modalOptions?.heading || 'Enter your application password',
+            modalOptions?.subHeading || null,
+            (password: string) => {
+              resolve(password);
+            },
+            () => {
+              resolve(false);
+            },
+          );
+        });
+      }
+    }
+  }
+
   function passwordModalOpened(
     personalPasswordResult: PersonalPasswordResult,
   ): personalPasswordResult is false {
@@ -77,5 +109,5 @@ export default function usePersonalPassword() {
     return false;
   }
 
-  return { getPassword, getPasswordV2, passwordModalOpened };
+  return { getPassword, getPasswordV2, getPasswordAsync, passwordModalOpened };
 }

@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 
 const dohertyThreshold = 400; // milliseconds
 const persistenceTime = dohertyThreshold * 3;
@@ -10,14 +11,18 @@ const persistenceTime = dohertyThreshold * 3;
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
-  actionCallback: () => Promise<void>;
-  confirmTitle: string;
-  confirmText: string;
+  actionCallback: (personalPassword: string | null) => Promise<void>;
+  confirmTitle?: string;
+  confirmText?: string;
+  personalPasswordRequired?: boolean;
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
-  dataTestid: string;
+  dataTestid?: string;
 }>();
+
+/* Composables */
+const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
 const isConfirmModalShown = ref(false);
@@ -25,8 +30,38 @@ const startDate = ref<Date | null>(null);
 const timeoutID = ref<number | null>(null);
 const showProgress = ref<boolean>(false);
 
+/* Computed */
+const confirmationProps = computed(() => {
+  const { confirmTitle, confirmText, dataTestid } = props;
+  if (confirmTitle !== undefined && confirmText !== undefined && dataTestid !== undefined) {
+    return { confirmTitle, confirmText, dataTestid };
+  }
+  return null;
+});
+
 /* Handlers */
 const handleConfirm = async () => {
+  if (props.personalPasswordRequired) {
+    const pp = await getPasswordAsync({
+      subHeading: 'Enter your application password to decrypt your private key',
+    });
+    if (pp === false) {
+      // User cancelled action
+      handleCancel();
+    } else {
+      await performAction(pp);
+    }
+  } else {
+    await performAction(null);
+  }
+};
+
+const handleCancel = () => {
+  activate.value = false;
+};
+
+/* Functions */
+const performAction = async (personalPassword: string | null) => {
   document.documentElement.inert = true; // Before Doherty threshold, we render document inert
   startDate.value = new Date();
   timeoutID.value = window.setTimeout(() => {
@@ -35,7 +70,7 @@ const handleConfirm = async () => {
     showProgress.value = true;
   }, dohertyThreshold);
   try {
-    await props.actionCallback();
+    await props.actionCallback(personalPassword);
     if (showProgress.value) {
       // Progress dialog is visible.
       // We make sure it's visible long enough for the user to identify it.
@@ -43,7 +78,7 @@ const handleConfirm = async () => {
       const waitingTime = dohertyThreshold + persistenceTime - elapsedTime;
       if (waitingTime > 0) {
         // => elapsedTime < dohertyThreshold + visibleMinTime
-        console.log("Waiting for " + waitingTime + " ms");
+        console.log('Waiting for ' + waitingTime + ' ms');
         await new Promise(resolve => setTimeout(resolve, waitingTime));
       }
     }
@@ -59,26 +94,27 @@ const handleConfirm = async () => {
   }
 };
 
-const handleCancel = () => {
-  activate.value = false;
-};
-
 /* Hooks */
-watch(activate, () => {
+watch(activate, async () => {
   if (activate.value) {
-    isConfirmModalShown.value = true;
+    if (confirmationProps.value) {
+      isConfirmModalShown.value = true;
+    } else {
+      await handleConfirm();
+    }
   }
 });
 </script>
 
 <template>
   <AppConfirmModal
+    v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :title="props.confirmTitle"
-    :text="props.confirmText"
+    :title="confirmationProps.confirmTitle"
+    :text="confirmationProps.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :data-testid="props.dataTestid"
+    :data-testid="confirmationProps.dataTestid"
   />
 
   <AppModal

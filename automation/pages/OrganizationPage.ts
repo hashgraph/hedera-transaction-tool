@@ -13,21 +13,18 @@ import {
   getPrivateKeyEnv
 } from '../utils/automationSupport.js';
 import { createTestUsersBatch } from '../utils/databaseUtil.js';
-import { Mnemonic } from '@hashgraph/sdk';
 import {
   findNewKey,
   getAllTransactionIdsForUserObserver,
   getFirstPublicKeyByEmail,
   getLatestInAppNotificationStatusByEmail,
   getUserIdByEmail,
-  insertKeyPair,
-  insertUserKey,
   isKeyDeleted,
   verifyOrganizationExists,
 } from '../utils/databaseQueries.js';
 import * as fs from 'node:fs';
 import { generateMnemonic } from '../utils/keyUtil.js';
-import { argonHash, encrypt } from '../utils/crypto.js';
+import { indexRecoveryPhraseWords, seedOrganizationUserKey } from '../utils/organizationBaseline.js';
 import {
   encodeExchangeRates,
   encodeFeeSchedule,
@@ -285,7 +282,11 @@ export class OrganizationPage extends BasePage {
   async setUpUsers(encryptionPassword: string, startIndex: number, endIndex: number) {
     for (let i = startIndex; i <= endIndex; i++) {
       const user = this.users[i];
-      this.users[i].privateKey = await this.generateAndStoreUserKey(user.email, encryptionPassword);
+      this.users[i].privateKey = await this.generateAndStoreUserKey(
+        user.email,
+        encryptionPassword,
+        i,
+      );
     }
   }
 
@@ -298,31 +299,19 @@ export class OrganizationPage extends BasePage {
     );
   }
 
-  async generateAndStoreUserKey(email: string, password: string) {
-    // Generate a 24-word mnemonic phrase
-    const mnemonic = await Mnemonic.generate();
+  async generateAndStoreUserKey(email: string, password: string, userIndex?: number) {
+    const seededUser = await seedOrganizationUserKey({
+      email,
+      localPassword: password,
+    });
 
-    // Hash the mnemonic phrase
-    const mnemonicHash = await argonHash(mnemonic.toString(), true);
+    if (userIndex !== undefined) {
+      this.organizationRecoveryWords[userIndex] = indexRecoveryPhraseWords(
+        seededUser.recoveryPhraseWords,
+      );
+    }
 
-    const privateKey = await mnemonic.toStandardEd25519PrivateKey('', 0);
-
-    const privateKeyString = privateKey.toStringRaw();
-    const publicKeyString = privateKey.publicKey.toStringRaw();
-
-    // Encrypt the private key
-    const encryptedPrivateKey = encrypt(privateKeyString, password);
-
-    // Get the user ID by email
-    const userId = await this.getUserIdByEmail(email);
-
-    // Insert the mnemonic hash and public key into the user_key table
-    await insertUserKey(userId, mnemonicHash, 0, publicKeyString);
-
-    // Insert the public key and encrypted private key into the key_pair table
-    await insertKeyPair(publicKeyString, encryptedPrivateKey, mnemonicHash, userId);
-
-    return privateKeyString;
+    return seededUser.privateKey;
   }
 
   async recoverAccount(userIndex: number) {
@@ -496,7 +485,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnContactListButton() {
-    await this.click(this.contactListButton);
+    await this.click(this.contactListButton, 0, this.LONG_TIMEOUT);
   }
 
   async isContactListButtonVisible() {
@@ -1399,7 +1388,7 @@ export class OrganizationPage extends BasePage {
     // => we wait a little bit before checking button visibility
     // => to be revisited once button state computation has been re-worked in transaction group details.
     await this.window.waitForTimeout(holdTimeout);
-    await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, 10000);
+    await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, this.LONG_TIMEOUT * 2);
     await this.click(this.signAllTransactionsButtonSelector);
   }
 

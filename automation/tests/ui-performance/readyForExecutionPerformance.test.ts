@@ -15,7 +15,7 @@
 import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import { setupApp, closeApp } from '../../utils/automationSupport.js';
-import { resetDbState } from '../../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
@@ -52,7 +52,7 @@ test.describe('Ready for Execution Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('Ready for Execution tab should load in under 1 second (p95)', async () => {
