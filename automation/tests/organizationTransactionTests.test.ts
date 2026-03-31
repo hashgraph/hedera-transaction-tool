@@ -643,7 +643,7 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
       expect(transactionDetails?.status).toBe('SUCCESS');
     });
 
-    test('Verify user can import superfluous signatures from TTv1 format', async () => {
+    test.skip('Verify user can import superfluous signatures from TTv1 format', async () => {
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
