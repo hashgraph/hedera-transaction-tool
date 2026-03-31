@@ -21,6 +21,7 @@ const heading = ref<string | null>(null);
 const subHeading = ref<string | null>(null);
 const password = ref('');
 const callback = ref<((password: string) => void) | null>(null);
+const cancel = ref<(() => void) | null>(null);
 
 /* Handlers */
 const handlePasswordEntered = async () => {
@@ -37,14 +38,21 @@ const handlePasswordEntered = async () => {
     const currentCallback = callback.value;
     handleClose();
 
-    await currentCallback?.(user.personal.password);
+    currentCallback?.(user.personal.password);
   } else {
     throw new Error('Incorrect Personal User Password');
   }
 };
 
+const handleCancel = () => {
+  const cancelCallback = cancel.value;
+  handleClose();
+  cancelCallback?.();
+};
+
 const handleClose = () => {
   callback.value = null;
+  cancel.value = null;
   password.value = '';
   heading.value = '';
   subHeading.value = '';
@@ -55,6 +63,7 @@ const handleOpen = (
   _heading: string | null,
   _subHeading: string | null,
   _callback: (password: string) => void,
+  _cancel?: () => void,
 ) => {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
@@ -65,13 +74,13 @@ const handleOpen = (
   heading.value = _heading;
   subHeading.value = _subHeading;
   callback.value = _callback;
+  cancel.value = _cancel ?? null;
   show.value = true;
 };
 
 /* Exposes */
 defineExpose({
   open: handleOpen,
-  close: handleClose,
 });
 </script>
 <template>
@@ -83,7 +92,7 @@ defineExpose({
   >
     <div class="p-5">
       <div>
-        <i class="bi bi-x-lg cursor-pointer" @click="handleClose"></i>
+        <i class="bi bi-x-lg cursor-pointer" @click="handleCancel"></i>
       </div>
       <div class="text-center">
         <AppCustomIcon :name="'lock'" style="height: 160px" />
@@ -104,7 +113,7 @@ defineExpose({
         </div>
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" type="button" @click="handleClose">Cancel</AppButton>
+          <AppButton color="borderless" type="button" @click="handleCancel">Cancel</AppButton>
           <AppButton
             color="primary"
             data-testid="button-continue-encrypt-password"
