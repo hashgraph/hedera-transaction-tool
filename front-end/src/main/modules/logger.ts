@@ -254,7 +254,12 @@ function startMainErrorCapture() {
 }
 
 function ensureLogsDirectory() {
-  fs.mkdirSync(getLogsDirectoryPath(), { recursive: true });
+  try {
+    fs.mkdirSync(getLogsDirectoryPath(), { recursive: true });
+  } catch (error) {
+    // Do not let logging failures crash the application.
+    console.warn('Failed to create logs directory:', error);
+  }
 }
 
 function rotateLogFiles(currentPath: string) {
@@ -271,7 +276,22 @@ function rotateLogFiles(currentPath: string) {
       continue;
     }
 
-    fs.rmSync(targetPath, { force: true });
-    fs.renameSync(sourcePath, targetPath);
+    try {
+      if (fs.existsSync(targetPath)) {
+        fs.rmSync(targetPath, { force: true });
+      }
+      fs.renameSync(sourcePath, targetPath);
+    } catch (error) {
+      // Do not let log rotation failures crash the process; log and continue.
+      try {
+        electronLog.error('Failed to rotate log file', {
+          sourcePath,
+          targetPath,
+          error,
+        });
+      } catch {
+        // If logging the rotation failure itself fails, swallow the error.
+      }
+    }
   }
 }
