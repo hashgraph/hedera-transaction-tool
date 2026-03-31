@@ -59,11 +59,17 @@ describe('TransactionStatusService', () => {
   const executeService = mockDeep<ExecuteService>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
-  const mockTransaction = () => {
-    const transactionMock = jest.fn(async passedFunction => {
-      await passedFunction(transactionRepo.manager);
-    });
-    transactionRepo.manager.transaction.mockImplementation(transactionMock);
+  let mockQueryBuilder: any;
+
+  const setupQueryBuilderMock = (rawResult: any[] = []) => {
+    mockQueryBuilder = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: rawResult }),
+    };
+    transactionRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
   };
 
   beforeEach(async () => {
@@ -100,6 +106,8 @@ describe('TransactionStatusService', () => {
     }).compile();
 
     service = module.get<TransactionSchedulerService>(TransactionSchedulerService);
+
+    setupQueryBuilderMock();
   });
 
   it('should be defined', () => {
@@ -256,41 +264,41 @@ describe('TransactionStatusService', () => {
   });
 
   it('should updates for expired transactions', async () => {
-    mockTransaction();
-
-    const network = 'testnet';
-
-    const expiredTransactions = [
-      { id: 1, transactionId: '0.0.123456@123456798.0123', status: TransactionStatus.NEW, mirrorNetwork: network },
-      { id: 2, transactionId: '0.0.123456@123456798.0124', status: TransactionStatus.REJECTED, mirrorNetwork: network },
-      { id: 3, transactionId: '0.0.123456@123456798.0125', status: TransactionStatus.WAITING_FOR_EXECUTION, mirrorNetwork: network },
+    const rawResult = [
+      { id: 1 },
+      { id: 2 },
+      { id: 3 },
     ];
 
-    transactionRepo.manager.find.mockResolvedValue(expiredTransactions as Transaction[]);
+    setupQueryBuilderMock(rawResult);
 
     await service.handleExpiredTransactions();
 
-    expect(transactionRepo.manager.transaction).toHaveBeenCalled();
-    expect(transactionRepo.manager.update).toHaveBeenCalled();
+    expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+    expect(mockQueryBuilder.update).toHaveBeenCalled();
+    expect(mockQueryBuilder.set).toHaveBeenCalledWith({ status: TransactionStatus.EXPIRED });
+    expect(mockQueryBuilder.returning).toHaveBeenCalled();
+    expect(mockQueryBuilder.execute).toHaveBeenCalled();
 
-    const expected = expiredTransactions.map(tx =>
-      expect.objectContaining({
-        entityId: tx.id,
-        additionalData: {
-          transactionId: tx.transactionId ?? '',
-          network: tx.mirrorNetwork,
-        },
-      }),
-    );
     expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
       notificationsPublisher,
-      expect.arrayContaining(expected),
+      rawResult.map(t => expect.objectContaining({ entityId: t.id })),
     );
+  });
+
+  it('should not emit notification for expired transactions when no rows updated', async () => {
+    setupQueryBuilderMock([]);
+
+    await service.handleExpiredTransactions();
+
+    expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+    expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
   });
 
   describe('updateTransactions', () => {
     beforeEach(() => {
       jest.resetAllMocks();
+      setupQueryBuilderMock();
     });
 
     it('should correctly update transactions statuses', async () => {
@@ -536,6 +544,7 @@ describe('TransactionStatusService', () => {
     beforeEach(async () => {
       jest.setTimeout(10_000);
       jest.resetAllMocks();
+      setupQueryBuilderMock();
 
       //Fix the System time so that the Date.now() calls in collateGroupAndExecute use this
       //same time. This will allow tests to not be flaky due to time issues.
@@ -686,7 +695,8 @@ describe('TransactionStatusService', () => {
       jest.mocked(smartCollate).mockReturnValue(null);
       transactionSignatureService.computeSignatureKey.mockResolvedValue(keyList);
 
-      jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
+      const mockIds = mockTransactionGroup.groupItems.map(gi => ({ id: gi.transaction.id }));
+      setupQueryBuilderMock(mockIds);
 
       service.collateGroupAndExecute(mockTransactionGroup);
 
@@ -694,17 +704,14 @@ describe('TransactionStatusService', () => {
 
       expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
 
-      mockTransactionGroup.groupItems.forEach(groupItem => {
-        // Verify that the update method was called with the correct parameters
-        expect(transactionRepo.update).toHaveBeenCalledWith(
-          { id: groupItem.transaction.id },
-          {
-            status: TransactionStatus.FAILED,
-            executedAt: expect.any(Date),
-            statusCode: Status.TransactionOversize._code,
-          },
-        );
-      });
+      expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: TransactionStatus.FAILED,
+          statusCode: Status.TransactionOversize._code,
+        }),
+      );
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should fail to prepare a group of signed transactions, due to some transactions not signed', async () => {
@@ -722,16 +729,17 @@ describe('TransactionStatusService', () => {
         return null;
       });
 
+      setupQueryBuilderMock([{ id: 0 }]);
+
       service.collateGroupAndExecute(mockTransactionGroup);
 
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        expect.any(Object),
+      expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
-          executedAt: expect.any(Date),
           statusCode: Status.TransactionOversize._code,
         }),
       );
@@ -769,23 +777,23 @@ describe('TransactionStatusService', () => {
       });
       transactionSignatureService.computeSignatureKey.mockResolvedValue(keyList);
 
+      const mockIds = mockTransactionGroup.groupItems.map(gi => ({ id: gi.transaction.id }));
+      setupQueryBuilderMock(mockIds);
+
       service.collateGroupAndExecute(mockTransactionGroup);
 
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
 
-      mockTransactionGroup.groupItems.forEach(groupItem => {
-        // Verify that the update method was called with the correct parameters
-        expect(transactionRepo.update).toHaveBeenCalledWith(
-          { id: groupItem.transaction.id },
-          {
-            status: TransactionStatus.FAILED,
-            executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
-            statusCode: Status.TransactionOversize._code,
-          },
-        );
-      });
+      expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: TransactionStatus.FAILED,
+          statusCode: Status.TransactionOversize._code,
+        }),
+      );
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should handle error in callback', async () => {
@@ -807,6 +815,7 @@ describe('TransactionStatusService', () => {
 
     beforeEach(async () => {
       jest.resetAllMocks();
+      setupQueryBuilderMock();
 
       //Fix the System time so that the Date.now() calls in collateAndExecute use this
       //same time. This will allow tests to not be flaky due to time issues.
@@ -912,7 +921,7 @@ describe('TransactionStatusService', () => {
       jest.mocked(smartCollate).mockReturnValue(null);
       transactionSignatureService.computeSignatureKey.mockResolvedValue(keyList);
 
-      jest.spyOn(transactionRepo, 'update').mockResolvedValue(undefined);
+      setupQueryBuilderMock([{ id: mockTransaction.id }]);
 
       service.collateAndExecute(mockTransaction);
 
@@ -920,15 +929,15 @@ describe('TransactionStatusService', () => {
 
       expect(service.addExecutionTimeout).not.toHaveBeenCalled();
 
-      // Verify that the update method was called with the correct parameters
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: mockTransaction.id },
-        {
+      // Verify that createQueryBuilder was used with status guard
+      expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
+        expect.objectContaining({
           status: TransactionStatus.FAILED,
-          executedAt: expect.any(Date), // Use expect.any(Date) to match any Date object
           statusCode: Status.TransactionOversize._code,
-        },
+        }),
       );
+      expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
     it('should handle error in callback', async () => {
