@@ -1,5 +1,7 @@
 import type { IUser, IUserKey } from '@shared/interfaces';
 
+import axios from 'axios';
+
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 import { getUserKeys } from './userKeys';
@@ -71,13 +73,16 @@ export const deleteUser = (organizationServerUrl: string, id: number) =>
     return response.data;
   }, 'Failed to delete user');
 
-export const getPublicKeyOwner = async (organizationServerUrl: string, publicKey: string): Promise<string|null> => {
+export const getPublicKeyOwner = async (organizationServerUrl: string, publicKey: string): Promise<string | null> => {
   try {
     const response = await axiosWithCredentials.get(
       `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
     );
     return response.data === "" ? null : response.data;
-  } catch {
-    return null;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      return null;
+    }
+    throw error;
   }
 };
