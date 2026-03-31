@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -11,12 +11,12 @@ const persistenceTime = dohertyThreshold * 3;
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
   actionCallback: () => Promise<void>;
-  confirmTitle: string;
-  confirmText: string;
+  confirmTitle?: string;
+  confirmText?: string;
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
-  dataTestid: string;
+  dataTestid?: string;
 }>();
 
 /* State */
@@ -25,8 +25,26 @@ const startDate = ref<Date | null>(null);
 const timeoutID = ref<number | null>(null);
 const showProgress = ref<boolean>(false);
 
+/* Computed */
+const confirmationProps = computed(() => {
+  const { confirmTitle, confirmText, dataTestid } = props;
+  if (confirmTitle !== undefined && confirmText !== undefined && dataTestid !== undefined) {
+    return { confirmTitle, confirmText, dataTestid };
+  }
+  return null;
+});
+
 /* Handlers */
 const handleConfirm = async () => {
+  await performAction();
+};
+
+const handleCancel = () => {
+  activate.value = false;
+};
+
+/* Functions */
+const performAction = async () => {
   document.documentElement.inert = true; // Before Doherty threshold, we render document inert
   startDate.value = new Date();
   timeoutID.value = window.setTimeout(() => {
@@ -43,7 +61,7 @@ const handleConfirm = async () => {
       const waitingTime = dohertyThreshold + persistenceTime - elapsedTime;
       if (waitingTime > 0) {
         // => elapsedTime < dohertyThreshold + visibleMinTime
-        console.log("Waiting for " + waitingTime + " ms");
+        console.log('Waiting for ' + waitingTime + ' ms');
         await new Promise(resolve => setTimeout(resolve, waitingTime));
       }
     }
@@ -59,26 +77,27 @@ const handleConfirm = async () => {
   }
 };
 
-const handleCancel = () => {
-  activate.value = false;
-};
-
 /* Hooks */
-watch(activate, () => {
+watch(activate, async () => {
   if (activate.value) {
-    isConfirmModalShown.value = true;
+    if (confirmationProps.value) {
+      isConfirmModalShown.value = true;
+    } else {
+      await performAction();
+    }
   }
 });
 </script>
 
 <template>
   <AppConfirmModal
+    v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :title="props.confirmTitle"
-    :text="props.confirmText"
+    :title="confirmationProps.confirmTitle"
+    :text="confirmationProps.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :data-testid="props.dataTestid"
+    :data-testid="confirmationProps.dataTestid"
   />
 
   <AppModal
