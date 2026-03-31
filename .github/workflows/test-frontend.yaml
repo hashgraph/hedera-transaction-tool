@@ -375,8 +375,6 @@ jobs:
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
-          PRIVATE_KEY: ${{ secrets.SOLO_PRIVATE_KEY }}
-          OPERATOR_KEY: ${{ secrets.OPERATOR_KEY }}
           ENVIRONMENT: LOCALNET
           ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'https://localhost:3001' || '' }}
           POSTGRES_HOST: ${{ matrix.test-suite.backendRequired && 'localhost' || '' }}
