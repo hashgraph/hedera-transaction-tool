@@ -13,7 +13,12 @@
 import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
 import { setupApp, closeApp } from '../../utils/automationSupport.js';
-import { resetDbState, resetPostgresDbState } from '../../utils/databaseUtil.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+} from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
@@ -106,8 +111,8 @@ test.describe('Sign All with Complex Threshold Keys (Org Mode)', () => {
     if (app) {
       await closeApp(app);
     }
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Sign All with complex threshold key completes in under 4 seconds with loading indicator', async () => {

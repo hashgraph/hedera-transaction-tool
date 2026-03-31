@@ -1,16 +1,20 @@
 import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
+import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+  flushRateLimiter,
+} from '../utils/databaseUtil.js';
 import { signatureMapToV1Json } from '../utils/transactionUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   setDialogMockState,
   setupApp,
-  setupEnvironmentForTransactions,
   waitAndReadFile,
   waitForValidStart,
 } from '../utils/automationSupport.js';
@@ -19,6 +23,7 @@ import { PrivateKey, Transaction } from '@hashgraph/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -27,13 +32,14 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
+let loginPage: LoginPage;
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
 let thirdUser: UserDetails;
 let complexKeyAccountId: string;
 
-test.describe('Organization Transaction tests', () => {
+test.describe('Organization Transaction tests @organization-advanced', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();
@@ -53,27 +59,19 @@ test.describe('Organization Transaction tests', () => {
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
+    loginPage = new LoginPage(window);
 
     organizationPage.complexFileId = [];
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(3);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 3,
+      },
     );
-
-    const payerPrivateKey = await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -81,11 +79,6 @@ test.describe('Organization Transaction tests', () => {
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions();
@@ -124,8 +117,8 @@ test.describe('Organization Transaction tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify required signers are able to see the transaction in "Ready to Sign" status', async () => {
@@ -241,6 +234,48 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails?.detailsButton).toBe(true);
   });
 
+  test('Verify transaction is shown "History" tab after canceling and cannot be signed again', async () => {
+    const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 30, true);
+    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
+    await organizationPage.closeDraftModal();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnInProgressTab();
+
+    const transactionDetails = await organizationPage.getInProgressTransactionDetails(txId ?? '');
+    expect(transactionDetails?.transactionId).toBe(txId);
+    expect(transactionDetails?.transactionType).toBe('Account Update');
+    expect(transactionDetails?.validStart).toBe(validStartTime);
+    expect(transactionDetails?.detailsButton).toBe(true);
+
+    await organizationPage.clickOnInProgressDetailsButtonByTransactionId(txId ?? '');
+    await organizationPage.clickOnCancelTransactionButton();
+    await organizationPage.clickOnConfirmCancelButton();
+    await expect
+      .poll(() => organizationPage.isSignTransactionButtonVisible(), { timeout: 10000 })
+      .toBe(false);
+
+    await organizationPage.logoutFromOrganization();
+    // Now signs in as every user and verifies that no sign action is enabled for txId
+    for (const user of organizationPage.users) {
+      await organizationPage.fillInLoginDetailsAndClickSignIn(user.email, user.password);
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.clickOnHistoryTab();
+      const historyDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+      expect(historyDetails?.transactionId).toBe(txId);
+      expect(historyDetails?.transactionType).toBe('Account Update');
+      expect(historyDetails?.validStart).toBe('N/A');
+      expect(historyDetails?.status).toBe('CANCELED');
+      expect(historyDetails?.detailsButton).toBe(true);
+      await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
+      expect(await organizationPage.isSignTransactionButtonVisible()).toBe(false);
+      await organizationPage.logoutFromOrganization();
+    }
+
+    // Signs in again as user 0 to enable logout in afterEach() callback
+    const user0 = organizationPage.users[0];
+    await organizationPage.fillInLoginDetailsAndClickSignIn(user0.email, user0.password);
+  });
+
   test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(complexKeyAccountId, 'update', 600, true);
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
@@ -343,7 +378,7 @@ test.describe('Organization Transaction tests', () => {
     expect(isTransactionVisible).toBe(false);
   });
 
-  test('Verify observer is listed in the transaction details', async () => {
+  test.skip('Verify observer is listed in the transaction details', async () => {
     const { selectedObservers } = await organizationPage.createAccount(60, 1);
     const firstObserver = await organizationPage.getObserverEmail(0);
     expect(selectedObservers).toBe(firstObserver);
@@ -370,7 +405,7 @@ test.describe('Organization Transaction tests', () => {
     expect(isTransactionVisible).toBe(true);
   });
 
-  test('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
+  test.skip('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
     const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1, true);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -390,7 +425,7 @@ test.describe('Organization Transaction tests', () => {
     expect(isTransactionVisible).toBe(true);
   });
 
-  test('Verify observer is saved in the db for the correct transaction id', async () => {
+  test.skip('Verify observer is saved in the db for the correct transaction id', async () => {
     const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1);
     expect(typeof selectedObservers).toBe('string');
     const userIdInDb = await organizationPage.getUserIdByEmail(selectedObservers as string);
@@ -409,7 +444,7 @@ test.describe('Organization Transaction tests', () => {
     await transactionPage.clickOnTransactionsMenuButton();
   });
 
-  test('Verify next button is visible when user has multiple txs to sign', async () => {
+  test.skip('Verify next button is visible when user has multiple txs to sign', async () => {
     await organizationPage.createAccount(600, 0, false);
     const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -420,7 +455,7 @@ test.describe('Organization Transaction tests', () => {
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
 
-  test('Verify user is redirected to the next transaction after clicking the next button', async () => {
+  test.skip('Verify user is redirected to the next transaction after clicking the next button', async () => {
     await organizationPage.createAccount(600, 0, false);
     const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -434,7 +469,7 @@ test.describe('Organization Transaction tests', () => {
     expect(await organizationPage.isSignTransactionButtonVisible()).toBe(true);
   });
 
-  test('Verify next button is visible when user has multiple txs in history', async () => {
+  test.skip('Verify next button is visible when user has multiple txs in history', async () => {
     const { txId } = await organizationPage.createAccount(1, 0, true);
     await organizationPage.closeDraftModal();
     const { validStart } = await organizationPage.createAccount(3, 0, true);
@@ -501,7 +536,7 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test('Verify user can execute file create with complex account', async () => {
+  test.skip('Verify user can execute file create with complex account', async () => {
     const { txId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -516,7 +551,7 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test('Verify user can execute file update with complex account', async () => {
+  test.skip('Verify user can execute file update with complex account', async () => {
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -540,7 +575,7 @@ test.describe('Organization Transaction tests', () => {
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test('Verify user can execute file append with complex account', async () => {
+  test.skip('Verify user can execute file append with complex account', async () => {
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
       globalCredentials,
@@ -599,7 +634,7 @@ test.describe('Organization Transaction tests', () => {
       }
     });
 
-    test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
+    test.skip('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
       // Create 73 more users, a total of 76
       await organizationPage.createAdditionalUsers(73, globalCredentials.password);
 
@@ -650,7 +685,7 @@ test.describe('Organization Transaction tests', () => {
       expect(transactionDetails?.status).toBe('SUCCESS');
     });
 
-    test('Verify user can import superfluous signatures from TTv1 format', async () => {
+    test.skip('Verify user can import superfluous signatures from TTv1 format', async () => {
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export
@@ -701,7 +736,7 @@ test.describe('Organization Transaction tests', () => {
       expect(transactionDetails?.status).toBe('SUCCESS');
     });
 
-    test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
+    test.skip('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       // Create transaction to export

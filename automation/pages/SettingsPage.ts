@@ -102,7 +102,7 @@ export class SettingsPage extends BasePage {
   // Function to verify keys exist for a given index and user's email
   async verifyKeysExistByIndexAndEmail(email: string, index: number): Promise<boolean> {
     const row = await getKeyPairByIndexAndEmail(email, index);
-    return row?.public_key !== undefined && row?.private_key !== undefined;
+    return row !== null && row.public_key !== undefined && row.private_key !== undefined;
   }
 
   async getKeyRowCount(): Promise<number> {

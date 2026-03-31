@@ -4,15 +4,19 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetPostgresDbState, flushRateLimiter } from '../utils/databaseUtil.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+  flushRateLimiter,
+} from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   setupApp,
-  setupEnvironmentForTransactions,
 } from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -36,7 +40,7 @@ function incrementAccountId(accountId: string) {
   return parts.join('.');
 }
 
-test.describe('Organization Group Tx tests', () => {
+test.describe('Organization Group Tx tests @organization-advanced', () => {
   test.slow();
   test.beforeAll(async () => {
     await resetDbState();
@@ -49,29 +53,16 @@ test.describe('Organization Group Tx tests', () => {
     groupPage = new GroupPage(window);
 
     organizationPage.complexFileId = [];
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(3);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
-    );
-
-    const payerPrivateKey = await setupEnvironmentForTransactions(window);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(
+    const seededSession = await createSeededOrganizationSession(
       window,
-      globalCredentials.password,
-      payerPrivateKey,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 3,
+      },
     );
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
 
     // Disable notifications for test users
     await disableNotificationsForTestUsers();
@@ -79,11 +70,6 @@ test.describe('Organization Group Tx tests', () => {
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
@@ -131,8 +117,8 @@ test.describe('Organization Group Tx tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify user can execute group transaction in organization', async () => {
