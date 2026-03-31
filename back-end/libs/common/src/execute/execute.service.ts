@@ -167,15 +167,17 @@ export class ExecuteService {
       // successful pod win the update and emit the change
       if (statusCode === Status.DuplicateTransaction._code) {
         isDuplicate = true;
+        this.logger.debug(
+          `Duplicate transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}) detected; assuming it was successfully executed by another pod and skipping updates.`,
+        );
       } else {
         transactionStatus = TransactionStatus.FAILED;
         transactionStatusCode = statusCode;
         result.error = message;
+        this.logger.error(
+          `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
+        );
       }
-
-      this.logger.error(
-        `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
-      );
     } finally {
       client.close();
     }

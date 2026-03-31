@@ -114,7 +114,7 @@ export class TransactionSchedulerService {
         ],
         before: this.getThreeMinutesBefore(),
       })
-      .returning('id, mirrorNetwork, transactionId')
+      .returning(['id'])
       .execute();
 
     if (result.raw.length > 0) {
