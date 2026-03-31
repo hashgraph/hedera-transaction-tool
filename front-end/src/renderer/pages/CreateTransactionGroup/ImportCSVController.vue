@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createTransactionId } from '@renderer/utils';
@@ -28,6 +28,12 @@ const accountByIdCache = AccountByIdCache.inject();
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const network = useNetworkStore();
+
+const progressText = computed(() =>
+  transactionGroup.groupItems.length === 1
+    ? '1 transaction'
+    : `${transactionGroup.groupItems.length} transactions`,
+);
 
 /* Handlers */
 async function handleImportCsv() {
@@ -191,6 +197,6 @@ async function readFileAsText(file: File): Promise<string> {
     :actionCallback="handleImportCsv"
     progress-icon-name="group"
     progress-title="Importing from CSV File"
-    :progress-text="transactionGroup.groupItems.length + ' transactions'"
+    :progress-text="progressText"
   />
 </template>
