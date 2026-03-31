@@ -3,6 +3,7 @@ import { ref, watch, computed } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 
 const dohertyThreshold = 400; // milliseconds
 const persistenceTime = dohertyThreshold * 3;
@@ -10,14 +11,18 @@ const persistenceTime = dohertyThreshold * 3;
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
-  actionCallback: () => Promise<void>;
+  actionCallback: (personalPassword: string | null) => Promise<void>;
   confirmTitle?: string;
   confirmText?: string;
+  personalPasswordRequired?: boolean;
   progressIconName: CustomIcon;
   progressTitle: string;
   progressText: string;
   dataTestid?: string;
 }>();
+
+/* Composables */
+const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
 const isConfirmModalShown = ref(false);
@@ -36,7 +41,19 @@ const confirmationProps = computed(() => {
 
 /* Handlers */
 const handleConfirm = async () => {
-  await performAction();
+  if (props.personalPasswordRequired) {
+    const pp = await getPasswordAsync({
+      subHeading: 'Enter your application password to decrypt your private key',
+    });
+    if (pp === false) {
+      // User cancelled action
+      handleCancel();
+    } else {
+      await performAction(pp);
+    }
+  } else {
+    await performAction(null);
+  }
 };
 
 const handleCancel = () => {
@@ -44,7 +61,7 @@ const handleCancel = () => {
 };
 
 /* Functions */
-const performAction = async () => {
+const performAction = async (personalPassword: string | null) => {
   document.documentElement.inert = true; // Before Doherty threshold, we render document inert
   startDate.value = new Date();
   timeoutID.value = window.setTimeout(() => {
@@ -53,7 +70,7 @@ const performAction = async () => {
     showProgress.value = true;
   }, dohertyThreshold);
   try {
-    await props.actionCallback();
+    await props.actionCallback(personalPassword);
     if (showProgress.value) {
       // Progress dialog is visible.
       // We make sure it's visible long enough for the user to identify it.
@@ -83,7 +100,7 @@ watch(activate, async () => {
     if (confirmationProps.value) {
       isConfirmModalShown.value = true;
     } else {
-      await performAction();
+      await handleConfirm();
     }
   }
 });
