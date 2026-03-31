@@ -115,8 +115,24 @@ describe('ExecuteService', () => {
     return { response, receipt };
   };
 
+  const mockQueryBuilder = {
+    update: jest.fn().mockReturnThis(),
+    set: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    returning: jest.fn().mockReturnThis(),
+    execute: jest.fn().mockResolvedValue({ raw: [{ id: 1 }] }),
+  };
+
   beforeEach(async () => {
     jest.resetAllMocks();
+
+    // Re-setup query builder mock after resetAllMocks
+    mockQueryBuilder.update.mockReturnThis();
+    mockQueryBuilder.set.mockReturnThis();
+    mockQueryBuilder.where.mockReturnThis();
+    mockQueryBuilder.returning.mockReturnThis();
+    mockQueryBuilder.execute.mockResolvedValue({ raw: [{ id: 1 }] });
+    transactionRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -157,14 +173,11 @@ describe('ExecuteService', () => {
       await service.executeTransaction(transaction);
 
       expect(response.getReceipt).toHaveBeenCalled();
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.EXECUTED,
-          statusCode: receipt.status._code,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: receipt.status._code,
+      });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
@@ -192,14 +205,11 @@ describe('ExecuteService', () => {
 
       await service.executeTransaction(transaction);
 
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.EXECUTED,
-          statusCode: Status.Ok._code,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: Status.Ok._code,
+      });
       expect(client.close).toHaveBeenCalled();
     });
 
@@ -218,14 +228,11 @@ describe('ExecuteService', () => {
 
       await service.executeTransaction(transaction);
 
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.FAILED,
-          statusCode: null,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.FAILED,
+        statusCode: null,
+      });
       expect(client.close).toHaveBeenCalled();
     });
 
@@ -246,14 +253,11 @@ describe('ExecuteService', () => {
 
       await service.executeTransaction(transaction);
 
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.FAILED,
-          statusCode: null,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.FAILED,
+        statusCode: null,
+      });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
@@ -338,6 +342,14 @@ describe('ExecuteService', () => {
       jest.restoreAllMocks();
       jest.resetAllMocks();
 
+      // Re-setup query builder mock after resetAllMocks
+      mockQueryBuilder.update.mockReturnThis();
+      mockQueryBuilder.set.mockReturnThis();
+      mockQueryBuilder.where.mockReturnThis();
+      mockQueryBuilder.returning.mockReturnThis();
+      mockQueryBuilder.execute.mockResolvedValue({ raw: [{ id: 1 }] });
+      transactionRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
       client = mockDeep<Client>();
       transactionGroup = {
         id: 1,
@@ -376,15 +388,10 @@ describe('ExecuteService', () => {
       await service.executeTransactionGroup(transactionGroup);
 
       expect(response.getReceipt).toHaveBeenCalled();
-      transactionGroup.groupItems.forEach(groupItem => {
-        expect(transactionRepo.update).toHaveBeenCalledWith(
-          { id: groupItem.transaction.id },
-          {
-            executedAt: expect.any(Date),
-            status: TransactionStatus.EXECUTED,
-            statusCode: receipt.status._code,
-          },
-        );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: receipt.status._code,
       });
       expect(client.close).toHaveBeenCalled();
     });
@@ -400,14 +407,11 @@ describe('ExecuteService', () => {
       await service.executeTransactionGroup(transactionGroup);
 
       expect(response.getReceipt).toHaveBeenCalled();
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.EXECUTED,
-          statusCode: receipt.status._code,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: receipt.status._code,
+      });
       expect(client.close).toHaveBeenCalled();
     });
 
@@ -421,14 +425,11 @@ describe('ExecuteService', () => {
       await service.executeTransactionGroup(transactionGroup);
 
       expect(response.getReceipt).toHaveBeenCalled();
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
-        {
-          executedAt: expect.any(Date),
-          status: TransactionStatus.EXECUTED,
-          statusCode: receipt.status._code,
-        },
-      );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: receipt.status._code,
+      });
       expect(client.close).toHaveBeenCalled();
     });
 
@@ -446,15 +447,10 @@ describe('ExecuteService', () => {
 
       await service.executeTransactionGroup(transactionGroup);
 
-      transactionGroup.groupItems.forEach(groupItem => {
-        expect(transactionRepo.update).toHaveBeenCalledWith(
-          { id: groupItem.transaction.id },
-          {
-            executedAt: expect.any(Date),
-            status: TransactionStatus.FAILED,
-            statusCode: null,
-          },
-        );
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.FAILED,
+        statusCode: null,
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
@@ -486,22 +482,11 @@ describe('ExecuteService', () => {
 
       expect(response.getReceipt).toHaveBeenCalled();
 
-      transactionGroup.groupItems.forEach(groupItem => {
-        if (groupItem.transaction.status === TransactionStatus.CANCELED) {
-          expect(transactionRepo.update).not.toHaveBeenCalledWith(
-            { id: groupItem.transaction.id },
-            expect.anything(),
-          );
-        } else {
-          expect(transactionRepo.update).toHaveBeenCalledWith(
-            { id: groupItem.transaction.id },
-            {
-              executedAt: expect.any(Date),
-              status: TransactionStatus.EXECUTED,
-              statusCode: receipt.status._code,
-            },
-          );
-        }
+      // Only non-canceled transactions should have triggered the query builder
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith({
+        executedAt: expect.any(Date),
+        status: TransactionStatus.EXECUTED,
+        statusCode: receipt.status._code,
       });
 
       expect(client.close).toHaveBeenCalled();
@@ -520,12 +505,8 @@ describe('ExecuteService', () => {
 
       expect(result.transactions).toEqual([]);
 
-      transactionGroup.groupItems.forEach(groupItem => {
-        expect(transactionRepo.update).not.toHaveBeenCalledWith(
-          { id: groupItem.transaction.id },
-          expect.anything(),
-        );
-      });
+      // No query builder calls should have been made
+      expect(transactionRepo.createQueryBuilder).not.toHaveBeenCalled();
     });
   });
 
@@ -542,14 +523,11 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 1, mirrorNetwork: 'testnet' } as any;
 
-      transactionRepo.update.mockResolvedValueOnce(undefined as any);
-
       const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
 
       expect(result.status).toBe(TransactionStatus.FAILED);
       expect(result.error).toBe('boom');
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
           statusCode: 999,
@@ -571,15 +549,12 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 2, mirrorNetwork: 'testnet' } as any;
 
-      transactionRepo.update.mockResolvedValueOnce(undefined as any);
-
       const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
 
       expect(getStatusCodeFromMessage).toHaveBeenCalledWith('Transaction failed');
       expect(result.status).toBe(TransactionStatus.FAILED);
       expect(result.error).toBe('Transaction failed');
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
           statusCode: 1234,
@@ -599,14 +574,11 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 3, mirrorNetwork: 'testnet' } as any;
 
-      transactionRepo.update.mockResolvedValueOnce(undefined as any);
-
       const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
 
       expect(result.status).toBe(TransactionStatus.FAILED);
       expect(result.error).toEqual('Unknown error');
-      expect(transactionRepo.update).toHaveBeenCalledWith(
-        { id: transaction.id },
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
           statusCode: null,

@@ -42,19 +42,21 @@ export class ExecuteService {
   async executeTransaction(transaction: Transaction) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-    const results = await this._executeTransaction(transaction, sdkTransaction);
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      [{
-        entityId: transaction.id,
-        additionalData: {
-          network: transaction.mirrorNetwork,
-          transactionId: sdkTransaction.transactionId,
-          status: results.status,
-        }
-      }],
-    );
-    return results;
+    const result = await this._executeTransaction(transaction, sdkTransaction);
+    if (result) {
+      emitTransactionStatusUpdate(
+        this.notificationsPublisher,
+        [{
+          entityId: transaction.id,
+          additionalData: {
+            network: transaction.mirrorNetwork,
+            transactionId: sdkTransaction.transactionId,
+            status: result.status,
+          }
+        }],
+      );
+    }
+    return result;
   }
 
   @MurLock(15000, 'transactionGroup.id + "_group"')
@@ -78,16 +80,14 @@ export class ExecuteService {
       }
     }
 
-    const results: TransactionGroupExecutedDto = {
-      transactions: [],
-    };
+    // Execute all transactions, collecting raw results (may contain nulls for pods that lost the race)
+    const rawResults: (TransactionExecutedDto | null)[] = [];
 
-    // now we can execute all the transactions
     if (transactionGroup.sequential) {
       for (const { sdkTransaction, transaction } of transactions) {
         const delay = transaction.validStart.getTime() - Date.now();
         await sleep(delay);
-        results.transactions.push(await this._executeTransaction(transaction, sdkTransaction));
+        rawResults.push(await this._executeTransaction(transaction, sdkTransaction));
       }
     } else {
       const executionPromises = transactions.map(async ({ sdkTransaction, transaction }) => {
@@ -95,23 +95,32 @@ export class ExecuteService {
         await sleep(delay);
         return this._executeTransaction(transaction, sdkTransaction);
       });
-      results.transactions.push(...(await Promise.all(executionPromises)));
+      rawResults.push(...(await Promise.all(executionPromises)));
     }
 
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      transactions.map(({ sdkTransaction, transaction }, i) => {
-        const result = results.transactions[i];
+    const successfulEvents = transactions
+      .map(({ sdkTransaction, transaction }, i) => {
+        const txResult = rawResults[i];
+        if (!txResult) return null;
         return {
           entityId: transaction.id,
           additionalData: {
             network: transaction.mirrorNetwork,
             transactionId: sdkTransaction.transactionId?.toString?.() ?? String(sdkTransaction.transactionId),
-            status: result?.status,
+            status: txResult.status,
           },
         };
-      }),
-    );
+      })
+      .filter(Boolean);
+
+    if (successfulEvents.length > 0) {
+      emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
+    }
+
+    // Return only successful results — filter out nulls from pods that lost the race
+    const results: TransactionGroupExecutedDto = {
+      transactions: rawResults.filter((r): r is TransactionExecutedDto => r !== null),
+    };
 
     return results;
   }
@@ -119,13 +128,13 @@ export class ExecuteService {
   private async _executeTransaction(
     transaction: Transaction,
     sdkTransaction: SDKTransaction,
-  ) {
-    /* Execute the transaction */
+  ): Promise<TransactionExecutedDto | null> {
     const client = await getClientFromNetwork(transaction.mirrorNetwork);
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
     let transactionStatusCode = null;
+    let isDuplicate = false;
 
     const result: TransactionExecutedDto = {
       status: transactionStatus,
@@ -154,27 +163,41 @@ export class ExecuteService {
         }
       }
 
-      transactionStatus = TransactionStatus.FAILED;
-      transactionStatusCode = statusCode;
-      result.error = message;
-
-      this.logger.error(
-        `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
-      );
+      // Another pod already submitted this — don't touch the row, let the
+      // successful pod win the update and emit the change
+      if (statusCode === Status.DuplicateTransaction._code) {
+        isDuplicate = true;
+        this.logger.debug(
+          `Duplicate transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}) detected; assuming it was successfully executed by another pod and skipping updates.`,
+        );
+      } else {
+        transactionStatus = TransactionStatus.FAILED;
+        transactionStatusCode = statusCode;
+        result.error = message;
+        this.logger.error(
+          `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
+        );
+      }
     } finally {
-      result.status = transactionStatus;
-
-      await this.transactionsRepo.update(
-        { id: transaction.id },
-        {
-          status: transactionStatus,
-          executedAt,
-          statusCode: transactionStatusCode,
-        },
-      );
-
       client.close();
     }
+
+    if (isDuplicate) return null;
+
+    const updateResult = await this.transactionsRepo
+      .createQueryBuilder()
+      .update(Transaction)
+      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
+      .where('id = :id AND status = :currentStatus', {
+        id: transaction.id,
+        currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
+      })
+      .returning('id')
+      .execute();
+
+    if (updateResult.raw.length === 0) return null;
+
+    result.status = transactionStatus;
     return result;
   }
 
