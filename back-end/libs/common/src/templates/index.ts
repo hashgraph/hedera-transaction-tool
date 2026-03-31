@@ -9,6 +9,7 @@ import { generateTransactionCancelledContent } from '@app/common/templates/trans
 import { generateTransactionExecutedContent } from '@app/common/templates/transaction-executed';
 import { generateTransactionExpiredContent } from '@app/common/templates/transaction-expired';
 
+export * from './layout';
 export * from './remind-signers';
 export * from './reset-password';
 export * from './transaction-cancelled';
@@ -30,7 +31,7 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
     case NotificationType.TRANSACTION_CANCELLED:
       return generateTransactionCancelledContent(...notifications);
     case NotificationType.USER_REGISTERED:
-      return generateNotifyUserRegisteredContent(notifications);
+      return generateNotifyUserRegisteredContent(...notifications);
     case NotificationType.TRANSACTION_EXPIRED:
       return generateTransactionExpiredContent(...notifications);
     default:

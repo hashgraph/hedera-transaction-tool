@@ -110,6 +110,15 @@ Example: Create Brevo Account:
    SENDER_EMAIL=no-reply@<yourdomain.com>
 ```
 
+## Local Docker Compose Development
+
+Use the base compose file for CI-style container runs, and add the dev overlay when you want source bind mounts and a
+persisted local Postgres data directory:
+
+```bash
+docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build
+```
+
 ## 5. Create Email API Secret for Kubernetes
 
 (First time only) Create `email-api-secret.yaml` from the example template:

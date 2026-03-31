@@ -10,9 +10,9 @@
  * - We can seed 17+ keys directly into user_key table
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/util.js';
+import { setupApp, closeApp } from '../../utils/automationSupport.js';
 import { resetDbState, resetPostgresDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
@@ -65,7 +65,7 @@ function validateStagingConfig(): void {
   console.log(`Staging mode: Using pre-created account ${process.env.COMPLEX_KEY_ACCOUNT_ID}`);
 }
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
 import {
-  cancelTransaction,
   getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
@@ -12,7 +11,6 @@ import {
   type INotificationReceiver,
   type ITransactionFull,
   NotificationType,
-  TransactionStatus,
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
@@ -31,6 +29,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
@@ -62,8 +61,10 @@ import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vu
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
+import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
@@ -93,9 +94,26 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
-  await fetchGroup(Array.isArray(id) ? id[0] : id);
+  const groupId = Number(Array.isArray(id) ? id[0] : id);
+  if (!parsed) {
+    await fetchGroup(groupId);
+    return;
+  } // Legacy fallback
+
+  // If initial fetch hasn't completed yet, fall back to a full refetch
+  if (!group.value) {
+    await fetchGroup(groupId);
+    return;
+  }
+
+  const isAffected =
+    parsed.groupIds.includes(groupId) ||
+    (group.value.groupItems?.some(item => parsed.transactionIds.includes(item.transactionId)) ??
+      false);
+  if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -111,6 +129,7 @@ const toastManager = ToastManager.inject();
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
 const signAllStarted = ref(false);
+const cancelAllStarted = ref(false);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -184,14 +203,9 @@ const isCreator = computed(() => {
 });
 
 const groupIsInProgress = computed(() => {
-  let result = false;
-  for (const item of group.value?.groupItems ?? []) {
-    if (isTransactionInProgress(item.transaction as ITransactionFull)) {
-      result = true;
-      break;
-    }
-  }
-  return result;
+  return (
+    group.value?.groupItems?.some(item => isInProgressStatus(item.transaction.status)) ?? false
+  );
 });
 
 const canCancelAll = computed(() => {
@@ -222,7 +236,7 @@ const flatBreadCrumb = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await nextTransaction.routeUp(router);
+  await router.push({ name: 'transactions', query: { tab: router.previousTab ?? undefined } });
 };
 
 const handleDetails = async (id: number) => {
@@ -234,38 +248,12 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const handleCancelAll = async (showModal = false) => {
-  if (showModal) {
-    isConfirmModalShown.value = true;
-    confirmModalTitle.value = 'Cancel all transactions?';
-    confirmModalText.value = 'Are you sure you want to cancel all transactions?';
-    confirmCallback.value = handleCancelAll;
-    return;
-  }
+const handleCancelAll = async () => {
+  cancelAllStarted.value = true;
+};
 
-  isConfirmModalShown.value = false;
-
-  if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in organization');
-  }
-
-  try {
-    loadingStates[cancel] = 'Canceling...';
-    if (group.value != undefined) {
-      for (const groupItem of group.value.groupItems) {
-        if (isTransactionInProgress(groupItem.transaction as ITransactionFull)) {
-          await cancelTransaction(user.selectedOrganization.serverUrl, groupItem.transaction.id);
-        }
-      }
-    }
-
-    await fetchGroup(group.value!.id);
-    toastManager.success('Transactions canceled successfully');
-  } catch {
-    toastManager.error('Transactions not canceled');
-  } finally {
-    loadingStates[cancel] = null;
-  }
+const didCancelAll = async (groupId: number) => {
+  await fetchGroup(groupId);
 };
 
 const handleSignAll = () => {
@@ -289,7 +277,7 @@ const handleApproveAll = async (showModal = false, approved = false) => {
 
   const callback = async () => {
     if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-      throw new Error('User is not logged in organization');
+      throw new Error('You must be logged in to cancel transactions.');
     }
 
     const personalPassword = getPassword(callback, {
@@ -379,13 +367,13 @@ const handleExportGroup = async () => {
 
       const baseName = generateTransactionExportFileName(orgTransaction);
 
-      const { signedBytes, jsonContent } = await generateTransactionV1ExportContent(
+      const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
         orgTransaction,
         privateKey,
         group.value.description,
       );
 
-      zip.file(`${baseName}.tx`, signedBytes); // Add .tx file content to ZIP
+      zip.file(`${baseName}.tx`, transactionBytes); // Add .tx file content to ZIP
       zip.file(`${baseName}.txt`, jsonContent); // Add .txt  file content to ZIP
     }
     // Generate the ZIP file in-memory as a Uint8Array
@@ -421,7 +409,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === sign) {
     handleSignAll();
   } else if (value === cancel) {
-    await handleCancelAll(true);
+    await handleCancelAll();
   } else if (value === exportName) {
     await handleExportGroup();
   }
@@ -554,14 +542,6 @@ async function fetchGroup(id: string | number) {
     console.log('not logged into org');
   }
 }
-
-const isTransactionInProgress = (transaction: ITransactionFull) => {
-  return [
-    TransactionStatus.NEW,
-    TransactionStatus.WAITING_FOR_EXECUTION,
-    TransactionStatus.WAITING_FOR_SIGNATURES,
-  ].includes(transaction.status);
-};
 </script>
 <template>
   <form @submit.prevent="handleSubmit" class="p-5">
@@ -588,6 +568,7 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
                 <div>
                   <AppButton
                     :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                    :disabled="Boolean(loadingStates[visibleButtons[0]])"
                     :loading="Boolean(loadingStates[visibleButtons[0]])"
                     :loading-text="loadingStates[visibleButtons[0]] || ''"
                     :data-testid="buttonsDataTestIds[visibleButtons[0]]"
@@ -670,8 +651,15 @@ const isTransactionInProgress = (transaction: ITransactionFull) => {
               :callback="didSignAll"
             />
 
+            <CancelAllController
+              v-model:activate="cancelAllStarted"
+              :groupOrId="group"
+              :callback="didCancelAll"
+            />
+
             <AppConfirmModal
               v-model:show="isConfirmModalShown"
+              data-testid="button-group-action"
               :title="confirmModalTitle"
               :text="confirmModalText"
               :callback="confirmCallback"

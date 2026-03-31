@@ -2,11 +2,11 @@ import { exec } from 'child_process';
 import * as util from 'util';
 
 import { StartedTestContainer } from 'testcontainers';
-import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { RedisContainer } from '@testcontainers/redis';
 import { RabbitMQContainer } from '@testcontainers/rabbitmq';
 
 import { addUsers } from './utils/databaseUtil';
+import { createTestPostgresContainer } from '../../../test-utils/postgres-test-db';
 
 const execPromise = util.promisify(exec);
 
@@ -42,7 +42,7 @@ export default async function globalSetup() {
 async function startRedis() {
   /* For more information visit: https://node.testcontainers.org/modules/redis/ */
   console.log(`Starting ${redisContainerName} container...`);
-  global.REDIS_CONTAINER = await new RedisContainer().withName(redisContainerName).start();
+  global.REDIS_CONTAINER = await new RedisContainer("redis:7.2").withName(redisContainerName).start();
   console.log(
     `${redisContainerName} container started at ${global.REDIS_CONTAINER.getConnectionUrl()}`,
   );
@@ -54,7 +54,7 @@ async function startRedis() {
 async function startPostgres() {
   /* For more information visit: https://node.testcontainers.org/modules/postgresql/ */
   console.log(`Starting ${postgresContainerName} container...`);
-  global.POSTGRES_CONTAINER = await new PostgreSqlContainer()
+  global.POSTGRES_CONTAINER = await createTestPostgresContainer()
     .withName(`${postgresContainerName}`)
     .start();
   console.log(
@@ -72,7 +72,7 @@ async function startPostgres() {
 async function startRabbitMQ() {
   /* For more information visit: https://node.testcontainers.org/modules/rabbitmq/ */
   console.log(`Starting ${rabbitMQContainerName} container...`);
-  global.RABBITMQ_CONTAINER = await new RabbitMQContainer().withName(rabbitMQContainerName).start();
+  global.RABBITMQ_CONTAINER = await new RabbitMQContainer("rabbitmq:3.12.11-management-alpine").withName(rabbitMQContainerName).start();
   console.log(
     `${rabbitMQContainerName} container started at ${global.RABBITMQ_CONTAINER.getAmqpUrl()}`,
   );

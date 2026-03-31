@@ -1,4 +1,4 @@
-import { ElectronApplication, Page } from '@playwright/test';
+import { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -10,10 +10,10 @@ import {
   generateRandomEmail,
   generateRandomPassword,
   setupApp,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;

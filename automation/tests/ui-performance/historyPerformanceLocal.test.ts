@@ -11,20 +11,20 @@
  * - NO backend required (local SQLite only)
  */
 
-import { test, expect, ElectronApplication, Page } from '@playwright/test';
-import { setupApp, closeApp } from '../../utils/util.js';
+import { expect, Page, test } from '@playwright/test';
+import { closeApp, setupApp } from '../../utils/automationSupport.js';
 import { resetDbState } from '../../utils/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { seedLocalPerfData } from './seed-local-perf-data.js';
 import {
-  TARGET_LOAD_TIME_MS,
   collectPerformanceSamples,
-  waitForRowCount,
-  formatDuration,
-  TRANSACTION_ROW_SELECTOR,
   DATA_VOLUMES,
   DEBUG,
+  formatDuration,
+  TARGET_LOAD_TIME_MS,
   TEST_LOCAL_PASSWORD,
+  TRANSACTION_ROW_SELECTOR,
+  waitForRowCount,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 
@@ -32,7 +32,7 @@ import { SELECTORS } from './selectors.js';
 const DB_ITEM_COUNT = DATA_VOLUMES.HISTORY;
 const MIN_ROWS = 10; // Minimum rows to verify rendering
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let registrationPage: RegistrationPage;
 let testEmail: string;
@@ -45,8 +45,7 @@ test.describe('History Page Performance (Local Mode)', () => {
     registrationPage = new RegistrationPage(window);
 
     testEmail = `perf-history-local-${Date.now()}@test.com`;
-    const password = TEST_LOCAL_PASSWORD;
-    await registrationPage.completeRegistration(testEmail, password);
+    await registrationPage.completeRegistration(testEmail, TEST_LOCAL_PASSWORD);
 
     const result = await seedLocalPerfData(testEmail);
     seededCount = result.history;

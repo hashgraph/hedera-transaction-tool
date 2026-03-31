@@ -8,7 +8,8 @@ import { Prisma } from '@prisma/client';
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -19,6 +20,7 @@ import useNextTransactionV2, {
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 
 import { getTransactions, getTransactionsCount } from '@renderer/services/transactionService';
 import { getHistoryTransactions } from '@renderer/services/organization';
@@ -69,7 +71,28 @@ const notifications = useNotificationsStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
-useWebsocketSubscription(TRANSACTION_ACTION, fetchTransactions);
+const { recentlyUpdatedTxIds, highlightAndFetch } = useTransactionLiveHighlight();
+
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) { await fetchTransactions(); return; } // Legacy fallback
+
+  const silentFetch = () => fetchTransactions({ silent: true });
+
+  // Status updates can move transactions into History — always refetch
+  if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
+
+  // For non-status updates, refetch only if current items are affected
+  const txIds = new Set(parsed.transactionIds);
+  const hasMatch = organizationTransactions.value.some(t => txIds.has(t.transactionRaw.id));
+  if (hasMatch) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+  }
+});
+
 const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_EXECUTED,
   NotificationType.TRANSACTION_INDICATOR_EXPIRED,
@@ -203,12 +226,12 @@ function setNotifiedTransactions() {
   );
 }
 
-async function fetchTransactions() {
+async function fetchTransactions(options?: { silent?: boolean }) {
   if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
-  isLoading.value = true;
+  if (!options?.silent) isLoading.value = true;
   try {
     if (isLoggedInOrganization(user.selectedOrganization)) {
       if (user.selectedOrganization.isPasswordTemporary) return;
@@ -461,6 +484,7 @@ watch(
                   v-if="transactionData.transaction instanceof SDKTransaction && true"
                   :class="{
                     highlight: notifiedTransactionIds.includes(transactionData.transactionRaw.id),
+                    'recently-updated': recentlyUpdatedTxIds.has(transactionData.transactionRaw.id),
                   }"
                   :id="transactionData.transactionRaw.id.toString()"
                 >
@@ -555,3 +579,14 @@ watch(
     </template>
   </div>
 </template>
+
+<style scoped>
+.recently-updated td {
+  animation: flash-update 3s ease-out;
+}
+@keyframes flash-update {
+  0%,
+  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
+  100% { background-color: transparent; }
+}
+</style>

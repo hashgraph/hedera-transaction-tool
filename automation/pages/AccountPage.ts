@@ -47,6 +47,7 @@ export class AccountPage extends BasePage {
   // Inputs
   existingAccountIdInputSelector = 'input-existing-account-id';
   multiSelectCheckboxSelector = 'checkbox-multiple-account-id-';
+  fillAccountIdScreenshotSelector = 'fill-account-id-';
 
   async clickOnEditButton() {
     await this.click(this.editButtonSelector);
@@ -169,33 +170,28 @@ export class AccountPage extends BasePage {
    * @param {string} buttonSelector - The test ID selector for the button to check.
    */
   async fillInAccountId(accountId: string, inputSelector: string, buttonSelector: string) {
-    const maxRetries = 100; // Maximum number of retries before giving up
+    const maxRetries = 100;
     let attempt = 0;
 
     while (attempt < maxRetries) {
-      // Fill the input normally
-      const element = this.window.getByTestId(inputSelector);
-      await element.fill(accountId);
-
+      await this.fill(inputSelector, accountId);
       // Grab the last character of accountId and prepare the version without the last char
       const lastChar = accountId.slice(-1);
       const withoutLastChar = accountId.slice(0, -1);
-
-      // Clear the input and retype it without the last character
-      await element.fill(withoutLastChar);
-
+      await this.fill(inputSelector, withoutLastChar);
       // Type the last character
       await this.window.keyboard.type(lastChar);
 
       // Check if the target button is enabled
       if (await this.isButtonEnabled(buttonSelector)) {
+        await this.captureStepScreenshot(this.fillAccountIdScreenshotSelector + inputSelector);
         return; // Exit the function if the button is enabled
       }
 
       // Wait a short period before retrying to allow for UI updates
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      attempt++; // Increment the attempt counter
+      attempt++;
     }
 
     throw new Error(
@@ -220,9 +216,6 @@ export class AccountPage extends BasePage {
       const { newAccountId } = await this.transactionPage.createNewAccount();
       await this.transactionPage.mirrorGetAccountResponse(newAccountId ?? '');
       await this.transactionPage.clickOnTransactionsMenuButton();
-      // await this.clickOnAccountsLink();
-      // await this.clickOnRemoveButton();
-      // await this.unlinkAccounts(newAccountId);
       await deleteAccountById(newAccountId ?? '');
       await this.addAccountToUnliked(newAccountId ?? '');
     }

@@ -1,6 +1,10 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, In } from 'typeorm';
 
 import {
   emitTransactionStatusUpdate,
@@ -10,11 +14,15 @@ import {
   NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
-import { Transaction, TransactionGroup, TransactionGroupItem, User, UserKey } from '@entities';
+import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
 
 import { TransactionsService } from '../transactions.service';
 
-import { CreateTransactionGroupDto } from '../dto';
+import {
+  CancelFailureCode,
+  CancelGroupResultDto,
+  CreateTransactionGroupDto,
+} from '../dto';
 
 @Injectable()
 export class TransactionGroupsService {
@@ -189,6 +197,112 @@ export class TransactionGroupsService {
     return true;
   }
 
+  async cancelTransactionGroup(
+    user: User,
+    groupId: number,
+  ): Promise<CancelGroupResultDto> {
+    const group = await this.getTransactionGroup(user, groupId, false);
+
+    // Verify the user is the creator of all transactions in the group
+    const allOwnedByUser = group.groupItems.every(
+      item => item.transaction?.creatorKey?.userId === user.id,
+    );
+    if (!allOwnedByUser) {
+      throw new UnauthorizedException('Only the creator can cancel all transactions in a group.');
+    }
+
+    const cancelableStatuses = [
+      TransactionStatus.NEW,
+      TransactionStatus.WAITING_FOR_SIGNATURES,
+      TransactionStatus.WAITING_FOR_EXECUTION,
+    ];
+
+    // Classify transactions in-memory from already-loaded group data
+    const canceled: number[] = [];
+    const alreadyCanceled: number[] = [];
+    const failed: { id: number; code: CancelFailureCode; message: string }[] = [];
+    const cancelableIds: number[] = [];
+
+    for (const item of group.groupItems) {
+      const tx = item.transaction;
+      if (tx.status === TransactionStatus.CANCELED) {
+        alreadyCanceled.push(item.transactionId);
+      } else if (cancelableStatuses.includes(tx.status)) {
+        cancelableIds.push(item.transactionId);
+      } else {
+        failed.push({
+          id: item.transactionId,
+          code: CancelFailureCode.NOT_CANCELABLE,
+          message: 'Transaction cannot be canceled in its current state.',
+        });
+      }
+    }
+
+    // Bulk UPDATE in a single query
+    if (cancelableIds.length > 0) {
+      const updateResult = await this.dataSource.getRepository(Transaction)
+        .createQueryBuilder()
+        .update(Transaction)
+        .set({ status: TransactionStatus.CANCELED })
+        .where('id IN (:...ids)', { ids: cancelableIds })
+        .andWhere('status IN (:...statuses)', { statuses: cancelableStatuses })
+        .execute();
+
+      if (updateResult.affected === cancelableIds.length) {
+        // All updated successfully
+        canceled.push(...cancelableIds);
+      } else {
+        // Race condition: some transactions changed status between classify and update.
+        // Re-query only those IDs to find out what happened.
+        const latestStatuses = await this.dataSource.getRepository(Transaction).find({
+          where: { id: In(cancelableIds) },
+          select: ['id', 'status'],
+        });
+
+        const latestMap = new Map(latestStatuses.map(t => [t.id, t.status]));
+        for (const id of cancelableIds) {
+          const currentStatus = latestMap.get(id);
+          if (currentStatus === TransactionStatus.CANCELED) {
+            canceled.push(id);
+          } else if (cancelableStatuses.includes(currentStatus)) {
+            // Still cancelable but wasn't affected — treat as conflict
+            failed.push({
+              id,
+              code: CancelFailureCode.CONFLICT,
+              message: 'Transaction state changed during cancellation. Please retry.',
+            });
+          } else {
+            failed.push({
+              id,
+              code: CancelFailureCode.NOT_CANCELABLE,
+              message: 'Transaction cannot be canceled in its current state.',
+            });
+          }
+        }
+      }
+
+      // Batch notification — one publish for all canceled transactions
+      if (canceled.length > 0) {
+        emitTransactionStatusUpdate(
+          this.notificationsPublisher,
+          canceled.map(id => ({ entityId: id })),
+        );
+      }
+    }
+
+    return {
+      canceled,
+      alreadyCanceled,
+      failed,
+      summary: {
+        processedCount: group.groupItems.length,
+        canceled: canceled.length,
+        alreadyCanceled: alreadyCanceled.length,
+        failed: failed.length,
+      },
+    };
+  }
+
   private groupBy<T>(
     items: T[],
     key: (item: T) => string | number,
@@ -205,4 +319,5 @@ export class TransactionGroupsService {
 
     return map;
   }
+
 }

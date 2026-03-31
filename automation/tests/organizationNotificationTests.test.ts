@@ -1,4 +1,4 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
@@ -10,14 +10,14 @@ import {
   getPrivateKeyEnv,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import {
   disableNotificationsForTestUsers,
   getLatestInAppNotificationStatusByEmail,
   getNotifiedTransactionIdByEmail,
 } from '../utils/databaseQueries.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -51,11 +51,11 @@ test.describe('Organization Notification tests', () => {
       globalCredentials.password,
     );
 
-    await setupEnvironmentForTransactions(window);
+    const payerPrivateKey = await setupEnvironmentForTransactions(window);
 
     // Setup Organization
     await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password, false);
+    await organizationPage.setUpInitialUsers(window, globalCredentials.password, payerPrivateKey);
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
 

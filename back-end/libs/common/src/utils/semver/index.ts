@@ -6,6 +6,14 @@ export interface VersionCheckResult {
   updateUrl: string | null;
 }
 
+export function buildFrontendUpdateUrl(
+  repoUrl: string,
+  version: string,
+): string {
+  const baseUrl = repoUrl.replace(/\/+$/, '');
+  return `${baseUrl}/download/v${version}/`;
+}
+
 export function checkFrontendVersion(
   userVersion: string,
   latestSupported: string | undefined | null,
@@ -28,8 +36,7 @@ export function checkFrontendVersion(
     const cleanLatest = semver.clean(latestSupported);
     if (cleanLatest && semver.lt(cleanUserVersion, cleanLatest)) {
       if (repoUrl) {
-        const baseUrl = repoUrl.replace(/\/+$/, '');
-        result.updateUrl = `${baseUrl}/v${cleanLatest}/`;
+        result.updateUrl = buildFrontendUpdateUrl(repoUrl, cleanLatest);
       }
     }
   }

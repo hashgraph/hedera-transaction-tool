@@ -19,7 +19,11 @@ import {
   type VersionStatus,
 } from '@renderer/stores/versionState';
 
-const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
+const isDismissed = ref(
+  typeof sessionStorage !== 'undefined'
+    ? sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true'
+    : false,
+);
 
 // per org checking flags
 const orgChecks = ref<Record<string, boolean>>({});
