@@ -1,4 +1,5 @@
 vi.unmock('@main/modules/logger');
+
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('electron', () => ({
   app: {
@@ -63,12 +64,12 @@ const {
   getLoggerSettings,
   logRendererMessage,
 } = loggerModule;
+
 const rootLogger = electronLog.default.default;
 
 describe('logger', () => {
   beforeEach(() => {
-    rootLogger.processMessage.mockClear();
-    rootLogger.errorHandler.startCatching.mockClear();
+    vi.resetAllMocks();
   });
 
   test('configures the single file transport', () => {
@@ -81,6 +82,7 @@ describe('logger', () => {
       level: 'info',
       maxSizeBytes: 5 * 1024 * 1024,
     });
+
     expect(getLogFilePath()).toBe('/mock-user-data/logs/app.log');
     expect(rootLogger.transports.file.fileName).toBe('app.log');
     expect(rootLogger.transports.file.maxSize).toBe(5 * 1024 * 1024);
@@ -88,6 +90,7 @@ describe('logger', () => {
     expect(rootLogger.transports.console.level).toBeTruthy();
     expect(rootLogger.transports.ipc.level).toBe(false);
     expect(rootLogger.transports.remote.level).toBe(false);
+
     expect(rootLogger.errorHandler.startCatching).toHaveBeenCalledWith(
       expect.objectContaining({
         showDialog: false,
@@ -99,6 +102,7 @@ describe('logger', () => {
     initLogger();
 
     const sanitizeHook = rootLogger.hooks[0];
+
     const sanitized = sanitizeHook({
       data: [
         'Renderer log',
@@ -172,6 +176,36 @@ describe('logger', () => {
     );
   });
 
+  test('rotateLogFiles removes and renames archive slots', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    fsMock.existsSync.mockReturnValue(true);
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(fsMock.rmSync).toHaveBeenCalledTimes(5);
+    expect(fsMock.renameSync).toHaveBeenCalledTimes(5);
+  });
+
+  test('rotateLogFiles skips slots where source file does not exist', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+
+    // Only current file exists
+    fsMock.existsSync.mockImplementation(
+      (p: string) => p === '/mock-user-data/logs/app.log'
+    );
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(fsMock.renameSync).toHaveBeenCalledTimes(1);
+
+    // ✅ FIX: target does not exist → rmSync should NOT be called
+    expect(fsMock.rmSync).toHaveBeenCalledTimes(0);
+  });
+
   test('prefixes renderer log components and preserves renderer process type', () => {
     logRendererMessage('error', 'ipc', 'Renderer failure', { token: 'secret' });
 
@@ -207,49 +241,6 @@ describe('logger', () => {
         logId: 'renderer.test',
       }),
     );
-  });
-
-  test('rotateLogFiles removes and renames archive slots', async () => {
-    initLogger();
-
-    const fsMock = (await import('fs')).default;
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.rmSync.mockClear();
-    fsMock.renameSync.mockClear();
-
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
-
-    expect(fsMock.rmSync).toHaveBeenCalled();
-    expect(fsMock.renameSync).toHaveBeenCalled();
-
-    // There are 5 archive slots, so we expect 5 rm + 5 rename calls
-    expect(fsMock.rmSync).toHaveBeenCalledTimes(5);
-    expect(fsMock.renameSync).toHaveBeenCalledTimes(5);
-
-    fsMock.existsSync.mockReturnValue(false);
-    fsMock.rmSync.mockClear();
-    fsMock.renameSync.mockClear();
-  });
-
-  test('rotateLogFiles skips slots where source file does not exist', async () => {
-    initLogger();
-
-    const fsMock = (await import('fs')).default;
-    fsMock.rmSync.mockClear();
-    fsMock.renameSync.mockClear();
-
-    // Only the current file exists; archived slots do not
-    fsMock.existsSync.mockImplementation((p: string) => p === '/mock-user-data/logs/app.log');
-
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
-
-    // Only slot 1 (source = current file) should be renamed
-    expect(fsMock.renameSync).toHaveBeenCalledTimes(1);
-    expect(fsMock.rmSync).toHaveBeenCalledTimes(1);
-
-    fsMock.existsSync.mockReturnValue(false);
-    fsMock.rmSync.mockClear();
-    fsMock.renameSync.mockClear();
   });
 
   test('ensureLogsDirectory creates the logs directory', async () => {
