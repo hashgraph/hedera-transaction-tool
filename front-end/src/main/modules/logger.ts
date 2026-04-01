@@ -254,12 +254,7 @@ function startMainErrorCapture() {
 }
 
 function ensureLogsDirectory() {
-  try {
-    fs.mkdirSync(getLogsDirectoryPath(), { recursive: true });
-  } catch (error) {
-    // Do not let logging failures crash the application.
-    console.warn('Failed to create logs directory:', error);
-  }
+  fs.mkdirSync(getLogsDirectoryPath(), { recursive: true });
 }
 
 function rotateLogFiles(currentPath: string) {
