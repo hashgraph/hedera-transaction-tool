@@ -7,7 +7,7 @@ import {
   KeyList,
   SignatureMap,
   Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { ErrorCodes } from '@app/common';
 import { User, Transaction, TransactionSigner, UserKey, TransactionStatus } from '@entities';

@@ -1,5 +1,5 @@
 import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobufKey } from '@app/common';
-import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hashgraph/sdk';
+import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hiero-ledger/sdk';
 
 export const parseAccountInfo = (accountInfo: AccountInfo) => {
   const accountInfoParsed: AccountInfoParsed = {

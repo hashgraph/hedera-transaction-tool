@@ -40,8 +40,8 @@
     "migration:revert": "pnpm typeorm migration:revert -d typeorm/data-source.ts"
   },
   "dependencies": {
-    "@hashgraph/proto": "2.25.0",
-    "@hashgraph/sdk": "2.80.0",
+    "@hiero-ledger/proto": "2.27.0",
+    "@hiero-ledger/sdk": "2.82.0",
     "@nest-lab/throttler-storage-redis": "1.1.1",
     "@nestjs/axios": "3.1.3",
     "@nestjs/cache-manager": "2.2.2",
