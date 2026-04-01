@@ -1,5 +1,4 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
@@ -19,8 +18,7 @@ import {
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
-let globalCredentials = { email: '', password: '' };
-let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
@@ -30,18 +28,15 @@ test.describe('Group transaction tests @local-transactions', () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    groupPage = new GroupPage(window);
-    const loginPage = new LoginPage(window);
-    const seededUser = await createSeededLocalUserSession(window, loginPage);
-    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
-
-    await setupEnvironmentForTransactions(window);
   });
 
   test.beforeEach(async () => {
+    loginPage = new LoginPage(window);
+    transactionPage = new TransactionPage(window);
+    groupPage = new GroupPage(window);
+    await createSeededLocalUserSession(window, loginPage);
+    transactionPage.generatedAccounts = [];
+    await setupEnvironmentForTransactions(window);
     await transactionPage.clickOnTransactionsMenuButton();
 
     if (process.env.CI) {

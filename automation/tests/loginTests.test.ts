@@ -26,10 +26,6 @@ test.describe('Login tests @local-basic', () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
-    loginPage = new LoginPage(window);
-    const seededUser = await createSeededLocalUserSession(window, loginPage);
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
   });
 
   test.afterAll(async () => {
@@ -39,6 +35,10 @@ test.describe('Login tests @local-basic', () => {
   });
 
   test.beforeEach(async () => {
+    loginPage = new LoginPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
     await loginPage.logout();
   });
 

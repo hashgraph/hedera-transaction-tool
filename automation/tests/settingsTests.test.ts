@@ -33,13 +33,6 @@ test.describe('Settings tests @local-basic', () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
-    loginPage = new LoginPage(window);
-    settingsPage = new SettingsPage(window);
-    transactionPage = new TransactionPage(window);
-    const seededUser = await createSeededLocalUserSession(window, loginPage);
-    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
   });
 
   test.afterAll(async () => {
@@ -49,8 +42,13 @@ test.describe('Settings tests @local-basic', () => {
   });
 
   test.beforeEach(async () => {
-    await loginPage.logout();
-    await loginPage.login(globalCredentials.email, globalCredentials.password);
+    loginPage = new LoginPage(window);
+    settingsPage = new SettingsPage(window);
+    transactionPage = new TransactionPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
     await settingsPage.clickOnSettingsButton();
   });
 

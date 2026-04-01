@@ -39,7 +39,6 @@ import {
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
-const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 let transactionPage: TransactionPage;
@@ -53,6 +52,15 @@ test.describe('Workflow tests @local-transactions', () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
+  });
+
+  test.afterAll(async () => {
+    await closeApp(app);
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
+  });
+
+  test.beforeEach(async () => {
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     accountPage = new AccountPage(window);
@@ -60,25 +68,8 @@ test.describe('Workflow tests @local-transactions', () => {
     detailsPage = new DetailsPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage);
     registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-
-    // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
-
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
-
     await setupEnvironmentForTransactions(window);
-  });
-
-  test.afterAll(async () => {
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await cleanupIsolation(isolationContext);
-  });
-
-  test.beforeEach(async () => {
     await transactionPage.clickOnTransactionsMenuButton();
 
     if (process.env.CI) {
