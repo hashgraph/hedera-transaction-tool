@@ -49,8 +49,6 @@ let detailsPage: DetailsPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Workflow tests @local-transactions', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();

@@ -1,6 +1,5 @@
 import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { flushRateLimiter } from '../utils/databaseUtil.js';
@@ -21,19 +20,18 @@ import { createSeededOrganizationSession } from '../utils/organizationBaseline.j
 import {
   activateSuiteIsolation,
   cleanupIsolation,
-  createNamespacedLabel,
   resetBackendStateForSuite,
   resetBackendStateForTeardown,
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
 } from '../utils/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../utils/organizationTestNames.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
-let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
@@ -44,14 +42,12 @@ let firstUser: UserDetails;
 let secondUser: UserDetails;
 let thirdUser: UserDetails;
 let complexKeyAccountId: string;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Transaction tests @organization-advanced', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
     await resetLocalStateForSuite();
     await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
@@ -68,9 +64,16 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
     });
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
     loginPage = new LoginPage(window);
+  });
 
+  test.beforeEach(async ({}, testInfo) => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+    await setDialogMockState(window, { savePath: null, openPaths: [] });
+
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    organizationPage.complexAccountId = [];
     organizationPage.complexFileId = [];
     const seededSession = await createSeededOrganizationSession(
       window,
@@ -89,24 +92,9 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
     thirdUser = organizationPage.getUser(2);
     await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
 
-    // Set complex account for transactions
-    await organizationPage.addComplexKeyAccountForTransactions();
-
+    await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-  });
-
-  test.beforeEach(async () => {
-    // Flush rate limiter before each test to prevent "too many requests" errors
-    await flushRateLimiter();
-    await setDialogMockState(window, { savePath: null, openPaths: [] });
-
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     // Wait for login toast to disappear before test starts
     await organizationPage.waitForElementToDisappear('.v-toast__text');
@@ -121,7 +109,12 @@ test.describe('Organization Transaction tests @organization-advanced', () => {
   });
 
   test.afterEach(async () => {
-    await organizationPage.logoutFromOrganization();
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Several tests delete or fully consume the current org session.
+      // The next beforeEach recreates the fixture from scratch.
+    }
   });
 
   test.afterAll(async () => {

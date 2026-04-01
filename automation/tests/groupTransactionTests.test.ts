@@ -26,8 +26,6 @@ let groupPage: GroupPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Group transaction tests @local-transactions', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();

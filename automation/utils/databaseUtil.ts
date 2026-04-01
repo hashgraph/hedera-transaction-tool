@@ -6,7 +6,9 @@ import * as url from 'url';
 import { Client, QueryResultRow } from 'pg';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
+import { shouldPreserveLocalAppState } from './appMode.js';
 import { applyPlaywrightIsolationEnv } from './playwrightIsolation.js';
+import { shouldPreserveBackendState } from './backendStateMode.js';
 
 // Load environment variables from .env file
 const __filename = url.fileURLToPath(import.meta.url);
@@ -89,6 +91,11 @@ export function queryDatabase<T>(query: string, params: (string|number)[] = []):
 }
 
 export async function resetDbState() {
+  if (shouldPreserveLocalAppState()) {
+    console.log('Preserving local SQLite state. Skipping database reset.');
+    return;
+  }
+
   const db = openDatabase();
   if (!db) {
     console.log('SQLite database file does not exist. Skipping reset.');
@@ -229,6 +236,11 @@ export async function createTestUsersBatch(usersData: {email: string, password: 
 }
 
 export async function resetPostgresDbState() {
+  if (shouldPreserveBackendState()) {
+    console.log('Preserving PostgreSQL state. Skipping database reset.');
+    return;
+  }
+
   const client = await connectPostgresDatabase();
 
   // Tables to reset - order matters for foreign key constraints
@@ -270,8 +282,8 @@ export async function resetPostgresDbStateForTeardown() {
 }
 
 export async function flushRateLimiter() {
-  if (process.env.PLAYWRIGHT_SHARED_ENV === 'true') {
-    console.log('Skipping Redis rate limiter flush in shared Playwright environment.');
+  if (shouldPreserveBackendState()) {
+    console.log('Preserving backend state. Skipping Redis rate limiter flush.');
     return;
   }
 

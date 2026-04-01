@@ -18,8 +18,6 @@ let loginPage: LoginPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Registration tests @local-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeEach(async ({}, testInfo) => {
     if (app) {
       await closeApp(app);

@@ -13,13 +13,13 @@ import { createSeededOrganizationSession } from '../utils/organizationBaseline.j
 import {
   activateSuiteIsolation,
   cleanupIsolation,
-  createNamespacedLabel,
   resetBackendStateForSuite,
   resetBackendStateForTeardown,
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
 } from '../utils/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../utils/organizationTestNames.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -36,16 +36,12 @@ let updatedOrganizationNickname = 'New Organization';
 let invalidOrganizationNickname = 'Bad Organization';
 
 let firstUser: UserDetails;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Settings tests @organization-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
-    updatedOrganizationNickname = createNamespacedLabel('New Organization', isolationContext);
-    invalidOrganizationNickname = createNamespacedLabel('Bad Organization', isolationContext);
     await resetLocalStateForSuite();
     await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
@@ -54,6 +50,18 @@ test.describe('Organization Settings tests @organization-basic', () => {
     organizationPage = new OrganizationPage(window);
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    updatedOrganizationNickname = organizationNickname.replace(
+      'Test Organization',
+      'Updated Organization',
+    );
+    invalidOrganizationNickname = organizationNickname.replace(
+      'Test Organization',
+      'Invalid Organization',
+    );
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -66,6 +74,15 @@ test.describe('Organization Settings tests @organization-basic', () => {
     globalCredentials.email = seededSession.localUser.email;
     globalCredentials.password = seededSession.localUser.password;
     firstUser = organizationPage.getUser(0);
+  });
+
+  test.afterEach(async () => {
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Tests can end in personal mode or after deleting the organization.
+      // The next beforeEach recreates the full fixture.
+    }
   });
 
   test.afterAll(async () => {

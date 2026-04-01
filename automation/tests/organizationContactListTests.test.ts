@@ -1,5 +1,4 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { ContactListPage } from '../pages/ContactListPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
@@ -12,18 +11,17 @@ import { createSeededOrganizationSession } from '../utils/organizationBaseline.j
 import {
   activateSuiteIsolation,
   cleanupIsolation,
-  createNamespacedLabel,
   resetBackendStateForSuite,
   resetBackendStateForTeardown,
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
 } from '../utils/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../utils/organizationTestNames.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
-let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let contactListPage: ContactListPage;
 let loginPage: LoginPage;
@@ -32,21 +30,22 @@ let organizationNickname = 'Test Organization';
 
 let adminUser: UserDetails;
 let regularUser: UserDetails;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Contact List tests @organization-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
     await resetLocalStateForSuite();
     await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
     contactListPage = new ContactListPage(window);
     loginPage = new LoginPage(window);
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -68,7 +67,12 @@ test.describe('Organization Contact List tests @organization-basic', () => {
   });
 
   test.afterEach(async () => {
-    await organizationPage.logoutFromOrganization();
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Some attach-mode reruns fail before the org session is fully established.
+      // The next beforeEach recreates a fresh fixture, so this cleanup stays best-effort.
+    }
   });
 
   test.afterAll(async () => {

@@ -13,6 +13,10 @@ import {
   clearPlaywrightIsolationEnv,
   type PlaywrightIsolationContext,
 } from './playwrightIsolation.js';
+import {
+  isSharedEnvironmentRun,
+  shouldPreserveBackendState,
+} from './backendStateMode.js';
 
 const SHARED_ENV_ROOT = path.join(os.tmpdir(), 'hedera-transaction-tool-playwright');
 const DEFAULT_REMOTE_DEBUGGING_PORT = 9333;
@@ -21,10 +25,6 @@ const MAX_LABEL_LENGTH = 63;
 export interface ActivatedTestIsolationContext extends PlaywrightIsolationContext {
   rootDir: string;
   scope: 'suite' | 'test';
-}
-
-export function isSharedEnvironmentRun(): boolean {
-  return process.env.PLAYWRIGHT_SHARED_ENV === 'true';
 }
 
 export async function activateSuiteIsolation(
@@ -65,7 +65,7 @@ export async function resetLocalStateForTeardown() {
 }
 
 export async function resetBackendStateForSuite() {
-  if (isSharedEnvironmentRun()) {
+  if (shouldPreserveBackendState()) {
     return;
   }
 
@@ -73,7 +73,7 @@ export async function resetBackendStateForSuite() {
 }
 
 export async function resetBackendStateForTeardown() {
-  if (isSharedEnvironmentRun()) {
+  if (shouldPreserveBackendState()) {
     return;
   }
 

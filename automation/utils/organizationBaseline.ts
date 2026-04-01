@@ -83,6 +83,7 @@ export async function createSeededOrganizationSession(
   options: CreateSeededOrganizationSessionOptions = {},
 ): Promise<SeededOrganizationSession> {
   const localUser = await createSeededLocalUserSession(page, loginPage, options.localUser);
+  await deleteExistingLocalOrganizationConnection(page, process.env.ORGANIZATION_URL ?? '');
   const shouldSetupPersonalTransactions = options.setupPersonalTransactions ?? true;
   const shouldSetupOrganizationTransactions = options.setupOrganizationTransactions ?? true;
   const shouldSeedOrganizationKeys = options.seedOrganizationKeys ?? true;
@@ -199,4 +200,47 @@ export function resolveSignInUserIndex(
 
 async function generateRecoveryPhraseWords(): Promise<string[]> {
   return (await Mnemonic.generate()).toString().split(' ');
+}
+
+async function deleteExistingLocalOrganizationConnection(page: Page, serverUrl: string): Promise<void> {
+  if (!serverUrl) {
+    return;
+  }
+
+  await page.evaluate(async targetServerUrl => {
+    type LocalOrganization = {
+      id: string;
+      serverUrl: string;
+    };
+
+    type ElectronApiWindow = Window & {
+      electronAPI: {
+        local: {
+          organizations: {
+            getOrganizations: () => Promise<LocalOrganization[]>;
+            deleteOrganization: (id: string) => Promise<boolean>;
+          };
+        };
+      };
+    };
+
+    const electronWindow = window as unknown as ElectronApiWindow;
+    const organizations = await electronWindow.electronAPI.local.organizations.getOrganizations();
+
+    for (const organization of organizations) {
+      if (organization.serverUrl !== targetServerUrl) {
+        continue;
+      }
+
+      await electronWindow.electronAPI.local.organizations.deleteOrganization(organization.id);
+
+      try {
+        const origin = new URL(targetServerUrl).origin;
+        sessionStorage.removeItem(`auth-token-${origin}`);
+      } catch {
+        // Ignore malformed URLs here. The add-organization flow will fail with the
+        // real validation error if the configured organization URL is invalid.
+      }
+    }
+  }, serverUrl);
 }

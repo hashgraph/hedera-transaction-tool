@@ -42,8 +42,6 @@ let firstUser: UserDetails;
 let secondUser: UserDetails;
 
 test.describe.skip('Organization Notification tests @organization-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     test.slow();
     isolationContext = await activateSuiteIsolation(test.info());

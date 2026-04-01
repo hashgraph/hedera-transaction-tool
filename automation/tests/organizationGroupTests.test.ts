@@ -1,10 +1,10 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { flushRateLimiter } from '../utils/databaseUtil.js';
+import { findMissingAccountId } from '../utils/mirrorNodeAPI.js';
 import {
   closeApp,
   setupApp,
@@ -14,19 +14,18 @@ import { createSeededOrganizationSession } from '../utils/organizationBaseline.j
 import {
   activateSuiteIsolation,
   cleanupIsolation,
-  createNamespacedLabel,
   resetBackendStateForSuite,
   resetBackendStateForTeardown,
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
 } from '../utils/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../utils/organizationTestNames.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
-let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
@@ -38,48 +37,27 @@ let secondUser: UserDetails
 let thirdUser: UserDetails
 let complexKeyAccountId: string;
 let newAccountId: string;
-
-async function findMissingAccountId(accountId: string): Promise<string> {
-  const parts = accountId.split('.');
-  const lastIndex = parts.length - 1;
-  const baseAccountNumber = Number(parts[lastIndex]);
-
-  if (!Number.isInteger(baseAccountNumber)) {
-    throw new Error(`Invalid account id: ${accountId}`);
-  }
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    parts[lastIndex] = String(baseAccountNumber + 1_000_000 + attempt);
-    const candidateAccountId = parts.join('.');
-    const accountExists = await transactionPage
-      .mirrorGetAccountResponse(candidateAccountId, 300, 150)
-      .then(response => Array.isArray(response?.accounts) && response.accounts.length > 0)
-      .catch(() => false);
-
-    if (!accountExists) {
-      return candidateAccountId;
-    }
-  }
-
-  throw new Error(`Failed to find a missing account id derived from ${accountId}`);
-}
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
     await resetLocalStateForSuite();
     await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
     groupPage = new GroupPage(window);
+  });
 
+  test.beforeEach(async ({}, testInfo) => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    organizationPage.complexAccountId = [];
     organizationPage.complexFileId = [];
     const seededSession = await createSeededOrganizationSession(
       window,
@@ -98,25 +76,11 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
     thirdUser = organizationPage.getUser(2);
     await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
 
-    // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
     newAccountId = organizationPage.complexAccountId[1];
     groupPage.organizationPage = organizationPage;
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-  });
-
-  test.beforeEach(async () => {
-    // Flush rate limiter before each test to prevent "too many requests" errors
-    await flushRateLimiter();
-
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
 
     await groupPage.waitForElementToDisappear(groupPage.toastMessageSelector);
 
@@ -139,7 +103,12 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
   });
 
   test.afterEach(async () => {
-    await organizationPage.logoutFromOrganization();
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Group tests can end in intermediary modal states.
+      // The next beforeEach recreates the org fixture from scratch.
+    }
   });
 
   test.afterAll(async () => {

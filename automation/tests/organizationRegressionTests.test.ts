@@ -43,8 +43,6 @@ let complexKeyAccountId: string;
 let totalUsers = 57; // 57... divisible by 3...? Well this is not a good start...
 
 test.describe.skip('Organization Regression tests @organization-advanced', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     test.slow();
     isolationContext = await activateSuiteIsolation(test.info());

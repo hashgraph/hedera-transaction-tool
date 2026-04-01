@@ -28,8 +28,6 @@ let transactionPage: TransactionPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Transaction tests @local-transactions', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     isolationContext = await activateSuiteIsolation(test.info());
     await resetLocalStateForSuite();
