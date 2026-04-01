@@ -3,22 +3,67 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { getPublicKeyOwner } from '@renderer/services/organization/user';
 import { axiosWithCredentials } from '@renderer/utils';
-import { AxiosError } from 'axios';
+import { AxiosError, type AxiosResponse } from 'axios';
 
+import {
+  PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
+  PUBLIC_KEY_OWNER_STATUS_MESSAGES,
+  SESSION_EXPIRED_MESSAGE,
+} from '@renderer/services/organization/errorMessages';
+
+// Replicate the real commonRequestHandler logic so we test the actual behavior
+// of getPublicKeyOwner with its messageOn401 and statusMessages params
 vi.mock('@renderer/utils', () => ({
   axiosWithCredentials: {
     get: vi.fn(),
   },
   commonRequestHandler: vi.fn(
-    async <T>(callback: () => Promise<T>, defaultMessage: string): Promise<T> => {
+    async <T>(
+      callback: () => Promise<T>,
+      defaultMessage: string = 'Failed to send request',
+      messageOn401?: string,
+      statusMessages?: Partial<Record<number, string>>,
+    ): Promise<T> => {
       try {
         return await callback();
-      } catch {
-        throw new Error(defaultMessage);
+      } catch (error) {
+        let message = defaultMessage;
+
+        if (error instanceof AxiosError) {
+          if (!error.response) {
+            throw new Error('Failed to connect to the server');
+          }
+
+          const status = error.response.status;
+
+          if (statusMessages?.[status]) {
+            message = statusMessages[status]!;
+          } else if (status === 401 && messageOn401) {
+            message = messageOn401.trim() || error.response.data?.message;
+          } else if (status === 429) {
+            message = 'Too many requests. Please try again later.';
+          }
+        }
+        throw new Error(message);
       }
     },
   ),
 }));
+
+const createAxiosError = (
+  message: string,
+  code: string,
+  status: number,
+  data: Record<string, unknown> = {},
+): AxiosError => {
+  return new AxiosError(message, code, undefined, undefined, {
+    status,
+    data,
+    statusText: message,
+    headers: {},
+    config: {} as any,
+  } as AxiosResponse);
+};
 
 describe('getPublicKeyOwner', () => {
   const serverUrl = 'https://org.example.com';
@@ -27,6 +72,8 @@ describe('getPublicKeyOwner', () => {
   beforeEach(() => {
     vi.resetAllMocks();
   });
+
+  // --- Happy path ---
 
   test('returns email when user owns the public key', async () => {
     vi.mocked(axiosWithCredentials.get).mockResolvedValueOnce({
@@ -51,73 +98,81 @@ describe('getPublicKeyOwner', () => {
     expect(result).toBeNull();
   });
 
-  test('returns null on 401 Unauthorized (expired JWT)', async () => {
-    const axiosError = new AxiosError('Unauthorized', '401', undefined, undefined, {
-      status: 401,
-      data: { message: 'Unauthorized', statusCode: 401 },
-      statusText: 'Unauthorized',
-      headers: {},
-      config: {} as any,
-    });
-    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(axiosError);
+  // --- 401: throws session-expired message via messageOn401 (the fix for #2411) ---
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
+  test('throws session-expired message on 401 Unauthorized instead of generic error', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Unauthorized', '401', 401, {
+        message: 'Unauthorized',
+        statusCode: 401,
+      }),
+    );
 
-    expect(result).toBeNull();
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      SESSION_EXPIRED_MESSAGE,
+    );
   });
 
-  test('returns null on 429 Too Many Requests', async () => {
-    const axiosError = new AxiosError('Too Many Requests', '429', undefined, undefined, {
-      status: 429,
-      data: { message: 'Too Many Requests' },
-      statusText: 'Too Many Requests',
-      headers: {},
-      config: {} as any,
-    });
-    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(axiosError);
+  // --- Status codes with custom messages via statusMessages ---
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
+  test('throws custom message on 403 Forbidden', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Forbidden', '403', 403),
+    );
 
-    expect(result).toBeNull();
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      PUBLIC_KEY_OWNER_STATUS_MESSAGES[403],
+    );
   });
 
-  test('returns null on 500 Internal Server Error', async () => {
-    const axiosError = new AxiosError('Server Error', '500', undefined, undefined, {
-      status: 500,
-      data: {},
-      statusText: 'Internal Server Error',
-      headers: {},
-      config: {} as any,
-    });
-    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(axiosError);
+  test('throws custom message on 404 Not Found', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Not Found', '404', 404),
+    );
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
-
-    expect(result).toBeNull();
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      PUBLIC_KEY_OWNER_STATUS_MESSAGES[404],
+    );
   });
 
-  test('returns null on network error (no response from server)', async () => {
+  test('throws custom message on 500 Internal Server Error', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Server Error', '500', 500),
+    );
+
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      PUBLIC_KEY_OWNER_STATUS_MESSAGES[500],
+    );
+  });
+
+  // --- Other errors ---
+
+  test('throws rate-limit message on 429 Too Many Requests', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Too Many Requests', '429', 429),
+    );
+
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      'Too many requests. Please try again later.',
+    );
+  });
+
+  test('throws default message on unhandled status code (e.g. 418)', async () => {
+    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
+      createAxiosError('Teapot', '418', 418),
+    );
+
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
+    );
+  });
+
+  test('throws connection error when server is unreachable', async () => {
     const axiosError = new AxiosError('Network Error', 'ERR_NETWORK');
     vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(axiosError);
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
-
-    expect(result).toBeNull();
-  });
-
-  test('throws non-Axios errors (unexpected runtime bugs)', async () => {
-    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
-      new TypeError('Cannot read properties of undefined'),
+    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+      'Failed to connect to the server',
     );
-
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(TypeError);
-  });
-
-  test('throws RangeError instead of swallowing it', async () => {
-    vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(
-      new RangeError('Invalid array length'),
-    );
-
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(RangeError);
   });
 });

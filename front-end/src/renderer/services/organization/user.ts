@@ -1,10 +1,10 @@
 import type { IUser, IUserKey } from '@shared/interfaces';
 
-import axios from 'axios';
-
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 import { getUserKeys } from './userKeys';
+
+import { PUBLIC_KEY_OWNER_DEFAULT_MESSAGE, PUBLIC_KEY_OWNER_STATUS_MESSAGES } from './errorMessages';
 
 /* User service for organization */
 const controller = 'users';
@@ -73,16 +73,20 @@ export const deleteUser = (organizationServerUrl: string, id: number) =>
     return response.data;
   }, 'Failed to delete user');
 
-export const getPublicKeyOwner = async (organizationServerUrl: string, publicKey: string): Promise<string | null> => {
-  try {
-    const response = await axiosWithCredentials.get(
-      `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
-    );
-    return response.data === "" ? null : response.data;
-  } catch (error) {
-    if (axios.isAxiosError(error)) {
-      return null;
-    }
-    throw error;
-  }
+export const getPublicKeyOwner = async (
+  organizationServerUrl: string,
+  publicKey: string,
+): Promise<string | null> => {
+  return commonRequestHandler(
+    async () => {
+      const response = await axiosWithCredentials.get(
+        `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
+      );
+      // response.data == "" when there is no matching user => fixing
+      return response.data === "" ? null : response.data;
+    },
+    PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
+    PUBLIC_KEY_OWNER_STATUS_MESSAGES[401],
+    PUBLIC_KEY_OWNER_STATUS_MESSAGES,
+  );
 };
