@@ -5,6 +5,11 @@ import {
   TransactionNodeCollection,
 } from '../../../../../shared/src/ITransactionNode';
 import { BackEndTransactionType, type Network, TransactionStatus } from '@shared/interfaces';
+import {
+  TRANSACTION_NODE_DEFAULT_MESSAGE,
+  TRANSACTION_NODE_STATUS_MESSAGES,
+  SESSION_EXPIRED_MESSAGE,
+} from './errorMessages';
 
 export const getTransactionNodes = async (
   serverUrl: string,
@@ -31,11 +36,7 @@ export const getTransactionNodes = async (
 
     return r.data;
   },
-    'Something went wrong while fetching transaction nodes. Please try again.',
-    'Your session may have expired. Try refreshing the page and signing in again.',
-    {
-      404: `Could not retrieve transactions. The server may be outdated — please contact your administrator for help.`,
-      403: `You don't have permission to view transactions for this network.`,
-      500: `The server ran into a problem fetching transactions. Try again in a moment.`,
-    },
+    TRANSACTION_NODE_DEFAULT_MESSAGE,
+    SESSION_EXPIRED_MESSAGE,
+    TRANSACTION_NODE_STATUS_MESSAGES,
   );
