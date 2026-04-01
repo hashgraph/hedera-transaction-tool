@@ -17,6 +17,8 @@ vi.mock('fs', () => ({
 vi.mock('electron-log', () => {
   const processMessage = vi.fn();
   const startCatching = vi.fn();
+  const error = vi.fn();
+
   const rootLogger = {
     errorHandler: {
       startCatching,
@@ -48,6 +50,7 @@ vi.mock('electron-log', () => {
   return {
     default: {
       default: rootLogger,
+      error,
     },
   };
 });
@@ -69,10 +72,12 @@ const rootLogger = electronLog.default.default;
 
 describe('logger', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    vi.clearAllMocks();
   });
 
-  test('configures the single file transport', () => {
+  test('configures the single file transport', async () => {
+    const fsMock = (await import('fs')).default;
+
     initLogger();
 
     expect(getLoggerSettings()).toEqual({
@@ -96,6 +101,8 @@ describe('logger', () => {
         showDialog: false,
       }),
     );
+
+    expect(fsMock.mkdirSync).toHaveBeenCalledWith('/mock-user-data/logs', { recursive: true });
   });
 
   test('sanitizes sensitive metadata before formatting', () => {
@@ -202,8 +209,115 @@ describe('logger', () => {
 
     expect(fsMock.renameSync).toHaveBeenCalledTimes(1);
 
-    // ✅ FIX: target does not exist → rmSync should NOT be called
     expect(fsMock.rmSync).toHaveBeenCalledTimes(0);
+  });
+
+  test('rotateLogFiles logs error when renameSync throws', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    const electronLogError = electronLog.default.error;
+
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.renameSync.mockImplementation(() => {
+      throw new Error('rename failed');
+    });
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(electronLogError).toHaveBeenCalled();
+  });
+
+  test('rotateLogFiles logs error when rmSync throws', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    const electronLogError = (await import('electron-log')).default.error;
+
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.rmSync.mockImplementation(() => {
+      throw new Error('rm failed');
+    });
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(electronLogError).toHaveBeenCalled();
+  });
+
+  test('rotateLogFiles swallows error if electronLog.error throws (via processMessage)', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.renameSync.mockImplementation(() => {
+      throw new Error('rename failed');
+    });
+
+    rootLogger.processMessage.mockImplementationOnce(() => {
+      throw new Error('logging failed');
+    });
+
+    expect(() => {
+      rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    }).not.toThrow();
+  });
+
+  test('rotateLogFiles logs source and target paths on failure', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    const electronLogError = (await import('electron-log')).default.error;
+
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.renameSync.mockImplementation(() => {
+      throw new Error('rename failed');
+    });
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(electronLogError).toHaveBeenCalledWith(
+      'Failed to rotate log file',
+      expect.objectContaining({
+        sourcePath: expect.any(String),
+        targetPath: expect.any(String),
+        error: expect.any(Error),
+      }),
+    );
+  });
+
+  test('rotateLogFiles handles mixed existing and non-existing files', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+
+    fsMock.existsSync.mockImplementation((p: string) => {
+      return p.includes('app.log') || p.includes('app.1.log');
+    });
+
+    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+
+    expect(fsMock.renameSync).toHaveBeenCalled();
+  });
+
+  test('rotateLogFiles swallows error if electronLog.error throws', async () => {
+    initLogger();
+
+    const fsMock = (await import('fs')).default;
+    const electronLogError = (await import('electron-log')).default.error;
+
+    fsMock.existsSync.mockReturnValue(true);
+    fsMock.renameSync.mockImplementation(() => {
+      throw new Error('rename failed');
+    });
+
+    electronLogError.mockImplementationOnce(() => {
+      throw new Error('logging failed');
+    });
+
+    expect(() => {
+      rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    }).not.toThrow();
   });
 
   test('prefixes renderer log components and preserves renderer process type', () => {
@@ -241,50 +355,6 @@ describe('logger', () => {
         logId: 'renderer.test',
       }),
     );
-  });
-
-  test('ensureLogsDirectory creates the logs directory', async () => {
-    vi.resetModules();
-    vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-    vi.mock('electron', () => ({
-      app: { getPath: vi.fn(() => '/mock-user-data') },
-    }));
-    vi.mock('fs', () => ({
-      default: {
-        existsSync: vi.fn(() => false),
-        mkdirSync: vi.fn(),
-        renameSync: vi.fn(),
-        rmSync: vi.fn(),
-      },
-    }));
-    vi.mock('electron-log', () => {
-      const rl = {
-        errorHandler: { startCatching: vi.fn() },
-        hooks: [] as any[],
-        processMessage: vi.fn(),
-        transports: {
-          console: { format: '', level: 'silly' },
-          file: {
-            archiveLogFn: vi.fn(),
-            fileName: '',
-            format: '',
-            level: 'silly',
-            maxSize: 0,
-            resolvePathFn: vi.fn(),
-          },
-          ipc: { level: 'silly' },
-          remote: { level: 'silly' },
-        },
-      };
-      return { default: { default: rl } };
-    });
-
-    const freshModule = await import('@main/modules/logger');
-    const freshFs = (await import('fs')).default;
-
-    freshModule.default();
-
-    expect(freshFs.mkdirSync).toHaveBeenCalledWith('/mock-user-data/logs', { recursive: true });
   });
 
   test('patchMainConsole routes console.log through processMessage', () => {
@@ -526,60 +596,13 @@ describe('logger', () => {
     expect(rootLogger.hooks).toHaveLength(1);
   });
 
-  test('log level configuration via HTT_LOG_LEVEL env var', async () => {
-    // This test needs a fresh module import to pick up env changes
-    // Since the logger is already configured in this test suite,
-    // we verify the resolveLogLevel behavior through getLoggerSettings
-    const originalEnv = process.env.HTT_LOG_LEVEL;
+  test('log level configuration via HTT_LOG_LEVEL env var', () => {
+    process.env.HTT_LOG_LEVEL = 'debug';
 
     try {
-      process.env.HTT_LOG_LEVEL = 'debug';
-
-      // Re-import to get fresh module state
-      vi.resetModules();
-      vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-      vi.mock('electron', () => ({
-        app: { getPath: vi.fn(() => '/mock-user-data') },
-      }));
-      vi.mock('fs', () => ({
-        default: {
-          existsSync: vi.fn(() => false),
-          mkdirSync: vi.fn(),
-          renameSync: vi.fn(),
-          rmSync: vi.fn(),
-        },
-      }));
-      vi.mock('electron-log', () => {
-        const rootLogger = {
-          errorHandler: { startCatching: vi.fn() },
-          hooks: [] as any[],
-          processMessage: vi.fn(),
-          transports: {
-            console: { format: '', level: 'silly' },
-            file: {
-              archiveLogFn: vi.fn(),
-              fileName: '',
-              format: '',
-              level: 'silly',
-              maxSize: 0,
-              resolvePathFn: vi.fn(),
-            },
-            ipc: { level: 'silly' },
-            remote: { level: 'silly' },
-          },
-        };
-        return { default: { default: rootLogger } };
-      });
-
-      const freshModule = await import('@main/modules/logger');
-      const settings = freshModule.getLoggerSettings();
-      expect(settings.level).toBe('debug');
+      expect(getLoggerSettings().level).toBe('debug');
     } finally {
-      if (originalEnv === undefined) {
-        delete process.env.HTT_LOG_LEVEL;
-      } else {
-        process.env.HTT_LOG_LEVEL = originalEnv;
-      }
+      delete process.env.HTT_LOG_LEVEL;
     }
   });
 });
