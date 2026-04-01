@@ -18,6 +18,7 @@ import listenForMnemonicEvents from './mnemonic';
 import listenForPublicKeyMappingsEvents from './publicKeyMappings';
 import listenForImportV1Events from './importV1';
 import listenForTransactionFileEvents from './transactionFile';
+import listenForLoggingEvents from './logging';
 
 export default () => {
   listenForKeyPairEvents();
@@ -40,4 +41,5 @@ export default () => {
   listenForPublicKeyMappingsEvents();
   listenForImportV1Events();
   listenForTransactionFileEvents();
+  listenForLoggingEvents();
 };

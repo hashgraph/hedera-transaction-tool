@@ -2,12 +2,14 @@
 import { ref, computed } from 'vue';
 import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { createTransactionId } from '@renderer/utils';
+import { createLogger, createTransactionId } from '@renderer/utils';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';
 import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
+
+const logger = createLogger('renderer.page.importCSVController');
 
 /* Props */
 const props = defineProps<{
@@ -69,7 +71,7 @@ async function handleImportCsv() {
             toastManager.error(
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Sender account lookup failed', { senderAccount, error });
             return;
           }
           break;
@@ -81,7 +83,7 @@ async function handleImportCsv() {
             toastManager.error(
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Fee payer account lookup failed', { feePayer, error });
             return;
           }
           break;
@@ -124,7 +126,7 @@ async function handleImportCsv() {
             toastManager.error(
               `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
             );
-            console.log(error);
+            logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
             return;
           }
@@ -173,7 +175,7 @@ async function handleImportCsv() {
     toastManager.success('Import complete');
   } catch (error) {
     toastManager.error('Failed to import CSV file');
-    console.log(error);
+    logger.error('Failed to import CSV file', { error });
   } finally {
     activate.value = false;
     await props.callback();

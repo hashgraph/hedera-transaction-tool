@@ -4,9 +4,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
+import { createLogger } from '@renderer/utils/logger';
 import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
+
+const logger = createLogger('renderer.organization.disconnect');
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -52,9 +55,10 @@ export async function disconnectOrganization(
     );
   }
 
-  console.log(
-    `[${new Date().toISOString()}] DISCONNECT Organization: ${org?.nickname || serverUrl} (Server: ${serverUrl})`,
-  );
-  console.log(`  - Status: disconnected`);
-  console.log(`  - Reason: ${reason}`);
+  logger.info('Organization disconnected', {
+    organization: org?.nickname || serverUrl,
+    reason,
+    serverUrl,
+    status: 'disconnected',
+  });
 }

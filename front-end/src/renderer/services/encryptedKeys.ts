@@ -1,4 +1,7 @@
 import { commonIPCHandler } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.encryptedKeys');
 
 /* Searches for encrypted keys in the provided files */
 export const searchEncryptedKeys = async (filePaths: string[]) =>
@@ -59,7 +62,7 @@ export const decryptKeysFromFiles = async (
       const decryptedKey = await decryptEncryptedKey(path, password, null, recoveryPhraseHashCode);
       decryptedKeys.push(decryptedKey);
     } catch (error) {
-      console.error(`Failed to decrypt key at path: ${path}`, error);
+      logger.error('Failed to decrypt key', { filePath: path, error });
     }
   }
 

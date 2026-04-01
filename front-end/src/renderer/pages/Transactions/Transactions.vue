@@ -245,7 +245,6 @@ async function importSignaturesFromV2File(filePath: string) {
   } else if (unknownTransactionIds.length === 1) {
     toastManager.error('Import failed: there is 1 unknown transaction in this file');
   } else {
-    // console.log('importSignatures: INPUTS', JSON.stringify(importInputs));
     const importResults = await importSignatures(user.selectedOrganization, importInputs);
     let failedImportCount = 0;
     let successfulImportCount = 0;
@@ -265,7 +264,6 @@ async function importSignaturesFromV2File(filePath: string) {
         `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
       );
     }
-    // console.log('importSignatures: RESULTS', JSON.stringify(importResults));
   }
 }
 

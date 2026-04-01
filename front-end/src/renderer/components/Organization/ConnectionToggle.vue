@@ -10,8 +10,11 @@ import { reconnectOrganization } from '@renderer/services/organization/reconnect
 import { isLoggedOutOrganization } from '@renderer/utils';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
+import { createLogger } from '@renderer/utils/logger';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+
+const logger = createLogger('renderer.component.connectionToggle');
 
 /* Props */
 const props = defineProps<{
@@ -55,7 +58,7 @@ const handleToggle = async (checked: boolean) => {
       await handleDisconnect();
     }
   } catch (error) {
-    console.error('Connection toggle error:', error);
+    logger.error('Connection toggle error', { error });
     toastManager.error(`Failed to ${checked ? 'connect' : 'disconnect'} organization`);
   } finally {
     isProcessing.value = false;

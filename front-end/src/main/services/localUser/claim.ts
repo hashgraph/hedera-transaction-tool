@@ -3,6 +3,9 @@ import { Claim, Prisma } from '@prisma/client';
 import { USE_KEYCHAIN } from '@shared/constants';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.claim');
 
 /* Add a claim to the database */
 export const addClaim = async (
@@ -19,7 +22,7 @@ export const addClaim = async (
     },
   });
 
-  if (alreadyAddedCount > 0) console.log('Claim already exists, claim will be overwritten');
+  if (alreadyAddedCount > 0) logger.info('Claim already exists, claim will be overwritten');
 
   return await prisma.claim.create({
     data: {
@@ -37,7 +40,7 @@ export const getClaims = async (findArgs: Prisma.ClaimFindManyArgs): Promise<Cla
   try {
     return await prisma.claim.findMany(findArgs);
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get claims', { error });
     return [];
   }
 };
