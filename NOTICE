@@ -675,7 +675,7 @@ The Initial Developer of @prisma/fetch-engine@7.6.0,
 is Tim Suchanek (https://github.com/prisma/prisma).
 Copyright Tim Suchanek. All Rights Reserved.
 
-The Initial Developer of @prisma/get-platform@7.6.0,
+The Initial Developer of @prisma/get-platform@7.2.0,
 is Tim Suchanek (https://github.com/prisma/prisma).
 Copyright Tim Suchanek. All Rights Reserved.
 
@@ -1207,7 +1207,7 @@ The Initial Developer of ajv-keywords@3.5.2,
 is Evgeny Poberezkin (https://github.com/epoberezkin/ajv-keywords).
 Copyright Evgeny Poberezkin. All Rights Reserved.
 
-The Initial Developer of ajv@8.18.0,
+The Initial Developer of ajv@6.14.0,
 is Evgeny Poberezkin (https://github.com/ajv-validator/ajv).
 Copyright Evgeny Poberezkin. All Rights Reserved.
 
@@ -1369,7 +1369,7 @@ The Initial Developer of better-result@2.7.0,
 is Dillon Mulroy (https://github.com/dmmulroy/better-result).
 Copyright Dillon Mulroy. All Rights Reserved.
 
-The Initial Developer of better-sqlite3@11.8.1,
+The Initial Developer of better-sqlite3@12.8.0,
 is Joshua Wise (https://github.com/WiseLibs/better-sqlite3).
 Copyright Joshua Wise. All Rights Reserved.
 
@@ -1891,7 +1891,7 @@ The Initial Developer of entities@7.0.1,
 is Felix Boehm (https://github.com/fb55/entities).
 Copyright Felix Boehm. All Rights Reserved.
 
-The Initial Developer of env-paths@3.0.0,
+The Initial Developer of env-paths@2.2.1,
 is Sindre Sorhus (https://github.com/sindresorhus/env-paths).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -2602,7 +2602,7 @@ The Initial Developer of json-buffer@3.0.1,
 is Dominic Tarr (https://github.com/dominictarr/json-buffer).
 Copyright Dominic Tarr. All Rights Reserved.
 
-The Initial Developer of json-schema-traverse@1.0.0,
+The Initial Developer of json-schema-traverse@0.4.1,
 is Evgeny Poberezkin (https://github.com/epoberezkin/json-schema-traverse).
 Copyright Evgeny Poberezkin. All Rights Reserved.
 
@@ -2705,6 +2705,10 @@ is John-David Dalton (https://github.com/lodash/lodash).
 Copyright John-David Dalton. All Rights Reserved.
 
 The Initial Developer of lodash@4.17.23,
+is John-David Dalton (https://github.com/lodash/lodash).
+Copyright John-David Dalton. All Rights Reserved.
+
+The Initial Developer of lodash@4.18.1,
 is John-David Dalton (https://github.com/lodash/lodash).
 Copyright John-David Dalton. All Rights Reserved.
 
@@ -3662,6 +3666,9 @@ Copyright Nathan Rajlich. All Rights Reserved.
 This product includes software (statuses@1.5.0) developed at
 (https://github.com/jshttp/statuses).
 
+This product includes software (std-env@3.10.0) developed at
+(https://github.com/unjs/std-env).
+
 The Initial Developer of string-width@4.2.3,
 is Sindre Sorhus (https://github.com/sindresorhus/string-width).
 Copyright Sindre Sorhus. All Rights Reserved.
@@ -3848,6 +3855,10 @@ Copyright George Zahariev. All Rights Reserved.
 The Initial Developer of type-detect@4.0.8,
 is Jake Luer (https://github.com/chaijs/type-detect).
 Copyright Jake Luer. All Rights Reserved.
+
+The Initial Developer of type-fest@0.20.2,
+is Sindre Sorhus (https://github.com/sindresorhus/type-fest).
+Copyright Sindre Sorhus. All Rights Reserved.
 
 The Initial Developer of typeorm@0.3.28,
 is TypeORM (https://github.com/typeorm/typeorm).
