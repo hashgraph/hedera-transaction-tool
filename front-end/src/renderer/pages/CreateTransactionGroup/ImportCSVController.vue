@@ -8,6 +8,7 @@ import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hashgraph/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 const logger = createLogger('renderer.page.importCSVController');
 
@@ -38,8 +39,8 @@ const progressText = computed(() =>
 );
 
 /* Handlers */
-async function handleImportCsv() {
-  if (!props.selectedFile) return;
+async function handleImportCsv(): Promise<ActionReport | null> {
+  if (!props.selectedFile) return null;
   try {
     const result = await readFileAsText(props.selectedFile);
     const rows = result.split(/\r?\n|\r|\n/g);
@@ -72,7 +73,7 @@ async function handleImportCsv() {
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
             );
             logger.error('Sender account lookup failed', { senderAccount, error });
-            return;
+            return null;
           }
           break;
         case 'fee payer account':
@@ -84,7 +85,7 @@ async function handleImportCsv() {
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
             );
             logger.error('Fee payer account lookup failed', { feePayer, error });
-            return;
+            return null;
           }
           break;
         case 'sending time':
@@ -128,7 +129,7 @@ async function handleImportCsv() {
             );
             logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
-            return;
+            return null;
           }
 
           const transaction = new TransferTransaction()
@@ -180,6 +181,8 @@ async function handleImportCsv() {
     activate.value = false;
     await props.callback();
   }
+
+  return null;
 }
 
 /* Functions */

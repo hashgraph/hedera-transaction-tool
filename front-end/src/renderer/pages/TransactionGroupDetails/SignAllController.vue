@@ -9,6 +9,7 @@ import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { TransactionStatus } from '@shared/interfaces';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
 import ActionController from '../../components/ActionController/ActionController.vue';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 /* Props */
 const props = defineProps<{
@@ -30,7 +31,7 @@ const user = useUserStore();
 const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
-const handleSignAll = async (personalPassword: string | null) => {
+const handleSignAll = async (personalPassword: string | null): Promise<ActionReport | null> => {
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
@@ -69,6 +70,8 @@ const handleSignAll = async (personalPassword: string | null) => {
       progressText.value = 'Loading group items…';
     }
   } // else bug
+
+  return null;
 };
 
 const invokeCallback = async (groupId: number, signed: boolean) => {

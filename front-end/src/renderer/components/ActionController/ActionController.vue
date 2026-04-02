@@ -3,7 +3,9 @@ import { ref, watch, computed } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import ActionReportModal from './ActionReportModal.vue';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
+import { makeUncontrolledErrorReport, type ActionReport } from './ActionReport';
 
 const dohertyThreshold = 400; // milliseconds
 const persistenceTime = dohertyThreshold * 3;
@@ -11,7 +13,7 @@ const persistenceTime = dohertyThreshold * 3;
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
 const props = defineProps<{
-  actionCallback: (personalPassword: string | null) => Promise<void>;
+  actionCallback: (personalPassword: string | null) => Promise<ActionReport | null>;
   confirmTitle?: string;
   confirmText?: string;
   personalPasswordRequired?: boolean;
@@ -29,6 +31,8 @@ const isConfirmModalShown = ref(false);
 const startDate = ref<Date | null>(null);
 const timeoutID = ref<number | null>(null);
 const showProgress = ref<boolean>(false);
+const showReport = ref<boolean>(false);
+const report = ref<ActionReport | null>(null);
 
 /* Computed */
 const confirmationProps = computed(() => {
@@ -70,7 +74,7 @@ const performAction = async (personalPassword: string | null) => {
     showProgress.value = true;
   }, dohertyThreshold);
   try {
-    await props.actionCallback(personalPassword);
+    report.value = await props.actionCallback(personalPassword);
     if (showProgress.value) {
       // Progress dialog is visible.
       // We make sure it's visible long enough for the user to identify it.
@@ -81,6 +85,8 @@ const performAction = async (personalPassword: string | null) => {
         await new Promise(resolve => setTimeout(resolve, waitingTime));
       }
     }
+  } catch (error) {
+    report.value = makeUncontrolledErrorReport(error);
   } finally {
     showProgress.value = false;
     document.documentElement.inert = false;
@@ -90,6 +96,10 @@ const performAction = async (personalPassword: string | null) => {
     }
     startDate.value = null;
     activate.value = false;
+  }
+
+  if (report.value !== null) {
+    showReport.value = true;
   }
 };
 
@@ -133,6 +143,8 @@ watch(activate, async () => {
       </p>
     </div>
   </AppModal>
+
+  <ActionReportModal v-if="report !== null" v-model:show="showReport" :report="report" />
 </template>
 
 <style scoped></style>
