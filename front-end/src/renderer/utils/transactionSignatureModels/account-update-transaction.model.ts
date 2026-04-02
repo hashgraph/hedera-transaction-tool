@@ -1,4 +1,4 @@
-import { AccountId, AccountUpdateTransaction, Key } from '@hashgraph/sdk';
+import { AccountId, AccountUpdateTransaction, Key } from '@hiero-ledger/sdk';
 
 import { TransactionBaseModel } from './transaction.model';
 

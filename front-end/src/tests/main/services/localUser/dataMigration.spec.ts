@@ -2,7 +2,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 import {

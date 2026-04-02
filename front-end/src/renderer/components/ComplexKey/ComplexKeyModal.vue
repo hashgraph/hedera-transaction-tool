@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 
-import { Key, KeyList } from '@hashgraph/sdk';
+import { Key, KeyList } from '@hiero-ledger/sdk';
 
 import { isKeyListValid } from '@renderer/utils';
 

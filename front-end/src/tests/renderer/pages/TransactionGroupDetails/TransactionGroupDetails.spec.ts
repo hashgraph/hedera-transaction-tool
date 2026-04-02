@@ -181,8 +181,8 @@ vi.mock('@shared/utils/byteUtils', () => ({
   areByteArraysEqual: vi.fn(() => true),
 }));
 
-vi.mock('@hashgraph/sdk', async importOriginal => {
-  const actual = await importOriginal<typeof import('@hashgraph/sdk')>();
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
+  const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
 
   return {
     ...actual,

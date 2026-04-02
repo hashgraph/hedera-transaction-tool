@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 

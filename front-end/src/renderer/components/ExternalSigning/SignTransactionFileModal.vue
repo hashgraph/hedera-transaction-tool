@@ -13,7 +13,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { assertUserLoggedIn, getErrorMessage, hexToUint8Array, uint8ToHex } from '@renderer/utils';
-import { SignatureMap, Transaction } from '@hashgraph/sdk';
+import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
 import { ToastManager } from '@renderer/utils/ToastManager';

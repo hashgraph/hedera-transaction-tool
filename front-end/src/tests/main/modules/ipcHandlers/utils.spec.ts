@@ -19,7 +19,7 @@ vi.mock('electron', () => {
 vi.mock('fs', () => mockDeep());
 vi.mock('path', () => mockDeep());
 vi.mock('path', () => mockDeep());
-vi.mock('@hashgraph/proto', () => mockDeep());
+vi.mock('@hiero-ledger/proto', () => mockDeep());
 vi.mock('@main/utils/crypto', () => mockDeep());
 vi.mock('@main/utils', () => mockDeep());
 

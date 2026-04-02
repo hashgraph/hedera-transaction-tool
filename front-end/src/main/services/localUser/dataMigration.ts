@@ -6,7 +6,7 @@ import * as path from 'path';
 
 import { app } from 'electron';
 import * as argon2 from 'argon2';
-import { AccountId, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { AccountId, Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 import { MigrateUserDataResult } from '@shared/interfaces/migration';

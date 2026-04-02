@@ -5,7 +5,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

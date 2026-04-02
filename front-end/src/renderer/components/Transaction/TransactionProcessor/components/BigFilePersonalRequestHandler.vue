@@ -9,7 +9,7 @@ import {
   TransactionResponse,
   TransactionReceipt,
   FileAppendTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 

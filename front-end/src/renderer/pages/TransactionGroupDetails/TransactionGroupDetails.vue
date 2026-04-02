@@ -17,7 +17,7 @@ import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import JSZip from 'jszip';
 import { FEATURE_APPROVERS_ENABLED, historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 

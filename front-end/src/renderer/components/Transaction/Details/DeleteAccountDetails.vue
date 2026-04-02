@@ -2,7 +2,7 @@
 import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
-import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { TransactionStatus } from '@shared/interfaces';
 

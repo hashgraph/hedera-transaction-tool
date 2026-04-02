@@ -5,7 +5,7 @@ import type { Transaction } from '@prisma/client';
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';

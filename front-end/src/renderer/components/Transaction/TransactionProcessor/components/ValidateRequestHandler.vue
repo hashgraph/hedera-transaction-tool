@@ -2,7 +2,7 @@
 import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
-import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
+import { FileCreateTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { TRANSACTION_MAX_SIZE } from '@shared/constants';
 

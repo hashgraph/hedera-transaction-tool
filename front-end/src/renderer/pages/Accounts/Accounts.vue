@@ -2,7 +2,7 @@
 import type { HederaAccount } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
-import { KeyList, PublicKey, Hbar } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Hbar } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';

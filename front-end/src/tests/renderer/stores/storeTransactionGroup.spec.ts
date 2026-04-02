@@ -2,7 +2,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 
-vi.mock('@hashgraph/sdk', () => ({
+vi.mock('@hiero-ledger/sdk', () => ({
   Transaction: {
     fromBytes: vi.fn(() => ({
       setTransactionId: vi.fn(),

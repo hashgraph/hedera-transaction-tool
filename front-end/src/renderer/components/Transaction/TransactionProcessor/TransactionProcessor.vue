@@ -4,7 +4,7 @@ import type { ExecutedData, Processable } from '.';
 
 import { ref } from 'vue';
 
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 

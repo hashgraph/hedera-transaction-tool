@@ -1,7 +1,7 @@
 import type { AccountInfo, ITransaction } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
-import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hiero-ledger/sdk';
 
 import pLimit from 'p-limit';
 

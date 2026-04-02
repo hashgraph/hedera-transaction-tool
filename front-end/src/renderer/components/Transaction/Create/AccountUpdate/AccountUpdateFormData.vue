@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Client } from '@hashgraph/sdk';
+import type { Client } from '@hiero-ledger/sdk';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import type {
   AccountData,

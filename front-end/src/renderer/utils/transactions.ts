@@ -8,7 +8,7 @@ import {
   Transaction as Tx,
   TransactionReceipt,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 

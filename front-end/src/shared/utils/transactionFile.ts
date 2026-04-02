@@ -1,4 +1,4 @@
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { computeSignatureKey, hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';

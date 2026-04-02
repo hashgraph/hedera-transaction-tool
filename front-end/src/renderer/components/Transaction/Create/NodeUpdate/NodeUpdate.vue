@@ -4,7 +4,7 @@ import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
+import { NodeUpdateTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
