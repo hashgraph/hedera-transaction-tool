@@ -2,7 +2,7 @@
 import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, onBeforeUnmount, ref } from 'vue';
-import { Transaction, TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { Transaction, TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
 

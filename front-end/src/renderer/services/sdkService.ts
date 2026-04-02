@@ -1,4 +1,4 @@
-import type { proto } from '@hashgraph/proto';
+import type { proto } from '@hiero-ledger/proto';
 
 import { commonIPCHandler } from '@renderer/utils';
 

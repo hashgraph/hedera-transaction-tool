@@ -1,4 +1,4 @@
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';

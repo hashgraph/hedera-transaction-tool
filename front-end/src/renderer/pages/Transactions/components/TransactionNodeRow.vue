@@ -7,7 +7,7 @@ import { computedAsync } from '@vueuse/core';
 import useTransactionAudit from '@renderer/composables/useTransactionAudit.ts';
 import useFilterNotifications from '@renderer/composables/useFilterNotifications.ts';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
-import { FreezeTransaction } from '@hashgraph/sdk';
+import { FreezeTransaction } from '@hiero-ledger/sdk';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';

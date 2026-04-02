@@ -6,7 +6,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';

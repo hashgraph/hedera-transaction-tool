@@ -1,8 +1,8 @@
-import type { Hbar, Key } from '@hashgraph/sdk';
+import type { Hbar, Key } from '@hiero-ledger/sdk';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
-import { AccountId, KeyList } from '@hashgraph/sdk';
+import { AccountId, KeyList } from '@hiero-ledger/sdk';
 
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 

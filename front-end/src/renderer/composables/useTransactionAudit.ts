@@ -1,5 +1,5 @@
 import { computed, type ComputedRef, type Ref } from 'vue';
-import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import {
   computeSignatureKey,
   hexToUint8Array,

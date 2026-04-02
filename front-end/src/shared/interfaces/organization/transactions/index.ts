@@ -1,4 +1,4 @@
-import { SignatureMap } from '@hashgraph/sdk';
+import { SignatureMap } from '@hiero-ledger/sdk';
 
 import type { ITransactionApprover } from '../approvers';
 import type { ITransactionObserverUserId } from '../observers';

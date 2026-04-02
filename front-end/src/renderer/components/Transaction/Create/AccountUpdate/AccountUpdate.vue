@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { AccountId, Transaction } from '@hashgraph/sdk';
+import { AccountId, Transaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';

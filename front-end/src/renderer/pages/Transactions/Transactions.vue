@@ -49,7 +49,7 @@ import ExportTransactionsModal from '@renderer/components/ExternalSigning/Export
 import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
-import { SignatureMap, Transaction } from '@hashgraph/sdk';
+import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { getTransactionById, importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
 

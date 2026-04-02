@@ -1,4 +1,4 @@
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import * as unzipper from 'unzipper';
 import * as path from 'path';
 import { extractUnzipperFileToBuffer } from '@main/utils/files';

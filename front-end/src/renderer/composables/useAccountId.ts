@@ -1,7 +1,7 @@
 import type { IAccountInfoParsed, CryptoAllowance } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
-import { AccountId, Client, Hbar } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 

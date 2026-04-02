@@ -7,7 +7,7 @@ import {
   PrivateKey,
   Transaction as SDKTransaction,
   TransactionId,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TransactionSignatureService, flattenKeyList } from '@app/common';
 

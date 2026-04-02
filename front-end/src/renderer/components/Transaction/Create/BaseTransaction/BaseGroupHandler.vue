@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
-import type { KeyList, Transaction } from '@hashgraph/sdk';
+import type { KeyList, Transaction } from '@hiero-ledger/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 

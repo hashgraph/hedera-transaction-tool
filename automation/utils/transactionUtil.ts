@@ -1,4 +1,4 @@
-import { SignatureMap } from '@hashgraph/sdk';
+import { SignatureMap } from '@hiero-ledger/sdk';
 
 export function signatureMapToV1Json(signatureMap: SignatureMap): string {
   const result: {

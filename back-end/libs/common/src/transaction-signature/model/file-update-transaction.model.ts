@@ -1,4 +1,4 @@
-import { FileUpdateTransaction } from '@hashgraph/sdk';
+import { FileUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
 import { isHederaSpecialFileId } from '@app/common';

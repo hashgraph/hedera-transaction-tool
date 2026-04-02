@@ -1,9 +1,9 @@
-import * as SDK from '@hashgraph/sdk';
+import * as SDK from '@hiero-ledger/sdk';
 import { getNodeAddressBook } from '@main/services/localUser/sdk';
 
-vi.mock('@hashgraph/sdk', async importOriginal => {
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
   return {
-    ...(await importOriginal<typeof import('@hashgraph/sdk')>()),
+    ...(await importOriginal<typeof import('@hiero-ledger/sdk')>()),
   };
 });
 

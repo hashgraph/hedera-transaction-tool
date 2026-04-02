@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { Key, KeyList, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Key, KeyList, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { Transaction } from '@entities';
 import TransactionFactory from '@app/common/transaction-signature/model/transaction-factory';
 import { TransactionBaseModel } from '@app/common/transaction-signature/model/transaction-base.model';

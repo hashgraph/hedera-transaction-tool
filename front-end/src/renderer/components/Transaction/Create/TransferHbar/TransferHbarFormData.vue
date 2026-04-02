@@ -4,7 +4,7 @@ import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { ref, onMounted, computed } from 'vue';
-import { Hbar, Transfer } from '@hashgraph/sdk';
+import { Hbar, Transfer } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

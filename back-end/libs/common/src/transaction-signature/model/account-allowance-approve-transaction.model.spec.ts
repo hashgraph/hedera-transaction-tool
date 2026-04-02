@@ -1,4 +1,4 @@
-import { AccountAllowanceApproveTransaction, AccountId, TokenId, Hbar, NftId } from '@hashgraph/sdk';
+import { AccountAllowanceApproveTransaction, AccountId, TokenId, Hbar, NftId } from '@hiero-ledger/sdk';
 import { AccountAllowanceApproveTransactionModel } from './account-allowance-approve-transaction.model';
 
 describe('AccountAllowanceApproveTransactionModel', () => {

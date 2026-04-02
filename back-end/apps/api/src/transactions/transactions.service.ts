@@ -15,7 +15,7 @@ import {
   PublicKey,
   Transaction as SDKTransaction,
   TransactionId,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   Brackets,
