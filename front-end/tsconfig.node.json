@@ -20,8 +20,7 @@
     "paths": {
       "@main/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
-      "@prisma/client": ["src/generated/prisma/client.ts"],
-      "@prisma/client/*": ["src/generated/prisma/*"]
+      "@prisma/client": ["src/generated/prisma/client.ts"]
     }
   }
 }
