@@ -86,6 +86,8 @@ const invokeCallback = async (groupId: number, signed: boolean) => {
     :actionCallback="handleSignAll"
     confirm-title="Sign all transactions?"
     confirm-text="Are you sure you want to sign all transactions?"
+    action-button-text="Sign all"
+    cancel-button-text="Do not sign"
     :personal-password-required="true"
     progress-icon-name="group"
     progress-title="Sign all transactions"
