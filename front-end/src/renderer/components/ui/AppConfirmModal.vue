@@ -46,12 +46,14 @@ const handleCancel = () => {
 /* Hooks */
 watch(show, () => {
   if (!show.value) {
-    if (confirmed.value && props.callback) {
+    const wasConfirmed = confirmed.value;
+    confirmed.value = false;
+
+    if (wasConfirmed && props.callback) {
       props.callback();
-    } else if (!confirmed.value && props.cancel) {
+    } else if (!wasConfirmed && props.cancel) {
       props.cancel();
     }
-    confirmed.value = false;
   }
 });
 </script>
