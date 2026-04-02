@@ -21,6 +21,9 @@ import {
 import { TransactionTypeName } from '@shared/interfaces';
 import { getTransactionById } from '@renderer/services/organization';
 import { hexToUint8Array } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.sdk.transactions');
 
 export const getTransactionPayerId = (transaction: Transaction) =>
   transaction.transactionId?.accountId?.toString() || null;
@@ -211,7 +214,7 @@ export const getDisplayTransactionType = (
     try {
       sdkTransaction = Transaction.fromBytes(input);
     } catch (error) {
-      console.error('Failed to deserialize transaction:', error);
+      logger.error('Failed to deserialize transaction', { error });
       return formatTransactionType('Freeze Transaction', short, removeTransaction);
     }
   }
@@ -290,7 +293,7 @@ export const getFreezeTypeForTransaction = async (
       return sdkTx.freezeType;
     }
   } catch (error) {
-    console.error('Failed to fetch freeze type:', error);
+    logger.error('Failed to fetch freeze type', { error });
   }
 
   setFreezeTypeCache(cacheKey, null);

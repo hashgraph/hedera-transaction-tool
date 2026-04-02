@@ -12,6 +12,9 @@ import type {
 } from '@shared/interfaces';
 
 import axios from 'axios';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.mirrorNodeDataService');
 
 import {
   AccountId,
@@ -61,7 +64,7 @@ export const getAccountsByPublicKey = async (
 
     return accounts;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get accounts by public key', { error });
     return accounts;
   }
 };
@@ -147,7 +150,7 @@ export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: Ab
 
     return exchangeRateSet;
   } catch {
-    console.log('Failed to fetch exchange rate');
+    logger.warn('Failed to fetch exchange rate');
     return null;
   }
 };
@@ -210,7 +213,7 @@ export const getNetworkNodes = async (mirrorNodeURL: string) => {
 
     return networkNodes;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get network nodes', { error });
     return networkNodes;
   }
 };
@@ -269,7 +272,7 @@ export const getNodeInfo = async (
     }
     return null;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get node info', { error });
     return null;
   }
 };
@@ -287,7 +290,7 @@ const parseNetworkResponseKey = (key: NetworkResponseKey | null | undefined) => 
         return null;
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to parse network response key', { error });
     return null;
   }
 };

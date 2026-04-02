@@ -7,7 +7,10 @@ import { jwtDecode } from 'jwt-decode';
 import { login } from '@main/services/organization/auth';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
+import { createLogger } from '@main/modules/logger';
 import { decrypt, encrypt } from '@main/utils/crypto';
+
+const logger = createLogger('main.organizationCredentials');
 
 /* Returns the organization that the user is connected to */
 export const getOrganizationTokens = async (user_id: string) => {
@@ -24,7 +27,7 @@ export const getOrganizationTokens = async (user_id: string) => {
 
     return orgs || [];
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organization tokens', { error });
     return [];
   }
 };
@@ -50,7 +53,7 @@ export const organizationsToSignIn = async (user_id: string) => {
 
     return finalCredentials;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organizations to sign in', { error });
     return [];
   }
 };
@@ -84,7 +87,7 @@ export const getAccessToken = async (serverUrl: string) => {
     if (!credentials) return null;
     return credentials.jwtToken || null;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get access token', { error });
     return null;
   }
 };
@@ -124,7 +127,7 @@ export const getOrganizationCredentials = async (
       password,
     };
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get organization credentials', { error });
     return null;
   }
 };
@@ -140,7 +143,7 @@ export const organizationCredentialsExists = async (organization_id: string, use
       })) > 0
     );
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to check organization credentials existence', { error });
     return false;
   }
 };
@@ -188,7 +191,7 @@ export const addOrganizationCredentials = async (
 
     return true;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to add organization credentials', { error });
     throw new Error('Failed to add organization credentials');
   }
 };
@@ -214,7 +217,7 @@ export const updateOrganizationCredentials = async (
     });
 
     if (!credentials) {
-      console.log('User credentials for this organization not found');
+      logger.warn('User credentials for this organization not found');
       return false;
     }
 
@@ -229,7 +232,7 @@ export const updateOrganizationCredentials = async (
 
     return true;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to update organization credentials', { error });
     throw new Error('Failed to update organization credentials');
   }
 };
@@ -245,7 +248,7 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
 
     return true;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to delete organization credentials', { error });
     throw new Error('Failed to delete organization credentials');
   }
 };

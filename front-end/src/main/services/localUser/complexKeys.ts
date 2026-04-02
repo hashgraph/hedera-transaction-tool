@@ -1,4 +1,7 @@
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.complexKeys');
 
 export const getComplexKeys = async (userId: string) => {
   const prisma = getPrismaClient();
@@ -16,7 +19,7 @@ export const getComplexKeys = async (userId: string) => {
 
     return complexKeys;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get complex keys', { error });
     return [];
   }
 };

@@ -1,6 +1,9 @@
 import type { INotificationReceiver, IUpdateNotificationReceiver } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.organization.notifications');
 
 /* Notification service for organization */
 
@@ -54,7 +57,7 @@ export const updateNotifications = async (
         await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
       }
     } catch (error) {
-      console.log(error);
+      logger.error('Failed to update notifications', { error });
     }
   }, 'Failed to update notifications');
 

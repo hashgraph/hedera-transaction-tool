@@ -6,6 +6,7 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
+import { createLogger } from '@renderer/utils/logger';
 import {
   BackEndTransactionType,
   type INotificationReceiver,
@@ -68,6 +69,8 @@ import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelA
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
+
+const logger = createLogger('renderer.page.transactionGroupDetails');
 
 /* Misc */
 const reject: ActionButton = 'Reject All';
@@ -539,7 +542,7 @@ async function fetchGroup(id: string | number) {
       throw error;
     }
   } else {
-    console.log('not logged into org');
+    logger.info('Not logged into org');
   }
 }
 </script>

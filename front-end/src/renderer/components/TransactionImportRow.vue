@@ -3,6 +3,9 @@ import { computed } from 'vue';
 import { Transaction, TransactionId } from '@hiero-ledger/sdk';
 import { hexToUint8Array } from '@renderer/utils';
 import type { ITransactionFull, V1ImportCandidate } from '@shared/interfaces';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.transactionImportRow');
 
 /* Props */
 const props = defineProps<{
@@ -23,7 +26,7 @@ const transaction = computed(() => {
     const bytes = hexToUint8Array(props.candidate.transactionBytes);
     result = Transaction.fromBytes(bytes);
   } catch (error) {
-    console.log('error=' + error);
+    logger.error('Failed to parse transaction bytes', { error });
     result = null;
   }
   return result;

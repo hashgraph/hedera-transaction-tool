@@ -7,6 +7,9 @@ import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts
 import type { ConnectedOrganization } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.transaction.signatureModel');
 
 export interface SignatureAudit {
   signatureKeys: Key[]; // All the keys expected to sign target transaction
@@ -86,7 +89,9 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           currentKeyList.push(accountInfo.key);
         }
       } catch (error) {
-        console.log(`Fee payer key error:`, error);
+        logger.warn('Failed to resolve fee payer key', {
+          error,
+        });
       }
     }
 
@@ -100,7 +105,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           currentKeyList.push(accountInfo.key);
         }
       } catch (error) {
-        console.log(`Account key error for ${accountId}:`, error);
+        logger.warn('Failed to resolve account signing key', {
+          accountId,
+          error,
+        });
       }
     }
 
@@ -118,7 +126,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           currentKeyList.push(accountInfo.key);
         }
       } catch (error) {
-        console.log(`Receiver account key error for ${accountId}:`, error);
+        logger.warn('Failed to resolve receiver account signing key', {
+          accountId,
+          error,
+        });
       }
     }
 
@@ -152,7 +163,10 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         }
       }
     } catch (error) {
-      console.log(`Node admin key error for nodeId ${nodeId}:`, error);
+      logger.warn('Failed to resolve node admin signing key', {
+        error,
+        nodeId,
+      });
     }
 
     /* Add keys to the signature key list */

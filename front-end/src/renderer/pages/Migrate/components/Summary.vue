@@ -9,6 +9,9 @@ import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.page.migrate.summary');
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SummaryItem from './SummaryItem.vue';
@@ -45,7 +48,7 @@ const handleCopy = (event: ClipboardEvent) => {
 
   if (recoveryPhraseItemRef.value instanceof HTMLElement && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
-    console.log('range', range);
+    logger.debug('Selection range', { range });
     if (recoveryPhraseItemRef.value.contains(range.commonAncestorContainer)) {
       const strippedText = selectedText.replace(/\d+\.\s*/g, ', ');
       event.clipboardData?.setData('text/plain', strippedText);

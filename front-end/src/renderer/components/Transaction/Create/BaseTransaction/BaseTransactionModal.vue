@@ -14,6 +14,10 @@ import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.baseTransactionModal');
+
 import {
   addDraft,
   draftExists,
@@ -117,7 +121,7 @@ const handleSingleTransaction = async () => {
       await sendAddDraft(user.personal.id, transactionBytes);
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to save draft', { error });
   }
 };
 

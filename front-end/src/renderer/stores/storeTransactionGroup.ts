@@ -311,7 +311,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   // }
 
   // function getApprovers() {
-  //   console.log('TODO');
+  //   TODO
   //   return new Array<TransactionApproverDto>();
   // }
 

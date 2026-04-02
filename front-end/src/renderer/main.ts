@@ -13,6 +13,9 @@ import DatePicker from '@vuepic/vue-datepicker';
 import App from './App.vue';
 
 import { AutoFocusFirstInputDirective } from './utils';
+import { setupRendererLogging } from './utils/logger';
+
+setupRendererLogging();
 
 const app = createApp(App);
 

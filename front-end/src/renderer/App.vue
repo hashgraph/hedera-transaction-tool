@@ -24,10 +24,11 @@ import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByI
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 import { ToastManager } from './utils/ToastManager';
-import { getErrorMessage } from '@renderer/utils';
+import { createLogger, getErrorMessage } from '@renderer/utils';
 
 /* Composables */
 const router = useRouter();
+const logger = createLogger('renderer.app');
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -58,7 +59,7 @@ onMounted(async () => {
 });
 
 onErrorCaptured((err: unknown) => {
-  console.log(err);
+  logger.error('Vue error captured', err);
   toastManager.error(getErrorMessage(err, 'An error occurred'));
 });
 

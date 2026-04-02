@@ -1,5 +1,9 @@
+import { createLogger } from './logger';
+
+const logger = createLogger('renderer.ipc');
+
 export const getMessageFromIPCError = (err: any, msg: string) => {
-  console.log(err);
+  logger.error('IPC handler failed', err);
   return err.message?.split(': Error: ')[1] || msg;
 };
 

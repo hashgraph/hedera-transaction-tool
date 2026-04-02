@@ -11,6 +11,9 @@ import {
 
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.transactions');
 
 import { HederaSpecialFileId } from '@shared/interfaces';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
@@ -197,7 +200,7 @@ export const executeQuery = async (
       return response;
     }
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Failed to execute query', { error });
     client._operator = null;
     throw new Error(error instanceof Error ? error.message : 'Failed to execute query');
   }
@@ -220,7 +223,7 @@ export const storeTransaction = async (transaction: Prisma.TransactionUncheckedC
       data: transaction,
     });
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Failed to store transaction', { error });
     throw new Error(error instanceof Error ? error.message : 'Failed to store transaction');
   }
 };
@@ -291,7 +294,7 @@ export const encodeSpecialFile = async (content: Uint8Array, fileId: string) => 
       throw new Error('File is not one of special files');
     }
   } catch (error: unknown) {
-    console.log(error);
+    logger.error('Failed to encode special file', { error });
     throw new Error(error instanceof Error ? error.message : 'Failed to encode special file');
   }
 };

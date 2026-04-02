@@ -13,6 +13,9 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.transactionBrowserKeySection');
 
 /* Props */
 const props = defineProps<{
@@ -37,7 +40,7 @@ const transaction = computed<Transaction | null>(() => {
   try {
     result = Transaction.fromBytes(hexToUint8Array(props.item.transactionBytes));
   } catch (error) {
-    console.log('error=' + error);
+    logger.error('Failed to parse transaction bytes', { error });
     result = null;
   }
   return result;
@@ -59,7 +62,7 @@ const updateSignatureKeyObject = async () => {
         user.selectedOrganization,
       );
     } catch (error) {
-      console.log('error=' + error);
+      logger.error('Failed to compute signature key', { error });
       signatureKeyObject.value = null;
     }
   } else {

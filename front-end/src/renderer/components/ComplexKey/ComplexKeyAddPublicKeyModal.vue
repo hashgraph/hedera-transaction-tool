@@ -13,6 +13,9 @@ import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.complexKeyAddPublicKeyModal');
 
 /* Enums */
 enum KeyTab {
@@ -155,7 +158,7 @@ watch(
             const identifier = await findIdentifier(key.publicKey, publicKeyOwnerCache);
             return identifier || 'Public Key';
           } catch (error) {
-            console.error(`Failed to find owner/nickname for key: ${key.publicKey}`, error);
+            logger.error('Failed to find owner/nickname for key', { publicKey: key.publicKey, error });
             return 'Public Key';
           }
         }),
@@ -163,7 +166,7 @@ watch(
 
       identifiers.value = tempIdentifiers;
     } catch (error) {
-      console.error('Error processing identifiers:', error);
+      logger.error('Error processing identifiers', { error });
     } finally {
       isLoadingIdentifiers.value = false;
     }

@@ -2,6 +2,9 @@ import { computed, type ComputedRef, type Ref, ref } from 'vue';
 import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
 import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.store.nextTransactionV2');
 import {
   historyTitle,
   inProgressTitle,
@@ -92,7 +95,7 @@ const useNextTransactionV2 = defineStore(
         currentIndexStack.value.push(currentIndex + 1);
         await routeToCurrent(router, true);
       } else {
-        console.warn('There is no next in currentCollection');
+        logger.warn('There is no next in currentCollection');
       }
     };
 
@@ -102,7 +105,7 @@ const useNextTransactionV2 = defineStore(
         currentIndexStack.value.push(currentIndex - 1);
         await routeToCurrent(router, true);
       } else {
-        console.warn('There is no prev in currentCollection');
+        logger.warn('There is no prev in currentCollection');
       }
     };
 
@@ -114,7 +117,7 @@ const useNextTransactionV2 = defineStore(
           contextStack.value.pop();
           router.back();
         } else {
-          console.warn('There is no up');
+          logger.warn('There is no up');
         }
         nbLevels--;
       }
@@ -191,7 +194,7 @@ const useNextTransactionV2 = defineStore(
             replace,
           });
         } else {
-          console.warn('Malformed transaction node id: ' + JSON.stringify(nodeId));
+          logger.warn('Malformed transaction node id', { nodeId });
         }
       }
     };

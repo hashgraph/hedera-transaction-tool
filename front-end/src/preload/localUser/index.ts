@@ -23,6 +23,7 @@ import publicKeyMapping from './publicKeyMapping';
 import importV1 from './importV1';
 import transactionFile from './transactionFile';
 import settings from './settings';
+import logging from './logging';
 
 export default {
   ...updateAPI,
@@ -50,4 +51,5 @@ export default {
   ...importV1,
   ...transactionFile,
   ...settings,
+  ...logging,
 };
