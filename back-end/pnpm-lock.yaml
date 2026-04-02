@@ -36,10 +36,10 @@ importers:
   .:
     dependencies:
       '@hiero-ledger/proto':
-        specifier: ^2.27.0
+        specifier: 2.27.0
         version: 2.27.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.0.0)(strip-ansi@7.1.2)
       '@hiero-ledger/sdk':
-        specifier: ^2.82.0
+        specifier: 2.82.0
         version: 2.82.0(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(react@19.2.4))
       '@nest-lab/throttler-storage-redis':
         specifier: 1.1.1
