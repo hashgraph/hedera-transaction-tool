@@ -1,6 +1,9 @@
 import { computed, ref } from 'vue';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.composable.versionCheck');
 
 import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
 
@@ -19,7 +22,11 @@ import {
   type VersionStatus,
 } from '@renderer/stores/versionState';
 
-const isDismissed = ref(sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true');
+const isDismissed = ref(
+  typeof sessionStorage !== 'undefined'
+    ? sessionStorage.getItem(SESSION_STORAGE_DISMISSED_UPDATE_PROMPT) === 'true'
+    : false,
+);
 
 // per org checking flags
 const orgChecks = ref<Record<string, boolean>>({});
@@ -52,7 +59,7 @@ export default function useVersionCheck() {
         setVersionStatusForOrg(serverUrl, 'current');
       }
     } catch (error) {
-      console.error('Version check failed:', error);
+      logger.error('Version check failed', { error });
       const orgStatus = getVersionStatusForOrg(serverUrl);
       if (orgStatus !== 'belowMinimum') {
         setVersionStatusForOrg(serverUrl, 'current');

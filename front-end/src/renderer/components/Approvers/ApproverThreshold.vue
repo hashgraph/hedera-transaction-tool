@@ -5,11 +5,10 @@ import { ref } from 'vue';
 
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import UserSelectModal from '@renderer/components/Organization/UserSelectModal.vue';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +26,7 @@ const emit = defineEmits<{
 const contacts = useContactsStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const areChildrenShown = ref(true);
@@ -41,7 +40,7 @@ const handleThresholdChange = (e: Event) => {
 
 const handleUserSelect = (userIds: number[]) => {
   if (props.approver.approvers?.some(approver => approver.userId === userIds[0])) {
-    toast.error('User already exists in the list', errorToastOptions);
+    toastManager.error('User already exists in the list');
   } else {
     const newApprovers = [...(props.approver.approvers || []).concat([{ userId: userIds[0] }])];
     const newThreshold = getThreshold(props.approver.threshold, newApprovers);

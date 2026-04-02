@@ -23,12 +23,14 @@ import {
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { Transaction } from '@hashgraph/sdk';
+import { createLogger } from '@renderer/utils/logger';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+
+const logger = createLogger('renderer.component.exportTransactionsModal');
 
 /* Models */
 const show = defineModel<boolean>('show', { required: true });
@@ -38,7 +40,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
@@ -53,13 +55,13 @@ async function handleExport() {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   const collectionNodes = await fetchNodes();
-  console.log(`Fetched ${collectionNodes.length} nodes`);
+  logger.debug('Fetched collection nodes', { count: collectionNodes.length });
 
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
   );
-  console.log(`Flattened ${collectionTransactions.length} transactions`);
+  logger.debug('Flattened transactions', { count: collectionTransactions.length });
 
   if (isOnlyExternalSelected.value) {
     const filteredTransactions: ITransaction[] = [];
@@ -80,7 +82,7 @@ async function handleExport() {
     }
     collectionTransactions = filteredTransactions;
 
-    console.log(`Filtered ${collectionTransactions.length} external transactions`);
+    logger.debug('Filtered external transactions', { count: collectionTransactions.length });
   }
 
   show.value = false;
@@ -121,7 +123,7 @@ async function fetchNodes(): Promise<ITransactionNode[]> {
       );
     } catch {
       nodes = [];
-      toast.error('Failed to fetch Transactions to export', errorToastOptions);
+      toastManager.error('Failed to fetch Transactions to export');
     }
   } else {
     nodes = [];

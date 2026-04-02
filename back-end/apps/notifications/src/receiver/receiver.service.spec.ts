@@ -874,7 +874,7 @@ describe('ReceiverService', () => {
       const inAppReceiverIds: number[] = [];
       const emailNotifications: { [email: string]: any[] } = {};
       const emailReceiverIds: number[] = [];
-      const affectedUserIds = new Set<number>();
+      const affectedUsers = new Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>();
 
       const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net' } as any;
       const approvers: any[] = [];
@@ -907,14 +907,15 @@ describe('ReceiverService', () => {
         inAppReceiverIds,
         emailNotifications,
         emailReceiverIds,
-        affectedUserIds,
+        affectedUsers,
         123,
       );
 
-      // deletedReceiverIds.forEach updated deletionNotifications and affectedUserIds
+      // deletedReceiverIds.forEach updated deletionNotifications and affectedUsers
       expect((service as any).deleteExistingIndicators).toHaveBeenCalledWith(em as any, transaction);
       expect(deletionNotifications[1]).toEqual([10]);
-      expect(affectedUserIds.has(1)).toBe(true);
+      expect(affectedUsers.has(1)).toBe(true);
+      expect(affectedUsers.get(1)!.transactionIds.has(123)).toBe(true);
 
       // new in-app receivers were added to inAppNotifications and inAppReceiverIds
       expect(inAppNotifications[2]).toBeDefined();
@@ -943,7 +944,7 @@ describe('ReceiverService', () => {
         [],
         {},
         [],
-        new Set(),
+        new Map(),
         123,
       );
 
@@ -1076,7 +1077,7 @@ describe('ReceiverService', () => {
       expect(ctx!.keyCache).toBeInstanceOf(Map);
       expect(ctx!.inAppReceiverIds).toEqual([]);
       expect(ctx!.emailReceiverIds).toEqual([]);
-      expect(ctx!.affectedUserIds).toBeInstanceOf(Set);
+      expect(ctx!.affectedUsers).toBeInstanceOf(Map);
     });
   });
 
@@ -1132,6 +1133,41 @@ describe('ReceiverService', () => {
       (emitEmailNotifications as jest.Mock).mockImplementation(async (_pub, _dtos, onSuccess, _onError) => {
         await onSuccess();
       });
+    });
+
+    it('processTransactionStatusUpdateNotifications skips missing transaction and still sends batch notifications', async () => {
+      const ctx = {
+        cache: new Map<number, any>(),
+        keyCache: new Map<number, any>(),
+        transactionMap: new Map(), // empty — no transaction found
+        approversMap: new Map(),
+        deletionNotifications: {},
+        inAppNotifications: {},
+        emailNotifications: {},
+        inAppReceiverIds: [],
+        emailReceiverIds: [],
+        affectedUsers: new Map(),
+      };
+
+      const prepSpy = jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const handlerSpy = jest
+        .spyOn(service as any, 'handleTransactionStatusUpdateNotifications')
+        .mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 999 } as any]);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('999'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('not found'),
+      );
+      expect(handlerSpy).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+      prepSpy.mockRestore();
+      handlerSpy.mockRestore();
     });
 
     it('processTransactionStatusUpdateNotifications returns early when prepareEventContext is null', async () => {
@@ -1264,6 +1300,35 @@ describe('ReceiverService', () => {
       expect(res).toBe(expected);
 
       spy.mockRestore();
+    });
+
+    it('processSignerReminders skips missing transaction and logs warning', async () => {
+      const ctx = {
+        cache: new Map<number, any>(),
+        keyCache: new Map<number, any>(),
+        transactionMap: new Map(), // empty — no transaction found
+        deletionNotifications: {},
+        inAppNotifications: {},
+        emailNotifications: {},
+        inAppReceiverIds: [],
+        emailReceiverIds: [],
+      };
+
+      const prepSpy = jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      const consoleSpy = jest.spyOn(console, 'warn').mockImplementation();
+
+      await (service as any).processSignerReminders([{ entityId: 777 } as any], false);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('777'),
+      );
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('not found'),
+      );
+      expect(keysRequiredToSign).not.toHaveBeenCalled();
+
+      consoleSpy.mockRestore();
+      prepSpy.mockRestore();
     });
 
     it('processSignerReminders returns early when prepareEventContext is null', async () => {

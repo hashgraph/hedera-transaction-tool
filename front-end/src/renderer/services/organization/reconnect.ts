@@ -1,4 +1,4 @@
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
@@ -18,17 +18,19 @@ import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organi
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
 import { checkVersion, login } from '@renderer/services/organization';
 
+import { createLogger } from '@renderer/utils/logger';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 import {
   getAuthTokenFromSessionStorage,
   toggleAuthTokenInSessionStorage,
 } from '@renderer/utils/userStoreHelpers';
 
-import { errorToastOptions } from '@renderer/utils/toastOptions';
 import {
   getOrganizationCredentials,
   updateOrganizationCredentials,
 } from '../organizationCredentials';
+
+const logger = createLogger('renderer.organization.reconnect');
 
 export async function reconnectOrganization(serverUrl: string): Promise<{
   success: boolean;
@@ -39,13 +41,15 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
-  const toast = useToast();
+  const toastManager = ToastManager.inject();
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   const user = userStore.personal;
   if (!org) {
-    console.error(`[${new Date().toISOString()}] RECONNECT Organization not found: ${serverUrl}`);
-    toast.error('Organization not found', errorToastOptions);
+    logger.error('Organization not found during reconnect', {
+      serverUrl,
+    });
+    toastManager.error('Organization not found');
     return { success: false };
   }
 
@@ -71,9 +75,10 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
       }
     }
-    console.log(
-      `[${new Date().toISOString()}] RECONNECT Starting version check for: ${org.nickname || serverUrl}`,
-    );
+    logger.info('Starting organization reconnect version check', {
+      organization: org.nickname || serverUrl,
+      serverUrl,
+    });
 
     await performVersionCheck(serverUrl);
 
@@ -81,9 +86,10 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
     const versionData = organizationVersionData.value[serverUrl];
 
     if (versionStatus === 'belowMinimum' || (versionData && isVersionBelowMinimum(versionData))) {
-      console.log(
-        `[${new Date().toISOString()}] RECONNECT Version check failed: ${org.nickname || serverUrl} requires update`,
-      );
+      logger.warn('Organization reconnect requires frontend update', {
+        organization: org.nickname || serverUrl,
+        serverUrl,
+      });
 
       let versionResponse = versionData;
       if (!versionResponse) {
@@ -91,7 +97,10 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
           versionResponse = await checkVersion(serverUrl, FRONTEND_VERSION);
           setVersionDataForOrg(serverUrl, versionResponse);
         } catch (versionError) {
-          console.error('Version check failed during reconnect:', versionError);
+          logger.error('Version check failed during reconnect', {
+            error: versionError,
+            serverUrl,
+          });
           return { success: false, requiresUpdate: true };
         }
       }
@@ -108,15 +117,12 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
           setOrgVersionBelowMinimum(serverUrl, versionResponse.updateUrl);
         }
 
-        console.log(
-          `[${new Date().toISOString()}] RECONNECT Compatibility check completed: ${org.nickname || serverUrl}`,
-        );
-        console.log(`  - Has conflicts: ${compatibilityResult.hasConflict}`);
-        if (compatibilityResult.hasConflict) {
-          console.log(
-            `  - Conflicts: ${compatibilityResult.conflicts.map(c => c.organizationName).join(', ')}`,
-          );
-        }
+        logger.info('Reconnect compatibility check completed', {
+          conflicts: compatibilityResult.conflicts.map(c => c.organizationName),
+          hasCompatibilityConflict: compatibilityResult.hasConflict,
+          organization: org.nickname || serverUrl,
+          serverUrl,
+        });
 
         return {
           success: false,
@@ -128,9 +134,10 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
       return { success: false, requiresUpdate: true };
     }
 
-    console.log(
-      `[${new Date().toISOString()}] RECONNECT Version check passed: ${org.nickname || serverUrl}`,
-    );
+    logger.info('Organization reconnect version check passed', {
+      organization: org.nickname || serverUrl,
+      serverUrl,
+    });
 
     const wsUrl = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
     ws.connect(serverUrl, wsUrl);
@@ -145,24 +152,24 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
       delete org.lastDisconnectedAt;
     }
 
-    console.log(
-      `[${new Date().toISOString()}] RECONNECT Success: ${org.nickname || serverUrl} (Server: ${serverUrl})`,
-    );
-    console.log(`  - Status: connected`);
-    console.log(`  - Details: Version check passed, websocket connected`);
+    logger.info('Organization reconnected successfully', {
+      organization: org.nickname || serverUrl,
+      serverUrl,
+      status: 'connected',
+    });
 
     return { success: true };
   } catch (error) {
-    console.error(
-      `[${new Date().toISOString()}] RECONNECT Failed: ${org.nickname || serverUrl} (Server: ${serverUrl})`,
-    );
-    console.error(`  - Error:`, error);
+    logger.error('Organization reconnect failed', {
+      error,
+      organization: org.nickname || serverUrl,
+      serverUrl,
+    });
 
     if (error instanceof Error) {
       if (error.message.includes('network') || error.message.includes('fetch')) {
-        toast.error(
+        toastManager.error(
           `Failed to reconnect to ${org.nickname || serverUrl}. Network error.`,
-          errorToastOptions,
         );
         return { success: false };
       }
@@ -172,17 +179,15 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
         error.message.includes('401') ||
         error.message.includes('403')
       ) {
-        toast.error(
+        toastManager.error(
           `Failed to reconnect to ${org.nickname || serverUrl}. Authentication failed.`,
-          errorToastOptions,
         );
         return { success: false };
       }
     }
 
-    toast.error(
+    toastManager.error(
       `Failed to reconnect to ${org.nickname || serverUrl}. ${error instanceof Error ? error.message : 'Unknown error'}`,
-      errorToastOptions,
     );
 
     return { success: false };

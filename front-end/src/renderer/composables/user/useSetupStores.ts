@@ -1,13 +1,12 @@
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 export default function useSetupStores() {
   /* Stores */
   const ws = useWebsocketConnection();
 
-  const toast = useToast();
+  const toastManager = ToastManager.inject()
 
   const setupStores = async () => {
     const results = await Promise.allSettled([ws.setup()]);
@@ -19,7 +18,7 @@ export default function useSetupStores() {
             : typeof r.reason === 'string'
               ? r.reason
               : 'An unknown error occurred';
-        toast.error(errorMessage, errorToastOptions);
+        toastManager.error(errorMessage);
       }
     });
   };

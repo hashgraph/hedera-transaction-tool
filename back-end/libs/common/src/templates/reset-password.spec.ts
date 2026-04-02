@@ -1,89 +1,104 @@
-import { generateResetPasswordMessage } from '.';
-import { ELECTRON_APP_PROTOCOL_PREFIX } from '@app/common';
+import { generateResetPasswordMessage, resetPasswordEmailBody } from './reset-password';
 
-describe('generateResetPasswordMessage', () => {
-  it('should generate HTML with the provided OTP', () => {
-    const otp = '123456';
-    const result = generateResetPasswordMessage({ otp });
+jest.mock('@app/common/templates/layout', () => ({
+  emailHeader: jest.fn((title, subtitle) => `<HEADER title="${title}" subtitle="${subtitle}">`),
+  emailBody: jest.fn((content) => `<BODY>${content}</BODY>`),
+  emailWarning: jest.fn((msg) => `<WARNING:${msg}>`),
+  emailWrapper: jest.fn((content) => `<WRAPPER>${content}</WRAPPER>`),
+  escapeHtml: jest.fn((str) => str), // pass-through; escapeHtml has its own tests
+}));
 
-    expect(result).toContain(otp);
-    expect(result).toContain(`<b>${otp}</b>`);
+import {
+  emailHeader,
+  emailBody,
+  emailWarning,
+  emailWrapper,
+  escapeHtml,
+} from '@app/common/templates/layout';
+
+describe('reset-password templates', () => {
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('should include the Hedera Transaction Tool heading', () => {
-    const result = generateResetPasswordMessage({ otp: '123456' });
+// ─── generateResetPasswordMessage ────────────────────────────────────────────
 
-    expect(result).toContain('<h1 style="margin: 0">Hedera Transaction Tool</h1>');
-  });
+  describe('generateResetPasswordMessage', () => {
+    it('returns the output of emailWrapper', () => {
+      const result = generateResetPasswordMessage({ otp: '123456' });
+      expect(result).toContain('<WRAPPER>');
+    });
 
-  it('should include reset password instructions', () => {
-    const result = generateResetPasswordMessage({ otp: '123456' });
+    it('calls emailHeader with correct title and subtitle', () => {
+      generateResetPasswordMessage({ otp: '123456' });
+      expect(emailHeader).toHaveBeenCalledWith('Password Reset', 'Hedera Transaction Tool');
+    });
 
-    expect(result).toContain('Use the following token to reset your password:');
-  });
+    it('calls emailBody once', () => {
+      generateResetPasswordMessage({ otp: '123456' });
+      expect(emailBody).toHaveBeenCalledTimes(1);
+    });
 
-  it('should include a verify link with the correct protocol and OTP', () => {
-    const otp = 'ABC123';
-    const result = generateResetPasswordMessage({ otp });
+    it('calls emailWrapper once', () => {
+      generateResetPasswordMessage({ otp: '123456' });
+      expect(emailWrapper).toHaveBeenCalledTimes(1);
+    });
 
-    expect(result).toContain(`href="${ELECTRON_APP_PROTOCOL_PREFIX}token=${otp}"`);
-  });
+    it('passes otp from additionalData into the body', () => {
+      generateResetPasswordMessage({ otp: 'ABC123' });
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).toContain('ABC123');
+    });
 
-  it('should include a styled verify button', () => {
-    const result = generateResetPasswordMessage({ otp: '123456' });
-
-    expect(result).toContain('background-color: #6600cc');
-    expect(result).toContain('padding: 8px 22px');
-    expect(result).toContain('border-radius: 6px');
-    expect(result).toContain('>Verify</a>');
-  });
-
-  it('should handle different OTP formats', () => {
-    const testCases = [
-      '123456',
-      'ABCDEF',
-      '1a2b3c',
-      '999999',
-    ];
-
-    testCases.forEach(otp => {
-      const result = generateResetPasswordMessage({ otp });
-      expect(result).toContain(otp);
-      expect(result).toContain(`token=${otp}`);
+    it('ignores extra properties in additionalData', () => {
+      expect(() =>
+        generateResetPasswordMessage({ otp: '123456', extraProp: 'ignored', another: 99 })
+      ).not.toThrow();
+      const bodyArg = (emailBody as jest.Mock).mock.calls[0][0];
+      expect(bodyArg).not.toContain('ignored');
+      expect(bodyArg).not.toContain('extraProp');
     });
   });
 
-  it('should return valid HTML structure', () => {
-    const result = generateResetPasswordMessage({ otp: '123456' });
+// ─── resetPasswordEmailBody ───────────────────────────────────────────────────
 
-    expect(result).toContain('<div>');
-    expect(result).toContain('</div>');
-    expect(result).toContain('<h1');
-    expect(result).toContain('</h1>');
-    expect(result).toContain('<p');
-    expect(result).toContain('</p>');
-    expect(result).toContain('<a');
-    expect(result).toContain('</a>');
-  });
-
-  it('should not be affected by additional data properties', () => {
-    const result = generateResetPasswordMessage({
-      otp: '123456',
-      extraProp: 'ignored',
-      anotherProp: 123,
+  describe('resetPasswordEmailBody', () => {
+    it('includes the otp value', () => {
+      const result = resetPasswordEmailBody('999999');
+      expect(result).toContain('999999');
     });
 
-    expect(result).toContain('123456');
-    expect(result).not.toContain('ignored');
-    expect(result).not.toContain('extraProp');
-  });
+    it('calls escapeHtml with the otp', () => {
+      resetPasswordEmailBody('ABC123');
+      expect(escapeHtml).toHaveBeenCalledWith('ABC123');
+    });
 
-  it('should maintain consistent whitespace and formatting', () => {
-    const result = generateResetPasswordMessage({ otp: '123456' });
+    it('includes password reset instructions', () => {
+      const result = resetPasswordEmailBody('123456');
+      expect(result).toContain('reset your password');
+    });
 
-    // Check that the structure is maintained
-    const lines = result.split('\n').filter(line => line.trim());
-    expect(lines.length).toBeGreaterThan(0);
-    expect(lines[0]).toContain('<div>');
+    it('includes the Reset Code label', () => {
+      const result = resetPasswordEmailBody('123456');
+      expect(result).toContain('Reset Code');
+    });
+
+    it('calls emailWarning with the ignore message', () => {
+      resetPasswordEmailBody('123456');
+      expect(emailWarning).toHaveBeenCalledWith(
+        "If you didn't request a password reset, you can safely ignore this email."
+      );
+    });
+
+    it('handles different OTP formats', () => {
+      const otps = ['123456', 'ABCDEF', '1a2b3c', '999999'];
+      otps.forEach(otp => {
+        jest.clearAllMocks();
+        const result = resetPasswordEmailBody(otp);
+        expect(result).toContain(otp);
+        expect(escapeHtml).toHaveBeenCalledWith(otp);
+      });
+    });
   });
 });

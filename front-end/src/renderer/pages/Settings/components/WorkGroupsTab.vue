@@ -3,7 +3,7 @@ import type { Organization } from '@prisma/client';
 
 import { onBeforeMount, ref } from 'vue';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { getOrganizations, addOrganization } from '@renderer/services/organizationsService';
 
@@ -11,10 +11,9 @@ import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
-/* Composables */
-const toast = useToast();
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const newOrganizationName = ref('');
@@ -32,9 +31,9 @@ const handleAddOrganization = async () => {
         key: newOrganizationServerPublicKey.value,
       });
 
-      toast.success('Organization added successfully', successToastOptions);
+      toastManager.success('Organization added successfully');
     } catch (error) {
-      toast.error(getErrorMessage(error, 'Failed to add organization'), errorToastOptions);
+      toastManager.error(getErrorMessage(error, 'Failed to add organization'));
     }
   }
 };

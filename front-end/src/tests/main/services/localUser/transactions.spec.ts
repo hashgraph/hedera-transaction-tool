@@ -343,7 +343,7 @@ describe('Services Local User Transactions', () => {
         return decryptedPrivateKeys[keyPairs.findIndex(kp => kp.private_key === privateKey)];
       });
 
-      expect(() =>
+      await expect(() =>
         signTransaction(transactionBytes, publicKeys, userId, userPassword),
       ).rejects.toThrow('Required public key not found in local key pairs');
     });
@@ -629,7 +629,6 @@ describe('Services Local User Transactions', () => {
       );
 
       await executeQuery(queryBytes, accountId, privateKey, privateKeyType);
-      console.log(getClient()._operator);
 
       expect(getClient()._operator).toBeNull();
     });

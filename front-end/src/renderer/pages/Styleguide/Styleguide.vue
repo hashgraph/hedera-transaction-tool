@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// import { useToast } from 'vue-toast-notification';
+// import { ToastManager } from '@renderer/utils/ToastManager';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -422,7 +422,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
           <Button
             size="small"
             class="ms-3"
-            onClick={() => toast.success('Success', successToastOptions)}
+            onClick={() => toastManager.success('Success', successToastOptions)}
             type="primary"
           >
             Open toast success
@@ -430,7 +430,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
           <Button
             size="small"
             class="ms-3"
-            onClick={() => toast.error('Danger', errorToastOptions)}
+            onClick={() => toastManager.error('Danger', errorToastOptions)}
             type="primary"
           >
             Open toast danger

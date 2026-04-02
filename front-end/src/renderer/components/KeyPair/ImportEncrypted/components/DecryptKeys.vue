@@ -4,7 +4,7 @@ import { computed, ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { hashData } from '@renderer/services/electronUtilsService';
@@ -12,7 +12,7 @@ import { hashData } from '@renderer/services/electronUtilsService';
 import { getKeysFromSecretHash, getRecoveryPhraseHashValue, safeAwait } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Props */
 defineProps<{
@@ -30,7 +30,7 @@ const user = useUserStore();
 const contacts = useContactsStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -98,7 +98,7 @@ async function end() {
   isDecryptKeyModalShown.value = false;
 
   if (storedCount.value > 0) {
-    toast.success('Keys imported successfully', successToastOptions);
+    toastManager.success('Keys imported successfully');
   }
 
   await user.refetchKeys();

@@ -10,8 +10,11 @@ Before you begin, ensure you have the following installed on your system:
 
 - Node.js: `20.17.0`
 
-Additionally, you should have the Hedera Transaction Tool executable installed and know its path, as it will be required
-to run the tests.
+Additionally, you should either:
+
+- have the Hedera Transaction Tool executable installed and know its path, or
+- run the front-end Electron app in dev mode with remote debugging enabled if you want to attach to an existing app
+  instance.
 
 ## Setup
 
@@ -34,10 +37,12 @@ to run the tests.
    pnpm approve-builds # if required by pnpm install
    ```
 
-4. **Configure the environment variables** by creating a `.env` file in the root of the project and setting the path to
-   the Hedera Transaction Tool executable. For example:
+4. **Configure the environment variables** by creating a `.env` file in the root of the project.
+
+   Launch mode example:
 
    ```env
+   ELECTRON_APP_MODE='launch'
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
    PRIVATE_KEY='your_private_key_here'
    ENVIRONMENT='LOCALNET'
@@ -48,6 +53,21 @@ to run the tests.
    POSTGRES_DATABASE: Name of your PostgreSQL database
    POSTGRES_USERNAME: Username for your PostgreSQL database
    POSTGRES_PASSWORD: Password for your PostgreSQL database
+   ```
+
+   Attach mode example:
+
+   ```env
+   ELECTRON_APP_MODE='attach'
+   ELECTRON_ATTACH_URL='http://127.0.0.1:9222'
+   PRIVATE_KEY='your_private_key_here'
+   ENVIRONMENT='LOCALNET'
+   ```
+
+   If you use attach mode, start the front-end first from `front-end/`:
+
+   ```bash
+   PLAYWRIGHT_TEST=true ELECTRON_REMOTE_DEBUGGING_PORT=9222 pnpm dev
    ```
 
    Replace `ENVIRONMENT` with variable that can be set to `TESTNET`, `PREVIEWNET` or `LOCALNET`.

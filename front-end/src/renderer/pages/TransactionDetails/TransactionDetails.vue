@@ -11,7 +11,7 @@ import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -20,6 +20,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -62,8 +63,22 @@ const notifications = useNotificationsStore();
 
 /* Composables */
 const router = useRouter();
-useWebsocketSubscription(TRANSACTION_ACTION, async () => {
-  await fetchTransaction();
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) { await fetchTransaction(); return; } // Legacy fallback
+
+  // If initial fetch hasn't completed yet, fall back to a full refetch
+  if (!orgTransaction.value && !localTransaction.value) {
+    await fetchTransaction();
+    return;
+  }
+
+  const currentId = Number(formattedId.value);
+  const currentGroupId = orgTransaction.value?.groupItem?.groupId;
+  if (parsed.transactionIds.includes(currentId) ||
+      (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
+    await fetchTransaction();
+  }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
@@ -102,7 +117,7 @@ const creator = computed(() => {
 });
 
 const showExternal = computed(() => {
-  return isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+  return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
 });
 
 const transactionIsInProgress = computed(

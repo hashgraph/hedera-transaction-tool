@@ -6,7 +6,7 @@ const {
   generateRandomEmail,
   generateRandomPassword,
   setupEnvironmentForTransactions,
-} = require('../utils/util');
+} = require('../utils/automationSupport');
 const RegistrationPage = require('../pages/RegistrationPage.js');
 const LoginPage = require('../pages/LoginPage');
 const TransactionPage = require('../pages/TransactionPage');
@@ -16,23 +16,22 @@ const DetailsPage = require('../pages/DetailsPage');
 const { resetDbState } = require('../utils/databaseUtil');
 */
 
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState } from '../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
   setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
 import { AccountPage } from '../pages/AccountPage.js';
 import { FilePage } from '../pages/FilePage.js';
 import { DetailsPage } from '../pages/DetailsPage.js';
+import { createSeededLocalUserSession } from '../utils/localBaseline.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
@@ -42,7 +41,7 @@ let accountPage: AccountPage;
 let filePage: FilePage;
 let detailsPage: DetailsPage;
 
-test.describe('Workflow tests', () => {
+test.describe('Workflow tests @local-transactions', () => {
   test.beforeAll(async () => {
     await resetDbState();
     ({ app, window } = await setupApp());
@@ -51,20 +50,14 @@ test.describe('Workflow tests', () => {
     accountPage = new AccountPage(window);
     filePage = new FilePage(window);
     detailsPage = new DetailsPage(window);
-    registrationPage = new RegistrationPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
 
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
 
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
-    );
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
 
     await setupEnvironmentForTransactions(window);
   });
@@ -73,7 +66,7 @@ test.describe('Workflow tests', () => {
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
     await closeApp(app);
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test.beforeEach(async () => {

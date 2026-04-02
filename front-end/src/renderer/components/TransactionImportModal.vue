@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { computed, ref, watch } from 'vue';
 import { TransactionId } from '@hashgraph/sdk';
 
@@ -19,7 +19,9 @@ import { getTransactionById, importSignatures } from '@renderer/services/organiz
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.transactionImportModal');
 
 /* Props */
 const props = defineProps<{
@@ -34,7 +36,7 @@ const selectedCandidates = ref<V1ImportCandidate[]>([]);
 const transactionMap = ref<Map<string, ITransactionFull>>(new Map()); // transactionId -> ITransactionFull
 const importing = ref(false);
 const user = useUserStore();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -114,11 +116,7 @@ const importSelectedCandidates = async (): Promise<void> => {
     const tx = allTransactions.find((t: ITransactionFull) => t.id === r.id)!;
     if (r.error) {
       errorResults.set(tx.transactionId, r);
-      console.log('Import failed for ' + tx.transactionId);
-      console.log('error=' + r.error);
-      if (r.error in ErrorCodes) {
-        console.log('ErrorCodes=' + ErrorMessages[r.error as unknown as ErrorCodes]);
-      }
+      logger.error('Import failed', { transactionId: tx.transactionId, error: r.error });
     } else {
       successResults.set(tx.transactionId, r);
     }
@@ -133,36 +131,32 @@ const importSelectedCandidates = async (): Promise<void> => {
     if (errorCount == 1) {
       const [transactionId, result] = errorResults.entries().next().value!;
       const errorMessage = formatError(result);
-      toast.error(
+      toastManager.error(
         'Failed to import transaction ' + transactionId + '\n[' + errorMessage + ']',
-        errorToastOptions,
       );
     } else if (rejectedCount == 1) {
       const transactionId = rejectedTransactionIds[0];
-      toast.error(
+      toastManager.error(
         'Transaction ' + transactionId + ' does not exist or is not accessible',
-        errorToastOptions,
       );
     } else {
       // successCount == 1
       const [transactionId] = successResults.entries().next().value!;
-      toast.success(
+      toastManager.success(
         'Imported transaction ' + transactionId + ' successfully.',
-        successToastOptions,
       );
     }
   } else {
     if (successCount >= 1) {
-      toast.success(
+      toastManager.success(
         'Imported ' + successCount + ' transaction(s) successfully.',
-        successToastOptions,
       );
     }
     if (errorCount >= 1) {
-      toast.error('Failed to import ' + errorCount + ' transaction(s)', errorToastOptions);
+      toastManager.error('Failed to import ' + errorCount + ' transaction(s)');
     }
     if (rejectedCount >= 1) {
-      toast.error('Rejected ' + rejectedCount + ' transaction(s)', errorToastOptions);
+      toastManager.error('Rejected ' + rejectedCount + ' transaction(s)');
     }
   }
 };
@@ -194,7 +188,7 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
           const t = await getTransactionById(serverUrl, transactionId);
           transactionMap.value.set(candidate.transactionId, t);
         } catch (error) {
-          console.log('error=' + error);
+          logger.error('Failed to fetch transaction by id', { error });
         }
       }
     }

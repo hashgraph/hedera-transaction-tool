@@ -46,7 +46,7 @@ describe('getTransactionNodesForUser - Integration', () => {
     ];
 
     for (const entity of entities) {
-      await dataSource.getRepository(entity).delete({});
+      await dataSource.getRepository(entity).createQueryBuilder().delete().execute();
     }
   });
 

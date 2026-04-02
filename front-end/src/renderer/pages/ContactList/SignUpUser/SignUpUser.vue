@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { signUp } from '@renderer/services/organization';
@@ -17,12 +17,17 @@ import {
   assertUserLoggedIn,
   assertIsLoggedInOrganization,
 } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.component.signUpUser');
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -30,7 +35,6 @@ const contacts = useContactsStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
@@ -61,19 +65,18 @@ const handleLinkAccount = async () => {
       try {
         await signUpUser(email);
       } catch (error) {
-        console.error(error);
+        logger.error('Failed to sign up user', { email, error });
         failedEmails.push(email);
       }
     }
     await contacts.fetch();
 
     if (failedEmails.length > 0) {
-      toast.error(
+      toastManager.error(
         `Failed to sign up users with emails: ${failedEmails.join(', ')}`,
-        errorToastOptions,
       );
     } else {
-      toast.success('All users signed up successfully', successToastOptions);
+      toastManager.success('All users signed up successfully');
     }
   } else {
     if (!isEmail(email.value)) throw new Error('Invalid email');
@@ -83,7 +86,7 @@ const handleLinkAccount = async () => {
 
       const id = await signUpUser(email.value);
 
-      toast.success('User signed up successfully', successToastOptions);
+      toastManager.success('User signed up successfully');
 
       if (nickname.value.trim().length > 0) {
         await addContact({
@@ -96,8 +99,8 @@ const handleLinkAccount = async () => {
         await contacts.fetch();
       }
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to sign up user', errorToastOptions);
+      logger.error('Failed to sign up user', { error });
+      toastManager.error('Failed to sign up user');
     }
   }
   router.back();

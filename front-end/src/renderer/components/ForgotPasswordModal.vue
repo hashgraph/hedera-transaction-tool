@@ -3,7 +3,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { resetPassword, setPassword, verifyReset } from '@renderer/services/organization';
 import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
@@ -23,7 +23,6 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import OTPInput from '@renderer/components/OTPInput.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,7 +38,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const email = ref('');
@@ -100,7 +99,7 @@ async function handleEmailEnter() {
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to request password reset'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to request password reset'));
   }
 }
 
@@ -119,7 +118,7 @@ async function handleTokenEnter() {
     shouldEnterToken.value = false;
     shouldSetNewPassword.value = true;
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to verify OTP'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to verify OTP'));
   }
 }
 
@@ -159,9 +158,9 @@ async function handleNewPassword() {
 
     emit('update:show', false);
 
-    toast.success('Password changed successfully', successToastOptions);
+    toastManager.success('Password changed successfully');
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to set new password'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to set new password'));
   }
 }
 

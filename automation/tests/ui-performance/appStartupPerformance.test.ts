@@ -8,7 +8,7 @@
 import { test, expect, ElectronApplication } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 import * as dotenv from 'dotenv';
-import { resetDbState } from '../../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
 import { formatDuration } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 
@@ -23,7 +23,7 @@ test.describe('App Startup Performance', () => {
   });
 
   test.afterAll(async () => {
-    await resetDbState();
+    await resetDbStateForTeardown();
   });
 
   test('App startup time should be within threshold', async () => {

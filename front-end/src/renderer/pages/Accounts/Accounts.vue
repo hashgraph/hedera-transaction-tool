@@ -8,7 +8,7 @@ import { Prisma } from '@prisma/client';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
@@ -33,7 +33,6 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Stores */
@@ -41,7 +40,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const accountData = useAccountId();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -120,7 +119,7 @@ const handleUnlinkAccount = async () => {
   isUnlinkAccountModalShown.value = false;
 
   selectedAccountIds.value = [];
-  toast.success('Account Unlinked!', successToastOptions);
+  toastManager.success('Account Unlinked!');
 };
 
 const handleStartNicknameEdit = () => {

@@ -7,6 +7,7 @@ import pLimit from 'p-limit';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 import { getOne } from '@renderer/services/accountsService';
 import { uploadSignatures } from '@renderer/services/organization';
@@ -21,10 +22,12 @@ import { isAccountId } from './validator';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import type { SignatureItem } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { createLogger } from './logger';
+
+const logger = createLogger('renderer.utils');
 
 export * from './dom';
 export * from './sdk';
@@ -43,6 +46,7 @@ export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './localServices';
 export * from './transactionFile';
+export * from './logger';
 
 export const convertBytes = (
   bytes: number,
@@ -192,10 +196,11 @@ export async function signTransactions(
   accountInfoCache: AccountByIdCache,
   nodeInfoCache: NodeByIdCache,
   publicKeyOwnerCache: PublicKeyOwnerCache,
+  toastManager: ToastManager,
 ): Promise<boolean> {
   const user = useUserStore();
   const network = useNetworkStore();
-  const toast = useToast();
+  const notificationStore = useNotificationsStore();
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -233,11 +238,10 @@ export async function signTransactions(
     const missingKeys = publicKeysRequired.filter(k => !userPublicKeys.has(k));
 
     if (missingKeys.length > 0) {
-      toast.error(
+      toastManager.error(
         `You need to restore the following public keys to fully sign the transaction: ${missingKeys.join(
           ', ',
         )}`,
-        errorToastOptions,
       );
       return false;
     }
@@ -248,7 +252,7 @@ export async function signTransactions(
   }
 
   if (items.length > 0) {
-    await uploadSignatures(
+    const uploadResults = await uploadSignatures(
       user.personal.id,
       password,
       selectedOrganization,
@@ -257,6 +261,12 @@ export async function signTransactions(
       undefined,
       items,
     );
+
+    const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
+    if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
+      notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
+    }
+
     signed = true;
   }
   return signed;
@@ -308,7 +318,7 @@ export const splitMultipleAccounts = (input: string, client: Client): string[] =
       }
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Invalid multiple account input', { error });
     throwError('Invalid multiple account input');
   }
 

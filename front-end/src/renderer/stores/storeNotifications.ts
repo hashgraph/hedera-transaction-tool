@@ -35,6 +35,8 @@ const useNotificationsStore = defineStore('notifications', () => {
     [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: true,
     [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: true,
     [NotificationType.TRANSACTION_CANCELLED]: true,
+    [NotificationType.TRANSACTION_EXPIRED]: true,
+    [NotificationType.TRANSACTION_EXECUTED]: true,
   });
   const notifications = ref<{ [serverUrl: string]: INotificationReceiver[] }>({});
 
@@ -154,25 +156,29 @@ const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function listenForUpdates() {
-    const severUrls = user.organizations.map(o => o.serverUrl);
-    for (const severUrl of severUrls) {
-      ws.on(severUrl, NOTIFICATIONS_NEW, e => {
+    const serverUrls = user.organizations.map(o => o.serverUrl);
+    for (const serverUrl of serverUrls) {
+      ws.on(serverUrl, NOTIFICATIONS_NEW, e => {
         const newNotifications: INotificationReceiver[] = e;
 
-        notifications.value[severUrl] = [...notifications.value[severUrl], ...newNotifications];
+        notifications.value[serverUrl] = [...notifications.value[serverUrl], ...newNotifications];
         notifications.value = { ...notifications.value };
       });
 
-      ws.on(severUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
+      ws.on(serverUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
         const deleteNotifications: {notificationReceiverIds: number}[] = e;
         const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
 
-        notifications.value[severUrl] = notifications.value[severUrl].filter(
-          nr => !notificationReceiverIds.includes(nr.id),
-        );
-        notifications.value = { ...notifications.value };
+        dismissNotifications(serverUrl, notificationReceiverIds);
       });
     }
+  }
+
+  function dismissNotifications(serverUrl: string, notificationReceiverIds: number[]) {
+    notifications.value[serverUrl] = notifications.value[serverUrl].filter(
+      nr => !notificationReceiverIds.includes(nr.id),
+    );
+    notifications.value = { ...notifications.value };
   }
 
   async function markAsRead(type: NotificationType) {
@@ -221,10 +227,8 @@ const useNotificationsStore = defineStore('notifications', () => {
       if (notificationsToUpdate.length === 0) return;
 
       await updateNotifications(notificationsKey, notificationsToUpdate);
-      notifications.value[notificationsKey] = notifications.value[notificationsKey].filter(
-        nr => !notificationIds.includes(nr.id),
-      );
-      notifications.value = { ...notifications.value };
+
+      dismissNotifications(notificationsKey, notificationIds);
     });
 
     // Wait for the current update to complete
@@ -246,6 +250,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     notifications,
     currentOrganizationNotifications,
     updatePreferences,
+    dismissNotifications,
     markAsRead,
     markAsReadIds,
     networkNotifications,

@@ -263,12 +263,20 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
+    // This method ensures that the group satisfies the following two invariants:
+    //  - The valid start time of each group item is unique within the group (for a given payer)
+    //  - The valid start time of each group item is >= to the group's valid start time
+
     // Items are updated in-place so that findUniqueValidStart sees
     // already-assigned timestamps from earlier items in the same pass
     groupItems.value.forEach((groupItem, index) => {
+      const targetValidStart =
+        newGroupValidStart.getTime() > groupItem.validStart.getTime()
+          ? newGroupValidStart
+          : groupItem.validStart;
       const updatedValidStart = findUniqueValidStart(
         groupItem.payerAccountId,
-        newGroupValidStart.getTime() + index,
+        targetValidStart.getTime(),
         index,
       );
       const transaction = Transaction.fromBytes(groupItem.transactionBytes);
@@ -303,7 +311,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   // }
 
   // function getApprovers() {
-  //   console.log('TODO');
+  //   TODO
   //   return new Array<TransactionApproverDto>();
   // }
 

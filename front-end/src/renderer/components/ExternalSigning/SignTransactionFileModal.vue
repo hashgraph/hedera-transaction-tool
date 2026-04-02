@@ -12,14 +12,14 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { assertUserLoggedIn, getErrorMessage, hexToUint8Array, uint8ToHex } from '@renderer/utils';
+import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { createLogger } from '@renderer/utils/logger';
 
 /* Props */
 const props = defineProps<{
@@ -34,12 +34,13 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* Injected */
 const accountInfoCache = AccountByIdCache.inject();
 const nodeInfoCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const logger = createLogger('renderer.externalSigning.signTransactionFile');
 
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
@@ -76,7 +77,10 @@ async function handleSignAll() {
         );
 
         const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
-        console.log(`SignatureMap before signing`, sigMapBefore.toJSON());
+        logger.debug('Signing transaction file entry', {
+          missingSignerCount: missingSignerKeys.length,
+          signatureCountBefore: sigMapBefore.getFlatSignatureList().length,
+        });
 
         try {
           const signedBytes = await signTransaction(
@@ -90,12 +94,13 @@ async function handleSignAll() {
 
           const signedTransaction = Transaction.fromBytes(signedBytes);
           const sigMapAfter = SignatureMap._fromTransaction(signedTransaction);
-          console.log(`SignatureMap after signing`, sigMapAfter.toJSON());
+          logger.debug('Transaction file entry signed', {
+            signatureCountAfter: sigMapAfter.getFlatSignatureList().length,
+          });
         } catch (error) {
-          console.log(
-            `Error signing one of the transactions in the file (leaving transaction untouched):`,
+          logger.error('Failed to sign transaction file entry', {
             error,
-          );
+          });
         }
       }
       updatedFile.items.push(updatedItem);
@@ -104,8 +109,10 @@ async function handleSignAll() {
       await writeTransactionFile(updatedFile, props.filePath!);
       showSuccessModal.value = true;
     } catch (error) {
-      console.log(getErrorMessage(error, 'Failed to update transaction file'));
-      toast.error('Failed to update file', errorToastOptions);
+      logger.error('Failed to update transaction file', {
+        error,
+      });
+      toastManager.error('Failed to update file');
     }
   }
 }
@@ -131,8 +138,10 @@ watch(
         itemsFullySigned.value = status.fullySigned;
         itemsSignable.value = status.needSigning.concat(status.fullySigned);
       } catch (error) {
-        console.log(getErrorMessage(error, 'Failed to read transaction file'));
-        toast.error('Failed to read file', errorToastOptions);
+        logger.error('Failed to read transaction file', {
+          error,
+        });
+        toastManager.error('Failed to read file');
         transactionFile.value = null;
         itemsToBeSigned.value = [];
         show.value = false;

@@ -2,6 +2,9 @@ import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from '
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.axios');
 
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
@@ -14,8 +17,7 @@ import {
 import useUserStore from '@renderer/stores/storeUser';
 
 import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import { useToast } from 'vue-toast-notification';
-import { warningToastOptions } from './toastOptions';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 function extractServerUrlFromRequest(url: string): string | null {
   if (!url) return null;
@@ -82,21 +84,18 @@ axios.interceptors.response.use(
                 .join(', ');
 
               // Show toast notification for compatibility conflicts
-              const toast = useToast();
-              toast.warning(
+              const toastManager = ToastManager.inject();
+              toastManager.warning(
                 `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-                warningToastOptions,
               );
 
-              console.warn(
-                `[${new Date().toISOString()}] COMPATIBILITY_CHECK Version guard failure for ${serverUrl}`,
-              );
-              console.warn(
-                `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
-              );
+              logger.warn('Version guard compatibility conflict', {
+                serverUrl,
+                conflictCount: compatibilityResult.conflicts.length,
+              });
             }
           } catch (compatError) {
-            console.error('Compatibility check failed:', compatError);
+            logger.error('Compatibility check failed', { error: compatError });
             organizationCompatibilityResults.value[serverUrl] = null;
           }
         }

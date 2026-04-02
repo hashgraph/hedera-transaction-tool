@@ -4,8 +4,7 @@ import { ref, type Ref } from 'vue';
 import type { Handler, Processable } from '@renderer/components/Transaction/TransactionProcessor';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { getErrorMessage } from '@renderer/utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 import storeUser from '@renderer/stores/storeUser';
 
@@ -17,7 +16,7 @@ const props = defineProps<{
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 
 /* Stores */
 const user = storeUser();
@@ -57,7 +56,7 @@ const handleSaveAndGoToSettings = async () => {
     show.value = false;
     await router.push('/settings/keys');
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to save draft'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to save draft'));
   } finally {
     saving.value = false;
   }

@@ -9,10 +9,12 @@ import { disconnectOrganization } from '@renderer/services/organization/disconne
 import { reconnectOrganization } from '@renderer/services/organization/reconnect';
 import { isLoggedOutOrganization } from '@renderer/utils';
 
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions } from '@renderer/utils/toastOptions';
+import { ToastManager } from '@renderer/utils/ToastManager';
+import { createLogger } from '@renderer/utils/logger';
 
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+
+const logger = createLogger('renderer.component.connectionToggle');
 
 /* Props */
 const props = defineProps<{
@@ -28,7 +30,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const orgConnection = useOrganizationConnection();
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const isProcessing = ref(false);
@@ -56,8 +58,8 @@ const handleToggle = async (checked: boolean) => {
       await handleDisconnect();
     }
   } catch (error) {
-    console.error('Connection toggle error:', error);
-    toast.error(`Failed to ${checked ? 'connect' : 'disconnect'} organization`, errorToastOptions);
+    logger.error('Connection toggle error', { error });
+    toastManager.error(`Failed to ${checked ? 'connect' : 'disconnect'} organization`);
   } finally {
     isProcessing.value = false;
   }

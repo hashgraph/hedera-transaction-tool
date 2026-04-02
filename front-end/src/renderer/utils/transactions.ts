@@ -1,7 +1,14 @@
 import type { Network } from '@shared/interfaces';
 import type { KeyPair, Transaction } from '@prisma/client';
 
-import { Key, Status, Timestamp, Transaction as Tx, TransactionReceipt } from '@hashgraph/sdk';
+import {
+  Key, Long,
+  Status,
+  Timestamp,
+  Transaction as Tx,
+  TransactionReceipt,
+  TransferTransaction,
+} from '@hashgraph/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 
@@ -66,4 +73,35 @@ export const getPropagationButtonLabel = (
   } else {
     return 'Sign & Execute';
   }
+};
+
+const START_OF_STAKING_ACCOUNT_NUM = 400;
+const END_OF_STAKING_ACCOUNT_NUM = 439;
+
+/**
+ * Checks if a transaction transfers out of the staking account range (400-439).
+ * @param transaction - The transaction to check.
+ * @returns True if there is any transfer which debits staking account(s) and does not credit other staking account(s) of the same net amount, false otherwise.
+ */
+export const hasTransfersOutOfStaking = (transaction: Tx): boolean => {
+  if (transaction instanceof TransferTransaction) {
+    const transferMap = transaction.hbarTransfers;
+    let stakingDebit = Long.fromInt(0);
+    let stakingCredit = Long.fromInt(0);
+
+    for (const [accountId, hbar] of transferMap) {
+      const accountNum = accountId.num.toNumber();
+      if (accountNum >= START_OF_STAKING_ACCOUNT_NUM && accountNum <= END_OF_STAKING_ACCOUNT_NUM) {
+        if (hbar.isNegative()) {
+          stakingDebit = stakingDebit.add(hbar.toTinybars());
+        } else {
+          stakingCredit = stakingCredit.add(hbar.toTinybars());
+        }
+      }
+    }
+    if (stakingCredit.add(stakingDebit).isNegative()) {
+      return true;
+    }
+  }
+  return false;
 };

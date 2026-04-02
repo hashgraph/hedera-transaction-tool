@@ -325,7 +325,7 @@ describe('NotificationPreferencesService', () => {
         email: true,
         inApp: true,
       };
-      repo.create.mockImplementation((data: NotificationPreferences) => data);
+      repo.create.mockImplementation(((data: NotificationPreferences) => data) as any);
       repo.insert.mockResolvedValue(undefined);
 
       const result = await service.getPreferencesOrCreate(user);

@@ -1,6 +1,6 @@
 {
   "name": "@back-end/api",
-  "version": "0.26.0-SNAPSHOT",
+  "version": "0.28.0-SNAPSHOT",
   "description": "",
   "author": "",
   "main": "index.js",
@@ -22,6 +22,6 @@
     "passport-local": "1.0.0"
   },
   "devDependencies": {
-    "@types/bcryptjs": "2.4.6"
+    "@types/bcryptjs": "3.0.0"
   }
 }

@@ -4,14 +4,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
+import { createLogger } from '@renderer/utils/logger';
 import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
-import { useToast } from 'vue-toast-notification';
-import {
-  errorToastOptions,
-  infoToastOptions,
-  warningToastOptions,
-} from '@renderer/utils/toastOptions';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
+
+const logger = createLogger('renderer.organization.disconnect');
 
 export async function disconnectOrganization(
   serverUrl: string,
@@ -20,7 +18,7 @@ export async function disconnectOrganization(
   const userStore = useUserStore();
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
-  const toast = useToast();
+  const toastManager = ToastManager.inject();
 
   ws.disconnect(serverUrl);
 
@@ -42,27 +40,25 @@ export async function disconnectOrganization(
   }
 
   if (reason === 'upgradeRequired') {
-    toast.warning(
+    toastManager.warning(
       `Disconnected from ${org?.nickname || serverUrl}. Update required to reconnect.`,
-      warningToastOptions,
     );
   } else if (reason === 'compatibilityConflict') {
-    toast.warning(
+    toastManager.warning(
       `Disconnected from ${org?.nickname || serverUrl}. Compatibility conflict detected.`,
-      warningToastOptions,
     );
   } else if (reason === 'manual') {
-    toast.info(`Disconnected from ${org?.nickname || serverUrl}`, infoToastOptions);
+    toastManager.info(`Disconnected from ${org?.nickname || serverUrl}`);
   } else if (reason === 'error') {
-    toast.error(
+    toastManager.error(
       `Disconnected from ${org?.nickname || serverUrl}. Connection error occurred.`,
-      errorToastOptions,
     );
   }
 
-  console.log(
-    `[${new Date().toISOString()}] DISCONNECT Organization: ${org?.nickname || serverUrl} (Server: ${serverUrl})`,
-  );
-  console.log(`  - Status: disconnected`);
-  console.log(`  - Reason: ${reason}`);
+  logger.info('Organization disconnected', {
+    organization: org?.nickname || serverUrl,
+    reason,
+    serverUrl,
+    status: 'disconnected',
+  });
 }

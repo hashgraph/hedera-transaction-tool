@@ -5,7 +5,7 @@ import type { NodeData } from '@renderer/utils/sdk/createTransactions';
 import { computed, reactive, ref, watch } from 'vue';
 import { Transaction } from '@hashgraph/sdk';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -14,13 +14,13 @@ import { createNodeCreateTransaction } from '@renderer/utils/sdk/createTransacti
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeFormData from '@renderer/components/Transaction/Create/NodeCreate/NodeFormData.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
+const toastManager = ToastManager.inject();
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
@@ -64,7 +64,7 @@ const handleExecutedSuccess = async () => {
     throw new Error('User is not logged in');
   }
 
-  toast.success(`Node ${data.nodeAccountId} Created`, successToastOptions);
+  toastManager.success(`Node ${data.nodeAccountId} Created`);
 };
 
 /* Functions */

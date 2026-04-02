@@ -2,8 +2,7 @@
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
-import { useToast } from 'vue-toast-notification';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { assertIsLoggedInOrganization, signTransactions } from '@renderer/utils';
 import { getTransactionById } from '@renderer/services/organization';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -25,13 +24,13 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toast = useToast();
 const { getPasswordV2 } = usePersonalPassword();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const toastManager = ToastManager.inject();
 
 /* State */
 const signOnGoing = ref(false);
@@ -61,16 +60,17 @@ const handleSign = async (personalPassword: string|null) => {
       accountByIdCache,
       nodeByIdCache,
       publicKeyOwnerCache,
+      toastManager,
     );
 
     emit('transactionSigned', { transactionId: props.transactionId, signed });
     if (signed) {
-      toast.success('Transaction signed successfully', successToastOptions);
+      toastManager.success('Transaction signed successfully');
     } else {
-      toast.error('Transaction not signed', errorToastOptions);
+      toastManager.error('Transaction not signed');
     }
   } catch {
-    toast.error('Transaction not signed', errorToastOptions);
+    toastManager.error('Transaction not signed');
   } finally {
     signOnGoing.value = false;
   }

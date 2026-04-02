@@ -8,6 +8,19 @@ import * as unzipper from 'unzipper';
 import * as files from '@main/utils/files';
 import { abortFileSearch } from '@main/utils/files';
 
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+vi.mock('@main/modules/logger', () => ({
+  createLogger: () => mockLogger,
+}));
+
 const readStream = {
   on: vi.fn((event, callback) => {
     if (event === 'data') callback(); // Simulate data event
@@ -106,18 +119,16 @@ describe('Files utilities', () => {
       vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
       vi.mocked(fsp.rm).mockResolvedValue(undefined);
       processor.mockRejectedValue(new Error('Processing error'));
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = await files.searchFiles(['/file.pub'], extensions, processor);
       expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/\/file\.pub$/));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringMatching(/Error processing file/), expect.any(Error));
+      expect(mockLogger.error).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
 
     test('Should handle errors in recursiveSearch gracefully', async () => {
       vi.mocked(fsp.stat).mockRejectedValue(new Error('stat error'));
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = await files.searchFiles(['/badfile'], extensions, processor);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
 
@@ -127,9 +138,8 @@ describe('Files utilities', () => {
         isDirectory: () => true,
       } as any);
       vi.mocked(fsp.readdir).mockRejectedValue(new Error('readdir error'));
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const result = await files.searchFiles(['/dir'], extensions, processor);
-      expect(consoleSpy).toHaveBeenCalled();
+      expect(mockLogger.error).toHaveBeenCalled();
       expect(result).toEqual([]);
     });
 
@@ -224,17 +234,13 @@ describe('Files utilities', () => {
           return filePath;
         });
 
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
         const results = await files.searchFiles(['/archive.zip'], extensions, processor);
 
         expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/search_/), { recursive: true });
         expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/unzipped_/), { recursive: true });
 
-        expect(consoleSpy).toHaveBeenCalledWith('Delete search dirs error:', error);
+        expect(mockLogger.error).toHaveBeenCalled();
         expect(results).toEqual([]);
-
-        consoleSpy.mockRestore();
       });
     });
   });

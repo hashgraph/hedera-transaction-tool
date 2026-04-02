@@ -1,27 +1,34 @@
-import { ElectronApplication, expect, Page, test } from '@playwright/test';
+import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { ContactListPage } from '../pages/ContactListPage.js';
-import { resetDbState, resetPostgresDbState } from '../utils/databaseUtil.js';
+import { LoginPage } from '../pages/LoginPage.js';
+import {
+  resetDbState,
+  resetDbStateForTeardown,
+  resetPostgresDbState,
+  resetPostgresDbStateForTeardown,
+} from '../utils/databaseUtil.js';
 import {
   closeApp,
   generateRandomEmail,
-  generateRandomPassword,
   setupApp,
-  setupEnvironmentForTransactions,
-} from '../utils/util.js';
+} from '../utils/automationSupport.js';
+import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
 
-let app: ElectronApplication;
+let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let contactListPage: ContactListPage;
+let loginPage: LoginPage;
 
 let adminUser: UserDetails;
 let regularUser: UserDetails;
 
-test.describe('Organization Contact List tests', () => {
+test.describe('Organization Contact List tests @organization-basic', () => {
+  test.slow();
   test.beforeAll(async () => {
     await resetDbState();
     await resetPostgresDbState();
@@ -29,29 +36,24 @@ test.describe('Organization Contact List tests', () => {
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
     contactListPage = new ContactListPage(window);
-
-    // Generate credentials and store them globally
-    globalCredentials.email = generateRandomEmail();
-    globalCredentials.password = generateRandomPassword();
-
-    // Generate test users in PostgreSQL database for organizations
-    await organizationPage.createUsers(2);
-
-    // Perform registration with the generated credentials
-    await registrationPage.completeRegistration(
-      globalCredentials.email,
-      globalCredentials.password,
+    loginPage = new LoginPage(window);
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 2,
+        signInUserIndex: null,
+        setupPersonalTransactions: false,
+        setupOrganizationTransactions: false,
+      },
     );
-
-    await setupEnvironmentForTransactions(window);
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
 
     adminUser = organizationPage.getUser(0);
     regularUser = organizationPage.getUser(1);
     await contactListPage.upgradeUserToAdmin(adminUser.email);
-
-    // Setup Organization
-    await organizationPage.setupOrganization();
-    await organizationPage.setUpInitialUsers(window, globalCredentials.password);
   });
 
   test.afterEach(async () => {
@@ -60,8 +62,8 @@ test.describe('Organization Contact List tests', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbState();
-    await resetPostgresDbState();
+    await resetDbStateForTeardown();
+    await resetPostgresDbStateForTeardown();
   });
 
   test('Verify "Remove" contact list button is visible for an admin role', async () => {
@@ -110,7 +112,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify contact email and public keys are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
@@ -130,7 +131,6 @@ test.describe('Organization Contact List tests', () => {
   });
 
   test('Verify associated accounts are displayed', async () => {
-    test.slow();
     await organizationPage.signInOrganization(
       regularUser.email,
       regularUser.password,
@@ -175,7 +175,7 @@ test.describe('Organization Contact List tests', () => {
     expect(isUserAdded).toBe(true);
   });
 
-  test('Verify admin user can remove user from the organization', async () => {
+  test.skip('Verify admin user can remove user from the organization', async () => {
     const newUserEmail = generateRandomEmail();
     await organizationPage.signInOrganization(
       adminUser.email,

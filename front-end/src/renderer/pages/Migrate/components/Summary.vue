@@ -6,14 +6,16 @@ import { Hbar } from '@hashgraph/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.page.migrate.summary');
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SummaryItem from './SummaryItem.vue';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 defineProps<{
@@ -21,12 +23,14 @@ defineProps<{
   importedUserData: MigrateUserDataResult | null;
 }>();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+
 /* Stores */
 const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
 
 /* State */
 const recoveryPhraseItemRef = ref<HTMLElement | null>(null);
@@ -44,12 +48,12 @@ const handleCopy = (event: ClipboardEvent) => {
 
   if (recoveryPhraseItemRef.value instanceof HTMLElement && selection.rangeCount > 0) {
     const range = selection.getRangeAt(0);
-    console.log('range', range);
+    logger.debug('Selection range', { range });
     if (recoveryPhraseItemRef.value.contains(range.commonAncestorContainer)) {
       const strippedText = selectedText.replace(/\d+\.\s*/g, ', ');
       event.clipboardData?.setData('text/plain', strippedText);
       event.preventDefault();
-      toast.success('Selected text copied to clipboard', successToastOptions);
+      toastManager.success('Selected text copied to clipboard');
     }
   }
 };
@@ -58,7 +62,7 @@ const handleCopy = (event: ClipboardEvent) => {
 const copyRecoveryPhrase = () => {
   const recoveryPhrase = user.recoveryPhrase?.words.join(', ') || '';
   navigator.clipboard.writeText(recoveryPhrase).then(() => {
-    toast.success('Recovery phrase copied to clipboard', successToastOptions);
+    toastManager.success('Recovery phrase copied to clipboard');
   });
 };
 

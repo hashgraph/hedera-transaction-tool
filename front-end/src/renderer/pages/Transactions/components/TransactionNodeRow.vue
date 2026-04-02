@@ -22,6 +22,7 @@ import {
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import Tooltip from 'bootstrap/js/dist/tooltip';
+import { FEATURE_EXTERNAL_BADGE_ENABLED } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
@@ -29,6 +30,7 @@ const props = defineProps<{
   node: ITransactionNode;
   index: number;
   oldNotifications?: INotificationReceiver[];
+  recentlyUpdated?: boolean;
 }>();
 
 /* Emits */
@@ -242,14 +244,14 @@ watch(
     }
 
     const externalSignerKeys = await transactionAudit.externalSignerKeys.value;
-    isExternal.value = externalSignerKeys.size > 0;
+    isExternal.value = FEATURE_EXTERNAL_BADGE_ENABLED && externalSignerKeys.size > 0;
   },
   { immediate: true },
 );
 </script>
 
 <template>
-  <tr :class="{ highlight: hasNotifications }">
+  <tr :class="{ highlight: hasNotifications, 'recently-updated': recentlyUpdated }">
     <!-- Column #1 : Transaction Id -->
     <td :data-testid="`td-transaction-node-transaction-id-${index}`">
       <TransactionId
@@ -339,3 +341,14 @@ watch(
     </td>
   </tr>
 </template>
+
+<style scoped>
+.recently-updated :deep(td) {
+  animation: flash-update 3s ease-out;
+}
+@keyframes flash-update {
+  0%,
+  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
+  100% { background-color: transparent; }
+}
+</style>

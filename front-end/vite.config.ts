@@ -21,6 +21,14 @@ export default defineConfig(({ command }) => {
   const sourcemap = isServe || !!process.env.VSCODE_DEBUG;
 
   return {
+    css: {
+      preprocessorOptions: {
+        scss: {
+          api: 'modern-compiler',
+          silenceDeprecations: ['import', 'global-builtin', 'if-function', 'color-functions'],
+        },
+      },
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer'),
@@ -80,6 +88,7 @@ export default defineConfig(({ command }) => {
     },
     test: {
       globals: true,
+      setupFiles: ['src/tests/setup.ts'],
     },
     clearScreen: false,
   };

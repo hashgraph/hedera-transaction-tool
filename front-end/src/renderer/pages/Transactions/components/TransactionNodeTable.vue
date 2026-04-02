@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
-import {
-  type ITransactionNode,
-  TransactionNodeCollection,
-} from '../../../../../../shared/src/ITransactionNode.ts';
+import { type ITransactionNode, TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
 
 import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
 
@@ -14,9 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
-import useNextTransactionV2, {
-  type TransactionNodeId,
-} from '@renderer/stores/storeNextTransactionV2.ts';
+import useNextTransactionV2, { type TransactionNodeId } from '@renderer/stores/storeNextTransactionV2.ts';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -24,17 +19,18 @@ import TransactionNodeHead from '@renderer/pages/Transactions/components/Transac
 import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
-import { isLoggedInOrganization } from '@renderer/utils';
-import { errorToastOptions } from '@renderer/utils/toastOptions.ts';
+import { createLogger, isLoggedInOrganization } from '@renderer/utils';
 import {
-  sortTransactionNodes,
-  TransactionNodeSortField,
-  sortFieldToUrl,
   sortFieldFromUrl,
+  sortFieldToUrl,
+  sortTransactionNodes,
   TRANSACTION_NODE_SORT_URL_VALUES,
+  TransactionNodeSortField,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
-import { TRANSACTION_ACTION } from '@shared/constants';
+import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
+import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 
@@ -72,8 +68,42 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
-const toast = useToast();
-useWebsocketSubscription(TRANSACTION_ACTION, fetchNodes);
+const toastManager = ToastManager.inject();
+const logger = createLogger('renderer.transactions.nodeTable');
+const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) {
+    await fetchNodes();
+    return;
+  }
+
+  const silentFetch = () => fetchNodes({ silent: true });
+
+  // Status updates can move items between collections — always refetch
+  if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
+
+  // For non-status updates, only refetch if current items are affected
+  const txIds = new Set(parsed.transactionIds);
+  const grpIds = new Set(parsed.groupIds);
+  const hasMatch = nodes.value.some(n =>
+    (n.transactionId && txIds.has(n.transactionId)) ||
+    (n.groupId && grpIds.has(n.groupId)),
+  );
+  if (hasMatch) {
+    await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
+    return;
+  }
+
+  // Edge case: during initial load, nodes are still empty while isLoading is true.
+  if (isLoading.value && nodes.value.length === 0) {
+    await silentFetch();
+  }
+});
 /* Use mark notifications with computed types */
 const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
@@ -139,7 +169,10 @@ const routeToDetails = async (node: ITransactionNode) => {
     } else if (n.groupId) {
       nodeIds.push({ groupId: n.groupId });
     } else {
-      console.log('Malformed transaction node: ' + JSON.stringify(n));
+      logger.warn('Malformed transaction node encountered while routing', {
+        hasGroupId: 'groupId' in n && !!n.groupId,
+        hasTransactionId: 'transactionId' in n && !!n.transactionId,
+      });
     }
   }
   if (node.transactionId) {
@@ -159,7 +192,7 @@ const routeToDetails = async (node: ITransactionNode) => {
       true,
     );
   } else {
-    console.warn(`Malformed transaction node`);
+    logger.warn('Malformed transaction node selected for routing');
   }
 };
 
@@ -189,9 +222,9 @@ function initialSort() {
   return result;
 }
 
-async function fetchNodes(): Promise<void> {
+async function fetchNodes(options?: { silent?: boolean }): Promise<void> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    isLoading.value = true;
+    if (!options?.silent) isLoading.value = true;
     try {
       nodes.value = await getTransactionNodes(
         user.selectedOrganization.serverUrl,
@@ -203,7 +236,7 @@ async function fetchNodes(): Promise<void> {
       sortNodes();
       clampPage();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : loadErrorMessage.value, errorToastOptions);
+      toastManager.error(error instanceof Error ? error.message : loadErrorMessage.value);
     } finally {
       isLoading.value = false;
     }
@@ -271,9 +304,13 @@ onMounted(fetchNodes);
                 :node="node"
                 :index="index"
                 :old-notifications="oldNotifications"
+                :recently-updated="
+                  (node.transactionId != null && recentlyUpdatedTxIds.has(node.transactionId)) ||
+                  (node.groupId != null && recentlyUpdatedGroupIds.has(node.groupId))
+                "
                 @route-to-details="routeToDetails"
-                @transaction-signed="fetchNodes"
-                @transaction-group-signed="fetchNodes"
+                @transaction-signed="() => fetchNodes()"
+                @transaction-group-signed="() => fetchNodes()"
               />
             </template>
           </tbody>

@@ -7,7 +7,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { NodeUpdateTransaction, Transaction } from '@hashgraph/sdk';
 
 import { useRoute } from 'vue-router';
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
@@ -16,11 +16,11 @@ import { getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils'
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
-import { successToastOptions } from '@renderer/utils/toastOptions.ts';
+
 
 /* Composables */
 const route = useRoute();
-const toast = useToast();
+const toastManager = ToastManager.inject()
 const nodeData = useNodeId();
 const newNodeAccountData = useAccountId();
 
@@ -76,7 +76,7 @@ const handleUpdateData = (newData: NodeUpdateData) => {
 };
 
 const handleExecutedSuccess = async () => {
-  toast.success(`Node ${data.nodeAccountId} Updated`, successToastOptions);
+  toastManager.success(`Node ${data.nodeAccountId} Updated`);
 };
 
 /* Watchers */

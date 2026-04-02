@@ -3,14 +3,13 @@ import { computed, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { useToast } from 'vue-toast-notification';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { getErrorMessage } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
 
 /* Props */
 const props = defineProps<{
@@ -30,8 +29,8 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 
-/* Composables */
-const toast = useToast();
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* State */
 const isDeletingKey = ref(false);
@@ -56,17 +55,16 @@ const handleDelete = async () => {
         try {
           await user.deletePublicKeyMapping(id);
         } catch (error) {
-          toast.error(
+          toastManager.error(
             getErrorMessage(error, 'Unable to delete one or more public key mapping(s)'),
-            errorToastOptions,
           );
         }
       }
     }
 
-    toast.success('Public key mapping(s) deleted successfully', successToastOptions);
+    toastManager.success('Public key mapping(s) deleted successfully');
   } catch (error) {
-    toast.error(getErrorMessage(error, 'Failed to delete public key mapping(s)'), errorToastOptions);
+    toastManager.error(getErrorMessage(error, 'Failed to delete public key mapping(s)'));
   } finally {
     resetSelection();
     isDeletingKey.value = false;

@@ -454,7 +454,7 @@ describe('UsersService', () => {
   it('should throw if the email already exists', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
 
-    await expect(service.createUser(email, password)).rejects.toThrowError('Email already exists.');
+    await expect(service.createUser(email, password)).rejects.toThrow('Email already exists.');
   });
 
   it('should return user that verifies the email and password', async () => {

@@ -7,7 +7,9 @@
     "src/renderer/**/*",
     "src/renderer/**/*.vue",
     "src/preload/**/*.ts",
-    "src/tests/renderer",
+
+    "src/tests/renderer/**/*",
+
     "../shared/src/**/*.ts"
   ],
   "compilerOptions": {
@@ -35,5 +37,13 @@
     "noUncheckedIndexedAccess": false,
 
     "preserveSymlinks": true
+  },
+  "vueCompilerOptions": {
+    "strictVModel": true,
+    "strictCssModules": true,
+    "checkUnknownProps": false,
+    "checkUnknownEvents": true,
+    "checkUnknownDirectives": true,
+    "checkUnknownComponents": true
   }
 }
