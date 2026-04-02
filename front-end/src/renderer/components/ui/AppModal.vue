@@ -4,14 +4,12 @@ import { onBeforeUnmount, onMounted, ref } from 'vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    show?: boolean;
     closeOnEscape?: boolean;
     closeOnClickOutside?: boolean;
     scrollable?: boolean;
     loading?: boolean;
   }>(),
   {
-    show: false,
     closeOnEscape: true,
     closeOnClickOutside: true,
     scrollable: false,
@@ -19,8 +17,8 @@ const props = withDefaults(
   },
 );
 
-/* Emits */
-const emit = defineEmits(['update:show']);
+/* Model */
+const show = defineModel<boolean>('show', { required: true });
 
 /* State */
 const modalRef = ref<HTMLDivElement | null>(null);
@@ -28,7 +26,7 @@ const modalRef = ref<HTMLDivElement | null>(null);
 /* Handlers */
 const handleKeyDown = (event: KeyboardEvent) => {
   if (event.key === 'Escape' && props.closeOnEscape && props.loading !== true) {
-    emit('update:show', false);
+    show.value = false;
   }
 };
 
@@ -38,7 +36,7 @@ const handleClickOutside = (event: Event) => {
     props.closeOnClickOutside &&
     props.loading !== true
   ) {
-    emit('update:show', false);
+    show.value = false;
   }
 };
 
@@ -58,9 +56,9 @@ onBeforeUnmount(() => {
     v-bind="$attrs"
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
-    :inert="!props.show"
+    :inert="!show"
     data-testid="modal-confirm-transaction"
-    :style="{ display: props.show ? 'block' : 'none' }"
+    :style="{ display: show ? 'block' : 'none' }"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
       <div class="modal-content">
@@ -70,5 +68,5 @@ onBeforeUnmount(() => {
       </div>
     </div>
   </div>
-  <div :style="{ display: props.show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>
+  <div :style="{ display: show ? 'block' : 'none' }" class="modal-backdrop fade show"></div>
 </template>
