@@ -102,6 +102,8 @@ const isTransactionInProgress = (transaction: ITransaction) => {
     :actionCallback="handleCancelAll"
     confirm-title="Cancel all transactions?"
     confirm-text="Are you sure you want to cancel all transactions?"
+    action-button-text="Cancel all"
+    cancel-button-text="Do not cancel"
     progress-icon-name="group"
     progress-title="Canceling all transactions"
     :progress-text="progressText"
