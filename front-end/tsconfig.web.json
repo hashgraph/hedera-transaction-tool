@@ -21,7 +21,6 @@
       "@main/*": ["src/main/*"],
       "@shared/*": ["src/shared/*"],
       "@prisma/client": ["src/generated/prisma/browser.ts"],
-      "@prisma/client/*": ["src/generated/prisma/*"],
       "long": ["node_modules/long"]
     },
 
