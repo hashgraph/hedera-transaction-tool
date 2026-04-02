@@ -145,6 +145,7 @@ const isConfirmModalShown = ref(false);
 const confirmModalTitle = ref('');
 const confirmModalText = ref('');
 const confirmModalButtonText = ref('');
+const confirmModalCancelButtonText = ref('');
 const confirmModalLoadingText = ref('');
 const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
@@ -197,9 +198,7 @@ const canSign = computed(() => {
     return false;
   }
 
-  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
-
-  return userShouldSign;
+  return publicKeysRequiredToSign.value.length > 0;
 });
 
 const canApprove = computed(() => {
@@ -384,7 +383,8 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
     cancel: {
       title: 'Cancel Transaction?',
       text: 'Are you sure you want to cancel the transaction?',
-      buttonText: 'Confirm',
+      buttonText: 'Cancel transaction',
+      cancelButtonText: 'Do not cancel',
       loadingText: 'Canceling…',
       successMessage: 'Transaction canceled successfully',
       actionFunction: cancelTransaction,
@@ -392,7 +392,8 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
     archive: {
       title: 'Archive Transaction?',
       text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
-      buttonText: 'Confirm',
+      buttonText: 'Archive transaction',
+      cancelButtonText: 'Do not archive',
       loadingText: 'Archiving…',
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
@@ -400,7 +401,8 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
     execute: {
       title: 'Schedule Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
-      buttonText: 'Confirm',
+      buttonText: 'Schedule transaction',
+      cancelButtonText: 'Do not schedule',
       loadingText: 'Scheduling…',
       successMessage: 'Transaction scheduled for execution successfully',
       actionFunction: executeTransaction,
@@ -408,20 +410,22 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
     remindSigners: {
       title: 'Remind Signers?',
       text: 'All signers that have not yet signed will be sent a notification.',
-      buttonText: 'Confirm',
+      buttonText: 'Send reminders',
+      cancelButtonText: 'Do not send',
       loadingText: 'Sending…',
       successMessage: 'Signers reminded successfully',
       actionFunction: remindSigners,
     },
   };
 
-  const { title, text, buttonText, loadingText, successMessage, actionFunction } =
+  const { title, text, buttonText, loadingText, cancelButtonText, successMessage, actionFunction } =
     actionDetails[action];
 
   if (showModal) {
     confirmModalTitle.value = title;
     confirmModalText.value = text;
     confirmModalButtonText.value = buttonText;
+    confirmModalCancelButtonText.value = cancelButtonText;
     confirmCallback.value = () => handleTransactionAction(action);
     isConfirmModalShown.value = true;
     return;
@@ -674,6 +678,7 @@ watch(
     :text="confirmModalText"
     :title="confirmModalTitle"
     :button-text="confirmModalButtonText"
+    :cancel-button-text="confirmModalCancelButtonText"
     :loading-text="confirmModalLoadingText"
     :loading="isConfirmModalLoadingState"
   />
