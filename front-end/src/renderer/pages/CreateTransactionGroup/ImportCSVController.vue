@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createLogger, createTransactionId } from '@renderer/utils';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';

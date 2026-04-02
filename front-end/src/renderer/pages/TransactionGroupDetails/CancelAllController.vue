@@ -11,7 +11,7 @@ import {
   type IGroupItem,
 } from '@renderer/services/organization';
 import { getCancelGroupToast } from '@renderer/pages/TransactionGroupDetails/cancelGroupResult.ts';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 
 /* Props */
 const props = defineProps<{
