@@ -10,16 +10,25 @@ const persistenceTime = dohertyThreshold * 3;
 
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
-const props = defineProps<{
-  actionCallback: (personalPassword: string | null) => Promise<void>;
-  confirmTitle?: string;
-  confirmText?: string;
-  personalPasswordRequired?: boolean;
-  progressIconName: CustomIcon;
-  progressTitle: string;
-  progressText: string;
-  dataTestid?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    actionCallback: (personalPassword: string | null) => Promise<void>;
+    confirmTitle?: string;
+    confirmText?: string;
+    actionButtonText?: string;
+    cancelButtonText?: string;
+    personalPasswordRequired?: boolean;
+    progressIconName: CustomIcon;
+    progressTitle: string;
+    progressText: string;
+    dataTestid?: string;
+  }>(),
+  {
+    actionButtonText: 'Confirm',
+    cancelButtonText: 'Cancel',
+    personalPasswordRequired: false,
+  },
+);
 
 /* Composables */
 const { getPasswordAsync } = usePersonalPassword();
@@ -113,6 +122,8 @@ watch(activate, async () => {
     :text="confirmationProps.confirmText"
     :callback="handleConfirm"
     :cancel="handleCancel"
+    :button-text="props.actionButtonText"
+    :cancel-button-text="props.cancelButtonText"
     :data-testid="confirmationProps.dataTestid"
   />
 
