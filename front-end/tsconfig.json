@@ -7,8 +7,7 @@
       "@main/*": ["src/main/*"],
       "@renderer/*": ["src/renderer/*"],
       "@shared/*": ["src/shared/*"],
-      "@prisma/client": ["src/generated/prisma/client.ts"],
-      "@prisma/client/*": ["src/generated/prisma/*"]
+      "@prisma/client": ["src/generated/prisma/client.ts"]
     }
   },
   "references": [{ "path": "./tsconfig.node.json" }, { "path": "./tsconfig.web.json" }]
