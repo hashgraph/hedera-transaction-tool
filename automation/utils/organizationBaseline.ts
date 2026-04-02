@@ -1,4 +1,4 @@
-import { Mnemonic } from '@hashgraph/sdk';
+import { Mnemonic } from '@hiero-ledger/sdk';
 import { Page } from '@playwright/test';
 import type { LoginPage } from '../pages/LoginPage.js';
 import type { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';

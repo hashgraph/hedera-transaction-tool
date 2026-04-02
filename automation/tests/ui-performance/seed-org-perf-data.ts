@@ -19,7 +19,7 @@ import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { DEBUG } from './performanceUtils.js';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 import {
   generateSimpleComplexKey,
   generateHederaStyleComplexKey,
@@ -368,8 +368,8 @@ export async function refreshCachedAccountTimestamp(client?: Client): Promise<vo
     }
 
     // Read the test mnemonic and derive the public key
-    const { Mnemonic } = await import('@hashgraph/sdk');
-    const { proto } = await import('@hashgraph/proto');
+    const { Mnemonic } = await import('@hiero-ledger/sdk');
+    const { proto } = await import('@hiero-ledger/proto');
 
     const mnemonicWords = readSeedMnemonic();
     const mnemonic = await Mnemonic.fromString(mnemonicWords.join(' '));

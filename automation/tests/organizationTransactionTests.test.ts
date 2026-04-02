@@ -19,7 +19,7 @@ import {
   waitForValidStart,
 } from '../utils/automationSupport.js';
 import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
-import { PrivateKey, Transaction } from '@hashgraph/sdk';
+import { PrivateKey, Transaction } from '@hiero-ledger/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
 import JSZip from 'jszip';

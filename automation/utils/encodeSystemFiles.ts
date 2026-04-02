@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 import Long from 'long';
-import { AccountId } from '@hashgraph/sdk';
+import { AccountId } from '@hiero-ledger/sdk';
 
 /**
  * Reads the exchange rates JSON file, encodes it into binary, and writes to a .bin file.
