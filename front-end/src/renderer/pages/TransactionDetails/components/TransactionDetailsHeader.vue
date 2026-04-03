@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
 import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, reactive, ref, watch } from 'vue';
@@ -15,21 +15,15 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
-import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-
 import { getUserShouldApprove } from '@renderer/services/organization';
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
+import { showSaveDialog } from '@renderer/services/electronUtilsService';
 
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   generateTransactionExportFileName,
-  generateTransactionV1ExportContent,
-  generateTransactionV2ExportContent,
   getErrorMessage,
   getLastExportExtension,
-  getPrivateKey,
   hexToUint8Array,
   isLoggedInOrganization,
   setLastExportExtension,
@@ -37,14 +31,12 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
@@ -59,6 +51,7 @@ import ScheduleTransactionController from '@renderer/pages/TransactionDetails/Sc
 import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 import ApproveTransactionController from '@renderer/pages/TransactionDetails/ApproveTransactionController.vue';
+import ExportTransactionController from '@renderer/pages/TransactionDetails/ExportTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -126,7 +119,6 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
-const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
@@ -136,21 +128,12 @@ const toastManager = ToastManager.inject();
 
 /* State */
 const isTransactionVersionMismatch = ref(false);
-const isConfirmModalShown = ref(false);
-const confirmModalTitle = ref('');
-const confirmModalText = ref('');
-const confirmModalButtonText = ref('');
-const confirmModalCancelButtonText = ref('');
-const confirmModalLoadingText = ref('');
-const confirmCallback = ref<((...args: any[]) => void) | null>(null);
-
 const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
   [sign]: null,
 });
-const isConfirmModalLoadingState = ref(false);
 
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
@@ -159,6 +142,8 @@ const signStarted = ref(false);
 const goNextAfterSign = ref(false);
 const approveStarted = ref(false);
 const isApproved = ref(false);
+const exportStarted = ref(false);
+const exportFilePath = ref<string | null>(null);
 const cancelStarted = ref(false);
 const archiveStarted = ref(false);
 const scheduleStarted = ref(false);
@@ -259,80 +244,44 @@ const handleBack = async () => {
 };
 
 const handleExport = async () => {
-  if (!props.sdkTransaction || !props.organizationTransaction) {
-    throw new Error('(BUG) Transaction is not available');
-  }
-
   assertUserLoggedIn(user.personal);
+  if (props.sdkTransaction instanceof SDKTransaction && props.organizationTransaction !== null) {
+    // Load the last export format the user selected, if applicable
+    const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
+    const defaultFormat =
+      getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
 
-  /* Verifies the user has entered his password */
-  const personalPassword = getPassword(handleExport, {
-    subHeading: 'Enter your application password to export the transaction',
-  });
-  if (passwordModalOpened(personalPassword)) return;
+    // Move the default format to the top
+    enabledFormats.sort((a /*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
 
-  // Load the last export format the user selected, if applicable
-  const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
-  const defaultFormat =
-    getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
+    // Generate the default base name for the file
+    const baseName = generateTransactionExportFileName(props.organizationTransaction);
 
-  // Move the default format to the top
-  enabledFormats.sort((a /*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
-
-  // Generate the default base name for the file
-  const baseName = generateTransactionExportFileName(props.organizationTransaction);
-
-  // Show the save dialog to the user, allowing them to choose the file name and location
-  const { filePath, canceled } = await showSaveDialog(
-    `${baseName || 'transaction'}`,
-    'Export transaction',
-    'Export',
-    enabledFormats,
-    'Export transaction',
-  );
-
-  if (canceled || !filePath) {
-    return;
-  }
-
-  // Save selected format to local storage
-  const ext = filePath.split('.').pop();
-  if (!ext || !EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
-    throw new Error(`Unsupported file extension: ${ext}`);
-  }
-  setLastExportExtension(ext);
-
-  // Create file(s) based on name and selected format
-  if (ext === 'tx2') {
-    // Export TTv2 --> TTv2
-    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
-      [props.organizationTransaction],
-      network.network,
+    // Show the save dialog to the user, allowing them to choose the file name and location
+    const { filePath, canceled } = await showSaveDialog(
+      `${baseName || 'transaction'}`,
+      'Export transaction',
+      'Export',
+      enabledFormats,
+      'Export transaction',
     );
-    await writeTransactionFile(tx2Content, filePath);
 
-    toastManager.success('Transaction exported successfully');
-  } else if (ext === 'tx') {
-    // Export TTv2 --> TTv1
-    if (user.publicKeys.length === 0) {
-      throw new Error(
-        'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
-      );
+    if (canceled || !filePath) {
+      return;
     }
-    const publicKey = user.publicKeys[0]; // get the first key pair's public key
-    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-    const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
-      props.organizationTransaction,
-      privateKey,
-    );
+    // Save selected format to local storage
+    const ext = filePath.split('.').pop();
+    if (!ext || !EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
+      throw new Error(`Unsupported file extension: ${ext}`);
+    }
+    setLastExportExtension(ext);
 
-    await saveFileToPath(transactionBytes, filePath);
-    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
-    await saveFileToPath(jsonContent, txtFilePath);
-
-    toastManager.success('Transaction exported successfully');
+    exportFilePath.value = filePath;
+    exportStarted.value = true;
+  } else {
+    // Bug
+    toastManager.error('Unable to export: transaction is not available');
   }
 };
 
@@ -376,7 +325,7 @@ watch(
       return;
     }
 
-    const approvePromise = FEATURE_APPROVERS_ENABLED
+    const approvePromise: Promise<boolean> = FEATURE_APPROVERS_ENABLED
       ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
       : Promise.resolve(false);
 
@@ -478,6 +427,14 @@ watch(
     :sdk-transaction="props.sdkTransaction"
     :transaction="props.organizationTransaction"
   />
+  <ExportTransactionController
+    v-if="exportFilePath"
+    v-model:activate="exportStarted"
+    :callback="props.onAction"
+    :file-path="exportFilePath"
+    :sdk-transaction="props.sdkTransaction"
+    :transaction="props.organizationTransaction"
+  />
   <CancelTransactionController
     v-model:activate="cancelStarted"
     :callback="props.onAction"
@@ -497,17 +454,5 @@ watch(
     v-model:activate="remindSignersStarted"
     :callback="props.onAction"
     :transaction="props.organizationTransaction"
-  />
-
-  <AppConfirmModal
-    v-model:show="isConfirmModalShown"
-    :button-text="confirmModalButtonText"
-    :callback="confirmCallback"
-    :cancel-button-text="confirmModalCancelButtonText"
-    :loading="isConfirmModalLoadingState"
-    :loading-text="confirmModalLoadingText"
-    :text="confirmModalText"
-    :title="confirmModalTitle"
-    data-testid="button-group-action"
   />
 </template>
