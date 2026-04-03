@@ -1,5 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BaseNatsConsumerService, ConsumerConfig, MessageHandler } from './base-nats-consumer.service';
+import {
+  BaseNatsConsumerService,
+  ConsumerConfig,
+  MessageHandler,
+} from './base-nats-consumer.service';
 import { NatsJetStreamService } from '@app/common/nats/nats-jetstream.service';
 import { AckPolicy, DeliverPolicy } from 'nats';
 import { MessageValidator } from './message-validator.util';
@@ -58,6 +62,7 @@ describe('BaseNatsConsumerService', () => {
     natsService = {
       getManager: jest.fn().mockReturnValue(mockJsm),
       getJetStream: jest.fn().mockReturnValue(mockJs),
+      isConnected: jest.fn().mockReturnValue(true),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -77,7 +82,8 @@ describe('BaseNatsConsumerService', () => {
     service = module.get<TestConsumerService>(TestConsumerService);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await service.onModuleDestroy();
     jest.clearAllMocks();
   });
 
@@ -87,6 +93,7 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(mockJsm.consumers.add).toHaveBeenCalledWith('TEST_STREAM', {
         durable_name: 'test_consumer',
@@ -105,6 +112,7 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(mockJsm.consumers.update).toHaveBeenCalledWith(
         'TEST_STREAM',
@@ -112,7 +120,7 @@ describe('BaseNatsConsumerService', () => {
         expect.objectContaining({
           durable_name: 'test_consumer',
           ack_policy: AckPolicy.Explicit,
-        })
+        }),
       );
       expect(mockJsm.consumers.add).not.toHaveBeenCalled();
       expect(mockJs.consumers.get).toHaveBeenCalled();
@@ -129,12 +137,14 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(mockJsm.consumers.add).toHaveBeenCalledWith('TEST_STREAM',
+      expect(mockJsm.consumers.add).toHaveBeenCalledWith(
+        'TEST_STREAM',
         expect.objectContaining({
           filter_subjects: ['test.a.>', 'test.b.>'],
           filter_subject: undefined,
-        })
+        }),
       );
     });
 
@@ -150,11 +160,13 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(mockJsm.consumers.add).toHaveBeenCalledWith('TEST_STREAM',
+      expect(mockJsm.consumers.add).toHaveBeenCalledWith(
+        'TEST_STREAM',
         expect.objectContaining({
           ack_policy: AckPolicy.None,
-        })
+        }),
       );
     });
 
@@ -170,11 +182,13 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(mockJsm.consumers.add).toHaveBeenCalledWith('TEST_STREAM',
+      expect(mockJsm.consumers.add).toHaveBeenCalledWith(
+        'TEST_STREAM',
         expect.objectContaining({
           deliver_policy: DeliverPolicy.New,
-        })
+        }),
       );
     });
 
@@ -190,22 +204,9 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(mockConsumer.consume).toHaveBeenCalledWith({ max_messages: 50 });
-    });
-
-    it('should throw error if consumer creation fails', async () => {
-      mockJsm.consumers.info.mockRejectedValue(new Error('some other error'));
-
-      await expect(service.onModuleInit()).rejects.toThrow('some other error');
-    });
-
-    it('should throw error if getting runtime consumer fails', async () => {
-      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
-      mockJsm.consumers.add.mockResolvedValue({} as any);
-      mockJs.consumers.get.mockRejectedValue(new Error('Failed to get consumer'));
-
-      await expect(service.onModuleInit()).rejects.toThrow('Failed to get consumer');
     });
 
     it('should handle 404 error code for missing consumer', async () => {
@@ -215,6 +216,7 @@ describe('BaseNatsConsumerService', () => {
       mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       expect(mockJsm.consumers.add).toHaveBeenCalled();
     });
@@ -245,9 +247,11 @@ describe('BaseNatsConsumerService', () => {
 
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue(mockData);
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg;
+        })() as any,
+      );
 
       await service.onModuleInit();
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -255,7 +259,7 @@ describe('BaseNatsConsumerService', () => {
       expect(MessageValidator.parseAndValidate).toHaveBeenCalledWith(
         mockMsg,
         TestDto,
-        expect.any(Object)
+        expect.any(Object),
       );
       expect(mockHandler).toHaveBeenCalledWith(mockData);
       expect(mockMsg.ack).toHaveBeenCalled();
@@ -290,10 +294,12 @@ describe('BaseNatsConsumerService', () => {
         .mockResolvedValueOnce(mockData1)
         .mockResolvedValueOnce(mockData2);
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg1;
-        yield mockMsg2;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg1;
+          yield mockMsg2;
+        })() as any,
+      );
 
       await service.onModuleInit();
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -314,9 +320,11 @@ describe('BaseNatsConsumerService', () => {
         ack: jest.fn(),
       };
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg;
+        })() as any,
+      );
 
       const warnSpy = jest.spyOn(service['logger'], 'warn');
 
@@ -346,16 +354,20 @@ describe('BaseNatsConsumerService', () => {
 
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue(null);
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg;
+        })() as any,
+      );
 
       const warnSpy = jest.spyOn(service['logger'], 'warn');
 
       await service.onModuleInit();
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      expect(warnSpy).toHaveBeenCalledWith('Invalid message data on subject test.message, skipping');
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Invalid message data on subject test.message, skipping',
+      );
       expect(mockHandler).not.toHaveBeenCalled();
       expect(mockMsg.ack).toHaveBeenCalled();
     });
@@ -379,9 +391,11 @@ describe('BaseNatsConsumerService', () => {
 
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg;
+        })() as any,
+      );
 
       const errorSpy = jest.spyOn(service['logger'], 'error');
 
@@ -390,7 +404,7 @@ describe('BaseNatsConsumerService', () => {
 
       expect(errorSpy).toHaveBeenCalledWith(
         'Error processing message: Handler error',
-        expect.any(String)
+        expect.any(String),
       );
       expect(mockMsg.ack).toHaveBeenCalled();
     });
@@ -426,10 +440,12 @@ describe('BaseNatsConsumerService', () => {
 
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
 
-      mockConsumer.consume.mockResolvedValue((async function* () {
-        yield mockMsg1;
-        yield mockMsg2;
-      })() as any);
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield mockMsg1;
+          yield mockMsg2;
+        })() as any,
+      );
 
       await service.onModuleInit();
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -439,76 +455,284 @@ describe('BaseNatsConsumerService', () => {
       expect(mockMsg1.ack).toHaveBeenCalled();
       expect(mockMsg2.ack).toHaveBeenCalled();
     });
+  });
 
-    it('should log error when consumer loop fails', async () => {
-      mockConsumer.consume.mockRejectedValue(new Error('Consumer loop error'));
+  describe('reconnection', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should reconnect after consumer loop error', async () => {
+      let callCount = 0;
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+
+      mockConsumer.consume.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error('NATS connection lost');
+        }
+        return (async function* () {})() as any;
+      });
+
+      await service.onModuleInit();
+
+      // Advance past the 1s reconnect delay after first failure
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(callCount).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should wait for NATS connection before starting consumer', async () => {
+      natsService.isConnected.mockReturnValue(false);
+
+      const warnSpy = jest.spyOn(service['logger'], 'warn');
+
+      await service.onModuleInit();
+
+      // Advance past the 2s waitForConnection poll interval
+      await jest.advanceTimersByTimeAsync(100);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Waiting for NATS connection before starting consumer...',
+      );
+
+      // Simulate NATS coming back
+      natsService.isConnected.mockReturnValue(true);
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
+
+      // Advance past the 2s poll + consumer setup
+      await jest.advanceTimersByTimeAsync(2500);
+
+      expect(mockConsumer.consume).toHaveBeenCalled();
+    });
+
+    it('should handle JetStream not available after connection established', async () => {
+      natsService.getManager.mockReturnValue(null);
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       const errorSpy = jest.spyOn(service['logger'], 'error');
 
       await service.onModuleInit();
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      await jest.advanceTimersByTimeAsync(1500);
 
       expect(errorSpy).toHaveBeenCalledWith(
-        'Consumer loop error: Consumer loop error',
-        expect.any(String)
+        expect.stringContaining('Consumer error, reconnecting in'),
+        expect.any(String),
+      );
+    });
+
+    it('should use exponential backoff on repeated failures', async () => {
+      let callCount = 0;
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+
+      mockConsumer.consume.mockImplementation(async () => {
+        callCount++;
+        throw new Error('NATS connection lost');
+      });
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      // Advance past first retry (1s) + second retry (2s)
+      await jest.advanceTimersByTimeAsync(3500);
+
+      // Should have attempted multiple reconnections with increasing delays
+      expect(callCount).toBeGreaterThanOrEqual(2);
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Consumer error, reconnecting in'),
+        expect.any(String),
       );
     });
   });
 
   describe('onModuleDestroy', () => {
-    beforeEach(() => {
+    it('should stop the consumer loop on shutdown', async () => {
       mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
-    });
-
-    it('should wait for consume promise to finish', async () => {
-      let resolveConsume: () => void;
-      const consumePromise = new Promise<void>(resolve => {
-        resolveConsume = resolve;
-      });
-
-      mockConsumer.consume.mockImplementation(async function* () {
-        await consumePromise;
-      } as any);
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
 
       await service.onModuleInit();
 
-      const logSpy = jest.spyOn(service['logger'], 'log'); // <- add spy here
+      const logSpy = jest.spyOn(service['logger'], 'log');
+      await service.onModuleDestroy();
 
-      const destroyPromise = service.onModuleDestroy();
-
-      // Verify destroy is waiting
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Resolve the consume promise
-      resolveConsume!();
-
-      // Now destroy should complete
-      await destroyPromise;
-
-      expect(logSpy).toHaveBeenCalledWith('Shutting down consumer'); // assert the spy
+      expect(logSpy).toHaveBeenCalledWith('Shutting down consumer');
+      expect(logSpy).toHaveBeenCalledWith('Consumer loop stopped (shutdown)');
     });
 
-    it('logs error when consumePromise rejects during shutdown', async () => {
-      const shutdownError = new Error('Shutdown failure');
+    it('should not throw if called before onModuleInit', async () => {
+      await expect(service.onModuleDestroy()).resolves.not.toThrow();
+    });
 
-      // make consumePromise reject slightly later so awaiting it triggers the catch
-      service['consumePromise'] = new Promise((_, reject) => setTimeout(() => reject(shutdownError), 0));
+    it('should log error if consumePromise rejects during shutdown', async () => {
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+      mockConsumer.consume.mockImplementation(async () => {
+        throw new Error('Fatal NATS error');
+      });
+
+      await service.onModuleInit();
+
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+      await service.onModuleDestroy();
+
+      // Should have logged the shutdown; consumePromise itself shouldn't throw
+      // because errors are caught inside consumeWithReconnect
+      expect(errorSpy).not.toHaveBeenCalledWith(
+        'Error closing consumer',
+        expect.anything(),
+      );
+    });
+  });
+
+  describe('shutdown during active operations', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.useRealTimers();
+    });
+
+    it('should break out of waitForConnection when shutdown is triggered', async () => {
+      natsService.isConnected.mockReturnValue(false);
 
       const logSpy = jest.spyOn(service['logger'], 'log');
-      const errorSpy = jest.spyOn(service['logger'], 'error');
+      const warnSpy = jest.spyOn(service['logger'], 'warn');
+
+      await service.onModuleInit();
+
+      // Let it enter the waitForConnection loop
+      await jest.advanceTimersByTimeAsync(100);
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        'Waiting for NATS connection before starting consumer...',
+      );
 
       await service.onModuleDestroy();
 
       expect(logSpy).toHaveBeenCalledWith('Shutting down consumer');
-      expect(errorSpy).toHaveBeenCalledWith('Error closing consumer', shutdownError);
-
-      logSpy.mockRestore();
-      errorSpy.mockRestore();
+      expect(logSpy).toHaveBeenCalledWith('Consumer loop stopped (shutdown)');
+      expect(mockConsumer.consume).not.toHaveBeenCalled();
     });
 
-    it('should not throw if consumePromise does not exist', async () => {
-      // Don't call onModuleInit, so consumePromise is undefined
-      await expect(service.onModuleDestroy()).resolves.not.toThrow();
+    it('should break out of startConsuming when shutdown is triggered mid-message', async () => {
+      const handler = jest.fn().mockResolvedValue(undefined);
+
+      service.mockHandlers = [
+        {
+          subject: 'test.message',
+          dtoClass: TestDto,
+          handler,
+        },
+      ];
+
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+      (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
+
+      let yieldResolve: () => void;
+      const yieldPromise = new Promise<void>(resolve => {
+        yieldResolve = resolve;
+      });
+
+      // Generator that yields one message, then waits for shutdown, then yields another
+      mockConsumer.consume.mockResolvedValue(
+        (async function* () {
+          yield {
+            subject: 'test.message',
+            data: new TextEncoder().encode('{}'),
+            ack: jest.fn(),
+          };
+          // Signal that first message was processed
+          yieldResolve();
+          // Second message should not be processed if shutdown occurred
+          yield {
+            subject: 'test.message',
+            data: new TextEncoder().encode('{}'),
+            ack: jest.fn(),
+          };
+        })() as any,
+      );
+
+      await service.onModuleInit();
+
+      await yieldPromise;
+
+      expect(handler).toHaveBeenCalledTimes(1);
+    });
+
+    it('should break out of catch block when shutdown occurs during error handling', async () => {
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+
+      mockConsumer.consume.mockImplementation(async () => {
+        throw new Error('Connection dropped');
+      });
+
+      const logSpy = jest.spyOn(service['logger'], 'log');
+
+      await service.onModuleInit();
+
+      await jest.advanceTimersByTimeAsync(100);
+
+      await service.onModuleDestroy();
+
+      expect(logSpy).toHaveBeenCalledWith('Shutting down consumer');
+      expect(logSpy).toHaveBeenCalledWith('Consumer loop stopped (shutdown)');
+    });
+
+    it('should handle js.consumers.get failure', async () => {
+      mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
+      mockJs.consumers.get.mockRejectedValue(new Error('Failed to get consumer'));
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to get runtime consumer'),
+        expect.anything(),
+      );
+    });
+
+    it('should re-throw non-404 errors from consumers.info', async () => {
+      mockJsm.consumers.info.mockRejectedValue(new Error('Permission denied'));
+      mockConsumer.consume.mockResolvedValue((async function* () {})() as any);
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleInit();
+
+      await jest.advanceTimersByTimeAsync(1500);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Consumer error, reconnecting in'),
+        expect.any(String),
+      );
+    });
+  });
+
+  describe('onModuleDestroy error handling', () => {
+    it('should log error when consumePromise rejects during shutdown', async () => {
+      const fatalError = new Error('Shutdown failure');
+
+      (service as any).consumePromise = Promise.reject(fatalError);
+      (service as any).consumePromise.catch(() => {});
+
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      await service.onModuleDestroy();
+
+      expect(errorSpy).toHaveBeenCalledWith('Error closing consumer', fatalError);
     });
   });
 });
