@@ -1,169 +1,172 @@
-# Hedera Transaction Tool Tests
+# Hedera Transaction Tool Automation
 
-This project contains automated tests for the Hedera Transaction Tool, designed to ensure the reliability and
-functionality of the application. The tests are written using [Playwright](https://playwright.dev/), a powerful
-framework for testing web applications across different browsers.
+This folder contains automated test tooling for Hedera Transaction Tool:
+
+- Playwright functional end-to-end tests (`tests/*.test.ts`)
+- Playwright UI performance tests (`tests/ui-performance`)
+- k6 API/load test scripts (`k6/`)
 
 ## Prerequisites
 
-Before you begin, ensure you have the following installed on your system:
-
-- Node.js: `20.17.0`
-
-Additionally, you should either:
-
-- have the Hedera Transaction Tool executable installed and know its path, or
-- run the front-end Electron app in dev mode with remote debugging enabled if you want to attach to an existing app
-  instance.
+- Node.js `20.17.0`
+- `pnpm`
+- One of:
+  - a built Hedera Transaction Tool executable (launch mode), or
+  - a running front-end Electron app with remote debugging enabled (attach mode)
 
 ## Setup
 
-1. **Clone the repository** to your local machine using Git:
+1. Clone the repository.
+2. Go to the automation folder:
 
    ```bash
-   git clone <repository-url>
+   cd hedera-transaction-tool/automation
    ```
 
-2. **Navigate to the project directory**:
-
-   ```bash
-   cd hedera-transaction-tool\automation
-   ```
-
-3. **Install dependencies** by running:
+3. Install dependencies:
 
    ```bash
    pnpm install
-   pnpm approve-builds # if required by pnpm install
+   pnpm approve-builds # only if pnpm requests approval
    ```
 
-4. **Configure the environment variables** by creating a `.env` file in the root of the project.
-
-   Launch mode example:
-
-   ```env
-   ELECTRON_APP_MODE='launch'
-   EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
-   PRIVATE_KEY='your_private_key_here'
-   ENVIRONMENT='LOCALNET'
-   ORGANIZATION_URL: URL for your organization, e.g., https://localhost:3001.
-
-   POSTGRES_HOST: Host of your PostgreSQL server
-   POSTGRES_PORT: Port for your PostgreSQL server
-   POSTGRES_DATABASE: Name of your PostgreSQL database
-   POSTGRES_USERNAME: Username for your PostgreSQL database
-   POSTGRES_PASSWORD: Password for your PostgreSQL database
-   ```
-
-   Attach mode example:
-
-   ```env
-   ELECTRON_APP_MODE='attach'
-   ELECTRON_ATTACH_URL='http://127.0.0.1:9222'
-   PRIVATE_KEY='your_private_key_here'
-   ENVIRONMENT='LOCALNET'
-   ```
-
-   If you use attach mode, start the front-end first from `front-end/`:
+4. Create your env file:
 
    ```bash
-   PLAYWRIGHT_TEST=true ELECTRON_REMOTE_DEBUGGING_PORT=9222 pnpm dev
+   cp example.env .env
    ```
 
-   Replace `ENVIRONMENT` with variable that can be set to `TESTNET`, `PREVIEWNET` or `LOCALNET`.
+## Environment Configuration
 
-   Depending on the environment selected:
+Launch mode example:
 
-   - TESTNET: Use your ECDSA private keys.
-   - PREVIEWNET: Use your ECDSA private keys.
-   - LOCALNET: Use your ED25519 private keys.
+```env
+ELECTRON_APP_MODE='launch'
+EXECUTABLE_PATH='/Applications/Hedera Transaction Tool.app/Contents/MacOS/Hedera Transaction Tool'
+PLAYWRIGHT_TEST=true
+PLAYWRIGHT_WORKERS=2
+PLAYWRIGHT_SHARED_ENV=true
 
-## Running Tests
+PRIVATE_KEY= # hex encoded
+OPERATOR_KEY= # DER encoded
+ENVIRONMENT='LOCALNET'
 
-To run all tests, execute the following command from the root of the project:
+ORGANIZATION_URL='https://localhost:3001'
 
-```bash
-npx playwright test
+POSTGRES_HOST=localhost
+POSTGRES_PORT=5432
+POSTGRES_DATABASE=postgres
+POSTGRES_USERNAME=postgres
+POSTGRES_PASSWORD=postgres
 ```
 
-This will launch Playwright and execute the test suites defined in the project, outputting the results to your terminal.
+Attach mode example:
 
-## Current Тest Suites
-
-### 1. Registration tests
-
-```bash
-npx playwright test tests/RegistrationTests
+```env
+ELECTRON_APP_MODE='attach'
+ELECTRON_ATTACH_URL='http://127.0.0.1:9222'
+ELECTRON_REMOTE_DEBUGGING_PORT='9222'
+ELECTRON_ATTACH_TIMEOUT_MS='30000'
 ```
 
-### 2. Login tests
+If you use attach mode, start the front-end first from `front-end/`:
 
 ```bash
-npx playwright test tests/LoginTests
+PLAYWRIGHT_TEST=true ELECTRON_REMOTE_DEBUGGING_PORT=9222 pnpm dev
 ```
 
-### 3. Settings tests
+`ENVIRONMENT` can be `LOCALNET`, `TESTNET`, or `PREVIEWNET`.
+
+- `TESTNET` / `PREVIEWNET`: use ECDSA keys
+- `LOCALNET`: use ED25519 keys
+
+## Running Playwright Tests
+
+Run all Playwright tests:
 
 ```bash
-npx playwright test tests/SettingsTests
+pnpm test
 ```
 
-### 4. Transactions tests
+List all discovered tests:
 
 ```bash
-npx playwright test tests/TransactionTests
+pnpm test:list
 ```
 
-### 5. Workflow tests
+Run all tests without the TypeScript pre-step:
 
 ```bash
-npx playwright test tests/WorkflowTests
+pnpm exec playwright test
 ```
 
-### 6. Organization Settings tests
+Run the shared E2E buckets by tag:
 
 ```bash
-npx playwright test tests/OrganizationSettingsTests
+pnpm exec playwright test --grep '@local-transactions|@organization-basic|@organization-advanced'
 ```
 
-### 7. Organization Transaction tests
+Run a single suite:
 
 ```bash
-npx playwright test tests/OrganizationTransactionTests
+pnpm exec playwright test tests/local-basic/registrationTests.test.ts
 ```
 
-### 8. Organization Contact list tests
+Run all UI performance tests:
 
 ```bash
-npx playwright test tests/OrganizationContactListTests
+pnpm exec playwright test tests/ui-performance
 ```
 
-### 9. Organization Regression tests
+Open the Playwright HTML report:
 
 ```bash
-npx playwright test tests/organizationRegressionTests
+pnpm report:playwright
 ```
 
-### 10. Organization Notification tests
+## Parallelism Model
 
-```bash
-npx playwright test tests/OrganizationNotificationTests
-```
+`PLAYWRIGHT_WORKERS` controls how many Playwright worker processes can run at once.
 
-### 11. System files tests
+- Parallelism is file-level, not free-for-all test-level parallelism.
+- `fullyParallel` is disabled in `playwright.config.ts`, so tests inside a single file still run sequentially.
+- Splitting large suites into smaller files improves worker utilization because different files can be scheduled on different workers.
+- In shared environment mode, workers share the same `solo` and back-end deployment, while Electron/app state stays isolated per worker.
 
-```bash
-npx playwright test tests/SystemFileTests
-```
+## Functional Test Suites
 
-### 12. Group transaction tests
+`@local-basic`
 
-```bash
-npx playwright test tests/GroupTransactionTests
-```
+- `tests/local-basic/registrationTests.test.ts`
+- `tests/local-basic/loginTests.test.ts`
+- `tests/local-basic/settingsTests.test.ts`
 
-### 13. Group organization tests
+`@local-transactions`
 
-```bash
-npx playwright test tests/OrganizationGroupTests
-```
+- `tests/local-transactions/transactionTests.test.ts`
+- `tests/local-transactions/transactionDraftTests.test.ts`
+- `tests/local-transactions/workflowTests.test.ts`
+- `tests/local-transactions/workflowHistoryDetailsTests.test.ts`
+- `tests/local-transactions/groupTransactionTests.test.ts`
+
+`@organization-basic`
+
+- `tests/organization-basic/organizationSettingsTests.test.ts`
+- `tests/organization-basic/organizationContactListTests.test.ts`
+- `tests/organization-basic/organizationNotificationTests.test.ts`
+
+`@organization-advanced`
+
+- `tests/organization-advanced/organizationTransactionTests.test.ts`
+- `tests/organization-advanced/organizationTransactionObserverTests.test.ts`
+- `tests/organization-advanced/organizationTransactionExecutionTests.test.ts`
+- `tests/organization-advanced/organizationTransactionCompatibilityTests.test.ts`
+- `tests/organization-advanced/organizationGroupTests.test.ts`
+- `tests/organization-advanced/organizationRegressionTests.test.ts`
+
+Some organization suites are currently marked `skip` in the source, but they remain listed here because they still belong to the suite structure and CI tag layout.
+
+## UI Performance and k6
+
+- UI performance tests are documented in `tests/ui-performance/README.md`.
+- k6 scripts are under `k6/` and can be run with `pnpm k6:*` scripts from `package.json` (for example `pnpm k6:smoke`).

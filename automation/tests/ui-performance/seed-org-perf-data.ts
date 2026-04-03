@@ -29,9 +29,9 @@ import {
   seedComplexKeys,
   seedComplexKeyTransactions,
 } from '../../k6/helpers/seed-perf-data.js';
-import { openDatabase, closeDatabase } from '../../utils/databaseUtil.js';
-import { encrypt, argonHash } from '../../utils/crypto.js';
-import { createSeededOrganizationSession } from '../../utils/organizationBaseline.js';
+import { openDatabase, closeDatabase } from '../../utils/db/databaseUtil.js';
+import { encrypt, argonHash } from '../../utils/crypto/crypto.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

@@ -10,6 +10,11 @@ import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import { safeAwait } from '@main/utils/safeAwait';
+import {
+  configurePlaywrightUserDataPath,
+  isPlaywrightSession,
+  shouldBypassSingleInstanceLock,
+} from '@main/utils/playwrightIsolation';
 import { deleteAllTempFolders } from '@main/services/localUser';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
@@ -19,7 +24,7 @@ let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
 
 function configureAutomationCommandLineSwitches() {
-  const isPlaywrightTest = process.env.PLAYWRIGHT_TEST === 'true';
+  const isPlaywrightTest = isPlaywrightSession();
   const remoteDebuggingPort = process.env.ELECTRON_REMOTE_DEBUGGING_PORT?.trim();
 
   if (isPlaywrightTest && remoteDebuggingPort) {
@@ -118,10 +123,19 @@ function setupDeepLink() {
   }
 }
 
+function acquireSingleInstanceLock(): boolean {
+  if (shouldBypassSingleInstanceLock()) {
+    return true;
+  }
+
+  return app.requestSingleInstanceLock();
+}
+
+configurePlaywrightUserDataPath();
 initLogger();
 configureAutomationCommandLineSwitches();
 
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = acquireSingleInstanceLock();
 
 if (!gotTheLock) {
   app.quit();

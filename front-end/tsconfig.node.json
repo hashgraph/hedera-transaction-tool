@@ -7,6 +7,8 @@
     "src/main/**/*",
     "src/preload/**/*",
     "src/tests/main/**/*",
+    "src/shared/**/*",
+    "src/generated/**/*",
 
     "../shared/src/**/*.ts"
   ],
