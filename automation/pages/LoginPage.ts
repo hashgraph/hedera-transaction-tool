@@ -2,6 +2,8 @@ import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
 
 export class LoginPage extends BasePage {
+  blockingModalSelector = '[data-testid="modal-confirm-transaction"][style*="display: block"]';
+
   constructor(window: Page) {
     super(window);
   }
@@ -186,7 +188,17 @@ export class LoginPage extends BasePage {
   }
 
   async clickSignIn() {
+    await this.waitForBlockingModalToClose();
     await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
+  }
+
+  async waitForBlockingModalToClose(timeout: number = this.VERY_LONG_TIMEOUT) {
+    const modalHidden = await this.isElementHidden(this.blockingModalSelector, null, timeout);
+    if (!modalHidden) {
+      throw new Error(
+        `Blocking modal "${this.blockingModalSelector}" did not close within ${timeout} ms`,
+      );
+    }
   }
 
   async waitForToastToDisappear() {

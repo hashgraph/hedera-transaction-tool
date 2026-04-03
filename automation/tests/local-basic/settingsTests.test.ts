@@ -1,0 +1,214 @@
+import { Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { SettingsPage } from '../../pages/SettingsPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { generateRandomPassword } from '../../utils/data/random.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { generateECDSAKeyPair, generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
+import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
+import {
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from '../helpers/bootstrap/localSuiteBootstrap.js';
+import { restoreKeyFromSettings } from '../helpers/flows/settingsKeyRecoveryFlow.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+
+let app: TransactionToolApp;
+let window: Page;
+const globalCredentials = { email: '', password: '' };
+let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
+let settingsPage: SettingsPage;
+let transactionPage: TransactionPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+
+test.describe('Settings tests @local-basic', () => {
+  test.beforeAll(async () => {
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
+  });
+
+  test.afterAll(async () => {
+    await teardownLocalSuiteApp(app, isolationContext);
+  });
+
+  test.beforeEach(async () => {
+    loginPage = new LoginPage(window);
+    settingsPage = new SettingsPage(window);
+    transactionPage = new TransactionPage(window);
+    const seededUser = await createSeededLocalUserSession(window, loginPage);
+    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
+    globalCredentials.email = seededUser.email;
+    globalCredentials.password = seededUser.password;
+    await settingsPage.clickOnSettingsButton();
+  });
+
+  test('Verify that all elements in settings page are present', async () => {
+    const allElementsVisible = await settingsPage.verifySettingsElements();
+    expect(allElementsVisible).toBe(true);
+  });
+
+  test('Verify user can decrypt private key', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnEyeDecryptIcon();
+    const decryptedPrivateKey = await settingsPage.getPrivateKeyText();
+
+    expect(decryptedPrivateKey).toBeTruthy();
+  });
+
+  test('Verify user can restore key', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      expectSuccessToast: true,
+    });
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
+  });
+
+  test('Verify user can delete key', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    const rowCountBeforeRestore = await settingsPage.getKeyRowCount();
+
+    await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      expectSuccessToast: true,
+    });
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
+
+    // deleting the key pair
+    await settingsPage.clickOnDeleteButtonAtIndex(rowCountBeforeRestore);
+    await settingsPage.clickOnDeleteKeyPairButton();
+
+    // going back and forth as delete is quick, and it does not pick the change
+    await loginPage.waitForToastToDisappear();
+
+    const rowCountAfterDelete = await settingsPage.getKeyRowCount();
+
+    // verifying that key pair before the recovery is the same after the deletion
+    expect(rowCountBeforeRestore).toBe(rowCountAfterDelete);
+
+    // key pair was successfully deleted, so we decrease the index
+    await settingsPage.decrementIndex();
+  });
+
+  test('Verify user restored key pair is saved in the local database', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    const currentIndex = await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      waitForToastAfterSave: true,
+      waitForToastBeforeNickname: false,
+    });
+
+    // poll the DB until the key appears (helps on fast/CI runs)
+    await expect.poll(
+      async () =>
+        await settingsPage.verifyKeysExistByIndexAndEmail(globalCredentials.email, currentIndex),
+      { timeout: 5000, intervals: [250] },
+    ).toBe(true);
+
+    // key pair was successfully restored, so we increment the index
+    await settingsPage.incrementIndex();
+  });
+
+  test('Verify user can import ECDSA key', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnECDSADropDown();
+
+    const privateKey = generateECDSAKeyPair();
+    await settingsPage.fillInECDSAPrivateKey(privateKey);
+    await settingsPage.fillInECDSANickname('Test-ECDSA-Import');
+    // await settingsPage.fillInECDSAPassword(globalCredentials.password);
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.clickOnECDSAImportButton();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('ECDSA private key imported successfully');
+
+    const rowCount = await settingsPage.getKeyRowCount();
+    const lastRowIndex = rowCount - 1;
+
+    const { index, nickname, accountID, keyType, publicKey } =
+      await settingsPage.getRowDataByIndex(lastRowIndex);
+    expect(index).toBe('N/A');
+    expect(nickname!.trim()).toBe('Test-ECDSA-Import');
+    expect(accountID).toBeTruthy();
+    expect(keyType).toBe('ECDSA');
+    expect(publicKey).toBeTruthy();
+  });
+
+  test('Verify user can import ED25519 keys', async () => {
+    await settingsPage.clickOnKeysTab();
+
+    await settingsPage.clickOnImportButton();
+    await settingsPage.clickOnED25519DropDown();
+
+    const { privateKey } = generateEd25519KeyPair();
+
+    await settingsPage.fillInED25519PrivateKey(privateKey);
+    await settingsPage.fillInED25519Nickname('Test-ED25519-Import');
+    await loginPage.waitForToastToDisappear();
+    await settingsPage.clickOnED25519ImportButton();
+
+    const toastMessage = await registrationPage.getToastMessage();
+    expect(toastMessage).toBe('ED25519 private key imported successfully');
+
+    const rowCount = await settingsPage.getKeyRowCount();
+    const lastRowIndex = rowCount - 1;
+
+    const { index, nickname, accountID, keyType, publicKey } =
+      await settingsPage.getRowDataByIndex(lastRowIndex);
+    expect(index).toBe('N/A');
+    expect(nickname!.trim()).toBe('Test-ED25519-Import');
+    expect(accountID).toBeTruthy();
+    expect(keyType).toBe('ED25519');
+    expect(publicKey).toBeTruthy();
+  });
+
+  test('Verify user can change password', async () => {
+    await settingsPage.clickOnProfileTab();
+
+    await settingsPage.fillInCurrentPassword(globalCredentials.password);
+    const newPassword = generateRandomPassword();
+    await settingsPage.fillInNewPassword(newPassword);
+    await settingsPage.clickOnChangePasswordButton();
+    await settingsPage.clickOnConfirmChangePassword();
+    await settingsPage.clickOnCloseButton();
+    globalCredentials.password = newPassword;
+    await loginPage.logout();
+
+    // verify that the settings button is visible(indicating he's logged in successfully in the app)
+    await loginPage.login(globalCredentials.email, globalCredentials.password);
+    const isButtonVisible = await loginPage.isSettingsButtonVisible();
+
+    expect(isButtonVisible).toBe(true);
+  });
+
+  test('Verify user can change key nickname', async () => {
+    const newNickname = 'testChangeNickname';
+    await settingsPage.clickOnKeysTab();
+    await settingsPage.changeNicknameForFirstKey(newNickname);
+    const keyData = await settingsPage.getRowDataByIndex(0);
+    expect(keyData.nickname!.trim()).toBe(newNickname);
+  });
+
+  test('Verify user can set global max tx fee', async () => {
+    const maxTransactionFee = '5';
+    await settingsPage.fillInDefaultMaxTransactionFee(maxTransactionFee);
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnCreateAccountTransaction();
+
+    const transactionFee = await transactionPage.getMaxTransactionFee();
+
+    expect(transactionFee).toBe(maxTransactionFee);
+  });
+});
