@@ -4,7 +4,7 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization, getErrorMessage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
-import { archiveTransaction, remindSigners } from '@renderer/services/organization';
+import { remindSigners } from '@renderer/services/organization';
 import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
 import { executeTransactionActionFlow } from '@renderer/pages/TransactionDetails/components/transactionActionFlow.ts';
 
