@@ -1,6 +1,11 @@
 import { MockedObject } from 'vitest';
 
-import { getPrismaClient, setPrismaClient, createPrismaClient, dbPath } from '@main/db/prisma';
+import {
+  getDatabasePath,
+  getPrismaClient,
+  setPrismaClient,
+  createPrismaClient,
+} from '@main/db/prisma';
 
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
@@ -29,12 +34,18 @@ vi.mock('@prisma/client', () => ({
 
 describe('Database path', () => {
   const appMO = app as unknown as MockedObject<Electron.App>;
+  const pathJoinMO = vi.mocked(path.join);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    appMO.getPath.mockReturnValue('user-data-path');
+    pathJoinMO.mockReturnValue('user-data-path/database.db');
+  });
 
   test('Should get the database path', () => {
-    appMO.getPath.mockReturnValue('user-data-path');
-    const dbPath = path.join('user-data-path', 'database.db');
-
-    expect(dbPath).toBe(dbPath);
+    expect(getDatabasePath()).toBe('user-data-path/database.db');
+    expect(appMO.getPath).toHaveBeenCalledWith('userData');
+    expect(pathJoinMO).toHaveBeenCalledWith('user-data-path', 'database.db');
   });
 });
 
@@ -43,15 +54,19 @@ describe('Prisma client', () => {
   const PrismaBetterSqlite3MO = PrismaBetterSqlite3 as unknown as MockedObject<
     typeof PrismaBetterSqlite3
   >;
+  const appMO = app as unknown as MockedObject<Electron.App>;
+  const pathJoinMO = vi.mocked(path.join);
 
   beforeEach(() => {
     vi.clearAllMocks();
+    appMO.getPath.mockReturnValue('user-data-path');
+    pathJoinMO.mockReturnValue('user-data-path/database.db');
   });
 
   test('Should create Prisma client', () => {
     const client = createPrismaClient();
     expect(PrismaBetterSqlite3MO).toHaveBeenCalledWith({
-      url: `file:${dbPath}`,
+      url: 'file:user-data-path/database.db',
     });
     expect(PrismaClientMO).toHaveBeenCalledWith({
       adapter: expect.any(Object),
@@ -66,11 +81,11 @@ describe('Prisma client', () => {
   });
 
   test('Should set Prisma client', () => {
-    const newClient = new PrismaClient();
+    const newClient = {} as PrismaClient;
     setPrismaClient(newClient);
     const client = getPrismaClient();
     expect(client).toBe(newClient);
-    expect(PrismaClientMO).toHaveBeenCalledTimes(1);
+    expect(PrismaClientMO).toHaveBeenCalledTimes(0);
   });
 
   test('Should get the same Prisma client on subsequent calls', () => {

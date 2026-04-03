@@ -201,15 +201,13 @@ export class OrganizationPage extends BasePage {
     await this.click(this.signInOrganizationButtonSelector);
   }
 
-  async setupOrganization() {
-    const organizationNickname = 'Test Organization';
+  async setupOrganization(organizationNickname = 'Test Organization') {
     const serverUrl = process.env.ORGANIZATION_URL ?? '';
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
   }
 
-  async setupWrongOrganization() {
-    const organizationNickname = 'Bad Organization';
+  async setupWrongOrganization(organizationNickname = 'Bad Organization') {
     const serverUrl = (process.env.ORGANIZATION_URL ?? '') + Math.floor(Math.random() * 10);
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
@@ -863,7 +861,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async createAccount(timeForExecution = 60, numberOfObservers = 1, isSignRequired = true) {
-    let selectedObservers = [];
+    const selectedObservers: string[] = [];
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
@@ -871,9 +869,8 @@ export class OrganizationPage extends BasePage {
 
     for (let i = 0; i < numberOfObservers; i++) {
       await this.clickOnAddObserverButton();
-      const observerEmail = await this.getUserOfObserverList(0);
+      const observerEmail = await this.selectTrackedObserver(selectedObservers);
       selectedObservers.push(observerEmail);
-      await this.clickOnUserOfObserverList(0);
       await this.clickOnAddUserButtonForObserver();
     }
 
@@ -889,6 +886,32 @@ export class OrganizationPage extends BasePage {
       selectedObservers: numberOfObservers === 1 ? selectedObservers[0] : selectedObservers,
       validStart,
     };
+  }
+
+  private async selectTrackedObserver(selectedObservers: string[]): Promise<string> {
+    await this.window.waitForSelector(`[data-testid^="${this.userListIndexSelector}"]`, {
+      state: 'visible',
+      timeout: this.LONG_TIMEOUT,
+    });
+
+    const listedObserverEmails = (await this.window
+      .locator(`[data-testid^="${this.userListIndexSelector}"]`)
+      .allTextContents())
+      .map(email => email.trim());
+
+    const trackedObserver = this.users.find(
+      user =>
+        !selectedObservers.includes(user.email) && listedObserverEmails.includes(user.email),
+    );
+
+    if (!trackedObserver) {
+      throw new Error(
+        `No tracked observer is available. Listed observers: ${listedObserverEmails.join(', ')}`,
+      );
+    }
+
+    await this.clickOnUserOfObserverList(listedObserverEmails.indexOf(trackedObserver.email));
+    return trackedObserver.email;
   }
 
   async createAccountWithFeePayerId(feePayerId: string) {
