@@ -1,5 +1,10 @@
 import { defineConfig } from '@playwright/test';
 
+const configuredWorkers = Number.parseInt(process.env.PLAYWRIGHT_WORKERS ?? '', 10);
+const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
+  ? configuredWorkers
+  : 1;
+
 export default defineConfig({
   testDir: './tests',
   reporter: process.env.CI
@@ -15,7 +20,8 @@ export default defineConfig({
   reportSlowTests: null,
   retries: process.env.CI ? 2 : 0,
   timeout: process.env.CI ? 180_000 : 3600_000,
-  workers: 1,
+  fullyParallel: false,
+  workers,
 
   projects: [
     {

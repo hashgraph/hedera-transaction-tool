@@ -34,8 +34,12 @@ export class LoginPage extends BasePage {
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 
-  async closeImportantNoteModal() {
-    const isModal = await this.isElementVisible(this.importantNoteModalButtonSelector);
+  async closeImportantNoteModal(timeout: number = this.DEFAULT_TIMEOUT) {
+    const isModal = await this.isElementVisible(
+      this.importantNoteModalButtonSelector,
+      null,
+      timeout,
+    );
     if (isModal) {
       await this.click(this.importantNoteModalButtonSelector);
     }
@@ -108,6 +112,7 @@ export class LoginPage extends BasePage {
   }
 
   async login(email: string, password: string) {
+    await this.closeImportantNoteModal(this.SHORT_TIMEOUT);
     await this.typeEmail(email);
     await this.typePassword(password);
     await this.clickSignIn();
@@ -186,7 +191,21 @@ export class LoginPage extends BasePage {
   }
 
   async clickSignIn() {
-    await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
+    const maxAttempts = 3;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      await this.closeImportantNoteModal(this.SHORT_TIMEOUT);
+      try {
+        await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
+        return;
+      } catch (error) {
+        await this.closeImportantNoteModal(this.DEFAULT_TIMEOUT);
+
+        if (attempt === maxAttempts - 1) {
+          throw error;
+        }
+      }
+    }
   }
 
   async waitForToastToDisappear() {

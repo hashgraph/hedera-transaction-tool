@@ -5,17 +5,21 @@ import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-} from '../utils/databaseUtil.js';
-import {
   closeApp,
   generateRandomPassword,
   setupApp,
 } from '../utils/automationSupport.js';
 import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  createNamespacedLabel,
+  resetBackendStateForSuite,
+  resetBackendStateForTeardown,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -26,14 +30,24 @@ let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let settingsPage: SettingsPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
+let updatedOrganizationNickname = 'New Organization';
+let invalidOrganizationNickname = 'Bad Organization';
 
 let firstUser: UserDetails;
 
 test.describe('Organization Settings tests @organization-basic', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.slow();
   test.beforeAll(async () => {
-    await resetDbState();
-    await resetPostgresDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
+    updatedOrganizationNickname = createNamespacedLabel('New Organization', isolationContext);
+    invalidOrganizationNickname = createNamespacedLabel('Bad Organization', isolationContext);
+    await resetLocalStateForSuite();
+    await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
@@ -46,6 +60,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
       organizationPage,
       {
         userCount: 1,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
@@ -55,8 +70,9 @@ test.describe('Organization Settings tests @organization-basic', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await resetBackendStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify user can switch between personal and organization mode', async () => {
@@ -73,17 +89,17 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
 
-    await organizationPage.editOrganizationNickname('New Organization');
+    await organizationPage.editOrganizationNickname(updatedOrganizationNickname);
     const orgName = await organizationPage.getOrganizationNicknameText();
-    expect(orgName).toBe('New Organization');
+    expect(orgName).toBe(updatedOrganizationNickname);
 
-    await organizationPage.editOrganizationNickname('Test Organization');
+    await organizationPage.editOrganizationNickname(organizationNickname);
   });
 
   test('Verify error message when user adds non-existing organization', async () => {
     await loginPage.waitForToastToDisappear();
-    await organizationPage.setupWrongOrganization();
-    const toastMessage = await registrationPage.getToastMessage();
+    await organizationPage.setupWrongOrganization(invalidOrganizationNickname);
+    const toastMessage = await registrationPage.getToastMessageByVariant('error');
     expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
     await organizationPage.clickOnCancelAddingOrganizationButton();
   });
@@ -92,7 +108,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization();
+    await organizationPage.setupOrganization(organizationNickname);
     await organizationPage.fillInLoginDetailsAndClickSignIn(firstUser.email, firstUser.password);
     await organizationPage.recoverAccount(0);
     await organizationPage.recoverPrivateKey(window);
@@ -104,7 +120,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization();
+    await organizationPage.setupOrganization(organizationNickname);
     await organizationPage.signInOrganization(
       firstUser.email,
       firstUser.password,
@@ -122,7 +138,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization();
+    await organizationPage.setupOrganization(organizationNickname);
     await organizationPage.signInOrganization(
       firstUser.email,
       firstUser.password,
@@ -172,7 +188,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
     await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization();
+    await organizationPage.setupOrganization(organizationNickname);
     await organizationPage.signInOrganization(
       firstUser.email,
       firstUser.password,
@@ -201,7 +217,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await loginPage.waitForToastToDisappear();
     await organizationPage.clickOnDeleteFirstOrganization();
 
-    const toastMessage = await registrationPage.getToastMessage();
+    const toastMessage = await registrationPage.getToastMessageByVariant('success');
     expect(toastMessage).toBe('Connection deleted successfully');
 
     const orgName = await organizationPage.getOrganizationNicknameText() ?? '';

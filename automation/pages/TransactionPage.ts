@@ -202,11 +202,15 @@ export class TransactionPage extends BasePage {
     return checks.every(isTrue => isTrue);
   }
 
-  async mirrorGetAccountResponse(accountId: string) {
+  async mirrorGetAccountResponse(
+    accountId: string,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+    interval: number = this.DEFAULT_TIMEOUT,
+  ) {
     const accountDetails = await getAccountDetails(
       accountId,
-      this.VERY_LONG_TIMEOUT,
-      this.DEFAULT_TIMEOUT,
+      timeout,
+      interval,
     );
     console.log('Account Details:', accountDetails);
     return accountDetails;

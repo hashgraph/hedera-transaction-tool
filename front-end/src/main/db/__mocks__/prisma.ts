@@ -12,6 +12,8 @@ export function getPrismaClient() {
   return prisma;
 }
 
-export const dbPath = 'database.db';
+export function getDatabasePath() {
+  return 'database.db';
+}
 
 export default prisma;

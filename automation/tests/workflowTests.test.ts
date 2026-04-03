@@ -20,7 +20,6 @@ import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
   setupApp,
@@ -30,6 +29,13 @@ import { AccountPage } from '../pages/AccountPage.js';
 import { FilePage } from '../pages/FilePage.js';
 import { DetailsPage } from '../pages/DetailsPage.js';
 import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -40,10 +46,14 @@ let transactionPage: TransactionPage;
 let accountPage: AccountPage;
 let filePage: FilePage;
 let detailsPage: DetailsPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Workflow tests @local-transactions', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeAll(async () => {
-    await resetDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
@@ -66,7 +76,8 @@ test.describe('Workflow tests @local-transactions', () => {
     // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
     await closeApp(app);
-    await resetDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test.beforeEach(async () => {
