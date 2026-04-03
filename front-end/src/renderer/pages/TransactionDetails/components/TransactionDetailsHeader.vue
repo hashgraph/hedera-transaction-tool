@@ -64,6 +64,7 @@ import {
   isSignableStatus,
 } from '@renderer/utils/transactionStatusGuards.ts';
 import CancelTransactionController from '@renderer/pages/TransactionDetails/CancelTransactionController.vue';
+import ArchiveTransactionController from '@renderer/pages/TransactionDetails/ArchiveTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -161,6 +162,7 @@ const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
 const cancelStarted = ref(false);
+const archiveStarted = ref(false);
 
 /* Computed */
 const txType = computed(() => {
@@ -457,11 +459,6 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
   }
 };
 
-const handleCancel = () => {
-  cancelStarted.value = true;
-};
-
-const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
 const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
 const handleRemindSigners = (showModal?: boolean) =>
   handleTransactionAction('remindSigners', showModal);
@@ -554,9 +551,9 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === signAndNext) {
     await handleSign(true);
   } else if (value === cancel) {
-    await handleCancel();
+    cancelStarted.value = true;
   } else if (value === archive) {
-    await handleArchive(true);
+    archiveStarted.value = true;
   } else if (value === execute) {
     await handleExecute(true);
   } else if (value === exportName) {
@@ -678,6 +675,11 @@ watch(
 
   <CancelTransactionController
     v-model:activate="cancelStarted"
+    :callback="props.onAction"
+    :transaction="organizationTransaction"
+  />
+  <ArchiveTransactionController
+    v-model:activate="archiveStarted"
     :callback="props.onAction"
     :transaction="organizationTransaction"
   />
