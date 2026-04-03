@@ -65,6 +65,8 @@ import {
 } from '@renderer/utils/transactionStatusGuards.ts';
 import CancelTransactionController from '@renderer/pages/TransactionDetails/CancelTransactionController.vue';
 import ArchiveTransactionController from '@renderer/pages/TransactionDetails/ArchiveTransactionController.vue';
+import ScheduleTransactionController from '@renderer/pages/TransactionDetails/ScheduleTransactionController.vue';
+import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
 
 /* Types */
 type ActionButton =
@@ -83,18 +85,18 @@ const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
 const signAndNext: ActionButton = 'Sign & Next';
-const execute: ActionButton = 'Schedule';
+const schedule: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, execute];
+const primaryButtons: ActionButton[] = [reject, approve, sign, schedule];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
-  [execute]: 'button-execute-org-transaction',
+  [schedule]: 'button-schedule-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
@@ -163,6 +165,8 @@ const shouldApprove = ref<boolean>(false);
 
 const cancelStarted = ref(false);
 const archiveStarted = ref(false);
+const scheduleStarted = ref(false);
+const remindSignersStarted = ref(false);
 
 /* Computed */
 const txType = computed(() => {
@@ -211,7 +215,7 @@ const canApprove = computed(() => {
   return FEATURE_APPROVERS_ENABLED && shouldApprove.value && isApprovableStatus(status);
 });
 
-const canExecute = computed(() => {
+const canSchedule = computed(() => {
   const status = props.organizationTransaction?.status;
   const isManual = props.organizationTransaction?.isManual;
 
@@ -236,7 +240,7 @@ const visibleButtons = computed(() => {
   /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
   canApprove.value && buttons.push(reject, approve);
   canSign.value && !canApprove.value && buttons.push(sign);
-  canExecute.value && buttons.push(execute);
+  canSchedule.value && buttons.push(schedule);
   canCancel.value && buttons.push(cancel);
   canRemind.value && buttons.push(remindSignersLabel);
   canArchive.value && buttons.push(archive);
@@ -402,7 +406,7 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
       successMessage: 'Transaction archived successfully',
       actionFunction: archiveTransaction,
     },
-    execute: {
+    schedule: {
       title: 'Schedule Transaction?',
       text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
       buttonText: 'Schedule transaction',
@@ -458,10 +462,6 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
     confirmModalLoadingText.value = '';
   }
 };
-
-const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
-const handleRemindSigners = (showModal?: boolean) =>
-  handleTransactionAction('remindSigners', showModal);
 
 const handleExport = async () => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
@@ -554,14 +554,15 @@ const handleAction = async (value: ActionButton) => {
     cancelStarted.value = true;
   } else if (value === archive) {
     archiveStarted.value = true;
-  } else if (value === execute) {
-    await handleExecute(true);
+  } else if (value === schedule) {
+    scheduleStarted.value = true;
   } else if (value === exportName) {
     await handleExport();
   } else if (value === remindSignersLabel) {
-    await handleRemindSigners(true);
+    remindSignersStarted.value = true;
   }
 };
+
 const handleSubmit = async (e: Event) => {
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
   await handleAction(buttonContent as ActionButton);
@@ -680,6 +681,16 @@ watch(
   />
   <ArchiveTransactionController
     v-model:activate="archiveStarted"
+    :callback="props.onAction"
+    :transaction="organizationTransaction"
+  />
+  <ScheduleTransactionController
+    v-model:activate="scheduleStarted"
+    :callback="props.onAction"
+    :transaction="organizationTransaction"
+  />
+  <RemindSignersController
+    v-model:activate="remindSignersStarted"
     :callback="props.onAction"
     :transaction="organizationTransaction"
   />
