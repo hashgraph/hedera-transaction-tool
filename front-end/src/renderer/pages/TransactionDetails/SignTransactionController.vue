@@ -49,7 +49,6 @@ const handleSignTransaction = async (personalPassword: string | null) => {
 
   if (props.transaction !== null) {
     try {
-      await new Promise(resolve => setTimeout(resolve, 5000));
       const signed = await signTransactions(
         [props.transaction],
         personalPassword,
