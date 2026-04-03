@@ -4,6 +4,7 @@ import { getPrismaClient, setPrismaClient, createPrismaClient, dbPath } from '@m
 
 import * as path from 'path';
 import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { app } from 'electron';
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -13,6 +14,10 @@ vi.mock('electron', () => ({
 
 vi.mock('path', () => ({
   join: vi.fn(),
+}));
+
+vi.mock('@prisma/adapter-better-sqlite3', () => ({
+  PrismaBetterSqlite3: vi.fn(() => ({})),
 }));
 
 vi.mock('@prisma/client', () => ({
@@ -35,6 +40,9 @@ describe('Database path', () => {
 
 describe('Prisma client', () => {
   const PrismaClientMO = PrismaClient as unknown as MockedObject<typeof PrismaClient>;
+  const PrismaBetterSqlite3MO = PrismaBetterSqlite3 as unknown as MockedObject<
+    typeof PrismaBetterSqlite3
+  >;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,12 +50,11 @@ describe('Prisma client', () => {
 
   test('Should create Prisma client', () => {
     const client = createPrismaClient();
+    expect(PrismaBetterSqlite3MO).toHaveBeenCalledWith({
+      url: `file:${dbPath}`,
+    });
     expect(PrismaClientMO).toHaveBeenCalledWith({
-      datasources: {
-        db: {
-          url: `file:${dbPath}`,
-        },
-      },
+      adapter: expect.any(Object),
     });
     expect(client).toBeDefined();
   });

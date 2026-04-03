@@ -2,6 +2,7 @@
   "extends": "@electron-toolkit/tsconfig/tsconfig.node.json",
   "include": [
     "vite.config.*",
+    "src/tests/vitest.config.*.ts",
 
     "src/main/**/*",
     "src/preload/**/*",
@@ -18,7 +19,8 @@
     "baseUrl": ".",
     "paths": {
       "@main/*": ["src/main/*"],
-      "@shared/*": ["src/shared/*"]
+      "@shared/*": ["src/shared/*"],
+      "@prisma/client": ["src/generated/prisma/client.ts"]
     }
   }
 }
