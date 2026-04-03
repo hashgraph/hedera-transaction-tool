@@ -95,11 +95,11 @@ const performAction = async (personalPassword: string | null) => {
       timeoutID.value = null;
     }
     startDate.value = null;
-    activate.value = false;
-  }
-
-  if (report.value !== null) {
-    showReport.value = true;
+    if (report.value !== null) {
+      showReport.value = true;
+    } else {
+      activate.value = false;
+    }
   }
 };
 
@@ -113,6 +113,11 @@ watch(activate, async () => {
     }
   }
 });
+watch(showReport, () => {
+  if (!showReport.value) {
+    activate.value = false;
+  }
+})
 </script>
 
 <template>
