@@ -17,7 +17,7 @@ import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { getUserShouldApprove, sendApproverChoice } from '@renderer/services/organization';
+import { getUserShouldApprove } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
 
@@ -30,7 +30,6 @@ import {
   getErrorMessage,
   getLastExportExtension,
   getPrivateKey,
-  getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
   setLastExportExtension,
@@ -59,6 +58,7 @@ import ArchiveTransactionController from '@renderer/pages/TransactionDetails/Arc
 import ScheduleTransactionController from '@renderer/pages/TransactionDetails/ScheduleTransactionController.vue';
 import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
+import ApproveTransactionController from '@renderer/pages/TransactionDetails/ApproveTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -157,6 +157,8 @@ const shouldApprove = ref<boolean>(false);
 
 const signStarted = ref(false);
 const goNextAfterSign = ref(false);
+const approveStarted = ref(false);
+const isApproved = ref(false);
 const cancelStarted = ref(false);
 const archiveStarted = ref(false);
 const scheduleStarted = ref(false);
@@ -256,78 +258,6 @@ const handleBack = async () => {
   router.back();
 };
 
-const handleApprove = async (approved: boolean, showModal?: boolean) => {
-  if (!approved && showModal) {
-    confirmModalTitle.value = 'Reject Transaction?';
-    confirmModalText.value = 'Are you sure you want to reject the transaction?';
-    confirmModalButtonText.value = 'Reject';
-    confirmCallback.value = () => handleApprove(false);
-    confirmModalLoadingText.value = 'Rejecting…';
-    isConfirmModalShown.value = true;
-    return;
-  }
-
-  const callback = async () => {
-    if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
-      throw new Error('Transaction is not available');
-    }
-
-    assertUserLoggedIn(user.personal);
-    assertIsLoggedInOrganization(user.selectedOrganization);
-
-    const personalPassword = getPassword(callback, {
-      subHeading: 'Enter your application password to access your private key',
-    });
-    if (passwordModalOpened(personalPassword)) return;
-
-    try {
-      if (approved) {
-        loadingStates[approve] = 'Approving…';
-      } else {
-        loadingStates[reject] = 'Rejecting…';
-        isConfirmModalLoadingState.value = true;
-      }
-
-      const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
-      const privateKeyRaw = await decryptPrivateKey(
-        user.personal.id,
-        personalPassword,
-        orgKey.publicKey,
-      );
-
-      const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
-
-      const signature = getTransactionBodySignatureWithoutNodeAccountId(
-        privateKey,
-        props.sdkTransaction,
-      );
-
-      await sendApproverChoice(
-        user.selectedOrganization.serverUrl,
-        props.organizationTransaction.id,
-        orgKey.id,
-        signature,
-        approved,
-      );
-      await props.onAction();
-      toastManager.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
-
-      if (!approved) {
-        router.back();
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      loadingStates[approve] = null;
-      loadingStates[reject] = null;
-      isConfirmModalLoadingState.value = false;
-      confirmModalLoadingText.value = '';
-    }
-  };
-
-  await callback();
-};
-
 const handleExport = async () => {
   if (!props.sdkTransaction || !props.organizationTransaction) {
     throw new Error('(BUG) Transaction is not available');
@@ -407,10 +337,9 @@ const handleExport = async () => {
 };
 
 const handleAction = async (value: ActionButton) => {
-  if (value === reject) {
-    await handleApprove(false, true);
-  } else if (value === approve) {
-    await handleApprove(true, true);
+  if (value === reject || value === approve) {
+    approveStarted.value = true;
+    isApproved.value = value === approve;
   } else if (value === sign || value === signAndNext) {
     signStarted.value = true;
     goNextAfterSign.value = value === signAndNext;
@@ -540,27 +469,34 @@ watch(
     v-model:activate="signStarted"
     :callback="props.onAction"
     :go-next="goNextAfterSign"
-    :transaction="organizationTransaction"
+    :transaction="props.organizationTransaction"
+  />
+  <ApproveTransactionController
+    v-model:activate="approveStarted"
+    :approved="isApproved"
+    :callback="props.onAction"
+    :sdk-transaction="props.sdkTransaction"
+    :transaction="props.organizationTransaction"
   />
   <CancelTransactionController
     v-model:activate="cancelStarted"
     :callback="props.onAction"
-    :transaction="organizationTransaction"
+    :transaction="props.organizationTransaction"
   />
   <ArchiveTransactionController
     v-model:activate="archiveStarted"
     :callback="props.onAction"
-    :transaction="organizationTransaction"
+    :transaction="props.organizationTransaction"
   />
   <ScheduleTransactionController
     v-model:activate="scheduleStarted"
     :callback="props.onAction"
-    :transaction="organizationTransaction"
+    :transaction="props.organizationTransaction"
   />
   <RemindSignersController
     v-model:activate="remindSignersStarted"
     :callback="props.onAction"
-    :transaction="organizationTransaction"
+    :transaction="props.organizationTransaction"
   />
 
   <AppConfirmModal
