@@ -5,6 +5,9 @@ import { BrowserWindow } from 'electron';
 import { STATIC_USER, WINDOW_STATE } from '@shared/constants';
 
 import { getPrismaClient } from '@main/db/prisma';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.windowState');
 
 /* Sets the window state*/
 export const setWindowBounds = async (window: BrowserWindow): Promise<void> => {
@@ -42,7 +45,7 @@ export const setWindowBounds = async (window: BrowserWindow): Promise<void> => {
       },
     });
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to set window bounds', { error });
   }
 };
 
@@ -60,7 +63,7 @@ export const getWindowBounds = async (): Promise<Rectangle | null> => {
     });
     return bounds ? JSON.parse(bounds.claim_value) : null;
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get window bounds', { error });
     return null;
   }
 };

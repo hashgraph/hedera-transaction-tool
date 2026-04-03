@@ -110,3 +110,46 @@ pnpm test:shared:coverage # run tests for the shared utils
     pnpm rebuild electron
     ```
 
+## Frontend Logging
+
+Both main and renderer processes write structured logs to a single local file via `electron-log`.
+
+### Log file location
+
+Logs are written to `app.getPath('userData')/logs/app.log`. Log rotation keeps one active 5 MB log file plus 5 archives (~30 MB maximum).
+
+### Log format
+
+Each line is a JSON object:
+
+```json
+{"timestamp":"2026-03-13T10:00:00.000Z","level":"info","component":"renderer.websocket","message":"Socket connected","metadata":{"url":"wss://..."}}
+```
+
+Fields: `timestamp` (ISO 8601), `level` (`error` | `warn` | `info` | `debug`), `component`, `message`, and optional `metadata`.
+
+### Component naming
+
+Components follow the convention `<process>.<module>.<submodule>`:
+- `main.*` — main process loggers (e.g., `main.console`, `main.database`, `main.localUser.accounts`)
+- `renderer.*` — renderer process loggers (e.g., `renderer.console`, `renderer.store.user`, `renderer.page.createTransactionGroup`)
+
+Create a logger with `createLogger('renderer.myComponent')` in the renderer or `createLogger('main.myModule')` in the main process.
+
+### Log level configuration
+
+The default log level is `info`. Override it by setting the `HTT_LOG_LEVEL` environment variable before launching the app:
+
+```bash
+HTT_LOG_LEVEL=debug pnpm dev
+```
+
+Available levels: `error`, `warn`, `info`, `debug`.
+
+### Sensitive data filtering
+
+Logs are automatically sanitized before being written to disk:
+
+- **Key-based redaction**: Values under keys containing `password`, `accesstoken`, `refreshtoken`, `jwt`, `authorization`, `cookie`, `secret`, `privatekey`, `mnemonic`, `recoveryphrase`, `seed`, `signaturebytes`, `signatureraw`, `signedtransaction`, `signaturemap`, `transactionbytes`, `requestbody`, `responsebody`, `pem`, `encrypted`, or `secrethash` are replaced with `[redacted]`.
+- **Pattern scrubbing**: JWT tokens (`eyJ...`), Bearer tokens, and PEM blocks are stripped from message text.
+- **Payload omission**: Long hex or base64 strings (>128 chars) are summarized as `payload omitted` instead of being logged verbatim.

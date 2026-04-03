@@ -4,6 +4,9 @@ import { computed } from 'vue';
 import { SKIPPED_ORGANIZATION_SETUP, SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 import { getSecretHashesFromKeys, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 import { getStoredClaim, setStoredClaim } from '@renderer/services/claimService.ts';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.store.accountSetup');
 
 export interface StoreAccountSetup {
   shouldShowAccountSetup: () => Promise<boolean>;
@@ -75,7 +78,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
         const value = await getStoredClaim(userId, skipClaimKey.value);
         result = value === 'true';
       } catch (reason) {
-        console.error(reason);
+        logger.error('Failed to check skip setup claim', { error: reason });
         result = false;
       }
     } else {

@@ -16,14 +16,10 @@ export abstract class EntityCache<K extends string | number, E> {
     const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
     const currentRecord = this.records.get(recordKey);
     if (currentRecord && currentRecord.isUsable(forceLoad, this)) {
-      // console.log(this.constructor.name + ' hit for ' + key);
+      // cache hit
       result = currentRecord.promise;
     } else {
-      // if (currentRecord) {
-      //   console.log(this.constructor.name + ' reload for ' + key);
-      // } else {
-      //   console.log(this.constructor.name + ' miss for ' + key);
-      // }
+      // cache miss or reload
       const newPromise = this.load(key, mirrorNodeUrl);
       this.mutate(key, mirrorNodeUrl, newPromise);
       result = newPromise;

@@ -18,6 +18,7 @@ module.exports = [
       '**/.gitignore',
       '**/release',
       '**/coverage',
+      '**/src/generated/**',
     ],
   },
   ...pluginVue.configs['flat/essential'],
@@ -32,6 +33,17 @@ module.exports = [
       '@typescript-eslint/no-unused-expressions': 'off',
       '@typescript-eslint/ban-ts-comment': 'off',
       'newline-per-chained-call': 'off',
+    },
+  },
+  {
+    files: ['src/**/*.{js,jsx,ts,tsx,cts,mts,vue}'],
+    ignores: [
+      'src/tests/**/*',
+      'src/main/modules/logger.ts',
+      'src/renderer/utils/logger.ts',
+    ],
+    rules: {
+      'no-console': 'error',
     },
   },
 ];

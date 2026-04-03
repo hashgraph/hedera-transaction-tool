@@ -6,6 +6,9 @@ import { HederaFile, Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
 import { deleteDirectory, getNumberArrayFromString, saveContentToPath } from '@main/utils';
 import { safeAwait } from '@main/utils/safeAwait';
+import { createLogger } from '@main/modules/logger';
+
+const logger = createLogger('main.localUser.files');
 
 export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   const prisma = getPrismaClient();
@@ -13,7 +16,7 @@ export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   try {
     return await prisma.hederaFile.findMany(findArgs);
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to get files', { error });
     return [];
   }
 };
@@ -108,7 +111,7 @@ export const showStoredFileInTemp = async (userId: string, fileId: string) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to find stored file', { error });
   }
 
   if (file === null) {
@@ -135,7 +138,7 @@ export const showContentInTemp = async (content: Buffer, fileId: string) => {
       shell.openPath(filePath);
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to open file content', { error });
     throw new Error('Failed to open file content');
   }
 };

@@ -17,8 +17,6 @@ export default async function initDatabase() {
   );
 
   const databaseLogger = getDatabaseLogger();
-  databaseLogger.errorHandler.startCatching();
-  databaseLogger.transports.console.format = '{text}';
 
   const db = new sqlite3.default(getDatabasePath());
 
@@ -59,7 +57,7 @@ export default async function initDatabase() {
           id: -1,
         };
       } catch (error) {
-        databaseLogger.error(error);
+        databaseLogger.error('Failed to apply migration', { error });
         failed = true;
         ROLLBACK.run();
         break;
@@ -76,9 +74,6 @@ export default async function initDatabase() {
   } else {
     databaseLogger.log('Database ready for usage');
   }
-
-  databaseLogger.errorHandler.stopCatching();
-
   async function getAvailableMigrations() {
     const migrationsData: { name: string; sql: string; created_at: number }[] = [];
 
@@ -111,7 +106,7 @@ export default async function initDatabase() {
         }
       }
     } catch (error) {
-      databaseLogger.error(error);
+      databaseLogger.error('Failed to read available migrations', { error });
     }
 
     return migrationsData;
@@ -150,17 +145,13 @@ export default async function initDatabase() {
 
 export async function deleteDatabase() {
   const databaseLogger = getDatabaseLogger();
-  databaseLogger.errorHandler.startCatching();
-  databaseLogger.transports.console.format = '{text}';
 
   try {
     await fsp.rm(getDatabasePath());
     databaseLogger.log('Database deleted successfully');
   } catch (error) {
-    databaseLogger.error(error);
+    databaseLogger.error('Failed to delete database', { error });
   }
-
-  databaseLogger.errorHandler.stopCatching();
 }
 
 export * from './prisma';

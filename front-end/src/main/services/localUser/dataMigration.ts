@@ -16,12 +16,15 @@ import {
   UPDATE_LOCATION,
 } from '@shared/constants';
 
+import { createLogger } from '@main/modules/logger';
 import { parseNetwork } from '@main/utils/parsers';
 import { safeAwait } from '@main/utils/safeAwait';
 
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
 import { addPublicKey } from './publicKeyMapping';
+
+const logger = createLogger('main.dataMigration');
 
 export const SALT_LENGTH = 16;
 export const KEY_LENGTH = 32;
@@ -73,7 +76,7 @@ export function getSalt(token: string): Buffer {
 
   /* If the length of the token is less than the sum of the salt length and the key length, then the token is invalid */
   if (tokenBytes.length < SALT_LENGTH + KEY_LENGTH) {
-    console.error('Token size check failed');
+    logger.error('Token size check failed');
     return Buffer.alloc(0);
   }
 
@@ -144,7 +147,7 @@ export async function decryptMnemonic(
     const decrypted = Buffer.concat([decipher.update(encryptedText), decipher.final()]);
     return decrypted.toString('utf-8');
   } catch (error) {
-    console.log('Error decrypting mnemonic:', error);
+    logger.error('Error decrypting mnemonic', { error });
     return null;
   }
 }
@@ -212,7 +215,7 @@ export async function getAccountInfoFromFile(
         });
       }
     } catch (error) {
-      console.error(`Error reading file ${filePath}: ${error}`);
+      logger.error('Error reading account file', { filePath, error });
     }
   }
 
@@ -249,7 +252,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
         ),
       );
       if (error) {
-        console.log(error);
+        logger.error('Failed to add default max transaction fee claim', { error });
       }
     }
 
@@ -260,7 +263,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
     result.currentNetwork = defaultNetwork;
     const { error } = await safeAwait(addClaim(userId, SELECTED_NETWORK, defaultNetwork));
     if (error) {
-      console.log(error);
+      logger.error('Failed to add network claim', { error });
     }
 
     const credentialsObj = parsedContent[CREDENTIALS_DIRECTORY];
@@ -271,11 +274,11 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
         : updatesLocation + '/InputFiles';
       const { error } = await safeAwait(addClaim(userId, UPDATE_LOCATION, updatesLocation));
       if (error) {
-        console.log(error);
+        logger.error('Failed to add update location claim', { error });
       }
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to read user properties', { error });
   }
 
   try {
@@ -286,13 +289,13 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
         addAccount(userId, accountData.accountID, accountData.network, accountData.nickname),
       );
       if (error) {
-        console.log(error);
+        logger.error('Failed to add account during migration', { error });
       } else {
         result.accountsImported++;
       }
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to migrate accounts', { error });
   }
 
   try {
@@ -314,7 +317,7 @@ export async function migrateUserData(userId: string): Promise<MigrateUserDataRe
       }
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Failed to migrate public keys', { error });
   }
 
   return result;

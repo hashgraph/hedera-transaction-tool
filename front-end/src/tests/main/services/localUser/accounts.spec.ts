@@ -6,6 +6,19 @@ import prisma from '@main/db/__mocks__/prisma';
 
 import { CommonNetwork } from '@shared/enums';
 
+const { mockLogger } = vi.hoisted(() => ({
+  mockLogger: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+vi.mock('@main/modules/logger', () => ({
+  createLogger: () => mockLogger,
+}));
+
 import {
   addAccount,
   changeAccountNickname,
@@ -103,12 +116,10 @@ describe('Services Local User Accounts', () => {
 
       prisma.hederaAccount.findFirst.mockRejectedValueOnce(new Error('Database Error'));
 
-      console.error = vi.fn();
-
       const result = await getAccountById(userId, accountId);
 
       expect(result).toBeNull();
-      expect(console.error).toHaveBeenCalledWith('Error fetching account:', expect.any(Error));
+      expect(mockLogger.error).toHaveBeenCalled();
     });
   });
 

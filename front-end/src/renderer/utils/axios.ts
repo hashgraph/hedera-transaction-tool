@@ -2,6 +2,9 @@ import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from '
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.axios');
 
 import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
@@ -86,15 +89,13 @@ axios.interceptors.response.use(
                 `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
               );
 
-              console.warn(
-                `[${new Date().toISOString()}] COMPATIBILITY_CHECK Version guard failure for ${serverUrl}`,
-              );
-              console.warn(
-                `Conflicts found with ${compatibilityResult.conflicts.length} organization(s)`,
-              );
+              logger.warn('Version guard compatibility conflict', {
+                serverUrl,
+                conflictCount: compatibilityResult.conflicts.length,
+              });
             }
           } catch (compatError) {
-            console.error('Compatibility check failed:', compatError);
+            logger.error('Compatibility check failed', { error: compatError });
             organizationCompatibilityResults.value[serverUrl] = null;
           }
         }

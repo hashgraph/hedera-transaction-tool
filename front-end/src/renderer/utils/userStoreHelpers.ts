@@ -44,10 +44,15 @@ import {
 } from '@renderer/services/electronUtilsService';
 import { get as getStoredMnemonics } from '@renderer/services/mnemonicService';
 
+import { createLogger } from '@renderer/utils/logger';
+
 import { safeAwait } from './safeAwait';
 import { getErrorMessage, throwError } from '.';
 import * as pks from '@renderer/services/publicKeyMappingService';
+
 import type { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+
+const logger = createLogger('renderer.userStoreHelpers');
 
 /* Flags */
 export function assertUserLoggedIn(user: PersonalUser | null): asserts user is LoggedInUser {
@@ -357,7 +362,7 @@ export const getConnectedOrganization = async (
       return inactiveOrg;
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Health check failed for organization', { error });
     return inactiveOrg;
   }
 
@@ -375,7 +380,7 @@ export const getConnectedOrganization = async (
       return activeLoginRequired;
     }
   } catch (error) {
-    console.log(error);
+    logger.error('Organization sign-in check failed', { error });
     return activeLoginRequired;
   }
 
@@ -448,7 +453,7 @@ export const updateConnectedOrganizations = async (
     }),
   );
 
-  result.forEach(res => res.status === 'rejected' && console.log(res.reason));
+  result.forEach(res => res.status === 'rejected' && logger.error('Failed to connect organization', { error: res.reason }));
 };
 
 export const getOrganizationJwtTokens = async (

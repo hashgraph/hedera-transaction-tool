@@ -3,12 +3,11 @@ import * as path from 'path';
 import { app } from 'electron';
 
 import { PrismaClient } from '@prisma/client';
+import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 let prisma: PrismaClient;
 
-export function getDatabasePath() {
-  return path.join(app.getPath('userData'), 'database.db');
-}
+export const dbPath = path.join(app.getPath('userData'), 'database.db');
 
 export function getPrismaClient() {
   if (!prisma) {
@@ -22,11 +21,10 @@ export function setPrismaClient(prismaClient: PrismaClient) {
 }
 
 export function createPrismaClient() {
-  return new PrismaClient({
-    datasources: {
-      db: {
-        url: `file:${getDatabasePath()}`,
-      },
-    },
+  const adapter = new PrismaBetterSqlite3({
+    url: `file:${dbPath}`,
   });
+  // Type assertion needed because generated Prisma 7 client types
+  // don't properly expose the adapter option from the runtime
+  return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
 }

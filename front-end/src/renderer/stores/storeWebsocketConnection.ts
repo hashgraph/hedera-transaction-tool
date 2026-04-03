@@ -7,7 +7,7 @@ import useOrganizationConnection from './storeOrganizationConnection';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
-import { getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
+import { createLogger, getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 interface WebsocketConnectionStoreReturn {
@@ -25,6 +25,7 @@ const useWebsocketConnection = defineStore(
     /* Stores */
     const user = useUserStore();
     const orgConnection = useOrganizationConnection();
+    const logger = createLogger('renderer.websocket');
 
     /* State */
     const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
@@ -44,9 +45,10 @@ const useWebsocketConnection = defineStore(
         const disconnectReason = orgConnection.getDisconnectReason(serverUrl);
 
         if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
-          console.log(
-            `[${new Date().toISOString()}] Skipping websocket setup for disconnected organization: ${serverUrl} (Reason: ${disconnectReason})`,
-          );
+          logger.info('Skipping websocket setup for disconnected organization', {
+            disconnectReason,
+            serverUrl,
+          });
           continue;
         }
 
@@ -60,7 +62,10 @@ const useWebsocketConnection = defineStore(
             orgConnection.setConnectionStatus(serverUrl, 'connected');
           }
         } catch (error) {
-          console.error(`Failed to connect to server ${serverUrl}:`, error);
+          logger.error('Failed to connect to websocket server', {
+            error,
+            serverUrl,
+          });
           disconnect(serverUrl);
         }
       }
@@ -92,10 +97,9 @@ const useWebsocketConnection = defineStore(
         auth: cb => {
           const token = getAuthTokenFromSessionStorage(serverUrl);
 
-          console.log('[WS][CLIENT][AUTH]', {
-            serverUrl,
+          logger.debug('Preparing websocket auth payload', {
             hasToken: !!token,
-            tokenPrefix: typeof token === 'string' ? token.slice(0, 15) : null,
+            serverUrl,
           });
 
           cb({
@@ -136,22 +140,28 @@ const useWebsocketConnection = defineStore(
 
     function listenConnection(socket: Socket, wsUrl: string, serverUrl: string) {
       socket.on('connect', () => {
-        console.log(`Connected to server ${wsUrl} with id: ${socket?.id}`);
+        logger.info('Websocket connected', {
+          serverUrl,
+          socketId: socket?.id,
+          wsUrl,
+        });
         connectionStates.value[serverUrl] = 'connected';
         orgConnection.setConnectionStatus(serverUrl, 'connected');
       });
 
       socket.on('connect_error', error => {
-        console.log(`⚠️ Socket for ${serverUrl}: connect_error`, {
-          message: error.message,
+        logger.warn('Websocket connect_error received', {
           active: socket?.active,
-          willRetry: socket?.active === true
+          error,
+          serverUrl,
+          willRetry: socket?.active === true,
         });
 
         if (isVersionError(error.message)) {
-          console.error(
-            `Socket for ${serverUrl}: Version error - ${error.message}. Disconnecting permanently.`,
-          );
+          logger.error('Websocket disconnected due to version error', {
+            error,
+            serverUrl,
+          });
           socket.disconnect();
           connectionStates.value[serverUrl] = 'disconnected';
           orgConnection.setConnectionStatus(serverUrl, 'disconnected', 'upgradeRequired');
@@ -162,7 +172,10 @@ const useWebsocketConnection = defineStore(
           // temporary failure, the socket will automatically try to reconnect
           connectionStates.value[serverUrl] = 'connecting';
         } else {
-          console.log(`Socket for ${serverUrl}: ${error.message}`);
+          logger.warn('Websocket connection failed without retry', {
+            error,
+            serverUrl,
+          });
           connectionStates.value[serverUrl] = 'disconnected';
           const currentStatus = orgConnection.getConnectionStatus(serverUrl);
           if (currentStatus !== 'disconnected') {
@@ -172,19 +185,25 @@ const useWebsocketConnection = defineStore(
       });
 
       socket.on('disconnect', reason => {
-        console.log(`🔌 Socket for ${serverUrl}: disconnect event`, {
-          reason,
+        logger.info('Websocket disconnect event received', {
           active: socket?.active,
           connected: socket?.connected,
-          willReconnect: socket?.active === true
+          reason,
+          serverUrl,
+          willReconnect: socket?.active === true,
         });
 
         if (socket?.active) {
           // temporary disconnection, the socket will automatically try to reconnect
-          console.log(`♻️ Socket for ${serverUrl}: Will auto-reconnect`);
+          logger.info('Websocket will auto-reconnect', {
+            serverUrl,
+          });
           connectionStates.value[serverUrl] = 'connecting';
         } else {
-          console.log(`Socket for ${serverUrl}: ${reason}`);
+          logger.info('Websocket disconnected without retry', {
+            reason,
+            serverUrl,
+          });
           connectionStates.value[serverUrl] = 'disconnected';
           const currentReason = orgConnection.getDisconnectReason(serverUrl);
           if (currentReason !== 'upgradeRequired' && currentReason !== 'compatibilityConflict') {

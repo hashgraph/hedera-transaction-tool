@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { ref, watch } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -6,7 +7,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    show?: boolean;
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
@@ -17,7 +17,6 @@ const props = withDefaults(
     dataTestid: string;
   }>(),
   {
-    show: false,
     callback: null,
     buttonText: 'Confirm',
     loadingText: '',
@@ -26,30 +25,40 @@ const props = withDefaults(
   },
 );
 
-/* Emits */
-const emit = defineEmits(['update:show']);
+/* Model */
+const show = defineModel<boolean>('show', { required: true });
+
+/* State */
+const confirmed = ref(false);
 
 /* Handlers */
 const handleConfirm = () => {
   if (props.loading) return;
-  emit('update:show', false);
-  props.callback && props.callback();
+  confirmed.value = true;
+  show.value = false;
 };
 
 const handleCancel = () => {
   if (props.loading) return;
-  emit('update:show', false);
+  show.value = false;
 };
 
-const handleUpdateShow = (value: boolean) => {
-  emit('update:show', value);
-  if (!value && props.cancel) {
-    props.cancel();
+/* Hooks */
+watch(show, () => {
+  if (!show.value) {
+    const wasConfirmed = confirmed.value;
+    confirmed.value = false;
+
+    if (wasConfirmed && props.callback) {
+      props.callback();
+    } else if (!wasConfirmed && props.cancel) {
+      props.cancel();
+    }
   }
-};
+});
 </script>
 <template>
-  <AppModal :show="props.show" :loading="props.loading" class="common-modal" @update:show="handleUpdateShow">
+  <AppModal v-model:show="show" :loading="props.loading" class="common-modal">
     <div class="p-4">
       <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
       <div class="text-center">
