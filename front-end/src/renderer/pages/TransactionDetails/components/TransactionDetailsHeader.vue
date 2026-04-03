@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
 import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -50,8 +51,6 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
-import { TransactionStatus } from '@shared/interfaces';
-
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
@@ -64,6 +63,7 @@ import {
   isInProgressStatus,
   isSignableStatus,
 } from '@renderer/utils/transactionStatusGuards.ts';
+import CancelTransactionController from '@renderer/pages/TransactionDetails/CancelTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -159,6 +159,8 @@ const isConfirmModalLoadingState = ref(false);
 
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
+
+const cancelStarted = ref(false);
 
 /* Computed */
 const txType = computed(() => {
@@ -455,7 +457,10 @@ const handleTransactionAction = async (action: TransactionAction, showModal?: bo
   }
 };
 
-const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
+const handleCancel = () => {
+  cancelStarted.value = true;
+};
+
 const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
 const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
 const handleRemindSigners = (showModal?: boolean) =>
@@ -549,7 +554,7 @@ const handleAction = async (value: ActionButton) => {
   } else if (value === signAndNext) {
     await handleSign(true);
   } else if (value === cancel) {
-    await handleCancel(true);
+    await handleCancel();
   } else if (value === archive) {
     await handleArchive(true);
   } else if (value === execute) {
@@ -670,6 +675,12 @@ watch(
       </div>
     </div>
   </form>
+
+  <CancelTransactionController
+    v-model:activate="cancelStarted"
+    :callback="props.onAction"
+    :transaction="organizationTransaction"
+  />
 
   <AppConfirmModal
     v-model:show="isConfirmModalShown"
