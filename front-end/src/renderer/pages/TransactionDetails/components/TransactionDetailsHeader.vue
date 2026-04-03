@@ -17,14 +17,7 @@ import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import {
-  archiveTransaction,
-  cancelTransaction,
-  executeTransaction,
-  getUserShouldApprove,
-  remindSigners,
-  sendApproverChoice,
-} from '@renderer/services/organization';
+import { getUserShouldApprove, sendApproverChoice } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
 
@@ -41,7 +34,6 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   setLastExportExtension,
-  signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
@@ -57,7 +49,6 @@ import { writeTransactionFile } from '@renderer/services/transactionFileService.
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { executeTransactionActionFlow, type TransactionAction } from './transactionActionFlow.ts';
 import {
   isApprovableStatus,
   isInProgressStatus,
@@ -67,6 +58,7 @@ import CancelTransactionController from '@renderer/pages/TransactionDetails/Canc
 import ArchiveTransactionController from '@renderer/pages/TransactionDetails/ArchiveTransactionController.vue';
 import ScheduleTransactionController from '@renderer/pages/TransactionDetails/ScheduleTransactionController.vue';
 import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
+import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -163,6 +155,8 @@ const isConfirmModalLoadingState = ref(false);
 const publicKeysRequiredToSign = ref<string[] | null>(null);
 const shouldApprove = ref<boolean>(false);
 
+const signStarted = ref(false);
+const goNextAfterSign = ref(false);
 const cancelStarted = ref(false);
 const archiveStarted = ref(false);
 const scheduleStarted = ref(false);
@@ -260,51 +254,6 @@ const flatBreadCrumb = computed(() => {
 /* Handlers */
 const handleBack = async () => {
   router.back();
-};
-
-const handleSign = async (goNext = false) => {
-  if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
-    throw new Error('Transaction is not available');
-  }
-
-  assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const personalPassword = getPassword(handleSign.bind(null, goNext), {
-    subHeading: 'Enter your application password to access your private key',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-
-  try {
-    loadingStates[sign] = 'Signing…';
-
-    const signed = await signTransactions(
-      [props.organizationTransaction],
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      toastManager,
-    );
-    await props.onAction();
-
-    if (signed) {
-      toastManager.success('Transaction signed successfully');
-      if (goNext) {
-        if (nextTransaction.hasNext) {
-          await nextTransaction.routeToNext(router);
-        } else {
-          await nextTransaction.routeUp(router);
-        }
-      }
-    } else {
-      toastManager.error('Failed to sign transaction');
-    }
-  } catch (error) {
-    toastManager.error(getErrorMessage(error, 'Failed to sign transaction'));
-  } finally {
-    loadingStates[sign] = null;
-  }
 };
 
 const handleApprove = async (approved: boolean, showModal?: boolean) => {
@@ -462,10 +411,9 @@ const handleAction = async (value: ActionButton) => {
     await handleApprove(false, true);
   } else if (value === approve) {
     await handleApprove(true, true);
-  } else if (value === sign) {
-    await handleSign();
-  } else if (value === signAndNext) {
-    await handleSign(true);
+  } else if (value === sign || value === signAndNext) {
+    signStarted.value = true;
+    goNextAfterSign.value = value === signAndNext;
   } else if (value === cancel) {
     cancelStarted.value = true;
   } else if (value === archive) {
@@ -483,8 +431,6 @@ const handleSubmit = async (e: Event) => {
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
   await handleAction(buttonContent as ActionButton);
 };
-
-const handleDropDownItem = async (value: ActionButton) => handleAction(value);
 
 /* Watchers */
 watch(
@@ -581,7 +527,7 @@ watch(
                 :items="dropDownItems"
                 compact
                 data-testid="button-more-dropdown-lg"
-                @select="handleDropDownItem($event as ActionButton)"
+                @select="handleAction($event as ActionButton)"
               />
             </div>
           </template>
@@ -590,6 +536,12 @@ watch(
     </div>
   </form>
 
+  <SignTransactionController
+    v-model:activate="signStarted"
+    :callback="props.onAction"
+    :go-next="goNextAfterSign"
+    :transaction="organizationTransaction"
+  />
   <CancelTransactionController
     v-model:activate="cancelStarted"
     :callback="props.onAction"
@@ -613,13 +565,13 @@ watch(
 
   <AppConfirmModal
     v-model:show="isConfirmModalShown"
-    data-testid="button-group-action"
+    :button-text="confirmModalButtonText"
     :callback="confirmCallback"
+    :cancel-button-text="confirmModalCancelButtonText"
+    :loading="isConfirmModalLoadingState"
+    :loading-text="confirmModalLoadingText"
     :text="confirmModalText"
     :title="confirmModalTitle"
-    :button-text="confirmModalButtonText"
-    :cancel-button-text="confirmModalCancelButtonText"
-    :loading-text="confirmModalLoadingText"
-    :loading="isConfirmModalLoadingState"
+    data-testid="button-group-action"
   />
 </template>
