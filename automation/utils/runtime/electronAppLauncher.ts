@@ -6,14 +6,17 @@ import {
   type Page,
 } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import { ELECTRON_APP_MODES } from '../../constants/index.js';
+import { getElectronAppMode, type TransactionToolAppMode } from './appMode.js';
+import { applyPlaywrightIsolationEnv } from '../setup/playwrightIsolation.js';
+
+export type { TransactionToolAppMode } from './appMode.js';
 
 dotenv.config();
 
 const DEFAULT_ATTACH_URL = 'http://127.0.0.1:9222';
 const DEFAULT_ATTACH_TIMEOUT_MS = 30_000;
 const WINDOW_POLL_INTERVAL_MS = 250;
-
-export type TransactionToolAppMode = 'launch' | 'attach';
 
 export interface TransactionToolApp {
   readonly mode: TransactionToolAppMode;
@@ -26,7 +29,7 @@ export interface LaunchHederaTransactionToolOptions {
 }
 
 class LaunchedTransactionToolApp implements TransactionToolApp {
-  readonly mode = 'launch';
+  readonly mode = ELECTRON_APP_MODES.LAUNCH;
 
   constructor(private readonly app: ElectronApplication) {}
 
@@ -40,7 +43,7 @@ class LaunchedTransactionToolApp implements TransactionToolApp {
 }
 
 class AttachedTransactionToolApp implements TransactionToolApp {
-  readonly mode = 'attach';
+  readonly mode = ELECTRON_APP_MODES.ATTACH;
 
   constructor(private readonly browser: Browser) {}
 
@@ -56,29 +59,18 @@ class AttachedTransactionToolApp implements TransactionToolApp {
 let attachedAppPromise: Promise<TransactionToolApp> | null = null;
 
 export async function launchHederaTransactionTool(
-  { mode = getLaunchMode() }: LaunchHederaTransactionToolOptions = {},
+  { mode = getElectronAppMode() }: LaunchHederaTransactionToolOptions = {},
 ): Promise<TransactionToolApp> {
-  if (mode === 'attach') {
+  if (mode === ELECTRON_APP_MODES.ATTACH) {
     return await attachToHederaTransactionTool();
   }
 
   return await launchNewHederaTransactionTool();
 }
 
-function getLaunchMode(): TransactionToolAppMode {
-  const mode = process.env.ELECTRON_APP_MODE?.trim() ?? 'launch';
-
-  if (mode === 'launch' || mode === 'attach') {
-    return mode;
-  }
-
-  throw new Error(
-    `Invalid ELECTRON_APP_MODE "${mode}". Expected "launch" or "attach".`,
-  );
-}
-
 async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
   const executablePath = process.env.EXECUTABLE_PATH;
+  const isolationContext = applyPlaywrightIsolationEnv();
 
   if (!executablePath) {
     console.error('[ElectronLauncher] EXECUTABLE_PATH is not defined.');
@@ -87,8 +79,23 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
 
   console.log('[ElectronLauncher] Launching Hedera Transaction Tool...');
   console.log(`[ElectronLauncher] Executable path: ${executablePath}`);
+  if (isolationContext) {
+    console.log(`[ElectronLauncher] Namespace: ${isolationContext.namespace}`);
+    console.log(`[ElectronLauncher] userData dir: ${isolationContext.userDataDir}`);
+    console.log(`[ElectronLauncher] Session partition: ${isolationContext.sessionPartition}`);
+  }
 
   const launchStart = Date.now();
+  const launchArgs = [
+    '--ignore-certificate-errors',
+    // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+  ];
+
+  if (isolationContext?.userDataDir) {
+    launchArgs.push(`--user-data-dir=${isolationContext.userDataDir}`);
+  }
 
   const app = await electron.launch({
     executablePath,
@@ -96,13 +103,8 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
       ...process.env,
       PLAYWRIGHT_TEST: 'true',
     },
-    // These args are passed to Electron/Chromium. Crucial for CI when using mkcert/self-signed TLS.
-    args: [
-      '--ignore-certificate-errors',
-      // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-    ],
+    // These args are passed to Electron/Chromium. `user-data-dir` must be isolated before app code runs.
+    args: launchArgs,
   });
   const wrappedApp = new LaunchedTransactionToolApp(app);
 

@@ -3,24 +3,21 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
 import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-} from '../utils/databaseUtil.js';
-import {
-  calculateTimeout,
-  closeApp,
   getPrivateKeyEnv,
-  setupApp,
   setupEnvironmentForTransactions,
-  waitForValidStart,
-} from '../utils/automationSupport.js';
-import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+} from '../utils/runtime/environment.js';
+import { calculateTimeout, waitForValidStart } from '../utils/runtime/timing.js';
+import { disableNotificationsForUsers } from '../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
+import {
+  setupNamedOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -28,6 +25,8 @@ let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails;
 let complexKeyAccountId: string;
@@ -39,27 +38,30 @@ let totalUsers = 57; // 57... divisible by 3...? Well this is not a good start..
 test.describe.skip('Organization Regression tests @organization-advanced', () => {
   test.beforeAll(async () => {
     test.slow();
-    await resetDbState();
-    await resetPostgresDbState();
-    ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
-    loginPage = new LoginPage(window);
+    ({
+      app,
+      window,
+      transactionPage,
+      organizationPage,
+      registrationPage,
+      loginPage,
+      isolationContext,
+      organizationNickname,
+    } = await setupNamedOrganizationSuiteApp(test.info()));
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
       organizationPage,
       {
         userCount: totalUsers,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
     globalCredentials.password = seededSession.localUser.password;
     firstUser = organizationPage.getUser(0);
 
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
+    await disableNotificationsForUsers(organizationPage.users.map(user => user.email));
 
     await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
 
@@ -84,9 +86,7 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify user can execute update account tx for complex key account similar to council account', async () => {

@@ -1,55 +1,48 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { setupEnvironmentForTransactions } from '../utils/runtime/environment.js';
+import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
 import {
-  closeApp,
-  setupApp,
-  setupEnvironmentForTransactions,
-} from '../utils/automationSupport.js';
-import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from './helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+import { prepareGroupTransactionPage } from './helpers/flows/groupTransactionNavigationFlow.js';
+import {
+  addAndEditAccountCreateGroupTransaction,
+  DEFAULT_GROUP_ACCOUNT_CREATE_DRAFT_VALUES,
+} from './helpers/flows/groupTransactionFlow.js';
+import { GroupTransactionAssertions } from './helpers/assertions/groupTransactionAssertions.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
-let globalCredentials = { email: '', password: '' };
-let registrationPage: RegistrationPage;
+let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
+let groupAssertions: GroupTransactionAssertions;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Group transaction tests @local-transactions', () => {
   test.beforeAll(async () => {
-    await resetDbState();
-    ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    groupPage = new GroupPage(window);
-    const loginPage = new LoginPage(window);
-    const seededUser = await createSeededLocalUserSession(window, loginPage);
-    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
-
-    await setupEnvironmentForTransactions(window);
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
   });
 
   test.beforeEach(async () => {
-    await transactionPage.clickOnTransactionsMenuButton();
-
-    if (process.env.CI) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    await groupPage.closeDraftTransactionModal();
-    await groupPage.closeGroupDraftModal();
-    await groupPage.deleteGroupModal();
-
-    await groupPage.navigateToGroupTransaction();
+    loginPage = new LoginPage(window);
+    transactionPage = new TransactionPage(window);
+    groupPage = new GroupPage(window);
+    groupAssertions = new GroupTransactionAssertions(transactionPage);
+    await createSeededLocalUserSession(window, loginPage);
+    transactionPage.generatedAccounts = [];
+    await setupEnvironmentForTransactions(window);
+    await prepareGroupTransactionPage({ transactionPage, groupPage });
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetDbStateForTeardown();
+    await teardownLocalSuiteApp(app, isolationContext);
   });
 
   test('Verify group transaction elements', async () => {
@@ -125,48 +118,22 @@ test.describe('Group transaction tests @local-transactions', () => {
   });
 
   test('Verify user can edit transaction in the group', async () => {
-    const initialFunds = '50';
-    const maxAutoTokenAssociation = '10';
-    const transactionMemo = 'test memo';
-    const accountMemo = 'test account memo';
-
-    await groupPage.addSingleTransactionToGroup();
-
-    await groupPage.clickTransactionEditButton(0);
-
-    await transactionPage.fillInInitialFunds(initialFunds);
-    await transactionPage.fillInMaxAccountAssociations(maxAutoTokenAssociation);
-    await transactionPage.fillInTransactionMemoUpdate(transactionMemo);
-    await transactionPage.fillInMemo(accountMemo);
-    await groupPage.clickAddToGroupButton();
+    const values = await addAndEditAccountCreateGroupTransaction(groupPage, transactionPage);
 
     //verifying that there is no duplicate transaction
     expect(await groupPage.isTransactionHidden(1)).toBe(true);
 
     //verifying that the transaction data is updated
     await groupPage.clickTransactionEditButton(0);
-    expect(await transactionPage.getTransactionTypeHeaderText()).toBe('Account Create Transaction');
-    expect(await transactionPage.getInitialFundsValue()).toBe(initialFunds);
-    expect(await transactionPage.getFilledMaxAccountAssociations()).toBe(maxAutoTokenAssociation);
-    expect(await transactionPage.getTransactionMemoText()).toBe(transactionMemo);
-    expect(await transactionPage.getMemoText()).toBe(accountMemo);
+    await groupAssertions.assertAccountCreateTransactionValues(values);
   });
 
   test('Verify user can duplicate transaction in the group', async () => {
-    const initialFunds = '50';
-    const maxAutoTokenAssociation = '10';
-    const transactionMemo = 'test memo';
-    const accountMemo = 'test account memo';
-
-    await groupPage.addSingleTransactionToGroup();
-
-    await groupPage.clickTransactionEditButton(0);
-
-    await transactionPage.fillInInitialFunds(initialFunds);
-    await transactionPage.fillInMaxAccountAssociations(maxAutoTokenAssociation);
-    await transactionPage.fillInTransactionMemoUpdate(transactionMemo);
-    await transactionPage.fillInMemo(accountMemo);
-    await groupPage.clickAddToGroupButton();
+    const values = await addAndEditAccountCreateGroupTransaction(
+      groupPage,
+      transactionPage,
+      DEFAULT_GROUP_ACCOUNT_CREATE_DRAFT_VALUES,
+    );
 
     await groupPage.clickTransactionDuplicateButton(0);
 
@@ -174,11 +141,7 @@ test.describe('Group transaction tests @local-transactions', () => {
     expect(await groupPage.getTransactionType(1)).toBe('Account Create Transaction');
 
     await groupPage.clickTransactionEditButton(1);
-    expect(await transactionPage.getTransactionTypeHeaderText()).toBe('Account Create Transaction');
-    expect(await transactionPage.getInitialFundsValue()).toBe(initialFunds);
-    expect(await transactionPage.getFilledMaxAccountAssociations()).toBe(maxAutoTokenAssociation);
-    expect(await transactionPage.getTransactionMemoText()).toBe(transactionMemo);
-    expect(await transactionPage.getMemoText()).toBe(accountMemo);
+    await groupAssertions.assertAccountCreateTransactionValues(values);
   });
 
   test('Verify user can delete many transactions at once(delete all)', async () => {
@@ -222,15 +185,7 @@ test.describe('Group transaction tests @local-transactions', () => {
     await groupPage.clickOnSignAndExecuteButton();
     const txId = await groupPage.getTransactionTimestamp(0) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
-
-    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails?.name;
-    const newAccount = transactionDetails?.entity_id;
-    const result = transactionDetails?.result;
-
-    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
-    expect(newAccount).toBeTruthy();
-    expect(result).toBe('SUCCESS');
+    await groupAssertions.assertMirrorTransactionResult(txId, 'CRYPTOCREATEACCOUNT');
   });
 
   test('Verify user can execute duplicated group transactions', async () => {
@@ -244,30 +199,9 @@ test.describe('Group transaction tests @local-transactions', () => {
     const secondTxId = await groupPage.getTransactionTimestamp(1) ?? '';
     const thirdTxId = await groupPage.getTransactionTimestamp(2) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
-
-    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails?.name;
-    const newAccount = transactionDetails?.entity_id;
-    const result = transactionDetails?.result;
-    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
-    expect(newAccount).toBeTruthy();
-    expect(result).toBe('SUCCESS');
-
-    const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails?.name;
-    const secondNewAccount = secondTransactionDetails?.entity_id;
-    const secondResult = secondTransactionDetails?.result;
-    expect(secondTransactionType).toBe('CRYPTOCREATEACCOUNT');
-    expect(secondNewAccount).toBeTruthy();
-    expect(secondResult).toBe('SUCCESS');
-
-    const thirdTransactionDetails = await transactionPage.mirrorGetTransactionResponse(thirdTxId);
-    const thirdTransactionType = thirdTransactionDetails?.name;
-    const thirdNewAccount = thirdTransactionDetails?.entity_id;
-    const thirdResult = thirdTransactionDetails?.result;
-    expect(thirdTransactionType).toBe('CRYPTOCREATEACCOUNT');
-    expect(thirdNewAccount).toBeTruthy();
-    expect(thirdResult).toBe('SUCCESS');
+    await groupAssertions.assertMirrorTransactionResult(txId, 'CRYPTOCREATEACCOUNT');
+    await groupAssertions.assertMirrorTransactionResult(secondTxId, 'CRYPTOCREATEACCOUNT');
+    await groupAssertions.assertMirrorTransactionResult(thirdTxId, 'CRYPTOCREATEACCOUNT');
   });
 
   test('Verify user can execute different transactions in a group', async () => {
@@ -278,22 +212,8 @@ test.describe('Group transaction tests @local-transactions', () => {
     const txId = await groupPage.getTransactionTimestamp(0) ?? '';
     const secondTxId = await groupPage.getTransactionTimestamp(1) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
-
-    const transactionDetails = await transactionPage.mirrorGetTransactionResponse(txId);
-    const transactionType = transactionDetails?.name;
-    const newAccount = transactionDetails?.entity_id;
-    const result = transactionDetails?.result;
-    expect(transactionType).toBe('CRYPTOCREATEACCOUNT');
-    expect(newAccount).toBeTruthy();
-    expect(result).toBe('SUCCESS');
-
-    const secondTransactionDetails = await transactionPage.mirrorGetTransactionResponse(secondTxId);
-    const secondTransactionType = secondTransactionDetails?.name;
-    const secondNewAccount = secondTransactionDetails?.entity_id;
-    const secondResult = secondTransactionDetails?.result;
-    expect(secondTransactionType).toBe('FILECREATE');
-    expect(secondNewAccount).toBeTruthy();
-    expect(secondResult).toBe('SUCCESS');
+    await groupAssertions.assertMirrorTransactionResult(txId, 'CRYPTOCREATEACCOUNT');
+    await groupAssertions.assertMirrorTransactionResult(secondTxId, 'FILECREATE');
   });
 
   test('Verify transaction and linked group items and transaction group exists in db', async () => {

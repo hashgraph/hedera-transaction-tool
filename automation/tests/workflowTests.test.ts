@@ -1,50 +1,39 @@
-/*
-const { test, expect } = require('playwright/test');
-const {
-  setupApp,
-  closeApp,
-  generateRandomEmail,
-  generateRandomPassword,
-  setupEnvironmentForTransactions,
-} = require('../utils/automationSupport');
-const RegistrationPage = require('../pages/RegistrationPage.js');
-const LoginPage = require('../pages/LoginPage');
-const TransactionPage = require('../pages/TransactionPage');
-const AccountPage = require('../pages/AccountPage');
-const FilePage = require('../pages/FilePage');
-const DetailsPage = require('../pages/DetailsPage');
-const { resetDbState } = require('../utils/databaseUtil');
-*/
-
 import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
-import {
-  closeApp,
-  setupApp,
-  setupEnvironmentForTransactions,
-} from '../utils/automationSupport.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { setupEnvironmentForTransactions } from '../utils/runtime/environment.js';
 import { AccountPage } from '../pages/AccountPage.js';
 import { FilePage } from '../pages/FilePage.js';
 import { DetailsPage } from '../pages/DetailsPage.js';
-import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
+import {
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from './helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
-const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let accountPage: AccountPage;
 let filePage: FilePage;
 let detailsPage: DetailsPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Workflow tests @local-transactions', () => {
   test.beforeAll(async () => {
-    await resetDbState();
-    ({ app, window } = await setupApp());
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
+  });
+
+  test.afterAll(async () => {
+    await teardownLocalSuiteApp(app, isolationContext);
+  });
+
+  test.beforeEach(async () => {
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
     accountPage = new AccountPage(window);
@@ -52,24 +41,8 @@ test.describe('Workflow tests @local-transactions', () => {
     detailsPage = new DetailsPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage);
     registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-
-    // Ensure transactionPage generatedAccounts is empty
     transactionPage.generatedAccounts = [];
-
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
-
     await setupEnvironmentForTransactions(window);
-  });
-
-  test.afterAll(async () => {
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
-    await closeApp(app);
-    await resetDbStateForTeardown();
-  });
-
-  test.beforeEach(async () => {
     await transactionPage.clickOnTransactionsMenuButton();
 
     if (process.env.CI) {

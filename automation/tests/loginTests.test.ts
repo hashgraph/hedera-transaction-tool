@@ -1,35 +1,34 @@
 import { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
-import {
-  setupApp,
-  resetAppState,
-  closeApp,
-} from '../utils/automationSupport.js';
+import { resetAppState, type TransactionToolApp } from '../utils/runtime/appSession.js';
 import { LoginPage } from '../pages/LoginPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
-import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
+import {
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from './helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Login tests @local-basic', () => {
   test.beforeAll(async () => {
-    await resetDbState();
-    ({ app, window } = await setupApp());
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
+  });
+
+  test.afterAll(async () => {
+    await teardownLocalSuiteApp(app, isolationContext);
+  });
+
+  test.beforeEach(async () => {
     loginPage = new LoginPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage);
     globalCredentials.email = seededUser.email;
     globalCredentials.password = seededUser.password;
-  });
-
-  test.afterAll(async () => {
-    await closeApp(app);
-    await resetDbStateForTeardown();
-  });
-
-  test.beforeEach(async () => {
     await loginPage.logout();
   });
 

@@ -7,7 +7,9 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 
 let prisma: PrismaClient;
 
-export const dbPath = path.join(app.getPath('userData'), 'database.db');
+export function getDatabasePath() {
+  return path.join(app.getPath('userData'), 'database.db');
+}
 
 export function getPrismaClient() {
   if (!prisma) {
@@ -21,6 +23,7 @@ export function setPrismaClient(prismaClient: PrismaClient) {
 }
 
 export function createPrismaClient() {
+  const dbPath = getDatabasePath();
   const adapter = new PrismaBetterSqlite3({
     url: `file:${dbPath}`,
   });

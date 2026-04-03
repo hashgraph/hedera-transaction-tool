@@ -1,38 +1,53 @@
 import { expect, Page, test } from '@playwright/test';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
-import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/automationSupport.js';
+import {
+  generateRandomEmail,
+  generateRandomPassword,
+} from '../utils/data/random.js';
+import { closeApp, setupApp } from '../utils/runtime/appSession.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import {
+  activateTestIsolation,
+  cleanupIsolation,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: Awaited<ReturnType<typeof setupApp>>['app'] | undefined;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Registration tests @local-basic', () => {
-  test.beforeAll(async () => {
-    await resetDbState();
-    ({ app, window } = await setupApp());
-    registrationPage = new RegistrationPage(window);
-    loginPage = new LoginPage(window);
-    await loginPage.assertRegistrationMode('registration suite bootstrap');
-  });
-
-  test.afterAll(async () => {
-    await closeApp(app);
-    await resetDbStateForTeardown();
-  });
-
-  test.beforeEach(async () => {
+  test.beforeEach(async ({}, testInfo) => {
     if (app) {
       await closeApp(app);
+      app = undefined;
     }
-    await resetDbState();
+    isolationContext = await activateTestIsolation(testInfo);
+    await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
     loginPage = new LoginPage(window);
     await loginPage.assertRegistrationMode('registration test bootstrap');
+  });
+
+  test.afterEach(async () => {
+    await closeApp(app);
+    app = undefined;
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
+    isolationContext = null;
+  });
+
+  test.afterAll(async () => {
+    if (app) {
+      await closeApp(app);
+    }
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify all elements are present on the registration page', async () => {
