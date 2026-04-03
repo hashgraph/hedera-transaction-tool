@@ -11,7 +11,8 @@ import {
   type IGroupItem,
 } from '@renderer/services/organization';
 import { getCancelGroupToast } from '@renderer/pages/TransactionGroupDetails/cancelGroupResult.ts';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -30,7 +31,7 @@ const user = useUserStore();
 const progressText = ref<string>('');
 
 /* Handlers */
-const handleCancelAll = async () => {
+const handleCancelAll = async (): Promise<ActionReport | null> => {
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
@@ -76,6 +77,8 @@ const handleCancelAll = async () => {
     toastManager.error('Unable to cancel transactions because groupOrId is null');
     progressText.value = '';
   }
+
+  return null;
 };
 
 const invokeCallback = async (groupId: number) => {
