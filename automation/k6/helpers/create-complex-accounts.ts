@@ -39,7 +39,7 @@ import {
   type ComplexKeyResult,
 } from './complex-keys.js';
 import { seedComplexKeyTransactions } from './seed-perf-data.js';
-import { argonHash } from '../../utils/crypto.js';
+import { argonHash } from '../../utils/crypto/crypto';
 import { DATA_VOLUMES, COMPLEX_KEY } from '../src/config/constants.js';
 
 /** Default output path for generated keys (localnet only) */

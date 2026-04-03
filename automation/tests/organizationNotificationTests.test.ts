@@ -3,27 +3,25 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import { flushRateLimiter } from '../utils/db/databaseUtil.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
 import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-  flushRateLimiter,
-} from '../utils/databaseUtil.js';
-import {
-  closeApp,
   getPrivateKeyEnv,
-  setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/automationSupport.js';
+} from '../utils/runtime/environment.js';
 import {
-  disableNotificationsForTestUsers,
+  disableNotificationsForUsers,
   getLatestInAppNotificationStatusByEmail,
   getNotifiedTransactionIdByEmail,
-} from '../utils/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+} from '../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
+import {
+  setupNamedOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -31,6 +29,8 @@ let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
@@ -38,19 +38,23 @@ let secondUser: UserDetails;
 test.describe.skip('Organization Notification tests @organization-basic', () => {
   test.beforeAll(async () => {
     test.slow();
-    await resetDbState();
-    await resetPostgresDbState();
-    ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
-    loginPage = new LoginPage(window);
+    ({
+      app,
+      window,
+      transactionPage,
+      organizationPage,
+      registrationPage,
+      loginPage,
+      isolationContext,
+      organizationNickname,
+    } = await setupNamedOrganizationSuiteApp(test.info()));
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
       organizationPage,
       {
         userCount: 3,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
@@ -58,8 +62,7 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
 
-    // Disable email notifications for test users
-    await disableNotificationsForTestUsers(true);
+    await disableNotificationsForUsers([firstUser.email, secondUser.email], true);
 
     await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
 
@@ -73,9 +76,7 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify notification is visible in the organization dropdown', async () => {

@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
-import { getKeyPairByIndexAndEmail } from '../utils/databaseQueries.js';
+import { getKeyPairByIndexAndEmail } from '../utils/db/databaseQueries.js';
 
 export class SettingsPage extends BasePage {
   constructor(window: Page, public currentIndex = "1") {

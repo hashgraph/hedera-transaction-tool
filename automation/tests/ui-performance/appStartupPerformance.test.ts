@@ -8,7 +8,7 @@
 import { test, expect, ElectronApplication } from '@playwright/test';
 import { _electron as electron } from 'playwright';
 import * as dotenv from 'dotenv';
-import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/db/databaseUtil.js';
 import { formatDuration } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
 

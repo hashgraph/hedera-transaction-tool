@@ -6,6 +6,9 @@ import * as url from 'url';
 import { Client, QueryResultRow } from 'pg';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
+import { shouldPreserveLocalAppState } from '../runtime/appMode.js';
+import { applyPlaywrightIsolationEnv } from '../setup/playwrightIsolation.js';
+import { shouldPreserveBackendState } from '../runtime/backendStateMode.js';
 
 // Load environment variables from .env file
 const __filename = url.fileURLToPath(import.meta.url);
@@ -14,6 +17,11 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // SQLite Functions
 export function getDatabasePath(): string {
+  const isolationContext = applyPlaywrightIsolationEnv();
+  if (isolationContext) {
+    return path.join(isolationContext.userDataDir, 'database.db');
+  }
+
   const homeDir = os.homedir();
   if (process.platform === 'darwin') {
     return path.join(
@@ -83,6 +91,11 @@ export function queryDatabase<T>(query: string, params: (string|number)[] = []):
 }
 
 export async function resetDbState() {
+  if (shouldPreserveLocalAppState()) {
+    console.log('Preserving local SQLite state. Skipping database reset.');
+    return;
+  }
+
   const db = openDatabase();
   if (!db) {
     console.log('SQLite database file does not exist. Skipping reset.');
@@ -223,6 +236,11 @@ export async function createTestUsersBatch(usersData: {email: string, password: 
 }
 
 export async function resetPostgresDbState() {
+  if (shouldPreserveBackendState()) {
+    console.log('Preserving PostgreSQL state. Skipping database reset.');
+    return;
+  }
+
   const client = await connectPostgresDatabase();
 
   // Tables to reset - order matters for foreign key constraints
@@ -264,6 +282,11 @@ export async function resetPostgresDbStateForTeardown() {
 }
 
 export async function flushRateLimiter() {
+  if (shouldPreserveBackendState()) {
+    console.log('Preserving backend state. Skipping Redis rate limiter flush.');
+    return;
+  }
+
   const { execSync } = await import('child_process');
   try {
     execSync('docker exec cache redis-cli FLUSHDB', { stdio: 'pipe' });

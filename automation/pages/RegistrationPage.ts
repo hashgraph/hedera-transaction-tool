@@ -6,7 +6,7 @@ import {
   getPublicKeyByEmail,
   verifyPrivateKeyExistsByEmail,
   verifyPublicKeyExistsByEmail,
-} from '../utils/databaseQueries.js';
+} from '../utils/db/databaseQueries.js';
 
 export class RegistrationPage extends BasePage {
   constructor(window: Page, private recoveryPhraseWords: Record<string, string> = {}) {
@@ -399,7 +399,9 @@ export class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    return await this.getText(this.toastMessageSelector, null, this.VERY_LONG_TIMEOUT);
+    const toasts = this.window.locator(`${this.toastMessageSelector}:visible`);
+    await toasts.last().waitFor({ state: 'visible', timeout: this.VERY_LONG_TIMEOUT });
+    return ((await toasts.last().textContent()) ?? '').trim();
   }
 
   async clickOnGenerateAgainButton() {

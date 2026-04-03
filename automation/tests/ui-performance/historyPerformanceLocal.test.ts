@@ -12,8 +12,8 @@
  */
 
 import { expect, Page, test } from '@playwright/test';
-import { closeApp, setupApp } from '../../utils/automationSupport.js';
-import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { closeApp, setupApp } from '../../utils/runtime/appSession.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/db/databaseUtil.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { seedLocalPerfData } from './seed-local-perf-data.js';
 import {
@@ -26,7 +26,7 @@ import {
   waitForRowCount,
 } from './performanceUtils.js';
 import { SELECTORS } from './selectors.js';
-import { createSeededLocalUserSession } from '../../utils/localBaseline.js';
+import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
 
 // Volume requirement from k6 constants (SSOT)
 const DB_ITEM_COUNT = DATA_VOLUMES.HISTORY;
