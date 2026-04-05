@@ -1,10 +1,6 @@
 <script lang="ts" setup>
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
-import {
-  getTransactionGroupById,
-  getUserShouldApprove,
-  sendApproverChoice,
-} from '@renderer/services/organization';
+import { getTransactionGroupById, getUserShouldApprove } from '@renderer/services/organization';
 import { createLogger } from '@renderer/utils/logger';
 import {
   BackEndTransactionType,
@@ -18,33 +14,26 @@ import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hashgraph/sdk';
-import { FEATURE_APPROVERS_ENABLED, historyTitle, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
-
-import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 import {
   assertIsLoggedInOrganization,
-  getPrivateKey,
-  getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
   isSignableTransaction,
-  isUserLoggedIn,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
@@ -61,6 +50,7 @@ import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/Transac
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
+import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export All';
@@ -114,7 +104,6 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   if (isAffected) await fetchGroup(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const { getPassword, passwordModalOpened } = usePersonalPassword();
 const createTooltips = useCreateTooltips();
 
 /* Injected */
@@ -126,16 +115,10 @@ const toastManager = ToastManager.inject();
 /* State */
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
-const signAllStarted = ref(false);
-const cancelAllStarted = ref(false);
-const exportAllStarted = ref(false);
+
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
-const isConfirmModalShown = ref(false);
-const confirmModalTitle = ref('');
-const confirmModalText = ref('');
-const confirmCallback = ref<((...args: any[]) => void) | null>(null);
 
 const fullyLoaded = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -144,6 +127,12 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
   [sign]: null,
   [cancel]: null,
 });
+
+const signAllStarted = ref(false);
+const cancelAllStarted = ref(false);
+const exportAllStarted = ref(false);
+const approveAllStarted = ref(false);
+const isApproved = ref(false);
 
 /* Computed */
 const groupId = computed(() => {
@@ -247,113 +236,28 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const handleCancelAll = async () => {
-  cancelAllStarted.value = true;
-};
-
-const didCancelAll = async (groupId: number) => {
-  await fetchGroup(groupId);
-};
-
-const handleSignAll = () => {
-  signAllStarted.value = true;
-};
-
 const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
   if (groupId !== null) {
     await fetchGroup(groupId);
   }
 };
 
-const handleApproveAll = async (showModal = false, approved = false) => {
-  if (!approved && showModal) {
-    isConfirmModalShown.value = true;
-    confirmModalTitle.value = 'Reject all Transactions?';
-    confirmModalText.value = 'Are you sure you want to reject all transactions?';
-    confirmCallback.value = handleApproveAll;
-    return;
-  }
-
-  const callback = async () => {
-    if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-      throw new Error('You must be logged in to cancel transactions.');
-    }
-
-    const personalPassword = getPassword(callback, {
-      subHeading: 'Enter your application password to decrypt your private key',
-    });
-    if (passwordModalOpened(personalPassword)) return;
-
-    try {
-      loadingStates[approve] = 'Approving...';
-
-      const publicKey = user.selectedOrganization.userKeys[0].publicKey;
-      const privateKeyRaw = await decryptPrivateKey(
-        user.personal.id,
-        user.personal.password,
-        publicKey,
-      );
-      const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-
-      if (group.value != undefined) {
-        for (const item of group.value.groupItems) {
-          if (
-            await getUserShouldApprove(user.selectedOrganization.serverUrl, item.transaction.id)
-          ) {
-            const transactionBytes = hexToUint8Array(item.transaction.transactionBytes);
-            const transaction = Transaction.fromBytes(transactionBytes);
-            const signature = getTransactionBodySignatureWithoutNodeAccountId(
-              privateKey,
-              transaction,
-            );
-
-            await sendApproverChoice(
-              user.selectedOrganization.serverUrl,
-              item.transaction.id,
-              user.selectedOrganization.userKeys[0].id,
-              signature,
-              approved,
-            );
-          }
-        }
-      }
-      toastManager.success(`Transactions ${approved ? 'approved' : 'rejected'} successfully`);
-
-      if (!approved) {
-        await router.push({
-          name: 'transactions',
-          query: {
-            tab: historyTitle,
-          },
-        });
-      }
-    } finally {
-      loadingStates[approve] = null;
-    }
-  };
-
-  await callback();
-};
-
-const handleExportGroup = async () => {
-  exportAllStarted.value = true;
-};
-
-const didExportAll = async (groupId: number) => {
-  await fetchGroup(groupId);
-};
-
 const handleAction = async (value: ActionButton) => {
-  if (value === reject) {
-    await handleApproveAll(true, false);
-  } else if (value === approve) {
-    await handleApproveAll(true, true);
-  } else if (value === sign) {
-    handleSignAll();
-  } else if (value === cancel) {
-    await handleCancelAll();
-  } else if (value === exportName) {
-    await handleExportGroup();
+  switch (value) {
+    case reject:
+    case approve:
+      approveAllStarted.value = true;
+      isApproved.value = value === approve;
+      break;
+    case sign:
+      signAllStarted.value = true;
+      break;
+    case cancel:
+      cancelAllStarted.value = true;
+      break;
+    case exportName:
+      exportAllStarted.value = true;
+      break;
   }
 };
 
@@ -587,6 +491,12 @@ async function fetchGroup(id: string | number) {
               </template>
             </Transition>
 
+            <ApproveAllController
+              v-model:activate="approveAllStarted"
+              :approved="isApproved"
+              :callback="fetchGroup"
+              :groupOrId="group"
+            />
             <SignAllController
               v-model:activate="signAllStarted"
               :callback="didSignAll"
@@ -594,21 +504,13 @@ async function fetchGroup(id: string | number) {
             />
             <CancelAllController
               v-model:activate="cancelAllStarted"
-              :callback="didCancelAll"
+              :callback="fetchGroup"
               :groupOrId="group"
             />
             <ExportAllController
               v-model:activate="exportAllStarted"
-              :callback="didExportAll"
+              :callback="fetchGroup"
               :groupOrId="group"
-            />
-
-            <AppConfirmModal
-              v-model:show="isConfirmModalShown"
-              :callback="confirmCallback"
-              :text="confirmModalText"
-              :title="confirmModalTitle"
-              data-testid="button-group-action"
             />
           </div>
         </template>

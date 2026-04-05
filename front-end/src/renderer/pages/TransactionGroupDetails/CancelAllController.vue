@@ -27,7 +27,7 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* State */
-const progressText = ref<string>('');
+const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
 const handleCancelAll = async () => {
@@ -71,7 +71,7 @@ const handleCancelAll = async () => {
       toastManager.error(getErrorMessage(error, 'Transactions not canceled'));
     } finally {
       await invokeCallback(groupId);
-      progressText.value = '';
+      progressText.value = 'Loading group items…';
     }
   } else {
     // Bug
