@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization, getErrorMessage, signTransactions } from '@renderer/utils';
@@ -27,7 +27,7 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* State */
-const progressText = ref<string>('Loading group items…');
+const progressText = ref<string>('');
 
 /* Handlers */
 const handleSignAll = async (personalPassword: string | null) => {
@@ -61,21 +61,24 @@ const handleSignAll = async (personalPassword: string | null) => {
       } else {
         toastManager.error('Transactions not signed');
       }
-      invokeCallback(groupId, signed);
+      await invokeCallback(groupId, signed);
     } catch {
       toastManager.error('Transactions not signed');
-      invokeCallback(groupId, false);
+      await invokeCallback(groupId, false);
     } finally {
-      progressText.value = 'Loading group items…';
+      progressText.value = '';
     }
-  } // else bug
+  } else {
+    // Bug
+    toastManager.error('Unable to sign transactions because groupOrId is null');
+  }
 };
 
 const invokeCallback = async (groupId: number, signed: boolean) => {
   try {
     await props.callback(groupId, signed);
   } catch (error) {
-    toastManager.error(getErrorMessage(error, 'Transactions not signed'));
+    toastManager.error(getErrorMessage(error, 'Failed to reload group items'));
   }
 };
 </script>
@@ -84,14 +87,14 @@ const invokeCallback = async (groupId: number, signed: boolean) => {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleSignAll"
-    confirm-title="Sign all transactions?"
-    confirm-text="Are you sure you want to sign all transactions?"
+    :personal-password-required="true"
+    :progress-text="progressText"
     action-button-text="Sign all"
     cancel-button-text="Do not sign"
-    :personal-password-required="true"
+    confirm-text="Are you sure you want to sign all transactions?"
+    confirm-title="Sign all transactions?"
+    data-testid="button-sign-all"
     progress-icon-name="group"
     progress-title="Sign all transactions"
-    :progress-text="progressText"
-    data-testid="button-sign-all"
   />
 </template>

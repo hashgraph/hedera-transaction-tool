@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -74,7 +74,6 @@ const handleCancelAll = async () => {
   } else {
     // Bug
     toastManager.error('Unable to cancel transactions because groupOrId is null');
-    progressText.value = '';
   }
 };
 
@@ -100,13 +99,13 @@ const isTransactionInProgress = (transaction: ITransaction) => {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleCancelAll"
-    confirm-title="Cancel all transactions?"
-    confirm-text="Are you sure you want to cancel all transactions?"
+    :progress-text="progressText"
     action-button-text="Cancel all"
     cancel-button-text="Do not cancel"
+    confirm-text="Are you sure you want to cancel all transactions?"
+    confirm-title="Cancel all transactions?"
+    data-testid="button-cancel-all"
     progress-icon-name="group"
     progress-title="Canceling all transactions"
-    :progress-text="progressText"
-    data-testid="button-cancel-all"
   />
 </template>
