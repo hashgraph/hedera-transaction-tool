@@ -491,6 +491,11 @@ async function fetchGroup(id: string | number) {
               </template>
             </Transition>
 
+            <CancelAllController
+              v-model:activate="cancelAllStarted"
+              :callback="fetchGroup"
+              :groupOrId="group"
+            />
             <ApproveAllController
               v-model:activate="approveAllStarted"
               :approved="isApproved"
@@ -500,11 +505,6 @@ async function fetchGroup(id: string | number) {
             <SignAllController
               v-model:activate="signAllStarted"
               :callback="didSignAll"
-              :groupOrId="group"
-            />
-            <CancelAllController
-              v-model:activate="cancelAllStarted"
-              :callback="fetchGroup"
               :groupOrId="group"
             />
             <ExportAllController
