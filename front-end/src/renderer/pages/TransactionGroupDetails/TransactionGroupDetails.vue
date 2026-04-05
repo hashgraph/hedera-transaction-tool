@@ -1,7 +1,6 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { IGroup, IGroupItem } from '@renderer/services/organization';
 import {
-  getTransactionById,
   getTransactionGroupById,
   getUserShouldApprove,
   sendApproverChoice,
@@ -19,7 +18,6 @@ import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hashgraph/sdk';
-import JSZip from 'jszip';
 import { FEATURE_APPROVERS_ENABLED, historyTitle, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -34,13 +32,9 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 
 import { areByteArraysEqual } from '@shared/utils/byteUtils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 
 import {
   assertIsLoggedInOrganization,
-  assertUserLoggedIn,
-  generateTransactionExportFileName,
-  generateTransactionV1ExportContent,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
@@ -66,9 +60,10 @@ import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
+import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
 
 /* Types */
-type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export';
+type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export All';
 
 const logger = createLogger('renderer.page.transactionGroupDetails');
 
@@ -77,7 +72,7 @@ const reject: ActionButton = 'Reject All';
 const approve: ActionButton = 'Approve All';
 const sign: ActionButton = 'Sign All';
 const cancel: ActionButton = 'Cancel All';
-const exportName: ActionButton = 'Export';
+const exportName: ActionButton = 'Export All';
 
 const primaryButtons: ActionButton[] = [reject, approve, sign];
 const buttonsDataTestIds: { [key: string]: string } = {
@@ -133,6 +128,7 @@ const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
 const signAllStarted = ref(false);
 const cancelAllStarted = ref(false);
+const exportAllStarted = ref(false);
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 const tooltipRef = ref<HTMLElement[]>([]);
@@ -340,68 +336,11 @@ const handleApproveAll = async (showModal = false, approved = false) => {
 };
 
 const handleExportGroup = async () => {
-  // This currently only exports to TTv1 format
-  assertUserLoggedIn(user.personal);
+  exportAllStarted.value = true;
+};
 
-  /* Verifies the user has entered his password */
-  const personalPassword = getPassword(handleExportGroup, {
-    subHeading: 'Enter your application password to export the transaction group',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-
-  if (user.publicKeys.length === 0) {
-    throw new Error(
-      'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
-    );
-  }
-  const publicKey = user.publicKeys[0]; // get the first key pair's public key
-
-  const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-  const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-
-  if (group.value != undefined) {
-    const zip = new JSZip(); // Prepare a new ZIP archive
-
-    for (const item of group.value.groupItems as IGroupItem[]) {
-      const orgTransaction: ITransactionFull = await getTransactionById(
-        user.selectedOrganization?.serverUrl || '',
-        Number(item.transactionId),
-      );
-
-      const baseName = generateTransactionExportFileName(orgTransaction);
-
-      const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
-        orgTransaction,
-        privateKey,
-        group.value.description,
-      );
-
-      zip.file(`${baseName}.tx`, transactionBytes); // Add .tx file content to ZIP
-      zip.file(`${baseName}.txt`, jsonContent); // Add .txt  file content to ZIP
-    }
-    // Generate the ZIP file in-memory as a Uint8Array
-    const zipContent = await zip.generateAsync({ type: 'uint8array' });
-
-    // Generate the ZIP file name
-    const zipBaseName = `${group.value.description.substring(0, 25) || 'transaction-group'}`;
-
-    // Save the ZIP file to disk
-    const { filePath, canceled } = await showSaveDialog(
-      `${zipBaseName}.zip`,
-      'Export transaction group',
-      'Export',
-      [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['.zip'] }],
-      'Select the file to export the transaction group to:',
-    );
-    if (canceled || !filePath) {
-      return;
-    }
-
-    // write the zip file to disk
-    await saveFileToPath(zipContent, filePath);
-
-    toastManager.success('Transaction exported successfully');
-  }
+const didExportAll = async (groupId: number) => {
+  await fetchGroup(groupId);
 };
 
 const handleAction = async (value: ActionButton) => {
@@ -547,7 +486,7 @@ async function fetchGroup(id: string | number) {
 }
 </script>
 <template>
-  <form @submit.prevent="handleSubmit" class="p-5">
+  <form class="p-5" @submit.prevent="handleSubmit">
     <div class="flex-column-100">
       <div class="d-flex flex-column">
         <div class="flex-centered justify-content-between flex-wrap gap-4">
@@ -566,15 +505,15 @@ async function fetchGroup(id: string | number) {
 
           <div class="flex-centered gap-4">
             <NextTransactionCursor />
-            <Transition name="fade" mode="out-in">
+            <Transition mode="out-in" name="fade">
               <template v-if="visibleButtons.length > 0">
                 <div>
                   <AppButton
                     :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                    :data-testid="buttonsDataTestIds[visibleButtons[0]]"
                     :disabled="Boolean(loadingStates[visibleButtons[0]])"
                     :loading="Boolean(loadingStates[visibleButtons[0]])"
                     :loading-text="loadingStates[visibleButtons[0]] || ''"
-                    :data-testid="buttonsDataTestIds[visibleButtons[0]]"
                     type="submit"
                     >{{ visibleButtons[0] }}
                   </AppButton>
@@ -582,15 +521,15 @@ async function fetchGroup(id: string | number) {
               </template>
             </Transition>
 
-            <Transition name="fade" mode="out-in">
+            <Transition mode="out-in" name="fade">
               <template v-if="dropDownItems.length > 0">
                 <div>
                   <AppDropDown
                     :color="'secondary'"
                     :items="dropDownItems"
                     compact
-                    @select="handleDropDownItem($event as ActionButton)"
                     data-testid="button-more-dropdown-lg"
+                    @select="handleDropDownItem($event as ActionButton)"
                   />
                 </div>
               </template>
@@ -599,7 +538,7 @@ async function fetchGroup(id: string | number) {
         </div>
       </div>
 
-      <Transition name="fade" mode="out-in">
+      <Transition mode="out-in" name="fade">
         <template v-if="group">
           <div class="fill-remaining flex-column-100 mt-5">
             <div class="mt-5">
@@ -614,7 +553,7 @@ async function fetchGroup(id: string | number) {
 
             <hr class="separator my-5 w-100" />
 
-            <Transition name="fade" mode="out-in">
+            <Transition mode="out-in" name="fade">
               <template v-if="group.groupItems.length > 0">
                 <div class="fill-remaining overflow-x-auto">
                   <table class="table-custom">
@@ -650,22 +589,26 @@ async function fetchGroup(id: string | number) {
 
             <SignAllController
               v-model:activate="signAllStarted"
-              :groupOrId="group"
               :callback="didSignAll"
+              :groupOrId="group"
             />
-
             <CancelAllController
               v-model:activate="cancelAllStarted"
-              :groupOrId="group"
               :callback="didCancelAll"
+              :groupOrId="group"
+            />
+            <ExportAllController
+              v-model:activate="exportAllStarted"
+              :callback="didExportAll"
+              :groupOrId="group"
             />
 
             <AppConfirmModal
               v-model:show="isConfirmModalShown"
-              data-testid="button-group-action"
-              :title="confirmModalTitle"
-              :text="confirmModalText"
               :callback="confirmCallback"
+              :text="confirmModalText"
+              :title="confirmModalTitle"
+              data-testid="button-group-action"
             />
           </div>
         </template>
