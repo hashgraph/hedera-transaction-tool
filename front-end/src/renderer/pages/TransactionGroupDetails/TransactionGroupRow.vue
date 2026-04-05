@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
 import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
@@ -168,15 +168,15 @@ useRevealed(container, () => {
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
         <SignGroupItemButton
+          :disabled="!canSign"
           :transaction-id="props.groupItem.transactionId"
-          :signing-enabled="canSign"
           @transactionSigned="payload => emit('transactionSigned', payload.transaction)"
         />
         <AppButton
-          type="button"
-          color="secondary"
-          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
           :data-testid="`button-group-transaction-${props.rowIndex}`"
+          color="secondary"
+          type="button"
+          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
           ><span>Details</span>
         </AppButton>
       </div>

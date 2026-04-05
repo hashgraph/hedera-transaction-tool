@@ -19,7 +19,7 @@ import { useRouter } from 'vue-router';
 /* Props */
 const props = defineProps<{
   transaction: ITransactionFull | null;
-  callback: () => Promise<void>;
+  callback: (signed: boolean) => Promise<void>;
   goNext?: boolean;
 }>();
 const activate = defineModel<boolean>('activate', { required: true });
@@ -57,7 +57,7 @@ const handleSignTransaction = async (personalPassword: string | null) => {
         publicKeyOwnerCache,
         toastManager,
       );
-      await props.callback();
+      await props.callback(signed);
 
       if (signed) {
         toastManager.success('Transaction signed successfully');

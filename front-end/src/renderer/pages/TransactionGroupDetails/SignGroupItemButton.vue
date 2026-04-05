@@ -1,22 +1,15 @@
-<script setup lang="ts">
-import { useToast } from 'vue-toast-notification';
+<script lang="ts" setup>
 import useUserStore from '@renderer/stores/storeUser.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import type { ITransactionFull } from '@shared/interfaces';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { assertIsLoggedInOrganization, signTransactions } from '@renderer/utils';
-import { errorToastOptions, successToastOptions } from '@renderer/utils/toastOptions.ts';
+import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { getTransactionById } from '@renderer/services/organization';
-import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 import { ref } from 'vue';
-import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 
 /* Props */
 const props = defineProps<{
   transactionId: number;
-  signingEnabled: boolean;
 }>();
 
 /* Emits */
@@ -24,76 +17,50 @@ const emit = defineEmits<{
   (event: 'transactionSigned', payload: { transaction: ITransactionFull; signed: boolean }): void;
 }>();
 
-/* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const toastManager = ToastManager.inject();
-
-/* Composables */
-const toast = useToast();
-const { getPasswordV2 } = usePersonalPassword();
-
 /* Stores */
 const user = useUserStore();
 
 /* State */
-const signOnGoing = ref(false);
+const signStarted = ref<boolean>(false);
+const transaction = ref<ITransactionFull | null>(null);
 
 /* Handlers */
-const handleClick = () => {
-  getPasswordV2(handleSign, {
-    subHeading: 'Enter your application password to decrypt your private key',
-  });
+const handleClick = async () => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  transaction.value = await getTransactionById(
+    user.selectedOrganization.serverUrl,
+    props.transactionId,
+  );
+
+  signStarted.value = true;
 };
 
-const handleSign = async (personalPassword: string | null) => {
-  try {
-    signOnGoing.value = true;
+const didSign = async (signed: boolean) => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
-    assertIsLoggedInOrganization(user.selectedOrganization);
-    const transaction = await getTransactionById(
-      user.selectedOrganization.serverUrl,
-      props.transactionId,
-    );
-    const itemsToSign = [transaction];
-    const signed = await signTransactions(
-      itemsToSign,
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      toastManager
-    );
-
-    const newTransaction = await getTransactionById(
-      user.selectedOrganization.serverUrl,
-      props.transactionId,
-    );
-
-    emit('transactionSigned', { transaction: newTransaction, signed });
-    if (signed) {
-      toast.success('Transaction signed successfully', successToastOptions);
-    } else {
-      toast.error('Transaction not signed', errorToastOptions);
-    }
-  } catch {
-    toast.error('Transaction not signed', errorToastOptions);
-  } finally {
-    signOnGoing.value = false;
-  }
+  const newTransaction = await getTransactionById(
+    user.selectedOrganization.serverUrl,
+    props.transactionId,
+  );
+  emit('transactionSigned', { transaction: newTransaction, signed });
 };
 </script>
 
 <template>
   <AppButton
-    :disabled="!props.signingEnabled || signOnGoing"
-    :loading="signOnGoing"
-    loading-text="Sign"
     color="primary"
+    loading-text="Sign"
     type="button"
+    v-bind="$attrs"
     @click.prevent="handleClick"
   >
     Sign
   </AppButton>
+
+  <SignTransactionController
+    v-model:activate="signStarted"
+    :callback="didSign"
+    :transaction="transaction"
+  />
 </template>
