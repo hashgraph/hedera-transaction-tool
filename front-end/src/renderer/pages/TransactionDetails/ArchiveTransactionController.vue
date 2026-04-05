@@ -66,7 +66,6 @@ const handleArchiveTransaction = async () => {
     confirm-text="Are you sure you want to archive this transaction?"
     confirm-title="Archive transaction?"
     data-testid="button-archive-transaction"
-    progress-icon-name="questionMark"
     progress-title="Archiving transaction"
   />
 </template>

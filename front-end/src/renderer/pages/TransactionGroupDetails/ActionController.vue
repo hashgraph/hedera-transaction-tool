@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -18,7 +18,7 @@ const props = withDefaults(
     actionButtonText?: string;
     cancelButtonText?: string;
     personalPasswordRequired?: boolean;
-    progressIconName: CustomIcon;
+    progressIconName?: CustomIcon | 'progress';
     progressTitle: string;
     progressText: string;
     dataTestid?: string;
@@ -27,6 +27,7 @@ const props = withDefaults(
     actionButtonText: 'Confirm',
     cancelButtonText: 'Cancel',
     personalPasswordRequired: false,
+    progressIconName: 'progress',
   },
 );
 
@@ -118,13 +119,13 @@ watch(activate, async () => {
   <AppConfirmModal
     v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :title="confirmationProps.confirmTitle"
-    :text="confirmationProps.confirmText"
+    :button-text="props.actionButtonText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :button-text="props.actionButtonText"
     :cancel-button-text="props.cancelButtonText"
     :data-testid="confirmationProps.dataTestid"
+    :text="confirmationProps.confirmText"
+    :title="confirmationProps.confirmTitle"
   />
 
   <AppModal
@@ -135,12 +136,16 @@ watch(activate, async () => {
   >
     <div class="p-4">
       <div class="text-center">
-        <AppCustomIcon :name="props.progressIconName" style="height: 80px" />
+        <i
+          v-if="props.progressIconName === 'progress'"
+          class="bi bi-arrow-left-right large-icon"
+        ></i>
+        <AppCustomIcon v-else :name="props.progressIconName" style="height: 80px" />
       </div>
       <h3 class="text-center text-title text-bold mt-4">{{ props.progressTitle }}</h3>
       <p class="text-center text-small text-secondary mt-4 mb-4">{{ props.progressText }}</p>
       <p class="text-center text-small text-secondary mt-6 mb-4">
-        <span class="spinner-border me-2" role="status" inert></span>{{ ' ' }}
+        <span class="spinner-border me-2" inert role="status"></span>{{ ' ' }}
       </p>
     </div>
   </AppModal>

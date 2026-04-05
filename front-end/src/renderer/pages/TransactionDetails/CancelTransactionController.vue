@@ -66,7 +66,6 @@ const handleCancelTransaction = async () => {
     confirm-text="Are you sure you want to cancel this transaction?"
     confirm-title="Cancel transaction?"
     data-testid="button-cancel-transaction"
-    progress-icon-name="questionMark"
     progress-title="Canceling transaction"
   />
 </template>

@@ -105,6 +105,5 @@ const handleApproveTransaction = async (personalPassword: string | null) => {
     :progress-text="progressText"
     :progress-title="progressTitle"
     data-testid="button-approve-transaction"
-    progress-icon-name="questionMark"
   />
 </template>

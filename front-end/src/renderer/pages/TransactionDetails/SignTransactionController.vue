@@ -89,7 +89,6 @@ const handleSignTransaction = async (personalPassword: string | null) => {
     :progress-text="progressText"
     action-button-text="Sign Transaction"
     cancel-button-text="Do not sign"
-    progress-icon-name="questionMark"
     progress-title="Signing transaction"
   />
 </template>

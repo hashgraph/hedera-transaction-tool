@@ -197,7 +197,6 @@ async function readFileAsText(file: File): Promise<string> {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleImportCsv"
-    progress-icon-name="group"
     progress-title="Importing from CSV File"
     :progress-text="progressText"
   />
