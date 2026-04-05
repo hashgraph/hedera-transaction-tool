@@ -10,11 +10,12 @@ import type { ITransactionFull } from '@shared/interfaces';
 /* Props */
 const props = defineProps<{
   transactionId: number;
+  refreshTransaction?: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', payload: { transactionId: number; signed: boolean }): void;
+  (event: 'transactionSigned', payload: { transaction: ITransactionFull; signed: boolean }): void;
 }>();
 
 /* Stores */
@@ -37,7 +38,17 @@ const handleClick = async () => {
 };
 
 const didSign = async (signed: boolean) => {
-  emit('transactionSigned', { transactionId: props.transactionId, signed });
+  if (props.refreshTransaction) {
+    assertIsLoggedInOrganization(user.selectedOrganization);
+
+    const newTransaction = await getTransactionById(
+      user.selectedOrganization.serverUrl,
+      props.transactionId,
+    );
+    emit('transactionSigned', { transaction: newTransaction, signed });
+  } else {
+    emit('transactionSigned', { transaction: transaction.value!, signed });
+  }
 };
 </script>
 

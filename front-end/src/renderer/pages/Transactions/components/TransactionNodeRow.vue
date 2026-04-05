@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { INotificationReceiver } from '@shared/interfaces';
+import type { INotificationReceiver, ITransactionFull } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { computedAsync } from '@vueuse/core';
@@ -35,7 +35,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', transactionId: number): void;
+  (event: 'transactionSigned', transaction: ITransactionFull): void;
   (event: 'transactionGroupSigned', groupId: number): void;
   (event: 'routeToDetails', node: ITransactionNode): void;
 }>();
@@ -55,19 +55,16 @@ const transactionId = computed(() => props.node.transactionId ?? null);
 const transactionAudit = useTransactionAudit(transactionId);
 
 /* Computed */
-const freezeType = computedAsync(
-  async () => {
-    if (props.node.transactionType !== 'FREEZE') return null;
+const freezeType = computedAsync(async () => {
+  if (props.node.transactionType !== 'FREEZE') return null;
 
-    const sdkTx = await transactionAudit.sdkTransaction.value;
+  const sdkTx = await transactionAudit.sdkTransaction.value;
 
-    if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
-      return sdkTx.freezeType;
-    }
-    return null;
-  },
-  null,
-);
+  if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+    return sdkTx.freezeType;
+  }
+  return null;
+}, null);
 
 const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
@@ -113,14 +110,11 @@ const hasOldNotifications = computed(() => {
 
     const hasEntityIds =
       n.notification.entityId !== undefined && props.node.transactionId !== undefined;
-    const matchesEntity =
-      hasEntityIds && n.notification.entityId === props.node.transactionId;
+    const matchesEntity = hasEntityIds && n.notification.entityId === props.node.transactionId;
 
     const notificationGroupId = n.notification.additionalData?.groupId;
-    const hasGroupIds =
-      notificationGroupId !== undefined && props.node.groupId !== undefined;
-    const matchesGroup =
-      hasGroupIds && notificationGroupId === props.node.groupId;
+    const hasGroupIds = notificationGroupId !== undefined && props.node.groupId !== undefined;
+    const matchesGroup = hasGroupIds && notificationGroupId === props.node.groupId;
 
     return matchesType && (matchesEntity || matchesGroup);
   });
@@ -226,9 +220,12 @@ onUnmounted(() => {
 });
 
 /* Watchers */
-watch(() => props.node.description, () => {
-  nextTick(() => checkTruncation());
-});
+watch(
+  () => props.node.description,
+  () => {
+    nextTick(() => checkTruncation());
+  },
+);
 
 // Fetch external status for the transaction (admin only)
 watch(
@@ -320,13 +317,13 @@ watch(
             v-if="props.node.transactionId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :transactionId="props.node.transactionId"
-            @transactionSigned="(payload) => emit('transactionSigned', payload.transactionId)"
+            @transactionSigned="payload => emit('transactionSigned', payload.transaction)"
           />
           <SignGroupButton
             v-if="props.node.groupId"
             :data-testid="`button-transaction-node-sign-${index}`"
             :group-id="props.node.groupId"
-            @transactionGroupSigned="(payload) => emit('transactionGroupSigned', payload.groupId)"
+            @transactionGroupSigned="payload => emit('transactionGroupSigned', payload.groupId)"
           />
         </template>
         <AppButton
@@ -348,7 +345,11 @@ watch(
 }
 @keyframes flash-update {
   0%,
-  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
-  100% { background-color: transparent; }
+  25% {
+    background-color: rgba(var(--bs-info-rgb), 0.45);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>

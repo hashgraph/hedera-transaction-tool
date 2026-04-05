@@ -16,8 +16,8 @@ import useNetwork from '@renderer/stores/storeNetwork.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import SignGroupItemButton from '@renderer/pages/TransactionGroupDetails/SignGroupItemButton.vue';
 import useRevealed from '@renderer/composables/useRevealed.ts';
+import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 
 /* Props */
 const props = defineProps<{
@@ -167,8 +167,9 @@ useRevealed(container, () => {
     <!-- Column #5 : Actions -->
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
-        <SignGroupItemButton
+        <SignSingleButton
           :disabled="!canSign"
+          :refresh-transaction="true"
           :transaction-id="props.groupItem.transactionId"
           @transactionSigned="payload => emit('transactionSigned', payload.transaction)"
         />
