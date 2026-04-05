@@ -74,6 +74,7 @@ vi.mock('@renderer/stores/storeNextTransactionV2.ts', () => ({
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
   default: vi.fn(() => ({
     getPassword: vi.fn(() => null),
+    getPasswordAsync: vi.fn(() => Promise.resolve(null)),
     passwordModalOpened: vi.fn(() => false),
   })),
 }));
@@ -111,7 +112,8 @@ vi.mock('@renderer/utils', () => ({
   generateTransactionV1ExportContent: vi.fn(),
   generateTransactionV2ExportContent: vi.fn(),
   getErrorMessage: vi.fn((error: unknown, fallback: string) =>
-    error instanceof Error ? error.message : fallback),
+    error instanceof Error ? error.message : fallback,
+  ),
   getLastExportExtension: vi.fn(),
   getPrivateKey: vi.fn(),
   getTransactionBodySignatureWithoutNodeAccountId: vi.fn(),
@@ -220,7 +222,8 @@ describe('TransactionDetailsHeader.vue', () => {
     form.element.dispatchEvent(submitEvent);
     await flushPromises();
 
-    const modal = wrapper.findComponent({ name: 'AppConfirmModal' });
+    const cancelController = wrapper.findComponent({ name: 'CancelTransactionController' });
+    const modal = cancelController.findComponent({ name: 'AppConfirmModal' });
     const callback = modal.props('callback') as (() => Promise<void>) | null;
     expect(typeof callback).toBe('function');
 
@@ -229,7 +232,9 @@ describe('TransactionDetailsHeader.vue', () => {
 
     expect(cancelTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(toastSuccess).toHaveBeenCalledWith('Transaction canceled successfully', { duration: 4000 });
+    expect(toastSuccess).toHaveBeenCalledWith('Transaction canceled successfully', {
+      duration: 4000,
+    });
   });
 
   test('refreshes transaction state after a failed cancel attempt', async () => {
@@ -245,7 +250,8 @@ describe('TransactionDetailsHeader.vue', () => {
     form.element.dispatchEvent(submitEvent);
     await flushPromises();
 
-    const modal = wrapper.findComponent({ name: 'AppConfirmModal' });
+    const cancelController = wrapper.findComponent({ name: 'CancelTransactionController' });
+    const modal = cancelController.findComponent({ name: 'AppConfirmModal' });
     const callback = modal.props('callback') as (() => Promise<void>) | null;
     expect(typeof callback).toBe('function');
 

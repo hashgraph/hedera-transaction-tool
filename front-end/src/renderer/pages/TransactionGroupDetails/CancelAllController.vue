@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import { assertIsLoggedInOrganization, assertUserLoggedIn, getErrorMessage } from '@renderer/utils';
+import { assertIsLoggedInOrganization, getErrorMessage, isUserLoggedIn } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransaction, TransactionStatus } from '@shared/interfaces';
 import {
@@ -31,7 +31,10 @@ const progressText = ref<string>('');
 
 /* Handlers */
 const handleCancelAll = async () => {
-  assertUserLoggedIn(user.personal);
+  if (!isUserLoggedIn(user.personal)) {
+    toastManager.error('You must be logged in to cancel transactions.');
+    return;
+  }
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
