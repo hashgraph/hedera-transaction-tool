@@ -105,8 +105,6 @@ const handleExportAll = async (personalPassword: string | null) => {
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
       // write the zip file to disk
       await saveFileToPath(zipContent, filePath);
 
