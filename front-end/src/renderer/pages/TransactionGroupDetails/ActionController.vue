@@ -18,7 +18,7 @@ const props = withDefaults(
     actionButtonText?: string;
     cancelButtonText?: string;
     personalPasswordRequired?: boolean;
-    progressIconName?: CustomIcon | 'progress';
+    progressIconName?: CustomIcon | null;
     progressTitle: string;
     progressText: string;
     dataTestid?: string;
@@ -27,7 +27,7 @@ const props = withDefaults(
     actionButtonText: 'Confirm',
     cancelButtonText: 'Cancel',
     personalPasswordRequired: false,
-    progressIconName: 'progress',
+    progressIconName: null,
   },
 );
 
@@ -137,7 +137,7 @@ watch(activate, async () => {
     <div class="p-4">
       <div class="text-center">
         <i
-          v-if="props.progressIconName === 'progress'"
+          v-if="props.progressIconName === null"
           class="bi bi-arrow-left-right large-icon"
         ></i>
         <AppCustomIcon v-else :name="props.progressIconName" style="height: 80px" />

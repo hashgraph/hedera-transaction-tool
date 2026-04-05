@@ -27,7 +27,7 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* State */
-const progressText = ref<string>('');
+const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
 const handleSignAll = async (personalPassword: string | null) => {
@@ -66,11 +66,11 @@ const handleSignAll = async (personalPassword: string | null) => {
       toastManager.error('Transactions not signed');
       await invokeCallback(groupId, false);
     } finally {
-      progressText.value = '';
+      progressText.value = 'Loading group items…';
     }
   } else {
     // Bug
-    toastManager.error('Unable to sign transactions because groupOrId is null');
+    toastManager.error('Unable to sign transactions: group is not available');
   }
 };
 

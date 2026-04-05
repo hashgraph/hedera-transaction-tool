@@ -42,7 +42,7 @@ const progressTitle = computed(() =>
 );
 
 const progressText = computed(() =>
-  props.sdkTransaction ? `${progressTitle.value} ${props.sdkTransaction.transactionId}` : '',
+  props.transaction ? `${progressTitle.value} ${props.transaction.transactionId}` : '',
 );
 
 const confirmTitle = computed(() => (props.approved ? undefined : 'Reject transaction?'));
@@ -87,7 +87,7 @@ const handleApproveTransaction = async (personalPassword: string | null) => {
   } else {
     // Bug
     toastManager.error(
-      "Unable to ${props.approved ? 'approve' : 'reject'}: transaction is not available",
+      `Unable to ${props.approved ? 'approve' : 'reject'}: transaction is not available`,
     );
   }
 };

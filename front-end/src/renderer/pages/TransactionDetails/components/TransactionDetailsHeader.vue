@@ -166,7 +166,9 @@ const canSign = computed(() => {
     return false;
   }
 
-  return publicKeysRequiredToSign.value.length > 0;
+  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
+
+  return userShouldSign;
 });
 
 const canApprove = computed(() => {

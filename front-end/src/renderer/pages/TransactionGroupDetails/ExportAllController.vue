@@ -116,7 +116,7 @@ const handleExportAll = async (personalPassword: string | null) => {
     }
   } else {
     // Bug
-    toastManager.error('Unable to export transactions because groupOrId is null');
+    toastManager.error('Unable to export transactions: group is not available');
   }
 };
 

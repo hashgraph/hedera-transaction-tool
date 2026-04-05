@@ -45,7 +45,7 @@ const handleRemindSigners = async () => {
         toastManager.success('Reminders successfully sent to signers');
       },
       onError: error => {
-        toastManager.error(getErrorMessage(error, `Failed to send send reminders to signers`));
+        toastManager.error(getErrorMessage(error, `Failed to send reminders to signers`));
       },
       onRefreshError: refreshError => {
         toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transaction'));

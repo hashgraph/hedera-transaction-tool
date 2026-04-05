@@ -75,7 +75,7 @@ const handleCancelAll = async () => {
     }
   } else {
     // Bug
-    toastManager.error('Unable to cancel transactions because groupOrId is null');
+    toastManager.error('Unable to cancel transactions: group is not available');
   }
 };
 
