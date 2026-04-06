@@ -99,7 +99,7 @@ export class OrganizationPage extends BasePage {
   confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
   cancelGroupActionButtonSelector = 'button-cancel-group-action';
-  confirmCancelButtonSelector = 'button-group-action-confirm';
+  confirmCancelButtonSelector = 'button-cancel-transaction';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   confirmTransactionModalTitleSelector = 'h3';
   signAllTransactionsModalTitle = 'Sign all transactions?';
@@ -1388,7 +1388,10 @@ export class OrganizationPage extends BasePage {
     // => we wait a little bit before checking button visibility
     // => to be revisited once button state computation has been re-worked in transaction group details.
     await this.window.waitForTimeout(holdTimeout);
-    await this.waitForElementToBeVisible(this.signAllTransactionsButtonSelector, this.LONG_TIMEOUT * 2);
+    await this.waitForElementToBeVisible(
+      this.signAllTransactionsButtonSelector,
+      this.LONG_TIMEOUT * 2,
+    );
     await this.click(this.signAllTransactionsButtonSelector);
   }
 
