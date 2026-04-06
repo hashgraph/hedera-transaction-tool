@@ -12,7 +12,7 @@ import {
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull, type TransactionFile } from '@shared/interfaces';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { Transaction } from '@hashgraph/sdk';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';

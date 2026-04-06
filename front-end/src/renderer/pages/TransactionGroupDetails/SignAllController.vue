@@ -8,7 +8,7 @@ import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCach
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { TransactionStatus } from '@shared/interfaces';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
-import ActionController from './ActionController.vue';
+import ActionController from '../../components/ActionController/ActionController.vue';
 
 /* Props */
 const props = defineProps<{

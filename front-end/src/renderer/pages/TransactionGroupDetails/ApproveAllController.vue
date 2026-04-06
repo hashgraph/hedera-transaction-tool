@@ -16,7 +16,7 @@ import {
   type IGroup,
   sendApproverChoice,
 } from '@renderer/services/organization';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { Transaction } from '@hashgraph/sdk';
 

@@ -9,7 +9,7 @@ import {
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';

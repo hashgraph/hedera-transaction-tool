@@ -5,7 +5,7 @@ import { assertIsLoggedInOrganization, getErrorMessage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
 import { remindSigners } from '@renderer/services/organization';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { executeTransactionActionFlow } from '@renderer/pages/TransactionDetails/components/transactionActionFlow.ts';
 
 /* Props */

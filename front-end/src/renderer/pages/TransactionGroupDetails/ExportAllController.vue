@@ -17,7 +17,7 @@ import {
   type IGroup,
   type IGroupItem,
 } from '@renderer/services/organization';
-import ActionController from './ActionController.vue';
+import ActionController from '../../components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';

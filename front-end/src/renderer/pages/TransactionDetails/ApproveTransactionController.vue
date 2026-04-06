@@ -9,7 +9,7 @@ import {
   getTransactionBodySignatureWithoutNodeAccountId,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { sendApproverChoice } from '@renderer/services/organization';
 import { Transaction } from '@hashgraph/sdk';
