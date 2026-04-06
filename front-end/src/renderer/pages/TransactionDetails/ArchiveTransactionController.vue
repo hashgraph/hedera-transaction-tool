@@ -7,6 +7,7 @@ import { type ITransactionFull } from '@shared/interfaces';
 import { archiveTransaction } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { executeTransactionActionFlow } from '@renderer/pages/TransactionDetails/components/transactionActionFlow.ts';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +28,7 @@ const progressText = computed(() =>
 );
 
 /* Handlers */
-const handleArchiveTransaction = async () => {
+const handleArchiveTransaction = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (props.transaction !== null) {
@@ -53,6 +54,8 @@ const handleArchiveTransaction = async () => {
     // Bug
     toastManager.error('Unable to archive: transaction is not available');
   }
+
+  return null;
 };
 </script>
 

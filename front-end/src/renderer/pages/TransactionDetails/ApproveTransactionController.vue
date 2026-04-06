@@ -14,6 +14,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { sendApproverChoice } from '@renderer/services/organization';
 import { Transaction } from '@hashgraph/sdk';
 import type { ITransactionFull } from '@shared/interfaces';
+import type { ActionReport } from "@renderer/components/ActionController/ActionReport";
 
 /* Props */
 const props = defineProps<{
@@ -52,7 +53,7 @@ const confirmText = computed(() =>
 );
 
 /* Handlers */
-const handleApproveTransaction = async (personalPassword: string | null) => {
+const handleApproveTransaction = async (personalPassword: string | null): Promise<ActionReport|null> => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -90,6 +91,8 @@ const handleApproveTransaction = async (personalPassword: string | null) => {
       `Unable to ${action.value}: transaction is not available`,
     );
   }
+
+  return null;
 };
 </script>
 

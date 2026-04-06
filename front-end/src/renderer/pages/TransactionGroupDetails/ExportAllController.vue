@@ -17,10 +17,11 @@ import {
   type IGroup,
   type IGroupItem,
 } from '@renderer/services/organization';
-import ActionController from '../../components/ActionController/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -39,7 +40,7 @@ const user = useUserStore();
 const progressText = ref<string>('');
 
 /* Handlers */
-const handleExportAll = async (personalPassword: string | null) => {
+const handleExportAll = async (personalPassword: string | null): Promise<ActionReport | null> => {
   // This currently only exports to TTv1 format
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
@@ -59,7 +60,7 @@ const handleExportAll = async (personalPassword: string | null) => {
         toastManager.error(
           'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
         );
-        return;
+        return null;
       }
       progressText.value = `Exporting ${group.groupItems.length} transactions`;
 
@@ -102,7 +103,7 @@ const handleExportAll = async (personalPassword: string | null) => {
         'Select the file to export the transaction group to:',
       );
       if (canceled || !filePath) {
-        return;
+        return null;
       }
 
       // write the zip file to disk
@@ -118,6 +119,8 @@ const handleExportAll = async (personalPassword: string | null) => {
     // Bug
     toastManager.error('Unable to export transactions: group is not available');
   }
+
+  return null;
 };
 
 const invokeCallback = async (groupId: number) => {

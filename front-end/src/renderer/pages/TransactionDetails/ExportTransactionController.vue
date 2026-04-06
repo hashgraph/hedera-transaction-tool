@@ -18,6 +18,7 @@ import { writeTransactionFile } from '@renderer/services/transactionFileService.
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import useNetwork from '@renderer/stores/storeNetwork.ts';
+import type { ActionReport } from "@renderer/components/ActionController/ActionReport";
 
 /* Props */
 const props = defineProps<{
@@ -56,7 +57,7 @@ const EXPORT_FORMATS = [
 ];
 
 /* Handlers */
-const handleExportTransaction = async (personalPassword: string | null) => {
+const handleExportTransaction = async (personalPassword: string | null): Promise<ActionReport | null> => {
   assertUserLoggedIn(user.personal);
   if (props.sdkTransaction instanceof Transaction && props.transaction !== null) {
     // Load the last export format the user selected, if applicable
@@ -80,7 +81,7 @@ const handleExportTransaction = async (personalPassword: string | null) => {
     );
 
     if (canceled || !filePath) {
-      return;
+      return null;
     }
 
     // Save selected format to local storage
@@ -125,6 +126,8 @@ const handleExportTransaction = async (personalPassword: string | null) => {
     // Bug
     toastManager.error('Unable to export: transaction is not available');
   }
+
+  return null;
 };
 </script>
 

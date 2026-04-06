@@ -7,6 +7,7 @@ import { type ITransactionFull } from '@shared/interfaces';
 import { executeTransaction } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { executeTransactionActionFlow } from '@renderer/pages/TransactionDetails/components/transactionActionFlow.ts';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +28,7 @@ const progressText = computed(() =>
 );
 
 /* Handlers */
-const handleScheduleTransaction = async () => {
+const handleScheduleTransaction = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (props.transaction !== null) {
@@ -53,6 +54,8 @@ const handleScheduleTransaction = async () => {
     // Bug
     toastManager.error('Unable to schedule: transaction is not available');
   }
+
+  return null;
 };
 </script>
 
