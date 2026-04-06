@@ -5,7 +5,9 @@ import { flushPromises, mount } from '@vue/test-utils';
 
 import { TransactionStatus } from '@shared/interfaces';
 import TransactionDetailsHeader from '@renderer/pages/TransactionDetails/components/TransactionDetailsHeader.vue';
-import { cancelTransaction } from '@renderer/services/organization';
+import { cancelTransaction, executeTransaction } from '@renderer/services/organization';
+import { showSaveDialog } from '@renderer/services/electronUtilsService';
+import { Transaction as SDKTransaction } from '@hashgraph/sdk';
 
 const routeUpMock = vi.fn();
 const routeToNextMock = vi.fn();
@@ -31,6 +33,13 @@ const contactsStore = {
     },
   ],
 };
+
+vi.mock('@hashgraph/sdk', () => {
+  class Transaction {
+    static fromBytes = vi.fn(() => new Transaction());
+  }
+  return { Transaction };
+});
 
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
@@ -172,12 +181,16 @@ const defaultTransaction = {
   isManual: false,
 } as any;
 
-const mountHeader = (overrides?: Partial<any>, onAction?: ReturnType<typeof vi.fn>) => {
+const mountHeader = (
+  overrides?: Partial<any>,
+  onAction?: ReturnType<typeof vi.fn>,
+  sdkTransaction?: SDKTransaction,
+) => {
   return mount(TransactionDetailsHeader, {
     props: {
       organizationTransaction: { ...defaultTransaction, ...overrides },
       localTransaction: null,
-      sdkTransaction: null,
+      sdkTransaction: sdkTransaction ?? null,
       onAction: onAction ?? vi.fn().mockResolvedValue(undefined),
     },
     global: {
@@ -261,5 +274,106 @@ describe('TransactionDetailsHeader.vue', () => {
     expect(cancelTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
     expect(toastError).toHaveBeenCalled();
+  });
+
+  test('shows success toast after successful schedule', async () => {
+    const onAction = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountHeader(
+      { status: TransactionStatus.WAITING_FOR_EXECUTION, isManual: true },
+      onAction,
+    );
+
+    const form = wrapper.find('form');
+    const scheduleButton = wrapper.get('[data-testid="button-schedule-org-transaction"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: scheduleButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    const scheduleController = wrapper.findComponent({ name: 'ScheduleTransactionController' });
+    const modal = scheduleController.findComponent({ name: 'AppConfirmModal' });
+    const callback = modal.props('callback') as (() => Promise<void>) | null;
+    expect(typeof callback).toBe('function');
+
+    await callback?.();
+    await flushPromises();
+
+    expect(executeTransaction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith('Transaction scheduled successfully', {
+      duration: 4000,
+    });
+  });
+
+  test('shows error toast after failed schedule', async () => {
+    const onAction = vi.fn().mockResolvedValue(undefined);
+    const wrapper = mountHeader(
+      { status: TransactionStatus.WAITING_FOR_EXECUTION, isManual: true },
+      onAction,
+    );
+
+    vi.mocked(executeTransaction).mockRejectedValueOnce(new Error('Schedule failed'));
+
+    const form = wrapper.find('form');
+    const scheduleButton = wrapper.get('[data-testid="button-schedule-org-transaction"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: scheduleButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    const scheduleController = wrapper.findComponent({ name: 'ScheduleTransactionController' });
+    const modal = scheduleController.findComponent({ name: 'AppConfirmModal' });
+    const callback = modal.props('callback') as (() => Promise<void>) | null;
+    expect(typeof callback).toBe('function');
+
+    await callback?.();
+    await flushPromises();
+
+    expect(executeTransaction).toHaveBeenCalledTimes(1);
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toastError).toHaveBeenCalled();
+  });
+
+  test('shows error toast when export is triggered without an SDK transaction', async () => {
+    const wrapper = mountHeader({ status: TransactionStatus.CANCELED });
+    await flushPromises();
+
+    const form = wrapper.find('form');
+    const exportButton = wrapper.get('[data-testid="button-export-transaction"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: exportButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    expect(toastError).toHaveBeenCalledWith(
+      'Unable to export: transaction is not available',
+      expect.objectContaining({ duration: 0 }),
+    );
+  });
+
+  test('shows success toast after successful export to tx2 format', async () => {
+    vi.mocked(showSaveDialog).mockResolvedValueOnce({
+      filePath: '/tmp/export.tx2',
+      canceled: false,
+    } as any);
+
+    const wrapper = mountHeader(
+      { status: TransactionStatus.CANCELED },
+      vi.fn().mockResolvedValue(undefined),
+      new SDKTransaction(),
+    );
+    await flushPromises();
+
+    const form = wrapper.find('form');
+    const exportButton = wrapper.get('[data-testid="button-export-transaction"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: exportButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    expect(showSaveDialog).toHaveBeenCalledTimes(1);
+    expect(toastSuccess).toHaveBeenCalledWith('Transaction exported successfully', {
+      duration: 4000,
+    });
   });
 });
