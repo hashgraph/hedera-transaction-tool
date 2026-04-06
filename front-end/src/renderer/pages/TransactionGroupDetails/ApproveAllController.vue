@@ -16,9 +16,10 @@ import {
   type IGroup,
   sendApproverChoice,
 } from '@renderer/services/organization';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { Transaction } from '@hashgraph/sdk';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 /* Props */
 const props = defineProps<{
@@ -53,10 +54,10 @@ const confirmTitle = computed(() =>
 const confirmText = computed(() => `Are you sure you want to ${action.value} all transactions?`);
 
 /* Handlers */
-const handleApproveAll = async (personalPassword: string | null) => {
+const handleApproveAll = async (personalPassword: string | null): Promise<ActionReport | null> => {
   if (!isUserLoggedIn(user.personal)) {
     toastManager.error(`You must be logged in to ${action.value} transactions.`);
-    return;
+    return null;
   }
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (props.groupOrId !== null) {
@@ -105,6 +106,8 @@ const handleApproveAll = async (personalPassword: string | null) => {
     // Bug
     toastManager.error(`Unable to ${action.value} transactions: group is not available`);
   }
+
+  return null;
 };
 
 const invokeCallback = async (groupId: number) => {

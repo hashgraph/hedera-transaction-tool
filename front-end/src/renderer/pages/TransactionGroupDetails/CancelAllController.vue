@@ -11,7 +11,8 @@ import {
   type IGroupItem,
 } from '@renderer/services/organization';
 import { getCancelGroupToast } from '@renderer/pages/TransactionGroupDetails/cancelGroupResult.ts';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -30,10 +31,10 @@ const user = useUserStore();
 const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
-const handleCancelAll = async () => {
+const handleCancelAll = async (): Promise<ActionReport | null> => {
   if (!isUserLoggedIn(user.personal)) {
     toastManager.error('You must be logged in to cancel transactions.');
-    return;
+    return null;
   }
   assertIsLoggedInOrganization(user.selectedOrganization);
   if (props.groupOrId !== null) {
@@ -77,6 +78,8 @@ const handleCancelAll = async () => {
     // Bug
     toastManager.error('Unable to cancel transactions: group is not available');
   }
+
+  return null;
 };
 
 const invokeCallback = async (groupId: number) => {

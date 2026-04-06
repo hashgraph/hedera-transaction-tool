@@ -9,12 +9,13 @@ import {
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 import { useRouter } from 'vue-router';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 /* Props */
 const props = defineProps<{
@@ -43,7 +44,7 @@ const progressText = computed(() =>
 );
 
 /* Handlers */
-const handleSignTransaction = async (personalPassword: string | null) => {
+const handleSignTransaction = async (personalPassword: string | null): Promise<ActionReport | null> => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -78,6 +79,8 @@ const handleSignTransaction = async (personalPassword: string | null) => {
     // Bug
     toastManager.error('Unable to sign: transaction is not available');
   }
+
+  return null;
 };
 </script>
 

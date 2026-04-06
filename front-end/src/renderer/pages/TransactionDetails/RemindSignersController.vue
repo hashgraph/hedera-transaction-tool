@@ -5,8 +5,9 @@ import { assertIsLoggedInOrganization, getErrorMessage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
 import { remindSigners } from '@renderer/services/organization';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { executeTransactionActionFlow } from '@renderer/pages/TransactionDetails/components/transactionActionFlow.ts';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
 const props = defineProps<{
@@ -29,7 +30,7 @@ const progressText = computed(() =>
 );
 
 /* Handlers */
-const handleRemindSigners = async () => {
+const handleRemindSigners = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (props.transaction !== null) {
@@ -55,6 +56,8 @@ const handleRemindSigners = async () => {
     // Bug
     toastManager.error('Unable to send reminders: transaction is not available');
   }
+
+  return null;
 };
 </script>
 
