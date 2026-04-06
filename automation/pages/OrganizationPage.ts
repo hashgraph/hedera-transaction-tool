@@ -99,7 +99,7 @@ export class OrganizationPage extends BasePage {
   confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
   cancelGroupActionButtonSelector = 'button-cancel-group-action';
-  confirmCancelButtonSelector = 'button-cancel-transaction';
+  confirmCancelButtonSelector = 'button-cancel-transaction-confirm';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   confirmTransactionModalTitleSelector = 'h3';
   signAllTransactionsModalTitle = 'Sign all transactions?';
