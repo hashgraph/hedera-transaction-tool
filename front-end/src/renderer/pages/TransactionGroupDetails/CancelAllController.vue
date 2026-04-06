@@ -108,6 +108,6 @@ const isTransactionInProgress = (transaction: ITransaction) => {
     confirm-title="Cancel all transactions?"
     data-testid="button-cancel-all"
     progress-icon-name="group"
-    progress-title="Canceling all transactions"
+    progress-title="Cancel all transactions"
   />
 </template>

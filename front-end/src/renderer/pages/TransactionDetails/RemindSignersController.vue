@@ -68,6 +68,6 @@ const handleRemindSigners = async () => {
     confirm-text="Send reminders to all signers of this transaction who have not yet signed?"
     confirm-title="Remind Signers?"
     data-testid="button-remind-signers"
-    progress-title="Sending reminders"
+    progress-title="Remind Signers"
   />
 </template>

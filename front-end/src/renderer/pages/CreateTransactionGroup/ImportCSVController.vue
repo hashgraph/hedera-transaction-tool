@@ -33,8 +33,8 @@ const network = useNetworkStore();
 
 const progressText = computed(() =>
   transactionGroup.groupItems.length === 1
-    ? '1 transaction'
-    : `${transactionGroup.groupItems.length} transactions`,
+    ? 'Imported 1 transaction'
+    : `Imported ${transactionGroup.groupItems.length} transactions`,
 );
 
 /* Handlers */
@@ -197,7 +197,7 @@ async function readFileAsText(file: File): Promise<string> {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleImportCsv"
-    progress-title="Importing from CSV File"
+    progress-title="Import CSV File"
     :progress-text="progressText"
   />
 </template>

@@ -134,6 +134,6 @@ const handleExportTransaction = async (personalPassword: string | null) => {
     :actionCallback="handleExportTransaction"
     :personal-password-required="true"
     :progress-text="progressText"
-    progress-title="Exporting transaction"
+    progress-title="Export transaction"
   />
 </template>

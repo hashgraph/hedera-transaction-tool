@@ -66,6 +66,6 @@ const handleScheduleTransaction = async () => {
     confirm-text="Are you sure you want to schedule this transaction?"
     confirm-title="Schedule transaction?"
     data-testid="button-schedule-transaction"
-    progress-title="Scheduling transaction"
+    progress-title="Schedule transaction"
   />
 </template>

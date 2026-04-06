@@ -38,7 +38,7 @@ const actionButtonText = computed(() =>
 );
 
 const progressTitle = computed(() =>
-  props.approved ? 'Approving transaction' : 'Rejecting transaction',
+  props.approved ? 'Approve transaction' : 'Reject transaction',
 );
 
 const progressText = computed(() =>
@@ -87,7 +87,7 @@ const handleApproveTransaction = async (personalPassword: string | null) => {
   } else {
     // Bug
     toastManager.error(
-      `Unable to ${props.approved ? 'approve' : 'reject'}: transaction is not available`,
+      `Unable to ${action.value}: transaction is not available`,
     );
   }
 };

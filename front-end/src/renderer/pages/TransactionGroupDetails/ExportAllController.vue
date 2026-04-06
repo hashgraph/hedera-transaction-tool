@@ -42,13 +42,13 @@ const progressText = ref<string>('');
 const handleExportAll = async (personalPassword: string | null) => {
   // This currently only exports to TTv1 format
   assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
-        assertIsLoggedInOrganization(user.selectedOrganization);
         const serverUrl = user.selectedOrganization.serverUrl;
         group = await getTransactionGroupById(serverUrl, props.groupOrId);
       } else {
@@ -72,7 +72,7 @@ const handleExportAll = async (personalPassword: string | null) => {
 
       for (const item of group.groupItems as IGroupItem[]) {
         const orgTransaction: ITransactionFull = await getTransactionById(
-          user.selectedOrganization?.serverUrl || '',
+          user.selectedOrganization.serverUrl,
           Number(item.transactionId),
         );
 
@@ -98,7 +98,7 @@ const handleExportAll = async (personalPassword: string | null) => {
         `${zipBaseName}.zip`,
         'Export transaction group',
         'Export',
-        [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['.zip'] }],
+        [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['zip'] }],
         'Select the file to export the transaction group to:',
       );
       if (canceled || !filePath) {

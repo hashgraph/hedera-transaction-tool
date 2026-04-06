@@ -40,28 +40,22 @@ const progressText = ref<string>('Loading group items…');
 /* Computed */
 const action = computed(() => (props.approved ? 'approve' : 'reject'));
 
-const actionButtonText = computed(() =>
-  props.approved ? 'Approve transactions' : 'Reject transactions',
-);
+const actionButtonText = computed(() => (props.approved ? 'Approve all' : 'Reject all'));
 
 const progressTitle = computed(() =>
-  props.approved ? 'Approving transactions' : 'Rejecting transactions',
+  props.approved ? 'Approve all transactions' : 'Reject all transactions',
 );
 
 const confirmTitle = computed(() =>
-  props.approved ? 'Approve transaction?' : 'Reject transaction?',
+  props.approved ? 'Approve all transactions?' : 'Reject all transactions?',
 );
 
-const confirmText = computed(() =>
-  props.approved
-    ? 'Are you sure you want to approve all transactions'
-    : 'Are you sure you want to reject all transactions?',
-);
+const confirmText = computed(() => `Are you sure you want to ${action.value} all transactions?`);
 
 /* Handlers */
 const handleApproveAll = async (personalPassword: string | null) => {
   if (!isUserLoggedIn(user.personal)) {
-    toastManager.error('You must be logged in to cancel transactions.');
+    toastManager.error(`You must be logged in to ${action.value} transactions.`);
     return;
   }
   assertIsLoggedInOrganization(user.selectedOrganization);
@@ -101,13 +95,15 @@ const handleApproveAll = async (personalPassword: string | null) => {
         }
       }
       toastManager.success(`Transactions ${props.approved ? 'approved' : 'rejected'} successfully`);
+    } catch (error) {
+      toastManager.error(getErrorMessage(error, `Failed to ${action.value} transactions`));
     } finally {
       await invokeCallback(groupId);
       progressText.value = 'Loading group items…';
     }
   } else {
     // Bug
-    toastManager.error('Unable to approve transactions: group is not available');
+    toastManager.error(`Unable to ${action.value} transactions: group is not available`);
   }
 };
 

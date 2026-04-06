@@ -42,9 +42,9 @@ const showProgress = ref<boolean>(false);
 
 /* Computed */
 const confirmationProps = computed(() => {
-  const { confirmTitle, confirmText, dataTestid } = props;
+  const { confirmTitle, confirmText, dataTestid, actionButtonText, cancelButtonText } = props;
   if (confirmTitle !== undefined && confirmText !== undefined && dataTestid !== undefined) {
-    return { confirmTitle, confirmText, dataTestid };
+    return { confirmTitle, confirmText, dataTestid, actionButtonText, cancelButtonText };
   }
   return null;
 });
@@ -119,10 +119,10 @@ watch(activate, async () => {
   <AppConfirmModal
     v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :button-text="props.actionButtonText"
+    :button-text="confirmationProps.actionButtonText"
     :callback="handleConfirm"
     :cancel="handleCancel"
-    :cancel-button-text="props.cancelButtonText"
+    :cancel-button-text="confirmationProps.cancelButtonText"
     :data-testid="confirmationProps.dataTestid"
     :text="confirmationProps.confirmText"
     :title="confirmationProps.confirmTitle"
@@ -136,10 +136,7 @@ watch(activate, async () => {
   >
     <div class="p-4">
       <div class="text-center">
-        <i
-          v-if="props.progressIconName === null"
-          class="bi bi-arrow-left-right large-icon"
-        ></i>
+        <i v-if="props.progressIconName === null" class="bi bi-arrow-left-right large-icon"></i>
         <AppCustomIcon v-else :name="props.progressIconName" style="height: 80px" />
       </div>
       <h3 class="text-center text-title text-bold mt-4">{{ props.progressTitle }}</h3>
