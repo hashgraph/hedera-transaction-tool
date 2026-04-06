@@ -10,18 +10,20 @@ const props = withDefaults(
     title: string;
     text: string;
     callback?: ((...args: any[]) => void) | null;
+    cancel?: ((...args: any[]) => void) | null;
     buttonText?: string;
+    cancelButtonText?: string;
     loadingText?: string;
     loading?: boolean;
-    cancel?: ((...args: any[]) => void) | null;
     dataTestid: string;
   }>(),
   {
     callback: null,
+    cancel: null,
     buttonText: 'Confirm',
+    cancelButtonText: 'Cancel',
     loadingText: '',
     loading: false,
-    cancel: null,
   },
 );
 
@@ -60,7 +62,11 @@ watch(show, () => {
 <template>
   <AppModal v-model:show="show" :loading="props.loading" class="common-modal">
     <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" :class="{ 'opacity-50 pointer-events-none': props.loading }" @click="handleCancel"></i>
+      <i
+        class="bi bi-x-lg d-inline-block cursor-pointer"
+        :class="{ 'opacity-50 pointer-events-none': props.loading }"
+        @click="handleCancel"
+      ></i>
       <div class="text-center">
         <AppCustomIcon :name="'questionMark'" style="height: 160px" />
       </div>
@@ -73,7 +79,7 @@ watch(show, () => {
           :disabled="props.loading"
           :data-testid="`${props.dataTestid}-cancel`"
           @click="handleCancel"
-          >Cancel</AppButton
+          >{{ props.cancelButtonText }}</AppButton
         >
         <AppButton
           color="primary"

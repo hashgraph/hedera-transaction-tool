@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, watch, computed } from 'vue';
+<script lang="ts" setup>
+import { computed, ref, watch } from 'vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -10,16 +10,26 @@ const persistenceTime = dohertyThreshold * 3;
 
 /* Props */
 const activate = defineModel<boolean>('activate', { required: true });
-const props = defineProps<{
-  actionCallback: (personalPassword: string | null) => Promise<void>;
-  confirmTitle?: string;
-  confirmText?: string;
-  personalPasswordRequired?: boolean;
-  progressIconName: CustomIcon;
-  progressTitle: string;
-  progressText: string;
-  dataTestid?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    actionCallback: (personalPassword: string | null) => Promise<void>;
+    confirmTitle?: string;
+    confirmText?: string;
+    actionButtonText?: string;
+    cancelButtonText?: string;
+    personalPasswordRequired?: boolean;
+    progressIconName?: CustomIcon | null;
+    progressTitle: string;
+    progressText: string;
+    dataTestid?: string;
+  }>(),
+  {
+    actionButtonText: 'Confirm',
+    cancelButtonText: 'Cancel',
+    personalPasswordRequired: false,
+    progressIconName: null,
+  },
+);
 
 /* Composables */
 const { getPasswordAsync } = usePersonalPassword();
@@ -32,9 +42,9 @@ const showProgress = ref<boolean>(false);
 
 /* Computed */
 const confirmationProps = computed(() => {
-  const { confirmTitle, confirmText, dataTestid } = props;
+  const { confirmTitle, confirmText, dataTestid, actionButtonText, cancelButtonText } = props;
   if (confirmTitle !== undefined && confirmText !== undefined && dataTestid !== undefined) {
-    return { confirmTitle, confirmText, dataTestid };
+    return { confirmTitle, confirmText, dataTestid, actionButtonText, cancelButtonText };
   }
   return null;
 });
@@ -109,11 +119,13 @@ watch(activate, async () => {
   <AppConfirmModal
     v-if="confirmationProps"
     v-model:show="isConfirmModalShown"
-    :title="confirmationProps.confirmTitle"
-    :text="confirmationProps.confirmText"
+    :button-text="confirmationProps.actionButtonText"
     :callback="handleConfirm"
     :cancel="handleCancel"
+    :cancel-button-text="confirmationProps.cancelButtonText"
     :data-testid="confirmationProps.dataTestid"
+    :text="confirmationProps.confirmText"
+    :title="confirmationProps.confirmTitle"
   />
 
   <AppModal
@@ -124,12 +136,13 @@ watch(activate, async () => {
   >
     <div class="p-4">
       <div class="text-center">
-        <AppCustomIcon :name="props.progressIconName" style="height: 80px" />
+        <i v-if="props.progressIconName === null" class="bi bi-arrow-left-right large-icon"></i>
+        <AppCustomIcon v-else :name="props.progressIconName" style="height: 80px" />
       </div>
       <h3 class="text-center text-title text-bold mt-4">{{ props.progressTitle }}</h3>
       <p class="text-center text-small text-secondary mt-4 mb-4">{{ props.progressText }}</p>
       <p class="text-center text-small text-secondary mt-6 mb-4">
-        <span class="spinner-border me-2" role="status" inert></span>{{ ' ' }}
+        <span class="spinner-border me-2" inert role="status"></span>{{ ' ' }}
       </p>
     </div>
   </AppModal>

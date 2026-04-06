@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import { getErrorMessage, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
+import { assertIsLoggedInOrganization, getErrorMessage, isUserLoggedIn } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransaction, TransactionStatus } from '@shared/interfaces';
 import {
@@ -27,16 +27,18 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* State */
-const progressText = ref<string>('');
+const progressText = ref<string>('Loading group items…');
 
 /* Handlers */
 const handleCancelAll = async () => {
+  if (!isUserLoggedIn(user.personal)) {
+    toastManager.error('You must be logged in to cancel transactions.');
+    return;
+  }
+  assertIsLoggedInOrganization(user.selectedOrganization);
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
-      if (!isLoggedInOrganization(user.selectedOrganization) || !isUserLoggedIn(user.personal)) {
-        throw new Error('You must be logged in to cancel transactions.');
-      }
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
         const serverUrl = user.selectedOrganization.serverUrl;
@@ -69,12 +71,11 @@ const handleCancelAll = async () => {
       toastManager.error(getErrorMessage(error, 'Transactions not canceled'));
     } finally {
       await invokeCallback(groupId);
-      progressText.value = '';
+      progressText.value = 'Loading group items…';
     }
   } else {
     // Bug
-    toastManager.error('Unable to cancel transactions because groupOrId is null');
-    progressText.value = '';
+    toastManager.error('Unable to cancel transactions: group is not available');
   }
 };
 
@@ -100,11 +101,13 @@ const isTransactionInProgress = (transaction: ITransaction) => {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleCancelAll"
-    confirm-title="Cancel all transactions?"
-    confirm-text="Are you sure you want to cancel all transactions?"
-    progress-icon-name="group"
-    progress-title="Canceling all transactions"
     :progress-text="progressText"
+    action-button-text="Cancel all"
+    cancel-button-text="Do not cancel"
+    confirm-text="Are you sure you want to cancel all transactions?"
+    confirm-title="Cancel all transactions?"
     data-testid="button-cancel-all"
+    progress-icon-name="group"
+    progress-title="Cancel all transactions"
   />
 </template>

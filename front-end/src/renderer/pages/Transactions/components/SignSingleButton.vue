@@ -1,91 +1,71 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
-import { ToastManager } from '@renderer/utils/ToastManager';
-import { assertIsLoggedInOrganization, signTransactions } from '@renderer/utils';
+import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { getTransactionById } from '@renderer/services/organization';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
+import type { ITransactionFull } from '@shared/interfaces';
 
 /* Props */
 const props = defineProps<{
   transactionId: number;
+  refreshTransaction?: boolean;
 }>();
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', payload: { transactionId: number, signed: boolean}): void;
+  (event: 'transactionSigned', payload: { transaction: ITransactionFull; signed: boolean }): void;
 }>();
 
 /* Stores */
 const user = useUserStore();
 
-/* Composables */
-const { getPasswordV2 } = usePersonalPassword();
-
-/* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const toastManager = ToastManager.inject();
-
 /* State */
-const signOnGoing = ref(false);
+const signStarted = ref<boolean>(false);
+const transaction = ref<ITransactionFull | null>(null);
 
 /* Handlers */
-const handleClick = () => {
-  getPasswordV2(handleSign, {
-    subHeading: 'Enter your application password to decrypt your private key',
-  });
-};
-
-const handleSign = async (personalPassword: string|null) => {
+const handleClick = async () => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  const transaction = await getTransactionById(
+  transaction.value = await getTransactionById(
     user.selectedOrganization.serverUrl,
     props.transactionId,
   );
 
-  try {
-    signOnGoing.value = true;
+  signStarted.value = true;
+};
 
-    const itemsToSign = [transaction];
-    const signed = await signTransactions(
-      itemsToSign,
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      toastManager,
+const didSign = async (signed: boolean) => {
+  if (props.refreshTransaction) {
+    assertIsLoggedInOrganization(user.selectedOrganization);
+
+    const newTransaction = await getTransactionById(
+      user.selectedOrganization.serverUrl,
+      props.transactionId,
     );
-
-    emit('transactionSigned', { transactionId: props.transactionId, signed });
-    if (signed) {
-      toastManager.success('Transaction signed successfully');
-    } else {
-      toastManager.error('Transaction not signed');
-    }
-  } catch {
-    toastManager.error('Transaction not signed');
-  } finally {
-    signOnGoing.value = false;
+    emit('transactionSigned', { transaction: newTransaction, signed });
+  } else {
+    emit('transactionSigned', { transaction: transaction.value!, signed });
   }
 };
 </script>
 
 <template>
   <AppButton
-    :disabled="signOnGoing"
-    :loading="signOnGoing"
-    loading-text="Sign"
     color="primary"
+    loading-text="Sign"
     type="button"
+    v-bind="$attrs"
     @click.prevent="handleClick"
   >
     Sign
   </AppButton>
+
+  <SignTransactionController
+    v-model:activate="signStarted"
+    :callback="didSign"
+    :transaction="transaction"
+  />
 </template>
