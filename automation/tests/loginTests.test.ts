@@ -6,17 +6,27 @@ import {
   closeApp,
 } from '../utils/automationSupport.js';
 import { LoginPage } from '../pages/LoginPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Login tests @local-basic', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeAll(async () => {
-    await resetDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage);
@@ -26,7 +36,8 @@ test.describe('Login tests @local-basic', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test.beforeEach(async () => {

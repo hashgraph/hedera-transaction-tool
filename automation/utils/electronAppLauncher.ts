@@ -6,6 +6,7 @@ import {
   type Page,
 } from '@playwright/test';
 import * as dotenv from 'dotenv';
+import { applyPlaywrightIsolationEnv } from './playwrightIsolation.js';
 
 dotenv.config();
 
@@ -79,6 +80,7 @@ function getLaunchMode(): TransactionToolAppMode {
 
 async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
   const executablePath = process.env.EXECUTABLE_PATH;
+  const isolationContext = applyPlaywrightIsolationEnv();
 
   if (!executablePath) {
     console.error('[ElectronLauncher] EXECUTABLE_PATH is not defined.');
@@ -87,8 +89,24 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
 
   console.log('[ElectronLauncher] Launching Hedera Transaction Tool...');
   console.log(`[ElectronLauncher] Executable path: ${executablePath}`);
+  if (isolationContext) {
+    console.log(`[ElectronLauncher] Namespace: ${isolationContext.namespace}`);
+    console.log(`[ElectronLauncher] userData dir: ${isolationContext.userDataDir}`);
+    console.log(`[ElectronLauncher] Session partition: ${isolationContext.sessionPartition}`);
+  }
 
   const launchStart = Date.now();
+  const launchArgs = [
+    '--ignore-certificate-errors',
+    // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
+    '--no-sandbox',
+    '--disable-dev-shm-usage',
+    '--lang=en-US',
+  ];
+
+  if (isolationContext?.userDataDir) {
+    launchArgs.push(`--user-data-dir=${isolationContext.userDataDir}`);
+  }
 
   const app = await electron.launch({
     executablePath,
@@ -96,13 +114,8 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
       ...process.env,
       PLAYWRIGHT_TEST: 'true',
     },
-    // These args are passed to Electron/Chromium. Crucial for CI when using mkcert/self-signed TLS.
-    args: [
-      '--ignore-certificate-errors',
-      // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
-      '--no-sandbox',
-      '--disable-dev-shm-usage',
-    ],
+    // These args are passed to Electron/Chromium. `user-data-dir` must be isolated before app code runs.
+    args: launchArgs,
   });
   const wrappedApp = new LaunchedTransactionToolApp(app);
 
