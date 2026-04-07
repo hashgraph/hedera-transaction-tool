@@ -617,6 +617,23 @@ export async function disableNotificationsForTestUsers(inApp = false) {
   }
 }
 
+export async function disableNotificationsForUsers(emails: string[], inApp = false) {
+  try {
+    const userIds = await Promise.all(emails.map(async email => await getUserIdByEmail(email)));
+    const userIdValues = userIds.filter((userId): userId is number => userId !== null);
+
+    if (userIdValues.length === 0) {
+      console.log('No matching users found for notification preference updates.');
+      return;
+    }
+
+    await ensureNotificationTypesForUsers(userIdValues);
+    await disableNotificationPreferences(userIdValues, inApp);
+  } catch (err) {
+    console.error('Error disabling notifications for selected users:', err);
+  }
+}
+
 /**
  * Retrieves the latest IN-APP notification status for a user identified by the given email.
  * This specifically queries for INDICATOR notification types (which are in-app notifications),

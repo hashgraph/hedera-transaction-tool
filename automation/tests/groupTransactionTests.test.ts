@@ -3,13 +3,19 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
-import { resetDbState, resetDbStateForTeardown } from '../utils/databaseUtil.js';
 import {
   closeApp,
   setupApp,
   setupEnvironmentForTransactions,
 } from '../utils/automationSupport.js';
 import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -17,10 +23,14 @@ let globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Group transaction tests @local-transactions', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeAll(async () => {
-    await resetDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    await resetLocalStateForSuite();
     ({ app, window } = await setupApp());
     transactionPage = new TransactionPage(window);
     groupPage = new GroupPage(window);
@@ -49,7 +59,8 @@ test.describe('Group transaction tests @local-transactions', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify group transaction elements', async () => {
