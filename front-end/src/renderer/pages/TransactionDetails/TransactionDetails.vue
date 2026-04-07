@@ -30,6 +30,7 @@ import {
   computeSignatureKey,
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
+  getErrorMessage,
   getStatusFromCode,
   getUInt8ArrayFromBytesString,
   hexToUint8Array,
@@ -54,6 +55,10 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
+
+/* Injectables */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -225,8 +230,9 @@ async function fetchTransaction() {
         publicKeyOwnerCache,
         user.selectedOrganization,
       );
-    } catch {
+    } catch (error) {
       signatureKeyObject.value = null;
+      toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
     }
   }
 
