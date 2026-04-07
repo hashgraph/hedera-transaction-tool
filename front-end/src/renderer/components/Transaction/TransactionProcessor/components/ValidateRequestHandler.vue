@@ -4,13 +4,12 @@ import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Proc
 import { ref } from 'vue';
 import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import { getMaxTransactionSizeForTransaction } from '@renderer/utils/sdk/privilegedPayer';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
 /* Constants */
@@ -84,8 +83,10 @@ function validateSignableInPersonal(request: BaseRequest) {
 
 function validateBigFile(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
+  // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit.
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
 
-  if (size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES) {
+  if (size <= maxSize - SIZE_BUFFER_BYTES) {
     return;
   }
 

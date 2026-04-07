@@ -11,12 +11,10 @@ import {
   FileAppendTransaction,
 } from '@hashgraph/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization } from '@renderer/utils';
-import { createTransactionId } from '@renderer/utils/sdk';
+import { createTransactionId, getMaxTransactionSizeForTransaction } from '@renderer/utils/sdk';
 
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
@@ -26,6 +24,10 @@ import { assertHandlerExists } from '..';
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;
 const SIZE_BUFFER_BYTES = 200;
+// Reserve headroom inside each File Append chunk for protobuf field overhead
+// (transactionID + nodeAccountID + signatures + framing). The numeric chunk
+// size below = max transaction size − this reserve.
+const APPEND_CHUNK_OVERHEAD_BYTES = 644;
 
 /* Emits */
 const emit = defineEmits<{
@@ -79,11 +81,14 @@ async function handle(req: Processable) {
 
   const transaction = Transaction.fromBytes(req.transactionBytes);
   const size = transaction.toBytes().length;
+  // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit
+  // and should NOT trigger the big-file split flow when under that limit.
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
 
   if (
     isLoggedInOrganization(user.selectedOrganization) ||
     !isFileCreateOrUpdate(transaction) ||
-    size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES ||
+    size <= maxSize - SIZE_BUFFER_BYTES ||
     !transaction.contents
   ) {
     await nextHandler.value?.handle(req);
@@ -233,6 +238,15 @@ function createAppendTransaction() {
   if (!originalTransactionId.validStart) throw new Error('Transaction valid start is missing');
   if (!maxTransactionFee) throw new Error('Transaction max fee is missing');
 
+  // HIP-1300: payer-aware chunk size. Privileged payers (0.0.2, 0.0.42-0.0.799)
+  // get a 128 KB transaction limit, so we can pack each File Append chunk close
+  // to that ceiling instead of the SDK default 4 KB. For normal payers we still
+  // use most of the 6 KB envelope. Reducing the number of internal chunks
+  // avoids the partial-upload failure mode where many sub-calls can't all
+  // execute within a single transaction's valid window.
+  const chunkSize =
+    getMaxTransactionSizeForTransaction(originalTransaction.value) - APPEND_CHUNK_OVERHEAD_BYTES;
+
   const append = new FileAppendTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee)
@@ -244,6 +258,7 @@ function createAppendTransaction() {
     )
     .setFileId(fileId.value)
     .setContents(content.value.slice(FIRST_CHUNK_SIZE_BYTES))
+    .setChunkSize(chunkSize)
     .setMaxChunks(99999);
 
   return append;

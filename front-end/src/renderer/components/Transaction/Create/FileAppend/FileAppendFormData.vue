@@ -2,9 +2,12 @@
 import type { Key } from '@hashgraph/sdk';
 import type { FileAppendData } from '@renderer/utils/sdk';
 
+import { computed } from 'vue';
+
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization, formatAccountId } from '@renderer/utils';
+import { getMaxTransactionSize } from '@renderer/utils/sdk/privilegedPayer';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
@@ -15,7 +18,13 @@ import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 const props = defineProps<{
   data: FileAppendData;
   signatureKey: Key | null;
+  payerId?: string | null;
 }>();
+
+/* Computed */
+// HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit,
+// so the chunk-size cap should grow accordingly.
+const chunkSizeMax = computed(() => getMaxTransactionSize(props.payerId ?? null));
 
 /* Emits */
 const emit = defineEmits<{
@@ -79,7 +88,7 @@ const columnClass = 'col-4 col-xxxl-3';
         :filled="true"
         type="number"
         min="1024"
-        max="6144"
+        :max="chunkSizeMax"
         placeholder="Enter Chunk Size"
       />
     </div>
