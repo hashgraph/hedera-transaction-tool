@@ -2,6 +2,7 @@ import { computed, type ComputedRef, type Ref } from 'vue';
 import { Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
 import {
   computeSignatureKey,
+  createLogger,
   hexToUint8Array,
   isLoggedInOrganization,
   type SignatureAudit,
@@ -13,6 +14,8 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+
+const logger = createLogger('renderer.useTransactionAudit');
 
 export interface TransactionAudit {
   transaction: ComputedRef<Promise<ITransactionFull | Error | null>>;
@@ -77,8 +80,9 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
           publicKeyOwnerCache,
           user.selectedOrganization,
         );
-      } catch {
+      } catch (error) {
         result = null;
+        logger.error('Failed to compute signature key', { error });
       }
     }
     return result;
