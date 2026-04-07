@@ -81,12 +81,12 @@ async function handleExport() {
           filteredTransactions.push(tx);
         }
       }
+      collectionTransactions = filteredTransactions;
       logger.debug('Filtered external transactions', { count: collectionTransactions.length });
-    } catch(error) {
-      // Leaves filteredTransactions empty
+    } catch (error) {
+      collectionTransactions = [];
       toastManager.error('Failed to filter external transactions');
       logger.error('Failed to filter external transactions: ' + error?.toString());
-      collectionTransactions = [];
     }
   }
 
