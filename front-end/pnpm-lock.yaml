@@ -16,7 +16,7 @@ importers:
         version: 2.27.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.0.0)(strip-ansi@7.1.2)
       '@hiero-ledger/sdk':
         specifier: 2.82.0
-        version: 2.82.0(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(react@19.2.4))
+        version: 2.82.0(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))
       '@prisma/adapter-better-sqlite3':
         specifier: 7.6.0
         version: 7.6.0
@@ -3032,9 +3032,6 @@ packages:
 
   hermes-parser@0.33.3:
     resolution: {integrity: sha512-Yg3HgaG4CqgyowtYjX/FsnPAuZdHOqSMtnbpylbptsQ9nwwSKsy6uRWcGO5RK0EqiX12q8HvDWKgeAVajRO5DA==}
-    
-  hmac-drbg@1.0.1:
-    resolution: {integrity: sha512-Tti3gMqLdZfhOQY1Mzf/AanLiqh1WTiJgEj26ZuYQ9fbkLomzGchCws4FyrSd4VkpBfiNhaE1On+lOz894jvXg==}
 
   hono@4.12.9:
     resolution: {integrity: sha512-wy3T8Zm2bsEvxKZM5w21VdHDDcwVS1yUFFY6i8UobSsKfFceT7TOwhbhfKsDyx7tYQlmRM5FLpIuYvNFyjctiA==}
@@ -5656,7 +5653,7 @@ snapshots:
       protobufjs: 7.5.4
       yargs: 17.7.2
 
-  '@hiero-ledger/cryptography@1.18.0(react-native@0.84.1(@babel/core@7.29.0)(react@19.2.4))':
+  '@hiero-ledger/cryptography@1.18.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))':
     dependencies:
       '@noble/curves': 1.8.1
       ansi-regex: 6.2.2
@@ -5669,7 +5666,7 @@ snapshots:
       debug: 4.4.1
       forge-light: 1.1.4
       js-base64: 3.7.7
-      react-native-get-random-values: 1.11.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))
+      react-native-get-random-values: 2.0.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))
       spark-md5: 3.0.2
       strip-ansi: 7.1.2
       tweetnacl: 1.0.3
@@ -5688,10 +5685,10 @@ snapshots:
       rimraf: 6.1.2
       strip-ansi: 7.1.2
 
-  '@hiero-ledger/sdk@2.82.0(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(react@19.2.4))':
+  '@hiero-ledger/sdk@2.82.0(bn.js@5.2.3)(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))':
     dependencies:
       '@grpc/grpc-js': 1.12.6
-      '@hiero-ledger/cryptography': 1.18.0(react-native@0.84.1(@babel/core@7.29.0)(react@19.2.4))
+      '@hiero-ledger/cryptography': 1.18.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4))
       '@hiero-ledger/proto': 2.27.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.0.0)(strip-ansi@7.1.2)
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
@@ -7095,7 +7092,7 @@ snapshots:
 
   aws-ssl-profiles@1.1.2: {}
 
-  axios@1.13.6(debug@4.4.3):
+  axios@1.13.6(debug@4.4.1):
     dependencies:
       follow-redirects: 1.15.11(debug@4.4.1)
       form-data: 4.0.5
@@ -8399,12 +8396,6 @@ snapshots:
     dependencies:
       hermes-estree: 0.33.3
 
-  hmac-drbg@1.0.1:
-    dependencies:
-      hash.js: 1.1.7
-      minimalistic-assert: 1.0.1
-      minimalistic-crypto-utils: 1.0.1
-
   hono@4.12.9: {}
 
   hookable@5.5.3: {}
@@ -9699,7 +9690,7 @@ snapshots:
 
   react-is@18.3.1: {}
 
-  react-native-get-random-values@1.11.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4)):
+  react-native-get-random-values@2.0.0(react-native@0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4)):
     dependencies:
       fast-base64-decode: 1.0.0
       react-native: 0.84.1(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.4)
