@@ -1,6 +1,6 @@
 import type { HederaSpecialFileId } from './interfaces';
 
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 import {
   AccountId,
   ExchangeRates,
@@ -9,7 +9,7 @@ import {
   type FeeSchedule,
   FeeSchedules,
   Long,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId {
   const validValues: HederaSpecialFileId[] = [

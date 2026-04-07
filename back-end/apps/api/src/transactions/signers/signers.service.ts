@@ -2,7 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import { DataSource, In, Repository } from 'typeorm';
-import { SignatureMap, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { SignatureMap, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import {
   emitDismissedNotifications,

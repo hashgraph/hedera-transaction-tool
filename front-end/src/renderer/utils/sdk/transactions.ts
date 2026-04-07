@@ -17,7 +17,7 @@ import {
   SystemUndeleteTransaction,
   Transaction,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { TransactionTypeName } from '@shared/interfaces';
 import { getTransactionById } from '@renderer/services/organization';
 import { hexToUint8Array } from '@renderer/utils';

@@ -12,7 +12,7 @@ import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { sendApproverChoice } from '@renderer/services/organization';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import type { ITransactionFull } from '@shared/interfaces';
 import type { ActionReport } from "@renderer/components/ActionController/ActionReport";
 

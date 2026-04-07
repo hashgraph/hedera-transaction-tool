@@ -1,7 +1,7 @@
 import { expect } from 'vitest';
 
 import { getStatusCodeFromMessage } from '@main/utils/sdk';
-import { Status } from '@hashgraph/sdk';
+import { Status } from '@hiero-ledger/sdk';
 
 describe('SDK utilities', () => {
   test('getStatusCodeFromMessage: Returns correct code for TransactionExpired if message includes TRANSACTION_EXPIRED', () => {

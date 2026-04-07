@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
 import { In, Between, MoreThan, Repository } from 'typeorm';
-import { Status } from '@hashgraph/sdk';
+import { Status } from '@hiero-ledger/sdk';
 
 import {
   TransactionSignatureService,

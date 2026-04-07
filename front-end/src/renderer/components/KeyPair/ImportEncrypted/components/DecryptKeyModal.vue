@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { Prisma } from '@prisma/client';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 
 import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 

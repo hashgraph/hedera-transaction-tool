@@ -3,7 +3,7 @@ import type { HederaFile } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Client, FileId, FileInfo } from '@hashgraph/sdk';
+import { Client, FileId, FileInfo } from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
 

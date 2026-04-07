@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as bip39 from 'bip39';
-import { proto } from '@hashgraph/proto';
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { proto } from '@hiero-ledger/proto';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 // Generates an ECDSA key pair
 export function generateECDSAKeyPair(curve = 'secp256k1') {

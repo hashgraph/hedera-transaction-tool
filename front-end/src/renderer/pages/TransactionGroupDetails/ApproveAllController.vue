@@ -18,7 +18,7 @@ import {
 } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 /* Props */

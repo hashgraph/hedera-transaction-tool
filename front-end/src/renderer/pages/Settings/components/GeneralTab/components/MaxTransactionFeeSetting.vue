@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 

@@ -1,4 +1,4 @@
-import { NodeDeleteTransaction } from '@hashgraph/sdk';
+import { NodeDeleteTransaction } from '@hiero-ledger/sdk';
 
 import { TransactionBaseModel } from './transaction.model';
 import { COUNCIL_ACCOUNTS } from './index';

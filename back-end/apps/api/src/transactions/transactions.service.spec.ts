@@ -16,7 +16,7 @@ import {
   SignatureMap,
   Timestamp,
   TransactionId,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   emitTransactionStatusUpdate,

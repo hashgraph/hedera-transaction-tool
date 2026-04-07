@@ -1,7 +1,7 @@
 import type { AccountInfo, IUserKey } from '@shared/interfaces';
 import type { Organization } from '@prisma/client';
 
-import { Mnemonic } from '@hashgraph/sdk';
+import { Mnemonic } from '@hiero-ledger/sdk';
 
 type LoggedOutUser = {
   isLoggedIn: false;

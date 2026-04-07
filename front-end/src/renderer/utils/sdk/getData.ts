@@ -4,7 +4,7 @@ import {
   SystemUndeleteTransaction,
   Timestamp,
   type Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -21,7 +21,7 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import type {
   AccountCreateData,

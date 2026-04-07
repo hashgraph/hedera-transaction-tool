@@ -1,4 +1,4 @@
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 import * as fs from 'fs';
 import { areByteArraysEqual, javaFormatArrayHashCode } from '../utils/byteUtils';
 

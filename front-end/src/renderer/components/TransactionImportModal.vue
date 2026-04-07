@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { computed, ref, watch } from 'vue';
-import { TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hiero-ledger/sdk';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';

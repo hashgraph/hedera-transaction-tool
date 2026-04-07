@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Transaction, TransactionId } from '@hashgraph/sdk';
+import { Transaction, TransactionId } from '@hiero-ledger/sdk';
 import { hexToUint8Array } from '@renderer/utils';
 import type { ITransactionFull, V1ImportCandidate } from '@shared/interfaces';
 import { createLogger } from '@renderer/utils/logger';

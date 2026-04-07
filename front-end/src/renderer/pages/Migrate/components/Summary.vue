@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 

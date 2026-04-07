@@ -26,7 +26,7 @@ import {
   Transaction,
   TransactionId,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TransactionType } from '@entities';
 

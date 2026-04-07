@@ -2,7 +2,7 @@
 import type { ITransactionBrowserItem } from '@renderer/components/ExternalSigning/TransactionBrowser/ITransactionBrowserItem.ts';
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import { computed, ref, watch, type Ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import {
   computeSignatureKey,
   hexToUint8Array,

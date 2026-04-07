@@ -1,4 +1,4 @@
-import { AccountDeleteTransaction } from '@hashgraph/sdk';
+import { AccountDeleteTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction.model';
 
 export default class AccountDeleteTransactionModel extends TransactionBaseModel<AccountDeleteTransaction> {

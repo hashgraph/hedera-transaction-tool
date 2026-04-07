@@ -1,7 +1,7 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
 import { Repository } from 'typeorm';
-import { AccountCreateTransaction, AccountUpdateTransaction } from '@hashgraph/sdk';
+import { AccountCreateTransaction, AccountUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { TransactionStatus, User, Transaction, Role, TransactionObserver } from '@entities';
 

@@ -17,7 +17,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hiero-ledger/sdk';
 
 import {
   Filtering,

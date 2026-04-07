@@ -1,6 +1,6 @@
 import type { Organization } from '@prisma/client';
-import type { TransactionId } from '@hashgraph/sdk';
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import type { TransactionId } from '@hiero-ledger/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ISignatureImport,

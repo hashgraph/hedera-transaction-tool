@@ -1,4 +1,4 @@
-import type { AccountId, FileId, Hbar, Key, ServiceEndpoint } from '@hashgraph/sdk';
+import type { AccountId, FileId, Hbar, Key, ServiceEndpoint } from '@hiero-ledger/sdk';
 import type { TimestampRange } from './HederaSchema';
 
 export interface INodeInfoParsed {

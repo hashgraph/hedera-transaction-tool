@@ -9,7 +9,7 @@ import {
   isFileId,
   TimestampRange,
 } from '@app/common';
-import { AccountId, FileId, Hbar, HbarUnit, Key, PublicKey, ServiceEndpoint } from '@hashgraph/sdk';
+import { AccountId, FileId, Hbar, HbarUnit, Key, PublicKey, ServiceEndpoint } from '@hiero-ledger/sdk';
 
 export const parseNodeInfo = (nodeInfo: NetworkNode) => {
   const nodeInfoParsed: NodeInfoParsed = {

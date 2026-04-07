@@ -1,4 +1,4 @@
-import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { compareKeys } from '../sdk';
 import type { INodeInfoParsed } from '@shared/interfaces';

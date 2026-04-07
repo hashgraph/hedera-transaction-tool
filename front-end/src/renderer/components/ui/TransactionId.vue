@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
-import { TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hiero-ledger/sdk';
 
 /* Props */
 const props = withDefaults(

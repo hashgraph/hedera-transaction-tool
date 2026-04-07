@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, test, expect, vi, beforeEach, type MockInstance } from 'vitest';
-import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import {
   getFreezeTypeString,
   getDisplayTransactionType,

@@ -24,7 +24,7 @@ import {
   HbarUnit,
   PublicKey,
   Timestamp,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { BigNumber } from 'bignumber.js';
 
 import {

@@ -13,7 +13,7 @@ import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue'
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Key } from '@hashgraph/sdk';
+import type { Key } from '@hiero-ledger/sdk';
 import type { FileAppendData } from '@renderer/utils/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';

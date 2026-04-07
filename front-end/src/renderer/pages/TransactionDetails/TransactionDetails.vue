@@ -10,7 +10,7 @@ import {
 import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 

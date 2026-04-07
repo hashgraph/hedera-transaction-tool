@@ -3,7 +3,7 @@ import type { CryptoAllowance, IAccountInfoParsed } from '@shared/interfaces';
 import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, ref, watch } from 'vue';
-import { Hbar, HbarUnit, Key } from '@hashgraph/sdk';
+import { Hbar, HbarUnit, Key } from '@hiero-ledger/sdk';
 
 import { stringifyHbar, formatAccountId, getAccountIdWithChecksum } from '@renderer/utils';
 

@@ -1,4 +1,4 @@
-import { TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hiero-ledger/sdk';
 
 import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 

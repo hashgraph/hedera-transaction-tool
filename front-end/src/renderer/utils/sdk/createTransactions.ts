@@ -27,7 +27,7 @@ import {
   TransactionId,
   Transfer,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
 

@@ -42,8 +42,8 @@
     "test": "tests"
   },
   "dependencies": {
-    "@hashgraph/proto": "2.25.0",
-    "@hashgraph/sdk": "2.80.0",
+    "@hiero-ledger/proto": "^2.27.0",
+    "@hiero-ledger/sdk": "^2.82.0",
     "@playwright/test": "1.58.2",
     "argon2": "0.44.0",
     "async-retry": "1.3.3",

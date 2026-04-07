@@ -28,7 +28,7 @@ import {
   Client,
   Hbar,
   PrivateKey,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { Client as PgClient } from 'pg';
 import {
   generateHederaStyleComplexKey,
