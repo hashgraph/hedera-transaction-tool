@@ -15,7 +15,7 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', payload: { transaction: ITransactionFull; signed: boolean }): void;
+  (event: 'transactionSigned', payload: { transaction: ITransactionFull }): void;
 }>();
 
 /* Stores */
@@ -37,7 +37,7 @@ const handleClick = async () => {
   signStarted.value = true;
 };
 
-const didSign = async (signed: boolean) => {
+const didSign = async () => {
   if (props.refreshTransaction) {
     assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -45,9 +45,9 @@ const didSign = async (signed: boolean) => {
       user.selectedOrganization.serverUrl,
       props.transactionId,
     );
-    emit('transactionSigned', { transaction: newTransaction, signed });
+    emit('transactionSigned', { transaction: newTransaction });
   } else {
-    emit('transactionSigned', { transaction: transaction.value!, signed });
+    emit('transactionSigned', { transaction: transaction.value! });
   }
 };
 </script>
