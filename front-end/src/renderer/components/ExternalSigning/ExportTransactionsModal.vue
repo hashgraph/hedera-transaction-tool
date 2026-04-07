@@ -83,7 +83,7 @@ async function handleExport() {
       }
       logger.debug('Filtered external transactions', { count: collectionTransactions.length });
     } catch(error) {
-      // Leaves filteredtransactions empty
+      // Leaves filteredTransactions empty
       toastManager.error('Failed to filter external transactions');
       logger.error('Failed to filter external transactions: ' + error?.toString());
       collectionTransactions = [];
