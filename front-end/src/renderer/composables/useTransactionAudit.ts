@@ -68,14 +68,18 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
     if (sdkTX === null || sdkTX instanceof Error) {
       result = null;
     } else {
-      result = await computeSignatureKey(
-        sdkTX,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
-        user.selectedOrganization,
-      );
+      try {
+        result = await computeSignatureKey(
+          sdkTX,
+          network.mirrorNodeBaseURL,
+          accountByIdCache,
+          nodeByIdCache,
+          publicKeyOwnerCache,
+          user.selectedOrganization,
+        );
+      } catch {
+        result = null;
+      }
     }
     return result;
   });

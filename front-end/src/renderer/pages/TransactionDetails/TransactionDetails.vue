@@ -216,14 +216,18 @@ async function fetchTransaction() {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKeyObject.value = await computeSignatureKey(
-      sdkTransaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      user.selectedOrganization,
-    );
+    try {
+      signatureKeyObject.value = await computeSignatureKey(
+        sdkTransaction.value,
+        network.mirrorNodeBaseURL,
+        accountByIdCache,
+        nodeByIdCache,
+        publicKeyOwnerCache,
+        user.selectedOrganization,
+      );
+    } catch {
+      signatureKeyObject.value = null;
+    }
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);

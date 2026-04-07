@@ -64,25 +64,30 @@ async function handleExport() {
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
 
   if (isOnlyExternalSelected.value) {
-    const filteredTransactions: ITransaction[] = [];
-    for (const tx of collectionTransactions) {
-      const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
-      const mirrorNodeLink = network.getMirrorNodeREST(network.network);
-      const audit = await computeSignatureKey(
-        sdkTransaction,
-        mirrorNodeLink,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
-        user.selectedOrganization,
-      );
-      if (audit.externalKeys.size > 0) {
-        filteredTransactions.push(tx);
+    try {
+      const filteredTransactions: ITransaction[] = [];
+      for (const tx of collectionTransactions) {
+        const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+        const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+        const audit = await computeSignatureKey(
+          sdkTransaction,
+          mirrorNodeLink,
+          accountInfoCache,
+          nodeInfoCache,
+          publicKeyOwnerCache,
+          user.selectedOrganization,
+        );
+        if (audit.externalKeys.size > 0) {
+          filteredTransactions.push(tx);
+        }
       }
+      logger.debug('Filtered external transactions', { count: collectionTransactions.length });
+    } catch(error) {
+      // Leaves filteredtransactions empty
+      toastManager.error('Failed to filter external transactions');
+      logger.error('Failed to filter external transactions: ' + error?.toString());
+      collectionTransactions = [];
     }
-    collectionTransactions = filteredTransactions;
-
-    logger.debug('Filtered external transactions', { count: collectionTransactions.length });
   }
 
   show.value = false;
