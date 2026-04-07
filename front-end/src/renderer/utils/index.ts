@@ -20,11 +20,11 @@ import {
 } from './userStoreHelpers';
 import { isAccountId } from './validator';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import type { SignatureItem } from '@renderer/types';
-import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { createLogger } from './logger';
 
 const logger = createLogger('renderer.utils');
@@ -188,6 +188,92 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-se
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
   return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
+}
+
+export async function collectRequiredKeys(
+  transactions: ITransaction[],
+  accountInfoCache: AccountByIdCache,
+  nodeInfoCache: NodeByIdCache,
+  publicKeyOwnerCache: PublicKeyOwnerCache,
+): Promise<SignatureItem[]> {
+  const user = useUserStore();
+  const network = useNetworkStore();
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  const selectedOrganization = user.selectedOrganization;
+
+  const limit = pLimit(10);
+  const results = await Promise.all(
+    transactions.map(tx =>
+      limit(async (): Promise<SignatureItem> => {
+        const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+
+        const publicKeysRequired = await usersPublicRequiredToSign(
+          transaction,
+          selectedOrganization.userKeys,
+          network.mirrorNodeBaseURL,
+          accountInfoCache,
+          nodeInfoCache,
+          publicKeyOwnerCache,
+          selectedOrganization,
+        );
+
+        return { transactionId: tx.id, transaction, publicKeys: publicKeysRequired };
+      }),
+    ),
+  );
+
+  return results;
+}
+
+export function collectMissingKeys(signatureItems: SignatureItem[]): string[] {
+  const result = new Set<string>();
+  const user = useUserStore();
+  const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
+
+  for (const { publicKeys } of signatureItems) {
+    const missingKeys = publicKeys.filter(k => !userPublicKeys.has(k));
+    missingKeys.forEach(k => result.add(k));
+  }
+
+  return Array.from(result);
+}
+
+export async function signItems(items: SignatureItem[], password: string | null): Promise<SignatureItem[]> {
+  const user = useUserStore();
+  assertUserLoggedIn(user.personal);
+  const selectedOrganization = user.selectedOrganization;
+  assertIsLoggedInOrganization(selectedOrganization);
+  const notificationStore = useNotificationsStore();
+
+  const uploadResults = await uploadSignatures(
+    user.personal.id,
+    password,
+    selectedOrganization,
+    undefined,
+    undefined,
+    undefined,
+    items,
+  );
+
+  const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
+  if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
+    notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
+  }
+
+  const signers: { transactionId: number }[] = uploadResults?.data?.signers ?? [];
+  const signedTransactionIds = new Set<number>(signers.map((s) => s.transactionId));
+  const unsignedCount = items.length - signers.length;
+  const result: SignatureItem[] = [];
+  if (unsignedCount > 0) {
+    // Collects items that have not been signed
+    for (const item of items) {
+      if (!signedTransactionIds.has(item.transactionId)) {
+        result.push(item);
+      }
+    }
+  }
+
+  return result;
 }
 
 export async function signTransactions(
