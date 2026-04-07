@@ -101,6 +101,7 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
     // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
     '--no-sandbox',
     '--disable-dev-shm-usage',
+    '--lang=en-US',
   ];
 
   if (isolationContext?.userDataDir) {
