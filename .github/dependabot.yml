@@ -5,8 +5,30 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
+
   - package-ecosystem: npm
     directory: "/"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/front-end"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/back-end"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/automation"
     schedule:
       interval: weekly
     versioning-strategy: increase
