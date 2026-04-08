@@ -1,50 +1,48 @@
 # Hedera Transaction Tool Tests
 
-This project contains automated tests for the Hedera Transaction Tool, designed to ensure the reliability and
-functionality of the application. The tests are written using [Playwright](https://playwright.dev/), a powerful
-framework for testing web applications across different browsers.
+This project contains automated tests for the Hedera Transaction Tool. The tests are written with
+[Playwright](https://playwright.dev/) and cover local-user, localnet, and organization flows.
 
 ## Prerequisites
 
 Before you begin, ensure you have the following installed on your system:
 
 - Node.js: `22.12.0`
-- pnpm: `9.15.3`
 
 Additionally, you should either:
 
-- have the Hedera Transaction Tool executable installed and know its path, or
-- run the front-end Electron app in dev mode with remote debugging enabled if you want to attach to an existing app
+- have the Hedera Transaction Tool executable installed and know its path for launch mode, or
+- run the front-end Electron app with remote debugging enabled if you want automation to attach to an existing app
   instance.
 
-Infrastructure requirements depend on the suite you run:
+For organization and shared localnet suites, you also need the dependent services running locally:
 
-- `@local-basic` needs only the front-end app.
-- `@local-transactions`, `@organization-basic`, and `@organization-advanced` also need Solo localnet, the back end,
-  and PostgreSQL connection settings.
+- Hedera localnet / Solo for `@local-transactions`
+- Hedera localnet / Solo plus back-end API + PostgreSQL for `@organization-basic` and
+  `@organization-advanced`
 
 ## Setup
 
-1. **Clone the repository** to your local machine using Git:
+1. **Clone the repository** to your local machine:
 
    ```bash
    git clone <repository-url>
    ```
 
-2. **Navigate to the project directory**:
+2. **Navigate to the automation directory**:
 
    ```bash
    cd hedera-transaction-tool/automation
    ```
 
-3. **Install dependencies** by running:
+3. **Install dependencies**:
 
    ```bash
    pnpm install
    pnpm approve-builds # if required by pnpm install
    ```
 
-4. **Configure the environment variables** by creating a `.env` file in the root of the project.
+4. **Configure environment variables** by creating a `.env` file in `automation/`.
 
    Launch mode example:
 
@@ -52,10 +50,18 @@ Infrastructure requirements depend on the suite you run:
    ELECTRON_APP_MODE='launch'
    EXECUTABLE_PATH='/path/to/Hedera Transaction Tool'
    PLAYWRIGHT_TEST=true
-   PLAYWRIGHT_WORKERS=1
-   PLAYWRIGHT_SHARED_ENV=false
+   PLAYWRIGHT_WORKERS=2
+   PLAYWRIGHT_SHARED_ENV=true
+
    PRIVATE_KEY='your_private_key_here'
    ENVIRONMENT='LOCALNET'
+   ORGANIZATION_URL='https://localhost:3001'
+
+   POSTGRES_HOST='localhost'
+   POSTGRES_PORT='5432'
+   POSTGRES_DATABASE='postgres'
+   POSTGRES_USERNAME='postgres'
+   POSTGRES_PASSWORD='postgres'
    ```
 
    Attach mode example:
@@ -65,10 +71,16 @@ Infrastructure requirements depend on the suite you run:
    ELECTRON_ATTACH_URL='http://127.0.0.1:9222'
    PLAYWRIGHT_TEST=true
    PLAYWRIGHT_WORKERS=1
-   PLAYWRIGHT_SHARED_ENV=false
+   PLAYWRIGHT_PRESERVE_BACKEND_STATE='true'
+
    PRIVATE_KEY='your_private_key_here'
    ENVIRONMENT='LOCALNET'
    ```
+
+   In attach mode, automation preserves the existing Electron local state and SQLite database by default.
+   Set `ELECTRON_PRESERVE_APP_STATE='false'` if you need the previous cleanup behavior.
+   Set `PLAYWRIGHT_PRESERVE_BACKEND_STATE='true'` if you also want to skip PostgreSQL truncation and
+   Redis rate-limiter flushes during local attach-mode debugging without enabling shared-env mode.
 
    If you use attach mode, start the front-end first from `front-end/`:
 
@@ -76,244 +88,242 @@ Infrastructure requirements depend on the suite you run:
    PLAYWRIGHT_TEST=true ELECTRON_REMOTE_DEBUGGING_PORT=9222 pnpm dev
    ```
 
-   Replace `ENVIRONMENT` with variable that can be set to `TESTNET`, `PREVIEWNET` or `LOCALNET`.
+   Replace `ENVIRONMENT` with `TESTNET`, `PREVIEWNET`, or `LOCALNET`.
 
-   Depending on the environment selected:
+   Depending on the selected environment:
 
-   - TESTNET: Use your ECDSA private keys.
-   - PREVIEWNET: Use your ECDSA private keys.
-   - LOCALNET: Use your ED25519 private keys.
-
-   Shared-environment suites also need:
-
-   ```env
-   PLAYWRIGHT_SHARED_ENV=true
-   PLAYWRIGHT_WORKERS=3
-   ORGANIZATION_URL='https://localhost:3001'
-   POSTGRES_HOST='localhost'
-   POSTGRES_PORT='5432'
-   POSTGRES_DATABASE='postgres'
-   POSTGRES_USERNAME='postgres'
-   POSTGRES_PASSWORD='postgres'
-   ```
+   - TESTNET: use ECDSA private keys
+   - PREVIEWNET: use ECDSA private keys
+   - LOCALNET: use ED25519 private keys
 
 ## Running Tests
 
-Run commands from `automation/`.
-
-To run the whole Playwright suite:
-
-```bash
-pnpm test
-```
-
-To list discovered tests without running them:
-
-```bash
-pnpm run test:list
-```
-
-To run a single file:
-
-```bash
-pnpm exec playwright test tests/loginTests.test.ts
-```
-
-Playwright worker behavior is controlled by `PLAYWRIGHT_WORKERS`. The config keeps `fullyParallel: false`, so tests in
-the same file run sequentially while different files can run concurrently across workers. This matches the execution
-model described in
-[`AUTOMATION_TESTS_PLAIN_TEXT_COMPARISON_refactor_parallel_execution_vs_refactor_hooks_reorganize.md`](../AUTOMATION_TESTS_PLAIN_TEXT_COMPARISON_refactor_parallel_execution_vs_refactor_hooks_reorganize.md).
-
-## How Tests Are Executed
-
-### Local execution
-
-The common local entry point is:
+Run all automation tests from `automation/`:
 
 ```bash
 pnpm exec playwright test
 ```
 
-Useful local commands that mirror the current suite split are:
-
-```bash
-PLAYWRIGHT_SHARED_ENV=false PLAYWRIGHT_WORKERS=1 \
-pnpm exec playwright test --grep "@local-basic"
-```
-
-```bash
-PLAYWRIGHT_SHARED_ENV=true PLAYWRIGHT_WORKERS=3 \
-pnpm exec playwright test --grep "@local-transactions|@organization-basic|@organization-advanced"
-```
-
-Practical notes:
-
-- `@local-basic` is the lightweight slice and does not require Solo or the back end.
-- `@local-transactions`, `@organization-basic`, and `@organization-advanced` are intended to run against a shared
-  localnet/back-end environment.
-- In launch mode, Playwright starts the executable from `EXECUTABLE_PATH`.
-- In attach mode, Playwright connects to the running Electron app through `ELECTRON_ATTACH_URL` or
-  `ELECTRON_REMOTE_DEBUGGING_PORT`.
-- On Linux without a desktop session, run the command through `xvfb-run -a`, the same way CI does.
-
-### GitHub Actions execution (`.github/workflows/test-frontend.yaml`)
-
-The `Test Frontend` workflow runs the automation tests in two stages:
-
-1. `Build | Front-end` installs front-end dependencies, runs `pnpm run build:linux`, and caches
-   `front-end/release/linux-unpacked`.
-2. The `Automation` matrix restores that build artifact and runs Playwright in two slices:
-
-| Job name | Grep | Solo required | Back-end required | `PLAYWRIGHT_SHARED_ENV` | `PLAYWRIGHT_WORKERS` |
-| --- | --- | --- | --- | --- | --- |
-| `Automation | Local Basic` | `@local-basic` | No | No | `false` | `1` |
-| `Automation | Shared E2E` | `@local-transactions\|@organization-basic\|@organization-advanced` | Yes | Yes | `true` | `3` |
-
-The CI Playwright command is:
-
-```bash
-xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.grep }}"
-```
-
-The workflow also injects the main runtime variables used by the tests:
-
-- `EXECUTABLE_PATH=../front-end/release/linux-unpacked/hedera-transaction-tool`
-- `ENVIRONMENT=LOCALNET`
-- `PLAYWRIGHT_SHARED_ENV`
-- `PLAYWRIGHT_WORKERS`
-- `ORGANIZATION_URL` and `POSTGRES_*` for the shared E2E slice
-
-For the shared E2E job, the workflow prepares the environment before Playwright starts:
-
-- installs Docker Compose if needed
-- installs and deploys Solo
-- verifies Solo port forwarding
-- builds and starts the back end with Docker Compose
-- installs `xvfb` and runtime shared libraries
-
-After the run, CI uploads the Playwright HTML report, raw test results, and Solo diagnostics when applicable.
-
-The same workflow also contains a separate `unit-test` matrix for front-end Vitest suites in `front-end/`. That job
-is independent from the Playwright automation described in this README.
-
-## Hooks And Limitations
-
-The current branch follows the `refactor_parallel_execution` hook model described in
-[`AUTOMATION_TESTS_PLAIN_TEXT_COMPARISON_refactor_parallel_execution_vs_refactor_hooks_reorganize.md`](../AUTOMATION_TESTS_PLAIN_TEXT_COMPARISON_refactor_parallel_execution_vs_refactor_hooks_reorganize.md).
-Most suites use suite-scoped fixtures rather than recreating business data before every test.
-
-### Current hook lifecycle
-
-Typical suite structure in this branch:
-
-- `beforeAll`
-  - activates suite isolation when `PLAYWRIGHT_SHARED_ENV=true`
-  - resets local SQLite and, for organization suites, back-end state when shared-environment mode is disabled
-  - starts or attaches to the Electron app with `setupApp()`
-  - creates page objects and seeds the local user or organization session once for the whole file
-  - runs one-time environment setup such as transaction bootstrap
-- `beforeEach`
-  - navigates back to the expected screen
-  - closes transient UI state such as draft modals and toasts
-  - signs in the active organization user when the suite needs it
-- `afterEach`
-  - usually performs best-effort organization logout
-- `afterAll`
-  - calls `closeApp()`; in launch mode this closes the app, and in attach mode it leaves the external app running
-  - resets local or back-end state again when allowed by the environment
-  - removes worker isolation directories and environment overrides
-
-Important consequence:
-
-- tests in the same file share the data seeded in `beforeAll`
-- many top-level suites still declare `test.describe.configure({ mode: 'serial' })`
-- Playwright also runs with `fullyParallel: false`, so files are sequential internally and only file-level concurrency
-  happens across workers
-
-### CI limitations
-
-CI runs in launch mode and has two different behaviors depending on the job slice:
-
-- `Automation | Local Basic`
-  - `PLAYWRIGHT_SHARED_ENV=false`
-  - local SQLite reset hooks run before and after the suite
-- `Automation | Shared E2E`
-  - `PLAYWRIGHT_SHARED_ENV=true`
-  - local and back-end reset hooks are intentionally skipped
-  - isolation comes from worker namespacing (`PLAYWRIGHT_USER_DATA_DIR`, session partition, labels, remote debugging
-    port), not from a globally empty backend
-
-Practical limitations in CI:
-
-- an early failure can skip the rest of the file because many suites still run in serial mode
-- because setup is shared at suite scope, one broken test can poison later tests in the same file
-- shared E2E jobs cannot assume an empty PostgreSQL/Redis/backend state between files; tests must tolerate
-  worker-shared infrastructure
-- infra instability has a large blast radius because Solo, the back end, and seeded organization state are usually
-  created once in `beforeAll` and then reused
-
-### Local launch mode limitations
-
-Launch mode is the closest option to a fresh automated run because Playwright starts a new Electron process from
-`EXECUTABLE_PATH`.
-
-Practical limitations in local launch mode:
-
-- even in launch mode, `setupApp()` clears `localStorage` and `sessionStorage` at startup
-- when shared-environment mode is disabled, suite hooks reset local state before and after the suite, so launch mode is
-  not suitable for preserving a long-lived manual app state
-- because most test data is seeded once in `beforeAll`, debugging often requires rerunning the full file rather than a
-  single isolated test path
-- mutable page-object state can leak between tests in the same file if a test exits mid-flow
-
-### Local attach mode limitations
-
-Attach mode connects to an already running Electron instance through `ELECTRON_ATTACH_URL` or
-`ELECTRON_REMOTE_DEBUGGING_PORT`.
-
-Practical limitations in local attach mode:
-
-- attach mode does not preserve the existing browser session as-is; `setupApp()` still clears browser storage on
-  startup
-- if automation detects an already logged-in session, it calls `resetAppState()`, so attach mode still trends toward a
-  clean automation session rather than “continue exactly where I left off”
-- `closeApp()` does not stop the attached app, so leftover state remains in that Electron instance after the suite
-- one Playwright process should own one attached Electron instance and one CDP endpoint; sharing a single attached app
-  across multiple Playwright processes is unsafe
-- with suite-scoped hooks, an early failure in `beforeAll` or the first test can leave the attached app in a mutated
-  state for the rest of the suite
-
-Recommended local usage:
-
-- use launch mode when you want reproducible automation behavior
-- use attach mode when you need interactive debugging, but start from a disposable app instance and avoid sharing that
-  instance across concurrent runs
-
-## Current Test Groups
-
-- `@local-basic`
-  - `registrationTests.test.ts`
-  - `loginTests.test.ts`
-  - `settingsTests.test.ts`
-- `@local-transactions`
-  - `transactionTests.test.ts`
-  - `workflowTests.test.ts`
-  - `groupTransactionTests.test.ts`
-- `@organization-basic`
-  - `organizationSettingsTests.test.ts`
-  - `organizationContactListTests.test.ts`
-  - `organizationNotificationTests.test.ts` (currently skipped)
-- `@organization-advanced`
-  - `organizationTransactionTests.test.ts`
-  - `organizationGroupTests.test.ts`
-  - `organizationRegressionTests.test.ts` (currently skipped)
-
-Examples:
+Run a single suite:
 
 ```bash
 pnpm exec playwright test tests/registrationTests.test.ts
 ```
 
+List discovered tests:
+
 ```bash
-pnpm exec playwright test --grep "@organization-advanced"
+pnpm exec playwright test --list
+```
+
+## Parallel Local Execution
+
+### Launch Mode
+
+Use launch mode when you want Playwright workers to start isolated Electron instances automatically. In shared-env
+mode each worker gets its own Chromium user-data directory, SQLite database, and session partition.
+
+Shared local/basic validation:
+
+```bash
+ELECTRON_APP_MODE=launch \
+PLAYWRIGHT_SHARED_ENV=true \
+PLAYWRIGHT_WORKERS=2 \
+pnpm exec playwright test --grep "@local-basic|@local-transactions"
+```
+
+Shared infra-heavy validation:
+
+```bash
+ELECTRON_APP_MODE=launch \
+PLAYWRIGHT_SHARED_ENV=true \
+PLAYWRIGHT_WORKERS=3 \
+pnpm exec playwright test --grep "@local-transactions|@organization-basic|@organization-advanced"
+```
+
+These commands assume:
+
+- `EXECUTABLE_PATH` points to a working Electron build
+- localnet is available for `@local-transactions`
+- `ORGANIZATION_URL` and `POSTGRES_*` are configured for organization suites
+
+### Attach Mode
+
+Attach mode does not create worker-local Electron instances. For parallel local execution, run one Electron app
+instance per Playwright process, each with its own remote debugging port and Playwright user-data directory.
+
+From `front-end/`, start one app per terminal:
+
+```bash
+PLAYWRIGHT_TEST=true \
+PLAYWRIGHT_USER_DATA_DIR=/tmp/htt-attach-0 \
+PLAYWRIGHT_SESSION_PARTITION=persist:htt-attach-0 \
+PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK=true \
+ELECTRON_REMOTE_DEBUGGING_PORT=9222 \
+pnpm dev
+```
+
+```bash
+PLAYWRIGHT_TEST=true \
+PLAYWRIGHT_USER_DATA_DIR=/tmp/htt-attach-1 \
+PLAYWRIGHT_SESSION_PARTITION=persist:htt-attach-1 \
+PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK=true \
+ELECTRON_REMOTE_DEBUGGING_PORT=9223 \
+pnpm dev
+```
+
+Then, from `automation/`, run one Playwright process per attached app. Keep `PLAYWRIGHT_SHARED_ENV=true`
+for parallel shared-environment runs so automation does not truncate shared PostgreSQL state or flush Redis between
+suites:
+
+```bash
+ELECTRON_APP_MODE=attach \
+ELECTRON_ATTACH_URL=http://127.0.0.1:9222 \
+PLAYWRIGHT_SHARED_ENV=true \
+PLAYWRIGHT_WORKERS=1 \
+pnpm exec playwright test --grep "@local-basic" &
+
+ELECTRON_APP_MODE=attach \
+ELECTRON_ATTACH_URL=http://127.0.0.1:9223 \
+PLAYWRIGHT_SHARED_ENV=true \
+PLAYWRIGHT_WORKERS=1 \
+pnpm exec playwright test --grep "@local-transactions" &
+
+wait
+```
+
+To shard more suites in attach mode, repeat the same pattern with more Electron instances, ports, and user-data
+directories.
+
+## CI Workflow
+
+The GitHub Actions workflow in `.github/workflows/test-frontend.yaml` runs three jobs:
+
+- `build`: installs front-end dependencies, builds the Linux executable, and caches
+  `front-end/release/linux-unpacked`
+- `test`: restores the built executable and runs the Playwright automation matrix
+- `unit-test`: runs the front-end unit test matrix for main, renderer, and shared code
+
+The Playwright automation job has two matrix entries:
+
+1. `Local Basic`
+
+   - grep: `@local-basic`
+   - `PLAYWRIGHT_SHARED_ENV=false`
+   - `PLAYWRIGHT_WORKERS=1`
+   - no Solo deployment
+   - no back-end deployment
+
+2. `Shared E2E`
+
+   - grep: `@local-transactions|@organization-basic|@organization-advanced`
+   - `PLAYWRIGHT_SHARED_ENV=true`
+   - `PLAYWRIGHT_WORKERS=3`
+   - installs Kind and Solo CLI
+   - deploys Solo once
+   - deploys the back end once with Docker Compose
+
+For the shared E2E job, the workflow:
+
+- installs `mkcert` and `socat`
+- generates local HTTPS certificates
+- copies back-end `example.env` files into working `.env` files
+- aligns the back-end supported front-end version with `front-end/package.json`
+- raises API throttling limits for the shared run
+- waits for Solo and the back-end API to become ready
+
+The automation command in CI is:
+
+```bash
+xvfb-run -a npx playwright test --grep "<matrix grep>"
+```
+
+CI sets these runtime variables before running that command:
+
+- `EXECUTABLE_PATH=../front-end/release/linux-unpacked/hedera-transaction-tool`
+- `ENVIRONMENT=LOCALNET`
+- `PLAYWRIGHT_SHARED_ENV`
+- `PLAYWRIGHT_WORKERS`
+- `ORGANIZATION_URL=https://localhost:3001` for back-end-dependent suites
+- `POSTGRES_HOST=localhost`
+- `POSTGRES_PORT=5432`
+- `POSTGRES_DATABASE=postgres`
+- `POSTGRES_USERNAME=postgres`
+- `POSTGRES_PASSWORD=postgres`
+
+After execution, the workflow uploads the Playwright HTML report, raw test results, and Solo / Kind diagnostics when
+available.
+
+## Current Test Suites
+
+### 1. Registration tests
+
+```bash
+pnpm exec playwright test tests/registrationTests.test.ts
+```
+
+### 2. Login tests
+
+```bash
+pnpm exec playwright test tests/loginTests.test.ts
+```
+
+### 3. Settings tests
+
+```bash
+pnpm exec playwright test tests/settingsTests.test.ts
+```
+
+### 4. Transactions tests
+
+```bash
+pnpm exec playwright test tests/transactionTests.test.ts
+```
+
+### 5. Workflow tests
+
+```bash
+pnpm exec playwright test tests/workflowTests.test.ts
+```
+
+### 6. Organization Settings tests
+
+```bash
+pnpm exec playwright test tests/organizationSettingsTests.test.ts
+```
+
+### 7. Organization Transaction tests
+
+```bash
+pnpm exec playwright test tests/organizationTransactionTests.test.ts
+```
+
+### 8. Organization Contact List tests
+
+```bash
+pnpm exec playwright test tests/organizationContactListTests.test.ts
+```
+
+### 9. Organization Regression tests
+
+```bash
+pnpm exec playwright test tests/organizationRegressionTests.test.ts
+```
+
+### 10. Organization Notification tests
+
+```bash
+pnpm exec playwright test tests/organizationNotificationTests.test.ts
+```
+
+### 11. Group transaction tests
+
+```bash
+pnpm exec playwright test tests/groupTransactionTests.test.ts
+```
+
+### 12. Group organization tests
+
+```bash
+pnpm exec playwright test tests/organizationGroupTests.test.ts
 ```

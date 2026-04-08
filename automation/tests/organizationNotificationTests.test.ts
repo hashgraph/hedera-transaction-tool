@@ -3,31 +3,25 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
-import { flushRateLimiter } from '../utils/databaseUtil.js';
+import { flushRateLimiter } from '../utils/db/databaseUtil.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
 import {
-  closeApp,
   getPrivateKeyEnv,
-  setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/automationSupport.js';
+} from '../utils/runtime/environment.js';
 import {
   disableNotificationsForUsers,
   getLatestInAppNotificationStatusByEmail,
   getNotifiedTransactionIdByEmail,
-} from '../utils/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+} from '../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
 import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  createNamespacedLabel,
-  resetBackendStateForSuite,
-  resetBackendStateForTeardown,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupNamedOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -42,19 +36,18 @@ let firstUser: UserDetails;
 let secondUser: UserDetails;
 
 test.describe.skip('Organization Notification tests @organization-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     test.slow();
-    isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
-    await resetLocalStateForSuite();
-    await resetBackendStateForSuite();
-    ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
-    loginPage = new LoginPage(window);
+    ({
+      app,
+      window,
+      transactionPage,
+      organizationPage,
+      registrationPage,
+      loginPage,
+      isolationContext,
+      organizationNickname,
+    } = await setupNamedOrganizationSuiteApp(test.info()));
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -83,10 +76,7 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await resetBackendStateForTeardown();
-    await cleanupIsolation(isolationContext);
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify notification is visible in the organization dropdown', async () => {

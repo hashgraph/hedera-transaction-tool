@@ -1,17 +1,15 @@
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
-import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
+import { getAccountDetails, getTransactionDetails } from '../utils/network/mirrorNodeAPI.js';
 import {
   verifyAccountExists,
   verifyFileExists,
   verifyTransactionExists,
-} from '../utils/databaseQueries.js';
-import { decodeAndFlattenKeys } from '../utils/keyUtil.js';
-import {
-  getCleanAccountId,
-  isLocalnetEnvironment,
-  LOCALNET_PAYER_ACCOUNT_ID,
-} from '../utils/automationSupport.js';
+} from '../utils/db/databaseQueries.js';
+import { decodeAndFlattenKeys } from '../utils/crypto/keyUtil.js';
+import { LOCALNET_PAYER_ACCOUNT_ID } from '../constants/index.js';
+import { getCleanAccountId } from '../utils/data/transactionFormatting.js';
+import { isLocalnetEnvironment } from '../utils/runtime/environment.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import * as path from 'node:path';
 

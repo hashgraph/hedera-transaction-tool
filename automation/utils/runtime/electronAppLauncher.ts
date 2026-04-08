@@ -6,15 +6,17 @@ import {
   type Page,
 } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { applyPlaywrightIsolationEnv } from './playwrightIsolation.js';
+import { ELECTRON_APP_MODES } from '../../constants/index.js';
+import { getElectronAppMode, type TransactionToolAppMode } from './appMode.js';
+import { applyPlaywrightIsolationEnv } from '../setup/playwrightIsolation.js';
+
+export type { TransactionToolAppMode } from './appMode.js';
 
 dotenv.config();
 
 const DEFAULT_ATTACH_URL = 'http://127.0.0.1:9222';
 const DEFAULT_ATTACH_TIMEOUT_MS = 30_000;
 const WINDOW_POLL_INTERVAL_MS = 250;
-
-export type TransactionToolAppMode = 'launch' | 'attach';
 
 export interface TransactionToolApp {
   readonly mode: TransactionToolAppMode;
@@ -27,7 +29,7 @@ export interface LaunchHederaTransactionToolOptions {
 }
 
 class LaunchedTransactionToolApp implements TransactionToolApp {
-  readonly mode = 'launch';
+  readonly mode = ELECTRON_APP_MODES.LAUNCH;
 
   constructor(private readonly app: ElectronApplication) {}
 
@@ -41,7 +43,7 @@ class LaunchedTransactionToolApp implements TransactionToolApp {
 }
 
 class AttachedTransactionToolApp implements TransactionToolApp {
-  readonly mode = 'attach';
+  readonly mode = ELECTRON_APP_MODES.ATTACH;
 
   constructor(private readonly browser: Browser) {}
 
@@ -57,25 +59,13 @@ class AttachedTransactionToolApp implements TransactionToolApp {
 let attachedAppPromise: Promise<TransactionToolApp> | null = null;
 
 export async function launchHederaTransactionTool(
-  { mode = getLaunchMode() }: LaunchHederaTransactionToolOptions = {},
+  { mode = getElectronAppMode() }: LaunchHederaTransactionToolOptions = {},
 ): Promise<TransactionToolApp> {
-  if (mode === 'attach') {
+  if (mode === ELECTRON_APP_MODES.ATTACH) {
     return await attachToHederaTransactionTool();
   }
 
   return await launchNewHederaTransactionTool();
-}
-
-function getLaunchMode(): TransactionToolAppMode {
-  const mode = process.env.ELECTRON_APP_MODE?.trim() ?? 'launch';
-
-  if (mode === 'launch' || mode === 'attach') {
-    return mode;
-  }
-
-  throw new Error(
-    `Invalid ELECTRON_APP_MODE "${mode}". Expected "launch" or "attach".`,
-  );
 }
 
 async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
@@ -101,7 +91,6 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
     // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
     '--no-sandbox',
     '--disable-dev-shm-usage',
-    '--lang=en-US',
   ];
 
   if (isolationContext?.userDataDir) {

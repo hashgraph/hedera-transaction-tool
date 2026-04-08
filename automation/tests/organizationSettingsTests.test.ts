@@ -4,24 +4,17 @@ import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
+import { generateRandomPassword } from '../utils/data/random.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
 import {
-  closeApp,
-  generateRandomPassword,
-  setupApp,
-} from '../utils/automationSupport.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
-import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  createNamespacedLabel,
-  resetBackendStateForSuite,
-  resetBackendStateForTeardown,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from './helpers/support/organizationNamingSupport.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -36,24 +29,33 @@ let updatedOrganizationNickname = 'New Organization';
 let invalidOrganizationNickname = 'Bad Organization';
 
 let firstUser: UserDetails;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Settings tests @organization-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
-    isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
-    updatedOrganizationNickname = createNamespacedLabel('New Organization', isolationContext);
-    invalidOrganizationNickname = createNamespacedLabel('Bad Organization', isolationContext);
-    await resetLocalStateForSuite();
-    await resetBackendStateForSuite();
-    ({ app, window } = await setupApp());
-    loginPage = new LoginPage(window);
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
+    ({
+      app,
+      window,
+      loginPage,
+      transactionPage,
+      organizationPage,
+      isolationContext,
+    } = await setupOrganizationSuiteApp(test.info()));
     settingsPage = new SettingsPage(window);
     registrationPage = new RegistrationPage(window);
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    updatedOrganizationNickname = organizationNickname.replace(
+      'Test Organization',
+      'Updated Organization',
+    );
+    invalidOrganizationNickname = organizationNickname.replace(
+      'Test Organization',
+      'Invalid Organization',
+    );
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -68,11 +70,17 @@ test.describe('Organization Settings tests @organization-basic', () => {
     firstUser = organizationPage.getUser(0);
   });
 
+  test.afterEach(async () => {
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Tests can end in personal mode or after deleting the organization.
+      // The next beforeEach recreates the full fixture.
+    }
+  });
+
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await resetBackendStateForTeardown();
-    await cleanupIsolation(isolationContext);
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify user can switch between personal and organization mode', async () => {
@@ -99,7 +107,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
   test('Verify error message when user adds non-existing organization', async () => {
     await loginPage.waitForToastToDisappear();
     await organizationPage.setupWrongOrganization(invalidOrganizationNickname);
-    const toastMessage = await registrationPage.getToastMessageByVariant('error');
+    const toastMessage = await registrationPage.getToastMessage();
     expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
     await organizationPage.clickOnCancelAddingOrganizationButton();
   });
@@ -217,8 +225,11 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await loginPage.waitForToastToDisappear();
     await organizationPage.clickOnDeleteFirstOrganization();
 
-    const toastMessage = await registrationPage.getToastMessageByVariant('success');
-    expect(toastMessage).toBe('Connection deleted successfully');
+    await expect
+      .poll(async () => await registrationPage.getToastMessage(), {
+        timeout: 10_000,
+      })
+      .toBe('Connection deleted successfully');
 
     const orgName = await organizationPage.getOrganizationNicknameText() ?? '';
     const isDeletedFromDb = await organizationPage.verifyOrganizationExists(orgName);

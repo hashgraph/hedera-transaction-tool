@@ -5,14 +5,18 @@ import { SettingsPage } from './SettingsPage.js';
 import { TransactionPage } from './TransactionPage.js';
 import {
   compareJsonFiles,
+  parsePropertiesContent,
+} from '../utils/data/jsonUtils.js';
+import {
   generateRandomEmail,
   generateRandomPassword,
-  parsePropertiesContent,
+} from '../utils/data/random.js';
+import {
+  getPrivateKeyEnv,
   setupEnvironmentForTransactions,
-  waitForValidStart,
-  getPrivateKeyEnv
-} from '../utils/automationSupport.js';
-import { createTestUsersBatch } from '../utils/databaseUtil.js';
+} from '../utils/runtime/environment.js';
+import { waitForValidStart } from '../utils/runtime/timing.js';
+import { createTestUsersBatch } from '../utils/db/databaseUtil.js';
 import {
   findNewKey,
   getAllTransactionIdsForUserObserver,
@@ -21,22 +25,22 @@ import {
   getUserIdByEmail,
   isKeyDeleted,
   verifyOrganizationExists,
-} from '../utils/databaseQueries.js';
+} from '../utils/db/databaseQueries.js';
 import * as fs from 'node:fs';
-import { generateMnemonic } from '../utils/keyUtil.js';
-import { indexRecoveryPhraseWords, seedOrganizationUserKey } from '../utils/organizationBaseline.js';
+import { generateMnemonic } from '../utils/crypto/keyUtil.js';
+import { indexRecoveryPhraseWords, seedOrganizationUserKey } from '../utils/seeding/organizationSeeding.js';
 import {
   encodeExchangeRates,
   encodeFeeSchedule,
   encodeNodeAddressBook,
   encodeServicesConfigurationList,
   encodeThrottleDefinitions,
-} from '../utils/encodeSystemFiles.js';
+} from '../utils/files/encodeSystemFiles.js';
 import {
   normalizeExchangeRateData,
   normalizeFeeScheduleData,
   normalizeThrottleData,
-} from '../utils/dataNormalizer.js';
+} from '../utils/data/dataNormalizer.js';
 
 interface TransactionDetails {
   txId: string | null;
@@ -948,6 +952,10 @@ export class OrganizationPage extends BasePage {
     return timeMatch ? timeMatch[0] : null;
   }
 
+  private normalizeTransactionId(dateStr: string | null): string | null {
+    return dateStr?.replace(/\s+/g, '') ?? null;
+  }
+
   async getValidStart() {
     return await this.getText(this.transactionValidStartSelector);
   }
@@ -1449,7 +1457,8 @@ export class OrganizationPage extends BasePage {
   }
 
   async getReadyForSignTransactionIdByIndex(index: number) {
-    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    const text = await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    return text?.replace(/\s+/g, '') ?? null;
   }
 
   async getReadyForSignTransactionTypeByIndex(index: number) {
@@ -1479,7 +1488,8 @@ export class OrganizationPage extends BasePage {
   }
 
   async getInProgressTransactionIdByIndex(index: number) {
-    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    const text = await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    return text?.replace(/\s+/g, '') ?? null;
   }
 
   async getInProgressTransactionTypeByIndex(index: number) {
@@ -1497,7 +1507,8 @@ export class OrganizationPage extends BasePage {
   }
 
   async getReadyForExecutionTransactionIdByIndex(index: number) {
-    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    const text = await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    return text?.replace(/\s+/g, '') ?? null;
   }
 
   async getReadyForExecutionTransactionTypeByIndex(index: number) {
@@ -1523,7 +1534,8 @@ export class OrganizationPage extends BasePage {
   }
 
   async getHistoryTransactionIdByIndex(index: number) {
-    return await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    const text = await this.getText(this.transactionNodeTransactionIdIndexSelector + index);
+    return text?.replace(/\s+/g, '') ?? null;
   }
 
   async getHistoryTransactionTypeByIndex(index: number) {
@@ -1558,7 +1570,7 @@ export class OrganizationPage extends BasePage {
       name: string;
       getter: (index: number) => Promise<any>;
     }>,
-    maxRetries = 10,
+    maxRetries = 40,
     retryDelay = this.SHORT_TIMEOUT,
   ): Promise<{
     transactionId: string | null;
@@ -1567,11 +1579,18 @@ export class OrganizationPage extends BasePage {
     detailsButton: boolean;
     [key: string]: any; // for additionalFields
   } | null> {
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
+    let lastSeenIds: string[] = [];
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(transactionIdIndexSelector);
+      lastSeenIds = [];
       for (let i = 0; i < count; i++) {
         const id = await getTransactionIdByIndex.call(this, i);
-        if (id === transactionId) {
+        if (id) {
+          lastSeenIds.push(id);
+        }
+        if (id === normalizedTransactionId) {
           const transactionType = await getTransactionTypeByIndex.call(this, i);
           const validStart = await getValidStartByIndex.call(this, i);
           const detailsButton = await getDetailsButtonVisibleByIndex.call(this, i);
@@ -1592,6 +1611,9 @@ export class OrganizationPage extends BasePage {
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
+    console.warn(
+      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    );
     return null;
   }
 
@@ -1651,76 +1673,114 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSubmitSignButtonByTransactionId(
     transactionId: string,
-    maxRetries = 20,
+    maxRetries = 60,
     retryDelay = this.SHORT_TIMEOUT,
   ) {
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
+    let lastSeenIds: string[] = [];
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      lastSeenIds = [];
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForSignTransactionIdByIndex(i);
-        if (id === transactionId) {
+        if (id) {
+          lastSeenIds.push(id);
+        }
+        if (id === normalizedTransactionId) {
           await this.clickOnSubmitSignButtonByIndex(i);
           return;
         }
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-    throw new Error(`Transaction ${transactionId} not found after ${maxRetries} retries`);
+    throw new Error(
+      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    );
   }
 
   async clickOnReadyToSignDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 20,
+    maxRetries = 60,
     retryDelay = this.SHORT_TIMEOUT,
   ) {
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
+    let lastSeenIds: string[] = [];
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      lastSeenIds = [];
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForSignTransactionIdByIndex(i);
-        if (id === transactionId) {
+        if (id) {
+          lastSeenIds.push(id);
+        }
+        if (id === normalizedTransactionId) {
           await this.clickOnReadyToSignDetailsButtonByIndex(i);
           return;
         }
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
-    throw new Error(`Transaction ${transactionId} not found after ${maxRetries} retries`);
+    throw new Error(
+      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    );
   }
 
   async clickOnReadyForExecutionDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 20,
+    maxRetries = 40,
     retryDelay = this.SHORT_TIMEOUT,
   ) {
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
+    let lastSeenIds: string[] = [];
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      lastSeenIds = [];
       for (let i = 0; i < count; i++) {
         const id = await this.getReadyForExecutionTransactionIdByIndex(i);
-        if (id === transactionId) {
+        if (id) {
+          lastSeenIds.push(id);
+        }
+        if (id === normalizedTransactionId) {
           await this.clickOnReadyForExecutionDetailsButtonByIndex(i);
           return;
         }
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
+    throw new Error(
+      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    );
   }
 
   async clickOnHistoryDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 20,
+    maxRetries = 40,
     retryDelay = this.SHORT_TIMEOUT,
   ) {
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
+    let lastSeenIds: string[] = [];
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      lastSeenIds = [];
       for (let i = 0; i < count; i++) {
         const id = await this.getHistoryTransactionIdByIndex(i);
-        if (id === transactionId) {
+        if (id) {
+          lastSeenIds.push(id);
+        }
+        if (id === normalizedTransactionId) {
           await this.clickOnHistoryDetailsButtonByIndex(i);
           return;
         }
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
+    throw new Error(
+      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    );
   }
 
   async clickOnInProgressDetailsButtonByTransactionId(

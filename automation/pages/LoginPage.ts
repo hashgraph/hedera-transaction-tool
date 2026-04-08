@@ -2,6 +2,8 @@ import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
 
 export class LoginPage extends BasePage {
+  blockingModalSelector = '[data-testid="modal-confirm-transaction"][style*="display: block"]';
+
   constructor(window: Page) {
     super(window);
   }
@@ -34,12 +36,8 @@ export class LoginPage extends BasePage {
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 
-  async closeImportantNoteModal(timeout: number = this.DEFAULT_TIMEOUT) {
-    const isModal = await this.isElementVisible(
-      this.importantNoteModalButtonSelector,
-      null,
-      timeout,
-    );
+  async closeImportantNoteModal() {
+    const isModal = await this.isElementVisible(this.importantNoteModalButtonSelector);
     if (isModal) {
       await this.click(this.importantNoteModalButtonSelector);
     }
@@ -112,7 +110,6 @@ export class LoginPage extends BasePage {
   }
 
   async login(email: string, password: string) {
-    await this.closeImportantNoteModal(this.SHORT_TIMEOUT);
     await this.typeEmail(email);
     await this.typePassword(password);
     await this.clickSignIn();
@@ -191,20 +188,16 @@ export class LoginPage extends BasePage {
   }
 
   async clickSignIn() {
-    const maxAttempts = 3;
+    await this.waitForBlockingModalToClose();
+    await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
+  }
 
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      await this.closeImportantNoteModal(this.SHORT_TIMEOUT);
-      try {
-        await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
-        return;
-      } catch (error) {
-        await this.closeImportantNoteModal(this.DEFAULT_TIMEOUT);
-
-        if (attempt === maxAttempts - 1) {
-          throw error;
-        }
-      }
+  async waitForBlockingModalToClose(timeout: number = this.VERY_LONG_TIMEOUT) {
+    const modalHidden = await this.isElementHidden(this.blockingModalSelector, null, timeout);
+    if (!modalHidden) {
+      throw new Error(
+        `Blocking modal "${this.blockingModalSelector}" did not close within ${timeout} ms`,
+      );
     }
   }
 

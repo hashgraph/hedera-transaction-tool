@@ -60,7 +60,7 @@ export async function generateCSVFile({
   const csvContent = lines.join('\n');
 
   // Ensure the data directory exists
-  const dataDirectory = path.resolve(__dirname, '../data');
+  const dataDirectory = path.resolve(__dirname, '../../data');
   if (!fs.existsSync(dataDirectory)) {
     fs.mkdirSync(dataDirectory, { recursive: true });
   }

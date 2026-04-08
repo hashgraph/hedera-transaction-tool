@@ -20,8 +20,8 @@
 
 import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/automationSupport.js';
-import { resetDbState, resetDbStateForTeardown } from '../../utils/databaseUtil.js';
+import { setupApp, closeApp } from '../../utils/runtime/appSession.js';
+import { resetDbState, resetDbStateForTeardown } from '../../utils/db/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
