@@ -17,7 +17,7 @@ import {
   Hbar,
   AccountId,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';

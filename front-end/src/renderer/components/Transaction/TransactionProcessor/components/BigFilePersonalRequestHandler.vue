@@ -9,7 +9,7 @@ import {
   TransactionResponse,
   TransactionReceipt,
   FileAppendTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 

@@ -7,7 +7,7 @@ import { TransactionStatus } from '@shared/interfaces';
 import TransactionDetailsHeader from '@renderer/pages/TransactionDetails/components/TransactionDetailsHeader.vue';
 import { cancelTransaction, executeTransaction } from '@renderer/services/organization';
 import { showSaveDialog } from '@renderer/services/electronUtilsService';
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 const routeUpMock = vi.fn();
 const routeToNextMock = vi.fn();
@@ -34,7 +34,7 @@ const contactsStore = {
   ],
 };
 
-vi.mock('@hashgraph/sdk', () => {
+vi.mock('@hiero-ledger/sdk', () => {
   class Transaction {
     static fromBytes = vi.fn(() => new Transaction());
   }

@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
 import { HttpException, HttpStatus } from '@nestjs/common';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 
 import { AccountCacheService } from './account-cache.service';
 import { MirrorNodeClient } from './mirror-node.client';

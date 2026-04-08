@@ -4,7 +4,7 @@ import type { HederaFile } from '@prisma/client';
 import { onMounted, ref } from 'vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRoute } from 'vue-router';
-import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { FileContentsQuery, FileInfoQuery, Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';

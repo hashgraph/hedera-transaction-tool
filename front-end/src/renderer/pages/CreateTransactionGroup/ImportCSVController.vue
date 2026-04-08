@@ -4,7 +4,7 @@ import ActionController from '@renderer/components/ActionController/ActionContro
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createLogger, createTransactionId } from '@renderer/utils';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';
-import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hashgraph/sdk';
+import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hiero-ledger/sdk';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';

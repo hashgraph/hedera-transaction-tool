@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { KeyList, PublicKey, TransferTransaction, Transaction } from '@hashgraph/sdk';
+import { KeyList, PublicKey, TransferTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';

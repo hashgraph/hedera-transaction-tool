@@ -3,7 +3,7 @@ import type { ComplexKey } from '@prisma/client';
 
 import { ref, watch } from 'vue';
 
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 

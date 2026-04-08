@@ -49,6 +49,7 @@ export class RegistrationPage extends BasePage {
 
   // Messages
   toastMessageSelector = 'css=.v-toast__text';
+  toastMessageByVariantPrefix = 'css=.v-toast__item--';
   emailErrorMessageSelector = 'invalid-text-email';
   passwordErrorMessageSelector = 'invalid-text-password';
   confirmPasswordErrorMessageSelector = 'invalid-text-password-not-match';
@@ -400,6 +401,14 @@ export class RegistrationPage extends BasePage {
 
   async getToastMessage() {
     return await this.getText(this.toastMessageSelector, null, this.VERY_LONG_TIMEOUT);
+  }
+
+  async getToastMessageByVariant(variant: 'success' | 'error' | 'warning' | 'info') {
+    const selector = `${this.toastMessageByVariantPrefix}${variant} .v-toast__text`;
+    const toasts = this.window.locator(selector);
+    await toasts.first().waitFor({ state: 'visible', timeout: this.VERY_LONG_TIMEOUT });
+    const message = await toasts.last().textContent();
+    return message?.trim() ?? '';
   }
 
   async clickOnGenerateAgainButton() {

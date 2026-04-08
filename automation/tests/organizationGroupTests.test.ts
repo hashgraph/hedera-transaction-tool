@@ -4,19 +4,23 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-  flushRateLimiter,
-} from '../utils/databaseUtil.js';
+import { flushRateLimiter } from '../utils/databaseUtil.js';
 import {
   closeApp,
   setupApp,
 } from '../utils/automationSupport.js';
-import { disableNotificationsForTestUsers } from '../utils/databaseQueries.js';
+import { disableNotificationsForUsers } from '../utils/databaseQueries.js';
 import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  createNamespacedLabel,
+  resetBackendStateForSuite,
+  resetBackendStateForTeardown,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -26,6 +30,8 @@ let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails
 let secondUser: UserDetails
@@ -33,18 +39,40 @@ let thirdUser: UserDetails
 let complexKeyAccountId: string;
 let newAccountId: string;
 
-function incrementAccountId(accountId: string) {
+async function findMissingAccountId(accountId: string): Promise<string> {
   const parts = accountId.split('.');
   const lastIndex = parts.length - 1;
-  parts[lastIndex] = (parseInt(parts[lastIndex], 10) + 1).toString();
-  return parts.join('.');
+  const baseAccountNumber = Number(parts[lastIndex]);
+
+  if (!Number.isInteger(baseAccountNumber)) {
+    throw new Error(`Invalid account id: ${accountId}`);
+  }
+
+  for (let attempt = 0; attempt < 20; attempt++) {
+    parts[lastIndex] = String(baseAccountNumber + 1_000_000 + attempt);
+    const candidateAccountId = parts.join('.');
+    const accountExists = await transactionPage
+      .mirrorGetAccountResponse(candidateAccountId, 300, 150)
+      .then(response => Array.isArray(response?.accounts) && response.accounts.length > 0)
+      .catch(() => false);
+
+    if (!accountExists) {
+      return candidateAccountId;
+    }
+  }
+
+  throw new Error(`Failed to find a missing account id derived from ${accountId}`);
 }
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.slow();
   test.beforeAll(async () => {
-    await resetDbState();
-    await resetPostgresDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
+    await resetLocalStateForSuite();
+    await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
@@ -59,17 +87,16 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
       organizationPage,
       {
         userCount: 3,
+        organizationNickname,
       },
     );
     globalCredentials.email = seededSession.localUser.email;
     globalCredentials.password = seededSession.localUser.password;
 
-    // Disable notifications for test users
-    await disableNotificationsForTestUsers();
-
     firstUser = organizationPage.getUser(0);
     secondUser = organizationPage.getUser(1);
     thirdUser = organizationPage.getUser(2);
+    await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
 
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
@@ -117,8 +144,9 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await resetBackendStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify user can execute group transaction in organization', async () => {
@@ -202,22 +230,21 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
 
   test('Verify import fails if sender account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    // create a non-existing account Id
-    const senderAccountId = incrementAccountId(newAccountId);
+    const senderAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(senderAccountId, newAccountId, 5);
     expect(message).toBe(`Sender account ${senderAccountId} does not exist on network. Review the CSV file.`);
   });
 
   test('Verify import fails if fee payer account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    const feePayerAccountId = incrementAccountId(newAccountId);
+    const feePayerAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, newAccountId, 5, feePayerAccountId);
     expect(message).toBe(`Fee payer account ${feePayerAccountId} does not exist on network. Review the CSV file.`);
   });
 
   test('Verify import fails if receiver account does not exist on network', async () => {
     await groupPage.fillDescription('test');
-    const receiverAccountId = incrementAccountId(newAccountId);
+    const receiverAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, receiverAccountId, 5);
     expect(message).toBe(`Receiver account ${receiverAccountId} does not exist on network. Review the CSV file.`);
   });

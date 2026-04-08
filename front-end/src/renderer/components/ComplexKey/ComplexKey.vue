@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue';
-import { Key, KeyList } from '@hashgraph/sdk';
+import { Key, KeyList } from '@hiero-ledger/sdk';
 
 import ComplexKeyThreshold from '@renderer/components/ComplexKey/ComplexKeyThreshold.vue';
 

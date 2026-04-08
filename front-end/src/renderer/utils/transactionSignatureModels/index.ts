@@ -1,6 +1,6 @@
 import { type ITransaction, type IUserKey, TransactionStatus } from '@shared/interfaces';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import TransactionFactory from './transaction-factory';
 import { flattenKeyList } from '../../services/keyPairService';

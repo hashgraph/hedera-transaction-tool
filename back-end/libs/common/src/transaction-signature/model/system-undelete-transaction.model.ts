@@ -1,4 +1,4 @@
-import { SystemUndeleteTransaction } from '@hashgraph/sdk';
+import { SystemUndeleteTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 
 export class SystemUndeleteTransactionModel

@@ -13,7 +13,7 @@ import {
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull, type TransactionFile } from '@shared/interfaces';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';

@@ -1,4 +1,4 @@
-import { FileAppendTransaction } from '@hashgraph/sdk';
+import { FileAppendTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 
 export class FileAppendTransactionModel

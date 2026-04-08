@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { FileUpdateData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Key, Transaction } from '@hashgraph/sdk';
+import { Key, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 

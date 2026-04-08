@@ -11,7 +11,7 @@ import {
   SignatureMap,
   AccountId,
   TransactionId,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import {
   emitTransactionStatusUpdate,
   emitTransactionUpdate,

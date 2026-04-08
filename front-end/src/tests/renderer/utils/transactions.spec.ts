@@ -2,7 +2,7 @@
  * @vitest-environment happy-dom
  */
 import { describe, test, expect } from 'vitest';
-import { TransferTransaction, Hbar } from '@hashgraph/sdk';
+import { TransferTransaction, Hbar } from '@hiero-ledger/sdk';
 import {
   hasTransfersOutOfStaking,
 } from '@renderer/utils/transactions';

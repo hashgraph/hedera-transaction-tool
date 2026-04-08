@@ -4,17 +4,21 @@ import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { ContactListPage } from '../pages/ContactListPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import {
-  resetDbState,
-  resetDbStateForTeardown,
-  resetPostgresDbState,
-  resetPostgresDbStateForTeardown,
-} from '../utils/databaseUtil.js';
-import {
   closeApp,
   generateRandomEmail,
   setupApp,
 } from '../utils/automationSupport.js';
 import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+import {
+  activateSuiteIsolation,
+  cleanupIsolation,
+  createNamespacedLabel,
+  resetBackendStateForSuite,
+  resetBackendStateForTeardown,
+  resetLocalStateForSuite,
+  resetLocalStateForTeardown,
+  type ActivatedTestIsolationContext,
+} from '../utils/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;
@@ -23,15 +27,21 @@ let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let contactListPage: ContactListPage;
 let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
 
 let adminUser: UserDetails;
 let regularUser: UserDetails;
 
 test.describe('Organization Contact List tests @organization-basic', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.slow();
   test.beforeAll(async () => {
-    await resetDbState();
-    await resetPostgresDbState();
+    isolationContext = await activateSuiteIsolation(test.info());
+    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
+    await resetLocalStateForSuite();
+    await resetBackendStateForSuite();
     ({ app, window } = await setupApp());
     organizationPage = new OrganizationPage(window);
     registrationPage = new RegistrationPage(window);
@@ -43,6 +53,7 @@ test.describe('Organization Contact List tests @organization-basic', () => {
       organizationPage,
       {
         userCount: 2,
+        organizationNickname,
         signInUserIndex: null,
         setupPersonalTransactions: false,
         setupOrganizationTransactions: false,
@@ -62,8 +73,9 @@ test.describe('Organization Contact List tests @organization-basic', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
-    await resetPostgresDbStateForTeardown();
+    await resetLocalStateForTeardown();
+    await resetBackendStateForTeardown();
+    await cleanupIsolation(isolationContext);
   });
 
   test('Verify "Remove" contact list button is visible for an admin role', async () => {

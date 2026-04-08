@@ -6,6 +6,7 @@ import * as url from 'url';
 import { Client, QueryResultRow } from 'pg';
 import * as bcrypt from 'bcrypt';
 import * as dotenv from 'dotenv';
+import { applyPlaywrightIsolationEnv } from './playwrightIsolation.js';
 
 // Load environment variables from .env file
 const __filename = url.fileURLToPath(import.meta.url);
@@ -14,6 +15,11 @@ dotenv.config({ path: path.join(__dirname, '../.env') });
 
 // SQLite Functions
 export function getDatabasePath(): string {
+  const isolationContext = applyPlaywrightIsolationEnv();
+  if (isolationContext) {
+    return path.join(isolationContext.userDataDir, 'database.db');
+  }
+
   const homeDir = os.homedir();
   if (process.platform === 'darwin') {
     return path.join(
@@ -264,6 +270,11 @@ export async function resetPostgresDbStateForTeardown() {
 }
 
 export async function flushRateLimiter() {
+  if (process.env.PLAYWRIGHT_SHARED_ENV === 'true') {
+    console.log('Skipping Redis rate limiter flush in shared Playwright environment.');
+    return;
+  }
+
   const { execSync } = await import('child_process');
   try {
     execSync('docker exec cache redis-cli FLUSHDB', { stdio: 'pipe' });

@@ -1,4 +1,4 @@
-import { Mnemonic } from '@hashgraph/sdk';
+import { Mnemonic } from '@hiero-ledger/sdk';
 import { Page } from '@playwright/test';
 import type { LoginPage } from '../pages/LoginPage.js';
 import type { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
@@ -24,6 +24,7 @@ export interface CreateSeededOrganizationSessionOptions {
   userCount?: number;
   organizationUsers?: UserDetails[];
   organizationUserRecoveryPhraseWords?: string[][];
+  organizationNickname?: string;
   localUser?: SeedLocalUserOptions;
   signInUserIndex?: number | null;
   leaveSignedIn?: boolean;
@@ -92,6 +93,7 @@ export async function createSeededOrganizationSession(
 
   organizationPage.users = [];
   organizationPage.organizationRecoveryWords = [];
+  organizationPage.transactions = [];
 
   if (options.organizationUsers) {
     organizationPage.users.push(
@@ -103,7 +105,7 @@ export async function createSeededOrganizationSession(
     await organizationPage.createUsers(options.userCount ?? 1);
   }
 
-  await organizationPage.setupOrganization();
+  await organizationPage.setupOrganization(options.organizationNickname);
   await organizationPage.waitForElementToBeVisible(
     organizationPage.emailForOrganizationInputSelector,
   );

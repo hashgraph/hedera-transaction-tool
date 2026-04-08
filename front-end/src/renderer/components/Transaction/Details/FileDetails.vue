@@ -10,7 +10,7 @@ import {
   KeyList,
   FileUpdateTransaction,
   FileAppendTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TransactionStatus } from '@shared/interfaces';
 

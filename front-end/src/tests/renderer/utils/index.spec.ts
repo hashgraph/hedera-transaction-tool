@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
-import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hashgraph/sdk';
+import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import { hasStartTimestampChanged, transactionsDataMatch, signTransactions } from '@renderer/utils';
 
 export const toastErrorSpy = vi.fn();

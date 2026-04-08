@@ -13,6 +13,10 @@ Copyright Dav Glass &lt;davglass@gmail.com&gt;. All Rights Reserved.
 This product includes software (7zip-bin@5.2.0) developed at
 (https://github.com/develar/7zip-bin).
 
+The Initial Developer of @adraffy/ens-normalize@1.10.1,
+is raffy.eth (https://github.com/adraffy/ens-normalize.js).
+Copyright raffy.eth. All Rights Reserved.
+
 The Initial Developer of @ampproject/remapping@2.3.0,
 is Justin Ridgewell (https://github.com/ampproject/remapping).
 Copyright Justin Ridgewell. All Rights Reserved.
@@ -293,78 +297,6 @@ The Initial Developer of @eslint/plugin-kit@0.4.1,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
-The Initial Developer of @ethersproject/abi@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/abstract-provider@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/abstract-signer@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/address@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/base64@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/bignumber@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/bytes@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/constants@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/hash@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/keccak256@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/logger@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/networks@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/properties@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/rlp@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/signing-key@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/strings@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/transactions@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
-The Initial Developer of @ethersproject/web@5.8.0,
-is Richard Moore (https://github.com/ethers-io/ethers.js).
-Copyright Richard Moore. All Rights Reserved.
-
 The Initial Developer of @gar/promisify@1.1.3,
 is Gar (https://github.com/wraithgar/gar-promisify).
 Copyright Gar. All Rights Reserved.
@@ -377,23 +309,19 @@ The Initial Developer of @grpc/proto-loader@0.7.15,
 is Google Inc. (https://github.com/grpc/grpc-node).
 Copyright Google Inc.. All Rights Reserved.
 
-The Initial Developer of @hashgraph/cryptography@1.16.0-beta.3,
-is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
-Copyright Launchbadge. All Rights Reserved.
-
 The Initial Developer of @hashgraph/hedera-local@2.39.4,
 is hashgraph (https://github.com/hiero-ledger/hiero-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.25.0,
+The Initial Developer of @hiero-ledger/cryptography@1.18.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/proto@2.26.0-beta.3,
+The Initial Developer of @hiero-ledger/proto@2.27.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hashgraph/sdk@2.80.0,
+The Initial Developer of @hiero-ledger/sdk@2.82.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -575,7 +503,7 @@ The Initial Developer of @noble/curves@1.8.1,
 is Paul Miller (https://github.com/paulmillr/noble-curves).
 Copyright Paul Miller. All Rights Reserved.
 
-The Initial Developer of @noble/hashes@1.7.1,
+The Initial Developer of @noble/hashes@1.3.2,
 is Paul Miller (https://github.com/paulmillr/noble-hashes).
 Copyright Paul Miller. All Rights Reserved.
 
@@ -1191,6 +1119,10 @@ This product includes software (acorn-jsx@5.3.2) developed at
 This product includes software (acorn@8.16.0) developed at
 (https://github.com/acornjs/acorn).
 
+The Initial Developer of aes-js@4.0.0-beta.5,
+is Richard Moore (https://github.com/ricmoo/aes-js).
+Copyright Richard Moore. All Rights Reserved.
+
 The Initial Developer of agent-base@7.1.4,
 is Nathan Rajlich (https://github.com/TooTallNate/proxy-agents).
 Copyright Nathan Rajlich. All Rights Reserved.
@@ -1426,10 +1358,6 @@ Copyright Julian Gruber. All Rights Reserved.
 The Initial Developer of braces@3.0.3,
 is Jon Schlinkert (https://github.com/micromatch/braces).
 Copyright Jon Schlinkert. All Rights Reserved.
-
-The Initial Developer of brorand@1.1.0,
-is Fedor Indutny (https://github.com/indutny/brorand).
-Copyright Fedor Indutny. All Rights Reserved.
 
 The Initial Developer of browserslist@4.28.1,
 is Andrey Sitnik (https://github.com/browserslist/browserslist).
@@ -1858,10 +1786,6 @@ The Initial Developer of electron@34.0.0,
 is Electron Community (https://github.com/electron/electron).
 Copyright Electron Community. All Rights Reserved.
 
-The Initial Developer of elliptic@6.6.1,
-is Fedor Indutny (https://github.com/indutny/elliptic).
-Copyright Fedor Indutny. All Rights Reserved.
-
 The Initial Developer of emoji-regex@8.0.0,
 is Mathias Bynens (https://github.com/mathiasbynens/emoji-regex).
 Copyright Mathias Bynens. All Rights Reserved.
@@ -1997,6 +1921,10 @@ This product includes software (esutils@2.0.3) developed at
 
 This product includes software (etag@1.8.1) developed at
 (https://github.com/jshttp/etag).
+
+The Initial Developer of ethers@6.16.0,
+is Richard Moore (https://github.com/ethers-io/ethers.js).
+Copyright Richard Moore. All Rights Reserved.
 
 The Initial Developer of event-target-shim@5.0.1,
 is Toru Nagashima (https://github.com/mysticatea/event-target-shim).
@@ -2280,10 +2208,6 @@ Copyright Jordan Harband. All Rights Reserved.
 The Initial Developer of has-unicode@2.0.1,
 is Rebecca Turner (https://github.com/iarna/has-unicode).
 Copyright Rebecca Turner. All Rights Reserved.
-
-The Initial Developer of hash.js@1.1.7,
-is Fedor Indutny (https://github.com/indutny/hash.js).
-Copyright Fedor Indutny. All Rights Reserved.
 
 The Initial Developer of hasown@2.0.2,
 is Jordan Harband (https://github.com/inspect-js/hasOwn).
@@ -2578,10 +2502,6 @@ The Initial Developer of js-cookie@3.0.5,
 is Klaus Hartl (https://github.com/js-cookie/js-cookie).
 Copyright Klaus Hartl. All Rights Reserved.
 
-The Initial Developer of js-sha3@0.8.0,
-is Chen, Yi-Cyuan (https://github.com/emn178/js-sha3).
-Copyright Chen, Yi-Cyuan. All Rights Reserved.
-
 The Initial Developer of js-tokens@10.0.0,
 is Simon Lydell (https://github.com/lydell/js-tokens).
 Copyright Simon Lydell. All Rights Reserved.
@@ -2849,13 +2769,6 @@ Copyright Sindre Sorhus. All Rights Reserved.
 The Initial Developer of mimic-response@3.1.0,
 is Sindre Sorhus (https://github.com/sindresorhus/mimic-response).
 Copyright Sindre Sorhus. All Rights Reserved.
-
-This product includes software (minimalistic-assert@1.0.1) developed at
-(https://github.com/calvinmetcalf/minimalistic-assert).
-
-The Initial Developer of minimalistic-crypto-utils@1.0.1,
-is Fedor Indutny (https://github.com/indutny/minimalistic-crypto-utils).
-Copyright Fedor Indutny. All Rights Reserved.
 
 The Initial Developer of minimatch@3.1.5,
 is Isaac Z. Schlueter (https://github.com/isaacs/minimatch).
@@ -3286,7 +3199,7 @@ The Initial Developer of proto-list@1.2.4,
 is Isaac Z. Schlueter (https://github.com/isaacs/proto-list).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
-The Initial Developer of protobufjs@7.5.4,
+The Initial Developer of protobufjs@8.0.0,
 is Daniel Wirtz (https://github.com/protobufjs/protobuf.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
@@ -3350,7 +3263,7 @@ This product includes software (react-dom@19.2.4) developed at
 This product includes software (react-is@18.3.1) developed at
 (https://github.com/facebook/react).
 
-This product includes software (react-native-get-random-values@1.11.0) developed at
+This product includes software (react-native-get-random-values@2.0.0) developed at
 (https://github.com/LinusU/react-native-get-random-values).
 
 This product includes software (react-native@0.84.1) developed at
@@ -3444,7 +3357,7 @@ The Initial Developer of rfdc@1.4.1,
 is David Mark Clements (https://github.com/davidmarkclements/rfdc).
 Copyright David Mark Clements. All Rights Reserved.
 
-The Initial Developer of rimraf@3.0.2,
+The Initial Developer of rimraf@6.1.2,
 is Isaac Z. Schlueter (https://github.com/isaacs/rimraf).
 Copyright Isaac Z. Schlueter. All Rights Reserved.
 
@@ -3680,7 +3593,7 @@ The Initial Developer of strip-ansi@6.0.1,
 is Sindre Sorhus (https://github.com/chalk/strip-ansi).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of strip-ansi@7.2.0,
+The Initial Developer of strip-ansi@7.1.2,
 is Sindre Sorhus (https://github.com/chalk/strip-ansi).
 Copyright Sindre Sorhus. All Rights Reserved.
 
@@ -3832,7 +3745,7 @@ The Initial Developer of tsconfig-paths@4.2.0,
 is Jonas Kello (https://github.com/dividab/tsconfig-paths).
 Copyright Jonas Kello. All Rights Reserved.
 
-The Initial Developer of tslib@2.8.1,
+The Initial Developer of tslib@2.7.0,
 is Microsoft Corp. (https://github.com/Microsoft/tslib).
 Copyright Microsoft Corp.. All Rights Reserved.
 

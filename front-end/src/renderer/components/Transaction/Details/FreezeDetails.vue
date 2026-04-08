@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
 
-import { Transaction, FreezeTransaction } from '@hashgraph/sdk';
+import { Transaction, FreezeTransaction } from '@hiero-ledger/sdk';
 
 import { uint8ToHex } from '@renderer/utils';
 import { getFreezeTypeString } from '@renderer/utils/sdk/transactions';

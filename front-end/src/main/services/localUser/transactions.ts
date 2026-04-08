@@ -7,7 +7,7 @@ import {
   PrivateKey,
   Query,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';

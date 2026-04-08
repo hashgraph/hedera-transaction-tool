@@ -10,7 +10,7 @@ import {
 import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
-import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hashgraph/sdk';
+import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

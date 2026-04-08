@@ -10,7 +10,7 @@ import {
 import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
@@ -30,6 +30,7 @@ import {
   computeSignatureKey,
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
+  getErrorMessage,
   getStatusFromCode,
   getUInt8ArrayFromBytesString,
   hexToUint8Array,
@@ -54,6 +55,10 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
+
+/* Injectables */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -216,14 +221,19 @@ async function fetchTransaction() {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKeyObject.value = await computeSignatureKey(
-      sdkTransaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      user.selectedOrganization,
-    );
+    try {
+      signatureKeyObject.value = await computeSignatureKey(
+        sdkTransaction.value,
+        network.mirrorNodeBaseURL,
+        accountByIdCache,
+        nodeByIdCache,
+        publicKeyOwnerCache,
+        user.selectedOrganization,
+      );
+    } catch (error) {
+      signatureKeyObject.value = null;
+      toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
+    }
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);

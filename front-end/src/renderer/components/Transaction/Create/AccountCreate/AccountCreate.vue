@@ -4,7 +4,7 @@ import type { ExecutedSuccessData } from '@renderer/components/Transaction/Trans
 import type { AccountCreateData } from '@renderer/utils/sdk';
 
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { AccountId, Hbar, Transaction } from '@hashgraph/sdk';
+import { AccountId, Hbar, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

@@ -32,11 +32,11 @@ import {
   FileCreateTransaction,
   AccountId,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { DATA_VOLUMES, SEED_MARKER, TEST_USER_POOL } from '../src/config/constants.js';
 import type { SignatureMap } from '../src/types/api.types.js';
 import { type ComplexKeyResult } from './complex-keys.js';
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -130,7 +130,7 @@ async function seedCachedAccount(client: Client, publicKeyHex: string): Promise<
 
   // Create PublicKey from hex and serialize to protobuf
   // Import PublicKey from sdk to create the key object
-  const { PublicKey } = await import('@hashgraph/sdk');
+  const { PublicKey } = await import('@hiero-ledger/sdk');
   const publicKey = PublicKey.fromString(publicKeyHex);
   const encodedKey = serializeKeyToProtobuf(publicKey as any);
 

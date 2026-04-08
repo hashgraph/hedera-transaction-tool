@@ -10,7 +10,7 @@ import {
   NodeDeleteTransaction,
   KeyList,
   PublicKey,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   getComponentServiceEndpoint,

@@ -6,7 +6,7 @@ import { MurLock } from 'murlock';
 import {
   Status,
   Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   Transaction,

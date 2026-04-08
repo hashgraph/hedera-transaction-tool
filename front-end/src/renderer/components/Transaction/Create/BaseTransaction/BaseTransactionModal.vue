@@ -4,7 +4,7 @@ import {
   FileCreateTransaction,
   FileUpdateTransaction,
   type Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { computed, ref } from 'vue';
 

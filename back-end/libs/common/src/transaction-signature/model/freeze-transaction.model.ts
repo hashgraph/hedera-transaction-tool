@@ -1,4 +1,4 @@
-import { FreezeTransaction } from '@hashgraph/sdk';
+import { FreezeTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 
 export class FreezeTransactionModel

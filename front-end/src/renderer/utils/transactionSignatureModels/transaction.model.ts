@@ -1,4 +1,4 @@
-import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { compareKeys } from '../sdk';
 import type { INodeInfoParsed } from '@shared/interfaces';
@@ -92,6 +92,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         logger.warn('Failed to resolve fee payer key', {
           error,
         });
+        throw error;
       }
     }
 
@@ -109,6 +110,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           accountId,
           error,
         });
+        throw error;
       }
     }
 
@@ -130,6 +132,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
           accountId,
           error,
         });
+        throw error;
       }
     }
 
@@ -167,6 +170,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
         error,
         nodeId,
       });
+      throw error;
     }
 
     /* Add keys to the signature key list */

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 import { formatPublicKey } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';

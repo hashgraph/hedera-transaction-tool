@@ -18,10 +18,10 @@ import {
   SignatureMap,
   Timestamp,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { KeyType } from '../../types';
 
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
