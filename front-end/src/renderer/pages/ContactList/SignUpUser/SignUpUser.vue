@@ -96,8 +96,8 @@ const handleLinkAccount = async () => {
           organization_user_id_owner: user.selectedOrganization.userId,
           nickname: nickname.value,
         });
-        await contacts.fetch();
       }
+      await contacts.fetch();
     } catch (error) {
       logger.error('Failed to sign up user', { error });
       toastManager.error('Failed to sign up user');
