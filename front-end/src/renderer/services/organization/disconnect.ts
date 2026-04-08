@@ -18,7 +18,7 @@ export async function disconnectOrganization(
   const userStore = useUserStore();
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
-  const toastManager = ToastManager.inject();
+  const toastManager = new ToastManager();
 
   ws.disconnect(serverUrl);
 
