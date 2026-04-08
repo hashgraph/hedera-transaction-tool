@@ -83,7 +83,14 @@ const performSign = async (
   );
   const missingKeys = collectMissingKeys(signatureItems);
   const missingKeyCount = missingKeys.length;
-  if (missingKeyCount > 0) {
+  if (signatureItems.length === 0) {
+    // There is nothing to sign
+    result = {
+      status: ActionStatus.Success,
+      title: reportTitle,
+      what: 'Nothing to sign for this transaction',
+    };
+  } else if (missingKeyCount > 0) {
     // User needs to setup some private keys in Settings
     result = {
       status: ActionStatus.Error,
