@@ -187,7 +187,7 @@ test.describe('Organization Contact List tests @organization-basic', () => {
     expect(isUserAdded).toBe(true);
   });
 
-  test.skip('Verify admin user can remove user from the organization', async () => {
+  test('Verify admin user can remove user from the organization', async () => {
     const newUserEmail = generateRandomEmail();
     await organizationPage.signInOrganization(
       adminUser.email,
