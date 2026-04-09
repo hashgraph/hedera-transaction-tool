@@ -192,7 +192,6 @@ async function fetchTransaction() {
       }
     }
   } catch (error) {
-    router.back();
     throw error;
   }
 
