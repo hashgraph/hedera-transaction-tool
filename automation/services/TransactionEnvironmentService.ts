@@ -4,7 +4,7 @@ import type { TransactionPage } from '../pages/TransactionPage.js';
 import { KeyImportNavigator } from './KeyImportNavigator.js';
 import { LocalnetPayerProvisioner } from './LocalnetPayerProvisioner.js';
 import { TransactionEnvironmentConfig } from './TransactionEnvironmentConfig.js';
-import { generateEd25519KeyPair } from '../utils/keyUtil.js';
+import { generateEd25519KeyPair } from '../utils/crypto/keyUtil.js';
 import { CUSTOM, PAYER_ACCOUNT_NICKNAME, PREVIEWNET, TESTNET } from '../constants/index.js';
 
 type SettingsPageConstructor = new (window: Page) => SettingsPage;

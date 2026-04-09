@@ -3,8 +3,9 @@ import {
   launchHederaTransactionTool as defaultLaunchHederaTransactionTool,
   type LaunchHederaTransactionToolOptions,
   type TransactionToolApp,
-} from '../utils/electronAppLauncher.js';
-import { migrationDataExists as defaultMigrationDataExists } from '../utils/oldTools.js';
+} from '../utils/runtime/electronAppLauncher.js';
+import { shouldPreserveLocalAppState } from '../utils/runtime/appMode.js';
+import { migrationDataExists as defaultMigrationDataExists } from '../utils/runtime/oldTools.js';
 import { LoginPage as DefaultLoginPage } from '../pages/LoginPage.js';
 
 export const asciiArt =
@@ -54,17 +55,22 @@ export class AppBootstrapper {
 
     console.log('[setupApp] Initializing Hedera Transaction Tool session...');
     const app = await this.launchApp(options);
+    const preserveLocalState = shouldPreserveLocalAppState(app.mode);
 
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');
 
     const loginPage = this.createLoginPage(window);
 
-    console.log('[setupApp] Clearing browser storage...');
-    await window.evaluate(() => {
-      globalThis.localStorage.clear();
-      globalThis.sessionStorage.clear();
-    });
+    if (preserveLocalState) {
+      console.log('[setupApp] Preserving browser storage for this session.');
+    } else {
+      console.log('[setupApp] Clearing browser storage...');
+      await window.evaluate(() => {
+        globalThis.localStorage.clear();
+        globalThis.sessionStorage.clear();
+      });
+    }
 
     console.log('[setupApp] Handling startup modals...');
     await this.dismissStartupPrompts(window, loginPage);
@@ -73,9 +79,11 @@ export class AppBootstrapper {
     const isSettingsButtonVisible = await loginPage.isSettingsButtonVisible();
     console.log(`[setupApp] isSettingsButtonVisible: ${isSettingsButtonVisible}`);
 
-    if (isSettingsButtonVisible) {
+    if (isSettingsButtonVisible && !preserveLocalState) {
       console.log('[setupApp] Existing session detected -> resetting app state...');
       await this.resetAppState(window, app);
+    } else if (isSettingsButtonVisible) {
+      console.log('[setupApp] Existing session detected -> preserving local app state.');
     }
 
     console.log('[setupApp] App ready.');

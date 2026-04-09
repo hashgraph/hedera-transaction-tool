@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import * as bip39 from 'bip39';
 import { proto } from '@hiero-ledger/proto';
 import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';

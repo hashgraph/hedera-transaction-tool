@@ -1,7 +1,7 @@
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import { TransactionPage } from './TransactionPage.js';
-import { deleteAccountById } from '../utils/databaseQueries.js';
+import { deleteAccountById } from '../utils/db/databaseQueries.js';
 
 export class AccountPage extends BasePage {
   private readonly unlikedAccounts: string[]; // Store unlinked accounts

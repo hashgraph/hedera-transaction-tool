@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test';
 import { TransactionPage as DefaultTransactionPage } from '../pages/TransactionPage.js';
-import { generateEd25519KeyPair as defaultGenerateEd25519KeyPair } from '../utils/keyUtil.js';
+import { generateEd25519KeyPair as defaultGenerateEd25519KeyPair } from '../utils/crypto/keyUtil.js';
 import { KeyImportNavigator } from './KeyImportNavigator.js';
 import {
   LOCALNET_OPERATOR_ACCOUNT,

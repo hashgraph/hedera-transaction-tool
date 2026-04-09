@@ -1,32 +1,25 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { GroupPage } from '../pages/GroupPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
-import { flushRateLimiter } from '../utils/databaseUtil.js';
+import { flushRateLimiter } from '../utils/db/databaseUtil.js';
+import { findMissingAccountId } from '../utils/network/mirrorNodeAPI.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { setupOrganizationAdvancedFixture } from './helpers/fixtures/organizationAdvancedFixture.js';
+import { executeOrganizationGroupFromCsvFile } from './helpers/flows/organizationGroupFlow.js';
 import {
-  closeApp,
-  setupApp,
-} from '../utils/automationSupport.js';
-import { disableNotificationsForUsers } from '../utils/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
-import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  createNamespacedLabel,
-  resetBackendStateForSuite,
-  resetBackendStateForTeardown,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+import { prepareGroupTransactionPage } from './helpers/flows/groupTransactionNavigationFlow.js';
+import { createSequentialOrganizationNicknameResolver } from './helpers/support/organizationNamingSupport.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
-let registrationPage: RegistrationPage;
 let organizationPage: OrganizationPage;
 let transactionPage: TransactionPage;
 let groupPage: GroupPage;
@@ -38,115 +31,62 @@ let secondUser: UserDetails
 let thirdUser: UserDetails
 let complexKeyAccountId: string;
 let newAccountId: string;
-
-async function findMissingAccountId(accountId: string): Promise<string> {
-  const parts = accountId.split('.');
-  const lastIndex = parts.length - 1;
-  const baseAccountNumber = Number(parts[lastIndex]);
-
-  if (!Number.isInteger(baseAccountNumber)) {
-    throw new Error(`Invalid account id: ${accountId}`);
-  }
-
-  for (let attempt = 0; attempt < 20; attempt++) {
-    parts[lastIndex] = String(baseAccountNumber + 1_000_000 + attempt);
-    const candidateAccountId = parts.join('.');
-    const accountExists = await transactionPage
-      .mirrorGetAccountResponse(candidateAccountId, 300, 150)
-      .then(response => Array.isArray(response?.accounts) && response.accounts.length > 0)
-      .catch(() => false);
-
-    if (!accountExists) {
-      return candidateAccountId;
-    }
-  }
-
-  throw new Error(`Failed to find a missing account id derived from ${accountId}`);
-}
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.slow();
   test.beforeAll(async () => {
-    isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
-    await resetLocalStateForSuite();
-    await resetBackendStateForSuite();
-    ({ app, window } = await setupApp());
-    loginPage = new LoginPage(window);
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
-    groupPage = new GroupPage(window);
-
-    organizationPage.complexFileId = [];
-    const seededSession = await createSeededOrganizationSession(
+    ({
+      app,
       window,
       loginPage,
+      transactionPage,
       organizationPage,
-      {
-        userCount: 3,
-        organizationNickname,
-      },
-    );
-    globalCredentials.email = seededSession.localUser.email;
-    globalCredentials.password = seededSession.localUser.password;
-
-    firstUser = organizationPage.getUser(0);
-    secondUser = organizationPage.getUser(1);
-    thirdUser = organizationPage.getUser(2);
-    await disableNotificationsForUsers([firstUser.email, secondUser.email, thirdUser.email]);
-
-    // Set complex account for transactions
-    await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
-    complexKeyAccountId = organizationPage.getComplexAccountId();
-    await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
-    newAccountId = organizationPage.complexAccountId[1];
-    groupPage.organizationPage = organizationPage;
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
+      isolationContext,
+    } = await setupOrganizationSuiteApp(test.info()));
+    groupPage = new GroupPage(window);
   });
 
-  test.beforeEach(async () => {
+  test.beforeEach(async ({}, testInfo) => {
     // Flush rate limiter before each test to prevent "too many requests" errors
     await flushRateLimiter();
 
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    const fixture = await setupOrganizationAdvancedFixture(
+      window,
+      loginPage,
+      organizationPage,
+      organizationNickname,
+      true,
     );
+    globalCredentials.email = fixture.localCredentials.email;
+    globalCredentials.password = fixture.localCredentials.password;
+    firstUser = fixture.firstUser;
+    secondUser = fixture.secondUser;
+    thirdUser = fixture.thirdUser;
+    complexKeyAccountId = fixture.complexKeyAccountId;
+    newAccountId = fixture.secondaryComplexKeyAccountId ?? '';
+    groupPage.organizationPage = organizationPage;
 
     await groupPage.waitForElementToDisappear(groupPage.toastMessageSelector);
-
-    await transactionPage.clickOnTransactionsMenuButton();
-
-    //this is needed because tests fail in CI environment
-    if (process.env.CI) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    await groupPage.closeDraftTransactionModal();
-    await groupPage.closeGroupDraftModal();
-    await groupPage.deleteGroupModal();
-
-    await groupPage.navigateToGroupTransaction();
-
-    // Handle modals that may appear after navigation
-    await groupPage.closeGroupDraftModal();  // "Save Group?" modal
-    await groupPage.deleteGroupModal();       // "Group Contains No Transactions" modal
+    await prepareGroupTransactionPage({
+      transactionPage,
+      groupPage,
+      closePostNavigationModals: true,
+    });
   });
 
   test.afterEach(async () => {
-    await organizationPage.logoutFromOrganization();
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // Group tests can end in intermediary modal states.
+      // The next beforeEach recreates the org fixture from scratch.
+    }
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await resetBackendStateForTeardown();
-    await cleanupIsolation(isolationContext);
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify user can execute group transaction in organization', async () => {
@@ -195,38 +135,36 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
   });
 
   test(`Verify user can import csv with 5 transactions`, async () => {
-    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(5, false)
+    const isAllTransactionsSuccessful = await executeOrganizationGroupFromCsvFile({
+      groupPage,
+      loginPage,
+      organizationPage,
+      transactionPage,
+      firstUser,
+      encryptionPassword: globalCredentials.password,
+      senderAccountId: complexKeyAccountId,
+      receiverAccountId: newAccountId,
+      numberOfTransactions: 5,
+      signAll: false,
+    });
     expect(isAllTransactionsSuccessful).toBe(true);
   });
 
   test(`Verify user can import csv with 100 transactions`, async () => {
-    const isAllTransactionsSuccessful = await executeGroupFromCsvFile(100, true)
+    const isAllTransactionsSuccessful = await executeOrganizationGroupFromCsvFile({
+      groupPage,
+      loginPage,
+      organizationPage,
+      transactionPage,
+      firstUser,
+      encryptionPassword: globalCredentials.password,
+      senderAccountId: complexKeyAccountId,
+      receiverAccountId: newAccountId,
+      numberOfTransactions: 100,
+      signAll: true,
+    });
     expect(isAllTransactionsSuccessful).toBe(true);
   });
-
-  const executeGroupFromCsvFile = async (numberOfTransactions: number, signAll: boolean): Promise<boolean> => {
-    await groupPage.fillDescription('test');
-    await groupPage.generateAndImportCsvFile(complexKeyAccountId, newAccountId, numberOfTransactions);
-    const message = await groupPage.getToastMessage();
-    expect(message).toBe('Import complete');
-
-    await groupPage.clickOnSignAndExecuteButton();
-    await groupPage.closeGroupDraftModal();
-    await groupPage.clickOnConfirmGroupTransactionButton();
-    await groupPage.clickOnSignAllButton(numberOfTransactions >= 100 ? 3000 : 600);
-    await groupPage.clickOnConfirmSignAllButton();
-    await loginPage.waitForToastToDisappear();
-
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await groupPage.logInAndSignGroupTransactionsByAllUsers(globalCredentials.password, signAll);
-    await organizationPage.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
-
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnHistoryTab();
-    const timestamps = await groupPage.getAllTransactionTimestamps(numberOfTransactions, 100);
-    return groupPage.verifyAllTransactionsAreSuccessful(timestamps);
-  }
 
   test('Verify import fails if sender account does not exist on network', async () => {
     await groupPage.fillDescription('test');

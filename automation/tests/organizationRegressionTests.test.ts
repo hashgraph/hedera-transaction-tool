@@ -3,28 +3,21 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
 import {
-  calculateTimeout,
-  closeApp,
   getPrivateKeyEnv,
-  setupApp,
   setupEnvironmentForTransactions,
-  waitForValidStart,
-} from '../utils/automationSupport.js';
-import { disableNotificationsForUsers } from '../utils/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/organizationBaseline.js';
+} from '../utils/runtime/environment.js';
+import { calculateTimeout, waitForValidStart } from '../utils/runtime/timing.js';
+import { disableNotificationsForUsers } from '../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
 import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  createNamespacedLabel,
-  resetBackendStateForSuite,
-  resetBackendStateForTeardown,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupNamedOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from './helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
@@ -43,19 +36,18 @@ let complexKeyAccountId: string;
 let totalUsers = 57; // 57... divisible by 3...? Well this is not a good start...
 
 test.describe.skip('Organization Regression tests @organization-advanced', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
     test.slow();
-    isolationContext = await activateSuiteIsolation(test.info());
-    organizationNickname = createNamespacedLabel('Test Organization', isolationContext);
-    await resetLocalStateForSuite();
-    await resetBackendStateForSuite();
-    ({ app, window } = await setupApp());
-    transactionPage = new TransactionPage(window);
-    organizationPage = new OrganizationPage(window);
-    registrationPage = new RegistrationPage(window);
-    loginPage = new LoginPage(window);
+    ({
+      app,
+      window,
+      transactionPage,
+      organizationPage,
+      registrationPage,
+      loginPage,
+      isolationContext,
+      organizationNickname,
+    } = await setupNamedOrganizationSuiteApp(test.info()));
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -94,10 +86,7 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
   });
 
   test.afterAll(async () => {
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await resetBackendStateForTeardown();
-    await cleanupIsolation(isolationContext);
+    await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
   test('Verify user can execute update account tx for complex key account similar to council account', async () => {

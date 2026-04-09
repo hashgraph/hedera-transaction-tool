@@ -1,62 +1,41 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
 import {
-  closeApp,
   getOperatorKeyEnv,
-  setupApp,
   setupEnvironmentForTransactions,
-} from '../utils/automationSupport.js';
+} from '../utils/runtime/environment.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
-import { createSeededLocalUserSession } from '../utils/localBaseline.js';
+import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
 import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from './helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
-const globalCredentials = { email: '', password: '' };
-let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
 let transactionPage: TransactionPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Transaction tests @local-transactions', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
-    isolationContext = await activateSuiteIsolation(test.info());
-    await resetLocalStateForSuite();
-    ({ app, window } = await setupApp());
-    loginPage = new LoginPage(window);
-    transactionPage = new TransactionPage(window);
-    const seededUser = await createSeededLocalUserSession(window, loginPage);
-    registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
-
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
-
-    globalCredentials.email = seededUser.email;
-    globalCredentials.password = seededUser.password;
-
-    await setupEnvironmentForTransactions(window);
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
   });
 
   test.afterAll(async () => {
-    // Ensure transactionPage generatedAccounts is empty
-    transactionPage.generatedAccounts = [];
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await cleanupIsolation(isolationContext);
+    await teardownLocalSuiteApp(app, isolationContext);
   });
 
   test.beforeEach(async () => {
+    loginPage = new LoginPage(window);
+    transactionPage = new TransactionPage(window);
+    await createSeededLocalUserSession(window, loginPage);
+    transactionPage.generatedAccounts = [];
+    await setupEnvironmentForTransactions(window);
     await transactionPage.clickOnTransactionsMenuButton();
 
     if (process.env.CI) {

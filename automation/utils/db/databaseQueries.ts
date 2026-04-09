@@ -481,34 +481,81 @@ export async function insertUserKey(userId: number, mnemonicHash: string, index:
  * @param privateKey - the private key
  * @param secretHash - the secret hash
  * @param organizationUserId - the organization user id
+ * @param localUserId
+ * @param localOrganizationId
  * @returns {Promise<void>} - a promise that resolves when the key pair is inserted
  */
-export async function insertKeyPair(publicKey: string, privateKey: string, secretHash: string, organizationUserId: string) {
-  const query = `
-      INSERT INTO KeyPair (id, user_id, "index", public_key, private_key, type, organization_id, secret_hash, organization_user_id)
-      VALUES (
-                 ?,
-                 (SELECT id FROM User WHERE email != 'keychain@mode'), -- Exclude user with email 'keychain@mode'
-                 0,  -- keyIndex is always 0
-                 ?,
-                 ?,
-                 'ED25519',  -- keyType is always ED25519
-                 (SELECT id FROM Organization), -- organization_id is always the id of the organization
-                 ?,
-                 ?
-             );
-  `;
-
+export async function insertKeyPair(
+  publicKey: string,
+  privateKey: string,
+  secretHash: string,
+  organizationUserId: string,
+  localUserId?: string,
+  localOrganizationId?: string,
+) {
   const generatedId = uuid();
 
+  const query =
+    localUserId && localOrganizationId
+      ? `
+          INSERT INTO KeyPair (
+            id,
+            user_id,
+            "index",
+            public_key,
+            private_key,
+            type,
+            organization_id,
+            secret_hash,
+            organization_user_id
+          )
+          VALUES (?, ?, 0, ?, ?, 'ED25519', ?, ?, ?);
+        `
+      : `
+          INSERT INTO KeyPair (
+            id,
+            user_id,
+            "index",
+            public_key,
+            private_key,
+            type,
+            organization_id,
+            secret_hash,
+            organization_user_id
+          )
+          VALUES (
+            ?,
+            (SELECT id FROM User WHERE email != 'keychain@mode'),
+            0,
+            ?,
+            ?,
+            'ED25519',
+            (SELECT id FROM Organization),
+            ?,
+            ?
+          );
+        `;
+
+  const params = localUserId && localOrganizationId
+    ? [
+        generatedId,
+        localUserId,
+        publicKey,
+        privateKey,
+        localOrganizationId,
+        secretHash,
+        organizationUserId,
+      ]
+    : [
+        generatedId,
+        publicKey,
+        privateKey,
+        secretHash,
+        organizationUserId,
+      ];
+
   try {
-    await queryDatabase(query, [
-      generatedId,
-      publicKey,
-      privateKey,
-      secretHash,
-      organizationUserId,
-    ]);
+    await queryDatabase(query, params);
     console.log('KeyPair record inserted successfully');
   } catch (error) {
     console.error('Error inserting KeyPair record:', error);
