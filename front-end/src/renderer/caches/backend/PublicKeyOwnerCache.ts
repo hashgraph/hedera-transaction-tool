@@ -10,7 +10,7 @@ export class PublicKeyOwnerCache extends EntityCache<string, string | null> {
   //
 
   public constructor() {
-    super(4000); // Short live for backend data
+    super(3 * 60_000); // Enables to preserve key owners across Sign & Next actions
   }
 
   public static provide(): void {
