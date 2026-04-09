@@ -6,7 +6,7 @@ import {
   FileId,
   TransactionId,
   Timestamp,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   isPrivilegedFeePayer,

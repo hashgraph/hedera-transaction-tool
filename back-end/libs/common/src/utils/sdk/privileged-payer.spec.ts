@@ -9,7 +9,7 @@ import {
   TransferTransaction,
   Hbar,
   PublicKey,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   isPrivilegedFeePayer,

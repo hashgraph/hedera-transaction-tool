@@ -1,4 +1,4 @@
-import { AccountId, Transaction } from '@hashgraph/sdk';
+import { AccountId, Transaction } from '@hiero-ledger/sdk';
 
 import {
   TRANSACTION_MAX_SIZE,
