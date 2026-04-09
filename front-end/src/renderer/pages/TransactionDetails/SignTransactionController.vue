@@ -14,8 +14,6 @@ import ActionController from '@renderer/components/ActionController/ActionContro
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
-import { useRouter } from 'vue-router';
 import {
   type ActionReport,
   ActionStatus,
@@ -25,17 +23,12 @@ import {
 /* Props */
 const props = defineProps<{
   transaction: ITransactionFull | null;
-  callback: () => Promise<void>;
-  goNext?: boolean;
+  callback: (signed: boolean) => Promise<void>;
 }>();
 const activate = defineModel<boolean>('activate', { required: true });
 
 /* Stores */
 const user = useUserStore();
-const nextTransaction = useNextTransactionV2();
-
-/* Composables */
-const router = useRouter();
 
 /* Injected */
 const accountByIdCache = AccountByIdCache.inject();
@@ -58,7 +51,7 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
       result = makeBugReport('Sign', 'Cannot sign: transaction is undefined');
     }
   } finally {
-    await props.callback();
+    await props.callback(result === null);
   }
   return result;
 };
@@ -110,13 +103,6 @@ const performSign = async (
       // Transaction has been signed
       toastManager.success('Transaction signed successfully');
       result = null;
-      if (props.goNext) {
-        if (nextTransaction.hasNext) {
-          await nextTransaction.routeToNext(router);
-        } else {
-          await nextTransaction.routeUp(router);
-        }
-      }
     }
   }
 
