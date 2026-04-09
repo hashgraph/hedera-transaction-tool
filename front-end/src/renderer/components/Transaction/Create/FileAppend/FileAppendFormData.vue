@@ -7,7 +7,7 @@ import { computed } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization, formatAccountId } from '@renderer/utils';
-import { getMaxTransactionSize } from '@renderer/utils/sdk/privilegedPayer';
+import { getMaxChunkSize } from '@renderer/utils/sdk/privilegedPayer';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
@@ -23,8 +23,12 @@ const props = defineProps<{
 
 /* Computed */
 // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit,
-// so the chunk-size cap should grow accordingly.
-const chunkSizeMax = computed(() => getMaxTransactionSize(props.payerId ?? null));
+// so the chunk-size cap grows accordingly. We use `getMaxChunkSize`, which
+// subtracts the protobuf/signature overhead reserve so the resulting on-wire
+// transaction stays safely within the per-transaction size envelope — the
+// same reserve the big-file handlers apply when they build File Append
+// transactions internally.
+const chunkSizeMax = computed(() => getMaxChunkSize(props.payerId ?? null));
 
 /* Emits */
 const emit = defineEmits<{

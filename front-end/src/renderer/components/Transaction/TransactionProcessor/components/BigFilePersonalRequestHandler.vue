@@ -14,7 +14,11 @@ import {
 import useUserStore from '@renderer/stores/storeUser';
 
 import { isLoggedInOrganization } from '@renderer/utils';
-import { createTransactionId, getMaxTransactionSizeForTransaction } from '@renderer/utils/sdk';
+import {
+  createTransactionId,
+  getMaxTransactionSizeForTransaction,
+  getMaxChunkSize,
+} from '@renderer/utils/sdk';
 
 import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
@@ -24,10 +28,6 @@ import { assertHandlerExists } from '..';
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;
 const SIZE_BUFFER_BYTES = 200;
-// Reserve headroom inside each File Append chunk for protobuf field overhead
-// (transactionID + nodeAccountID + signatures + framing). The numeric chunk
-// size below = max transaction size − this reserve.
-const APPEND_CHUNK_OVERHEAD_BYTES = 644;
 
 /* Emits */
 const emit = defineEmits<{
@@ -243,9 +243,9 @@ function createAppendTransaction() {
   // to that ceiling instead of the SDK default 4 KB. For normal payers we still
   // use most of the 6 KB envelope. Reducing the number of internal chunks
   // avoids the partial-upload failure mode where many sub-calls can't all
-  // execute within a single transaction's valid window.
-  const chunkSize =
-    getMaxTransactionSizeForTransaction(originalTransaction.value) - APPEND_CHUNK_OVERHEAD_BYTES;
+  // execute within a single transaction's valid window. `getMaxChunkSize`
+  // subtracts a reserve for protobuf/signature overhead.
+  const chunkSize = getMaxChunkSize(originalTransactionId.accountId ?? null);
 
   const append = new FileAppendTransaction()
     .setTransactionValidDuration(180)

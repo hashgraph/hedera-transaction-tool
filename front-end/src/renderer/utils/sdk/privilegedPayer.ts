@@ -49,3 +49,23 @@ export function getMaxTransactionSize(
 export function getMaxTransactionSizeForTransaction(tx: Transaction): number {
   return getMaxTransactionSize(tx.transactionId?.accountId ?? null);
 }
+
+/**
+ * Reserved headroom inside each File Append chunk for protobuf framing, the
+ * transactionID, node account ID, and signature map. The maximum safe
+ * `chunkSize` for the SDK is therefore `max transaction size − this reserve`,
+ * otherwise the on-wire encoded transaction can exceed the limit at runtime.
+ */
+export const APPEND_CHUNK_OVERHEAD_BYTES = 644;
+
+/**
+ * HIP-1300: Returns the maximum safe File Append `chunkSize` for a given fee
+ * payer — the transaction size limit minus the protobuf/signature overhead
+ * reserve. Use this for any UI input that binds directly to the SDK
+ * `chunkSize` property.
+ */
+export function getMaxChunkSize(
+  feePayer: AccountId | string | null | undefined,
+): number {
+  return getMaxTransactionSize(feePayer) - APPEND_CHUNK_OVERHEAD_BYTES;
+}

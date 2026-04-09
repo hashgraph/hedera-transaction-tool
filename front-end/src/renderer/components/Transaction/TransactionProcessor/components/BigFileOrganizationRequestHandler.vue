@@ -35,15 +35,12 @@ import {
   createFileAppendTransaction,
   getPrivateKey,
   getMaxTransactionSizeForTransaction,
+  getMaxChunkSize,
 } from '@renderer/utils/sdk';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;
-// Reserve headroom inside each File Append chunk for protobuf field overhead
-// (transactionID + nodeAccountID + signatures + framing). The numeric chunk
-// size below = max transaction size − this reserve.
-const APPEND_CHUNK_OVERHEAD_BYTES = 644;
 
 /* Props */
 const props = defineProps<{
@@ -135,9 +132,11 @@ function createAppendTransaction() {
   // to that ceiling instead of the legacy 2 KB. For normal payers we still use
   // most of the 6 KB envelope. Reducing the number of internal chunks avoids
   // the partial-upload failure mode where many sub-calls can't all execute
-  // within a single transaction's valid window.
-  const chunkSize =
-    getMaxTransactionSizeForTransaction(originalTransaction) - APPEND_CHUNK_OVERHEAD_BYTES;
+  // within a single transaction's valid window. `getMaxChunkSize` subtracts a
+  // reserve for protobuf/signature overhead.
+  const chunkSize = getMaxChunkSize(
+    originalTransaction.transactionId?.accountId ?? null,
+  );
 
   const append = createFileAppendTransaction({
     payerId,
