@@ -24,6 +24,13 @@ const route = useRoute();
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
 
+/* Computed */
+// HIP-1300: forward the currently selected fee payer to the form so the
+// chunk-size input can grow to 128 KB for privileged accounts.
+const currentPayerId = computed<string | null>(
+  () => baseTransactionRef.value?.payerData?.accountId?.value ?? null,
+);
+
 const data = reactive<FileAppendData>({
   fileId: '',
   chunkSize: 4096,
@@ -83,6 +90,7 @@ onMounted(() => {
     <FileAppendFormData
       :data="data as FileAppendData"
       @update:data="handleUpdateData"
+      :payer-id="currentPayerId"
       v-model:signature-key="signatureKey"
     />
   </BaseTransaction>
