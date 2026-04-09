@@ -428,8 +428,8 @@ describe('HIP-1300 privileged fee payer detection', () => {
       expect(result).toBeNull();
     });
 
-    test('returns the SDK transaction for treasury payer at exactly 128 KB - small', async () => {
-      // Just under the privileged limit
+    test('returns the SDK transaction for treasury payer with 130 KB content (well under 128 KiB limit)', async () => {
+      // 130,000 bytes < 131,072-byte HIP-1300 privileged limit
       const entity = await buildTransactionEntity(2, 130000);
       const result = await smartCollate(asEntity(entity), new KeyList());
       expect(result).not.toBeNull();
