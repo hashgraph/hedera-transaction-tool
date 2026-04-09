@@ -2,9 +2,6 @@ import { generateTransactionWaitingForSignaturesContent } from './transaction-wa
 import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
-  buildEmailTransactionsList: jest.fn((transactions) =>
-    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}`).join(',')}>`
-  ),
   emailWarning: jest.fn((msg) => `<WARNING:${msg}>`),
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
 }));
@@ -17,11 +14,9 @@ jest.mock('@app/common/templates/index', () => ({
 }));
 
 import {
-  buildEmailTransactionsList,
   emailWarning,
   renderTransactionEmailLayout,
 } from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
 
 const makeNotification = (overrides?: Partial<{ transactionId: string; network: string }>) =>
   ({
@@ -31,9 +26,7 @@ const makeNotification = (overrides?: Partial<{ transactionId: string; network: 
     },
   } as unknown as Notification);
 
-
 describe('transaction-waiting-for-signatures templates', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -48,35 +41,78 @@ describe('transaction-waiting-for-signatures templates', () => {
     it('does not call any layout utilities when empty', () => {
       generateTransactionWaitingForSignaturesContent();
       expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
-      expect(buildEmailTransactionsList).not.toHaveBeenCalled();
+      expect(emailWarning).not.toHaveBeenCalled();
     });
   });
 
-// ─── Singular vs plural copy ──────────────────────────────────────────────────
+// ─── High-level copy ──────────────────────────────────────────────────────────
 
-  describe('singular vs plural intro text', () => {
-    it('uses singular copy for one notification', () => {
+  describe('high-level copy', () => {
+    it('uses singular noun and bolded count for one notification', () => {
       const result = generateTransactionWaitingForSignaturesContent(makeNotification());
-      expect(result).toContain('A new transaction requires your review and signature');
-      expect(result).not.toContain('Multiple transactions');
+      expect(result).toContain('You have <strong>1</strong> transaction waiting for your signature');
+      expect(result).not.toContain('1 transactions');
     });
 
-    it('uses plural copy for two notifications', () => {
-      const result = generateTransactionWaitingForSignaturesContent(
-        makeNotification(),
-        makeNotification(),
-      );
-      expect(result).toContain('Multiple transactions require your review and signature');
-      expect(result).not.toContain('A new transaction requires');
-    });
-
-    it('uses plural copy for three or more notifications', () => {
+    it('uses plural noun and bolded count for multiple notifications', () => {
       const result = generateTransactionWaitingForSignaturesContent(
         makeNotification(),
         makeNotification(),
         makeNotification(),
       );
-      expect(result).toContain('Multiple transactions require your review and signature');
+      expect(result).toContain('You have <strong>3</strong> transactions waiting for your signature');
+    });
+
+    it('uses the unified CTA text', () => {
+      const result = generateTransactionWaitingForSignaturesContent(makeNotification());
+      expect(result).toContain('View details in the Hedera Transaction Tool');
+    });
+  });
+
+// ─── Network breakdown ───────────────────────────────────────────────────────
+
+  describe('network breakdown', () => {
+    it('renders a single-network breakdown', () => {
+      const result = generateTransactionWaitingForSignaturesContent(
+        makeNotification({ network: 'mainnet' }),
+        makeNotification({ network: 'mainnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Mainnet');
+    });
+
+    it('renders a multi-network breakdown joined by comma', () => {
+      const result = generateTransactionWaitingForSignaturesContent(
+        makeNotification({ network: 'mainnet' }),
+        makeNotification({ network: 'mainnet' }),
+        makeNotification({ network: 'testnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Mainnet');
+      expect(result).toContain('<strong>1</strong> transaction on Testnet');
+    });
+  });
+
+// ─── Privacy — no per-transaction details leaked ─────────────────────────────
+
+  describe('privacy', () => {
+    it('does not embed the transactionId', () => {
+      const result = generateTransactionWaitingForSignaturesContent(
+        makeNotification({ transactionId: '0.0.999@1234567890.000' }),
+      );
+      expect(result).not.toContain('0.0.999@1234567890.000');
+      expect(result).not.toContain('0.0.999');
+    });
+
+    it('does not embed validStart timestamps', () => {
+      const notification = {
+        additionalData: {
+          transactionId: 'tx-1',
+          network: 'mainnet',
+          validStart: '2099-12-31T23:59:59.000Z',
+        },
+      } as unknown as Notification;
+      const result = generateTransactionWaitingForSignaturesContent(notification);
+      expect(result).not.toContain('2099-12-31T23:59:59.000Z');
+      expect(result).not.toContain('2099');
     });
   });
 
@@ -91,11 +127,6 @@ describe('transaction-waiting-for-signatures templates', () => {
       );
     });
 
-    it('calls buildEmailTransactionsList once', () => {
-      generateTransactionWaitingForSignaturesContent(makeNotification());
-      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
-    });
-
     it('calls emailWarning with the admin contact message', () => {
       generateTransactionWaitingForSignaturesContent(makeNotification());
       expect(emailWarning).toHaveBeenCalledWith(
@@ -107,74 +138,11 @@ describe('transaction-waiting-for-signatures templates', () => {
       const result = generateTransactionWaitingForSignaturesContent(makeNotification());
       expect(result).toContain('<LAYOUT title="Transaction Signature Request">');
     });
-  });
-
-// ─── Transaction data mapping ─────────────────────────────────────────────────
-
-  describe('transaction data mapping', () => {
-    it('passes transactionId to buildEmailTransactionsList', () => {
-      generateTransactionWaitingForSignaturesContent(
-        makeNotification({ transactionId: '0.0.999@1234567890.000' }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ transactionId: '0.0.999@1234567890.000' }),
-        ]),
-      );
-    });
-
-    it('passes network through getNetworkString', () => {
-      generateTransactionWaitingForSignaturesContent(makeNotification({ network: 'testnet' }));
-      expect(getNetworkString).toHaveBeenCalledWith('testnet');
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ network: 'Testnet' })]),
-      );
-    });
-
-    it('passes all notifications to buildEmailTransactionsList', () => {
-      generateTransactionWaitingForSignaturesContent(
-        makeNotification({ transactionId: 'tx-1', network: 'mainnet' }),
-        makeNotification({ transactionId: 'tx-2', network: 'testnet' }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith([
-        { transactionId: 'tx-1', network: 'Mainnet' },
-        { transactionId: 'tx-2', network: 'Testnet' },
-      ]);
-    });
-
-    it('preserves notification order', () => {
-      generateTransactionWaitingForSignaturesContent(
-        makeNotification({ transactionId: 'first' }),
-        makeNotification({ transactionId: 'second' }),
-        makeNotification({ transactionId: 'third' }),
-      );
-      const [transactions] = (buildEmailTransactionsList as jest.Mock).mock.calls[0];
-      expect(transactions[0].transactionId).toBe('first');
-      expect(transactions[1].transactionId).toBe('second');
-      expect(transactions[2].transactionId).toBe('third');
-    });
 
     it('handles missing additionalData gracefully', () => {
       expect(() =>
         generateTransactionWaitingForSignaturesContent({} as Notification),
       ).not.toThrow();
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: undefined })]),
-      );
-    });
-
-    it('handles missing transactionId', () => {
-      const notification = { additionalData: { network: 'mainnet' } } as unknown as Notification;
-      generateTransactionWaitingForSignaturesContent(notification);
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: undefined })]),
-      );
-    });
-
-    it('handles missing network', () => {
-      const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
-      generateTransactionWaitingForSignaturesContent(notification);
-      expect(getNetworkString).toHaveBeenCalledWith(undefined);
     });
   });
 });

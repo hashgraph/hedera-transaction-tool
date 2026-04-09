@@ -1,34 +1,34 @@
 import { Notification } from '@entities';
 import {
-  buildEmailTransactionsList,
   emailWarning,
   renderTransactionEmailLayout,
 } from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
+import { buildNetworkBreakdown } from '@app/common/templates/network';
 
+// Privacy invariant: only integer counts and normalized network labels may be
+// interpolated into this template. Do not add transactionId, validStart, or
+// statusCode — see 2520.
 export const generateTransactionWaitingForSignaturesContent = (...notifications: Notification[]) => {
   if (notifications.length === 0) return "";
 
-  const isPlural = notifications.length > 1;
-
-  const transactions = notifications.map(n => ({
-    transactionId: n.additionalData?.transactionId,
-    network: getNetworkString(n.additionalData?.network),
-  }));
+  const count = notifications.length;
+  const noun = count === 1 ? 'transaction' : 'transactions';
+  const breakdown = buildNetworkBreakdown(notifications);
 
   const intro = `
+<p style="margin:0 0 16px;font-size:15px;line-height:26px;color:#444444;">
+  You have <strong>${count}</strong> ${noun} waiting for your signature.
+</p>
+${breakdown ? `<p style="margin:0 0 16px;font-size:14px;line-height:24px;color:#666666;">
+  ${breakdown}
+</p>` : ''}
 <p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">
-  ${
-    isPlural
-      ? "Multiple transactions require your review and signature. Please visit the Hedera Transaction Tool and locate the transactions."
-      : "A new transaction requires your review and signature. Please visit the Hedera Transaction Tool and locate the transaction."
-  }
+  View details in the Hedera Transaction Tool.
 </p>`;
 
   const bodyContent = `
     ${intro}
-    ${buildEmailTransactionsList(transactions)}
-    ${emailWarning( "If this wasn't expected, please contact your administrator.")}
+    ${emailWarning("If this wasn't expected, please contact your administrator.")}
   `;
 
   return renderTransactionEmailLayout(
