@@ -4,22 +4,18 @@ import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import { SettingsPage } from '../pages/SettingsPage.js';
 import { TransactionPage } from '../pages/TransactionPage.js';
+import { generateRandomPassword } from '../utils/data/random.js';
+import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/crypto/keyUtil.js';
+import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
 import {
-  closeApp,
-  generateRandomPassword,
-  setupApp,
-} from '../utils/automationSupport.js';
-import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/keyUtil.js';
-import { createSeededLocalUserSession } from '../utils/localBaseline.js';
-import {
-  activateSuiteIsolation,
-  cleanupIsolation,
-  resetLocalStateForSuite,
-  resetLocalStateForTeardown,
-  type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+  setupLocalSuiteApp,
+  teardownLocalSuiteApp,
+} from './helpers/bootstrap/localSuiteBootstrap.js';
+import { restoreKeyFromSettings } from './helpers/flows/settingsKeyRecoveryFlow.js';
+import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
 
-let app: Awaited<ReturnType<typeof setupApp>>['app'];
+let app: TransactionToolApp;
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let registrationPage: RegistrationPage;
@@ -29,12 +25,15 @@ let transactionPage: TransactionPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Settings tests @local-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeAll(async () => {
-    isolationContext = await activateSuiteIsolation(test.info());
-    await resetLocalStateForSuite();
-    ({ app, window } = await setupApp());
+    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
+  });
+
+  test.afterAll(async () => {
+    await teardownLocalSuiteApp(app, isolationContext);
+  });
+
+  test.beforeEach(async () => {
     loginPage = new LoginPage(window);
     settingsPage = new SettingsPage(window);
     transactionPage = new TransactionPage(window);
@@ -42,18 +41,6 @@ test.describe('Settings tests @local-basic', () => {
     registrationPage = new RegistrationPage(window, seededUser.recoveryPhraseWordMap);
     globalCredentials.email = seededUser.email;
     globalCredentials.password = seededUser.password;
-  });
-
-  test.afterAll(async () => {
-    await closeApp(app);
-    await resetLocalStateForTeardown();
-    await cleanupIsolation(isolationContext);
-  });
-
-  test.beforeEach(async () => {
-    await loginPage.logout();
-    await loginPage.login(globalCredentials.email, globalCredentials.password);
-    await loginPage.closeImportantNoteModal();
     await settingsPage.clickOnSettingsButton();
   });
 
@@ -74,20 +61,9 @@ test.describe('Settings tests @local-basic', () => {
   test('Verify user can restore key', async () => {
     await settingsPage.clickOnKeysTab();
 
-    await settingsPage.clickOnRestoreButton();
-
-    await registrationPage.fillAllMissingRecoveryPhraseWords();
-    await settingsPage.clickOnContinuePhraseButton();
-
-    await settingsPage.fillInIndex(parseInt(settingsPage.currentIndex));
-    await settingsPage.clickOnIndexContinueButton();
-
-    await loginPage.waitForToastToDisappear();
-    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
-    await settingsPage.clickOnNicknameContinueButton();
-
-    const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key pair saved');
+    await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      expectSuccessToast: true,
+    });
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();
@@ -98,20 +74,9 @@ test.describe('Settings tests @local-basic', () => {
 
     const rowCountBeforeRestore = await settingsPage.getKeyRowCount();
 
-    await settingsPage.clickOnRestoreButton();
-
-    await registrationPage.fillAllMissingRecoveryPhraseWords();
-    await settingsPage.clickOnContinuePhraseButton();
-
-    await settingsPage.fillInIndex(parseInt(settingsPage.currentIndex));
-    await settingsPage.clickOnIndexContinueButton();
-
-    await loginPage.waitForToastToDisappear();
-    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
-    await settingsPage.clickOnNicknameContinueButton();
-
-    const toastMessage = await registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Key pair saved');
+    await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      expectSuccessToast: true,
+    });
 
     // key pair was successfully restored, so we increment the index
     await settingsPage.incrementIndex();
@@ -135,20 +100,10 @@ test.describe('Settings tests @local-basic', () => {
   test('Verify user restored key pair is saved in the local database', async () => {
     await settingsPage.clickOnKeysTab();
 
-    await settingsPage.clickOnRestoreButton();
-
-    await registrationPage.fillAllMissingRecoveryPhraseWords();
-    await settingsPage.clickOnContinuePhraseButton();
-
-    const currentIndex: number = parseInt(settingsPage.currentIndex);
-    await settingsPage.fillInIndex(currentIndex);
-    await settingsPage.clickOnIndexContinueButton();
-
-    await settingsPage.fillInNickname('testNickname' + settingsPage.currentIndex);
-    await settingsPage.clickOnNicknameContinueButton();
-
-    // wait for the success toast so save has been triggered
-    await loginPage.waitForToastToDisappear();
+    const currentIndex = await restoreKeyFromSettings(settingsPage, registrationPage, loginPage, {
+      waitForToastAfterSave: true,
+      waitForToastBeforeNickname: false,
+    });
 
     // poll the DB until the key appears (helps on fast/CI runs)
     await expect.poll(

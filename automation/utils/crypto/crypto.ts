@@ -1,4 +1,4 @@
-import * as crypto from 'crypto';
+import * as crypto from 'node:crypto';
 import * as argon2 from 'argon2';
 
 function deriveKey(password: crypto.BinaryLike, salt: crypto.BinaryLike) {

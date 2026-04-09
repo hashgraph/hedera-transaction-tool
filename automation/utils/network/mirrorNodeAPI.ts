@@ -1,9 +1,10 @@
 import axios from 'axios';
 import retry from 'async-retry';
 
-import { DEFAULT_NETWORK, PREVIEWNET, TESTNET } from '../constants/index.js';
-import { formatTransactionId, getNetworkEnv } from './automationSupport.js';
-import { AccountInfo, AccountsResponse } from '../../front-end/src/shared/interfaces/index.js';
+import { DEFAULT_NETWORK, PREVIEWNET, TESTNET } from '../../constants/index.js';
+import { formatTransactionId } from '../data/transactionFormatting.js';
+import { getNetworkEnv } from '../runtime/environment.js';
+import { AccountInfo, AccountsResponse } from '../../../front-end/src/shared/interfaces/index.js';
 
  const getBaseURL = () => {
    const network = getNetworkEnv().toUpperCase();
@@ -138,6 +139,33 @@ export const getAccountDetails = async (
     timeout,
     interval,
   );
+};
+
+export const findMissingAccountId = async (
+  accountId: string,
+  attempts: number = 20,
+  offset: number = 1_000_000,
+): Promise<string> => {
+  const parts = accountId.split('.');
+  const lastIndex = parts.length - 1;
+  const baseAccountNumber = Number(parts[lastIndex]);
+
+  if (!Number.isInteger(baseAccountNumber)) {
+    throw new Error(`Invalid account id: ${accountId}`);
+  }
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    parts[lastIndex] = String(baseAccountNumber + offset + attempt);
+    const candidateAccountId = parts.join('.');
+    const response = await apiCall('accounts', { 'account.id': candidateAccountId });
+    const accountExists = Array.isArray(response?.accounts) && response.accounts.length > 0;
+
+    if (!accountExists) {
+      return candidateAccountId;
+    }
+  }
+
+  throw new Error(`Failed to find a missing account id derived from ${accountId}`);
 };
 
 export const getTransactionDetails = async (

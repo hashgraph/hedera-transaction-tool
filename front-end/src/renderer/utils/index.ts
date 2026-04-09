@@ -23,7 +23,6 @@ import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureM
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { ToastManager } from '@renderer/utils/ToastManager';
 import type { SignatureItem } from '@renderer/types';
 import { createLogger } from './logger';
 
@@ -239,6 +238,9 @@ export function collectMissingKeys(signatureItems: SignatureItem[]): string[] {
 }
 
 export async function signItems(items: SignatureItem[], password: string | null): Promise<SignatureItem[]> {
+
+  if (items.length === 0) return [];
+
   const user = useUserStore();
   assertUserLoggedIn(user.personal);
   const selectedOrganization = user.selectedOrganization;
@@ -274,88 +276,6 @@ export async function signItems(items: SignatureItem[], password: string | null)
   }
 
   return result;
-}
-
-export async function signTransactions(
-  transactions: ITransaction[],
-  password: string | null,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
-  toastManager: ToastManager,
-): Promise<boolean> {
-  const user = useUserStore();
-  const network = useNetworkStore();
-  const notificationStore = useNotificationsStore();
-  assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  // Capture the narrowed, non-null organization for use across async callbacks
-  const selectedOrganization = user.selectedOrganization;
-
-  const items: SignatureItem[] = [];
-  let signed = false;
-
-  const limit = pLimit(10);
-
-  const results = await Promise.all(
-    transactions.map(tx =>
-      limit(async () => {
-        const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
-
-        const publicKeysRequired = await usersPublicRequiredToSign(
-          transaction,
-          selectedOrganization.userKeys,
-          network.mirrorNodeBaseURL,
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
-          selectedOrganization,
-        );
-
-        return { id: tx.id, transaction, publicKeysRequired };
-      }),
-    ),
-  );
-
-  const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
-
-  for (const { id, transaction, publicKeysRequired } of results) {
-    const missingKeys = publicKeysRequired.filter(k => !userPublicKeys.has(k));
-
-    if (missingKeys.length > 0) {
-      toastManager.error(
-        `You need to restore the following public keys to fully sign the transaction: ${missingKeys.join(
-          ', ',
-        )}`,
-      );
-      return false;
-    }
-
-    if (publicKeysRequired.length > 0) {
-      items.push({ publicKeys: publicKeysRequired, transaction, transactionId: id });
-    }
-  }
-
-  if (items.length > 0) {
-    const uploadResults = await uploadSignatures(
-      user.personal.id,
-      password,
-      selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
-
-    const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
-    if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
-      notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
-    }
-
-    signed = true;
-  }
-  return signed;
 }
 
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {

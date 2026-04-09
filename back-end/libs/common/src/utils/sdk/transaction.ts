@@ -25,7 +25,6 @@ import {
 import { proto } from '@hiero-ledger/proto';
 
 import {
-  MAX_TRANSACTION_BYTE_SIZE,
   TransactionType,
   Transaction,
 } from '@entities';
@@ -33,6 +32,7 @@ import {
   decode,
   computeShortenedPublicKeyList,
 } from '@app/common';
+import { getMaxTransactionSizeForTransaction } from './privileged-payer';
 
 export const isExpired = (transaction: SDKTransaction) => {
   if (!transaction.transactionId?.validStart) {
@@ -290,6 +290,9 @@ export async function smartCollate(
 ): Promise<SDKTransaction | null> {
   const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
+  // HIP-1300: isTransactionOverMaxSize is fee-payer aware. Privileged payers
+  // (0.0.2, 0.0.42-0.0.799) can carry up to 128 KB, so transactions under that
+  // limit pass through here untouched and signatures are NOT stripped.
   if (await isTransactionOverMaxSize(sdkTransaction)) {
     const publicKeys = computeShortenedPublicKeyList(
       sdkTransaction._signerPublicKeys,
@@ -317,12 +320,16 @@ export async function smartCollate(
 export async function isTransactionOverMaxSize(transaction: SDKTransaction) {
   // @ts-expect-error _makeRequestAsync is a protected method, this is a temporary solution.
   const request = await transaction._makeRequestAsync();
-  return proto.Transaction.encode(request).finish().length > MAX_TRANSACTION_BYTE_SIZE;
+  // HIP-1300: limit depends on the fee payer (privileged accounts get 128 KB).
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
+  return proto.Transaction.encode(request).finish().length > maxSize;
 }
 
 export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
   const bodyBytes = getTransactionBodyBytes(transaction);
-  return bodyBytes.length > MAX_TRANSACTION_BYTE_SIZE;
+  // HIP-1300: limit depends on the fee payer (privileged accounts get 128 KB).
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
+  return bodyBytes.length > maxSize;
 }
 
 export const transactionIs = <T extends SDKTransaction>(

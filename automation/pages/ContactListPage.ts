@@ -5,8 +5,8 @@ import {
   isUserDeleted,
   upgradeUserToAdmin,
   verifyUserExistsInOrganization,
-} from '../utils/databaseQueries.js';
-import { getAssociatedAccounts } from '../utils/mirrorNodeAPI.js';
+} from '../utils/db/databaseQueries.js';
+import { getAssociatedAccounts } from '../utils/network/mirrorNodeAPI.js';
 
 export class ContactListPage extends BasePage {
   // Buttons

@@ -1,10 +1,11 @@
 import { Mnemonic } from '@hiero-ledger/sdk';
 import { Page } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage.js';
-import { generateRandomEmail, generateRandomPassword } from './automationSupport.js';
-import { argonHash } from './crypto.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { generateRandomEmail, generateRandomPassword } from '../data/random.js';
+import { argonHash } from '../crypto/crypto.js';
 
 const SELECTED_NETWORK_CLAIM_KEY = 'selected_network';
+const LOCAL_USER_STORAGE_KEY = 'htx_user';
 
 type SeedLocalUserPayload = {
   claimKey: string;
@@ -161,11 +162,21 @@ async function generateRecoveryPhraseWords(): Promise<string[]> {
 }
 
 async function reloadSeededLoginPage(page: Page, loginPage: LoginPage): Promise<void> {
-  await page.evaluate(async () => {
+  await page.evaluate(async (localUserStorageKey: string) => {
     type VueAppContainer = HTMLElement & {
       __vue_app__?: {
         config?: {
           globalProperties?: {
+            $pinia?: {
+              _s?: Map<string, {
+                clearGroup?: () => void;
+                personal?: {
+                  isLoggedIn?: boolean;
+                };
+                logout?: () => void;
+                setAccountSetupStarted?: (value: boolean) => void;
+              }>;
+            };
             $router?: {
               push: (target: { name: string }) => Promise<void>;
             };
@@ -175,15 +186,36 @@ async function reloadSeededLoginPage(page: Page, loginPage: LoginPage): Promise<
     };
 
     const appRoot = document.querySelector('#app') as VueAppContainer | null;
-    const router = appRoot?.__vue_app__?.config?.globalProperties?.$router;
+    const globalProperties = appRoot?.__vue_app__?.config?.globalProperties;
+    const router = globalProperties?.$router;
+    const storeRegistry = globalProperties?.$pinia?._s;
+    const userStore = storeRegistry?.get('user');
+    const transactionGroupStore = storeRegistry?.get('transactionGroup');
 
     if (!router) {
       throw new Error('Unable to access Vue router to remount the login page');
     }
 
+    // Reset route-blocking transaction group state before forcing the login screen.
+    if (typeof transactionGroupStore?.clearGroup === 'function') {
+      transactionGroupStore.clearGroup();
+    }
+
+    if (typeof userStore?.setAccountSetupStarted === 'function') {
+      userStore.setAccountSetupStarted(false);
+    }
+
+    // Attach-mode reruns can start from an already logged-in personal session.
+    // Clear only the in-memory/UI session so the DB can be preserved while we
+    // navigate back to the local login screen for deterministic setup.
+    if (userStore?.personal?.isLoggedIn && typeof userStore.logout === 'function') {
+      localStorage.removeItem(localUserStorageKey);
+      userStore.logout();
+    }
+
     await router.push({ name: 'styleGuide' });
     await router.push({ name: 'login' });
-  });
+  }, LOCAL_USER_STORAGE_KEY);
 
   await loginPage.assertSignInMode('seeded local baseline route refresh');
 }

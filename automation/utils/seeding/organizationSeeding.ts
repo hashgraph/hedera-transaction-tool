@@ -1,11 +1,11 @@
 import { Mnemonic } from '@hiero-ledger/sdk';
 import { Page } from '@playwright/test';
-import type { LoginPage } from '../pages/LoginPage.js';
-import type { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { createSeededLocalUserSession, type SeedLocalUserOptions, type SeededLocalUser } from './localBaseline.js';
-import { setupEnvironmentForTransactions } from './automationSupport.js';
-import { argonHash, encrypt } from './crypto.js';
-import { getUserIdByEmail, insertKeyPair, insertUserKey } from './databaseQueries.js';
+import type { LoginPage } from '../../pages/LoginPage.js';
+import type { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { createSeededLocalUserSession, type SeedLocalUserOptions, type SeededLocalUser } from './localUserSeeding.js';
+import { setupEnvironmentForTransactions } from '../runtime/environment.js';
+import { argonHash, encrypt } from '../crypto/crypto.js';
+import { getUserIdByEmail, insertKeyPair, insertUserKey } from '../db/databaseQueries.js';
 
 export interface SeededOrganizationUser extends UserDetails {
   userId: number;
@@ -18,6 +18,8 @@ export interface SeedOrganizationUserKeyOptions {
   email: string;
   localPassword: string;
   recoveryPhraseWords?: string[];
+  localUserId?: string;
+  localOrganizationId?: string;
 }
 
 export interface CreateSeededOrganizationSessionOptions {
@@ -43,6 +45,8 @@ export async function seedOrganizationUserKey({
   email,
   localPassword,
   recoveryPhraseWords,
+  localUserId,
+  localOrganizationId,
 }: SeedOrganizationUserKeyOptions): Promise<SeededOrganizationUser> {
   const resolvedRecoveryPhraseWords = recoveryPhraseWords ?? (await generateRecoveryPhraseWords());
   const mnemonic = await Mnemonic.fromWords(resolvedRecoveryPhraseWords);
@@ -63,7 +67,14 @@ export async function seedOrganizationUserKey({
     throw new Error(`Failed to seed organization user key for ${email}`);
   }
 
-  await insertKeyPair(publicKey, encryptedPrivateKey, mnemonicHash, userId.toString());
+  await insertKeyPair(
+    publicKey,
+    encryptedPrivateKey,
+    mnemonicHash,
+    userId.toString(),
+    localUserId,
+    localOrganizationId,
+  );
 
   return {
     userId,
@@ -83,6 +94,7 @@ export async function createSeededOrganizationSession(
   options: CreateSeededOrganizationSessionOptions = {},
 ): Promise<SeededOrganizationSession> {
   const localUser = await createSeededLocalUserSession(page, loginPage, options.localUser);
+  await deleteExistingLocalOrganizationConnection(page, process.env.ORGANIZATION_URL ?? '');
   const shouldSetupPersonalTransactions = options.setupPersonalTransactions ?? true;
   const shouldSetupOrganizationTransactions = options.setupOrganizationTransactions ?? true;
   const shouldSeedOrganizationKeys = options.seedOrganizationKeys ?? true;
@@ -109,6 +121,10 @@ export async function createSeededOrganizationSession(
   await organizationPage.waitForElementToBeVisible(
     organizationPage.emailForOrganizationInputSelector,
   );
+  const localOrganizationId = await getLocalOrganizationId(
+    page,
+    process.env.ORGANIZATION_URL ?? '',
+  );
 
   const seededOrganizationUsers: SeededOrganizationUser[] = [];
 
@@ -119,6 +135,8 @@ export async function createSeededOrganizationSession(
         email: user.email,
         localPassword: localUser.password,
         recoveryPhraseWords: options.organizationUserRecoveryPhraseWords?.[index],
+        localUserId: localUser.userId,
+        localOrganizationId,
       });
 
       organizationPage.users[index].privateKey = seededUser.privateKey;
@@ -200,4 +218,80 @@ export function resolveSignInUserIndex(
 
 async function generateRecoveryPhraseWords(): Promise<string[]> {
   return (await Mnemonic.generate()).toString().split(' ');
+}
+
+async function deleteExistingLocalOrganizationConnection(page: Page, serverUrl: string): Promise<void> {
+  if (!serverUrl) {
+    return;
+  }
+
+  await page.evaluate(async targetServerUrl => {
+    type LocalOrganization = {
+      id: string;
+      serverUrl: string;
+    };
+
+    type ElectronApiWindow = Window & {
+      electronAPI: {
+        local: {
+          organizations: {
+            getOrganizations: () => Promise<LocalOrganization[]>;
+            deleteOrganization: (id: string) => Promise<boolean>;
+          };
+        };
+      };
+    };
+
+    const electronWindow = window as unknown as ElectronApiWindow;
+    const organizations = await electronWindow.electronAPI.local.organizations.getOrganizations();
+
+    for (const organization of organizations) {
+      if (organization.serverUrl !== targetServerUrl) {
+        continue;
+      }
+
+      await electronWindow.electronAPI.local.organizations.deleteOrganization(organization.id);
+
+      try {
+        const origin = new URL(targetServerUrl).origin;
+        sessionStorage.removeItem(`auth-token-${origin}`);
+      } catch {
+        // Ignore malformed URLs here. The add-organization flow will fail with the
+        // real validation error if the configured organization URL is invalid.
+      }
+    }
+  }, serverUrl);
+}
+
+async function getLocalOrganizationId(page: Page, serverUrl: string): Promise<string> {
+  if (!serverUrl) {
+    throw new Error('ORGANIZATION_URL is not configured');
+  }
+
+  return await page.evaluate(async targetServerUrl => {
+    type LocalOrganization = {
+      id: string;
+      serverUrl: string;
+    };
+
+    type ElectronApiWindow = Window & {
+      electronAPI: {
+        local: {
+          organizations: {
+            getOrganizations: () => Promise<LocalOrganization[]>;
+          };
+        };
+      };
+    };
+
+    const electronWindow = window as unknown as ElectronApiWindow;
+    const organizations = await electronWindow.electronAPI.local.organizations.getOrganizations();
+    const match = organizations.find(org => org.serverUrl === targetServerUrl);
+
+    if (!match) {
+      throw new Error(`Local organization ${targetServerUrl} was not found in SQLite`);
+    }
+
+    return match.id;
+  }, serverUrl);
 }

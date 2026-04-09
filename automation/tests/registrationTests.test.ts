@@ -1,5 +1,9 @@
 import { expect, Page, test } from '@playwright/test';
-import { closeApp, generateRandomEmail, generateRandomPassword, setupApp } from '../utils/automationSupport.js';
+import {
+  generateRandomEmail,
+  generateRandomPassword,
+} from '../utils/data/random.js';
+import { closeApp, setupApp } from '../utils/runtime/appSession.js';
 import { RegistrationPage } from '../pages/RegistrationPage.js';
 import { LoginPage } from '../pages/LoginPage.js';
 import {
@@ -8,7 +12,7 @@ import {
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
-} from '../utils/sharedTestEnvironment.js';
+} from '../utils/setup/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'] | undefined;
 let window: Page;
@@ -18,8 +22,6 @@ let loginPage: LoginPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Registration tests @local-basic', () => {
-  test.describe.configure({ mode: 'serial' });
-
   test.beforeEach(async ({}, testInfo) => {
     if (app) {
       await closeApp(app);

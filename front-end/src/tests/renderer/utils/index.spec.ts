@@ -1,6 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
-import { hasStartTimestampChanged, transactionsDataMatch, signTransactions } from '@renderer/utils';
+import {
+  collectMissingKeys, collectRequiredKeys,
+  hasStartTimestampChanged,
+  signItems,
+  transactionsDataMatch,
+} from '@renderer/utils';
+import type { SignatureItem } from '@renderer/types';
 
 export const toastErrorSpy = vi.fn();
 const toastMock = { error: toastErrorSpy };
@@ -37,13 +43,6 @@ const mockUploadSignatures = vi.fn();
 vi.mock('@renderer/services/organization', () => ({
   uploadSignatures: (...args: any[]) => mockUploadSignatures(...args),
 }));
-
-const mockToastManager = {
-  error: vi.fn(),
-  success: vi.fn(),
-  warning: vi.fn(),
-  info: vi.fn(),
-} as any;
 
 describe('General utilities', () => {
   const t1Bytes = [
@@ -193,12 +192,14 @@ describe('hasStartTimestampChanged', () => {
   });
 });
 
-describe('signTransactions', () => {
+describe('collectRequiredKeys', () => {
   let originalFromBytes: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockToastManager.error.mockReset();
+
+    originalFromBytes = Transaction.fromBytes;
+    Transaction.fromBytes = vi.fn(() => ({ mocked: 'tx' }) as any) as any;
 
     mockUseNetworkStore.mockReturnValue({
       mirrorNodeBaseURL: 'https://mirror.test',
@@ -215,140 +216,121 @@ describe('signTransactions', () => {
         loginRequired: false,
       },
     });
-
-    mockUseNotificationsStore.mockReturnValue({
-      dismissNotifications: mockDismissNotifications,
-    });
-
-    originalFromBytes = Transaction.fromBytes;
-    Transaction.fromBytes = vi.fn(() => ({ mocked: 'tx' } as any)) as any;
   });
 
   afterEach(() => {
     Transaction.fromBytes = originalFromBytes;
   });
 
-  test('returns false and shows toast when user is missing required public keys', async () => {
-    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-missing']);
 
-    const result = await signTransactions(
-      [{ id: 'tx-1', transactionBytes: '00' } as any],
-      null,
-      {} as any,
-      {} as any,
-      {} as any,
-      mockToastManager,
-    );
-
-    expect(result).toBe(false);
-    expect(mockToastManager.error).toHaveBeenCalledTimes(1);
-    expect(mockUploadSignatures).not.toHaveBeenCalled();
-  });
-
-  test('returns false when no signatures are required (does not upload)', async () => {
-    mockUsersPublicRequiredToSign.mockResolvedValue([]);
-
-    const result = await signTransactions(
-      [{ id: 'tx-1', transactionBytes: '00' } as any],
-      'pw',
-      {} as any,
-      {} as any,
-      {} as any,
-      mockToastManager,
-    );
-
-    expect(result).toBe(false);
-    expect(mockUploadSignatures).not.toHaveBeenCalled();
-  });
-
-  test('uploads signatures and returns true when signatures are required and user has keys', async () => {
+  test('t1', async () => {
     mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
-    mockUploadSignatures.mockResolvedValue({ data: { notificationReceiverIds: [] } });
 
-    const result = await signTransactions(
-      [
-        { id: 'tx-1', transactionBytes: '00' } as any,
-        { id: 'tx-2', transactionBytes: '00' } as any,
-      ],
-      'pw',
+    const result = await collectRequiredKeys(
+      [{ id: 0, transactionBytes: '00' } as any, { id: 1, transactionBytes: '00' } as any],
       {} as any,
       {} as any,
       {} as any,
-      mockToastManager,
     );
+    expect(result).toEqual([
+      { transactionId: 0, transaction: { mocked: 'tx' }, publicKeys: ['pk-1'] },
+      { transactionId: 1, transaction: { mocked: 'tx' }, publicKeys: ['pk-1'] },
+    ]);
 
-    expect(result).toBe(true);
+    Transaction.fromBytes = originalFromBytes;
+  });
+});
+
+describe('collectMissingKeys', () => {
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockUseUserStore.mockReturnValue({
+      personal: { id: 'user-1', isLoggedIn: true },
+      keyPairs: [{ public_key: 'pk-1' }],
+      selectedOrganization: {
+        serverUrl: 'https://api.test',
+        userKeys: ['org-key-1'],
+        isLoading: false,
+        isServerActive: true,
+        loginRequired: false,
+      },
+    });
+  });
+
+  test('collectMissingKeys() returns no missing key for empty input', () => {
+    const signatureItems: SignatureItem[] = [];
+    const missingKeys = collectMissingKeys(signatureItems);
+    expect(missingKeys).toEqual([]);
+  });
+
+  test('collectMissingKeys() returns no missing key', () => {
+    const signatureItems: SignatureItem[] = [
+      { publicKeys: ['pk-1'], transaction: {} as any, transactionId: 0 },
+    ];
+    const missingKeys = collectMissingKeys(signatureItems);
+    expect(missingKeys).toEqual([]);
+  });
+
+  test('collectMissingKeys() returns one missing key', () => {
+    const signatureItems: SignatureItem[] = [
+      { publicKeys: ['pk-1', 'pk-2'], transaction: {} as any, transactionId: 0 },
+    ];
+    const missingKeys = collectMissingKeys(signatureItems);
+    expect(missingKeys).toEqual(['pk-2']);
+  });
+
+});
+
+describe('signItems', () => {
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+
+    mockUseUserStore.mockReturnValue({
+      personal: { id: 'user-1', isLoggedIn: true },
+      keyPairs: [{ public_key: 'pk-1' }],
+      selectedOrganization: {
+        serverUrl: 'https://api.test',
+        userKeys: ['org-key-1'],
+        isLoading: false,
+        isServerActive: true,
+        loginRequired: false,
+      },
+    });
+  });
+
+  test('returns empty when no signatures are required (does not upload)', async () => {
+    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+
+    const result = await signItems([], 'pw');
+    expect(result).toEqual([]);
+    expect(mockUploadSignatures).not.toHaveBeenCalled();
+    expect(mockDismissNotifications).not.toHaveBeenCalled();
+  });
+
+  test('uploads signatures for which user has key and reject others', async () => {
+    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
+    mockUploadSignatures.mockResolvedValue({
+      data: {
+        signers: [{ publicKeys: ['pk-1'], transaction: {}, transactionId: 0 } as any],
+        notificationReceiverIds: [10, 11, 12],
+      },
+    });
+    mockUseNotificationsStore.mockReturnValue({
+      dismissNotifications: mockDismissNotifications,
+    });
+
+    const inputItems: SignatureItem[] = [
+      { publicKeys: ['pk-1'], transaction: {}, transactionId: 0 } as any,
+      { publicKeys: ['pk-2'], transaction: {}, transactionId: 1 } as any,
+    ];
+    const rejectedItems = await signItems(inputItems, 'pw');
+
+    expect(rejectedItems).toStrictEqual([inputItems[1]]);
     expect(mockUploadSignatures).toHaveBeenCalledTimes(1);
-
-    const args = mockUploadSignatures.mock.calls[0];
-
-    expect(args[0]).toBe('user-1');
-    expect(args[1]).toBe('pw');
-    expect(args[2]).toEqual(expect.objectContaining({ serverUrl: 'https://api.test' }));
-
-    const signatureItems = args[6] as any[];
-    expect(Array.isArray(signatureItems)).toBe(true);
-    expect(signatureItems).toHaveLength(2);
-    expect(signatureItems[0]).toEqual(
-      expect.objectContaining({ transactionId: 'tx-1', publicKeys: ['pk-1'] }),
-    );
-    expect(signatureItems[1]).toEqual(
-      expect.objectContaining({ transactionId: 'tx-2', publicKeys: ['pk-1'] }),
-    );
+    expect(mockDismissNotifications).toHaveBeenCalledWith('https://api.test', [10, 11, 12]);
   });
 
-  test('dismisses notifications when notificationReceiverIds are returned', async () => {
-    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
-    mockUploadSignatures.mockResolvedValue({
-      data: { notificationReceiverIds: [10, 11, 12] },
-    });
-
-    await signTransactions(
-      [{ id: 'tx-1', transactionBytes: '00' } as any],
-      'pw',
-      {} as any,
-      {} as any,
-      {} as any,
-      mockToastManager,
-    );
-
-    expect(mockDismissNotifications).toHaveBeenCalledWith(
-      'https://api.test',
-      [10, 11, 12],
-    );
-  });
-
-  test('does not dismiss notifications when notificationReceiverIds is empty', async () => {
-    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
-    mockUploadSignatures.mockResolvedValue({
-      data: { notificationReceiverIds: [] },
-    });
-
-    await signTransactions(
-      [{ id: 'tx-1', transactionBytes: '00' } as any],
-      'pw',
-      {} as any,
-      {} as any,
-      {} as any,
-      mockToastManager,
-    );
-
-    expect(mockDismissNotifications).not.toHaveBeenCalled();
-  });
-
-  test('does not dismiss notifications when uploadSignatures returns no data', async () => {
-    mockUsersPublicRequiredToSign.mockResolvedValue(['pk-1']);
-    mockUploadSignatures.mockResolvedValue(null);
-
-    await signTransactions(
-      [{ id: 'tx-1', transactionBytes: '00' } as any],
-      'pw',
-      {} as any,
-      {} as any,
-      {} as any,
-      mockToastManager,
-    );
-
-    expect(mockDismissNotifications).not.toHaveBeenCalled();
-  });
 });

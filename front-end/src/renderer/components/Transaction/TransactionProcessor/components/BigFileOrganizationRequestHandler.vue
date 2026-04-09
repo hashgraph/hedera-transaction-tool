@@ -12,8 +12,6 @@ import { TransactionRequest, type Handler, type Processable } from '..';
 import { ref } from 'vue';
 import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hiero-ledger/sdk';
 
-import { TRANSACTION_MAX_SIZE } from '@shared/constants';
-
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -36,6 +34,8 @@ import {
   assertTransactionType,
   createFileAppendTransaction,
   getPrivateKey,
+  getMaxTransactionSizeForTransaction,
+  getMaxChunkSize,
 } from '@renderer/utils/sdk';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 
@@ -81,11 +81,14 @@ async function handle(req: Processable) {
   const transaction = Transaction.fromBytes(req.transactionBytes);
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
+  // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit
+  // and should NOT be split into chunks when under that limit.
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
 
   if (
     !isLoggedInOrganization(user.selectedOrganization) ||
     !isFileUpdate(transaction) ||
-    size <= TRANSACTION_MAX_SIZE - sizeBufferBytes ||
+    size <= maxSize - sizeBufferBytes ||
     !transaction.contents
   ) {
     await nextHandler.value?.handle(req);
@@ -124,6 +127,17 @@ function createAppendTransaction() {
   const fileId = originalTransaction.fileId;
   if (!fileId) throw new Error('File ID is missing');
 
+  // HIP-1300: payer-aware chunk size. Privileged payers (0.0.2, 0.0.42-0.0.799)
+  // get a 128 KB transaction limit, so we can pack each File Append chunk close
+  // to that ceiling instead of the legacy 2 KB. For normal payers we still use
+  // most of the 6 KB envelope. Reducing the number of internal chunks avoids
+  // the partial-upload failure mode where many sub-calls can't all execute
+  // within a single transaction's valid window. `getMaxChunkSize` subtracts a
+  // reserve for protobuf/signature overhead.
+  const chunkSize = getMaxChunkSize(
+    originalTransaction.transactionId?.accountId ?? null,
+  );
+
   const append = createFileAppendTransaction({
     payerId,
     validStart: new Date(validStart.getTime() + 10),
@@ -131,7 +145,7 @@ function createAppendTransaction() {
     transactionMemo: originalTransaction.transactionMemo,
     fileId: fileId.toString(),
     contents: originalTransaction.contents.slice(FIRST_CHUNK_SIZE_BYTES),
-    chunkSize: 2048,
+    chunkSize,
     maxChunks: 99999,
   });
 

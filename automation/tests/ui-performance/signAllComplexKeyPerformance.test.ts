@@ -12,13 +12,13 @@
 
 import { test, expect, Page } from '@playwright/test';
 import * as dotenv from 'dotenv';
-import { setupApp, closeApp } from '../../utils/automationSupport.js';
+import { setupApp, closeApp } from '../../utils/runtime/appSession.js';
 import {
   resetDbState,
   resetDbStateForTeardown,
   resetPostgresDbState,
   resetPostgresDbStateForTeardown,
-} from '../../utils/databaseUtil.js';
+} from '../../utils/db/databaseUtil.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import {
