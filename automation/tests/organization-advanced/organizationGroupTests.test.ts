@@ -1,20 +1,20 @@
 import { expect, Page, test } from '@playwright/test';
-import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { GroupPage } from '../pages/GroupPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { flushRateLimiter } from '../utils/db/databaseUtil.js';
-import { findMissingAccountId } from '../utils/network/mirrorNodeAPI.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
-import { setupOrganizationAdvancedFixture } from './helpers/fixtures/organizationAdvancedFixture.js';
-import { executeOrganizationGroupFromCsvFile } from './helpers/flows/organizationGroupFlow.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { GroupPage } from '../../pages/GroupPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
+import { findMissingAccountId } from '../../utils/network/mirrorNodeAPI.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { setupOrganizationAdvancedFixture } from '../helpers/fixtures/organizationAdvancedFixture.js';
+import { executeOrganizationGroupFromCsvFile } from '../helpers/flows/organizationGroupFlow.js';
 import {
   setupOrganizationSuiteApp,
   teardownOrganizationSuiteApp,
-} from './helpers/bootstrap/organizationSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
-import { prepareGroupTransactionPage } from './helpers/flows/groupTransactionNavigationFlow.js';
-import { createSequentialOrganizationNicknameResolver } from './helpers/support/organizationNamingSupport.js';
+} from '../helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { prepareGroupTransactionPage } from '../helpers/flows/groupTransactionNavigationFlow.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 
 let app: TransactionToolApp;
 let window: Page;

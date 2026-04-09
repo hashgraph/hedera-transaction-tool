@@ -1,19 +1,19 @@
 import { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { SettingsPage } from '../pages/SettingsPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { generateRandomPassword } from '../utils/data/random.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
-import { generateECDSAKeyPair, generateEd25519KeyPair } from '../utils/crypto/keyUtil.js';
-import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
+import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { SettingsPage } from '../../pages/SettingsPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { generateRandomPassword } from '../../utils/data/random.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { generateECDSAKeyPair, generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
+import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
 import {
   setupLocalSuiteApp,
   teardownLocalSuiteApp,
-} from './helpers/bootstrap/localSuiteBootstrap.js';
-import { restoreKeyFromSettings } from './helpers/flows/settingsKeyRecoveryFlow.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+} from '../helpers/bootstrap/localSuiteBootstrap.js';
+import { restoreKeyFromSettings } from '../helpers/flows/settingsKeyRecoveryFlow.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
 
 let app: TransactionToolApp;
 let window: Page;
