@@ -1,3 +1,6 @@
+// KEEP IN SYNC with front-end/src/renderer/utils/sdk/privilegedPayer.ts
+// Both files implement the HIP-1300 privileged fee payer rules and must be
+// updated together if the privileged account range ever changes.
 import { AccountId, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import {

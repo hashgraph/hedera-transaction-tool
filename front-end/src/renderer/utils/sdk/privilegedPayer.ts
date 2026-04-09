@@ -1,3 +1,6 @@
+// KEEP IN SYNC with back-end/libs/common/src/utils/sdk/privileged-payer.ts
+// Both files implement the HIP-1300 privileged fee payer rules and must be
+// updated together if the privileged account range ever changes.
 import { AccountId, Transaction } from '@hiero-ledger/sdk';
 
 import {
@@ -51,10 +54,18 @@ export function getMaxTransactionSizeForTransaction(tx: Transaction): number {
 }
 
 /**
- * Reserved headroom inside each File Append chunk for protobuf framing, the
- * transactionID, node account ID, and signature map. The maximum safe
- * `chunkSize` for the SDK is therefore `max transaction size − this reserve`,
- * otherwise the on-wire encoded transaction can exceed the limit at runtime.
+ * Rough breakdown of where the 644 bytes go (conservative upper bound for a
+ * 1–3 signature File Append with typical metadata):
+ *   - TransactionID (shard/realm/num of payer + validStart timestamp)    ~40 B
+ *   - Node account ID                                                    ~10 B
+ *   - Transaction body envelope (memo, validDuration, maxFee, type tag)  ~50 B
+ *   - FileID (shard/realm/num)                                           ~15 B
+ *   - Protobuf field tags + length-delimited framing                    ~100 B
+ *   - SignatureMap (PublicKey prefix + signature bytes per signer,
+ *     accounting for threshold keys up to ~4 signers)                   ~400 B
+ *   - Safety margin                                                      ~29 B
+ *                                                                      ──────
+ *                                                                       ~644 B
  */
 export const APPEND_CHUNK_OVERHEAD_BYTES = 644;
 
