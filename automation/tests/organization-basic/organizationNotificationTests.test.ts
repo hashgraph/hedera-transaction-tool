@@ -1,31 +1,26 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { flushRateLimiter } from '../utils/db/databaseUtil.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
-import {
-  getPrivateKeyEnv,
-  setupEnvironmentForTransactions,
-} from '../utils/runtime/environment.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
 import {
   disableNotificationsForUsers,
   getLatestInAppNotificationStatusByEmail,
   getNotifiedTransactionIdByEmail,
-} from '../utils/db/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
+} from '../../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
-  setupNamedOrganizationSuiteApp,
+  setupOrganizationSuiteApp,
   teardownOrganizationSuiteApp,
-} from './helpers/bootstrap/organizationSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+} from '../helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 
 let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
-let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
@@ -34,20 +29,27 @@ let organizationNickname = 'Test Organization';
 
 let firstUser: UserDetails;
 let secondUser: UserDetails;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe.skip('Organization Notification tests @organization-basic', () => {
+  test.slow();
+
   test.beforeAll(async () => {
-    test.slow();
     ({
       app,
       window,
       transactionPage,
       organizationPage,
-      registrationPage,
       loginPage,
       isolationContext,
-      organizationNickname,
-    } = await setupNamedOrganizationSuiteApp(test.info()));
+    } = await setupOrganizationSuiteApp(test.info()));
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -64,15 +66,16 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
 
     await disableNotificationsForUsers([firstUser.email, secondUser.email], true);
 
-    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
-
     // Set complex account for transactions
-    await organizationPage.addComplexKeyAccountForTransactions();
+    await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
   });
 
-  test.beforeEach(async () => {
-    // Flush rate limiter before each test to prevent "too many requests" errors
-    await flushRateLimiter();
+  test.afterEach(async () => {
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // The next beforeEach recreates the full org fixture from scratch.
+    }
   });
 
   test.afterAll(async () => {
