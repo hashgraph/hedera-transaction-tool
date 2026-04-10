@@ -5,9 +5,6 @@ import {
 import { buildNetworkBreakdown } from '@app/common/templates/network';
 import { Notification } from '@entities';
 
-// Privacy invariant: only integer counts and normalized network labels may be
-// interpolated into this template. Do not add transactionId, validStart, or
-// statusCode — see 2520.
 export const generateTransactionExpiredContent = (...notifications: Notification[]) => {
   if (notifications.length === 0) return "";
 

@@ -14,9 +14,6 @@ export function isSuccessStatusCode(statusCode: unknown): boolean {
   return false;
 }
 
-// Privacy invariant: only integer counts and normalized network labels may be
-// interpolated into this template. Do not add transactionId, validStart, or
-// raw statusCode digits — see 2520.
 export function generateTransactionExecutedContent(...notifications: Notification[]): string {
   if (notifications.length === 0) return "";
 

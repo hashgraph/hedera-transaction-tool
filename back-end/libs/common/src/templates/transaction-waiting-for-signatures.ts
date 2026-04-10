@@ -5,9 +5,6 @@ import {
 } from '@app/common/templates/layout';
 import { buildNetworkBreakdown } from '@app/common/templates/network';
 
-// Privacy invariant: only integer counts and normalized network labels may be
-// interpolated into this template. Do not add transactionId, validStart, or
-// statusCode — see 2520.
 export const generateTransactionWaitingForSignaturesContent = (...notifications: Notification[]) => {
   if (notifications.length === 0) return "";
 

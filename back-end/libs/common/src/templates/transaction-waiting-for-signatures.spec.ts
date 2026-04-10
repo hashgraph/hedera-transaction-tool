@@ -31,8 +31,6 @@ describe('transaction-waiting-for-signatures templates', () => {
     jest.clearAllMocks();
   });
 
-// ─── Empty input ──────────────────────────────────────────────────────────────
-
   describe('empty input', () => {
     it('returns empty string when called with no arguments', () => {
       expect(generateTransactionWaitingForSignaturesContent()).toBe('');
@@ -44,8 +42,6 @@ describe('transaction-waiting-for-signatures templates', () => {
       expect(emailWarning).not.toHaveBeenCalled();
     });
   });
-
-// ─── High-level copy ──────────────────────────────────────────────────────────
 
   describe('high-level copy', () => {
     it('uses singular noun and bolded count for one notification', () => {
@@ -69,8 +65,6 @@ describe('transaction-waiting-for-signatures templates', () => {
     });
   });
 
-// ─── Network breakdown ───────────────────────────────────────────────────────
-
   describe('network breakdown', () => {
     it('renders a single-network breakdown', () => {
       const result = generateTransactionWaitingForSignaturesContent(
@@ -90,8 +84,6 @@ describe('transaction-waiting-for-signatures templates', () => {
       expect(result).toContain('<strong>1</strong> transaction on Testnet');
     });
   });
-
-// ─── Privacy — no per-transaction details leaked ─────────────────────────────
 
   describe('privacy', () => {
     it('does not embed the transactionId', () => {
@@ -115,8 +107,6 @@ describe('transaction-waiting-for-signatures templates', () => {
       expect(result).not.toContain('2099');
     });
   });
-
-// ─── Layout wiring ────────────────────────────────────────────────────────────
 
   describe('layout integration', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
