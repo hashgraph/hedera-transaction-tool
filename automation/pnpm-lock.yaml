@@ -63,8 +63,8 @@ importers:
         specifier: 1.58.2
         version: 1.58.2
       prettier:
-        specifier: 3.8.1
-        version: 3.8.1
+        specifier: 3.8.2
+        version: 3.8.2
       sqlite3:
         specifier: 5.1.6
         version: 5.1.6(encoding@0.1.13)
@@ -2170,8 +2170,8 @@ packages:
     resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
     engines: {node: '>=0.10.0'}
 
-  prettier@3.8.1:
-    resolution: {integrity: sha512-UOnG6LftzbdaHZcKoPFtOcCKztrQ57WkHDeRD9t/PTQtmT0NHSeWWepj6pS0z/N7+08BHFDQVUrfmfMRcZwbMg==}
+  prettier@3.8.2:
+    resolution: {integrity: sha512-8c3mgTe0ASwWAJK+78dpviD+A8EqhndQPUBpNUIPt6+xWlIigCwfN01lWr9MAede4uqXGTEKeQWTvzb3vjia0Q==}
     engines: {node: '>=14'}
     hasBin: true
 
@@ -5045,7 +5045,7 @@ snapshots:
     dependencies:
       xtend: 4.0.2
 
-  prettier@3.8.1: {}
+  prettier@3.8.2: {}
 
   pretty-format@29.7.0:
     dependencies:
