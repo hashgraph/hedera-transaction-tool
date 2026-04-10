@@ -68,7 +68,7 @@
     "@types/async-retry": "1.4.9",
     "@types/bcrypt": "6.0.0",
     "@types/deep-diff": "1.0.5",
-    "@types/k6": "1.6.0",
+    "@types/k6": "1.7.0",
     "@types/lodash": "4.17.24",
     "@types/node": "25.3.5",
     "@types/pg": "8.18.0",
