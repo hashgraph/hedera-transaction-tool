@@ -298,7 +298,7 @@ const computeVisibleButtons = (publicKeysRequiredToSign: string[], shouldApprove
 
       <div class="flex-centered gap-4">
         <NextTransactionCursor />
-        <div>
+        <div v-if="visibleButtons.length > 0">
           <SplitSignButtonDropdown
             v-if="visibleButtons[0] === sign"
             :disabled="isRefreshing"
@@ -316,6 +316,14 @@ const computeVisibleButtons = (publicKeysRequiredToSign: string[], shouldApprove
             type="submit"
             >{{ visibleButtons[0] }}
           </AppButton>
+        </div>
+        <div v-else>
+          <AppButton
+            color="primary"
+            :disabled="true"
+            class="extra-width"
+            type="submit"
+            >...</AppButton>
         </div>
 
         <div>
