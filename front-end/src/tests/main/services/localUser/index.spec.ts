@@ -1,10 +1,32 @@
 import { expect, vi } from 'vitest';
 
-import { getUserStorageFolderPath, resetData } from '@main/services/localUser/index';
+import { getUserStorageFolderPath, resetData, resetDatabase } from '@main/services/localUser';
 
 import { session } from 'electron';
 import initDatabase, { deleteDatabase } from '@main/db/init';
 import { createPrismaClient, setPrismaClient } from '@main/db/prisma';
+import { getSessionPartitionName } from '@main/utils/playwrightIsolation';
+
+// Mock all sub-modules re-exported via `export *` in index.ts.
+// Explicit factory `() => ({})` is required — without it, Vitest loads the real
+// module for auto-mock generation, which triggers @hiero-ledger/sdk and other
+// native/heavy imports that crash the worker process (ERR_IPC_CHANNEL_CLOSED).
+vi.mock('@main/services/localUser/auth', () => ({}));
+vi.mock('@main/services/localUser/keyPairs', () => ({}));
+vi.mock('@main/services/localUser/accounts', () => ({}));
+vi.mock('@main/services/localUser/files', () => ({}));
+vi.mock('@main/services/localUser/transactions', () => ({}));
+vi.mock('@main/services/localUser/transactionDrafts', () => ({}));
+vi.mock('@main/services/localUser/transactionGroups', () => ({}));
+vi.mock('@main/services/localUser/complexKeys', () => ({}));
+vi.mock('@main/services/localUser/organizations', () => ({}));
+vi.mock('@main/services/localUser/organizationCredentials', () => ({}));
+vi.mock('@main/services/localUser/contacts', () => ({}));
+vi.mock('@main/services/localUser/encryptedKeys', () => ({}));
+vi.mock('@main/services/localUser/dataMigration', () => ({}));
+vi.mock('@main/services/localUser/sdk', () => ({}));
+vi.mock('@main/services/localUser/mnemonic', () => ({}));
+vi.mock('@main/services/localUser/publicKeyMapping', () => ({}));
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('electron', () => ({
@@ -17,6 +39,7 @@ vi.mock('electron', () => ({
 vi.mock('@main/db/prisma', () => ({
   createPrismaClient: vi.fn(),
   setPrismaClient: vi.fn(),
+  getPrismaClient: vi.fn(),
 }));
 vi.mock('@main/db/init', () => {
   return {
@@ -24,6 +47,9 @@ vi.mock('@main/db/init', () => {
     deleteDatabase: vi.fn(),
   };
 });
+vi.mock('@main/utils/playwrightIsolation', () => ({
+  getSessionPartitionName: vi.fn().mockReturnValue('persist:main'),
+}));
 
 describe('Services Local User Transactions', () => {
   beforeEach(() => {
@@ -33,6 +59,7 @@ describe('Services Local User Transactions', () => {
   describe('resetData', () => {
     beforeEach(() => {
       vi.resetAllMocks();
+      vi.mocked(getSessionPartitionName).mockReturnValue('persist:main');
     });
 
     test('Should clear storage data, delete and initialize the database', async () => {
@@ -72,14 +99,17 @@ describe('Services Local User Transactions', () => {
         return promise;
       });
 
-      const firstResetData = resetData();
-      const secondResetData = resetData();
+      // The guard lives in resetDatabase — calling it twice while in progress
+      // should only trigger one actual DB deletion.
+      const firstReset = resetDatabase();
+      const secondReset = resetDatabase();
 
-      expect(firstResetData).toStrictEqual(secondResetData);
+      expect(await secondReset).toBeUndefined();
+      expect(deleteDatabase).toHaveBeenCalledTimes(1);
 
       resolve!();
 
-      await firstResetData;
+      await firstReset;
     });
   });
 

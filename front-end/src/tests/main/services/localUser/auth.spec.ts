@@ -5,14 +5,20 @@ import prisma from '@main/db/__mocks__/prisma';
 import { randomUUID } from 'crypto';
 
 import * as auth from '@main/services/localUser/auth';
-import { changeDecryptionPassword } from '@main/services/localUser/keyPairs';
+import { changeDecryptionPassword } from '@main/services/localUser';
 import { dualCompareHash, hash } from '@main/utils/crypto';
 
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
-vi.mock('@main/db/prisma');
 vi.mock('@main/utils/crypto');
-vi.mock('@main/services/localUser/keyPairs');
+
+vi.mock('@main/services/localUser', () => ({
+  changeDecryptionPassword: vi.fn(),
+}));
+
+vi.mock('@main/db/prisma', () => ({
+  getPrismaClient: () => prisma,
+}));
 
 describe('Services Local User Auth', () => {
   beforeEach(() => {

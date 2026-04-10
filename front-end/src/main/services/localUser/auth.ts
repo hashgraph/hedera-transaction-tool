@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 import { getPrismaClient } from '@main/db/prisma';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 
-import { changeDecryptionPassword } from './keyPairs';
+import { changeDecryptionPassword } from '@main/services/localUser';
 
 export const register = async (email: string, password: string) => {
   const prisma = getPrismaClient();
