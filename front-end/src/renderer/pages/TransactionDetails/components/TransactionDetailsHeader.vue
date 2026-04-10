@@ -107,7 +107,7 @@ const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 const toastManager = ToastManager.inject();
 
 /* State */
-const visibleButtons = ref<ActionButton[]>([sign, exportName]);
+const visibleButtons = ref<ActionButton[]>([]);
 const isTransactionVersionMismatch = ref(false);
 const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -237,6 +237,7 @@ watch(
         toastManager.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
     );
   },
+  { immediate: true }
 );
 
 /* Functions */
