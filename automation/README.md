@@ -2,13 +2,13 @@
 
 This folder contains automated test tooling for Hedera Transaction Tool:
 
-- Playwright functional end-to-end tests (`tests/*.test.ts`)
+- Playwright functional end-to-end tests (`tests/**/*.test.ts`)
 - Playwright UI performance tests (`tests/ui-performance`)
 - k6 API/load test scripts (`k6/`)
 
 ## Prerequisites
 
-- Node.js `20.17.0`
+- Node.js `22.12.0`
 - `pnpm`
 - One of:
   - a built Hedera Transaction Tool executable (launch mode), or

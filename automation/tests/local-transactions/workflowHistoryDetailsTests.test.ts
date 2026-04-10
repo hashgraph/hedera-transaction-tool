@@ -334,7 +334,7 @@ test.describe('Workflow history/detail tests @local-transactions', () => {
     expect(await item1.innerText()).toBe('History');
     expect(await item2.innerText()).toBe('Account Create Transaction');
 
-    await(item1.click())
+    await item1.click();
     const url = window.url();
     expect(url).toContain('transactions?tab=History');
   });

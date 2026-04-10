@@ -361,7 +361,7 @@ test.describe('Transaction draft tests @local-transactions', () => {
     await transactionPage.clickOnSaveGotoSettings();
     await settingsPage.verifySettingsElements();
 
-    // Go back to Transactions / Drafs
+    // Go back to Transactions / Drafts
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.clickOnDraftsMenuButton();
 
