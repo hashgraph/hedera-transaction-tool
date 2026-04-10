@@ -102,7 +102,7 @@ onBeforeMount(async () => {
 }
 
 .dropdown-toggle {
-  min-width: 42px;
+  min-width: 32px;
 }
 
 .dropdown-toggle-split {
@@ -111,7 +111,7 @@ onBeforeMount(async () => {
 
 .main-button {
   border-right: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 125px;
+  min-width: 116px;
 }
 
 .option-label {

@@ -409,35 +409,28 @@ async function fetchGroup(id: string | number) {
 
           <div class="flex-centered gap-4">
             <NextTransactionCursor />
-            <Transition mode="out-in" name="fade">
-              <template v-if="visibleButtons.length > 0">
-                <div>
-                  <AppButton
-                    :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-                    :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                    :disabled="Boolean(loadingStates[visibleButtons[0]])"
-                    :loading="Boolean(loadingStates[visibleButtons[0]])"
-                    :loading-text="loadingStates[visibleButtons[0]] || ''"
-                    type="submit"
-                    >{{ visibleButtons[0] }}
-                  </AppButton>
-                </div>
-              </template>
-            </Transition>
+            <div>
+              <AppButton
+                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                :disabled="Boolean(loadingStates[visibleButtons[0]])"
+                :loading="Boolean(loadingStates[visibleButtons[0]])"
+                :loading-text="loadingStates[visibleButtons[0]] || ''"
+                type="submit"
+                class="extra-width"
+                >{{ visibleButtons[0] }}
+              </AppButton>
+            </div>
 
-            <Transition mode="out-in" name="fade">
-              <template v-if="dropDownItems.length > 0">
-                <div>
-                  <AppDropDown
-                    :color="'secondary'"
-                    :items="dropDownItems"
-                    compact
-                    data-testid="button-more-dropdown-lg"
-                    @select="handleDropDownItem($event as ActionButton)"
-                  />
-                </div>
-              </template>
-            </Transition>
+            <div>
+              <AppDropDown
+                :color="'secondary'"
+                :items="dropDownItems"
+                compact
+                data-testid="button-more-dropdown-lg"
+                @select="handleDropDownItem($event as ActionButton)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -523,3 +516,8 @@ async function fetchGroup(id: string | number) {
     </div>
   </form>
 </template>
+<style lang="scss" scoped>
+.extra-width {
+  min-width: 166px;
+}
+</style>
