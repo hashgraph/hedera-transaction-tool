@@ -52,7 +52,7 @@
     "electron-updater": "6.8.3",
     "jszip": "3.10.1",
     "jwt-decode": "4.0.0",
-    "msgpackr": "1.11.8",
+    "msgpackr": "1.11.9",
     "node-forge": "1.4.0",
     "p-limit": "7.3.0",
     "pinia": "2.3.1",
