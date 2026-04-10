@@ -107,6 +107,7 @@ const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
 const toastManager = ToastManager.inject();
 
 /* State */
+const visibleButtons = ref<ActionButton[]>([sign, exportName]);
 const isTransactionVersionMismatch = ref(false);
 const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -114,9 +115,6 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
   [approve]: null,
   [sign]: null,
 });
-
-const publicKeysRequiredToSign = ref<string[] | null>(null);
-const shouldApprove = ref<boolean>(false);
 
 const signStarted = ref(false);
 const goNextAfterSign = ref(false);
@@ -131,84 +129,6 @@ const remindSignersStarted = ref(false);
 /* Computed */
 const txType = computed(() => {
   return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
-});
-
-const creator = computed(() => {
-  return props.organizationTransaction
-    ? contacts.contacts.find(contact =>
-        contact.userKeys.some(k => k.id === props.organizationTransaction?.creatorKeyId),
-      )
-    : null;
-});
-
-const isCreator = computed(() => {
-  if (!creator.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-
-  return creator.value.user.id === user.selectedOrganization.userId;
-});
-
-const transactionIsInProgress = computed(() =>
-  isInProgressStatus(props.organizationTransaction?.status),
-);
-
-const canCancel = computed(() => {
-  return isCreator.value && transactionIsInProgress.value;
-});
-
-const canSign = computed(() => {
-  if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-  if (!isSignableStatus(props.organizationTransaction.status)) return false;
-
-  if (isTransactionVersionMismatch.value) {
-    toastManager.error('Transaction version mismatch. Cannot sign.');
-    return false;
-  }
-
-  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
-
-  return userShouldSign;
-});
-
-const canApprove = computed(() => {
-  const status = props.organizationTransaction?.status;
-
-  return FEATURE_APPROVERS_ENABLED && shouldApprove.value && isApprovableStatus(status);
-});
-
-const canSchedule = computed(() => {
-  const status = props.organizationTransaction?.status;
-  const isManual = props.organizationTransaction?.isManual;
-
-  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
-});
-
-const canRemind = computed(() => {
-  const status = props.organizationTransaction?.status;
-
-  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
-});
-
-const canArchive = computed(() => {
-  const isManual = props.organizationTransaction?.isManual;
-
-  return isManual && isCreator.value && transactionIsInProgress.value;
-});
-
-const visibleButtons = computed(() => {
-  const buttons: ActionButton[] = [];
-
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  canApprove.value && buttons.push(reject, approve);
-  canSign.value && !canApprove.value && buttons.push(sign);
-  canSchedule.value && buttons.push(schedule);
-  canCancel.value && buttons.push(cancel);
-  canRemind.value && buttons.push(remindSignersLabel);
-  canArchive.value && buttons.push(archive);
-  buttons.push(exportName);
-
-  return buttons;
 });
 
 const dropDownItems = computed(() =>
@@ -284,14 +204,9 @@ watch(
   async transaction => {
     assertIsLoggedInOrganization(user.selectedOrganization);
 
-    isRefreshing.value = true;
+    if (!transaction) return;
 
-    if (!transaction) {
-      publicKeysRequiredToSign.value = null;
-      shouldApprove.value = false;
-      isRefreshing.value = false;
-      return;
-    }
+    isRefreshing.value = true;
 
     const approvePromise: Promise<boolean> = FEATURE_APPROVERS_ENABLED
       ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
@@ -310,9 +225,10 @@ watch(
       approvePromise,
     ]);
 
-    results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
-    results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
+    const publicKeysRequiredToSign = results[0].status === 'fulfilled' ? results[0].value : [];
+    const shouldApprove = results[1].status === 'fulfilled' ? results[1].value : false;
 
+    visibleButtons.value = computeVisibleButtons(publicKeysRequiredToSign, shouldApprove);
     isRefreshing.value = false;
 
     results.forEach(
@@ -322,6 +238,45 @@ watch(
     );
   },
 );
+
+/* Functions */
+const computeVisibleButtons = (publicKeysRequiredToSign: string[], shouldApprove: boolean) => {
+  const buttons: ActionButton[] = [];
+
+  if (props.organizationTransaction && isLoggedInOrganization(user.selectedOrganization)) {
+    const status = props.organizationTransaction.status;
+    const isManual = props.organizationTransaction.isManual;
+    const creatorKeyId = props.organizationTransaction.creatorKeyId;
+    const creator = contacts.contacts.find(contact =>
+      contact.userKeys.some(k => k.id === creatorKeyId),
+    );
+    const isCreator = creator?.user.id === user.selectedOrganization.userId;
+    const transactionIsInProgress = isInProgressStatus(props.organizationTransaction?.status);
+
+    const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
+    const canSign =
+      isSignableStatus(status) &&
+      publicKeysRequiredToSign.length > 0 &&
+      !isTransactionVersionMismatch.value;
+    const canSchedule = status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator;
+    const canCancel = isCreator && transactionIsInProgress;
+    const canRemind = status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator;
+    const canArchive = isManual && isCreator && transactionIsInProgress;
+
+    /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
+    canApprove && buttons.push(reject, approve);
+    canSign && !canApprove && buttons.push(sign);
+    canSchedule && buttons.push(schedule);
+    canCancel && buttons.push(cancel);
+    canRemind && buttons.push(remindSignersLabel);
+    canArchive && buttons.push(archive);
+    buttons.push(exportName);
+  } else {
+    // leaves buttons empty
+  }
+
+  return buttons;
+};
 </script>
 <template>
   <form @submit.prevent="handleSubmit">
@@ -342,42 +297,36 @@ watch(
 
       <div class="flex-centered gap-4">
         <NextTransactionCursor />
-        <Transition mode="out-in" name="fade">
-          <template v-if="visibleButtons.length > 0">
-            <div>
-              <SplitSignButtonDropdown
-                v-if="visibleButtons[0] === sign"
-                :loading="Boolean(loadingStates[sign])"
-                :loading-text="loadingStates[sign] || ''"
-              />
-              <AppButton
-                v-else
-                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
-                :loading="Boolean(loadingStates[visibleButtons[0]])"
-                :loading-text="loadingStates[visibleButtons[0]] || ''"
-                type="submit"
-                >{{ visibleButtons[0] }}
-              </AppButton>
-            </div>
-          </template>
-        </Transition>
+        <div>
+          <SplitSignButtonDropdown
+            v-if="visibleButtons[0] === sign"
+            :disabled="isRefreshing"
+            :loading="Boolean(loadingStates[sign])"
+            :loading-text="loadingStates[sign] || ''"
+          />
+          <AppButton
+            v-else
+            :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+            :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+            :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+            :loading="Boolean(loadingStates[visibleButtons[0]])"
+            :loading-text="loadingStates[visibleButtons[0]] || ''"
+            class="extra-width"
+            type="submit"
+            >{{ visibleButtons[0] }}
+          </AppButton>
+        </div>
 
-        <Transition mode="out-in" name="fade">
-          <template v-if="dropDownItems.length > 0">
-            <div>
-              <AppDropDown
-                :color="'secondary'"
-                :disabled="isRefreshing"
-                :items="dropDownItems"
-                compact
-                data-testid="button-more-dropdown-lg"
-                @select="handleAction($event as ActionButton)"
-              />
-            </div>
-          </template>
-        </Transition>
+        <div>
+          <AppDropDown
+            :color="'secondary'"
+            :disabled="isRefreshing"
+            :items="dropDownItems"
+            compact
+            data-testid="button-more-dropdown-lg"
+            @select="handleAction($event as ActionButton)"
+          />
+        </div>
       </div>
     </div>
   </form>
@@ -421,3 +370,8 @@ watch(
     :transaction="props.organizationTransaction"
   />
 </template>
+<style lang="scss" scoped>
+.extra-width {
+  min-width: 152px;
+}
+</style>
