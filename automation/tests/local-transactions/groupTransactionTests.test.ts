@@ -1,21 +1,21 @@
 import { expect, Page, test } from '@playwright/test';
-import { LoginPage } from '../pages/LoginPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { GroupPage } from '../pages/GroupPage.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
-import { setupEnvironmentForTransactions } from '../utils/runtime/environment.js';
-import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { GroupPage } from '../../pages/GroupPage.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { setupEnvironmentForTransactions } from '../../utils/runtime/environment.js';
+import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
 import {
   setupLocalSuiteApp,
   teardownLocalSuiteApp,
-} from './helpers/bootstrap/localSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
-import { prepareGroupTransactionPage } from './helpers/flows/groupTransactionNavigationFlow.js';
+} from '../helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { prepareGroupTransactionPage } from '../helpers/flows/groupTransactionNavigationFlow.js';
 import {
   addAndEditAccountCreateGroupTransaction,
   DEFAULT_GROUP_ACCOUNT_CREATE_DRAFT_VALUES,
-} from './helpers/flows/groupTransactionFlow.js';
-import { GroupTransactionAssertions } from './helpers/assertions/groupTransactionAssertions.js';
+} from '../helpers/flows/groupTransactionFlow.js';
+import { GroupTransactionAssertions } from '../helpers/assertions/groupTransactionAssertions.js';
 
 let app: TransactionToolApp;
 let window: Page;

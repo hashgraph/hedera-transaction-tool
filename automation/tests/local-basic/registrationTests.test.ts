@@ -2,17 +2,17 @@ import { expect, Page, test } from '@playwright/test';
 import {
   generateRandomEmail,
   generateRandomPassword,
-} from '../utils/data/random.js';
-import { closeApp, setupApp } from '../utils/runtime/appSession.js';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
+} from '../../utils/data/random.js';
+import { closeApp, setupApp } from '../../utils/runtime/appSession.js';
+import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
 import {
   activateTestIsolation,
   cleanupIsolation,
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
-} from '../utils/setup/sharedTestEnvironment.js';
+} from '../../utils/setup/sharedTestEnvironment.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'] | undefined;
 let window: Page;

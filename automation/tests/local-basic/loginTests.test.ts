@@ -1,13 +1,13 @@
 import { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
-import { resetAppState, type TransactionToolApp } from '../utils/runtime/appSession.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { createSeededLocalUserSession } from '../utils/seeding/localUserSeeding.js';
+import { resetAppState, type TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
 import {
   setupLocalSuiteApp,
   teardownLocalSuiteApp,
-} from './helpers/bootstrap/localSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+} from '../helpers/bootstrap/localSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
 
 let app: TransactionToolApp;
 let window: Page;

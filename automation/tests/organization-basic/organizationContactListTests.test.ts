@@ -1,11 +1,11 @@
 import { expect, Page, test } from '@playwright/test';
-import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { ContactListPage } from '../pages/ContactListPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { generateRandomEmail } from '../utils/data/random.js';
-import { closeApp, setupApp } from '../utils/runtime/appSession.js';
-import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
-import { signInOrganizationUser } from './helpers/support/organizationAuthSupport.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { ContactListPage } from '../../pages/ContactListPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { generateRandomEmail } from '../../utils/data/random.js';
+import { closeApp, setupApp } from '../../utils/runtime/appSession.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
+import { signInOrganizationUser } from '../helpers/support/organizationAuthSupport.js';
 import {
   activateSuiteIsolation,
   cleanupIsolation,
@@ -14,8 +14,8 @@ import {
   resetLocalStateForSuite,
   resetLocalStateForTeardown,
   type ActivatedTestIsolationContext,
-} from '../utils/setup/sharedTestEnvironment.js';
-import { createSequentialOrganizationNicknameResolver } from './helpers/support/organizationNamingSupport.js';
+} from '../../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 
 let app: Awaited<ReturnType<typeof setupApp>>['app'];
 let window: Page;

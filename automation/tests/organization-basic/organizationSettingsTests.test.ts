@@ -1,18 +1,18 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { SettingsPage } from '../pages/SettingsPage.js';
-import { generateRandomPassword } from '../utils/data/random.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
-import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
+import { RegistrationPage } from '../../pages/RegistrationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { SettingsPage } from '../../pages/SettingsPage.js';
+import { generateRandomPassword } from '../../utils/data/random.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
   setupOrganizationSuiteApp,
   teardownOrganizationSuiteApp,
-} from './helpers/bootstrap/organizationSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
-import { createSequentialOrganizationNicknameResolver } from './helpers/support/organizationNamingSupport.js';
+} from '../helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 
 let app: TransactionToolApp;
 let window: Page;

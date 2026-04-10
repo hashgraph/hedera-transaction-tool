@@ -1,27 +1,22 @@
 import { expect, Page, test } from '@playwright/test';
-import { RegistrationPage } from '../pages/RegistrationPage.js';
-import { TransactionPage } from '../pages/TransactionPage.js';
-import { OrganizationPage, UserDetails } from '../pages/OrganizationPage.js';
-import { LoginPage } from '../pages/LoginPage.js';
-import type { TransactionToolApp } from '../utils/runtime/appSession.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import { calculateTimeout, waitForValidStart } from '../../utils/runtime/timing.js';
+import { disableNotificationsForUsers } from '../../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
-  getPrivateKeyEnv,
-  setupEnvironmentForTransactions,
-} from '../utils/runtime/environment.js';
-import { calculateTimeout, waitForValidStart } from '../utils/runtime/timing.js';
-import { disableNotificationsForUsers } from '../utils/db/databaseQueries.js';
-import { createSeededOrganizationSession } from '../utils/seeding/organizationSeeding.js';
-import {
-  setupNamedOrganizationSuiteApp,
+  setupOrganizationSuiteApp,
   teardownOrganizationSuiteApp,
-} from './helpers/bootstrap/organizationSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../utils/setup/sharedTestEnvironment.js';
+} from '../helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 
 let app: TransactionToolApp;
 let window: Page;
 let globalCredentials = { email: '', password: '' };
 
-let registrationPage: RegistrationPage;
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
@@ -34,20 +29,24 @@ let complexKeyAccountId: string;
 // Total number of users to be used as complex key
 // It should be divisible by 3
 let totalUsers = 57; // 57... divisible by 3...? Well this is not a good start...
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe.skip('Organization Regression tests @organization-advanced', () => {
+  test.slow();
+
   test.beforeAll(async () => {
-    test.slow();
     ({
       app,
       window,
       transactionPage,
       organizationPage,
-      registrationPage,
       loginPage,
       isolationContext,
-      organizationNickname,
-    } = await setupNamedOrganizationSuiteApp(test.info()));
+    } = await setupOrganizationSuiteApp(test.info()));
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -63,26 +62,19 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
 
     await disableNotificationsForUsers(organizationPage.users.map(user => user.email));
 
-    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
-
     // Set complex account for transactions
     await organizationPage.addComplexKeyAccountWithNestedThresholds(totalUsers);
 
     complexKeyAccountId = organizationPage.getComplexAccountId();
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-  });
-
-  test.beforeEach(async () => {
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
   });
 
   test.afterEach(async () => {
-    await organizationPage.logoutFromOrganization();
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // The next beforeEach recreates the full regression fixture from scratch.
+    }
   });
 
   test.afterAll(async () => {
