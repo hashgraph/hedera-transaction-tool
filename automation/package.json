@@ -71,7 +71,7 @@
     "@types/k6": "1.7.0",
     "@types/lodash": "4.17.24",
     "@types/node": "25.3.5",
-    "@types/pg": "8.18.0",
+    "@types/pg": "8.20.0",
     "glob": "13.0.6",
     "ts-loader": "9.5.4",
     "tsx": "4.21.0",
