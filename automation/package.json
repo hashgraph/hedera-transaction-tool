@@ -73,7 +73,7 @@
     "@types/node": "25.3.5",
     "@types/pg": "8.20.0",
     "glob": "13.0.6",
-    "ts-loader": "9.5.4",
+    "ts-loader": "9.5.7",
     "tsx": "4.21.0",
     "typescript": "5.9.3",
     "webpack": "5.105.4",
