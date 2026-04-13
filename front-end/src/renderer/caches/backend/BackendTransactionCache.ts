@@ -34,8 +34,12 @@ export class BackendTransactionCache extends EntityCache<number | string, ITrans
     return await getTransactionById(serverUrl, tid);
   }
 
-  public override async lookup(id: number | string, serverUrl: string): Promise<ITransactionFull> {
-    const p = super.lookup(id, serverUrl);
+  public override async lookup(
+    id: number | string,
+    serverUrl: string,
+    forceLoad = false,
+  ): Promise<ITransactionFull> {
+    const p = super.lookup(id, serverUrl, forceLoad);
     const result = await p;
     if (typeof id === 'number') {
       // We insert an entry with the string key
