@@ -42,7 +42,7 @@ const handleScheduleTransaction = async (): Promise<ActionReport | null> => {
       const transactionId = props.transaction.id;
       await executeTransaction(serverUrl, transactionId);
       toastManager.success('Transaction scheduled successfully');
-        result = null;
+      result = null;
       } else {
       result = makeBugReport('Schedule', 'Cannot schedule: transaction is not available');
     }
