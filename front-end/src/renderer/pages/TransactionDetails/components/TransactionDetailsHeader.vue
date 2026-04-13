@@ -228,7 +228,11 @@ watch(
     const publicKeysRequiredToSign = results[0].status === 'fulfilled' ? results[0].value : [];
     const shouldApprove = results[1].status === 'fulfilled' ? results[1].value : false;
 
-    visibleButtons.value = computeVisibleButtons(publicKeysRequiredToSign, shouldApprove);
+    visibleButtons.value = computeVisibleButtons(
+      transaction,
+      publicKeysRequiredToSign,
+      shouldApprove,
+    );
     isRefreshing.value = false;
 
     results.forEach(
@@ -237,22 +241,26 @@ watch(
         toastManager.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
     );
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 /* Functions */
-const computeVisibleButtons = (publicKeysRequiredToSign: string[], shouldApprove: boolean) => {
+const computeVisibleButtons = (
+  transaction: ITransactionFull,
+  publicKeysRequiredToSign: string[],
+  shouldApprove: boolean,
+) => {
   const buttons: ActionButton[] = [];
 
-  if (props.organizationTransaction && isLoggedInOrganization(user.selectedOrganization)) {
-    const status = props.organizationTransaction.status;
-    const isManual = props.organizationTransaction.isManual;
-    const creatorKeyId = props.organizationTransaction.creatorKeyId;
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const status = transaction.status;
+    const isManual = transaction.isManual;
+    const creatorKeyId = transaction.creatorKeyId;
     const creator = contacts.contacts.find(contact =>
       contact.userKeys.some(k => k.id === creatorKeyId),
     );
     const isCreator = creator?.user.id === user.selectedOrganization.userId;
-    const transactionIsInProgress = isInProgressStatus(props.organizationTransaction?.status);
+    const transactionIsInProgress = isInProgressStatus(transaction.status);
 
     const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
     const canSign =
@@ -318,12 +326,9 @@ const computeVisibleButtons = (publicKeysRequiredToSign: string[], shouldApprove
           </AppButton>
         </div>
         <div v-else>
-          <AppButton
-            color="primary"
-            :disabled="true"
-            class="extra-width"
-            type="submit"
-            >...</AppButton>
+          <AppButton color="primary" :disabled="true" class="extra-width" type="submit"
+            >...</AppButton
+          >
         </div>
 
         <div>
