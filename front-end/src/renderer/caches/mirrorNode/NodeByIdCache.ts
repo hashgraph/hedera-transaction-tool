@@ -11,10 +11,6 @@ export class NodeByIdCache extends EntityCache<number, INodeInfoParsed | null> {
   // Public
   //
 
-  public constructor() {
-    super(3600_000); // node info change infrequently so we keep them long time
-  }
-
   public static provide(): void {
     provide(NodeByIdCache.injectKey, new NodeByIdCache());
   }

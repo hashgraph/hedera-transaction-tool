@@ -7,7 +7,7 @@ export abstract class EntityCache<K extends string | number, E> {
   //
 
   public constructor(
-    public readonly youngDuration: number = 60000, // ms
+    public readonly youngDuration: number = 10 * 60_000, // ms
   ) {}
 
   public async lookup(key: K, mirrorNodeUrl: string, forceLoad = false): Promise<E> {

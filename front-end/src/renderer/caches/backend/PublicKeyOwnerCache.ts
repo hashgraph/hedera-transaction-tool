@@ -9,10 +9,6 @@ export class PublicKeyOwnerCache extends EntityCache<string, string | null> {
   // Public
   //
 
-  public constructor() {
-    super(3 * 60_000); // Enables to preserve key owners across Sign & Next actions
-  }
-
   public static provide(): void {
     provide(PublicKeyOwnerCache.injectKey, new PublicKeyOwnerCache());
   }

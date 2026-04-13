@@ -11,10 +11,6 @@ export class BackendTransactionCache extends EntityCache<number | string, ITrans
   // Public
   //
 
-  public constructor() {
-    super(30 * 60_000);
-  }
-
   public static provide(): void {
     provide(BackendTransactionCache.injectKey, new BackendTransactionCache());
   }
