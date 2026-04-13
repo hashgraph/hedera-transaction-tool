@@ -34,7 +34,7 @@ const progressText = computed(() =>
 /* Handlers */
 const handleScheduleTransaction = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
+    const serverUrl = user.selectedOrganization.serverUrl;
 
   let result: ActionReport | null;
   try {
@@ -42,8 +42,8 @@ const handleScheduleTransaction = async (): Promise<ActionReport | null> => {
       const transactionId = props.transaction.id;
       await executeTransaction(serverUrl, transactionId);
       toastManager.success('Transaction scheduled successfully');
-      result = null;
-    } else {
+        result = null;
+      } else {
       result = makeBugReport('Schedule', 'Cannot schedule: transaction is not available');
     }
   } finally {

@@ -43,7 +43,7 @@ const handleCancelTransaction = async (): Promise<ActionReport | null> => {
       await cancelTransaction(serverUrl, transactionId);
       result = null;
       toastManager.success('Transaction canceled successfully');
-    } else {
+      } else {
       result = makeBugReport('Cancel', 'Cannot cancel: transaction is not available');
     }
   } finally {

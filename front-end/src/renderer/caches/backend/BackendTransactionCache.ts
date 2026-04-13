@@ -11,6 +11,10 @@ export class BackendTransactionCache extends EntityCache<number | string, ITrans
   // Public
   //
 
+  public constructor() {
+    super(30 * 60_000);
+  }
+
   public static provide(): void {
     provide(BackendTransactionCache.injectKey, new BackendTransactionCache());
   }
@@ -23,6 +27,12 @@ export class BackendTransactionCache extends EntityCache<number | string, ITrans
   public forgetTransaction(transaction: ITransactionFull, serverUrl: string): void {
     this.forget(transaction.id, serverUrl);
     this.forget(transaction.transactionId, serverUrl);
+  }
+
+  public async preload(transactionIds: Array<number | string>, serverUrl: string): Promise<void> {
+    for (const id of transactionIds) {
+      await this.lookup(id, serverUrl);
+    }
   }
 
   //
