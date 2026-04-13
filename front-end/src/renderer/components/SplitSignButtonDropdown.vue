@@ -111,7 +111,7 @@ onBeforeMount(async () => {
 
 .main-button {
   border-right: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 116px;
+  min-width: 120px;
 }
 
 .option-label {
