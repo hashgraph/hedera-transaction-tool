@@ -230,7 +230,7 @@ async function importSignaturesFromV2File(filePath: string) {
     const transactionId = sdkTransaction.transactionId;
     try {
       const transaction = await transactionCache.lookup(
-      transactionId!.toString(),
+        transactionId!.toString(),
         user.selectedOrganization.serverUrl,
       );
       importInputs.push({

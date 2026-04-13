@@ -25,12 +25,6 @@ export class BackendTransactionCache extends EntityCache<number | string, ITrans
     this.forget(transaction.transactionId, serverUrl);
   }
 
-  public async preload(transactionIds: Array<number | string>, serverUrl: string): Promise<void> {
-    for (const id of transactionIds) {
-      await this.lookup(id, serverUrl);
-    }
-  }
-
   //
   // EntityCache
   //
