@@ -108,7 +108,6 @@ const toastManager = ToastManager.inject();
 
 /* State */
 const visibleButtons = ref<ActionButton[]>([]);
-const isTransactionVersionMismatch = ref(false);
 const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
@@ -265,8 +264,7 @@ const computeVisibleButtons = (
     const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
     const canSign =
       isSignableStatus(status) &&
-      publicKeysRequiredToSign.length > 0 &&
-      !isTransactionVersionMismatch.value;
+      publicKeysRequiredToSign.length > 0;
     const canSchedule = status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator;
     const canCancel = isCreator && transactionIsInProgress;
     const canRemind = status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator;
