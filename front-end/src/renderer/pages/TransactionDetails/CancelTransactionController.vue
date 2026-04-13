@@ -8,7 +8,6 @@ import { cancelTransaction } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import {
   type ActionReport,
-  ActionStatus,
   makeBugReport,
 } from '@renderer/components/ActionController/ActionReport';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
@@ -41,18 +40,9 @@ const handleCancelTransaction = async (): Promise<ActionReport | null> => {
   try {
     if (props.transaction !== null) {
       const transactionId = props.transaction.id;
-      const done = await cancelTransaction(serverUrl, transactionId);
-      if (done) {
-        result = null;
-        toastManager.success('Transaction canceled successfully');
-      } else {
-        result = {
-          status: ActionStatus.Warning,
-          title: 'Cancel Transaction',
-          what: 'Failed to cancel transaction',
-          next: 'Check status of transaction',
-        };
-      }
+      await cancelTransaction(serverUrl, transactionId);
+      result = null;
+      toastManager.success('Transaction canceled successfully');
     } else {
       result = makeBugReport('Cancel', 'Cannot cancel: transaction is not available');
     }

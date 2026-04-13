@@ -8,7 +8,6 @@ import { executeTransaction } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import {
   type ActionReport,
-  ActionStatus,
   makeBugReport,
 } from '@renderer/components/ActionController/ActionReport';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
@@ -41,18 +40,9 @@ const handleScheduleTransaction = async (): Promise<ActionReport | null> => {
   try {
     if (props.transaction !== null) {
       const transactionId = props.transaction.id;
-      const done = await executeTransaction(serverUrl, transactionId);
-      if (done) {
-        toastManager.success('Transaction scheduled successfully');
-        result = null;
-      } else {
-        result = {
-          status: ActionStatus.Warning,
-          title: 'Schedule Transaction',
-          what: 'Schedule failed',
-          next: 'Check status of transaction',
-        };
-      }
+      await executeTransaction(serverUrl, transactionId);
+      toastManager.success('Transaction scheduled successfully');
+      result = null;
     } else {
       result = makeBugReport('Schedule', 'Cannot schedule: transaction is not available');
     }
