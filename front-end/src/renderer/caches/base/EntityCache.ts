@@ -28,11 +28,11 @@ export abstract class EntityCache<K extends string | number, E> {
     return result;
   }
 
-  // public forget(key: K, mirrorNodeUrl: string): void {
-  //   const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
-  //   this.records.delete(recordKey);
-  // }
-  //
+  public forget(key: K, mirrorNodeUrl: string): void {
+    const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
+    this.records.delete(recordKey);
+  }
+
   // public clear(): void {
   //   this.records.clear();
   // }

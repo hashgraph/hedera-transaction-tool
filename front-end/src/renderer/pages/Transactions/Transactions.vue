@@ -50,8 +50,9 @@ import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
-import { getTransactionById, importSignatures } from '@renderer/services/organization';
+import { importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 const IMPORT_FORMATS = [
   { name: 'All Tx Tool files', extensions: ['tx2', 'zip'] },
@@ -59,13 +60,16 @@ const IMPORT_FORMATS = [
   { name: 'ZIP (Tx Tool 1.0)', extensions: ['zip'] },
 ];
 
+/* Injected */
+const toastManager = ToastManager.inject();
+const transactionCache = BackendTransactionCache.inject();
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
 const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -225,9 +229,9 @@ async function importSignaturesFromV2File(filePath: string) {
 
     const transactionId = sdkTransaction.transactionId;
     try {
-      const transaction = await getTransactionById(
+      const transaction = await transactionCache.lookup(
+      transactionId!.toString(),
         user.selectedOrganization.serverUrl,
-        transactionId!,
       );
       importInputs.push({
         id: transaction.id,

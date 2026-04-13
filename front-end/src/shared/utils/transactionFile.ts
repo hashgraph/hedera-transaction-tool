@@ -4,7 +4,8 @@ import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
-import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
+import { getTransactionGroupById } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { createLogger } from '@renderer/utils/logger';
@@ -14,6 +15,7 @@ const logger = createLogger('renderer.transactionFile');
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],
   serverUrl: string,
+  transactionCache: BackendTransactionCache,
 ): Promise<ITransaction[]> {
   const result: ITransaction[] = [];
 
@@ -25,7 +27,7 @@ export async function flattenNodeCollection(
       }
     } else {
       if (node.transactionId !== undefined) {
-        const transaction = await getTransactionById(serverUrl, node.transactionId);
+        const transaction = await transactionCache.lookup(node.transactionId, serverUrl);
         result.push(transaction);
       }
     }

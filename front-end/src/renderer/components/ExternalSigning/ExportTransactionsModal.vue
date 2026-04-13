@@ -30,6 +30,7 @@ import { createLogger } from '@renderer/utils/logger';
 import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 const logger = createLogger('renderer.component.exportTransactionsModal');
 
@@ -47,6 +48,7 @@ const toastManager = ToastManager.inject();
 const accountInfoCache = AccountByIdCache.inject();
 const nodeInfoCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const transactionCache = BackendTransactionCache.inject();
 
 /* State */
 const isOnlyExternalSelected = ref(false);
@@ -61,6 +63,7 @@ async function handleExport() {
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
+    transactionCache,
   );
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
 

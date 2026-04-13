@@ -4,7 +4,6 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
-  getErrorMessage,
   getPrivateKey,
   getTransactionBodySignatureWithoutNodeAccountId,
 } from '@renderer/utils';
@@ -14,7 +13,11 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { sendApproverChoice } from '@renderer/services/organization';
 import { Transaction } from '@hiero-ledger/sdk';
 import type { ITransactionFull } from '@shared/interfaces';
-import type { ActionReport } from "@renderer/components/ActionController/ActionReport";
+import {
+  type ActionReport,
+  makeBugReport,
+} from '@renderer/components/ActionController/ActionReport';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -29,6 +32,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 const user = useUserStore();
 
 /* Injected */
+const transactionCache = BackendTransactionCache.inject();
 const toastManager = ToastManager.inject();
 
 /* Computed */
@@ -53,44 +57,55 @@ const confirmText = computed(() =>
 );
 
 /* Handlers */
-const handleApproveTransaction = async (personalPassword: string | null): Promise<ActionReport|null> => {
+const handleApproveTransaction = async (
+  personalPassword: string | null,
+): Promise<ActionReport | null> => {
+  let result: ActionReport | null = null;
+  try {
+    if (props.sdkTransaction instanceof Transaction && props.transaction !== null) {
+      result = await performApprove(props.transaction, props.sdkTransaction, personalPassword);
+    } else {
+      result = makeBugReport('Approve', 'Cannot approve: transaction is not available');
+    }
+  } finally {
+    // 1) we clear transaction cache
+    if (props.transaction && user.selectedOrganization) {
+      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization.serverUrl);
+    }
+    // 2) we run callback (that will get fresh data from cache)
+    await props.callback();
+  }
+
+  return result;
+};
+
+const performApprove = async (
+  transaction: ITransactionFull,
+  sdkTransaction: Transaction,
+  personalPassword: string | null,
+): Promise<ActionReport | null> => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  if (props.sdkTransaction instanceof Transaction && props.transaction !== null) {
-    try {
-      const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
-      const privateKeyRaw = await decryptPrivateKey(
-        user.personal.id,
-        personalPassword,
-        orgKey.publicKey,
-      );
+  const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
+  const privateKeyRaw = await decryptPrivateKey(
+    user.personal.id,
+    personalPassword,
+    orgKey.publicKey,
+  );
 
-      const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
+  const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
 
-      const signature = getTransactionBodySignatureWithoutNodeAccountId(
-        privateKey,
-        props.sdkTransaction,
-      );
+  const signature = getTransactionBodySignatureWithoutNodeAccountId(privateKey, sdkTransaction);
 
-      await sendApproverChoice(
-        user.selectedOrganization.serverUrl,
-        props.transaction.id,
-        orgKey.id,
-        signature,
-        props.approved,
-      );
-      await props.callback();
-      toastManager.success(`Transaction ${props.approved ? 'approved' : 'rejected'} successfully`);
-    } catch (error) {
-      toastManager.error(getErrorMessage(error, `Failed to ${action.value} transaction`));
-    }
-  } else {
-    // Bug
-    toastManager.error(
-      `Unable to ${action.value}: transaction is not available`,
-    );
-  }
+  await sendApproverChoice(
+    user.selectedOrganization.serverUrl,
+    transaction.id,
+    orgKey.id,
+    signature,
+    props.approved,
+  );
+  toastManager.success(`Transaction ${props.approved ? 'approved' : 'rejected'} successfully`);
 
   return null;
 };
