@@ -41,7 +41,7 @@
     "@vuepic/vue-datepicker": "11.0.3",
     "@vueuse/core": "12.8.2",
     "argon2": "0.44.0",
-    "axios": "1.13.6",
+    "axios": "1.15.0",
     "bcrypt": "6.0.0",
     "better-sqlite3": "12.8.0",
     "bignumber.js": "10.0.2",
