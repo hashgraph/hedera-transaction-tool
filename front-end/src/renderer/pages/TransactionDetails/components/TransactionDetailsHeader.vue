@@ -262,9 +262,7 @@ const computeVisibleButtons = (
     const transactionIsInProgress = isInProgressStatus(transaction.status);
 
     const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
-    const canSign =
-      isSignableStatus(status) &&
-      publicKeysRequiredToSign.length > 0;
+    const canSign = isSignableStatus(status) && publicKeysRequiredToSign.length > 0;
     const canSchedule = status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator;
     const canCancel = isCreator && transactionIsInProgress;
     const canRemind = status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator;
@@ -329,7 +327,7 @@ const computeVisibleButtons = (
           >
         </div>
 
-        <div>
+        <div v-if="dropDownItems.length > 0">
           <AppDropDown
             :color="'secondary'"
             :disabled="isRefreshing"
