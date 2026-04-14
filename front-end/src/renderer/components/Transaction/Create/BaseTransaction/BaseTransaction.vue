@@ -192,6 +192,7 @@ const handleCreate = async () => {
     processable.payerId = payerData.accountId.value;
     processable.baseValidStart = data.validStart;
     processable.maxTransactionFee = data.maxTransactionFee as Hbar;
+    processable.description = description.value;
   }
 
   await withLoader(
