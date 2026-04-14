@@ -202,20 +202,8 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
   };
 });
 
-vi.mock('@renderer/caches/mirrorNode/AccountByIdCache.ts', () => ({
-  AccountByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/mirrorNode/NodeByIdCache.ts', () => ({
-  NodeByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/backend/PublicKeyOwnerCache.ts', () => ({
-  PublicKeyOwnerCache: {
+vi.mock('@renderer/caches/AppCache.ts', () => ({
+  AppCache: {
     inject: vi.fn(() => ({})),
   },
 }));
