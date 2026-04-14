@@ -59,6 +59,7 @@ export class CustomRequest extends BaseRequest {
   payerId?: string;
   baseValidStart?: Date;
   maxTransactionFee?: Hbar;
+  description: string;
 
   constructor(opts: {
     submitManually: boolean;
@@ -67,6 +68,7 @@ export class CustomRequest extends BaseRequest {
     payerId?: string;
     baseValidStart?: Date;
     maxTransactionFee?: Hbar;
+    description?: string;
   }) {
     super(opts.submitManually, opts.reminderMillisecondsBefore);
 
@@ -75,6 +77,7 @@ export class CustomRequest extends BaseRequest {
     this.payerId = opts.payerId;
     this.baseValidStart = opts.baseValidStart;
     this.maxTransactionFee = opts.maxTransactionFee;
+    this.description = opts.description ?? '';
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -99,6 +102,7 @@ export class MultipleAccountUpdateRequest extends CustomRequest {
     accountIsPayer: boolean;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    description?: string;
   }) {
     super({ ...opts, displayName: 'Multiple Accounts Update' });
 

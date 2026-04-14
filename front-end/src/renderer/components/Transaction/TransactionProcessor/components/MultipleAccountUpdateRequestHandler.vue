@@ -101,7 +101,7 @@ function setNext(next: Handler) {
 
 async function handle(req: Processable) {
   if (!(req instanceof MultipleAccountUpdateRequest)) {
-    await nextHandler.value?.handle(req);
+    nextHandler.value?.handle(req);
     return;
   }
 
@@ -113,7 +113,7 @@ async function handle(req: Processable) {
   groupItems.value = createGroupItems();
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    await processOrganization(groupItems.value);
+    await processOrganization(groupItems.value, req.description);
   } else {
     await processPersonal();
   }
@@ -224,10 +224,10 @@ function createGroupItem(accountId: string, seq: number): GroupItem {
   };
 }
 
-async function processOrganization(items: GroupItem[]) {
+async function processOrganization(items: GroupItem[], description: string) {
   try {
     emit('loading:begin');
-    await signGroupItems(items);
+    await signGroupItems(items, description);
   } finally {
     emit('loading:end');
   }
@@ -257,9 +257,9 @@ async function processPersonal() {
   await startChain(transactionRequest);
 }
 
-async function signGroupItems(groupItems: GroupItem[]) {
+async function signGroupItems(groupItems: GroupItem[], description: string) {
   assertUserLoggedIn(user.personal);
-  const personalPassword = getPassword(signGroupItems.bind(null, groupItems), {
+  const personalPassword = getPassword(signGroupItems.bind(null, groupItems, description), {
     subHeading: 'Enter your application password to sign as a creator',
   });
   if (passwordModalOpened(personalPassword)) return;
@@ -272,10 +272,16 @@ async function signGroupItems(groupItems: GroupItem[]) {
     groupItems,
     groupItems.map(g => uint8ToHex(privateKey.sign(g.transactionBytes))),
     keyToSignWith,
+    description,
   );
 }
 
-async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSignWith: string) {
+async function submitGroup(
+  groupItems: GroupItem[],
+  signature: string[],
+  keyToSignWith: string,
+  description: string,
+) {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   const apiGroupItems: ApiGroupItem[] = [];
@@ -298,7 +304,7 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
   try {
     const { id } = await submitTransactionGroup(
       user.selectedOrganization.serverUrl,
-      'Automatically created group for multiple accounts update',
+      description || 'Automatically created group for multiple accounts update',
       false,
       true,
       apiGroupItems,
