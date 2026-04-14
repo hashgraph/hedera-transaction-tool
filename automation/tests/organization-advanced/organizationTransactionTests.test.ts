@@ -345,7 +345,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     expect(isStageFourCompleted).toBe(true);
   });
 
-  test.skip('Verify next button is visible when user has multiple txs to sign', async () => {
+  test('Verify next button is visible when user has multiple txs to sign', async () => {
     await organizationPage.createAccount(600, 0, false);
     const { txId } = await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
@@ -354,19 +354,49 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
 
-  test.skip('Verify user is redirected to the next transaction after clicking the next button', async () => {
+  test('Verify user is redirected to the next transaction after clicking the next button', async () => {
     await organizationPage.createAccount(600, 0, false);
-    const { txId } = await organizationPage.createAccount(600, 0, false);
+    await organizationPage.createAccount(600, 0, false);
     await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignDetailsButtonByTransactionId(txId ?? '');
+    await organizationPage.clickOnReadyToSignTab();
+
+    let readyToSignCount = 0;
+    await expect
+      .poll(
+        async () => {
+          // Re-select the tab each poll to avoid stale table states during async cache updates.
+          await organizationPage.clickOnReadyToSignTab();
+          readyToSignCount = await organizationPage.countElements(
+            organizationPage.transactionNodeTransactionIdIndexSelector,
+          );
+          return readyToSignCount;
+        },
+        {
+          timeout: organizationPage.getVeryLongTimeout() * 2,
+          intervals: [organizationPage.getShortTimeout() * 2],
+        },
+      )
+      .toBeGreaterThan(1);
+
+    // Pick a details row where "Next" is enabled (ordering can vary by validStart sorting).
+    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
+    let hasEnabledNext = await organizationPage.isNextTransactionButtonEnabled();
+    if (!hasEnabledNext && readyToSignCount > 1) {
+      await transactionPage.clickOnBackButton();
+      await organizationPage.clickOnReadyToSignDetailsButtonByIndex(1);
+      hasEnabledNext = await organizationPage.isNextTransactionButtonEnabled();
+    }
+
+    expect(hasEnabledNext).toBe(true);
     await organizationPage.clickOnSignTransactionButton();
+    const currentTxIdBeforeNext = await organizationPage.getTransactionDetailsId();
     await organizationPage.clickOnNextTransactionButton();
     const currentTxId = await organizationPage.getTransactionDetailsId();
-    expect(currentTxId).not.toBe(txId);
+    expect(currentTxId).not.toBe(currentTxIdBeforeNext);
     expect(await organizationPage.isSignTransactionButtonVisible()).toBe(true);
   });
 
-  test.skip('Verify next button is visible when user has multiple txs in history', async () => {
+  test('Verify next button is visible when user has multiple txs in history', async () => {
     const { txId } = await organizationPage.createAccount(1, 0, true);
     await organizationPage.closeDraftModal();
     const { validStart } = await organizationPage.createAccount(3, 0, true);

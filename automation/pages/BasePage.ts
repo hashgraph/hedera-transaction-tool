@@ -12,6 +12,22 @@ export class BasePage {
 
   constructor(protected readonly window: Page) {}
 
+  getShortTimeout(): number {
+    return this.SHORT_TIMEOUT;
+  }
+
+  getLongTimeout(): number {
+    return this.LONG_TIMEOUT;
+  }
+
+  getDefaultTimeout(): number {
+    return this.DEFAULT_TIMEOUT;
+  }
+
+  getVeryLongTimeout(): number {
+    return this.VERY_LONG_TIMEOUT;
+  }
+
   private shouldCaptureStepScreenshots(): boolean {
     return process.env.PLAYWRIGHT_STEP_SCREENSHOTS === 'true';
   }

@@ -352,16 +352,13 @@ export class GroupPage extends BasePage {
           // Wait for 1 second to allow details to load
           // await new Promise(resolve => setTimeout(resolve, 5000));
 
-          // Check if there's a "Next" button to move to the next transaction
-          // the main issue is the 'next' button is not visible as long as there is a 'previous' button. I think these really should be done differently anyway
-          // not really sure how this ever worked
-          const hasNext = await this.isElementVisible(
-            this.organizationPage.nextTransactionButtonSelector,
-          );
+          // Next cursor can be visible but disabled at collection boundaries.
+          const hasEnabledNext = (await this.organizationPage.isNextTransactionButtonVisible()) &&
+            (await this.organizationPage.isNextTransactionButtonEnabled());
 
-          if (hasNext) {
+          if (hasEnabledNext) {
             console.log(`User ${i} signed a transaction, moving to the next one.`);
-            await this.click(this.organizationPage.nextTransactionButtonSelector);
+            await this.organizationPage.clickOnNextTransactionButton();
           } else {
             console.log(`No more transactions to sign for user ${i}.`);
             break;
