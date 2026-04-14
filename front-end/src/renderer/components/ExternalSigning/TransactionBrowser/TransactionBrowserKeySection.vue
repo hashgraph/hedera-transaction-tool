@@ -3,16 +3,10 @@ import type { ITransactionBrowserItem } from '@renderer/components/ExternalSigni
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import { computed, ref, watch, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
-import {
-  computeSignatureKey,
-  hexToUint8Array,
-  type SignatureAudit,
-} from '@renderer/utils';
+import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.component.transactionBrowserKeySection');
@@ -27,9 +21,7 @@ const user = useUserStore();
 const network = useNetwork();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
@@ -53,14 +45,7 @@ const signersPublicKeys = computed(() => {
 const updateSignatureKeyObject = async () => {
   if (transaction.value !== null) {
     try {
-      signatureKeyObject.value = await computeSignatureKey(
-        transaction.value,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
-        user.selectedOrganization,
-      );
+      signatureKeyObject.value = await appCache.computeSignatureKey(transaction.value, user.selectedOrganization, network.mirrorNodeBaseURL)
     } catch (error) {
       logger.error('Failed to compute signature key', { error });
       signatureKeyObject.value = null;

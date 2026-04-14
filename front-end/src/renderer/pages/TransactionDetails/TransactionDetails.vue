@@ -7,11 +7,15 @@ import {
   TransactionStatus,
 } from '@shared/interfaces';
 
-import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
+import { computed, onBeforeMount, ref, type Ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import {
+  FEATURE_APPROVERS_ENABLED,
+  FEATURE_EXTERNAL_BADGE_ENABLED,
+  TRANSACTION_ACTION,
+} from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -25,9 +29,12 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
-import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
-  computeSignatureKey,
+  getTransactionPayerId,
+  getTransactionType,
+  getTransactionValidStart,
+} from '@renderer/utils/sdk/transactions';
+import {
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
   getErrorMessage,
@@ -36,6 +43,7 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   openTransactionInHashscan,
+  type SignatureAudit,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -48,15 +56,12 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -71,7 +76,10 @@ const notifications = useNotificationsStore();
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransaction(); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchTransaction();
+    return;
+  } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
@@ -81,8 +89,10 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
 
   const currentId = Number(formattedId.value);
   const currentGroupId = orgTransaction.value?.groupItem?.groupId;
-  if (parsed.transactionIds.includes(currentId) ||
-      (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
+  if (
+    parsed.transactionIds.includes(currentId) ||
+    (currentGroupId && parsed.groupIds.includes(currentGroupId))
+  ) {
     await fetchTransaction();
   }
 });
@@ -90,16 +100,13 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const transactionCache = BackendTransactionCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject: Ref<Awaited<ReturnType<typeof computeSignatureKey>> | null> = ref(null);
+const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -124,7 +131,11 @@ const creator = computed(() => {
 });
 
 const showExternal = computed(() => {
-  return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+  return (
+    FEATURE_EXTERNAL_BADGE_ENABLED &&
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.admin
+  );
 });
 
 const transactionIsInProgress = computed(
@@ -162,7 +173,7 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await transactionCache.lookup(
+      orgTransaction.value = await appCache.backendTransaction.lookup(
         Number(id),
         user.selectedOrganization?.serverUrl || '',
       );
@@ -223,13 +234,10 @@ async function fetchTransaction() {
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
     try {
-      signatureKeyObject.value = await computeSignatureKey(
+      signatureKeyObject.value = await appCache.computeSignatureKey(
         sdkTransaction.value,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
         user.selectedOrganization,
+        network.mirrorNodeBaseURL,
       );
     } catch (error) {
       signatureKeyObject.value = null;
@@ -351,7 +359,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Approvers -->
               <div
-                v-if="FEATURE_APPROVERS_ENABLED && orgTransaction?.approvers && orgTransaction.approvers.length > 0"
+                v-if="
+                  FEATURE_APPROVERS_ENABLED &&
+                  orgTransaction?.approvers &&
+                  orgTransaction.approvers.length > 0
+                "
                 class="mt-5"
               >
                 <h4 class="text-title text-bold">Approvers</h4>
