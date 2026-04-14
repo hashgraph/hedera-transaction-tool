@@ -22,7 +22,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
-import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
+import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
@@ -56,6 +56,7 @@ import ExpiringBadge from '@renderer/pages/TransactionDetails/components/Expirin
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -92,6 +93,7 @@ const route = useRoute();
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const transactionCache = BackendTransactionCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -160,9 +162,9 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await getTransactionById(
-        user.selectedOrganization?.serverUrl || '',
+      orgTransaction.value = await transactionCache.lookup(
         Number(id),
+        user.selectedOrganization?.serverUrl || '',
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 

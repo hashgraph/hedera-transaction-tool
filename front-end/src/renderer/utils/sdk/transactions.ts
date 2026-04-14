@@ -19,7 +19,7 @@ import {
   TransferTransaction,
 } from '@hiero-ledger/sdk';
 import { TransactionTypeName } from '@shared/interfaces';
-import { getTransactionById } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 import { hexToUint8Array } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
 
@@ -231,40 +231,6 @@ export const getDisplayTransactionType = (
   return getTransactionType(sdkTransaction, short, removeTransaction);
 };
 
-// LRU cache to avoid re-fetching freeze types (keyed by serverUrl + transactionId)
-const FREEZE_TYPE_CACHE_MAX_SIZE = 250;
-const freezeTypeCache = new Map<string, FreezeType | null>();
-
-const makeFreezeTypeCacheKey = (serverUrl: string, transactionId: number): string => {
-  return `${transactionId}/${serverUrl}`;
-};
-
-const setFreezeTypeCache = (key: string, value: FreezeType | null): void => {
-  // Delete and re-add to move to end (most recently used)
-  if (freezeTypeCache.has(key)) {
-    freezeTypeCache.delete(key);
-  }
-  // Evict oldest entry if at capacity
-  if (freezeTypeCache.size >= FREEZE_TYPE_CACHE_MAX_SIZE) {
-    const oldestKey = freezeTypeCache.keys().next().value;
-    if (oldestKey !== undefined) {
-      freezeTypeCache.delete(oldestKey);
-    }
-  }
-  freezeTypeCache.set(key, value);
-};
-
-const getFreezeTypeFromCache = (key: string): FreezeType | null | undefined => {
-  if (!freezeTypeCache.has(key)) {
-    return undefined;
-  }
-  // Move to end (mark as recently used)
-  const value = freezeTypeCache.get(key)!;
-  freezeTypeCache.delete(key);
-  freezeTypeCache.set(key, value);
-  return value;
-};
-
 /**
  * Fetches the freeze type for a transaction from the backend.
  * Uses caching to avoid redundant API calls.
@@ -276,26 +242,21 @@ const getFreezeTypeFromCache = (key: string): FreezeType | null | undefined => {
 export const getFreezeTypeForTransaction = async (
   serverUrl: string,
   transactionId: number,
+  transactionCache: BackendTransactionCache
 ): Promise<FreezeType | null> => {
-  const cacheKey = makeFreezeTypeCacheKey(serverUrl, transactionId);
-  const cached = getFreezeTypeFromCache(cacheKey);
-  if (cached !== undefined) {
-    return cached;
-  }
+
 
   try {
-    const txFull = await getTransactionById(serverUrl, transactionId);
+    const txFull = await transactionCache.lookup(transactionId, serverUrl);
     const bytes = hexToUint8Array(txFull.transactionBytes);
     const sdkTx = Transaction.fromBytes(bytes);
 
     if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
-      setFreezeTypeCache(cacheKey, sdkTx.freezeType);
       return sdkTx.freezeType;
     }
   } catch (error) {
     logger.error('Failed to fetch freeze type', { error });
   }
 
-  setFreezeTypeCache(cacheKey, null);
   return null;
 };

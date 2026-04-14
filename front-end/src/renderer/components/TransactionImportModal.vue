@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { computed, ref, watch } from 'vue';
-import { TransactionId } from '@hiero-ledger/sdk';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -15,7 +14,8 @@ import {
   type V1ImportFilterResult,
 } from '@shared/interfaces';
 import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
-import { getTransactionById, importSignatures } from '@renderer/services/organization';
+import { importSignatures } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
@@ -28,6 +28,10 @@ const props = defineProps<{
   filterResult: V1ImportFilterResult;
 }>();
 
+/* Injected */
+const toastManager = ToastManager.inject();
+const transactionCache = BackendTransactionCache.inject();
+
 /* Model */
 const show = defineModel<boolean>('show', { required: true });
 
@@ -36,7 +40,6 @@ const selectedCandidates = ref<V1ImportCandidate[]>([]);
 const transactionMap = ref<Map<string, ITransactionFull>>(new Map()); // transactionId -> ITransactionFull
 const importing = ref(false);
 const user = useUserStore();
-const toastManager = ToastManager.inject()
 
 /* Computed */
 const isAllSelected = computed(() => {
@@ -184,8 +187,7 @@ const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
     for (const candidate of newValue) {
       if (transactionMap.value.get(candidate.transactionId) === undefined) {
         try {
-          const transactionId = TransactionId.fromString(candidate.transactionId);
-          const t = await getTransactionById(serverUrl, transactionId);
+          const t = await transactionCache.lookup(candidate.transactionId, serverUrl);
           transactionMap.value.set(candidate.transactionId, t);
         } catch (error) {
           logger.error('Failed to fetch transaction by id', { error });

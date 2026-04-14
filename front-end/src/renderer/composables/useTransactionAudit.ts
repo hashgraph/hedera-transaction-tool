@@ -7,7 +7,7 @@ import {
   isLoggedInOrganization,
   type SignatureAudit,
 } from '@renderer/utils';
-import { getTransactionById } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 import type { ITransactionFull } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
@@ -33,13 +33,16 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
   const accountByIdCache = AccountByIdCache.inject();
   const nodeByIdCache = NodeByIdCache.inject();
   const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+  const transactionCache = BackendTransactionCache.inject();
 
   /* Computed */
   const transaction = computed(async () => {
     let result: ITransactionFull | Error | null;
     if (transactionId.value !== null && isLoggedInOrganization(user.selectedOrganization)) {
       try {
-        result = await getTransactionById(user.selectedOrganization.serverUrl, transactionId.value);
+        result = await transactionCache.lookup(
+          transactionId.value, user.selectedOrganization.serverUrl,
+        );
       } catch {
         result = null;
       }
