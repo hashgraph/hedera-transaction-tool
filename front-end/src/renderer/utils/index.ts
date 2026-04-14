@@ -20,8 +20,7 @@ import {
 } from './userStoreHelpers';
 import { isAccountId } from './validator';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
-import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import type { SignatureItem } from '@renderer/types';
 import { createLogger } from './logger';
@@ -191,9 +190,7 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-se
 
 export async function collectRequiredKeys(
   transactions: ITransaction[],
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
 ): Promise<SignatureItem[]> {
   const user = useUserStore();
   const network = useNetworkStore();
@@ -210,9 +207,7 @@ export async function collectRequiredKeys(
           transaction,
           selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
           selectedOrganization,
         );
 

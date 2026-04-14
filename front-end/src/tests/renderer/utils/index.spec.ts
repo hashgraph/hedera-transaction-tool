@@ -229,8 +229,6 @@ describe('collectRequiredKeys', () => {
     const result = await collectRequiredKeys(
       [{ id: 0, transactionBytes: '00' } as any, { id: 1, transactionBytes: '00' } as any],
       {} as any,
-      {} as any,
-      {} as any,
     );
     expect(result).toEqual([
       { transactionId: 0, transaction: { mocked: 'tx' }, publicKeys: ['pk-1'] },

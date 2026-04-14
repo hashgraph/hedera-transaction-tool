@@ -9,7 +9,6 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
   assertIsLoggedInOrganization,
-  computeSignatureKey,
   generateTransactionExportFileName,
   generateTransactionV2ExportContent,
   hexToUint8Array,
@@ -27,10 +26,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hiero-ledger/sdk';
 import { createLogger } from '@renderer/utils/logger';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const logger = createLogger('renderer.component.exportTransactionsModal');
 
@@ -45,10 +41,7 @@ const network = useNetworkStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const accountInfoCache = AccountByIdCache.inject();
-const nodeInfoCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const transactionCache = BackendTransactionCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const isOnlyExternalSelected = ref(false);
@@ -63,7 +56,7 @@ async function handleExport() {
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
-    transactionCache,
+    appCache.backendTransaction,
   );
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
 
@@ -73,13 +66,10 @@ async function handleExport() {
       for (const tx of collectionTransactions) {
         const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
         const mirrorNodeLink = network.getMirrorNodeREST(network.network);
-        const audit = await computeSignatureKey(
+        const audit = await appCache.computeSignatureKey(
           sdkTransaction,
-          mirrorNodeLink,
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
           user.selectedOrganization,
+          mirrorNodeLink,
         );
         if (audit.externalKeys.size > 0) {
           filteredTransactions.push(tx);

@@ -1,13 +1,11 @@
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
-import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { computeSignatureKey, hexToUint8Array, type SignatureAudit } from '@renderer/utils';
+import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import {
   filterAuditByUser,
   filterTransactionSignersByUser,
 } from '@shared/utils/transactionFile.ts';
-import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import type { AppCache } from '@renderer/caches/AppCache';
 
 export class TransactionBrowserEntry {
   public readonly fullySignedByUser: boolean;
@@ -39,23 +37,14 @@ export class TransactionBrowserEntry {
   public static async make(
     item: ITransactionBrowserItem,
     mirrorNetwork: string,
-    accountInfoCache: AccountByIdCache,
-    nodeInfoCache: NodeByIdCache,
-    publicKeyOwnerCache: PublicKeyOwnerCache,
+    appCache: AppCache,
     userKeys: string[],
   ): Promise<TransactionBrowserEntry> {
     let transaction: SDKTransaction | null;
     let signatureAudit: SignatureAudit | null;
     try {
       transaction = SDKTransaction.fromBytes(hexToUint8Array(item.transactionBytes));
-      signatureAudit = await computeSignatureKey(
-        transaction,
-        mirrorNetwork,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
-        null,
-      );
+      signatureAudit = await appCache.computeSignatureKey(transaction, null, mirrorNetwork);
     } catch {
       transaction = null;
       signatureAudit = null;
@@ -66,14 +55,12 @@ export class TransactionBrowserEntry {
   public static async makeFromArray(
     items: ITransactionBrowserItem[],
     mirrorNetwork: string,
-    accountInfoCache: AccountByIdCache,
-    nodeInfoCache: NodeByIdCache,
-    publicKeyOwnerCache: PublicKeyOwnerCache,
+    appCache: AppCache,
     userKeys: string[],
   ): Promise<TransactionBrowserEntry[]> {
     const result: TransactionBrowserEntry[] = [];
     for (const i of items) {
-      result.push(await this.make(i, mirrorNetwork, accountInfoCache, nodeInfoCache, publicKeyOwnerCache, userKeys));
+      result.push(await this.make(i, mirrorNetwork, appCache, userKeys));
     }
     return result;
   }

@@ -10,6 +10,7 @@ import type { SignatureAudit } from './transaction.model';
 import type { ConnectedOrganization, LoggedInOrganization } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { hexToUint8Array } from '@renderer/utils';
+import type { AppCache } from '@renderer/caches/AppCache';
 
 export * from './account-create-transaction.model';
 export * from './account-update-transaction.model';
@@ -50,9 +51,7 @@ export const usersPublicRequiredToSign = async (
   transaction: SDKTransaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
   organization: ConnectedOrganization | null,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
@@ -63,13 +62,10 @@ export const usersPublicRequiredToSign = async (
   /* Transaction signers' public keys */
   const signerPublicKeys = new Set([...transaction._signerPublicKeys]);
 
-  const requiredKeys = await computeSignatureKey(
+  const requiredKeys = await appCache.computeSignatureKey(
     transaction,
-    mirrorNodeLink,
-    accountInfoCache,
-    nodeInfoCache,
-    publicKeyOwnerCache,
     organization,
+    mirrorNodeLink,
   );
 
   const requiredUnsignedKeys = new Set<string>();
@@ -94,9 +90,7 @@ export const usersPublicRequiredToSign = async (
 export const isSignableTransaction = async (
   tx: ITransaction,
   mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
   organization: ConnectedOrganization & LoggedInOrganization,
 ): Promise<boolean> => {
   let result: boolean;
@@ -108,9 +102,7 @@ export const isSignableTransaction = async (
         sdkTransaction,
         organization.userKeys,
         mirrorNodeLink,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
+        appCache,
         organization,
       );
       result = usersPublicKeys.length > 0;
