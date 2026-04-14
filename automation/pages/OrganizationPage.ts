@@ -931,7 +931,7 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSignTransactionButton() {
     // Preferred: explicit data-testid if present.
-    if (await this.isElementVisible(this.signTransactionButtonSelector, null, this.SHORT_TIMEOUT)) {
+    if (await this.isElementVisible(this.signTransactionButtonSelector, null, this.DEFAULT_TIMEOUT)) {
       await this.click(this.signTransactionButtonSelector, 0, this.VERY_LONG_TIMEOUT);
       return;
     }
@@ -941,6 +941,12 @@ export class OrganizationPage extends BasePage {
       await this.click(this.splitSignDropdownToggleSelector, 0, this.LONG_TIMEOUT);
       await this.waitForElementToBeVisible(this.splitSignOptionLabelSelector, this.LONG_TIMEOUT, 0);
       await this.click(this.splitSignOptionLabelSelector, 0, this.LONG_TIMEOUT);
+      await this.waitForElementToHaveText(
+        this.splitSignMainButtonSelector,
+        'Sign',
+        0,
+        this.LONG_TIMEOUT,
+      );
       await this.click(this.splitSignMainButtonSelector, 0, this.LONG_TIMEOUT);
       return;
     }
@@ -1951,7 +1957,25 @@ export class OrganizationPage extends BasePage {
   }
 
   async isNextTransactionButtonEnabled() {
-    return await this.getElement(this.nextTransactionButtonSelector).isEnabled();
+    const isNextTransactionButtonVisible = await this.isElementVisible(
+      this.nextTransactionButtonSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (!isNextTransactionButtonVisible) {
+      return false;
+    }
+
+    try {
+      return !(await this.isDisabled(
+        this.nextTransactionButtonSelector,
+        null,
+        this.SHORT_TIMEOUT,
+      ));
+    } catch {
+      return false;
+    }
   }
 
   async clickOnCancelAddingOrganizationButton() {
