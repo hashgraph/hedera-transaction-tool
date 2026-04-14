@@ -2,7 +2,7 @@ import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import type { AppCache } from '@renderer/caches/AppCache';
-import { flattenKeyList } from '@renderer/services/keyPairService.ts';
+import { flattenKeyList } from '@renderer/services/keyPairService';
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
