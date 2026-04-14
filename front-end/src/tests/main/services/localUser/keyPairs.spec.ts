@@ -19,8 +19,7 @@ import {
   updateNickname,
   updateIndex,
 } from '@main/services/localUser/keyPairs';
-import { getOrganization } from '@main/services/localUser/organizations';
-import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
+import { getOrganization, getCurrentUser } from '@main/services/localUser';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 import { decrypt, encrypt } from '@main/utils/crypto';
@@ -33,8 +32,7 @@ vi.mock('electron', () => ({
     decryptString: vi.fn(),
   },
 }));
-vi.mock('@main/services/localUser/organizations', () => ({ getOrganization: vi.fn() }));
-vi.mock('@main/services/localUser/organizationCredentials', () => ({ getCurrentUser: vi.fn() }));
+vi.mock('@main/services/localUser', () => ({ getOrganization: vi.fn(), getCurrentUser: vi.fn() }));
 vi.mock('@main/services/localUser/claim', () => ({ getUseKeychainClaim: vi.fn() }));
 vi.mock('@main/utils/crypto', () => ({
   encrypt: vi.fn(),

@@ -11,10 +11,6 @@ export class TransactionByIdCache extends EntityCache<string, TransactionByIdRes
   // Public
   //
 
-  public constructor() {
-    super(10 * 3600_000); // transactions are immutable data so we load them one time
-  }
-
   public static provide(): void {
     provide(TransactionByIdCache.injectKey, new TransactionByIdCache());
   }

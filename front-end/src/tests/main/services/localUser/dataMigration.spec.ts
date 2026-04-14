@@ -1,8 +1,46 @@
-import { describe, test, expect, vi, beforeEach } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
+vi.mock('crypto', async () => {
+  const actual = await vi.importActual<typeof import('crypto')>('crypto');
+
+  return {
+    ...actual,
+    createDecipheriv: vi.fn(),
+  };
+});
 import * as crypto from 'crypto';
+import { addAccount } from '@main/services/localUser/accounts';
+import { addClaim } from '@main/services/localUser/claim';
+import { addPublicKey } from '@main/services/localUser/publicKeyMapping';
+import { safeAwait } from '@main/utils/safeAwait';
+
+vi.spyOn(crypto, 'createDecipheriv').mockReturnValue({
+  update: vi.fn(),
+  final: vi.fn(),
+  setAuthTag: vi.fn(),
+} as unknown as crypto.Decipher);
+
+vi.mock('fs', async () => {
+  const actual = await vi.importActual<typeof import('fs')>('fs');
+  return {
+    ...actual,
+    existsSync: vi.fn(),
+    promises: {
+      ...actual.promises,
+      readFile: vi.fn(),
+      readdir: vi.fn(),
+    },
+  };
+});
+
+vi.mock('argon2', () => ({
+  hash: vi.fn(),
+  verify: vi.fn(),
+  argon2id: 2, // or whatever constant your code expects
+}));
+
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import * as path from 'path';
 import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
+import * as fs from 'fs';
 
 import { CommonNetwork } from '@shared/enums';
 import {
@@ -22,21 +60,18 @@ import {
   SALT_LENGTH,
   KEY_LENGTH,
 } from '@main/services/localUser/dataMigration';
-import { addAccount } from '@main/services/localUser/accounts';
-import { addClaim } from '@main/services/localUser/claim';
-import { addPublicKey } from '@main/services/localUser/publicKeyMapping';
-import { safeAwait } from '@main/utils/safeAwait';
 
-vi.mock('fs');
-vi.mock('crypto');
-vi.mock('argon2');
 vi.mock('electron', () => ({
   app: { getPath: vi.fn((key: string) => key) },
 }));
+
 vi.mock('@main/services/localUser/accounts');
 vi.mock('@main/services/localUser/claim');
 vi.mock('@main/services/localUser/publicKeyMapping');
-vi.mock('@main/utils/safeAwait');
+
+vi.mock('@main/utils/safeAwait', () => ({
+  safeAwait: vi.fn(),
+}));
 
 describe('Data Migration', () => {
   beforeEach(() => {

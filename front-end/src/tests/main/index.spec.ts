@@ -344,7 +344,9 @@ describe('Electron entry file - single instance lock not acquired', async () => 
 
 describe('configureAutomationCommandLineSwitches', () => {
   const originalPlaywrightTest = process.env.PLAYWRIGHT_TEST;
+  const originalPlaywrightDisableSingleInstanceLock = process.env.PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK;
   const originalRemoteDebuggingPort = process.env.ELECTRON_REMOTE_DEBUGGING_PORT;
+  const originalPlaywrightUserDataDir = process.env.PLAYWRIGHT_USER_DATA_DIR;
 
   afterEach(() => {
     vi.resetModules();
@@ -355,10 +357,22 @@ describe('configureAutomationCommandLineSwitches', () => {
       process.env.PLAYWRIGHT_TEST = originalPlaywrightTest;
     }
 
+    if (originalPlaywrightDisableSingleInstanceLock === undefined) {
+      delete process.env.PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK;
+    } else {
+      process.env.PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK = originalPlaywrightDisableSingleInstanceLock;
+    }
+
     if (originalRemoteDebuggingPort === undefined) {
       delete process.env.ELECTRON_REMOTE_DEBUGGING_PORT;
     } else {
       process.env.ELECTRON_REMOTE_DEBUGGING_PORT = originalRemoteDebuggingPort;
+    }
+
+    if (originalPlaywrightUserDataDir === undefined) {
+      delete process.env.PLAYWRIGHT_USER_DATA_DIR;
+    } else {
+      process.env.PLAYWRIGHT_USER_DATA_DIR = originalPlaywrightUserDataDir;
     }
   });
 
@@ -411,5 +425,20 @@ describe('configureAutomationCommandLineSwitches', () => {
     expect(freshApp.commandLine.appendSwitch).not.toHaveBeenCalledWith(
       'ignore-certificate-errors',
     );
+  });
+
+  test('Should apply Playwright isolation overrides before bootstrapping', async () => {
+    vi.resetModules();
+    process.env.PLAYWRIGHT_TEST = 'true';
+    process.env.PLAYWRIGHT_DISABLE_SINGLE_INSTANCE_LOCK = 'true';
+    process.env.PLAYWRIGHT_USER_DATA_DIR = ' /tmp/tt-playwright-user-data ';
+
+    mockIndexDependenciesForImport(false);
+
+    const { app: freshApp } = await import('electron');
+    await import('@main/index');
+
+    expect(freshApp.setPath).toHaveBeenCalledWith('userData', '/tmp/tt-playwright-user-data');
+    expect(freshApp.requestSingleInstanceLock).not.toHaveBeenCalled();
   });
 });

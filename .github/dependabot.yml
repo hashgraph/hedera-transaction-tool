@@ -5,9 +5,128 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
     versioning-strategy: increase
     open-pull-requests-limit: 10
+
+  - package-ecosystem: npm
+    directory: "/front-end"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    groups:
+      hiero-sdk:
+        patterns:
+          - "@hiero-ledger/*"
+      electron:
+        patterns:
+          - "electron"
+          - "electron-*"
+          - "vite-plugin-electron"
+          - "@electron-toolkit/*"
+      vue:
+        patterns:
+          - "vue"
+          - "vue-*"
+          - "@vue/*"
+          - "@vitejs/plugin-vue"
+          - "pinia"
+          - "@pinia/*"
+          - "@vueuse/*"
+          - "@vuepic/*"
+          - "eslint-plugin-vue"
+      prisma:
+        patterns:
+          - "@prisma/*"
+          - "prisma"
+          - "better-sqlite3"
+          - "@types/better-sqlite3"
+      build-and-test:
+        patterns:
+          - "vite"
+          - "vite-*"
+          - "vitest"
+          - "@vitest/*"
+          - "typescript"
+          - "eslint"
+          - "@eslint/*"
+          - "prettier"
+          - "sass"
+
+  - package-ecosystem: npm
+    directory: "/back-end"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    groups:
+      hiero-sdk:
+        patterns:
+          - "@hiero-ledger/*"
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+          - "@nest-lab/*"
+      redis-cache:
+        patterns:
+          - "ioredis"
+          - "redis"
+          - "cache-manager"
+          - "cache-manager-*"
+          - "murlock"
+      messaging:
+        patterns:
+          - "amqp-connection-manager"
+          - "amqplib"
+          - "nats"
+      testing:
+        patterns:
+          - "jest"
+          - "ts-jest"
+          - "jest-*"
+          - "jest-mock-extended"
+          - "testcontainers"
+          - "@testcontainers/*"
+          - "supertest"
+          - "@types/jest"
+          - "@types/supertest"
+          - "@hashgraph/hedera-local"
+          - "@nestjs/testing"
+      build-tools:
+        patterns:
+          - "typescript"
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "@nestjs/cli"
+          - "@nestjs/schematics"
+
+  - package-ecosystem: npm
+    directory: "/automation"
+    schedule:
+      interval: weekly
+    versioning-strategy: increase
+    open-pull-requests-limit: 10
+    groups:
+      hiero-sdk:
+        patterns:
+          - "@hiero-ledger/*"
+      playwright:
+        patterns:
+          - "playwright"
+          - "playwright-*"
+          - "playwright-core"
+          - "@playwright/*"
+      build-tools:
+        patterns:
+          - "typescript"
+          - "webpack"
+          - "webpack-cli"
+          - "tsx"

@@ -9,10 +9,6 @@ export class PublicKeyOwnerCache extends EntityCache<string, string | null> {
   // Public
   //
 
-  public constructor() {
-    super(4000); // Short live for backend data
-  }
-
   public static provide(): void {
     provide(PublicKeyOwnerCache.injectKey, new PublicKeyOwnerCache());
   }

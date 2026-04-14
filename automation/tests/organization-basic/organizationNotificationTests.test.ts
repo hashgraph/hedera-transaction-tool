@@ -1,0 +1,149 @@
+import { expect, Page, test } from '@playwright/test';
+import { TransactionPage } from '../../pages/TransactionPage.js';
+import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { LoginPage } from '../../pages/LoginPage.js';
+import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
+import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
+import {
+  disableNotificationsForUsers,
+  getLatestInAppNotificationStatusByEmail,
+  getNotifiedTransactionIdByEmail,
+} from '../../utils/db/databaseQueries.js';
+import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
+import {
+  setupOrganizationSuiteApp,
+  teardownOrganizationSuiteApp,
+} from '../helpers/bootstrap/organizationSuiteBootstrap.js';
+import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
+
+let app: TransactionToolApp;
+let window: Page;
+let globalCredentials = { email: '', password: '' };
+
+let transactionPage: TransactionPage;
+let organizationPage: OrganizationPage;
+let loginPage: LoginPage;
+let isolationContext: ActivatedTestIsolationContext | null = null;
+let organizationNickname = 'Test Organization';
+
+let firstUser: UserDetails;
+let secondUser: UserDetails;
+const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
+
+test.describe.skip('Organization Notification tests @organization-basic', () => {
+  test.slow();
+
+  test.beforeAll(async () => {
+    ({
+      app,
+      window,
+      transactionPage,
+      organizationPage,
+      loginPage,
+      isolationContext,
+    } = await setupOrganizationSuiteApp(test.info()));
+  });
+
+  test.beforeEach(async ({}, testInfo) => {
+    // Flush rate limiter before each test to prevent "too many requests" errors
+    await flushRateLimiter();
+
+    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    const seededSession = await createSeededOrganizationSession(
+      window,
+      loginPage,
+      organizationPage,
+      {
+        userCount: 3,
+        organizationNickname,
+      },
+    );
+    globalCredentials.email = seededSession.localUser.email;
+    globalCredentials.password = seededSession.localUser.password;
+    firstUser = organizationPage.getUser(0);
+    secondUser = organizationPage.getUser(1);
+
+    await disableNotificationsForUsers([firstUser.email, secondUser.email], true);
+
+    // Set complex account for transactions
+    await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
+  });
+
+  test.afterEach(async () => {
+    try {
+      await organizationPage.logoutFromOrganization();
+    } catch {
+      // The next beforeEach recreates the full org fixture from scratch.
+    }
+  });
+
+  test.afterAll(async () => {
+    await teardownOrganizationSuiteApp(app, isolationContext);
+  });
+
+  test('Verify notification is visible in the organization dropdown', async () => {
+    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+
+    expect(await organizationPage.isNotificationIndicatorElementVisible()).toBe(true);
+  });
+
+  test('Verify notification is saved in the db and marked correctly', async () => {
+    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+
+    let status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
+    expect(status?.isRead).toBe(false);
+    expect(status?.isInAppNotified).toBe(true);
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyToSignTab();
+    // Wait for notifications to be fetched and linked to transaction rows
+    await expect.poll(
+      () => getNotifiedTransactionIdByEmail(secondUser.email),
+      { timeout: 5000, intervals: [500] },
+    ).toBeTruthy();
+    // Click Details to VIEW the transaction - this marks the notification as read
+    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
+
+    // Wait for backend to process the "mark as read" request and update DB
+    await expect.poll(
+      async () => (await getLatestInAppNotificationStatusByEmail(secondUser.email))?.isRead,
+      { timeout: 10000, intervals: [500] },
+    ).toBe(true);
+  });
+
+  test('Verify tab notification is cleared after the transaction is seen', async () => {
+    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyToSignTab();
+    // Wait for notifications to be fetched and linked to transaction rows
+    await expect.poll(
+      () => getNotifiedTransactionIdByEmail(secondUser.email),
+      { timeout: 5000, intervals: [500] },
+    ).toBeTruthy();
+    // Click Details to VIEW the transaction - this marks the notification as read and clears the indicator
+    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    expect(await organizationPage.isNotificationNumberHidden()).toBe(true);
+  });
+
+  test('Verify notification element is shown next to the transaction', async () => {
+    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+
+    const notifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
+    expect(notifiedTransactionId).not.toBeNull();
+
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnReadyToSignTab();
+    // Wait for notifications to be fetched and linked to transaction rows
+    await expect.poll(
+      () => getNotifiedTransactionIdByEmail(secondUser.email),
+      { timeout: 5000, intervals: [500] },
+    ).toBeTruthy();
+
+    const hasNotification = await organizationPage.hasNotificationForTransaction(notifiedTransactionId!);
+    expect(hasNotification).toBe(true);
+  });
+});

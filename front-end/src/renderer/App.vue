@@ -25,6 +25,7 @@ import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 import { ToastManager } from './utils/ToastManager';
 import { createLogger, getErrorMessage } from '@renderer/utils';
+import { BackendTransactionCache } from './caches/backend/BackendTransactionCache.ts';
 
 /* Composables */
 const router = useRouter();
@@ -72,6 +73,7 @@ AccountByPublicKeyCache.provide();
 TransactionByIdCache.provide();
 NodeByIdCache.provide();
 PublicKeyOwnerCache.provide();
+BackendTransactionCache.provide();
 ToastManager.provide();
 </script>
 <template>
