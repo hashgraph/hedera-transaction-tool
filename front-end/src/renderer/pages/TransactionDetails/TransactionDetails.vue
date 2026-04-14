@@ -71,11 +71,11 @@ const notifications = useNotificationsStore();
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransaction(); return; } // Legacy fallback
+  if (!parsed) { await fetchTransactionOnNotif(); return; } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
-    await fetchTransaction();
+    await fetchTransactionOnNotif();
     return;
   }
 
@@ -83,7 +83,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const currentGroupId = orgTransaction.value?.groupItem?.groupId;
   if (parsed.transactionIds.includes(currentId) ||
       (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
-    await fetchTransaction();
+    await fetchTransactionOnNotif();
   }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -238,6 +238,17 @@ async function fetchTransaction() {
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);
+}
+
+async function fetchTransactionOnNotif(): Promise<void> {
+  // 1) Before calling fetchTransaction(), we clear transaction cache
+  const id = Number(formattedId.value);
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
+    // We clear cache with strict==false to keep young data
+    transactionCache.forget(id, user.selectedOrganization.serverUrl, false);
+  }
+  // 2) Now fetch transaction
+  await fetchTransaction();
 }
 
 /* Hooks */

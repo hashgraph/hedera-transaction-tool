@@ -63,6 +63,10 @@ const LOCAL_TO_ORG_SORT: Record<string, keyof ITransaction> = {
   executed_at: 'executedAt',
 };
 import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+
+/* Injected */
+const transactionCache = BackendTransactionCache.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -75,9 +79,9 @@ const { recentlyUpdatedTxIds, highlightAndFetch } = useTransactionLiveHighlight(
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransactions(); return; } // Legacy fallback
+  if (!parsed) { await fetchTransactionsOnNotif(); return; } // Legacy fallback
 
-  const silentFetch = () => fetchTransactions({ silent: true });
+  const silentFetch = () => fetchTransactionsOnNotif({ silent: true });
 
   // Status updates can move transactions into History — always refetch
   if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
@@ -260,6 +264,19 @@ async function fetchTransactions(options?: { silent?: boolean }) {
   } finally {
     isLoading.value = false;
   }
+}
+
+async function fetchTransactionsOnNotif(options?: { silent?: boolean }) {
+  // 1) Before calling fetchTransactions(), we clear transaction cache
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const serverUrl = user.selectedOrganization.serverUrl;
+    for (const t of organizationTransactions.value) {
+      // We clear cache with strict==false to keep young data
+      transactionCache.forget(t.transactionRaw.transactionId, serverUrl, false);
+    }
+  }
+  // 2) Now fetch group
+  await fetchTransactions(options);
 }
 
 /**

@@ -28,9 +28,15 @@ export abstract class EntityCache<K extends string | number, E> {
     return result;
   }
 
-  public forget(key: K, mirrorNodeUrl: string): void {
+  public forget(key: K, mirrorNodeUrl: string, strict = true): void {
     const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
-    this.records.delete(recordKey);
+    const currentRecord = this.records.get(recordKey);
+    if (currentRecord) {
+      // When strict is off, we forget only if data is 1s old (help for notification mgt)
+      if (strict || currentRecord.age() > 1000) {
+        this.records.delete(recordKey);
+      }
+    }
   }
 
   // public clear(): void {
