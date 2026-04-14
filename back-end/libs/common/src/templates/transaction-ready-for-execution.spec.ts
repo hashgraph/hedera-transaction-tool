@@ -3,6 +3,7 @@ import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+  escapeHtml: jest.requireActual('@app/common/templates/layout').escapeHtml,
 }));
 
 jest.mock('@app/common/templates/index', () => ({

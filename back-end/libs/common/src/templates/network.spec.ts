@@ -68,4 +68,51 @@ describe('buildNetworkBreakdown', () => {
     ]);
     expect(result).toBe('<strong>2</strong> transactions on Mainnet');
   });
+
+  describe('HTML injection prevention', () => {
+    it('escapes script tags in network value', () => {
+      const result = buildNetworkBreakdown([makeNotification('<script>alert(1)</script>')]);
+      expect(result).not.toContain('<script>');
+      expect(result).not.toContain('</script>');
+      expect(result).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
+    });
+
+    it('escapes img onerror injection', () => {
+      const result = buildNetworkBreakdown([makeNotification('<img src=x onerror=alert(1)>')]);
+      expect(result).not.toContain('<img');
+      expect(result).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    });
+
+    it('escapes bold/italic HTML tags', () => {
+      const result = buildNetworkBreakdown([makeNotification('<b>bad</b>')]);
+      expect(result).not.toContain('<b>');
+      expect(result).toContain('&lt;b&gt;bad&lt;/b&gt;');
+    });
+
+    it('escapes anchor tags with href', () => {
+      const result = buildNetworkBreakdown([makeNotification('<a href="https://evil.com">click</a>')]);
+      expect(result).not.toContain('<a ');
+      expect(result).toContain('&lt;a href=&quot;https://evil.com&quot;&gt;click&lt;/a&gt;');
+    });
+
+    it('escapes event handler attributes', () => {
+      const result = buildNetworkBreakdown([makeNotification('" onmouseover="alert(1)')]);
+      expect(result).not.toContain('" onmouseover');
+      expect(result).toContain('&quot; onmouseover=&quot;alert(1)');
+    });
+
+    it('escapes ampersands and special characters', () => {
+      const result = buildNetworkBreakdown([makeNotification('test&net<>"\'')] );
+      expect(result).toContain('Test&amp;net&lt;&gt;&quot;&#39;');
+    });
+
+    it('still counts and pluralizes correctly with escaped content', () => {
+      const result = buildNetworkBreakdown([
+        makeNotification('<script>x</script>'),
+        makeNotification('<script>x</script>'),
+        makeNotification('<script>x</script>'),
+      ]);
+      expect(result).toContain('<strong>3</strong> transactions on');
+    });
+  });
 });
