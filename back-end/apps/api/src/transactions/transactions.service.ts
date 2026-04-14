@@ -924,9 +924,6 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.TNVN);
     }
 
-    // Freeze transaction with shared client
-    sdkTransaction.freezeWith(client);
-
     const transactionHash = await sdkTransaction.getTransactionHash();
     const transactionType = getTransactionTypeEnumValue(sdkTransaction);
 
