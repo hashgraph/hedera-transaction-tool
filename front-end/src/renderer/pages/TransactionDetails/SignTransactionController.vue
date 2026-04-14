@@ -19,6 +19,7 @@ import {
   ActionStatus,
   makeBugReport,
 } from '@renderer/components/ActionController/ActionReport.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -31,6 +32,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 const user = useUserStore();
 
 /* Injected */
+const transactionCache = BackendTransactionCache.inject();
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
@@ -51,6 +53,10 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
       result = makeBugReport('Sign', 'Cannot sign: transaction is undefined');
     }
   } finally {
+    // We clear transaction cache
+    if (props.transaction && user.selectedOrganization) {
+      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization.serverUrl);
+    }
     await props.callback(result === null);
   }
   return result;

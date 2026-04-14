@@ -10,9 +10,7 @@ import {
   getPrivateKey,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { type ITransactionFull } from '@shared/interfaces';
 import {
-  getTransactionById,
   getTransactionGroupById,
   type IGroup,
   type IGroupItem,
@@ -22,6 +20,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -32,6 +31,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
 const toastManager = ToastManager.inject();
+const transactionCache = BackendTransactionCache.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -72,9 +72,9 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
       const zip = new JSZip(); // Prepare a new ZIP archive
 
       for (const item of group.groupItems as IGroupItem[]) {
-        const orgTransaction: ITransactionFull = await getTransactionById(
+        const orgTransaction = await transactionCache.lookup(
+          item.transactionId,
           user.selectedOrganization.serverUrl,
-          Number(item.transactionId),
         );
 
         const baseName = generateTransactionExportFileName(orgTransaction);
