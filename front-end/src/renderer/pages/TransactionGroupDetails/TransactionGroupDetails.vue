@@ -51,6 +51,7 @@ import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllCo
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
 import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export All';
@@ -73,6 +74,9 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [exportName]: 'button-export-group',
 };
 
+/* Injected */
+const transactionCache = BackendTransactionCache.inject();
+
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
@@ -87,13 +91,13 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const id = router.currentRoute.value.params.id;
   const groupId = Number(Array.isArray(id) ? id[0] : id);
   if (!parsed) {
-    await fetchGroup(groupId);
+    await fetchGroupOnNotif(groupId);
     return;
   } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!group.value) {
-    await fetchGroup(groupId);
+    await fetchGroupOnNotif(groupId);
     return;
   }
 
@@ -101,7 +105,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
     parsed.groupIds.includes(groupId) ||
     (group.value.groupItems?.some(item => parsed.transactionIds.includes(item.transactionId)) ??
       false);
-  if (isAffected) await fetchGroup(groupId);
+  if (isAffected) await fetchGroupOnNotif(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const createTooltips = useCreateTooltips();
@@ -387,6 +391,19 @@ async function fetchGroup(id: string | number) {
   } else {
     logger.info('Not logged into org');
   }
+}
+
+async function fetchGroupOnNotif(groupId: string | number) {
+  // 1) Before calling fetchGroup(), we clear transaction cache
+  if (isLoggedInOrganization(user.selectedOrganization) && group.value !== null) {
+    const serverUrl = user.selectedOrganization.serverUrl;
+    for (const item of group.value.groupItems) {
+      // We clear cache with strict==false to keep young data
+      transactionCache.forget(item.transactionId, serverUrl, false);
+    }
+  }
+  // 2) Now fetch group
+  await fetchGroup(groupId);
 }
 </script>
 <template>
