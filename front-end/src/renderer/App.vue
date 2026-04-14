@@ -26,6 +26,7 @@ import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 import { ToastManager } from './utils/ToastManager';
 import { createLogger, getErrorMessage } from '@renderer/utils';
 import { BackendTransactionCache } from './caches/backend/BackendTransactionCache.ts';
+import { AppCache } from './caches/AppCache';
 
 /* Composables */
 const router = useRouter();
@@ -74,6 +75,16 @@ TransactionByIdCache.provide();
 NodeByIdCache.provide();
 PublicKeyOwnerCache.provide();
 BackendTransactionCache.provide();
+AppCache.provide(
+  new AppCache(
+    AccountByIdCache.inject(),
+    AccountByPublicKeyCache.inject(),
+    NodeByIdCache.inject(),
+    TransactionByIdCache.inject(),
+    BackendTransactionCache.inject(),
+    PublicKeyOwnerCache.inject(),
+  ),
+);
 ToastManager.provide();
 </script>
 <template>
