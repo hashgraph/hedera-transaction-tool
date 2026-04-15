@@ -33,6 +33,7 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
   [TransactionNodeCollection.READY_FOR_REVIEW]: [],
@@ -61,6 +62,9 @@ const emit = defineEmits<{
   (event: 'nodesFetched', value: ITransactionNode[]): void;
 }>();
 
+/* Injected */
+const transactionCache = BackendTransactionCache.inject();
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
@@ -75,11 +79,11 @@ const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = use
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   if (!parsed) {
-    await fetchNodes();
+    await fetchNodesOnNotif();
     return;
   }
 
-  const silentFetch = () => fetchNodes({ silent: true });
+  const silentFetch = () => fetchNodesOnNotif({ silent: true });
 
   // Status updates can move items between collections — always refetch
   if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
@@ -258,6 +262,21 @@ function clampPage(): void {
   if (currentPage.value > totalPages) {
     currentPage.value = totalPages;
   }
+}
+
+async function fetchNodesOnNotif(options?: { silent?: boolean }): Promise<void> {
+  // 1) Before calling fetchNodes(), we clear transaction cache
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const serverUrl = user.selectedOrganization.serverUrl;
+    for (const node of nodes.value) {
+      // We clear cache with strict==false to keep young data
+      if (node.transactionId) {
+        transactionCache.forget(node.transactionId, serverUrl, false);
+      }
+    }
+  }
+  // 2) Now fetch group
+  await fetchNodes(options);
 }
 
 /* Watchers */

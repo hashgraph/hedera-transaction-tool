@@ -908,6 +908,11 @@ export class TransactionsService {
     // Parse SDK transaction
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
 
+    // Check the transaction is frozen, cannot require it to be frozen, breaks backwards compatibility
+    if (!sdkTransaction.isFrozen()) {
+      sdkTransaction.freezeWith(client);
+    }
+
     // Check if expired
     if (isExpired(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TE);
@@ -923,9 +928,6 @@ export class TransactionsService {
     if (!isTransactionValidForNodes(sdkTransaction, allowedNodes)) {
       throw new BadRequestException(ErrorCodes.TNVN);
     }
-
-    // Freeze transaction with shared client
-    sdkTransaction.freezeWith(client);
 
     const transactionHash = await sdkTransaction.getTransactionHash();
     const transactionType = getTransactionTypeEnumValue(sdkTransaction);

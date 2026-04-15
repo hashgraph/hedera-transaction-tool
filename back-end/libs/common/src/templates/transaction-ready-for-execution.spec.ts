@@ -2,10 +2,8 @@ import { generateTransactionReadyForExecutionContent } from './transaction-ready
 import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
-  buildEmailTransactionsList: jest.fn((transactions) =>
-    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}|${t.isManual}|${t.validStart}`).join(',')}>`
-  ),
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+  escapeHtml: jest.requireActual('@app/common/templates/layout').escapeHtml,
 }));
 
 jest.mock('@app/common/templates/index', () => ({
@@ -15,34 +13,25 @@ jest.mock('@app/common/templates/index', () => ({
   }),
 }));
 
-import {
-  buildEmailTransactionsList,
-  renderTransactionEmailLayout,
-} from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
+import { renderTransactionEmailLayout } from '@app/common/templates/layout';
 
 const makeNotification = (overrides?: Partial<{
   transactionId: string;
   network: string;
   isManual: boolean;
-  validStart: string;
 }>) =>
   ({
     additionalData: {
       transactionId: overrides?.transactionId ?? 'tx-123',
       network: overrides?.network ?? 'mainnet',
       isManual: overrides?.isManual ?? false,
-      validStart: overrides?.validStart,
     },
   } as unknown as Notification);
 
 describe('transaction-ready-for-execution templates', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-// ─── Empty input ──────────────────────────────────────────────────────────────
 
   describe('empty input', () => {
     it('returns empty string when called with no arguments', () => {
@@ -52,11 +41,8 @@ describe('transaction-ready-for-execution templates', () => {
     it('does not call layout utilities when empty', () => {
       generateTransactionReadyForExecutionContent();
       expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
-      expect(buildEmailTransactionsList).not.toHaveBeenCalled();
     });
   });
-
-// ─── Layout wiring ────────────────────────────────────────────────────────────
 
   describe('layout integration', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
@@ -71,212 +57,151 @@ describe('transaction-ready-for-execution templates', () => {
       const result = generateTransactionReadyForExecutionContent(makeNotification());
       expect(result).toContain('<LAYOUT title="Transactions Ready for Execution">');
     });
+
+    it('uses the unified CTA text', () => {
+      const result = generateTransactionReadyForExecutionContent(makeNotification());
+      expect(result).toContain('View details in the Hedera Transaction Tool');
+    });
   });
 
-// ─── Intro copy — automatic only ─────────────────────────────────────────────
-
-  describe('intro copy — all automatic', () => {
-    it('uses singular automatic copy for one notification', () => {
+  describe('all automatic', () => {
+    it('uses singular noun and bolded count for one notification', () => {
       const result = generateTransactionReadyForExecutionContent(makeNotification());
-      expect(result).toContain('A transaction is ready for execution');
-      expect(result).not.toContain('Multiple transactions');
+      expect(result).toContain('<strong>1</strong> transaction is ready and will be executed automatically');
       expect(result).not.toContain('manual submission');
+      expect(result).not.toContain('1 transactions');
     });
 
-    it('uses plural automatic copy for multiple notifications', () => {
+    it('uses plural noun and bolded count for multiple', () => {
       const result = generateTransactionReadyForExecutionContent(
         makeNotification(),
         makeNotification(),
+        makeNotification(),
       );
-      expect(result).toContain('Multiple transactions are ready for execution');
+      expect(result).toContain('<strong>3</strong> transactions are ready and will be executed automatically');
       expect(result).not.toContain('manual submission');
     });
   });
 
-// ─── Intro copy — manual transactions present ─────────────────────────────────
-
-  describe('intro copy — manual transactions present', () => {
-    it('uses singular manual copy when one manual transaction', () => {
+  describe('all manual', () => {
+    it('uses singular noun and bolded count for one notification', () => {
       const result = generateTransactionReadyForExecutionContent(
         makeNotification({ isManual: true }),
       );
-      expect(result).toContain('This transaction requires manual submission');
-      expect(result).not.toContain('Some transactions require');
+      expect(result).toContain('<strong>1</strong> transaction requires manual submission');
+      expect(result).not.toContain('automatically');
+      expect(result).not.toContain('1 transactions');
     });
 
-    it('uses plural manual copy when multiple transactions include a manual one', () => {
+    it('uses plural noun and bolded count for multiple', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: true }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions require manual submission');
+      expect(result).not.toContain('automatically');
+    });
+  });
+
+  describe('mixed manual and automatic', () => {
+    it('renders both sentences with their own bolded counts', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: true }),
+        makeNotification({ isManual: false }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions require manual submission');
+      expect(result).toContain('<strong>1</strong> transaction is ready and will be executed automatically');
+    });
+
+    it('disambiguates the 1 manual + 1 automatic case', () => {
       const result = generateTransactionReadyForExecutionContent(
         makeNotification({ isManual: true }),
         makeNotification({ isManual: false }),
       );
-      expect(result).toContain('Some transactions require manual submission');
-      expect(result).not.toContain('This transaction requires');
-    });
-
-    it('uses plural manual copy when all transactions are manual', () => {
-      const result = generateTransactionReadyForExecutionContent(
-        makeNotification({ isManual: true }),
-        makeNotification({ isManual: true }),
-      );
-      expect(result).toContain('Some transactions require manual submission');
+      expect(result).toContain('<strong>1</strong> transaction requires manual submission');
+      expect(result).toContain('<strong>1</strong> transaction is ready and will be executed automatically');
     });
   });
 
-// ─── Section rendering — automatic only ──────────────────────────────────────
-
-  describe('automatic-only section', () => {
-    it('renders "Ready for Automatic Execution" heading', () => {
-      const result = generateTransactionReadyForExecutionContent(makeNotification());
-      expect(result).toContain('Ready for Automatic Execution');
+  describe('network breakdown', () => {
+    it('renders a separate breakdown per section', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: true, network: 'mainnet' }),
+        makeNotification({ isManual: true, network: 'mainnet' }),
+        makeNotification({ isManual: false, network: 'testnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Mainnet');
+      expect(result).toContain('<strong>1</strong> transaction on Testnet');
     });
 
-    it('does not render "Manual Submission Required" heading', () => {
-      const result = generateTransactionReadyForExecutionContent(makeNotification());
-      expect(result).not.toContain('Manual Submission Required');
+    it('renders a multi-network breakdown within a single section', () => {
+      const result = generateTransactionReadyForExecutionContent(
+        makeNotification({ isManual: false, network: 'mainnet' }),
+        makeNotification({ isManual: false, network: 'mainnet' }),
+        makeNotification({ isManual: false, network: 'testnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Mainnet');
+      expect(result).toContain('<strong>1</strong> transaction on Testnet');
     });
 
-    it('calls buildEmailTransactionsList once with automatic transactions', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'tx-auto', isManual: false }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: 'tx-auto', isManual: false })]),
-      );
+    it('omits the breakdown paragraph for the automatic section when no network is present', () => {
+      const notification = {
+        additionalData: { isManual: false },
+      } as unknown as Notification;
+      const result = generateTransactionReadyForExecutionContent(notification);
+      expect(result).toContain('<strong>1</strong> transaction is ready and will be executed automatically');
+      expect(result).not.toContain('on Mainnet');
+      expect(result).not.toContain('on Testnet');
+    });
+
+    it('omits the breakdown paragraph for the manual section when no network is present', () => {
+      const notification = {
+        additionalData: { isManual: true },
+      } as unknown as Notification;
+      const result = generateTransactionReadyForExecutionContent(notification);
+      expect(result).toContain('<strong>1</strong> transaction requires manual submission');
+      expect(result).not.toContain('on Mainnet');
+      expect(result).not.toContain('on Testnet');
     });
   });
 
-// ─── Section rendering — manual only ─────────────────────────────────────────
-
-  describe('manual-only section', () => {
-    it('renders "Manual Submission Required" heading', () => {
+  describe('privacy', () => {
+    it('does not embed transactionId', () => {
       const result = generateTransactionReadyForExecutionContent(
-        makeNotification({ isManual: true }),
+        makeNotification({ transactionId: '0.0.999@1234567890.000' }),
       );
-      expect(result).toContain('Manual Submission Required');
+      expect(result).not.toContain('0.0.999@1234567890.000');
     });
 
-    it('does not render "Ready for Automatic Execution" heading', () => {
-      const result = generateTransactionReadyForExecutionContent(
-        makeNotification({ isManual: true }),
-      );
-      expect(result).not.toContain('Ready for Automatic Execution');
-    });
-
-    it('calls buildEmailTransactionsList once with manual transactions', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'tx-manual', isManual: true }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: 'tx-manual', isManual: true })]),
-      );
+    it('does not embed validStart timestamps', () => {
+      const notification = {
+        additionalData: {
+          transactionId: 'tx-1',
+          network: 'mainnet',
+          isManual: false,
+          validStart: '2099-12-31T23:59:59.000Z',
+        },
+      } as unknown as Notification;
+      const result = generateTransactionReadyForExecutionContent(notification);
+      expect(result).not.toContain('2099-12-31T23:59:59.000Z');
+      expect(result).not.toContain('2099');
     });
   });
 
-// ─── Section rendering — mixed manual and automatic ──────────────────────────
-
-  describe('mixed manual and automatic sections', () => {
-    it('renders both section headings', () => {
-      const result = generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'tx-manual', isManual: true }),
-        makeNotification({ transactionId: 'tx-auto', isManual: false }),
-      );
-      expect(result).toContain('Manual Submission Required');
-      expect(result).toContain('Ready for Automatic Execution');
-    });
-
-    it('calls buildEmailTransactionsList twice', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ isManual: true }),
-        makeNotification({ isManual: false }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(2);
-    });
-
-    it('passes only manual transactions to the first buildEmailTransactionsList call', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'tx-manual', isManual: true }),
-        makeNotification({ transactionId: 'tx-auto', isManual: false }),
-      );
-      const [firstCall, secondCall] = (buildEmailTransactionsList as jest.Mock).mock.calls;
-      expect(firstCall[0].every((t: any) => t.isManual === true)).toBe(true);
-      expect(secondCall[0].every((t: any) => t.isManual === false)).toBe(true);
-    });
-
-    it('does not mix manual and automatic in the same list', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'tx-manual', isManual: true }),
-        makeNotification({ transactionId: 'tx-auto', isManual: false }),
-      );
-      const calls = (buildEmailTransactionsList as jest.Mock).mock.calls;
-      calls.forEach(([transactions]) => {
-        const isManualValues = transactions.map((t: any) => t.isManual);
-        expect(new Set(isManualValues).size).toBe(1); // all same value
-      });
-    });
-  });
-
-// ─── Transaction data mapping ─────────────────────────────────────────────────
-
-  describe('transaction data mapping', () => {
-    it('passes network through getNetworkString', () => {
-      generateTransactionReadyForExecutionContent(makeNotification({ network: 'testnet' }));
-      expect(getNetworkString).toHaveBeenCalledWith('testnet');
-    });
-
+  describe('robustness', () => {
     it('defaults isManual to false when not provided', () => {
       const notification = {
         additionalData: { transactionId: 'tx-1', network: 'mainnet' },
       } as unknown as Notification;
-      generateTransactionReadyForExecutionContent(notification);
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ isManual: false })]),
-      );
-    });
-
-    it('preserves notification order within each section', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ transactionId: 'first', isManual: false }),
-        makeNotification({ transactionId: 'second', isManual: false }),
-        makeNotification({ transactionId: 'third', isManual: false }),
-      );
-      const [transactions] = (buildEmailTransactionsList as jest.Mock).mock.calls[0];
-      expect(transactions[0].transactionId).toBe('first');
-      expect(transactions[1].transactionId).toBe('second');
-      expect(transactions[2].transactionId).toBe('third');
+      const result = generateTransactionReadyForExecutionContent(notification);
+      expect(result).toContain('<strong>1</strong> transaction is ready and will be executed automatically');
     });
 
     it('handles missing additionalData gracefully', () => {
       expect(() =>
-        generateTransactionReadyForExecutionContent({} as Notification)
+        generateTransactionReadyForExecutionContent({} as Notification),
       ).not.toThrow();
-    });
-
-    it('handles missing network', () => {
-      const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
-      generateTransactionReadyForExecutionContent(notification);
-      expect(getNetworkString).toHaveBeenCalledWith(undefined);
-    });
-
-    it('passes validStart to buildEmailTransactionsList when provided', () => {
-      generateTransactionReadyForExecutionContent(
-        makeNotification({ validStart: '2024-01-15T10:30:45Z' }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ validStart: '2024-01-15T10:30:45Z' }),
-        ]),
-      );
-    });
-
-    it('passes undefined validStart when not provided', () => {
-      generateTransactionReadyForExecutionContent(makeNotification());
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ validStart: undefined }),
-        ]),
-      );
     });
   });
 });

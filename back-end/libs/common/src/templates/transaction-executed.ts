@@ -1,111 +1,66 @@
-import {
-  emailCardRow,
-  emailCardTable,
-  escapeHtml,
-  renderTransactionEmailLayout
-} from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
+import { renderTransactionEmailLayout } from '@app/common/templates/layout';
+import { buildNetworkBreakdown } from '@app/common/templates/network';
 import { Notification } from '@entities';
+
+const SUCCESS_STATUS_CODES = new Set([0, 22, 104]);
+
+export function isSuccessStatusCode(statusCode: unknown): boolean {
+  if (typeof statusCode === 'number') {
+    return Number.isFinite(statusCode) && SUCCESS_STATUS_CODES.has(statusCode);
+  }
+  if (typeof statusCode === 'string' && /^(0|[1-9]\d*)$/.test(statusCode)) {
+    return SUCCESS_STATUS_CODES.has(Number(statusCode));
+  }
+  return false;
+}
 
 export function generateTransactionExecutedContent(...notifications: Notification[]): string {
   if (notifications.length === 0) return "";
 
-  const isPlural = notifications.length > 1;
+  const successNotifications = notifications.filter(n => isSuccessStatusCode(n.additionalData?.statusCode));
+  const failedNotifications = notifications.filter(n => !isSuccessStatusCode(n.additionalData?.statusCode));
 
-  const transactions = notifications.map(n => ({
-    transactionId: n.additionalData?.transactionId,
-    network: getNetworkString(n.additionalData?.network),
-    statusCode: n.additionalData?.statusCode,
-  }));
+  const successCount = successNotifications.length;
+  const failedCount = failedNotifications.length;
 
-  const intro = `
-<p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">
-  ${
-    isPlural
-      ? "Multiple transactions have completed. Review the execution results below."
-      : "A transaction has completed. Review the execution result below."
+  const sections: string[] = [];
+
+  if (successCount > 0) {
+    const noun = successCount === 1 ? 'transaction' : 'transactions';
+    const breakdown = buildNetworkBreakdown(successNotifications);
+    sections.push(`
+<p style="margin:0 0 8px;font-size:15px;line-height:26px;color:#444444;">
+  <strong>${successCount}</strong> ${noun} executed successfully.
+</p>
+${breakdown ? `<p style="margin:0 0 16px;font-size:14px;line-height:24px;color:#666666;">
+  ${breakdown}
+</p>` : ''}`);
   }
+
+  if (failedCount > 0) {
+    const noun = failedCount === 1 ? 'transaction' : 'transactions';
+    const breakdown = buildNetworkBreakdown(failedNotifications);
+    sections.push(`
+<p style="margin:0 0 8px;font-size:15px;line-height:26px;color:#444444;">
+  <strong>${failedCount}</strong> ${noun} failed to execute.
+</p>
+${breakdown ? `<p style="margin:0 0 16px;font-size:14px;line-height:24px;color:#666666;">
+  ${breakdown}
+</p>` : ''}`);
+  }
+
+  const cta = `
+<p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">
+  View details in the Hedera Transaction Tool.
 </p>`;
 
   const bodyContent = `
-    ${intro}
-    ${emailExecutedTransactionList(transactions)}
+    ${sections.join('')}
+    ${cta}
   `;
 
   return renderTransactionEmailLayout(
     "Transaction Executed",
     bodyContent
   );
-}
-
-function getStatusBadgeStyles(statusCode: string): string {
-  const code = Number(statusCode);
-
-  if (Number.isFinite(code) && [0, 22, 104].includes(code)) {
-    // SUCCESS
-    return `
-        background-color:rgba(46, 184, 92, 0.12);
-        color:#2eb85c;
-        border-radius:4px;
-        padding:2px 8px;
-        display:inline-block;
-      `;
-  } else {
-    // FAILED
-    return `
-        background-color:rgba(220, 53, 69, 0.12);
-        color:#dc3545;
-        border-radius:4px;
-        padding:2px 8px;
-        display:inline-block;
-      `;
-  }
-}
-
-export function emailExecutedTransactionList(
-  transactions: {
-    transactionId?: string;
-    network?: string;
-    statusCode?: string;
-  }[]
-): string {
-  const rows = transactions
-    .map((tx, i) => {
-      const status = tx.statusCode ?? "UNKNOWN";
-
-      const statusStyles = getStatusBadgeStyles(status);
-
-      return emailCardRow(
-        `
-<td width="100%" style="padding:13px 18px;__ROW_STYLE__
-           font-size:14px;font-family:Arial,Helvetica,sans-serif;
-           color:#2d0072;">
-  ${escapeHtml(tx.transactionId ?? "")}
-</td>
-
-<td width="1%" nowrap style="padding:13px 18px;__ROW_STYLE__
-           font-size:12px;font-family:Arial,Helvetica,sans-serif;">
-  <span style="background-color:rgba(119,68,170,0.08);
-               color:#7744aa;
-               border-radius:4px;
-               padding:2px 8px;
-               display:inline-block;">
-    ${escapeHtml(tx.network ?? "")}
-  </span>
-</td>
-
-<td width="1%" nowrap align="right"
-    style="padding:13px 18px;__ROW_STYLE__
-           font-size:12px;font-family:Arial,Helvetica,sans-serif;">
-  <span style="${statusStyles}">
-    ${escapeHtml(status)}
-  </span>
-</td>
-`,
-        i
-      );
-    })
-    .join("");
-
-  return emailCardTable(rows);
 }

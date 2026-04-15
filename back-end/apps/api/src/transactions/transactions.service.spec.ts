@@ -663,7 +663,10 @@ describe('TransactionsService', () => {
     });
 
     it('should throw on transaction create if expired', async () => {
-      const sdkTransaction = new AccountCreateTransaction();
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(oneDayAgo)),
+      );
 
       const dto: CreateTransactionDto = {
         name: 'Transaction 1',
