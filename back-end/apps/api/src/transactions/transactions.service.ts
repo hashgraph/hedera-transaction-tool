@@ -908,6 +908,11 @@ export class TransactionsService {
     // Parse SDK transaction
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
 
+    // Check the transaction is frozen, cannot require it to be frozen, breaks backwards compatibility
+    if (!sdkTransaction.isFrozen()) {
+      sdkTransaction.freezeWith(client);
+    }
+
     // Check if expired
     if (isExpired(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TE);
