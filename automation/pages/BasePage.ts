@@ -12,6 +12,22 @@ export class BasePage {
 
   constructor(protected readonly window: Page) {}
 
+  getShortTimeout(): number {
+    return this.SHORT_TIMEOUT;
+  }
+
+  getLongTimeout(): number {
+    return this.LONG_TIMEOUT;
+  }
+
+  getDefaultTimeout(): number {
+    return this.DEFAULT_TIMEOUT;
+  }
+
+  getVeryLongTimeout(): number {
+    return this.VERY_LONG_TIMEOUT;
+  }
+
   private shouldCaptureStepScreenshots(): boolean {
     return process.env.PLAYWRIGHT_STEP_SCREENSHOTS === 'true';
   }
@@ -371,6 +387,42 @@ export class BasePage {
       );
       throw error;
     }
+  }
+
+  /**
+   * Waits for an element to have the exact expected text.
+   * @param {string} selector - The selector of the element to check.
+   * @param {string} expectedText - The exact text expected in the element.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the text update.
+   * @returns {Promise<void>}
+   */
+  async waitForElementToHaveText(
+    selector: string,
+    expectedText: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(
+      `Waiting for element with selector: ${selector} to have text: "${expectedText}"`,
+    );
+    const normalizedExpectedText = expectedText.trim();
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const currentText = (await this.getText(selector, index, this.SHORT_TIMEOUT))?.trim() ?? '';
+
+      if (currentText === normalizedExpectedText) {
+        return;
+      }
+
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+    }
+
+    const finalText = (await this.getText(selector, index, this.SHORT_TIMEOUT))?.trim() ?? '';
+    throw new Error(
+      `Element with selector: ${selector} did not have expected text "${normalizedExpectedText}" within ${timeout} ms. Current text: "${finalText}"`,
+    );
   }
 
   /**
