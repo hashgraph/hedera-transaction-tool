@@ -2,11 +2,9 @@ import { generateTransactionCancelledContent } from './transaction-cancelled';
 import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
-  buildEmailTransactionsList: jest.fn((transactions) =>
-    `<TRANSACTIONS:${transactions.map((t: any) => `${t.transactionId}|${t.network}`).join(',')}>`
-  ),
   emailWarning: jest.fn((msg) => `<WARNING:${msg}>`),
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+  escapeHtml: jest.requireActual('@app/common/templates/layout').escapeHtml,
 }));
 
 jest.mock('@app/common/templates/index', () => ({
@@ -17,11 +15,9 @@ jest.mock('@app/common/templates/index', () => ({
 }));
 
 import {
-  buildEmailTransactionsList,
   emailWarning,
   renderTransactionEmailLayout,
 } from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
 
 const makeNotification = (overrides?: Partial<{ transactionId: string; network: string }>) =>
   ({
@@ -32,12 +28,9 @@ const makeNotification = (overrides?: Partial<{ transactionId: string; network: 
   } as unknown as Notification);
 
 describe('transaction-cancelled templates', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-// ─── Empty input ──────────────────────────────────────────────────────────────
 
   describe('empty input', () => {
     it('returns empty string when called with no arguments', () => {
@@ -47,36 +40,71 @@ describe('transaction-cancelled templates', () => {
     it('does not call any layout utilities when empty', () => {
       generateTransactionCancelledContent();
       expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
-      expect(buildEmailTransactionsList).not.toHaveBeenCalled();
+      expect(emailWarning).not.toHaveBeenCalled();
     });
   });
 
-// ─── Singular vs plural copy ──────────────────────────────────────────────────
-
-  describe('singular vs plural intro text', () => {
-    it('uses singular copy for one notification', () => {
+  describe('high-level copy', () => {
+    it('uses singular noun and bolded count for one notification', () => {
       const result = generateTransactionCancelledContent(makeNotification());
-      expect(result).toContain('A transaction has been cancelled');
-      expect(result).not.toContain('Multiple transactions');
+      expect(result).toContain('<strong>1</strong> transaction has been cancelled');
+      expect(result).not.toContain('1 transactions');
     });
 
-    it('uses plural copy for two notifications', () => {
-      const result = generateTransactionCancelledContent(makeNotification(), makeNotification());
-      expect(result).toContain('Multiple transactions have been cancelled');
-      expect(result).not.toContain('A transaction has been cancelled');
-    });
-
-    it('uses plural copy for three or more notifications', () => {
+    it('uses plural noun and bolded count for multiple notifications', () => {
       const result = generateTransactionCancelledContent(
         makeNotification(),
         makeNotification(),
         makeNotification(),
       );
-      expect(result).toContain('Multiple transactions have been cancelled');
+      expect(result).toContain('<strong>3</strong> transactions have been cancelled');
+    });
+
+    it('uses the unified CTA text', () => {
+      const result = generateTransactionCancelledContent(makeNotification());
+      expect(result).toContain('View details in the Hedera Transaction Tool');
     });
   });
 
-// ─── Layout wiring ────────────────────────────────────────────────────────────
+  describe('network breakdown', () => {
+    it('renders a single-network breakdown', () => {
+      const result = generateTransactionCancelledContent(
+        makeNotification({ network: 'mainnet' }),
+      );
+      expect(result).toContain('<strong>1</strong> transaction on Mainnet');
+    });
+
+    it('renders a multi-network breakdown', () => {
+      const result = generateTransactionCancelledContent(
+        makeNotification({ network: 'mainnet' }),
+        makeNotification({ network: 'previewnet' }),
+      );
+      expect(result).toContain('<strong>1</strong> transaction on Mainnet');
+      expect(result).toContain('<strong>1</strong> transaction on Previewnet');
+    });
+  });
+
+  describe('privacy', () => {
+    it('does not embed transactionId', () => {
+      const result = generateTransactionCancelledContent(
+        makeNotification({ transactionId: '0.0.999@1234567890.000' }),
+      );
+      expect(result).not.toContain('0.0.999@1234567890.000');
+    });
+
+    it('does not embed validStart timestamps', () => {
+      const notification = {
+        additionalData: {
+          transactionId: 'tx-1',
+          network: 'mainnet',
+          validStart: '2099-12-31T23:59:59.000Z',
+        },
+      } as unknown as Notification;
+      const result = generateTransactionCancelledContent(notification);
+      expect(result).not.toContain('2099-12-31T23:59:59.000Z');
+      expect(result).not.toContain('2099');
+    });
+  });
 
   describe('layout integration', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
@@ -87,11 +115,6 @@ describe('transaction-cancelled templates', () => {
       );
     });
 
-    it('calls buildEmailTransactionsList once', () => {
-      generateTransactionCancelledContent(makeNotification());
-      expect(buildEmailTransactionsList).toHaveBeenCalledTimes(1);
-    });
-
     it('calls emailWarning with the admin contact message', () => {
       generateTransactionCancelledContent(makeNotification());
       expect(emailWarning).toHaveBeenCalledWith(
@@ -99,74 +122,8 @@ describe('transaction-cancelled templates', () => {
       );
     });
 
-    it('returns the output of renderTransactionEmailLayout', () => {
-      const result = generateTransactionCancelledContent(makeNotification());
-      expect(result).toContain('<LAYOUT title="Transaction Cancelled">');
-    });
-  });
-
-// ─── Transaction data mapping ─────────────────────────────────────────────────
-
-  describe('transaction data mapping', () => {
-    it('passes transactionId to buildEmailTransactionsList', () => {
-      generateTransactionCancelledContent(makeNotification({ transactionId: '0.0.999@1234567890.000' }));
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ transactionId: '0.0.999@1234567890.000' }),
-        ]),
-      );
-    });
-
-    it('passes network through getNetworkString', () => {
-      generateTransactionCancelledContent(makeNotification({ network: 'testnet' }));
-      expect(getNetworkString).toHaveBeenCalledWith('testnet');
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ network: 'Testnet' })]),
-      );
-    });
-
-    it('passes all notifications to buildEmailTransactionsList', () => {
-      generateTransactionCancelledContent(
-        makeNotification({ transactionId: 'tx-1', network: 'mainnet' }),
-        makeNotification({ transactionId: 'tx-2', network: 'testnet' }),
-      );
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith([
-        { transactionId: 'tx-1', network: 'Mainnet' },
-        { transactionId: 'tx-2', network: 'Testnet' },
-      ]);
-    });
-
-    it('preserves notification order', () => {
-      generateTransactionCancelledContent(
-        makeNotification({ transactionId: 'first' }),
-        makeNotification({ transactionId: 'second' }),
-        makeNotification({ transactionId: 'third' }),
-      );
-      const [transactions] = (buildEmailTransactionsList as jest.Mock).mock.calls[0];
-      expect(transactions[0].transactionId).toBe('first');
-      expect(transactions[1].transactionId).toBe('second');
-      expect(transactions[2].transactionId).toBe('third');
-    });
-
     it('handles missing additionalData gracefully', () => {
       expect(() => generateTransactionCancelledContent({} as Notification)).not.toThrow();
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: undefined })]),
-      );
-    });
-
-    it('handles missing transactionId', () => {
-      const notification = { additionalData: { network: 'mainnet' } } as unknown as Notification;
-      generateTransactionCancelledContent(notification);
-      expect(buildEmailTransactionsList).toHaveBeenCalledWith(
-        expect.arrayContaining([expect.objectContaining({ transactionId: undefined })]),
-      );
-    });
-
-    it('handles missing network', () => {
-      const notification = { additionalData: { transactionId: 'tx-1' } } as unknown as Notification;
-      generateTransactionCancelledContent(notification);
-      expect(getNetworkString).toHaveBeenCalledWith(undefined);
     });
   });
 });
