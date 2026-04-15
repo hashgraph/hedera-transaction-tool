@@ -1,13 +1,8 @@
 import { BasePage } from './BasePage.js';
 import { TransactionPage } from './TransactionPage.js';
 import { Page } from '@playwright/test';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { generateCSVFile } from '../utils/csvGenerator.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-import { getTransactionGroupsForTransactionId } from '../utils/databaseQueries.js';
+import { generateCSVFile } from '../utils/files/csvGenerator.js';
+import { getTransactionGroupsForTransactionId } from '../utils/db/databaseQueries.js';
 import { OrganizationPage } from './OrganizationPage.js';
 
 export class GroupPage extends BasePage {
@@ -217,7 +212,7 @@ export class GroupPage extends BasePage {
     feePayerAccountId: string | null = null,
   ) {
     const fileName = 'groupTransactions.csv';
-    await generateCSVFile({
+    const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
       accountId: receiverAccountId,
@@ -225,10 +220,7 @@ export class GroupPage extends BasePage {
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
     });
-    await this.uploadFile(
-      this.importCsvButtonSelector,
-      path.resolve(__dirname, '..', 'data', fileName),
-    );
+    await this.uploadFile(this.importCsvButtonSelector, filePath);
     // Wait for all transactions to be loaded before proceeding
     const lastTxIndex = numberOfTransactions - 1;
     await this.waitForElementToBeVisible(this.transactionTypeIndexSelector + lastTxIndex);
@@ -241,7 +233,7 @@ export class GroupPage extends BasePage {
     feePayerAccountId: string | null = null,
   ) {
     const fileName = 'groupTransactions.csv';
-    await generateCSVFile({
+    const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
       accountId: receiverAccountId,
@@ -249,10 +241,7 @@ export class GroupPage extends BasePage {
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
     });
-    await this.uploadFile(
-      this.importCsvButtonSelector,
-      path.resolve(__dirname, '..', 'data', fileName),
-    );
+    await this.uploadFile(this.importCsvButtonSelector, filePath);
     return await this.getToastMessage(true);
   }
 

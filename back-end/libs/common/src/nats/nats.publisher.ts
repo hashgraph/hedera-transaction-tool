@@ -1,31 +1,40 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { NatsJetStreamService } from './nats-jetstream.service';
-import { JetStreamClient, PubAck } from 'nats';
+import { PubAck } from 'nats';
 
 type PublishResult = { success: boolean; response: PubAck | any };
 
 @Injectable()
-export class NatsPublisherService implements OnModuleInit {
+export class NatsPublisherService {
   private readonly logger = new Logger(NatsPublisherService.name);
-  private js: JetStreamClient;
 
   constructor(private nats: NatsJetStreamService) {}
 
-  async onModuleInit() {
-    this.js = this.nats.getJetStream();
-  }
-
   /* Returns ack once Jetstream has the message, NOT when the message is processed */
   async publish(subject: string, payload: any): Promise<PublishResult> {
+    const js = this.nats.getJetStream();
+
+    if (!this.nats.isConnected() || !js) {
+      this.logger.warn(
+        `NATS not connected, cannot publish to: ${subject}. Message will be lost.`,
+      );
+      return {
+        success: false,
+        response: { name: 'ConnectionError', message: 'NATS not connected' },
+      };
+    }
+
     try {
-      const ack = await this.js.publish(subject, this.encodePayload(payload));
+      const ack = await js.publish(subject, this.encodePayload(payload));
       this.logger.debug(`Published to: ${subject}, seq: ${ack.seq}`);
       return { success: true, response: ack };
     } catch (err) {
-      this.logger.error(`Error publishing: ${subject}`, err);
-      const normalized = err instanceof Error
-        ? { name: err.name, message: err.message, stack: err.stack }
-        : err;
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`Failed to publish to ${subject}: ${message}`);
+      const normalized =
+        err instanceof Error
+          ? { name: err.name, message: err.message, stack: err.stack }
+          : err;
       return { success: false, response: normalized };
     }
   }

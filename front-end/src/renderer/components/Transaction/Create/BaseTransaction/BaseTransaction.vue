@@ -136,7 +136,13 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
-    } else if (hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value as Transaction, now)) {
+    } else if (
+      hasStartTimestampChanged(
+        initialTransaction.value as Transaction,
+        transaction.value as Transaction,
+        now,
+      )
+    ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart and startTimestamp
@@ -186,6 +192,7 @@ const handleCreate = async () => {
     processable.payerId = payerData.accountId.value;
     processable.baseValidStart = data.validStart;
     processable.maxTransactionFee = data.maxTransactionFee as Hbar;
+    processable.description = description.value;
   }
 
   await withLoader(
@@ -313,15 +320,19 @@ function basePreCreateAssert() {
 }
 
 async function updateTransactionKey() {
-  const computedKeys = await computeSignatureKey(
-    transaction.value,
-    network.mirrorNodeBaseURL,
-    accountByIdCache,
-    nodeByIdCache,
-    publicKeyOwnerCache,
-    user.selectedOrganization,
-  );
-  transactionKey.value = new KeyList(computedKeys.signatureKeys);
+  try {
+    const computedKeys = await computeSignatureKey(
+      transaction.value,
+      network.mirrorNodeBaseURL,
+      accountByIdCache,
+      nodeByIdCache,
+      publicKeyOwnerCache,
+      user.selectedOrganization,
+    );
+    transactionKey.value = new KeyList(computedKeys.signatureKeys);
+  } catch {
+    transactionKey.value = new KeyList();
+  }
 }
 
 /* Hooks */

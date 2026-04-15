@@ -259,6 +259,25 @@ const handleSubmit = async (e: Event) => {
   await handleAction(buttonContent as ActionButton);
 };
 
+const didSign = async (signed: boolean) => {
+  if (signed) {
+    if (goNextAfterSign.value) {
+      // We route to the next transaction
+      if (nextTransaction.hasNext) {
+        await nextTransaction.routeToNext(router);
+      } else {
+        await nextTransaction.routeUp(router);
+      }
+    } else {
+      // We tell parent to refresh transaction
+      await props.onAction();
+    }
+  } else {
+    // We tell parent to refresh transaction
+    await props.onAction();
+  }
+};
+
 /* Watchers */
 watch(
   () => props.organizationTransaction,
@@ -365,8 +384,7 @@ watch(
 
   <SignTransactionController
     v-model:activate="signStarted"
-    :callback="props.onAction"
-    :go-next="goNextAfterSign"
+    :callback="didSign"
     :transaction="props.organizationTransaction"
   />
   <ApproveTransactionController

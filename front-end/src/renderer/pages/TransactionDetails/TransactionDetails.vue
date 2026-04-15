@@ -22,7 +22,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
-import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
+import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
 import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
@@ -30,6 +30,7 @@ import {
   computeSignatureKey,
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
+  getErrorMessage,
   getStatusFromCode,
   getUInt8ArrayFromBytesString,
   hexToUint8Array,
@@ -54,6 +55,11 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+
+/* Injectables */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -87,6 +93,7 @@ const route = useRoute();
 const accountByIdCache = AccountByIdCache.inject();
 const nodeByIdCache = NodeByIdCache.inject();
 const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const transactionCache = BackendTransactionCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
@@ -155,9 +162,9 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await getTransactionById(
-        user.selectedOrganization?.serverUrl || '',
+      orgTransaction.value = await transactionCache.lookup(
         Number(id),
+        user.selectedOrganization?.serverUrl || '',
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
@@ -187,7 +194,6 @@ async function fetchTransaction() {
       }
     }
   } catch (error) {
-    router.back();
     throw error;
   }
 
@@ -216,14 +222,19 @@ async function fetchTransaction() {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKeyObject.value = await computeSignatureKey(
-      sdkTransaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      user.selectedOrganization,
-    );
+    try {
+      signatureKeyObject.value = await computeSignatureKey(
+        sdkTransaction.value,
+        network.mirrorNodeBaseURL,
+        accountByIdCache,
+        nodeByIdCache,
+        publicKeyOwnerCache,
+        user.selectedOrganization,
+      );
+    } catch (error) {
+      signatureKeyObject.value = null;
+      toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
+    }
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);

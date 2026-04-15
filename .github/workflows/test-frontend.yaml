@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
         with:
           egress-policy: audit
 
@@ -70,24 +70,20 @@ jobs:
       matrix:
         test-suite:
           - name: Local Basic
-            tag: '@local-basic'
+            grep: '@local-basic'
             soloRequired: false
             backendRequired: false
-          - name: Local Transactions
-            tag: '@local-transactions'
-            soloRequired: true
-            backendRequired: false
-          - name: Organization Basic
-            tag: '@organization-basic'
+            sharedEnvironment: false
+            workers: 1
+          - name: Shared E2E
+            grep: '@local-transactions|@organization-basic|@organization-advanced'
             soloRequired: true
             backendRequired: true
-          - name: Organization Advanced
-            tag: '@organization-advanced'
-            soloRequired: true
-            backendRequired: true
+            sharedEnvironment: true
+            workers: 4
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
         with:
           egress-policy: audit
 
@@ -232,6 +228,10 @@ jobs:
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/notifications/.env
 
           sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
+          sed -i 's/^ANONYMOUS_MINUTE_LIMIT=.*/ANONYMOUS_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
 
           export COMPOSE_PARALLEL_LIMIT=4
 
@@ -376,13 +376,15 @@ jobs:
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           ENVIRONMENT: LOCALNET
+          PLAYWRIGHT_SHARED_ENV: ${{ matrix.test-suite.sharedEnvironment && 'true' || 'false' }}
+          PLAYWRIGHT_WORKERS: ${{ matrix.test-suite.workers }}
           ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'https://localhost:3001' || '' }}
           POSTGRES_HOST: ${{ matrix.test-suite.backendRequired && 'localhost' || '' }}
           POSTGRES_PORT: ${{ matrix.test-suite.backendRequired && '5432' || '' }}
           POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_USERNAME: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_PASSWORD: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
-        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.tag }}"
+        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.grep }}"
         working-directory: automation
 
       - name: Upload Playwright Report
@@ -467,7 +469,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@f808768d1510423e83855289c910610ca9b43176 # v2.17.0
         with:
           egress-policy: audit
 
@@ -494,6 +496,6 @@ jobs:
         working-directory: front-end
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
+        uses: codecov/codecov-action@5c47607acb93fed5485fdbf7232e8a31425f672a # v5.0.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

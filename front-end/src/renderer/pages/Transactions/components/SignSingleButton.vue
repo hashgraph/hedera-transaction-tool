@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
-import { getTransactionById } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 import type { ITransactionFull } from '@shared/interfaces';
@@ -15,8 +15,11 @@ const props = defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'transactionSigned', payload: { transaction: ITransactionFull; signed: boolean }): void;
+  (event: 'transactionSigned', payload: { transaction: ITransactionFull }): void;
 }>();
+
+/* Injected */
+const transactionCache = BackendTransactionCache.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -29,25 +32,25 @@ const transaction = ref<ITransactionFull | null>(null);
 const handleClick = async () => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  transaction.value = await getTransactionById(
-    user.selectedOrganization.serverUrl,
+  transaction.value = await transactionCache.lookup(
     props.transactionId,
+    user.selectedOrganization.serverUrl,
   );
 
   signStarted.value = true;
 };
 
-const didSign = async (signed: boolean) => {
+const didSign = async () => {
   if (props.refreshTransaction) {
     assertIsLoggedInOrganization(user.selectedOrganization);
 
-    const newTransaction = await getTransactionById(
-      user.selectedOrganization.serverUrl,
+    const newTransaction = await transactionCache.lookup(
       props.transactionId,
+      user.selectedOrganization.serverUrl,
     );
-    emit('transactionSigned', { transaction: newTransaction, signed });
+    emit('transactionSigned', { transaction: newTransaction });
   } else {
-    emit('transactionSigned', { transaction: transaction.value!, signed });
+    emit('transactionSigned', { transaction: transaction.value! });
   }
 };
 </script>
