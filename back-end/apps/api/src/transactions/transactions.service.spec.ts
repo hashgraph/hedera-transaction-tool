@@ -194,7 +194,7 @@ describe('TransactionsService', () => {
       const transaction: Partial<Transaction> = { id: 1, transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
       const canceledTransaction: Partial<Transaction> = { id: 2, transactionId, status: TransactionStatus.CANCELED };
 
-      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([transaction as Transaction, canceledTransaction as Transaction]);
+      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([canceledTransaction as Transaction, transaction as Transaction]);
 
       const id = TransactionId.fromString(transactionId);
       await service.getTransactionById(id);
@@ -209,6 +209,35 @@ describe('TransactionsService', () => {
         where: {
           transaction: {
             id: transaction.id,
+          },
+        },
+        relations: {
+          userKey: true,
+        },
+        withDeleted: true,
+      });
+    });
+
+    it('should return latest canceled transaction by id', async () => {
+      const transactionId = '0.0.1234@123456789.000000000';
+      const canceledTransaction1: Partial<Transaction> = { id: 1, transactionId, status: TransactionStatus.CANCELED };
+      const canceledTransaction2: Partial<Transaction> = { id: 2, transactionId, status: TransactionStatus.CANCELED };
+
+      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([canceledTransaction2 as Transaction, canceledTransaction1 as Transaction]);
+
+      const id = TransactionId.fromString(transactionId);
+      await service.getTransactionById(id);
+
+      expect(transactionsRepo.find).toHaveBeenCalledWith({
+        where: { transactionId: transactionId },
+        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        order: { id: 'DESC' },
+      });
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+        where: {
+          transaction: {
+            id: canceledTransaction2.id,
           },
         },
         relations: {

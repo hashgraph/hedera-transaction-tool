@@ -125,10 +125,10 @@ export class TransactionsService {
 
     if (!transactions.length) return null;
 
-    const terminalStatuses = [TransactionStatus.CANCELED, TransactionStatus.REJECTED, TransactionStatus.ARCHIVED];
+    const inactiveStatuses = [TransactionStatus.CANCELED, TransactionStatus.REJECTED, TransactionStatus.ARCHIVED];
 
     const transaction =
-      transactions.find(t => !terminalStatuses.includes(t.status)) ??
+      transactions.find(t => !inactiveStatuses.includes(t.status)) ??
       transactions[0]; // most recent, since ordered by id DESC
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
