@@ -4,25 +4,104 @@ import { createTestPostgresDataSource } from '../../../../../test-utils/postgres
 import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';
 
+// Diagnostic logging (issue #2576). Prefixed so CI logs are greppable.
+const DIAG_TAG = '[cache.queries.spec]';
+function diag(message: string, extra?: Record<string, unknown>) {
+  const payload = {
+    ts: new Date().toISOString(),
+    pid: process.pid,
+    testName: expect.getState?.().currentTestName ?? null,
+    ...extra,
+  };
+  // eslint-disable-next-line no-console
+  console.log(`${DIAG_TAG} ${message}`, payload);
+}
+
+// Capture background rejections so they aren't silently attributed to whichever
+// suite happens to be active. We attach once per worker process.
+const g = globalThis as unknown as { __cacheQueriesDiagInstalled?: boolean };
+if (!g.__cacheQueriesDiagInstalled) {
+  g.__cacheQueriesDiagInstalled = true;
+  process.on('unhandledRejection', (reason) => {
+    diag('process:unhandledRejection', {
+      message: (reason as Error)?.message ?? String(reason),
+      name: (reason as Error)?.name,
+      stack: (reason as Error)?.stack,
+    });
+  });
+  process.on('uncaughtException', (err) => {
+    diag('process:uncaughtException', {
+      message: err?.message,
+      name: err?.name,
+      stack: err?.stack,
+    });
+  });
+}
+
 describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
   let dataSource: DataSource;
   let cleanup: () => Promise<void>;
   let sqlBuilder: SqlBuilderService;
 
   beforeAll(async () => {
-    const testDb = await createTestPostgresDataSource();
-    dataSource = testDb.dataSource;
-    cleanup = testDb.cleanup;
-    sqlBuilder = new SqlBuilderService(dataSource.manager);
-  }, 60000);
+    const start = Date.now();
+    diag('beforeAll:start');
+    try {
+      const testDb = await createTestPostgresDataSource();
+      dataSource = testDb.dataSource;
+      cleanup = testDb.cleanup;
+      sqlBuilder = new SqlBuilderService(dataSource.manager);
+      diag('beforeAll:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('beforeAll:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        name: (err as Error)?.name,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
+  }, 90000);
 
   afterAll(async () => {
-    await cleanup();
+    const start = Date.now();
+    diag('afterAll:start');
+    try {
+      if (cleanup) {
+        await cleanup();
+      } else {
+        diag('afterAll:skip (cleanup undefined — beforeAll likely failed)');
+      }
+      diag('afterAll:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('afterAll:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
+  });
+
+  beforeEach(() => {
+    diag('beforeEach');
   });
 
   afterEach(async () => {
-    await dataSource.getRepository(CachedNode).createQueryBuilder().delete().execute();
-    await dataSource.getRepository(CachedAccount).createQueryBuilder().delete().execute();
+    const start = Date.now();
+    diag('afterEach:start');
+    try {
+      await dataSource.getRepository(CachedNode).createQueryBuilder().delete().execute();
+      await dataSource.getRepository(CachedAccount).createQueryBuilder().delete().execute();
+      diag('afterEach:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('afterEach:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
   });
 
   describe('INSERT path - new records', () => {
