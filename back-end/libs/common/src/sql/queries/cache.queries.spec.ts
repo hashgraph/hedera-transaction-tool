@@ -5,6 +5,10 @@ import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/comm
 import { randomUUID } from 'node:crypto';
 
 // Diagnostic logging (issue #2576). Prefixed so CI logs are greppable.
+// Process-level unhandledRejection / uncaughtException / ioredis-constructor
+// listeners are installed globally via `setupFiles` in the Notifications
+// Jest config (test-utils/jest.setup.diag.ts). This spec only adds hook
+// timing logs below.
 const DIAG_TAG = '[cache.queries.spec]';
 function diag(message: string, extra?: Record<string, unknown>) {
   const payload = {
@@ -15,27 +19,6 @@ function diag(message: string, extra?: Record<string, unknown>) {
   };
   // eslint-disable-next-line no-console
   console.log(`${DIAG_TAG} ${message}`, payload);
-}
-
-// Capture background rejections so they aren't silently attributed to whichever
-// suite happens to be active. We attach once per worker process.
-const g = globalThis as unknown as { __cacheQueriesDiagInstalled?: boolean };
-if (!g.__cacheQueriesDiagInstalled) {
-  g.__cacheQueriesDiagInstalled = true;
-  process.on('unhandledRejection', (reason) => {
-    diag('process:unhandledRejection', {
-      message: (reason as Error)?.message ?? String(reason),
-      name: (reason as Error)?.name,
-      stack: (reason as Error)?.stack,
-    });
-  });
-  process.on('uncaughtException', (err) => {
-    diag('process:uncaughtException', {
-      message: err?.message,
-      name: err?.name,
-      stack: err?.stack,
-    });
-  });
 }
 
 describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
