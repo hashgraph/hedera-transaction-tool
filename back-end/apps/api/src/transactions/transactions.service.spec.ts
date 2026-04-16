@@ -166,13 +166,43 @@ describe('TransactionsService', () => {
     it('should return transaction by id', async () => {
       const transaction: Partial<Transaction> = { id: 1 };
 
-      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(transaction as Transaction);
+      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([transaction as Transaction]);
 
       await service.getTransactionById(1);
 
-      expect(transactionsRepo.findOne).toHaveBeenCalledWith({
+      expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { id: 1 },
         relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        order: { id: 'DESC' },
+      });
+
+      expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
+        where: {
+          transaction: {
+            id: transaction.id,
+          },
+        },
+        relations: {
+          userKey: true,
+        },
+        withDeleted: true,
+      });
+    });
+
+    it('should return non canceled transaction by id', async () => {
+      const transactionId = '0.0.1234@123456789.000000000';
+      const transaction: Partial<Transaction> = { id: 1, transactionId, status: TransactionStatus.WAITING_FOR_SIGNATURES };
+      const canceledTransaction: Partial<Transaction> = { id: 2, transactionId, status: TransactionStatus.CANCELED };
+
+      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([transaction as Transaction, canceledTransaction as Transaction]);
+
+      const id = TransactionId.fromString(transactionId);
+      await service.getTransactionById(id);
+
+      expect(transactionsRepo.find).toHaveBeenCalledWith({
+        where: { transactionId: transactionId },
+        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        order: { id: 'DESC' },
       });
 
       expect(entityManager.find).toHaveBeenCalledWith(TransactionSigner, {
@@ -189,7 +219,7 @@ describe('TransactionsService', () => {
     });
 
     it('should return null if not transaction found', async () => {
-      jest.spyOn(transactionsRepo, 'findOne').mockResolvedValueOnce(null);
+      jest.spyOn(transactionsRepo, 'find').mockResolvedValueOnce([]);
 
       const result = await service.getTransactionById(1);
 
@@ -1900,7 +1930,7 @@ describe('TransactionsService', () => {
     });
 
     it('should throw if transaction is not found', async () => {
-      transactionsRepo.findOne.mockResolvedValue(null);
+      transactionsRepo.find.mockResolvedValue([]);
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
@@ -1924,7 +1954,7 @@ describe('TransactionsService', () => {
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -1955,7 +1985,7 @@ describe('TransactionsService', () => {
 
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -1979,7 +2009,7 @@ describe('TransactionsService', () => {
       entityManager.find.mockResolvedValueOnce([]);
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2006,7 +2036,7 @@ describe('TransactionsService', () => {
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue(approvers);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2031,7 +2061,7 @@ describe('TransactionsService', () => {
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
         "You don't have permission to view this transaction",
@@ -2056,7 +2086,7 @@ describe('TransactionsService', () => {
       jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
-      transactionsRepo.findOne.mockResolvedValue(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2414,7 +2444,7 @@ describe('TransactionsService', () => {
 
     it('should throw if no user is provided', async () => {
       const transaction = { creatorKey: { userId: 2 } };
-      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValueOnce([transaction as Transaction]);
 
       await expect(service.getTransactionForCreator(1, null)).rejects.toThrow(
         'Only the creator has access to this transaction',
@@ -2424,7 +2454,7 @@ describe('TransactionsService', () => {
     it('should throw if user is not the creator', async () => {
       const transaction = { creatorKey: { userId: 231232 } };
 
-      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValueOnce([transaction as Transaction]);
 
       await expect(service.getTransactionForCreator(1, user as User)).rejects.toThrow(
         'Only the creator has access to this transaction',
@@ -2434,7 +2464,7 @@ describe('TransactionsService', () => {
     it('should return the transaction if user is the creator', async () => {
       const transaction = { creatorKey: { userId: user.id } };
 
-      transactionsRepo.findOne.mockResolvedValueOnce(transaction as Transaction);
+      transactionsRepo.find.mockResolvedValueOnce([transaction as Transaction]);
 
       const result = await service.getTransactionForCreator(1, user as User);
 
