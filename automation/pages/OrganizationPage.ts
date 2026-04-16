@@ -18,15 +18,19 @@ import {
 import { waitForValidStart } from '../utils/runtime/timing.js';
 import { createTestUsersBatch } from '../utils/db/databaseUtil.js';
 import {
+  clearUserKeyMnemonicHashesByEmail as clearOrganizationUserKeyMnemonicHashesByEmailQuery,
+  deleteUserKeysByEmail as deleteOrganizationUserKeysByEmailQuery,
   findNewKey,
   getAllTransactionIdsForUserObserver,
   getFirstPublicKeyByEmail,
   getLatestInAppNotificationStatusByEmail,
   getUserIdByEmail,
   isKeyDeleted,
+  setUserKeyMnemonicHashesByEmail as setOrganizationUserKeyMnemonicHashesByEmailQuery,
   verifyOrganizationExists,
 } from '../utils/db/databaseQueries.js';
 import * as fs from 'node:fs';
+import { argonHash } from '../utils/crypto/crypto.js';
 import { generateMnemonic } from '../utils/crypto/keyUtil.js';
 import { indexRecoveryPhraseWords, seedOrganizationUserKey } from '../utils/seeding/organizationSeeding.js';
 import {
@@ -141,10 +145,14 @@ export class OrganizationPage extends BasePage {
   transactionNodeStatusIndexSelector = 'td-transaction-node-transaction-status-';
   transactionNodeSignButtonIndexSelector = 'button-transaction-node-sign-';
   transactionNodeDetailsButtonIndexSelector = 'button-transaction-node-details-';
+  transactionNodeTransactionIdListSelector = `css=[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`;
 
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
+  userListSelector = `css=[data-testid^="${this.userListIndexSelector}"]`;
+  confirmGroupActionButtonByModalTitleSelectorTemplate =
+    'css=[data-testid="{modalTestId}"]:visible:has({modalTitleSelector}:has-text("{modalTitle}")) [data-testid="{confirmButtonTestId}"]';
   // Elements
   notificationsIndicatorElement = 'notification-indicator';
 
@@ -320,12 +328,27 @@ export class OrganizationPage extends BasePage {
   }
 
   async recoverAccount(userIndex: number) {
+    // After org reset + sign-in, the recovery view can render asynchronously.
+    // Wait for the first mnemonic field before trying to read/fill all words.
+    await this.waitForElementToBeVisible(
+      this.registrationPage.getRecoveryWordSelector(1),
+      this.VERY_LONG_TIMEOUT,
+    );
     await this.fillAllMissingRecoveryPhraseWordsForUser(userIndex);
     await this.registrationPage.clickOnNextImportButton();
 
     await this.registrationPage.waitForElementToDisappear(
       this.registrationPage.toastMessageSelector,
     );
+
+    const user = this.getUser(userIndex);
+    const recoveryWords = this.organizationRecoveryWords[userIndex];
+    if (recoveryWords?.length) {
+      // Keep backend mnemonic hashes aligned with the restored phrase so
+      // account-setup guards can resolve after the final "Next".
+      const recoveryPhraseHash = await argonHash(recoveryWords.slice(1).join(','), true);
+      await this.setUserKeyMnemonicHashesByEmail(user.email, recoveryPhraseHash);
+    }
 
     if (await this.isDeleteNextButtonVisible()) {
       await this.clickOnDeleteNextButton();
@@ -334,8 +357,11 @@ export class OrganizationPage extends BasePage {
   }
 
   async recoverPrivateKey(window: Page) {
-    // for settings tests we are recovering User#1 which has PRIVATE_KEY_2 in the database
-    await setupEnvironmentForTransactions(window, getPrivateKeyEnv());
+    // For settings recovery flows, prefer an already-seeded key over provisioning
+    // a brand-new localnet payer account (which can be slow/flaky on mirror sync).
+    const configuredPrivateKey = getPrivateKeyEnv();
+    const seededPrivateKey = this.users[0]?.privateKey ?? null;
+    await setupEnvironmentForTransactions(window, configuredPrivateKey ?? seededPrivateKey);
   }
 
   getUser(index: number) {
@@ -398,11 +424,9 @@ export class OrganizationPage extends BasePage {
    * @returns true if the transaction row has the notification indicator, false otherwise
    */
   async hasNotificationForTransaction(transactionId: string): Promise<boolean> {
-    const rows = await this.window
-      .locator(`[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`)
-      .all();
+    const rowCount = await this.getElement(this.transactionNodeTransactionIdListSelector).count();
 
-    for (let i = 0; i < rows.length; i++) {
+    for (let i = 0; i < rowCount; i++) {
       const rowText = await this.getText(this.transactionNodeTransactionIdIndexSelector + i);
 
       if (rowText && rowText.includes(transactionId)) {
@@ -553,6 +577,18 @@ export class OrganizationPage extends BasePage {
 
   async getUserIdByEmail(email: string) {
     return await getUserIdByEmail(email);
+  }
+
+  async deleteUserKeysByEmail(email: string) {
+    return await deleteOrganizationUserKeysByEmailQuery(email);
+  }
+
+  async clearUserKeyMnemonicHashesByEmail(email: string) {
+    return await clearOrganizationUserKeyMnemonicHashesByEmailQuery(email);
+  }
+
+  async setUserKeyMnemonicHashesByEmail(email: string, mnemonicHash: string) {
+    return await setOrganizationUserKeyMnemonicHashesByEmailQuery(email, mnemonicHash);
   }
 
   async isKeyDeleted(publicKey: string) {
@@ -896,15 +932,11 @@ export class OrganizationPage extends BasePage {
   }
 
   private async selectTrackedObserver(selectedObservers: string[]): Promise<string> {
-    await this.window.waitForSelector(`[data-testid^="${this.userListIndexSelector}"]`, {
-      state: 'visible',
-      timeout: this.LONG_TIMEOUT,
-    });
+    await this.waitForElementToBeVisible(this.userListSelector, this.LONG_TIMEOUT, 0);
 
-    const listedObserverEmails = (await this.window
-      .locator(`[data-testid^="${this.userListIndexSelector}"]`)
-      .allTextContents())
-      .map(email => email.trim());
+    const listedObserverEmails = (
+      await this.getElement(this.userListSelector).allTextContents()
+    ).map(email => email.trim());
 
     const trackedObserver = this.users.find(
       user =>
@@ -1464,7 +1496,11 @@ export class OrganizationPage extends BasePage {
       return this.confirmGroupActionButtonSelector;
     }
 
-    return `css=[data-testid="${this.confirmTransactionModalSelector}"]:visible:has(${this.confirmTransactionModalTitleSelector}:has-text("${modalTitle}")) [data-testid="${this.confirmGroupActionButtonSelector}"]`;
+    return this.confirmGroupActionButtonByModalTitleSelectorTemplate
+      .replace('{modalTestId}', this.confirmTransactionModalSelector)
+      .replace('{modalTitleSelector}', this.confirmTransactionModalTitleSelector)
+      .replace('{modalTitle}', modalTitle)
+      .replace('{confirmButtonTestId}', this.confirmGroupActionButtonSelector);
   }
 
   async clickOnConfirmGroupActionButton(modalTitle?: string) {
