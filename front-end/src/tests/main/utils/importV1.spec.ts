@@ -69,6 +69,6 @@ describe('V1 import utilities', () => {
       expect(error).toBe('File extraction aborted');
     }
     const f = async () => await extractUnzipperFileToBuffer(txFile!, abortSignal);
-    await expect(f).rejects.toThrow('File extraction aborted');
+    expect(f).rejects.toThrow('File extraction aborted');
   });
 });

@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import * as argon2 from 'argon2';
+import * as bcrypt from 'bcrypt';
 
 export function deriveKey(password: string, salt: Buffer) {
   const iterations = 2560;
@@ -28,19 +30,19 @@ export function decrypt(data: string, password: string) {
   const salt = bData.subarray(0, 64);
   const iv = bData.subarray(64, 80);
   const tag = bData.subarray(80, 96);
-  const encrypted = bData.subarray(96);
+  const text = bData.subarray(96).toString('base64');
 
   const key = deriveKey(password, salt);
 
   const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
   decipher.setAuthTag(tag);
 
-  const decrypted = decipher.update(encrypted, undefined, 'utf8') + decipher.final('utf8');
+  const decrypted = decipher.update(text, 'base64', 'utf8') + decipher.final('utf8');
 
   return decrypted;
 }
+
 export async function hash(data: string, usePseudoSalt = false): Promise<string> {
-  const argon2 = await import('argon2');
   let pseudoSalt: Buffer | undefined;
   if (usePseudoSalt) {
     const paddedData = data.padEnd(16, 'x');
@@ -52,12 +54,10 @@ export async function hash(data: string, usePseudoSalt = false): Promise<string>
 }
 
 export async function verifyHash(hash: string, data: string): Promise<boolean> {
-  const argon2 = await import('argon2');
   return await argon2.verify(hash, data);
 }
 
 export async function dualCompareHash(data: string, hash: string) {
-  const bcrypt = await import('bcrypt');
   const matchBcrypt = await bcrypt.compare(data, hash);
   const matchArgon2 = await verifyHash(hash, data);
 
