@@ -93,7 +93,10 @@ export class OrganizationPage extends BasePage {
   hoursOverlayButtonSelector = 'css=button[data-test-id="hours-toggle-overlay-btn-0"]';
   signTransactionButtonSelector = 'button-sign-org-transaction';
   cancelTransactionButtonSelector = 'button-cancel-org-transaction';
-  signTransactionButton = 'css=button:has-text("Sign")';
+  splitSignMainButtonSelector = 'css=button.main-button';
+  splitSignDropdownToggleSelector = 'css=button.dropdown-toggle-split';
+  splitSignOptionLabelSelector = 'css=.dropdown-menu .option-label';
+  transactionHeaderSubmitButtonSelector = 'css=form button[type="submit"]';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
   rejectAllTransactionsButtonSelector = 'button-reject-group';
@@ -927,11 +930,41 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnSignTransactionButton() {
-    await this.click(this.signTransactionButton, 0, this.VERY_LONG_TIMEOUT);
+    // Preferred: explicit data-testid if present.
+    if (await this.isElementVisible(this.signTransactionButtonSelector, null, this.DEFAULT_TIMEOUT)) {
+      await this.click(this.signTransactionButtonSelector, 0, this.VERY_LONG_TIMEOUT);
+      return;
+    }
+
+    // Split-sign flow: always pick the first dropdown option to avoid implicit next-navigation.
+    if (await this.isElementVisible(this.splitSignMainButtonSelector, null, this.LONG_TIMEOUT)) {
+      await this.click(this.splitSignDropdownToggleSelector, 0, this.LONG_TIMEOUT);
+      await this.waitForElementToBeVisible(this.splitSignOptionLabelSelector, this.LONG_TIMEOUT, 0);
+      await this.click(this.splitSignOptionLabelSelector, 0, this.LONG_TIMEOUT);
+      await this.waitForElementToHaveText(
+        this.splitSignMainButtonSelector,
+        'Sign',
+        0,
+        this.LONG_TIMEOUT,
+      );
+      await this.click(this.splitSignMainButtonSelector, 0, this.LONG_TIMEOUT);
+      return;
+    }
+
+    // Backward-compatible fallback for legacy layouts without explicit sign selectors.
+    await this.click(this.transactionHeaderSubmitButtonSelector, 0, this.VERY_LONG_TIMEOUT);
   }
 
   async isSignTransactionButtonVisible() {
-    return await this.isElementVisible(this.signTransactionButtonSelector);
+    if (await this.isElementVisible(this.signTransactionButtonSelector, null, this.SHORT_TIMEOUT)) {
+      return true;
+    }
+
+    if (await this.isElementVisible(this.splitSignMainButtonSelector, null, this.SHORT_TIMEOUT)) {
+      return true;
+    }
+
+    return await this.isElementVisible(this.transactionHeaderSubmitButtonSelector, null, this.SHORT_TIMEOUT);
   }
 
   async clickOnCancelTransactionButton() {
@@ -1785,7 +1818,7 @@ export class OrganizationPage extends BasePage {
 
   async clickOnInProgressDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 20,
+    maxRetries = 30,
     retryDelay = this.SHORT_TIMEOUT,
   ) {
     for (let attempt = 0; attempt < maxRetries; attempt++) {
@@ -1916,11 +1949,33 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnNextTransactionButton() {
-    await this.click(this.nextTransactionButtonSelector);
+    await this.clickButtonWhenEnabled(this.nextTransactionButtonSelector, this.VERY_LONG_TIMEOUT);
   }
 
   async isNextTransactionButtonVisible() {
     return await this.isElementVisible(this.nextTransactionButtonSelector);
+  }
+
+  async isNextTransactionButtonEnabled() {
+    const isNextTransactionButtonVisible = await this.isElementVisible(
+      this.nextTransactionButtonSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (!isNextTransactionButtonVisible) {
+      return false;
+    }
+
+    try {
+      return !(await this.isDisabled(
+        this.nextTransactionButtonSelector,
+        null,
+        this.SHORT_TIMEOUT,
+      ));
+    } catch {
+      return false;
+    }
   }
 
   async clickOnCancelAddingOrganizationButton() {

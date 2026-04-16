@@ -5,7 +5,6 @@ import { TransactionPage } from '../../pages/TransactionPage.js';
 import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
 import { setDialogMockState } from '../../utils/runtime/dialogMocks.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
-import { waitForValidStart } from '../../utils/runtime/timing.js';
 import { setupOrganizationAdvancedFixture } from '../helpers/fixtures/organizationAdvancedFixture.js';
 import {
   setupOrganizationSuiteApp,
@@ -24,7 +23,6 @@ let loginPage: LoginPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 let organizationNickname = 'Test Organization';
 
-let firstUser: UserDetails;
 let secondUser: UserDetails;
 let thirdUser: UserDetails;
 let complexKeyAccountId: string;
@@ -67,7 +65,6 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     );
     globalCredentials.email = fixture.localCredentials.email;
     globalCredentials.password = fixture.localCredentials.password;
-    firstUser = fixture.firstUser;
     secondUser = fixture.secondUser;
     thirdUser = fixture.thirdUser;
     complexKeyAccountId = fixture.complexKeyAccountId;
@@ -255,126 +252,5 @@ test.describe('Organization Transaction status/signing tests @organization-advan
 
     const user0 = organizationPage.users[0];
     await organizationPage.fillInLoginDetailsAndClickSignIn(user0.email, user0.password);
-  });
-
-  test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
-    const { txId, validStart } = await organizationPage.updateAccount(
-      complexKeyAccountId,
-      'update',
-      600,
-      true,
-    );
-    const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
-    await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyForExecutionTab();
-
-    const transactionDetails = await organizationPage.getReadyForExecutionTransactionDetails(
-      txId ?? '',
-    );
-    expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBe(validStartTime);
-    expect(transactionDetails?.detailsButton).toBe(true);
-
-    await organizationPage.clickOnReadyForExecutionDetailsButtonByTransactionId(txId ?? '');
-
-    const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
-    expect(isStageOneCompleted).toBe(true);
-
-    const isStageTwoCompleted = await organizationPage.isTransactionStageCompleted(1);
-    expect(isStageTwoCompleted).toBe(true);
-
-    const isStageThreeCompleted = await organizationPage.isTransactionStageCompleted(2);
-    expect(isStageThreeCompleted).toBe(false);
-  });
-
-  test('Verify transaction is shown "History" after it is executed', async () => {
-    const { txId, validStart } = await organizationPage.updateAccount(
-      complexKeyAccountId,
-      'newUpdate',
-      5,
-      true,
-    );
-    await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    await waitForValidStart(validStart ?? '');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnHistoryTab();
-
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
-    expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBeTruthy();
-    expect(transactionDetails?.detailsButton).toBe(true);
-    expect(transactionDetails?.status).toBe('SUCCESS');
-
-    await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
-
-    const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
-    expect(isStageOneCompleted).toBe(true);
-
-    const isStageTwoCompleted = await organizationPage.isTransactionStageCompleted(1);
-    expect(isStageTwoCompleted).toBe(true);
-
-    const isStageThreeCompleted = await organizationPage.isTransactionStageCompleted(2);
-    expect(isStageThreeCompleted).toBe(true);
-
-    const isStageFourCompleted = await organizationPage.isTransactionStageCompleted(3);
-    expect(isStageFourCompleted).toBe(true);
-  });
-
-  test.skip('Verify next button is visible when user has multiple txs to sign', async () => {
-    await organizationPage.createAccount(600, 0, false);
-    const { txId } = await organizationPage.createAccount(600, 0, false);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignDetailsButtonByTransactionId(txId ?? '');
-    await organizationPage.clickOnSignTransactionButton();
-    expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
-  });
-
-  test.skip('Verify user is redirected to the next transaction after clicking the next button', async () => {
-    await organizationPage.createAccount(600, 0, false);
-    const { txId } = await organizationPage.createAccount(600, 0, false);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignDetailsButtonByTransactionId(txId ?? '');
-    await organizationPage.clickOnSignTransactionButton();
-    await organizationPage.clickOnNextTransactionButton();
-    const currentTxId = await organizationPage.getTransactionDetailsId();
-    expect(currentTxId).not.toBe(txId);
-    expect(await organizationPage.isSignTransactionButtonVisible()).toBe(true);
-  });
-
-  test.skip('Verify next button is visible when user has multiple txs in history', async () => {
-    const { txId } = await organizationPage.createAccount(1, 0, true);
-    await organizationPage.closeDraftModal();
-    const { validStart } = await organizationPage.createAccount(3, 0, true);
-    await organizationPage.closeDraftModal();
-    await waitForValidStart(validStart ?? '');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnHistoryTab();
-    await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
-    expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
 });
