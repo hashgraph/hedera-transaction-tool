@@ -159,6 +159,7 @@ const canCancel = computed(() => {
 const canSign = computed(() => {
   if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
   if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+
   if (!isSignableStatus(props.organizationTransaction.status)) return false;
 
   if (isTransactionVersionMismatch.value) {

@@ -5,7 +5,9 @@ export const isInProgressStatus = (status: TransactionStatus | null | undefined)
     .includes(status as TransactionStatus);
 
 export const isSignableStatus = (status: TransactionStatus | null | undefined): boolean =>
-  status === TransactionStatus.WAITING_FOR_SIGNATURES;
+  [TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+    status as TransactionStatus,
+  );
 
 export const isApprovableStatus = (status: TransactionStatus | null | undefined): boolean =>
   [TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(

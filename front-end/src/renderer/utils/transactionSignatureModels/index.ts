@@ -100,7 +100,10 @@ export const isSignableTransaction = async (
   organization: ConnectedOrganization & LoggedInOrganization,
 ): Promise<boolean> => {
   let result: boolean;
-  if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
+  if (
+    tx.status === TransactionStatus.WAITING_FOR_SIGNATURES ||
+    tx.status === TransactionStatus.WAITING_FOR_EXECUTION
+  ) {
     const transactionBytes = hexToUint8Array(tx.transactionBytes);
     try {
       const sdkTransaction = SDKTransaction.fromBytes(transactionBytes);
