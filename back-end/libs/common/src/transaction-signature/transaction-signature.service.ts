@@ -189,28 +189,31 @@ export class TransactionSignatureService {
         return;
       }
 
-      if (transaction instanceof NodeDeleteTransaction) {
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+      if (sdkTransaction instanceof NodeDeleteTransaction) {
         // if fee payer is council_accounts,
         // it will already be added to the required list
         // and the admin key is not required (as the fee payer will already approve it)
         // otherwise, admin key is required
-        const payerId = transaction.transactionId?.accountId;
+        const payerId = sdkTransaction.transactionId?.accountId;
         const isCouncilAccount = payerId && payerId.toString() in COUNCIL_ACCOUNTS;
 
         if (!isCouncilAccount) {
           signatureKey.push(nodeInfo.admin_key);
         }
         return;
-      } else if (!(transaction instanceof NodeUpdateTransaction)) {
+      } else if (!(sdkTransaction instanceof NodeUpdateTransaction)) {
         // Non-update transactions only require the admin key
         signatureKey.push(nodeInfo.admin_key);
         return;
       }
 
-      const nodeUpdateTx = transaction as NodeUpdateTransaction;
+      const nodeUpdateTx = sdkTransaction as NodeUpdateTransaction;
 
       const isAccountIdChanging =
         nodeUpdateTx.accountId !== null &&
+        nodeInfo.node_account_id !== null &&
         !nodeUpdateTx.accountId.equals(nodeInfo.node_account_id);
 
       if (!isAccountIdChanging) {
@@ -226,6 +229,12 @@ export class TransactionSignatureService {
           // either the current account key OR the admin key can satisfy current owner
           const currentOwnerThreshold = new KeyList();
           currentOwnerThreshold.setThreshold(1);
+
+          if (nodeInfo.node_account_id === null) {
+            this.logger.warn(`No node account ID found for node ${nodeId}`);
+            signatureKey.push(nodeInfo.admin_key);
+            return;
+          }
 
           const currentAccountInfo = await this.accountCacheService.getAccountInfoForTransaction(
             transaction,
