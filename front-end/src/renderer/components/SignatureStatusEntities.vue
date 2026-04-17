@@ -35,6 +35,12 @@ const linkedAccounts = ref<HederaAccount[]>([]);
 /* Computed */
 const labelParts = computed(() => props.label.split('$entityId'));
 
+/* Functions */
+const isNumericEntityId = (entityId: string) => !Number.isNaN(Number(entityId));
+
+const getLinkedAccountNickname = (entityId: string) =>
+  linkedAccounts.value.find(la => la.account_id === entityId)?.nickname || '';
+
 /* Hooks */
 onBeforeMount(async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
@@ -72,24 +78,15 @@ onBeforeMount(async () => {
                 </template>
                 <template v-else>
                   <span>{{ part }}</span>
-                  <span>
-                    <template
-                      v-if="
-                        (linkedAccounts.find(la => la.account_id === entityId)?.nickname || '')
-                          .length > 0
-                      "
-                    >
-                      <span>
-                        <span class="text-small">
-                          {{ linkedAccounts.find(la => la.account_id === entityId)?.nickname }}
-                          ({{ getAccountIdWithChecksum(entityId) }})
-                        </span>
-                      </span>
+                  <span class="text-small">
+                    <template v-if="isNumericEntityId(entityId)">
+                      {{ entityId }}
+                    </template>
+                    <template v-else-if="getLinkedAccountNickname(entityId).length > 0">
+                      {{ getLinkedAccountNickname(entityId) }} ({{ getAccountIdWithChecksum(entityId) }})
                     </template>
                     <template v-else>
-                      <span class="text-small overflow-hidden">
-                        {{ getAccountIdWithChecksum(entityId) || entityId }}
-                      </span>
+                      <span class="overflow-hidden">{{ getAccountIdWithChecksum(entityId) || entityId }}</span>
                     </template>
                   </span>
                 </template>
