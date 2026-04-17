@@ -3,7 +3,7 @@ import { AccountId, Key, KeyList, NodeUpdateTransaction } from '@hiero-ledger/sd
 import { TransactionBaseModel } from './transaction.model';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache';
-import { createLogger } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.transaction.signatureModel.nodeUpdate');
 

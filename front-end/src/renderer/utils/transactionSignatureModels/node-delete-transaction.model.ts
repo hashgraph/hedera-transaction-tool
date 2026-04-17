@@ -4,7 +4,7 @@ import { TransactionBaseModel } from './transaction.model';
 import { COUNCIL_ACCOUNTS } from './index';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache';
-import { createLogger } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.transaction.signatureModel.nodeDelete');
 
