@@ -158,7 +158,7 @@ export class TransactionSignatureService {
    *     The current account key is not needed.
    *
    *   Case 2 — accountId IS changing AND other fields are also changing:
-   *     Required: (current account key OR admin key) + new account key (if swap)
+   *     Required: admin key + new account key (if swap)
    *     Admin key alone satisfies the "current owner" requirement, so the
    *     current account key does not need to be explicitly included.
    *
