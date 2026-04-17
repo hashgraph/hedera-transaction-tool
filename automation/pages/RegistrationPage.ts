@@ -49,7 +49,10 @@ export class RegistrationPage extends BasePage {
 
   // Messages
   toastMessageSelector = 'css=.v-toast__text';
+  visibleToastMessageSelector = 'css=.v-toast__text:visible';
+  visibleToastItemSelector = 'css=.v-toast__item:visible';
   toastMessageByVariantPrefix = 'css=.v-toast__item--';
+  toastMessageByVariantSuffix = ' .v-toast__text';
   emailErrorMessageSelector = 'invalid-text-email';
   passwordErrorMessageSelector = 'invalid-text-password';
   confirmPasswordErrorMessageSelector = 'invalid-text-password-not-match';
@@ -113,27 +116,64 @@ export class RegistrationPage extends BasePage {
     }
   }
 
-  async clickOnFinalNextButtonWithRetry(retryCount = 5) {
-    let attempts = 0;
-    let isSuccessful = false;
-
-    while (attempts < retryCount && !isSuccessful) {
+  async clickOnFinalNextButtonWithRetry(retryCount = 2) {
+    for (let attempt = 0; attempt < retryCount; attempt++) {
       try {
-        // Attempt to click the final next button
         await this.click(this.finalNextButtonSelector);
-        await this.waitForElementToBeVisible(this.settingsButtonSelector);
-        isSuccessful = true;
-      } catch {
+      } catch (error) {
+        await this.dismissVisibleToasts();
+
+        if (attempt === retryCount - 1) {
+          throw error;
+        }
+
         console.log(
-          `Attempt ${attempts + 1} to click ${this.finalNextButtonSelector} failed, retrying...`,
+          `Attempt ${attempt + 1} to click ${this.finalNextButtonSelector} was blocked, retrying...`,
         );
-        attempts++;
+        continue;
+      }
+
+      try {
+        // Saving org keys can take noticeably longer than a normal page transition.
+        await this.waitForElementToBeVisible(this.settingsButtonSelector, this.VERY_LONG_TIMEOUT);
+        return;
+      } catch {
+        await this.dismissVisibleToasts();
+
+        if (await this.isElementVisible(this.settingsButtonSelector, null, this.SHORT_TIMEOUT)) {
+          return;
+        }
+
+        console.log(
+          `Attempt ${attempt + 1} to click ${this.finalNextButtonSelector} failed, retrying...`,
+        );
       }
     }
 
-    if (!isSuccessful) {
-      throw new Error('Failed to navigate to the next page after maximum attempts');
+    throw new Error('Failed to navigate to the next page after maximum attempts');
+  }
+
+  private async dismissVisibleToasts() {
+    for (let attempt = 0; attempt < 10; attempt++) {
+      const isToastVisible = await this.isElementVisible(
+        this.visibleToastMessageSelector,
+        0,
+        this.SHORT_TIMEOUT,
+      );
+      if (!isToastVisible) {
+        return;
+      }
+
+      try {
+        await this.click(this.visibleToastItemSelector, 0, this.SHORT_TIMEOUT);
+      } catch {
+        await this.pressKey('Escape').catch(() => undefined);
+      }
+
+      await this.wait(this.SHORT_TIMEOUT);
     }
+
+    await this.isElementHidden(this.visibleToastMessageSelector, 0, this.LONG_TIMEOUT);
   }
 
   compareWordSets(firstSet: string[], secondSet: string[]) {
@@ -400,13 +440,13 @@ export class RegistrationPage extends BasePage {
   }
 
   async getToastMessage() {
-    const toasts = this.window.locator(`${this.toastMessageSelector}:visible`);
+    const toasts = this.window.locator(this.visibleToastMessageSelector);
     await toasts.last().waitFor({ state: 'visible', timeout: this.VERY_LONG_TIMEOUT });
     return ((await toasts.last().textContent()) ?? '').trim();
   }
 
   async getToastMessageByVariant(variant: 'success' | 'error' | 'warning' | 'info') {
-    const selector = `${this.toastMessageByVariantPrefix}${variant} .v-toast__text`;
+    const selector = `${this.toastMessageByVariantPrefix}${variant}${this.toastMessageByVariantSuffix}`;
     const toasts = this.window.locator(selector);
     await toasts.first().waitFor({ state: 'visible', timeout: this.VERY_LONG_TIMEOUT });
     const message = await toasts.last().textContent();
