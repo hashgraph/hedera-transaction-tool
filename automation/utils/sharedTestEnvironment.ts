@@ -7,7 +7,7 @@ import {
   resetDbStateForTeardown,
   resetPostgresDbState,
   resetPostgresDbStateForTeardown,
-} from './databaseUtil.js';
+} from './db/databaseUtil.js';
 import {
   applyPlaywrightIsolationEnv,
   clearPlaywrightIsolationEnv,
