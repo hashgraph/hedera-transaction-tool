@@ -2,7 +2,14 @@ import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
 
 export class LoginPage extends BasePage {
-  blockingModalSelector = '[data-testid="modal-confirm-transaction"][style*="display: block"]';
+  // AppModal currently reuses the same modal test id for multiple dialog types.
+  // Treat only transaction-confirm action buttons as blocking for login.
+  private readonly blockingModalActionSelectors = [
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-sign-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-cancel-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-sign-org-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-cancel-org-transaction"]',
+  ] as const;
 
   constructor(window: Page) {
     super(window);
@@ -33,6 +40,7 @@ export class LoginPage extends BasePage {
 
   // Messages
   toastMessageSelector = 'css=.v-toast__text';
+  visibleToastMessageSelector = 'css=.v-toast__text:visible';
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 
@@ -127,7 +135,7 @@ export class LoginPage extends BasePage {
         return 'signIn';
       }
 
-      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+      await this.wait(this.SHORT_TIMEOUT);
     }
 
     throw new Error('Unable to determine auth mode from startup screen');
@@ -188,21 +196,77 @@ export class LoginPage extends BasePage {
   }
 
   async clickSignIn() {
-    await this.waitForBlockingModalToClose();
+    await this.dismissKnownBlockingModals();
+
+    try {
+      await this.waitForBlockingModalToClose(this.SHORT_TIMEOUT);
+    } catch {
+      // In some flows a stale transaction confirmation modal can remain open and
+      // intercept pointer events on top of the auth screen.
+      await this.dismissKnownBlockingModals();
+      await this.pressKey('Escape');
+      await this.pressKey('Escape');
+      await this.waitForBlockingModalToClose();
+    }
     await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
   }
 
-  async waitForBlockingModalToClose(timeout: number = this.VERY_LONG_TIMEOUT) {
-    const modalHidden = await this.isElementHidden(this.blockingModalSelector, null, timeout);
-    if (!modalHidden) {
-      throw new Error(
-        `Blocking modal "${this.blockingModalSelector}" did not close within ${timeout} ms`,
-      );
+  private async dismissKnownBlockingModals() {
+    await this.closeImportantNoteModal();
+    await this.closeMigrationModal();
+
+    if (process.platform === 'darwin') {
+      await this.closeKeyChainModal();
     }
   }
 
+  async waitForBlockingModalToClose(timeout: number = this.VERY_LONG_TIMEOUT) {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      if (!(await this.hasVisibleBlockingModalAction())) {
+        return;
+      }
+
+      await this.pressKey('Escape');
+      await this.wait(this.SHORT_TIMEOUT);
+    }
+
+    throw new Error(
+      `Blocking transaction confirmation modal did not close within ${timeout} ms`,
+    );
+  }
+
+  private async hasVisibleBlockingModalAction() {
+    for (const selector of this.blockingModalActionSelectors) {
+      if (await this.isElementVisible(selector, 0, this.SHORT_TIMEOUT)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   async waitForToastToDisappear() {
-    await this.waitForElementToDisappear(this.toastMessageSelector);
+    const hasVisibleToast = await this.isElementVisible(
+      this.visibleToastMessageSelector,
+      0,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (!hasVisibleToast) {
+      return;
+    }
+
+    const toastHidden = await this.isElementHidden(
+      this.visibleToastMessageSelector,
+      0,
+      this.VERY_LONG_TIMEOUT,
+    );
+
+    if (!toastHidden) {
+      console.log('Visible toast did not disappear within timeout; continuing.');
+    }
   }
 
   async isSettingsButtonVisible() {
