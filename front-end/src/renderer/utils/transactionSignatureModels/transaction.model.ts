@@ -1,7 +1,6 @@
 import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { compareKeys } from '../sdk';
-import type { INodeInfoParsed } from '@shared/interfaces';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import type { ConnectedOrganization } from '@renderer/types';
@@ -18,6 +17,7 @@ export interface SignatureAudit {
   newKeys: Key[];
   payerKey: Record<string, Key>; // Fee payer accounts (including transaction payer id)
   nodeAdminKeys: Record<number, Key>;
+  newNodeAccountKeys: Record<string, Key>;
   externalKeys: Set<PublicKey>; // External keys (no matching user in backend)
 }
 
@@ -44,12 +44,20 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return [];
   }
 
-  getNodeId(): number | null {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  async getNodeKeys(
+    _mirrorNodeLink: string,
+    _accountInfoCache: AccountByIdCache,
+    _nodeInfoCache: NodeByIdCache,
+  ): Promise<{nodeId: number, key: Key} | null> {
     return null;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getNodeAccountId(_nodeInfo: INodeInfoParsed): string | null {
+  async getNewNodeAccountKeys(
+    _mirrorNodeLink: string,
+    _accountInfoCache: AccountByIdCache,
+  ): Promise<{accountId: string, key: Key} | null> {
     return null;
   }
 
@@ -64,7 +72,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
     const newKeys = this.getNewKeys() ?? [];
-    const nodeId = this.getNodeId();
+    const nodeKeys = await this.getNodeKeys(mirrorNodeLink, accountInfoCache, nodeInfoCache);
+    const newNodeKeys = await this.getNewNodeAccountKeys(mirrorNodeLink, accountInfoCache);
 
     /* Create result objects */
     const signatureKeys: Key[] = [];
@@ -72,6 +81,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const payerKey: Record<string, Key> = {};
     const receiverAccountsKeys: Record<string, Key> = {};
     const nodeAdminKeys: Record<number, Key> = {};
+    const newNodeAccountKeys: Record<string, Key> = {};
     const externalKeys = new Set<PublicKey>();
 
     const currentKeyList: Key[] = [];
@@ -136,41 +146,18 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       }
     }
 
-    /* Check if user has a key included in the node admin key */
-    try {
-      if (!Number.isNaN(nodeId) && nodeId !== null) {
-        const nodeInfo = await nodeInfoCache.lookup(nodeId, mirrorNodeLink);
-        const adminKey = nodeInfo?.admin_key;
-        if (adminKey && !hasKey(adminKey)) {
-          signatureKeys.push(adminKey);
-          nodeAdminKeys[nodeId] = adminKey;
-          currentKeyList.push(adminKey);
-        }
+    if (nodeKeys) {
+      const { nodeId, key } = nodeKeys;
+      signatureKeys.push(key);
+      nodeAdminKeys[nodeId] = key;
+      currentKeyList.push(key);
+    }
 
-        //TODO documentation on this requirement is still in the works.
-        //Current documentation states that when the node account id is unset, it can be signed by
-        //the account key OR the node admin key. Which means I would need to put these in an keyList with
-        //a threshold before added them to the signature keys.
-        //In the case of account id being changed, both the old key and the new key are required
-        // to sign the transaction. So they can be added like this.
-        //NOTE: this is different than node adminKey
-        const nodeAccountId = nodeInfo ? this.getNodeAccountId(nodeInfo) : null;
-        if (nodeAccountId) {
-          const nodeAccountInfo = await accountInfoCache.lookup(nodeAccountId, mirrorNodeLink);
-          const key = nodeAccountInfo?.key;
-          if (key && !hasKey(key)) {
-            signatureKeys.push(key);
-            nodeAdminKeys[nodeId] = key;
-            currentKeyList.push(key);
-          }
-        }
-      }
-    } catch (error) {
-      logger.warn('Failed to resolve node admin signing key', {
-        error,
-        nodeId,
-      });
-      throw error;
+    if (newNodeKeys) {
+      const { accountId, key } = newNodeKeys;
+      signatureKeys.push(key);
+      newNodeAccountKeys[accountId] = key;
+      currentKeyList.push(key);
     }
 
     /* Add keys to the signature key list */
@@ -204,8 +191,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       newKeys,
       payerKey,
       nodeAdminKeys,
+      newNodeAccountKeys,
       externalKeys,
-      // nodeAccountKeys,
     };
   }
 }

@@ -448,7 +448,7 @@ export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | n
   const domainName = serviceEndpoint.domainName?.trim();
   const port = Number.parseInt(serviceEndpoint.port?.trim());
 
-  if (ipAddressV4 || domainName) {
+  if (ipAddressV4.length > 0 || domainName) {
     const serviceEndpoint = new ServiceEndpoint();
 
     if (ipAddressV4.length > 0) {
