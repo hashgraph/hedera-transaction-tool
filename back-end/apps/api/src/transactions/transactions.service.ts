@@ -110,7 +110,7 @@ export class TransactionsService {
   async getTransactionById(id: number | TransactionId): Promise<Transaction> {
     if (!id) return null;
 
-    const transaction = await this.repo.findOne({
+    const transactions = await this.repo.find({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
       relations: [
         'creatorKey',
@@ -120,9 +120,16 @@ export class TransactionsService {
         'groupItem',
         'groupItem.group',
       ],
+      order: { id: 'DESC' },
     });
 
-    if (!transaction) return null;
+    if (!transactions.length) return null;
+
+    const inactiveStatuses = [TransactionStatus.CANCELED, TransactionStatus.REJECTED, TransactionStatus.ARCHIVED];
+
+    const transaction =
+      transactions.find(t => !inactiveStatuses.includes(t.status)) ??
+      transactions[0]; // most recent, since ordered by id DESC
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {

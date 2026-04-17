@@ -30,6 +30,8 @@ export const parseNodeInfo = (nodeInfo: NetworkNode) => {
     stake_rewarded: parseNodeProperty(nodeInfo, 'stake_rewarded'),
     staking_period: parseNodeProperty(nodeInfo, 'staking_period'),
     reward_rate_start: parseNodeProperty(nodeInfo, 'reward_rate_start'),
+    decline_reward: parseNodeProperty(nodeInfo, 'decline_reward'),
+    grpc_web_proxy_endpoint: parseNodeProperty(nodeInfo, 'grpc_web_proxy_endpoint'),
   };
 
   return nodeInfoParsed;
@@ -64,6 +66,8 @@ export function parseNodeProperty(
   nodeInfo: NetworkNode,
   property: 'description' | 'memo' | 'public_key' | 'node_cert_hash',
 ): string | null;
+export function parseNodeProperty(nodeInfo: NetworkNode, property: 'decline_reward'): boolean | null;
+export function parseNodeProperty(nodeInfo: NetworkNode, property: 'grpc_web_proxy_endpoint'): ServiceEndpoint | null;
 export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof NetworkNode) {
   switch (property) {
     case 'file_id':
@@ -112,6 +116,10 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof Network
       return nodeInfo.memo?.trim() || null;
     case 'description':
       return nodeInfo.description?.trim() || null;
+    case 'decline_reward':
+      return nodeInfo.decline_reward ?? null;
+    case 'grpc_web_proxy_endpoint':
+      return getServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
     default:
       throw new Error(`Unknown account info  property: ${property}`);
   }
@@ -121,25 +129,39 @@ export const getServiceEndpoints = (data: ServiceEndPoint[] | undefined) => {
   const endpoints = new Array<ServiceEndpoint>();
 
   for (const se of data || []) {
-    const ipAddressV4 = se.ip_address_v4?.trim()?.split('.') || [];
-    const domainName = se.domain_name?.trim();
+    const serviceEndpoint = getServiceEndpoint(se);
 
-    if (ipAddressV4 || domainName) {
-      const serviceEndpoint = new ServiceEndpoint();
-
-      if (ipAddressV4.length === 4) {
-        serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
-      } else if (domainName) {
-        serviceEndpoint.setDomainName(domainName);
-      }
-
-      if (se.port) {
-        serviceEndpoint.setPort(se.port);
-      }
-
+    if (serviceEndpoint) {
       endpoints.push(serviceEndpoint);
     }
   }
 
   return endpoints;
 };
+
+export const getServiceEndpoint = (endPoint: ServiceEndPoint | undefined) => {
+  if (!endPoint) {
+    return null;
+  }
+
+  const ipAddressV4 = endPoint.ip_address_v4?.trim()?.split('.') || [];
+  const domainName = endPoint.domain_name?.trim();
+
+  if (ipAddressV4.length > 0 || domainName) {
+    const serviceEndpoint = new ServiceEndpoint();
+
+    if (ipAddressV4.length === 4) {
+      serviceEndpoint.setIpAddressV4(Uint8Array.from(ipAddressV4.map(Number)));
+    } else if (domainName) {
+      serviceEndpoint.setDomainName(domainName);
+    }
+
+    if (endPoint.port) {
+      serviceEndpoint.setPort(endPoint.port);
+    }
+
+    return serviceEndpoint;
+  }
+
+  return null;
+}

@@ -2,9 +2,8 @@ import { expect, Page, test } from '@playwright/test';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
-import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
+import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import { SettingsPage } from '../../pages/SettingsPage.js';
-import { generateRandomPassword } from '../../utils/data/random.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
 import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
@@ -16,7 +15,6 @@ import { createSequentialOrganizationNicknameResolver } from '../helpers/support
 
 let app: TransactionToolApp;
 let window: Page;
-let globalCredentials = { email: '', password: '' };
 
 let registrationPage: RegistrationPage;
 let loginPage: LoginPage;
@@ -28,10 +26,9 @@ let organizationNickname = 'Test Organization';
 let updatedOrganizationNickname = 'New Organization';
 let invalidOrganizationNickname = 'Bad Organization';
 
-let firstUser: UserDetails;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
-test.describe('Organization Settings tests @organization-basic', () => {
+test.describe('Organization Settings (General) tests @organization-basic', () => {
   test.slow();
   test.beforeAll(async () => {
     ({
@@ -56,7 +53,8 @@ test.describe('Organization Settings tests @organization-basic', () => {
       'Test Organization',
       'Invalid Organization',
     );
-    const seededSession = await createSeededOrganizationSession(
+
+    await createSeededOrganizationSession(
       window,
       loginPage,
       organizationPage,
@@ -65,9 +63,6 @@ test.describe('Organization Settings tests @organization-basic', () => {
         organizationNickname,
       },
     );
-    globalCredentials.email = seededSession.localUser.email;
-    globalCredentials.password = seededSession.localUser.password;
-    firstUser = organizationPage.getUser(0);
   });
 
   test.afterEach(async () => {
@@ -87,7 +82,6 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await organizationPage.selectPersonalMode();
     const isContactListHidden = await organizationPage.isContactListButtonHidden();
     expect(isContactListHidden).toBe(true);
-
     await organizationPage.selectOrganizationMode();
     const isContactListVisibleAfterSwitch = await organizationPage.isContactListButtonVisible();
     expect(isContactListVisibleAfterSwitch).toBe(true);
@@ -96,11 +90,9 @@ test.describe('Organization Settings tests @organization-basic', () => {
   test('Verify user can edit organization nickname', async () => {
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnOrganisationsTab();
-
     await organizationPage.editOrganizationNickname(updatedOrganizationNickname);
     const orgName = await organizationPage.getOrganizationNicknameText();
     expect(orgName).toBe(updatedOrganizationNickname);
-
     await organizationPage.editOrganizationNickname(organizationNickname);
   });
 
@@ -110,107 +102,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     const toastMessage = await registrationPage.getToastMessage();
     expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
     await organizationPage.clickOnCancelAddingOrganizationButton();
-  });
-
-  test.skip('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnOrganisationsTab();
-    await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization(organizationNickname);
-    await organizationPage.fillInLoginDetailsAndClickSignIn(firstUser.email, firstUser.password);
-    await organizationPage.recoverAccount(0);
-    await organizationPage.recoverPrivateKey(window);
-    const isContactListVisible = await organizationPage.isContactListButtonVisible();
-    expect(isContactListVisible).toBe(true);
-  });
-
-  test.skip('Verify additional keys are saved when user restores his account', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnOrganisationsTab();
-    await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization(organizationNickname);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    await organizationPage.recoverAccount(0);
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
-    const missingKey = await organizationPage.isFirstMissingKeyVisible();
-    expect(missingKey).toBe(true);
-    await organizationPage.recoverPrivateKey(window);
-  });
-
-  test.skip('Verify user can restore missing keys when doing account recovery', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnOrganisationsTab();
-    await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization(organizationNickname);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    await organizationPage.recoverAccount(0);
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
-    await organizationPage.recoverPrivateKey(window);
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnKeysTab();
-    const missingKeyHidden = await organizationPage.isFirstMissingKeyHidden();
-    expect(missingKeyHidden).toBe(true);
-  });
-
-  test('Verify organization user can change password', async () => {
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnProfileTab();
-
-    await settingsPage.fillInCurrentPassword(firstUser.password);
-    const newPassword = generateRandomPassword();
-    await settingsPage.fillInNewPassword(newPassword);
-    await settingsPage.clickOnChangePasswordButton();
-    await settingsPage.clickOnConfirmChangePassword();
-    if (await organizationPage.isEncryptPasswordInputVisible()) {
-      await organizationPage.fillOrganizationEncryptionPasswordAndContinue(
-        globalCredentials.password,
-      );
-    }
-    await settingsPage.clickOnCloseButton();
-    organizationPage.changeUserPassword(firstUser.email, newPassword);
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-
-    // verify that the settings button is visible(indicating he's logged in successfully in the app)
-    const isButtonVisible = await loginPage.isSettingsButtonVisible();
-    expect(isButtonVisible).toBe(true);
-  });
-
-  test.skip('Verify user can restore account with new mnemonic phrase', async () => {
-    const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
-    const userId = await organizationPage.getUserIdByEmail(firstUser.email);
-    await settingsPage.clickOnSettingsButton();
-    await settingsPage.clickOnOrganisationsTab();
-    await organizationPage.clickOnDeleteFirstOrganization();
-    await organizationPage.setupOrganization(organizationNickname);
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-    organizationPage.generateAndSetRecoveryWords();
-    await organizationPage.recoverAccount(0);
-
-    //verify old mnemonic is still present in the db
-    const isKeyDeleted = await organizationPage.isKeyDeleted(publicKeyBeforeReset);
-    expect(isKeyDeleted).toBe(false);
-
-    const isNewKeyAddedInDb = await organizationPage.findNewKey(userId);
-    expect(isNewKeyAddedInDb).toBe(true);
+    await loginPage.waitForToastToDisappear();
   });
 
   test('Verify that tabs on Transaction page are visible', async () => {
@@ -224,14 +116,21 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await settingsPage.clickOnOrganisationsTab();
     await loginPage.waitForToastToDisappear();
     await organizationPage.clickOnDeleteFirstOrganization();
-
+    const visibleToasts = window.locator(registrationPage.visibleToastMessageSelector);
     await expect
-      .poll(async () => await registrationPage.getToastMessage(), {
-        timeout: 10_000,
-      })
-      .toBe('Connection deleted successfully');
-
-    const orgName = await organizationPage.getOrganizationNicknameText() ?? '';
+      .poll(
+        async () => {
+          const toastTexts = await visibleToasts.allTextContents();
+          return toastTexts
+            .map(toast => toast.trim())
+            .includes('Connection deleted successfully');
+        },
+        {
+          timeout: registrationPage.getLongTimeout(),
+        },
+      )
+      .toBe(true);
+    const orgName = (await organizationPage.getOrganizationNicknameText()) ?? '';
     const isDeletedFromDb = await organizationPage.verifyOrganizationExists(orgName);
     expect(isDeletedFromDb).toBe(false);
   });
@@ -241,7 +140,6 @@ test.describe('Organization Settings tests @organization-basic', () => {
     // If you fix something here, you probably want to do the same in transactionTests.test.ts
 
     // Go to Settings / Keys and delete all keys
-    const settingsPage = new SettingsPage(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
     await settingsPage.clickOnSelectAllKeys();
@@ -270,7 +168,7 @@ test.describe('Organization Settings tests @organization-basic', () => {
     await transactionPage.clickOnFirstDraftContinueButton();
 
     // Click Sign and Execute, Save and Goto Settings and check Settings tab is displayed
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, transactionPage.getShortTimeout()));
     await transactionPage.clickOnSignAndSubmitButton();
     await transactionPage.clickOnGotoSettings();
     await settingsPage.verifySettingsElements();
