@@ -1,15 +1,6 @@
-vi.mock('argon2', () => ({
-  hash: vi.fn(async (d: string) => `argon2:${d}`),
-  verify: vi.fn(async (h: string, d: string) => h === `argon2:${d}`),
-}));
-
-vi.mock('bcrypt', () => ({
-  hash: vi.fn(async (d: string) => `bcrypt:${d}`),
-  compare: vi.fn(async (d: string, h: string) => h === `bcrypt:${d}`),
-}));
-
 import { expect } from 'vitest';
 import * as bcrypt from 'bcrypt';
+
 import { decrypt, encrypt, hash, verifyHash, dualCompareHash } from '@main/utils/crypto';
 
 describe('Crypto utilities', () => {
