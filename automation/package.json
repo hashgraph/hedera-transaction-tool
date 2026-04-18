@@ -60,7 +60,7 @@
     "pg": "8.20.0",
     "playwright": "1.59.1",
     "playwright-core": "1.59.1",
-    "prettier": "3.8.2",
+    "prettier": "3.8.3",
     "sqlite3": "5.1.6",
     "uuid": "13.0.0"
   },
