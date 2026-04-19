@@ -122,5 +122,23 @@
   },
   "engines": {
     "node": ">=22.12.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "protobufjs@<8.0.0": "7.5.5",
+      "protobufjs@>=8.0.0": "8.0.1",
+      "follow-redirects": "1.16.0",
+      "lodash": "4.18.0",
+      "handlebars": "4.7.9",
+      "path-to-regexp@<1.0.0": "0.1.13",
+      "path-to-regexp@>=8.0.0": "8.4.0",
+      "serialize-javascript": "7.0.5",
+      "brace-expansion@<2.0.0": "1.1.13",
+      "brace-expansion@>=2.0.0 <3.0.0": "2.0.3",
+      "picomatch@>=4.0.0": "4.0.4",
+      "flatted": "3.4.2",
+      "socket.io-parser": "4.2.6",
+      "js-yaml": "4.1.1"
+    }
   }
 }
