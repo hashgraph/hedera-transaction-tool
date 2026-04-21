@@ -39,10 +39,10 @@ export abstract class EntityCache<K extends string | number, E> {
     }
   }
 
-  // public clear(): void {
-  //   this.records.clear();
-  // }
-  //
+  public clear(): void {
+    this.records.clear();
+  }
+
   // public contains(key: K, mirrorNodeUrl: string, forceLoad = false): boolean {
   //   const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
   //   const r = this.records.get(recordKey);

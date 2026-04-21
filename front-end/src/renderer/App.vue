@@ -64,6 +64,14 @@ provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
 ToastManager.provide();
+
+/* AppCache */
+const appCache = AppCache.inject();
+watch([() => user.personal, () => user.selectedOrganization], () => {
+  // User identity has changed => backend transaction cache is obsolete
+  appCache.backendTransaction.clear();
+}, { immediate: true });
+
 </script>
 <template>
   <AppHeader
