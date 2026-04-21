@@ -202,24 +202,6 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
   };
 });
 
-vi.mock('@renderer/caches/mirrorNode/AccountByIdCache.ts', () => ({
-  AccountByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/mirrorNode/NodeByIdCache.ts', () => ({
-  NodeByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/backend/PublicKeyOwnerCache.ts', () => ({
-  PublicKeyOwnerCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
 const AppButtonStub = defineComponent({
   name: 'AppButton',
   props: {

@@ -1,23 +1,7 @@
-import { inject, provide } from 'vue';
 import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import { getPublicKeyOwner } from '@renderer/services/organization';
 
 export class PublicKeyOwnerCache extends EntityCache<string, string | null> {
-  private static readonly injectKey = Symbol();
-
-  //
-  // Public
-  //
-
-  public static provide(): void {
-    provide(PublicKeyOwnerCache.injectKey, new PublicKeyOwnerCache());
-  }
-
-  public static inject(): PublicKeyOwnerCache {
-    const defaultFactory = () => new PublicKeyOwnerCache();
-    return inject<PublicKeyOwnerCache>(PublicKeyOwnerCache.injectKey, defaultFactory, true);
-  }
-
   //
   // EntityCache
   //

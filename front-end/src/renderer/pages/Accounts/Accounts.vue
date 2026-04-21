@@ -33,19 +33,19 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const accountData = useAccountId();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* Injected */
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);

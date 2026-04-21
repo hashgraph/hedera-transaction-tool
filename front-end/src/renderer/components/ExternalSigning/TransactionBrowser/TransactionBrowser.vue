@@ -5,10 +5,8 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem.ts';
 import TransactionBrowserTable from './TransactionBrowserTable.vue';
 import { TransactionBrowserEntry } from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserEntry.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -16,9 +14,10 @@ const props = defineProps<{
 }>();
 
 /* Injected */
-const accountInfoCache = AccountByIdCache.inject();
-const nodeInfoCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountInfoCache = appCache.mirrorAccountById;
+const nodeInfoCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* Stores */
 const network = useNetworkStore();

@@ -36,22 +36,19 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import useContactsStore from '@renderer/stores/storeContacts.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import { getTransactionTypeFromBackendType } from '@renderer/utils/sdk/transactions.ts';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
 import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 
 /* Types */
 type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export All';
@@ -73,9 +70,6 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [cancel]: 'button-cancel-group',
   [exportName]: 'button-export-group',
 };
-
-/* Injected */
-const transactionCache = BackendTransactionCache.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -111,9 +105,11 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const createTooltips = useCreateTooltips();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountByIdCache = appCache.mirrorAccountById;
+const nodeByIdCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
+const transactionCache = appCache.backendTransaction;
 const toastManager = ToastManager.inject();
 
 /* State */

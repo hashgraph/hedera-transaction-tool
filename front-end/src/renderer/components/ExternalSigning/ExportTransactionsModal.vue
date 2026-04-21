@@ -27,10 +27,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hiero-ledger/sdk';
 import { createLogger } from '@renderer/utils/logger';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const logger = createLogger('renderer.component.exportTransactionsModal');
 
@@ -45,10 +42,11 @@ const network = useNetworkStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const accountInfoCache = AccountByIdCache.inject();
-const nodeInfoCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const transactionCache = BackendTransactionCache.inject();
+const appCache = AppCache.inject();
+const accountInfoCache = appCache.mirrorAccountById;
+const nodeInfoCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
+const transactionCache = appCache.backendTransaction;
 
 /* State */
 const isOnlyExternalSelected = ref(false);
