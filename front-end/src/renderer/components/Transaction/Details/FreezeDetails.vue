@@ -59,7 +59,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </div>
 
     <!-- File Hash -->
-    <div v-if="transaction.fileHash" class="col-12 py-3">
+    <div v-if="transaction.fileHash && transaction.fileHash.length > 0" class="col-12 py-3">
       <h4 :class="detailItemLabelClass">File Hash</h4>
       <p :class="detailItemValueClass">
         {{ fileHashHex.startsWith('0x') ? fileHashHex : `0x${fileHashHex}` }}
