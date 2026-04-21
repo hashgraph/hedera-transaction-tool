@@ -14,6 +14,30 @@ import { EmailService } from './email.service';
 import { Notification, NotificationType } from '@entities';
 
 jest.mock('nodemailer');
+// Issue #2576: `EmailService` → `new DebouncedNotificationBatcher()` eagerly
+// constructs two real ioredis clients and calls `.subscribe(...)` in its
+// constructor. On CI there's no Redis on localhost, so each `it` in this
+// spec was leaking a pair of retrying ioredis clients that eventually hit
+// `maxRetriesPerRequest` and fired `MaxRetriesPerRequestError` — which Jest
+// then mis-attributed to whichever spec happened to be active (commonly
+// `cache.queries.spec.ts`). Mocking `ioredis` here follows the pattern used
+// in `blacklist.service.spec.ts`, `scheduler.service.spec.ts`, and
+// `redis-io.adapter.spec.ts`.
+jest.mock('ioredis', () => {
+  class MockRedis {
+    subscribe = jest.fn();
+    on = jest.fn();
+    disconnect = jest.fn();
+    set = jest.fn();
+    get = jest.fn();
+    del = jest.fn();
+    rpush = jest.fn();
+    lrange = jest.fn().mockResolvedValue([]);
+    pexpire = jest.fn();
+    keys = jest.fn().mockResolvedValue([]);
+  }
+  return { Redis: MockRedis };
+});
 jest.mock('@app/common', () => ({
   generateEmailContent: jest.fn(),
   generateUserRegisteredMessage: jest.fn(),
