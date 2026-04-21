@@ -27,9 +27,6 @@ const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const toastManager = ToastManager.inject();
 
 /* Stores */
@@ -82,9 +79,7 @@ const performSignAll = async (
     progressText.value = 'Collecting required keys…';
     const signatureItems = await collectRequiredKeys(
       itemsToSign,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
+      appCache,
     );
     const missingKeys = collectMissingKeys(signatureItems);
     const missingKeyCount = missingKeys.length;

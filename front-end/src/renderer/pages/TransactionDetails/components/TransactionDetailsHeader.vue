@@ -100,9 +100,6 @@ const router = useRouter();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const toastManager = ToastManager.inject();
 
 /* State */
@@ -301,9 +298,7 @@ watch(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
         user.selectedOrganization.userKeys,
         network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
+        appCache,
         user.selectedOrganization,
       ),
       approvePromise,

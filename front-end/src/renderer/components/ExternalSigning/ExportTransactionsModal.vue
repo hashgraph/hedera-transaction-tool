@@ -9,7 +9,6 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
   assertIsLoggedInOrganization,
-  computeSignatureKey,
   generateTransactionExportFileName,
   generateTransactionV2ExportContent,
   hexToUint8Array,
@@ -43,10 +42,6 @@ const toastManager = ToastManager.inject();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountInfoCache = appCache.mirrorAccountById;
-const nodeInfoCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
-const transactionCache = appCache.backendTransaction;
 
 /* State */
 const isOnlyExternalSelected = ref(false);
@@ -61,7 +56,7 @@ async function handleExport() {
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
-    transactionCache,
+    appCache.backendTransaction,
   );
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
 
@@ -71,13 +66,10 @@ async function handleExport() {
       for (const tx of collectionTransactions) {
         const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
         const mirrorNodeLink = network.getMirrorNodeREST(network.network);
-        const audit = await computeSignatureKey(
+        const audit = await appCache.computeSignatureKey(
           sdkTransaction,
-          mirrorNodeLink,
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
           user.selectedOrganization,
+          mirrorNodeLink,
         );
         if (audit.externalKeys.size > 0) {
           filteredTransactions.push(tx);

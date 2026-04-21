@@ -106,10 +106,6 @@ const createTooltips = useCreateTooltips();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
-const transactionCache = appCache.backendTransaction;
 const toastManager = ToastManager.inject();
 
 /* State */
@@ -287,9 +283,7 @@ const updateFirstSignableGroupItemAfterFetch = async () => {
     const signable = await isSignableTransaction(
       item.transaction,
       network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
+      appCache,
       user.selectedOrganization,
     );
     if (signable) {
@@ -395,7 +389,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
     const serverUrl = user.selectedOrganization.serverUrl;
     for (const item of group.value.groupItems) {
       // We clear cache with strict==false to keep young data
-      transactionCache.forget(item.transactionId, serverUrl, false);
+      appCache.backendTransaction.forget(item.transactionId, serverUrl, false);
     }
   }
   // 2) Now fetch group

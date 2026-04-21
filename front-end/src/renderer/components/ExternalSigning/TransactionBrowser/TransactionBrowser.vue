@@ -15,9 +15,6 @@ const props = defineProps<{
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountInfoCache = appCache.mirrorAccountById;
-const nodeInfoCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* Stores */
 const network = useNetworkStore();
@@ -34,9 +31,7 @@ const updateEntries = async () => {
     entries.value = await TransactionBrowserEntry.makeFromArray(
       props.items,
       mirrorNodeLink,
-      accountInfoCache,
-      nodeInfoCache,
-      publicKeyOwnerCache,
+      appCache,
       user.publicKeys,
     );
   } catch {
