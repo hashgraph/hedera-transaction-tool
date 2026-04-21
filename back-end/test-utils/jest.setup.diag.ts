@@ -87,13 +87,26 @@ function getTestContext(): { testPath: string | null; currentTestName: string | 
 interface DiagState {
   loadedSpecs: Array<{ at: string; testPath: string | null }>;
   ioredisRequireCount: number;
+  connectLoggedCount: number;
+  connectSuppressedCount: number;
 }
 const STATE_KEY = Symbol.for('jestDiag.state');
 const proc = process as unknown as Record<symbol, DiagState | undefined>;
 if (!proc[STATE_KEY]) {
-  proc[STATE_KEY] = { loadedSpecs: [], ioredisRequireCount: 0 };
+  proc[STATE_KEY] = {
+    loadedSpecs: [],
+    ioredisRequireCount: 0,
+    connectLoggedCount: 0,
+    connectSuppressedCount: 0,
+  };
 }
 const state = proc[STATE_KEY]!;
+
+// Cap how many connect logs we emit per worker. Once we've seen a handful
+// we know the culprit; anything beyond that is just noise (the CI log was
+// running into thousands of repeat lines). The suppressed count is reported
+// in `process:exit`.
+const CONNECT_LOG_LIMIT = 5;
 
 // Tag listeners/patches so re-runs of this file are no-ops on the target.
 const LISTENER_TAG = Symbol.for('jestDiag.listener');
@@ -175,6 +188,8 @@ addListenerOnce('exit', (...args) => {
       })),
       totalSpecsLoaded: state.loadedSpecs.length,
       totalIoredisRequires: state.ioredisRequireCount,
+      ioredisConnectLogged: state.connectLoggedCount,
+      ioredisConnectSuppressed: state.connectSuppressedCount,
     });
   } catch (e) {
     diag('process:exit:error', { message: (e as Error)?.message });
@@ -238,10 +253,17 @@ try {
       ) {
         hadConnect = true;
         function patchedConnect(this: unknown, ...args: unknown[]): unknown {
-          diag('ioredis:Redis.connect', {
-            ...getTestContext(),
-            stack: new Error('ioredis Redis.connect').stack,
-          });
+          if (state.connectLoggedCount < CONNECT_LOG_LIMIT) {
+            state.connectLoggedCount += 1;
+            diag('ioredis:Redis.connect', {
+              ...getTestContext(),
+              stack: new Error('ioredis Redis.connect').stack,
+              logged: state.connectLoggedCount,
+              limit: CONNECT_LOG_LIMIT,
+            });
+          } else {
+            state.connectSuppressedCount += 1;
+          }
           return origConnect.apply(this, args);
         }
         (patchedConnect as unknown as { __jestDiagPatched: boolean }).__jestDiagPatched = true;
