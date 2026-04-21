@@ -5,7 +5,7 @@ import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createLogger, createTransactionId } from '@renderer/utils';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';
 import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hiero-ledger/sdk';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
@@ -26,7 +26,7 @@ const payerData = useAccountId();
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const accountByIdCache = AccountByIdCache.inject();
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();

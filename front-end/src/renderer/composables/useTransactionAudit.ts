@@ -7,13 +7,10 @@ import {
   isLoggedInOrganization,
   type SignatureAudit,
 } from '@renderer/utils';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 import type { ITransactionFull } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 const logger = createLogger('renderer.useTransactionAudit');
 
@@ -30,10 +27,11 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
   const network = useNetworkStore();
 
   /* Injected */
-  const accountByIdCache = AccountByIdCache.inject();
-  const nodeByIdCache = NodeByIdCache.inject();
-  const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-  const transactionCache = BackendTransactionCache.inject();
+  const appCache = AppCache.inject();
+  const accountByIdCache = appCache.mirrorAccountById;
+  const nodeByIdCache = appCache.mirrorNodeById;
+  const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
+  const transactionCache = appCache.backendTransaction;
 
   /* Computed */
   const transaction = computed(async () => {

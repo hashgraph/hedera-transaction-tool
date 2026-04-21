@@ -7,9 +7,7 @@ import {
   collectRequiredKeys,
   signItems,
 } from '@renderer/utils';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { TransactionStatus } from '@shared/interfaces';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
@@ -28,9 +26,10 @@ const props = defineProps<{
 const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountByIdCache = appCache.mirrorAccountById;
+const nodeByIdCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const toastManager = ToastManager.inject();
 
 /* Stores */

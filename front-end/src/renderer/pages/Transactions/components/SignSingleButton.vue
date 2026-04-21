@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 import type { ITransactionFull } from '@shared/interfaces';
@@ -19,7 +19,7 @@ const emit = defineEmits<{
 }>();
 
 /* Injected */
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();

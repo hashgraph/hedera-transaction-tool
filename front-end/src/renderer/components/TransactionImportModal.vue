@@ -15,7 +15,7 @@ import {
 } from '@shared/interfaces';
 import { makeSignatureMap } from '@renderer/utils/signatureTools.ts';
 import { importSignatures } from '@renderer/services/organization';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
@@ -30,7 +30,7 @@ const props = defineProps<{
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Model */
 const show = defineModel<boolean>('show', { required: true });

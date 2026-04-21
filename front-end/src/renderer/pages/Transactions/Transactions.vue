@@ -52,7 +52,7 @@ import { readTransactionFile } from '@renderer/services/transactionFileService.t
 import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const IMPORT_FORMATS = [
   { name: 'All Tx Tool files', extensions: ['tx2', 'zip'] },
@@ -62,7 +62,7 @@ const IMPORT_FORMATS = [
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();

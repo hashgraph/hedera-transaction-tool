@@ -30,11 +30,9 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import {
   isApprovableStatus,
   isInProgressStatus,
@@ -101,9 +99,10 @@ const nextTransaction = useNextTransactionV2();
 const router = useRouter();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountByIdCache = appCache.mirrorAccountById;
+const nodeByIdCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const toastManager = ToastManager.inject();
 
 /* State */

@@ -4,7 +4,7 @@ import { computed, ref, watch } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 import useAccountId from './useAccountId';
 
@@ -16,7 +16,7 @@ export default function useNodeId() {
   const accountData = useAccountId();
 
   /* Injected */
-  const nodeByIdCache = NodeByIdCache.inject();
+  const nodeByIdCache = AppCache.inject().mirrorNodeById;
 
   /* State */
   const nodeId = ref<number | null>(null);

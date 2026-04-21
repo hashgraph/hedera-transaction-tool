@@ -13,9 +13,7 @@ import {
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetwork from '@renderer/stores/storeNetwork.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import useRevealed from '@renderer/composables/useRevealed.ts';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 
@@ -32,9 +30,10 @@ const emit = defineEmits<{
 }>();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountByIdCache = appCache.mirrorAccountById;
+const nodeByIdCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* Stores */
 const user = useUserStore();

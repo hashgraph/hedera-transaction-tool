@@ -26,8 +26,7 @@ import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@rende
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = defineProps<{
@@ -40,10 +39,10 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Injected */
-const transactionByIdCache = TransactionByIdCache.inject();
+const transactionByIdCache = AppCache.inject().mirrorTransactionById;
 
 /* State */
 const isKeyStructureModalShown = ref(false);

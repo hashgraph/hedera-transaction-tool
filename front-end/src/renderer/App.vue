@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onErrorCaptured, onMounted, reactive, ref } from 'vue';
+import { onErrorCaptured, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -18,14 +18,9 @@ import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
-import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from './caches/backend/PublicKeyOwnerCache';
 import { ToastManager } from './utils/ToastManager';
 import { createLogger, getErrorMessage } from '@renderer/utils';
-import { BackendTransactionCache } from './caches/backend/BackendTransactionCache.ts';
+import { AppCache } from './caches/AppCache';
 
 /* Composables */
 const router = useRouter();
@@ -68,12 +63,6 @@ onErrorCaptured((err: unknown) => {
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
-AccountByIdCache.provide();
-AccountByPublicKeyCache.provide();
-TransactionByIdCache.provide();
-NodeByIdCache.provide();
-PublicKeyOwnerCache.provide();
-BackendTransactionCache.provide();
 ToastManager.provide();
 </script>
 <template>

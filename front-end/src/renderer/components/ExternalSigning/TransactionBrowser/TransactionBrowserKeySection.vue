@@ -10,9 +10,7 @@ import {
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.component.transactionBrowserKeySection');
@@ -27,9 +25,10 @@ const user = useUserStore();
 const network = useNetwork();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const accountByIdCache = appCache.mirrorAccountById;
+const nodeByIdCache = appCache.mirrorNodeById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* State */
 const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);

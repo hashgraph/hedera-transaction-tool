@@ -14,7 +14,7 @@ import {
   safeAwait,
   stringifyHbar,
 } from '@renderer/utils';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = defineProps<{
@@ -26,7 +26,7 @@ const props = defineProps<{
 const network = useNetworkStore();
 
 /* Injected */
-const transactionByIdCache = TransactionByIdCache.inject();
+const transactionByIdCache = AppCache.inject().mirrorTransactionById;
 
 /* State */
 const controller = ref<AbortController | null>(null);

@@ -8,7 +8,7 @@ import { Hbar, Transaction } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/utils/sdk';
 
@@ -21,7 +21,7 @@ const network = useNetworkStore();
 const user = useUserStore();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);

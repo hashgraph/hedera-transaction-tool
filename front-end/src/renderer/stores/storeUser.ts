@@ -27,7 +27,7 @@ import { getVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
-import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import { reconnectOrganization } from '@renderer/services/organization';
 
 const useUserStore = defineStore('user', () => {
@@ -40,7 +40,7 @@ const useUserStore = defineStore('user', () => {
   const { reset: resetVersionCheck } = useVersionCheck();
 
   /* Injected */
-  const accountByKeyCache = AccountByPublicKeyCache.inject();
+  const accountByKeyCache = AppCache.inject().mirrorAccountByPublicKey;
 
   /* State */
   /** Keys */

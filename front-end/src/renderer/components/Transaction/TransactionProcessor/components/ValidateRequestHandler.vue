@@ -10,7 +10,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
 import { getMaxTransactionSizeForTransaction } from '@renderer/utils/sdk/privilegedPayer';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;
@@ -20,7 +20,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
 const nextHandler = ref<Handler | null>(null);

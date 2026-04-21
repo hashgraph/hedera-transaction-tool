@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = defineProps<{
@@ -23,7 +23,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);

@@ -5,7 +5,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -19,7 +19,7 @@ const user = useUserStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
 const isDeleteModalShown = ref(false);

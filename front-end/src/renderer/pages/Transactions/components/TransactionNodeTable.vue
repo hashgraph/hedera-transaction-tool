@@ -33,7 +33,7 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
   [TransactionNodeCollection.READY_FOR_REVIEW]: [],
@@ -63,7 +63,7 @@ const emit = defineEmits<{
 }>();
 
 /* Injected */
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();
