@@ -78,5 +78,14 @@
     "typescript": "5.9.3",
     "webpack": "5.105.4",
     "webpack-cli": "6.0.1"
+  },
+  "pnpm": {
+    "overrides": {
+      "protobufjs@<8.0.0": "7.5.5",
+      "protobufjs@>=8.0.0": "8.0.1",
+      "follow-redirects": "1.16.0",
+      "brace-expansion@<2.0.0": "1.1.13",
+      "tar": "7.5.11"
+    }
   }
 }
