@@ -13,12 +13,7 @@ const config: Config = {
     '^@app/common(|/.*)$': '<rootDir>/../../libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/../../libs/common/src/database/entities/$1',
   },
-  // Diagnostic (issue #2576): surface leaked timers/sockets/ioredis clients
-  // that would otherwise be attributed to whichever suite is active at teardown.
   detectOpenHandles: true,
-  // Install per-worker unhandled-error + ioredis-constructor logging so the
-  // worker that leaks a real Redis client identifies itself, regardless of
-  // which spec happens to be active when the retry budget expires.
   setupFiles: ['<rootDir>/../../test-utils/jest.setup.diag.ts'],
 };
 

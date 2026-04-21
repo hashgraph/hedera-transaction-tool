@@ -16,11 +16,6 @@ import { roomKeys } from './helpers';
 
 jest.mock('./middlewares/auth-websocket.middleware');
 jest.mock('./middlewares/frontend-version-websocket.middleware');
-// Issue #2576: `WebsocketGateway` → `new DebouncedNotificationBatcher()`
-// eagerly constructs two real ioredis clients and calls `.subscribe(...)`.
-// Same fix as `email.service.spec.ts`: replace the ioredis module with a
-// class whose methods are all jest.fn() so the NestJS TestingModule can
-// instantiate the gateway without opening real sockets.
 jest.mock('ioredis', () => {
   class MockRedis {
     subscribe = jest.fn();

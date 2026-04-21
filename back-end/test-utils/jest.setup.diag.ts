@@ -1,31 +1,18 @@
 /**
- * Diagnostic setup for issue #2576.
+ * Diagnostic setup for the Notifications Jest config (issue #2576).
  *
- * Registered via `setupFiles` on the Notifications Jest config. Runs once
- * per test file, in every worker process.
+ * Registered via `setupFiles`; runs once per test file, in every worker.
+ * Emits tagged `[jest-diag]` lines to stderr for:
+ *   - test-file lifecycle (`spec:start`)
+ *   - process-level errors (`unhandledRejection`, `uncaughtException`, `warning`)
+ *   - ioredis activity (`ioredis:require`, `ioredis:Redis.connect`,
+ *     `ioredis:Redis.sendCommand:first`) — dragnets every real Redis client
+ *     so a future leak identifies its own caller.
  *
- * The previous iteration used:
- *   - `globalThis.__jestDiagInstalled` as an install guard, which doesn't
- *     persist across test files because Jest resets globals between files.
- *     Result: listeners stacked, the same error logged ~25× per fire.
- *   - `console.log` for output. Jest wraps console to complain with
- *     "Cannot log after tests are done" when a handler fires asynchronously.
- *   - Wrapped only the `Redis` constructor exported from `ioredis`. The
- *     compiled ioredis module ships `Redis` as a getter-only property, so
- *     the assignment threw TypeError and no wrapping actually happened.
- *
- * This iteration fixes all three:
- *   - Every patch and listener install is idempotent per-target. Re-running
- *     the setup per test file is a no-op once any install has happened.
- *   - Output goes to `process.stderr.write`, bypassing Jest's console wrap.
- *   - Patches `Redis.prototype.connect` + `Redis.prototype.sendCommand`,
- *     which every ioredis instance shares regardless of which file
- *     constructed it. Wraps `Module.prototype.require` to log every
- *     `require('ioredis')` call with caller stack.
- *   - Tracks cumulative spec-load order on `process` (keyed by a global
- *     Symbol.for so it survives Jest's module isolation) and dumps the tail
- *     on every unhandledRejection — the culprit spec will be obvious from
- *     timing.
+ * All installs are idempotent per target (listeners keyed by Symbol, patches
+ * by a flag on the function itself), so re-evaluation per test file is a no-op.
+ * Connect logs are capped at CONNECT_LOG_LIMIT per worker; the suppressed
+ * count is reported on `process:exit`.
  */
 
 import type Module from 'module';
@@ -102,10 +89,8 @@ if (!proc[STATE_KEY]) {
 }
 const state = proc[STATE_KEY]!;
 
-// Cap how many connect logs we emit per worker. Once we've seen a handful
-// we know the culprit; anything beyond that is just noise (the CI log was
-// running into thousands of repeat lines). The suppressed count is reported
-// in `process:exit`.
+// First N connect calls per worker get a full log; the rest are counted
+// silently and reported on `process:exit`.
 const CONNECT_LOG_LIMIT = 5;
 
 // Tag listeners/patches so re-runs of this file are no-ops on the target.
@@ -197,10 +182,6 @@ addListenerOnce('exit', (...args) => {
 });
 
 // ---- Intercept every `require('ioredis')` ---------------------------------
-//
-// This runs BEFORE any transitive package loads ioredis, because setupFiles
-// runs before user code. Every require of 'ioredis' (direct or via a
-// dependency) logs its caller's stack so we can see who pulls it in.
 
 try {
   const proto = (NodeModule as unknown as { prototype: { require: (id: string) => unknown } })
@@ -226,15 +207,10 @@ try {
 }
 
 // ---- Patch ioredis prototype methods ---------------------------------------
-//
-// Every ioredis Redis instance — no matter which file imported the class,
-// no matter if some test did `jest.requireActual('ioredis')` — shares the
-// same `Redis.prototype` object. Patching prototype methods is a dragnet a
-// constructor-wrap couldn't be.
-//
-// We do NOT attempt to replace `ioredis.Redis` or `ioredis.default`: the
-// compiled ioredis module ships those as getter-only properties, so
-// assignment throws a TypeError.
+// All Redis instances share `Redis.prototype`, so patching methods there
+// catches every client regardless of import path. We do NOT attempt to
+// replace `ioredis.Redis` / `ioredis.default` because the compiled module
+// ships them as getter-only properties.
 
 let hadConnect = false;
 let hadSendCommand = false;

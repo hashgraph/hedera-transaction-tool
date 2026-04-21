@@ -4,7 +4,6 @@ import { AppDataSource } from '../typeorm/data-source';
 
 const POSTGRES_TEST_IMAGE = 'postgres:16.13-alpine3.22';
 
-// Diagnostic logging (issue #2576) — tag every line so CI logs are searchable.
 const DIAG_TAG = '[pg-test-db]';
 function diag(message: string, extra?: Record<string, unknown>) {
   const payload = {

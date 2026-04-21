@@ -4,11 +4,6 @@ import { createTestPostgresDataSource } from '../../../../../test-utils/postgres
 import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';
 
-// Diagnostic logging (issue #2576). Prefixed so CI logs are greppable.
-// Process-level unhandledRejection / uncaughtException / ioredis-constructor
-// listeners are installed globally via `setupFiles` in the Notifications
-// Jest config (test-utils/jest.setup.diag.ts). This spec only adds hook
-// timing logs below.
 const DIAG_TAG = '[cache.queries.spec]';
 function diag(message: string, extra?: Record<string, unknown>) {
   const payload = {
