@@ -32,12 +32,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
-import {
-  assertUserLoggedIn,
-  computeSignatureKey,
-  getErrorMessage,
-  isAccountId,
-} from '@renderer/utils';
+import { assertUserLoggedIn, getErrorMessage, isAccountId } from '@renderer/utils';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -88,9 +83,6 @@ const withLoader = useLoader();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -320,13 +312,10 @@ function basePreCreateAssert() {
 
 async function updateTransactionKey() {
   try {
-    const computedKeys = await computeSignatureKey(
+    const computedKeys = await appCache.computeSignatureKey(
       transaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
       user.selectedOrganization,
+      network.mirrorNodeBaseURL,
     );
     transactionKey.value = new KeyList(computedKeys.signatureKeys);
   } catch {
