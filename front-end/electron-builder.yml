@@ -15,6 +15,10 @@ files:
   - '!**/test/**'
   - '!**/tests/**'
   - '!**/*.evts'
+  - '!**/*.map'
+  - '!**/*.d.ts'
+  - '!**/node_modules/**/{README,CHANGELOG,CONTRIBUTING,LICENSE}*'
+  - '!**/node_modules/**/.{eslintrc,prettierrc,editorconfig,npmignore}'
 asarUnpack:
   - '**/*.node'
 extraResources:
@@ -41,7 +45,6 @@ mac:
         - x64
         - arm64
         - universal
-  x64ArchFiles: "{**/*.node,node_modules/.prisma/**}"
   mergeASARs: false
 linux:
   target:
