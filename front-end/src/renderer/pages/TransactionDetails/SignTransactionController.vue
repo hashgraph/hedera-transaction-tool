@@ -30,10 +30,6 @@ const user = useUserStore();
 
 /* Injected */
 const appCache = AppCache.inject();
-const transactionCache = appCache.backendTransaction;
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const toastManager = ToastManager.inject();
 
 /* Computed */
@@ -53,7 +49,10 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
   } finally {
     // We clear transaction cache
     if (props.transaction && user.selectedOrganization) {
-      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization.serverUrl);
+      appCache.backendTransaction.forgetTransaction(
+        props.transaction,
+        user.selectedOrganization.serverUrl,
+      );
     }
     await props.callback(result === null);
   }
@@ -72,12 +71,7 @@ const performSign = async (
   const reportTitle = 'Sign Transaction';
 
   // 1) checks if user has all the required private keys
-  const signatureItems = await collectRequiredKeys(
-    [transaction],
-    accountByIdCache,
-    nodeByIdCache,
-    publicKeyOwnerCache,
-  );
+  const signatureItems = await collectRequiredKeys([transaction], appCache);
   const missingKeys = collectMissingKeys(signatureItems);
   const missingKeyCount = missingKeys.length;
   if (missingKeyCount > 0) {

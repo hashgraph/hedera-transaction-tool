@@ -36,9 +36,6 @@ const toastManager = ToastManager.inject();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountInfoCache = appCache.mirrorAccountById;
-const nodeInfoCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 const logger = createLogger('renderer.externalSigning.signTransactionFile');
 
 /* State */
@@ -70,9 +67,7 @@ async function handleSignAll() {
           sdkTransaction,
           user.publicKeys,
           network.getMirrorNodeREST(transactionFile.value!.network),
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
         );
 
         const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
@@ -128,9 +123,7 @@ watch(
           transactionFile.value.items,
           user.publicKeys,
           network.getMirrorNodeREST(transactionFile.value.network),
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
         );
 
         itemsToBeSigned.value = status.needSigning;

@@ -25,9 +25,12 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
-import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
-  computeSignatureKey,
+  getTransactionPayerId,
+  getTransactionType,
+  getTransactionValidStart,
+} from '@renderer/utils/sdk/transactions';
+import {
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
   getErrorMessage,
@@ -36,6 +39,7 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   openTransactionInHashscan,
+  type SignatureAudit,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -88,16 +92,12 @@ const route = useRoute();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
-const transactionCache = appCache.backendTransaction;
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject: Ref<Awaited<ReturnType<typeof computeSignatureKey>> | null> = ref(null);
+const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -160,7 +160,7 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await transactionCache.lookup(
+      orgTransaction.value = await appCache.backendTransaction.lookup(
         Number(id),
         user.selectedOrganization?.serverUrl || '',
       );
@@ -221,13 +221,10 @@ async function fetchTransaction() {
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
     try {
-      signatureKeyObject.value = await computeSignatureKey(
+      signatureKeyObject.value = await appCache.computeSignatureKey(
         sdkTransaction.value,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
         user.selectedOrganization,
+        network.mirrorNodeBaseURL,
       );
     } catch (error) {
       signatureKeyObject.value = null;
@@ -243,7 +240,7 @@ async function fetchTransactionOnNotif(): Promise<void> {
   const id = Number(formattedId.value);
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
     // We clear cache with strict==false to keep young data
-    transactionCache.forget(id, user.selectedOrganization.serverUrl, false);
+    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl, false);
   }
   // 2) Now fetch transaction
   await fetchTransaction();

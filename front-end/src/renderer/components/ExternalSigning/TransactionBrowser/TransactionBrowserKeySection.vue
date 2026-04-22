@@ -3,11 +3,7 @@ import type { ITransactionBrowserItem } from '@renderer/components/ExternalSigni
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import { computed, ref, watch, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
-import {
-  computeSignatureKey,
-  hexToUint8Array,
-  type SignatureAudit,
-} from '@renderer/utils';
+import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import { AppCache } from '@renderer/caches/AppCache.ts';
@@ -26,9 +22,6 @@ const network = useNetwork();
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* State */
 const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
@@ -52,13 +45,10 @@ const signersPublicKeys = computed(() => {
 const updateSignatureKeyObject = async () => {
   if (transaction.value !== null) {
     try {
-      signatureKeyObject.value = await computeSignatureKey(
+      signatureKeyObject.value = await appCache.computeSignatureKey(
         transaction.value,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
         user.selectedOrganization,
+        network.mirrorNodeBaseURL,
       );
     } catch (error) {
       logger.error('Failed to compute signature key', { error });

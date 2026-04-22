@@ -31,9 +31,6 @@ const emit = defineEmits<{
 
 /* Injected */
 const appCache = AppCache.inject();
-const accountByIdCache = appCache.mirrorAccountById;
-const nodeByIdCache = appCache.mirrorNodeById;
-const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* Stores */
 const user = useUserStore();
@@ -125,9 +122,7 @@ const updateSigningStatus = async (): Promise<void> => {
     canSign.value = await isSignableTransaction(
       tx,
       network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
+      appCache,
       user.selectedOrganization,
     );
   } catch {
