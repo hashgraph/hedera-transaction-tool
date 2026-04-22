@@ -9,10 +9,23 @@ directories:
   buildResources: build
   output: 'release'
 files:
-  - 'dist'
-  - 'dist-electron'
+  - 'dist/**'
+  - 'dist-electron/**'
+  - 'package.json'
+  - '!**/test/**'
+  - '!**/tests/**'
+  - '!**/*.evts'
+  - '!**/*.map'
+  - '!**/*.d.ts'
+  - '!**/node_modules/**/{README,CHANGELOG,CONTRIBUTING,LICENSE}*'
+  - '!**/node_modules/**/.{eslintrc,prettierrc,editorconfig,npmignore}'
 asarUnpack:
-  - prisma/**
+  - '**/*.node'
+extraResources:
+  - from: src/generated/prisma
+    to: src/generated/prisma
+  - prisma/schema.prisma
+  - prisma/migrations/**
 win:
   executableName: ${productName}
 nsis:
@@ -32,8 +45,7 @@ mac:
         - x64
         - arm64
         - universal
-  x64ArchFiles: '*'
-  mergeASARs: true
+  mergeASARs: false
 linux:
   target:
     - snap
@@ -51,7 +63,3 @@ publish:
   # This ensures electron-builder knows where to publish releases
   owner: hashgraph
   repo: hedera-transaction-tool
-extraResources:
-  - node_modules/prisma/**/*
-  - node_modules/@prisma/adapter-better-sqlite3/**/*
-  - prisma/**
