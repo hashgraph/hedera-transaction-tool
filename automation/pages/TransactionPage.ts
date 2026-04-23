@@ -120,7 +120,11 @@ export class TransactionPage extends BasePage {
   uploadFileButtonSelector = '#append-transaction-file[type="file"]';
   insertAccountIdButtonSelector = 'button-insert-account-id';
   moreDropdownButtonSelector = 'button-more-dropdown-lg';
-  importButtonSelector = 'button-transaction-page-import';
+  /* The Transactions list page exposes a compact "..." menu (sm variant) that holds
+     "Sign Transactions from File" and "Import Signatures from File". AppDropDown
+     builds each item's data-testid as `${parentTestId}-item-${item.value}`. */
+  transactionsListMoreDropdownSelector = 'button-more-dropdown-sm';
+  importSignaturesMenuItemSelector = 'button-more-dropdown-sm-item-importSignaturesFromFile';
   confirmImportButtonSelector = 'button-import-files-public';
   saveGotoSettingsButtonSelector = 'button-save-goto-settings';
   gotoSettingsButtonSelector = 'button-goto-settings';
@@ -259,7 +263,11 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnImportButton() {
-    await this.click(this.importButtonSelector);
+    /* Open the "..." menu on the Transactions list page, then select the
+       "Import Signatures from File" item. Previous standalone button was
+       removed when the action was moved into this dropdown. */
+    await this.click(this.transactionsListMoreDropdownSelector);
+    await this.click(this.importSignaturesMenuItemSelector);
   }
 
   async clickOnConfirmImportButton() {
