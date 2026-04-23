@@ -19,11 +19,13 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   ErrorCodes,
   ExecuteService,
   flattenKeyList,
   NatsPublisherService,
+  processTransactionStatus,
   safe,
   SchedulerService,
   SqlBuilderService,
@@ -69,6 +71,8 @@ jest.mock(`@app/common/utils`, () => {
     userKeysRequiredToSign: jest.fn(),
     getTransactionSignReminderKey: jest.fn(),
     emitTransactionStatusUpdate: jest.fn(),
+    emitDismissedNotifications: jest.fn(),
+    processTransactionStatus: jest.fn(),
     flattenKeyList: jest.fn(),
     safe: jest.fn(),
 
@@ -1176,6 +1180,45 @@ describe('TransactionsService', () => {
       ],
     } as User;
 
+    /* Helpers that mirror the real typeorm chain calls used in importSignatures. */
+    const makeFindDispatcher = (transactions: unknown[], userKeys: unknown[] = [], existingSigners: unknown[] = []) => {
+      return (entity: unknown) => {
+        if (entity === Transaction) return Promise.resolve(transactions);
+        if (entity === TransactionSigner) return Promise.resolve(existingSigners);
+        if (entity === UserKey) return Promise.resolve(userKeys);
+        return Promise.resolve([]);
+      };
+    };
+
+    type UpdateQb = {
+      update: jest.Mock;
+      set: jest.Mock;
+      where: jest.Mock;
+      setParameters: jest.Mock;
+      execute: jest.Mock;
+    };
+    type InsertQb = {
+      insert: jest.Mock;
+      into: jest.Mock;
+      values: jest.Mock;
+      execute: jest.Mock;
+    };
+
+    const makeUpdateQb = (execute: jest.Mock = jest.fn().mockResolvedValue(undefined)): UpdateQb => ({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute,
+    });
+
+    const makeInsertQb = (execute: jest.Mock = jest.fn().mockResolvedValue(undefined)): InsertQb => ({
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      execute,
+    });
+
     beforeEach(async () => {
       sdkTransaction = new AccountCreateTransaction()
         .setTransactionId(TransactionId.generate('0.0.2'))
@@ -1183,9 +1226,10 @@ describe('TransactionsService', () => {
         .freeze();
 
       jest.resetAllMocks();
+      entityManager.query.mockResolvedValue([]);
     });
 
-    it('should import signatures successfully', async () => {
+    it('should import signatures successfully and persist new signers', async () => {
       const transaction = {
         id: transactionId,
         transactionId: sdkTransaction.transactionId.toString(),
@@ -1193,26 +1237,26 @@ describe('TransactionsService', () => {
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
       };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
-      const executeMock = jest.fn().mockResolvedValue(undefined);
-      const qbMock = {
-        update: jest.fn().mockReturnThis(),
-        set: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        setParameters: jest.fn().mockReturnThis(),
-        execute: executeMock,
-      };
-      entityManager.createQueryBuilder.mockReturnValue(qbMock as unknown as any);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], [matchingUserKey]) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      entityManager.createQueryBuilder
+        .mockReturnValueOnce(updateQb as unknown as any)
+        .mockReturnValueOnce(insertQb as unknown as any);
 
       jest.mocked(safe).mockReturnValue({
         data: [privateKey.publicKey],
       });
 
-      // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
-
       entityManager.update.mockResolvedValue(undefined);
 
       const result = await service.importSignatures(
@@ -1220,11 +1264,21 @@ describe('TransactionsService', () => {
         userWithKeys
       );
 
-      expect(qbMock.update).toHaveBeenCalledWith(Transaction);
-      expect(qbMock.set).toHaveBeenCalledWith({ transactionBytes: expect.any(Function) });
-      expect(qbMock.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: expect.any(Array) });
-      expect(qbMock.setParameters).toHaveBeenCalledWith(expect.any(Object));
-      expect(executeMock).toHaveBeenCalled();
+      expect(updateQb.update).toHaveBeenCalledWith(Transaction);
+      expect(updateQb.set).toHaveBeenCalledWith({ transactionBytes: expect.any(Function) });
+      expect(updateQb.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: expect.any(Array) });
+      expect(updateQb.setParameters).toHaveBeenCalledWith(expect.any(Object));
+      expect(updateQb.execute).toHaveBeenCalled();
+
+      /* New signer row inserted so the key owner is recognised as a participant. */
+      expect(insertQb.into).toHaveBeenCalledWith(TransactionSigner);
+      expect(insertQb.values).toHaveBeenCalledWith([
+        { userId: 7, transactionId, userKeyId: 42 },
+      ]);
+      expect(insertQb.execute).toHaveBeenCalled();
+
+      /* Status recomputation so threshold-met transitions to WAITING_FOR_EXECUTION. */
+      expect(processTransactionStatus).toHaveBeenCalled();
 
       expect(result).toEqual([{ id: transactionId }]);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
@@ -1237,6 +1291,43 @@ describe('TransactionsService', () => {
           },
         }],
       );
+    });
+
+    it('should skip inserting a signer row if one already exists for the key', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const existingSigner = { transactionId, userKeyId: 42 };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(
+        makeFindDispatcher([transaction], [matchingUserKey], [existingSigner]) as any,
+      );
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      entityManager.createQueryBuilder
+        .mockReturnValueOnce(updateQb as unknown as any)
+        .mockReturnValueOnce(insertQb as unknown as any);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(insertQb.execute).not.toHaveBeenCalled();
     });
     
     it('should return error if transaction not found', async () => {
@@ -1258,7 +1349,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -1276,7 +1367,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -1301,7 +1392,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -1328,7 +1419,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -1368,7 +1459,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // force verifyAccess to say the user has no access
       jest.spyOn(service, 'verifyAccess').mockResolvedValueOnce(false);
@@ -1393,7 +1484,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // user has access
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);

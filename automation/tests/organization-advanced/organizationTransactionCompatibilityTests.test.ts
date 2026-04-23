@@ -115,7 +115,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       }
     });
 
-    test.skip('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
+    test('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
       await organizationPage.createAdditionalUsers(73, globalCredentials.password);
 
       const newAccountId = (await organizationPage.createComplexKeyAccountForUsers(75)) ?? '';
@@ -157,7 +157,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       expect(transactionDetails?.status).toBe('SUCCESS');
     });
 
-    test.skip('Verify user can import superfluous signatures from TTv1 format', async () => {
+    test('Verify user can import superfluous signatures from TTv1 format', async () => {
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       const { txId, validStart } =
@@ -199,7 +199,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       expect(transactionDetails?.status).toBe('SUCCESS');
     });
 
-    test.skip('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
+    test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
       await organizationPage.createAdditionalUsers(1, globalCredentials.password);
 
       await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);

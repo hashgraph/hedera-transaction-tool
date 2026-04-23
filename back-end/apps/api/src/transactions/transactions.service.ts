@@ -36,10 +36,12 @@ import {
   TransactionStatus,
   TransactionType,
   User,
+  UserKey,
 } from '@entities';
 
 import {
   attachKeys,
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   encodeUint8Array,
@@ -57,6 +59,7 @@ import {
   TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
+  processTransactionStatus,
   safe,
   SchedulerService,
   Sorting,
@@ -519,8 +522,23 @@ export class TransactionsService {
     // Create a map for quick lookup
     const transactionMap = new Map(transactions.map(t => [t.id, t]));
 
+    // Preload existing signer rows so we can dedupe new inserts
+    const existingSigners = await this.entityManager.find(TransactionSigner, {
+      where: { transactionId: In(ids) },
+      select: ['transactionId', 'userKeyId'],
+    });
+    const signersByTransaction = new Map<number, Set<number>>();
+    for (const s of existingSigners) {
+      if (!signersByTransaction.has(s.transactionId)) {
+        signersByTransaction.set(s.transactionId, new Set());
+      }
+      signersByTransaction.get(s.transactionId)!.add(s.userKeyId);
+    }
+
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
+    const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const notificationDismissals: { userId: number; transactionId: number }[] = [];
 
     for (const { id, signatureMap: map } of dto) {
       const transaction = transactionMap.get(id);
@@ -550,6 +568,28 @@ export class TransactionsService {
 
         for (const publicKey of publicKeys) {
           sdkTransaction.addSignature(publicKey, map);
+        }
+
+        /* Resolve each signing public key to its owning UserKey so we can record
+           the signer relation. Without this the signing user can't access the
+           transaction post-import because verifyAccess relies on transaction.signers. */
+        if (publicKeys.length > 0) {
+          const pubKeyStrings = new Set<string>();
+          for (const pk of publicKeys) {
+            pubKeyStrings.add(pk.toStringRaw());
+            pubKeyStrings.add(pk.toStringDer());
+          }
+          const userKeys = await this.entityManager.find(UserKey, {
+            where: { publicKey: In([...pubKeyStrings]) },
+          });
+          const txExistingSigners = signersByTransaction.get(id) ?? new Set<number>();
+          for (const uk of userKeys) {
+            if (txExistingSigners.has(uk.id)) continue;
+            txExistingSigners.add(uk.id);
+            newSignerRows.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+            notificationDismissals.push({ userId: uk.userId, transactionId: id });
+          }
+          signersByTransaction.set(id, txExistingSigners);
         }
 
         transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
@@ -620,6 +660,69 @@ export class TransactionsService {
           additionalData: { transactionId: r.transactionId, network: r.network },
         })),
       );
+    }
+
+    /* Insert TransactionSigner rows so the key owners are recognised as participants.
+       Without this, verifyAccess denies the user access once their signature is imported. */
+    if (newSignerRows.length > 0) {
+      try {
+        await this.entityManager
+          .createQueryBuilder()
+          .insert()
+          .into(TransactionSigner)
+          .values(newSignerRows)
+          .execute();
+      } catch (err) {
+        console.error('Failed to persist imported signers:', err);
+      }
+    }
+
+    /* Dismiss any pending "please sign" notifications for users whose sigs were imported. */
+    if (notificationDismissals.length > 0) {
+      try {
+        const userIds = notificationDismissals.map(n => n.userId);
+        const txIds = notificationDismissals.map(n => n.transactionId);
+        const rows = await this.entityManager.query(
+          `
+          WITH input(user_id, tx_id) AS (
+            SELECT * FROM UNNEST($1::int[], $2::int[])
+          )
+          UPDATE notification_receiver nr
+          SET "isRead" = true,
+              "updatedAt" = NOW()
+          FROM notification n, input i
+          WHERE nr."notificationId" = n.id
+            AND n.type = 'TRANSACTION_INDICATOR_SIGN'
+            AND i.tx_id = n."entityId"
+            AND i.user_id = nr."userId"
+            AND nr."isRead" = false
+          RETURNING nr.id, nr."userId"
+          `,
+          [userIds, txIds],
+        );
+        if (Array.isArray(rows) && rows.length > 0) {
+          emitDismissedNotifications(this.notificationsPublisher, rows);
+        }
+      } catch (err) {
+        console.error('Failed to dismiss TRANSACTION_INDICATOR_SIGN notifications on import:', err);
+      }
+    }
+
+    /* Re-evaluate transaction status so it moves to WAITING_FOR_EXECUTION
+       once the imported signatures satisfy the required key threshold. */
+    const touchedTxs = updateArray
+      .map(u => transactionMap.get(u.id))
+      .filter((t): t is Transaction => !!t);
+    if (touchedTxs.length > 0) {
+      try {
+        await processTransactionStatus(
+          this.repo,
+          this.transactionSignatureService,
+          touchedTxs,
+        );
+      } catch (err) {
+        console.error('processTransactionStatus failed on import:', err);
+      }
     }
 
     return Array.from(results.values());
