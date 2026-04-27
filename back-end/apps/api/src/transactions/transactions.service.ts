@@ -527,10 +527,8 @@ export class TransactionsService {
     // Create a map for quick lookup
     const transactionMap = new Map(transactions.map(t => [t.id, t]));
 
-    /* Preload existing signer rows so we can dedupe new inserts. Soft-deleted
-       UserKey rows are intentionally excluded below (TypeORM default) — a revoked
-       key must not regain signer access retroactively when a historical TTv1
-       signature is imported. */
+    /* Soft-deleted UserKey rows are intentionally excluded (TypeORM default):
+       a revoked key must not regain signer access via a historical TTv1 import. */
     const existingSigners = await this.entityManager.find(TransactionSigner, {
       where: { transactionId: In(ids) },
       select: ['transactionId', 'userKeyId'],
@@ -549,9 +547,8 @@ export class TransactionsService {
     const updates = new Map<number, UpdateRecord>();
     const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
-    /* Transactions that passed per-DTO validation AND have at least one persistable
-       side-effect (new bytes OR new signer row). Status recomputation and NATS
-       emission operate on this set, not on `updates` alone. */
+    /* Transactions with at least one persistable side-effect. Status recomputation
+       and NATS emission operate on this set, not on `updates` alone. */
     const transactionsToProcess = new Map<number, Transaction>();
 
     for (const { id, signatureMap: map } of dto) {
@@ -588,11 +585,8 @@ export class TransactionsService {
         const newBytes = Buffer.from(sdkTransaction.toBytes());
         const isSameBytes = newBytes.equals(originalBytes);
 
-        /* Resolve each signing public key to its owning UserKey so we can record
-           the signer relation. Without this the signing user can't access the
-           transaction post-import because verifyAccess relies on transaction.signers.
-           Soft-deleted UserKey rows are excluded by TypeORM default (see preload
-           comment above). */
+        /* Record the signer relation for each imported key — without this, the
+           signing user fails verifyAccess post-import (the original bug). */
         const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
         if (publicKeys.length > 0) {
           const pubKeyStrings = new Set<string>();
@@ -615,9 +609,8 @@ export class TransactionsService {
           }
         }
 
-        /* No-op import: bytes unchanged and no new signer rows. Skip DB writes and
-           NATS emission so duplicate imports don't produce spurious status-update
-           events. Matches the parity guard in SignersService.uploadSignatureMaps. */
+        /* No-op: skip DB writes and NATS emission so duplicate imports don't
+           produce spurious status-update events. */
         if (isSameBytes && newSignersForDto.length === 0) {
           results.set(id, { id });
           continue;
@@ -655,9 +648,8 @@ export class TransactionsService {
     let dismissedRows: Array<{ id: number; userId: number }> = [];
     let committed = false;
 
-    /* Persist atomically: transactionBytes updates, new signer rows, and notification
-       dismissals all succeed or all roll back. Without this wrapper, a signer insert
-       failure after a successful byte update would recreate the original access bug. */
+    /* Atomic write: bytes, signer rows, and dismissals must all commit together —
+       a half-applied write recreates the original access bug. */
     if (updateArray.length > 0 || newSignerRows.length > 0) {
       try {
         await this.dataSource.transaction(async manager => {
@@ -743,10 +735,8 @@ export class TransactionsService {
       emitDismissedNotifications(this.notificationsPublisher, dismissedRows);
     }
 
-    /* Re-evaluate status only for transactions whose writes actually committed.
-       Using transactionsToProcess (cleared on rollback) prevents promoting a tx to
-       WAITING_FOR_EXECUTION when the atomic write above rolled back and the DB
-       still holds the pre-import bytes. */
+    /* Re-evaluate status only after a successful commit — transactionsToProcess
+       is cleared on rollback to prevent promoting a tx whose bytes never landed. */
     if (committed && transactionsToProcess.size > 0) {
       let statusMap = new Map<number, TransactionStatus>();
       try {
@@ -763,9 +753,8 @@ export class TransactionsService {
         );
       }
 
-      /* Partition by status change — mirrors SignersService.updateStatusesAndNotify
-         so downstream NATS consumers see a consistent payload shape regardless of
-         which signing path produced the update. */
+      /* Mirror SignersService.updateStatusesAndNotify so NATS consumers see a
+         consistent payload shape regardless of which signing path produced it. */
       const changed: number[] = [];
       const unchanged: number[] = [];
       for (const id of transactionsToProcess.keys()) {
