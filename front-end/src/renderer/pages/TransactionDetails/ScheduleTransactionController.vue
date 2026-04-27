@@ -10,7 +10,7 @@ import {
   type ActionReport,
   makeBugReport,
 } from '@renderer/components/ActionController/ActionReport';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -20,7 +20,7 @@ const props = defineProps<{
 const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 const toastManager = ToastManager.inject();
 
 /* Stores */

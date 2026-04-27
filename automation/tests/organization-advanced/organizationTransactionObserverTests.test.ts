@@ -105,7 +105,7 @@ test.describe('Organization Transaction observer/visibility tests @organization-
     expect(isTransactionVisible).toBe(false);
   });
 
-  test.skip('Verify observer is listed in the transaction details', async () => {
+  test('Verify observer is listed in the transaction details', async () => {
     const { selectedObservers } = await organizationPage.createAccount(60, 1);
     const firstObserver = await organizationPage.getObserverEmail(0);
     expect(selectedObservers).toBe(firstObserver);
@@ -132,7 +132,7 @@ test.describe('Organization Transaction observer/visibility tests @organization-
     expect(isTransactionVisible).toBe(true);
   });
 
-  test.skip('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
+  test('Verify transaction is visible for an observer while transaction is "Ready for execution"', async () => {
     const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1, true);
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -152,7 +152,7 @@ test.describe('Organization Transaction observer/visibility tests @organization-
     expect(isTransactionVisible).toBe(true);
   });
 
-  test.skip('Verify observer is saved in the db for the correct transaction id', async () => {
+  test('Verify observer is saved in the db for the correct transaction id', async () => {
     const { txId, selectedObservers } = await organizationPage.createAccount(1000, 1);
     expect(typeof selectedObservers).toBe('string');
     const userIdInDb = await organizationPage.getUserIdByEmail(selectedObservers as string);

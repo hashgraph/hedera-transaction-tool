@@ -81,6 +81,16 @@ const externalKeysRaw = computed(() => {
         />
       </div>
     </template>
+    <template v-if="Object.keys(signatureKeyObject.newNodeAccountKeys).length > 0">
+      <div class="ms-4" :class="{ 'ms-5': hasMultiplePublicKeys }">
+        <SignatureStatusEntities
+          :entities="signatureKeyObject.newNodeAccountKeys"
+          :public-keys-signed="publicKeysSigned"
+          :label="`New Node Account $entityId Key`"
+          :externalKeys="externalKeysRaw"
+        />
+      </div>
+    </template>
     <template v-if="signatureKeyObject.newKeys.length > 0">
       <div class="ms-4" :class="{ 'ms-5': hasMultiplePublicKeys }">
         <SignatureStatusEntities

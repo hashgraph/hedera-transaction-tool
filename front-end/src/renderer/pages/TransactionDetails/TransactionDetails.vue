@@ -25,9 +25,12 @@ import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionA
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
-import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
-  computeSignatureKey,
+  getTransactionPayerId,
+  getTransactionType,
+  getTransactionValidStart,
+} from '@renderer/utils/sdk/transactions';
+import {
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
   getErrorMessage,
@@ -36,6 +39,7 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
   openTransactionInHashscan,
+  type SignatureAudit,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -48,15 +52,12 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -90,16 +91,13 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
-const transactionCache = BackendTransactionCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject: Ref<Awaited<ReturnType<typeof computeSignatureKey>> | null> = ref(null);
+const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -162,7 +160,7 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await transactionCache.lookup(
+      orgTransaction.value = await appCache.backendTransaction.lookup(
         Number(id),
         user.selectedOrganization?.serverUrl || '',
       );
@@ -223,13 +221,10 @@ async function fetchTransaction() {
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
     try {
-      signatureKeyObject.value = await computeSignatureKey(
+      signatureKeyObject.value = await appCache.computeSignatureKey(
         sdkTransaction.value,
-        network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
         user.selectedOrganization,
+        network.mirrorNodeBaseURL,
       );
     } catch (error) {
       signatureKeyObject.value = null;
@@ -245,7 +240,7 @@ async function fetchTransactionOnNotif(): Promise<void> {
   const id = Number(formattedId.value);
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
     // We clear cache with strict==false to keep young data
-    transactionCache.forget(id, user.selectedOrganization.serverUrl, false);
+    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl, false);
   }
   // 2) Now fetch transaction
   await fetchTransaction();

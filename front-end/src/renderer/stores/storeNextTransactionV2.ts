@@ -1,10 +1,9 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue';
 import { type Router } from 'vue-router';
 import { defineStore } from 'pinia';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
 import { createLogger } from '@renderer/utils/logger';
-
-const logger = createLogger('renderer.store.nextTransactionV2');
 import {
   historyTitle,
   inProgressTitle,
@@ -12,6 +11,12 @@ import {
   readyForReviewTitle,
   readyToSignTitle,
 } from '@shared/constants';
+import { AppCache } from '@renderer/caches/AppCache.ts';
+import { hexToUint8Array, isLoggedInOrganization } from '@renderer/utils';
+import useUserStore from './storeUser.ts';
+import useNetworkStore from '@renderer/stores/storeNetwork.ts';
+
+const logger = createLogger('renderer.store.nextTransactionV2');
 
 export type TransactionNodeId =
   | {
@@ -45,6 +50,13 @@ export interface StoreNextTransactionV2 {
 const useNextTransactionV2 = defineStore(
   'navigationController',
   (): StoreNextTransactionV2 => {
+    /* Injected */
+    const appCache = AppCache.inject();
+
+    /* Stores */
+    const user = useUserStore();
+    const network = useNetworkStore();
+
     /* State */
     const collectionStack = ref<TransactionNodeId[][]>([]);
     const contextStack = ref<(TransactionNodeCollection | string)[]>([]);
@@ -196,8 +208,29 @@ const useNextTransactionV2 = defineStore(
         } else {
           logger.warn('Malformed transaction node id', { nodeId });
         }
+
+        preload(currentCollection.value, currentIndex.value);
       }
     };
+
+    const preload = async (nodeIds: TransactionNodeId[], index: number): Promise<void> => {
+      if (isLoggedInOrganization(user.selectedOrganization)) {
+        const preloadCount = 5;
+        const startIndex = Math.max(0, index - preloadCount);
+        const endIndex = startIndex + 2 * preloadCount;
+        const serverUrl = user.selectedOrganization.serverUrl;
+        const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+        for (const nodeId of nodeIds.slice(startIndex, endIndex)) {
+          if (nodeId.transactionId) {
+            const transactionId = Number(nodeId.transactionId);
+            const tx = await appCache.backendTransaction.lookup(transactionId, serverUrl);
+            const sdkTransaction = SDKTransaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+            // Note: we spawn computeSignatureKey() to preload caches but we don't await for them
+            appCache.computeSignatureKey(sdkTransaction, user.selectedOrganization, mirrorNodeLink);
+          }
+        }
+      }
+    }
 
     return {
       routeDown,

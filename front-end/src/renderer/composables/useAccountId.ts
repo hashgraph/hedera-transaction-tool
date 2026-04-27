@@ -10,7 +10,7 @@ import { getAccountAllowances } from '@renderer/services/mirrorNodeDataService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { stringifyHbar } from '@renderer/utils';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 export default function useAccountId() {
   /* Stores */
@@ -28,7 +28,7 @@ export default function useAccountId() {
   const isValid = computed(() => Boolean(accountInfo.value));
 
   /* Injected */
-  const accountByIdCache = AccountByIdCache.inject();
+  const accountByIdCache = AppCache.inject().mirrorAccountById;
 
   const accountIdFormatted = computed(() => {
     if (!isValid.value) {

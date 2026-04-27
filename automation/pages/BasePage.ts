@@ -97,6 +97,15 @@ export class BasePage {
     await this.window.pause();
   }
 
+  async pressKey(key: string): Promise<void> {
+    console.log(`Pressing key: ${key}`);
+    await this.window.keyboard.press(key);
+  }
+
+  async wait(timeout: number): Promise<void> {
+    await this.window.waitForTimeout(timeout);
+  }
+
   // --------------------------
   // Helper Methods
   // --------------------------

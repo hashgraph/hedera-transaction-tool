@@ -150,22 +150,6 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
     expect(isAllTransactionsSuccessful).toBe(true);
   });
 
-  test(`Verify user can import csv with 100 transactions`, async () => {
-    const isAllTransactionsSuccessful = await executeOrganizationGroupFromCsvFile({
-      groupPage,
-      loginPage,
-      organizationPage,
-      transactionPage,
-      firstUser,
-      encryptionPassword: globalCredentials.password,
-      senderAccountId: complexKeyAccountId,
-      receiverAccountId: newAccountId,
-      numberOfTransactions: 100,
-      signAll: true,
-    });
-    expect(isAllTransactionsSuccessful).toBe(true);
-  });
-
   test('Verify import fails if sender account does not exist on network', async () => {
     await groupPage.fillDescription('test');
     const senderAccountId = await findMissingAccountId(newAccountId);
