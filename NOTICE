@@ -260,10 +260,21 @@ The Initial Developer of @eslint/config-array@0.21.2,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
+The Initial Developer of @eslint/config-array@0.23.3,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
 This product includes software (@eslint/config-helpers@0.4.2) developed at
 (https://github.com/eslint/rewrite).
 
+This product includes software (@eslint/config-helpers@0.5.3) developed at
+(https://github.com/eslint/rewrite).
+
 The Initial Developer of @eslint/core@0.17.0,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/core@1.1.1,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
@@ -285,7 +296,15 @@ The Initial Developer of @eslint/object-schema@2.1.7,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
+The Initial Developer of @eslint/object-schema@3.0.3,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
 The Initial Developer of @eslint/plugin-kit@0.4.1,
+is Nicholas C. Zakas (https://github.com/eslint/rewrite).
+Copyright Nicholas C. Zakas. All Rights Reserved.
+
+The Initial Developer of @eslint/plugin-kit@0.6.1,
 is Nicholas C. Zakas (https://github.com/eslint/rewrite).
 Copyright Nicholas C. Zakas. All Rights Reserved.
 
@@ -803,7 +822,13 @@ This product includes software (@types/deep-diff@1.0.5) developed at
 This product includes software (@types/deep-eql@4.0.2) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
+This product includes software (@types/eslint-scope@3.7.7) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
 This product includes software (@types/eslint@8.56.12) developed at
+(https://github.com/DefinitelyTyped/DefinitelyTyped).
+
+This product includes software (@types/eslint@9.6.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/estree@1.0.8) developed at
@@ -1868,10 +1893,20 @@ The Initial Developer of eslint-plugin-vue@9.33.0,
 is Toru Nagashima (https://github.com/vuejs/eslint-plugin-vue).
 Copyright Toru Nagashima. All Rights Reserved.
 
+This product includes software (eslint-scope@5.1.1) developed at
+(https://github.com/eslint/eslint-scope).
+
 This product includes software (eslint-scope@8.4.0) developed at
 (https://github.com/eslint/js).
 
+This product includes software (eslint-scope@9.1.2) developed at
+(https://github.com/eslint/js).
+
 The Initial Developer of eslint-visitor-keys@4.2.1,
+is Toru Nagashima (https://github.com/eslint/js).
+Copyright Toru Nagashima. All Rights Reserved.
+
+The Initial Developer of eslint-visitor-keys@5.0.1,
 is Toru Nagashima (https://github.com/eslint/js).
 Copyright Toru Nagashima. All Rights Reserved.
 
