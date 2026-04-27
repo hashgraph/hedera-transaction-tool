@@ -20,7 +20,7 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -31,7 +31,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();

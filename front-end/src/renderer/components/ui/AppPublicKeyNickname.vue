@@ -2,7 +2,7 @@
 import { computed, ref, watchEffect } from 'vue';
 import { PublicKey } from '@hiero-ledger/sdk';
 import { extractIdentifier, formatPublicKey } from '@renderer/utils';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -12,7 +12,7 @@ const props = defineProps<{
 }>();
 
 /* Injected */
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
 const formattedPublicKey = ref('');

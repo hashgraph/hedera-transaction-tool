@@ -11,15 +11,12 @@ import {
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import {
   type ActionReport,
   ActionStatus,
   makeBugReport,
 } from '@renderer/components/ActionController/ActionReport.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -32,10 +29,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 const user = useUserStore();
 
 /* Injected */
-const transactionCache = BackendTransactionCache.inject();
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 const toastManager = ToastManager.inject();
 
 /* Computed */
@@ -55,7 +49,10 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
   } finally {
     // We clear transaction cache
     if (props.transaction && user.selectedOrganization) {
-      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization.serverUrl);
+      appCache.backendTransaction.forgetTransaction(
+        props.transaction,
+        user.selectedOrganization.serverUrl,
+      );
     }
     await props.callback(result === null);
   }
@@ -74,12 +71,7 @@ const performSign = async (
   const reportTitle = 'Sign Transaction';
 
   // 1) checks if user has all the required private keys
-  const signatureItems = await collectRequiredKeys(
-    [transaction],
-    accountByIdCache,
-    nodeByIdCache,
-    publicKeyOwnerCache,
-  );
+  const signatureItems = await collectRequiredKeys([transaction], appCache);
   const missingKeys = collectMissingKeys(signatureItems);
   const missingKeyCount = missingKeys.length;
   if (missingKeyCount > 0) {
