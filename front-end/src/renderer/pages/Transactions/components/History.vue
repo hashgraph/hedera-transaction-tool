@@ -44,6 +44,8 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const HISTORY_SORT_URL_VALUES = [
   'created_at',
@@ -62,11 +64,9 @@ const LOCAL_TO_ORG_SORT: Record<string, keyof ITransaction> = {
   status_code: 'statusCode',
   executed_at: 'executedAt',
 };
-import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache.ts';
 
 /* Injected */
-const transactionCache = BackendTransactionCache.inject();
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();

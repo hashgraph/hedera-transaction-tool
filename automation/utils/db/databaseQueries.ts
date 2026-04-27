@@ -287,6 +287,93 @@ export async function getUserIdByEmail(email: string) {
 }
 
 /**
+ * Deletes all organization user keys for a given organization user email.
+ *
+ * @param {string} email - The organization user email.
+ * @return {Promise<number>} The number of deleted rows.
+ */
+export async function deleteUserKeysByEmail(email: string): Promise<number> {
+  const query = `
+    DELETE FROM public.user_key
+    WHERE "userId" = (
+      SELECT id
+      FROM public."user"
+      WHERE email = $1
+    )
+    RETURNING id;
+  `;
+
+  try {
+    const deleted = await queryPostgresDatabase<{ id: number }>(query, [email]);
+    return deleted.length;
+  } catch (error) {
+    console.error('Error deleting user keys by email:', error);
+    return 0;
+  }
+}
+
+/**
+ * Clears mnemonic hashes for active organization user keys by email.
+ * This forces recovery flow while keeping existing key rows for assertions.
+ *
+ * @param {string} email - The organization user email.
+ * @return {Promise<number>} The number of updated rows.
+ */
+export async function clearUserKeyMnemonicHashesByEmail(email: string): Promise<number> {
+  const query = `
+    UPDATE public.user_key
+    SET "mnemonicHash" = NULL
+    WHERE "userId" = (
+      SELECT id
+      FROM public."user"
+      WHERE email = $1
+    )
+      AND "deletedAt" IS NULL
+    RETURNING id;
+  `;
+
+  try {
+    const updated = await queryPostgresDatabase<{ id: number }>(query, [email]);
+    return updated.length;
+  } catch (error) {
+    console.error('Error clearing user key mnemonic hashes by email:', error);
+    return 0;
+  }
+}
+
+/**
+ * Sets mnemonic hash for active organization user keys by email.
+ *
+ * @param {string} email - The organization user email.
+ * @param {string} mnemonicHash - The mnemonic hash to store.
+ * @return {Promise<number>} The number of updated rows.
+ */
+export async function setUserKeyMnemonicHashesByEmail(
+  email: string,
+  mnemonicHash: string,
+): Promise<number> {
+  const query = `
+    UPDATE public.user_key
+    SET "mnemonicHash" = $2
+    WHERE "userId" = (
+      SELECT id
+      FROM public."user"
+      WHERE email = $1
+    )
+      AND "deletedAt" IS NULL
+    RETURNING id;
+  `;
+
+  try {
+    const updated = await queryPostgresDatabase<{ id: number }>(query, [email, mnemonicHash]);
+    return updated.length;
+  } catch (error) {
+    console.error('Error setting user key mnemonic hashes by email:', error);
+    return 0;
+  }
+}
+
+/**
  * Checks if the given public key is marked as deleted.
  *
  * @param {string} publicKey - The public key to check.
