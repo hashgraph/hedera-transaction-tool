@@ -2,9 +2,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
   AccountUpdateTransaction,
@@ -19,6 +20,7 @@ import {
 
 import {
   Brackets,
+  DataSource,
   EntityManager,
   FindManyOptions,
   FindOperator,
@@ -36,10 +38,12 @@ import {
   TransactionStatus,
   TransactionType,
   User,
+  UserKey,
 } from '@entities';
 
 import {
   attachKeys,
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   encodeUint8Array,
@@ -57,6 +61,7 @@ import {
   TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
+  processTransactionStatus,
   safe,
   SchedulerService,
   Sorting,
@@ -78,9 +83,12 @@ export enum CancelTransactionOutcome {
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
+
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @InjectEntityManager() private entityManager: EntityManager,
+    @InjectDataSource() private dataSource: DataSource,
     private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
@@ -519,8 +527,32 @@ export class TransactionsService {
     // Create a map for quick lookup
     const transactionMap = new Map(transactions.map(t => [t.id, t]));
 
+    /* Preload existing signer rows so we can dedupe new inserts. Soft-deleted
+       UserKey rows are intentionally excluded below (TypeORM default) — a revoked
+       key must not regain signer access retroactively when a historical TTv1
+       signature is imported. */
+    const existingSigners = await this.entityManager.find(TransactionSigner, {
+      where: { transactionId: In(ids) },
+      select: ['transactionId', 'userKeyId'],
+    });
+    const signersByTransaction = new Map<number, Set<number>>();
+    for (const s of existingSigners) {
+      let set = signersByTransaction.get(s.transactionId);
+      if (!set) {
+        set = new Set<number>();
+        signersByTransaction.set(s.transactionId, set);
+      }
+      set.add(s.userKeyId);
+    }
+
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
+    const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const notificationDismissals: { userId: number; transactionId: number }[] = [];
+    /* Transactions that passed per-DTO validation AND have at least one persistable
+       side-effect (new bytes OR new signer row). Status recomputation and NATS
+       emission operate on this set, not on `updates` alone. */
+    const transactionsToProcess = new Map<number, Transaction>();
 
     for (const { id, signatureMap: map } of dto) {
       const transaction = transactionMap.get(id);
@@ -552,15 +584,61 @@ export class TransactionsService {
           sdkTransaction.addSignature(publicKey, map);
         }
 
-        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+        const originalBytes = transaction.transactionBytes;
+        const newBytes = Buffer.from(sdkTransaction.toBytes());
+        const isSameBytes = newBytes.equals(originalBytes);
 
-        results.set(id, { id });
-        updates.set(id, {
-          id,
-          transactionBytes: transaction.transactionBytes,
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        });
+        /* Resolve each signing public key to its owning UserKey so we can record
+           the signer relation. Without this the signing user can't access the
+           transaction post-import because verifyAccess relies on transaction.signers.
+           Soft-deleted UserKey rows are excluded by TypeORM default (see preload
+           comment above). */
+        const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
+        if (publicKeys.length > 0) {
+          const pubKeyStrings = new Set<string>();
+          for (const pk of publicKeys) {
+            pubKeyStrings.add(pk.toStringRaw());
+            pubKeyStrings.add(pk.toStringDer());
+          }
+          const userKeys = await this.entityManager.find(UserKey, {
+            where: { publicKey: In([...pubKeyStrings]) },
+          });
+          let txExistingSigners = signersByTransaction.get(id);
+          if (!txExistingSigners) {
+            txExistingSigners = new Set<number>();
+            signersByTransaction.set(id, txExistingSigners);
+          }
+          for (const uk of userKeys) {
+            if (txExistingSigners.has(uk.id)) continue;
+            txExistingSigners.add(uk.id);
+            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+          }
+        }
+
+        /* No-op import: bytes unchanged and no new signer rows. Skip DB writes and
+           NATS emission so duplicate imports don't produce spurious status-update
+           events. Matches the parity guard in SignersService.uploadSignatureMaps. */
+        if (isSameBytes && newSignersForDto.length === 0) {
+          results.set(id, { id });
+          continue;
+        }
+
+        if (!isSameBytes) {
+          transaction.transactionBytes = newBytes;
+          updates.set(id, {
+            id,
+            transactionBytes: newBytes,
+            transactionId: transaction.transactionId,
+            network: transaction.mirrorNetwork,
+          });
+        }
+
+        for (const row of newSignersForDto) {
+          newSignerRows.push(row);
+          notificationDismissals.push({ userId: row.userId, transactionId: id });
+        }
+
+        transactionsToProcess.set(id, transaction);
       } catch (error) {
         results.set(id, {
           id,
@@ -572,54 +650,144 @@ export class TransactionsService {
       }
     }
 
-    //Added a batch mechanism, probably should limit this on the api side of things
     const BATCH_SIZE = 500;
-
     const updateArray = Array.from(updates.values());
+    let dismissedRows: Array<{ id: number; userId: number }> = [];
+    let committed = false;
 
-    if (updateArray.length > 0) {
-      for (let i = 0; i < updateArray.length; i += BATCH_SIZE) {
-        const batch = updateArray.slice(i, i + BATCH_SIZE);
+    /* Persist atomically: transactionBytes updates, new signer rows, and notification
+       dismissals all succeed or all roll back. Without this wrapper, a signer insert
+       failure after a successful byte update would recreate the original access bug. */
+    if (updateArray.length > 0 || newSignerRows.length > 0) {
+      try {
+        await this.dataSource.transaction(async manager => {
+          if (updateArray.length > 0) {
+            for (let i = 0; i < updateArray.length; i += BATCH_SIZE) {
+              const batch = updateArray.slice(i, i + BATCH_SIZE);
 
-        let caseSQL = 'CASE id ';
-        const params: any = {};
+              let caseSQL = 'CASE id ';
+              const params: Record<string, unknown> = {};
 
-        batch.forEach((update, idx) => {
-          caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
-          params[`id${idx}`] = update.id;
-          params[`bytes${idx}`] = update.transactionBytes;
+              batch.forEach((update, idx) => {
+                caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
+                params[`id${idx}`] = update.id;
+                params[`bytes${idx}`] = update.transactionBytes;
+              });
+              caseSQL += 'END';
+
+              await manager
+                .createQueryBuilder()
+                .update(Transaction)
+                .set({ transactionBytes: () => caseSQL })
+                .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
+                .setParameters(params)
+                .execute();
+            }
+          }
+
+          if (newSignerRows.length > 0) {
+            await manager
+              .createQueryBuilder()
+              .insert()
+              .into(TransactionSigner)
+              .values(newSignerRows)
+              .execute();
+          }
+
+          if (notificationDismissals.length > 0) {
+            const userIds = notificationDismissals.map(n => n.userId);
+            const txIds = notificationDismissals.map(n => n.transactionId);
+            const [rows] = await manager.query(
+              `
+              WITH input(user_id, tx_id) AS (
+                SELECT * FROM UNNEST($1::int[], $2::int[])
+              )
+              UPDATE notification_receiver nr
+              SET "isRead" = true,
+                  "updatedAt" = NOW()
+              FROM notification n, input i
+              WHERE nr."notificationId" = n.id
+                AND n.type = 'TRANSACTION_INDICATOR_SIGN'
+                AND i.tx_id = n."entityId"
+                AND i.user_id = nr."userId"
+                AND nr."isRead" = false
+              RETURNING nr.id, nr."userId"
+              `,
+              [userIds, txIds],
+            );
+            if (Array.isArray(rows)) {
+              dismissedRows = rows;
+            }
+          }
         });
-        caseSQL += 'END';
+        committed = true;
 
-        try {
-          await this.entityManager
-            .createQueryBuilder()
-            .update(Transaction)
-            .set({ transactionBytes: () => caseSQL })
-            .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
-            .setParameters(params)
-            .execute();
+        for (const id of transactionsToProcess.keys()) {
+          results.set(id, { id });
+        }
+      } catch (err) {
+        this.logger.error(
+          'Failed to persist imported signatures atomically',
+          err instanceof Error ? err.stack : String(err),
+        );
+        const message = ErrorCodes.FST;
+        for (const id of transactionsToProcess.keys()) {
+          results.set(id, { id, error: message });
+        }
+        transactionsToProcess.clear();
+        dismissedRows = [];
+      }
+    }
 
-          // mark each update in the batch as succeeded
-          batch.forEach(u => results.set(u.id, { id: u.id }));
-        } catch (err) {
-          const SAVE_ERROR_PREFIX = 'An unexpected error occurred while saving the signatures';
-          const message =
-            err instanceof Error && err.message
-              ? `${SAVE_ERROR_PREFIX}: ${err.message}`
-              : SAVE_ERROR_PREFIX;
+    if (dismissedRows.length > 0) {
+      emitDismissedNotifications(this.notificationsPublisher, dismissedRows);
+    }
 
-          batch.forEach(u => results.set(u.id, { id: u.id, error: message }));
+    /* Re-evaluate status only for transactions whose writes actually committed.
+       Using transactionsToProcess (cleared on rollback) prevents promoting a tx to
+       WAITING_FOR_EXECUTION when the atomic write above rolled back and the DB
+       still holds the pre-import bytes. */
+    if (committed && transactionsToProcess.size > 0) {
+      let statusMap = new Map<number, TransactionStatus>();
+      try {
+        const result = await processTransactionStatus(
+          this.repo,
+          this.transactionSignatureService,
+          Array.from(transactionsToProcess.values()),
+        );
+        if (result) statusMap = result;
+      } catch (err) {
+        this.logger.error(
+          'processTransactionStatus failed on import',
+          err instanceof Error ? err.stack : String(err),
+        );
+      }
+
+      /* Partition by status change — mirrors SignersService.updateStatusesAndNotify
+         so downstream NATS consumers see a consistent payload shape regardless of
+         which signing path produced the update. */
+      const changed: number[] = [];
+      const unchanged: number[] = [];
+      for (const id of transactionsToProcess.keys()) {
+        if (statusMap.has(id)) {
+          changed.push(id);
+        } else {
+          unchanged.push(id);
         }
       }
 
-      emitTransactionStatusUpdate(
-        this.notificationsPublisher,
-        updateArray.map(r => ({
-          entityId: r.id,
-          additionalData: { transactionId: r.transactionId, network: r.network },
-        })),
-      );
+      if (changed.length > 0) {
+        emitTransactionStatusUpdate(
+          this.notificationsPublisher,
+          changed.map(id => ({ entityId: id })),
+        );
+      }
+      if (unchanged.length > 0) {
+        emitTransactionUpdate(
+          this.notificationsPublisher,
+          unchanged.map(id => ({ entityId: id })),
+        );
+      }
     }
 
     return Array.from(results.values());
