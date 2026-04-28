@@ -505,8 +505,6 @@ export class TransactionsService {
     type UpdateRecord = {
       id: number;
       transactionBytes: Buffer;
-      transactionId: string;
-      network: string;
     };
 
     const ids = dto.map(d => d.id);
@@ -621,8 +619,6 @@ export class TransactionsService {
           updates.set(id, {
             id,
             transactionBytes: newBytes,
-            transactionId: transaction.transactionId,
-            network: transaction.mirrorNetwork,
           });
         }
 
