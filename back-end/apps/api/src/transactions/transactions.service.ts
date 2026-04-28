@@ -670,7 +670,7 @@ export class TransactionsService {
               await manager
                 .createQueryBuilder()
                 .update(Transaction)
-                .set({ transactionBytes: () => caseSQL })
+                .set({ transactionBytes: () => caseSQL, updatedAt: () => 'NOW()' })
                 .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
                 .setParameters(params)
                 .execute();

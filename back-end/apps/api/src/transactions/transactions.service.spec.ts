@@ -1297,11 +1297,18 @@ describe('TransactionsService', () => {
 
       expect(dataSource.transaction).toHaveBeenCalledTimes(1);
       expect(updateQb.update).toHaveBeenCalledWith(Transaction);
-      expect(updateQb.set).toHaveBeenCalledWith({ transactionBytes: expect.any(Function) });
-      /* Invoke the SQL fragment so the arrow function body runs and we can assert
-         the CASE expression has the correct shape. */
-      const setArg = updateQb.set.mock.calls[0][0] as { transactionBytes: () => string };
+      expect(updateQb.set).toHaveBeenCalledWith({
+        transactionBytes: expect.any(Function),
+        updatedAt: expect.any(Function),
+      });
+      /* Invoke the SQL fragments so the arrow function bodies run and we can
+         assert the CASE expression and updatedAt have the correct shape. */
+      const setArg = updateQb.set.mock.calls[0][0] as {
+        transactionBytes: () => string;
+        updatedAt: () => string;
+      };
       expect(setArg.transactionBytes()).toBe('CASE id WHEN :id0 THEN :bytes0::bytea END');
+      expect(setArg.updatedAt()).toBe('NOW()');
       expect(updateQb.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: [transactionId] });
       expect(updateQb.execute).toHaveBeenCalled();
 
