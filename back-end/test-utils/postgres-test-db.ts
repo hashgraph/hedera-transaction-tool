@@ -71,26 +71,40 @@ export async function createTestPostgresDataSource() {
       async cleanup() {
         const cleanupStart = Date.now();
         diag('cleanup:begin', { containerId: container!.getId() });
+
+        // Capture errors from each step instead of rethrowing the first one,
+        // so a failed `dataSource.destroy()` never blocks `container.stop()`
+        // from running. A leaked testcontainer holds a port and a Docker
+        // resource indefinitely; that's worse than a noisy error log.
+        let destroyErr: Error | undefined;
+        let stopErr: Error | undefined;
+
         try {
           await dataSource.destroy();
           diag('cleanup:dataSource.destroy:done', { elapsedMs: Date.now() - cleanupStart });
         } catch (err) {
+          destroyErr = err as Error;
           diag('cleanup:dataSource.destroy:error', {
-            message: (err as Error)?.message,
-            stack: (err as Error)?.stack,
+            message: destroyErr?.message,
+            stack: destroyErr?.stack,
           });
-          throw err;
         }
+
         const stopStart = Date.now();
         try {
           await container!.stop();
           diag('cleanup:container.stop:done', { elapsedMs: Date.now() - stopStart });
         } catch (err) {
+          stopErr = err as Error;
           diag('cleanup:container.stop:error', {
-            message: (err as Error)?.message,
-            stack: (err as Error)?.stack,
+            message: stopErr?.message,
+            stack: stopErr?.stack,
           });
-          throw err;
+        }
+
+        // Surface the proximate failure (destroy) first if both occurred.
+        if (destroyErr || stopErr) {
+          throw destroyErr ?? stopErr;
         }
       },
     };
