@@ -74,6 +74,7 @@ function getTestContext(): { testPath: string | null; currentTestName: string | 
 interface DiagState {
   loadedSpecs: Array<{ at: string; testPath: string | null }>;
   ioredisRequireCount: number;
+  ioredisRequireLoggedCount: number;
   connectLoggedCount: number;
   connectSuppressedCount: number;
 }
@@ -83,6 +84,7 @@ if (!proc[STATE_KEY]) {
   proc[STATE_KEY] = {
     loadedSpecs: [],
     ioredisRequireCount: 0,
+    ioredisRequireLoggedCount: 0,
     connectLoggedCount: 0,
     connectSuppressedCount: 0,
   };
@@ -92,6 +94,7 @@ const state = proc[STATE_KEY]!;
 // First N connect calls per worker get a full log; the rest are counted
 // silently and reported on `process:exit`.
 const CONNECT_LOG_LIMIT = 5;
+const REQUIRE_LOG_LIMIT = 5;
 
 // Tag listeners/patches so re-runs of this file are no-ops on the target.
 const LISTENER_TAG = Symbol.for('jestDiag.listener');
@@ -173,6 +176,9 @@ addListenerOnce('exit', (...args) => {
       })),
       totalSpecsLoaded: state.loadedSpecs.length,
       totalIoredisRequires: state.ioredisRequireCount,
+      ioredisRequireLogged: state.ioredisRequireLoggedCount,
+      ioredisRequireSuppressed:
+        state.ioredisRequireCount - state.ioredisRequireLoggedCount,
       ioredisConnectLogged: state.connectLoggedCount,
       ioredisConnectSuppressed: state.connectSuppressedCount,
     });
@@ -191,11 +197,16 @@ try {
     function patchedRequire(this: unknown, id: string): unknown {
       if (id === 'ioredis') {
         state.ioredisRequireCount += 1;
-        diag('ioredis:require', {
-          ...getTestContext(),
-          count: state.ioredisRequireCount,
-          stack: new Error('ioredis require').stack,
-        });
+        if (state.ioredisRequireLoggedCount < REQUIRE_LOG_LIMIT) {
+          state.ioredisRequireLoggedCount += 1;
+          diag('ioredis:require', {
+            ...getTestContext(),
+            count: state.ioredisRequireCount,
+            logged: state.ioredisRequireLoggedCount,
+            limit: REQUIRE_LOG_LIMIT,
+            stack: new Error('ioredis require').stack,
+          });
+        }
       }
       return originalRequire.call(this, id);
     }
