@@ -109,7 +109,10 @@ export async function createTestPostgresDataSource() {
         // don't mutate the upstream Error instances (TypeORM/pg often expose
         // the same Error reference elsewhere with their own `cause` chain).
         if (destroyErr && stopErr) {
-          throw new AggregateError([destroyErr, stopErr], 'cleanup failed');
+          throw new AggregateError(
+            [destroyErr, stopErr],
+            'cleanup failed: dataSource.destroy and container.stop both threw',
+          );
         }
         if (destroyErr) {
           throw destroyErr;
