@@ -15,9 +15,9 @@ describe('transactionStatusGuards', () => {
     expect(isApprovableStatus(TransactionStatus.CANCELED)).toBe(false);
   });
 
-  test('signable only when waiting for signatures', () => {
+  test('signable when waiting for signatures or waiting for execution', () => {
     expect(isSignableStatus(TransactionStatus.WAITING_FOR_SIGNATURES)).toBe(true);
-    expect(isSignableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(false);
+    expect(isSignableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(true);
   });
 
   test('approvable in expected active states only', () => {
@@ -68,9 +68,9 @@ describe('transactionStatusGuards', () => {
     expect(isApprovableStatus(TransactionStatus.WAITING_FOR_SIGNATURES)).toBe(true);
   });
 
-  test('WAITING_FOR_EXECUTION is in-progress and approvable but not signable', () => {
+  test('WAITING_FOR_EXECUTION is in-progress, signable, and approvable', () => {
     expect(isInProgressStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(true);
-    expect(isSignableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(false);
+    expect(isSignableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(true);
     expect(isApprovableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(true);
   });
 
