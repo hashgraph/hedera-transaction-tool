@@ -172,7 +172,6 @@ watch(
             <AppButton
               :disabled="itemsToBeSigned.length === 0"
               color="primary"
-              data-testid="button-sign-transaction-file"
               type="submit"
               >Sign and Update File
             </AppButton>
@@ -218,7 +217,11 @@ watch(
         <div class="text-center">
           <AppCustomIcon :name="'error'" style="height: 80px" />
         </div>
-        <h3 class="text-center text-title text-bold mt-4">No transaction to sign.</h3>
+        <h3
+          class="text-center text-title text-bold mt-4"
+        >
+          No transaction to sign.
+        </h3>
         <div
           v-if="transactionFile && transactionFile.items.length > 0"
           class="text-center text-secondary mt-4"

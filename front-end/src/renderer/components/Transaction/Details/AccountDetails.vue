@@ -213,12 +213,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             color="secondary"
             size="small"
             type="button"
+            data-testid="button-account-details-link-account"
             @click="handleLinkEntity"
             >Link Account</AppButton
           >
           <span
             v-if="accounts.some(f => f.account_id === entityId)"
             class="align-self-start text-small text-secondary"
+            data-testid="p-account-details-account-already-linked"
             >Account already linked</span
           >
         </div>

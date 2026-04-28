@@ -33,7 +33,7 @@ function handleElevate() {
         <div class="col-6 d-grid">
           <AppButton
             color="primary"
-            data-testid="button-confirm-removing-contact"
+            data-testid="button-confirm-elevate-contact"
             @click="handleElevate"
             >Assign</AppButton
           >
