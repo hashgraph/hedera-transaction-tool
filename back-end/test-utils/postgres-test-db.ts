@@ -24,6 +24,9 @@ export async function createTestPostgresDataSource() {
   diag('createTestPostgresDataSource:start');
 
   let container: Awaited<ReturnType<ReturnType<typeof createTestPostgresContainer>['start']>> | undefined;
+  // Hoisted out of the `try` so the outer catch can reach it for best-effort
+  // teardown if a later step (e.g. runMigrations) throws after initialize().
+  let dataSource: DataSource | undefined;
   try {
     const containerStart = Date.now();
     diag('container.start:begin', { image: POSTGRES_TEST_IMAGE });
@@ -50,7 +53,7 @@ export async function createTestPostgresDataSource() {
 
     const initStart = Date.now();
     diag('dataSource.initialize:begin');
-    const dataSource = new DataSource(AppDataSource.options);
+    dataSource = new DataSource(AppDataSource.options);
     await dataSource.initialize();
     diag('dataSource.initialize:done', { elapsedMs: Date.now() - initStart });
 
@@ -117,7 +120,19 @@ export async function createTestPostgresDataSource() {
       name: (err as Error)?.name,
       stack: (err as Error)?.stack,
     });
-    // Best-effort teardown so a failed boot doesn't leak a container.
+    // Best-effort teardown so a failed boot doesn't leak handles or a
+    // container. Destroy the partially-initialized DataSource first to close
+    // the JS-level pool — otherwise `detectOpenHandles` reports lingering PG
+    // sockets even after the container is killed.
+    if (dataSource?.isInitialized) {
+      try {
+        await dataSource.destroy();
+      } catch (destroyErr) {
+        diag('createTestPostgresDataSource:error:destroy-failed', {
+          message: (destroyErr as Error)?.message,
+        });
+      }
+    }
     if (container) {
       try {
         await container.stop();
