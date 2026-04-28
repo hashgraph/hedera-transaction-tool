@@ -105,9 +105,16 @@ export async function createTestPostgresDataSource() {
           });
         }
 
-        // Surface the proximate failure (destroy) first if both occurred.
-        if (destroyErr || stopErr) {
-          throw destroyErr ?? stopErr;
+        // Surface the proximate failure (destroy) first if both occurred,
+        // attaching the secondary one as `cause` so it isn't silently dropped.
+        if (destroyErr) {
+          if (stopErr) {
+            (destroyErr as Error & { cause?: unknown }).cause = stopErr;
+          }
+          throw destroyErr;
+        }
+        if (stopErr) {
+          throw stopErr;
         }
       },
     };
@@ -121,10 +128,14 @@ export async function createTestPostgresDataSource() {
       stack: (err as Error)?.stack,
     });
     // Best-effort teardown so a failed boot doesn't leak handles or a
-    // container. Destroy the partially-initialized DataSource first to close
-    // the JS-level pool — otherwise `detectOpenHandles` reports lingering PG
-    // sockets even after the container is killed.
-    if (dataSource?.isInitialized) {
+    // container. Destroy the (possibly partially-initialized) DataSource
+    // first to close the JS-level pool — otherwise `detectOpenHandles`
+    // reports lingering PG sockets even after the container is killed.
+    // We deliberately do NOT gate on `dataSource.isInitialized`: a failure
+    // partway through `initialize()` can leave the flag false while pg
+    // sockets are already open, and `destroy()` on an uninit'd DataSource
+    // either no-ops or throws (caught below).
+    if (dataSource) {
       try {
         await dataSource.destroy();
       } catch (destroyErr) {

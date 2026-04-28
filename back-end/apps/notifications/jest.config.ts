@@ -4,7 +4,11 @@ import baseConfig from '../../jest.config';
 const includeLibs = process.env.INCLUDE_LIBS !== '0';
 // Diagnostics (issue #2576) are CI-only by default: GitHub Actions sets CI=true
 // automatically. Local dev gets the fast path; opt back in with JEST_DIAG=1.
-const enableDiag = Boolean(process.env.CI || process.env.JEST_DIAG);
+// The `!== '0'` matches the INCLUDE_LIBS convention above so explicit opt-out
+// (CI=false / JEST_DIAG=0) actually disables.
+const enableDiag =
+  process.env.CI === 'true' ||
+  (process.env.JEST_DIAG !== undefined && process.env.JEST_DIAG !== '0');
 
 const config: Config = {
   ...baseConfig,

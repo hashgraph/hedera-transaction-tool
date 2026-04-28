@@ -11,8 +11,8 @@
  *
  * All installs are idempotent per target (listeners keyed by Symbol, patches
  * by a flag on the function itself), so re-evaluation per test file is a no-op.
- * Connect logs are capped at CONNECT_LOG_LIMIT per worker; the suppressed
- * count is reported on `process:exit`.
+ * Connect and require logs are capped at CONNECT_LOG_LIMIT / REQUIRE_LOG_LIMIT
+ * per worker; suppressed counts are reported on `process:exit`.
  */
 
 import type Module from 'module';
