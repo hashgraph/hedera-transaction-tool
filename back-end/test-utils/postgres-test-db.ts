@@ -1,11 +1,13 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from '../typeorm/data-source';
+import { enableDiag } from './diag-enabled';
 
 const POSTGRES_TEST_IMAGE = 'postgres:16.13-alpine3.22';
 
 const DIAG_TAG = '[pg-test-db]';
 function diag(message: string, extra?: Record<string, unknown>) {
+  if (!enableDiag) return;
   const payload = {
     ts: new Date().toISOString(),
     pid: process.pid,

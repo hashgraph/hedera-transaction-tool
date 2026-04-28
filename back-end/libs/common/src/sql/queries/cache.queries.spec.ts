@@ -1,11 +1,13 @@
 import { DataSource } from 'typeorm';
 import { CachedAccount, CachedNode } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
+import { enableDiag } from '../../../../../test-utils/diag-enabled';
 import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';
 
 const DIAG_TAG = '[cache.queries.spec]';
 function diag(message: string, extra?: Record<string, unknown>) {
+  if (!enableDiag) return;
   const payload = {
     ts: new Date().toISOString(),
     pid: process.pid,
