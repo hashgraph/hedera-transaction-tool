@@ -9,6 +9,11 @@
  *     `ioredis:Redis.sendCommand:first`) — dragnets every real Redis client
  *     so a future leak identifies its own caller.
  *
+ * Scope: currently wired only into the Notifications jest config, where the
+ * leak addressed by this PR lived. To extend the dragnet to other apps
+ * (api, chain, typeorm, root), mirror the same `setupFiles` line into their
+ * respective configs gated on the same `enableDiag` flag.
+ *
  * All installs are idempotent per target (listeners keyed by Symbol, patches
  * by a flag on the function itself), so re-evaluation per test file is a no-op.
  * Connect and require logs are capped at CONNECT_LOG_LIMIT / REQUIRE_LOG_LIMIT

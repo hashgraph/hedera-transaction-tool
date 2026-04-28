@@ -105,12 +105,13 @@ export async function createTestPostgresDataSource() {
           });
         }
 
-        // Surface the proximate failure (destroy) first if both occurred,
-        // attaching the secondary one as `cause` so it isn't silently dropped.
+        // Aggregate when both occurred so neither error is dropped and we
+        // don't mutate the upstream Error instances (TypeORM/pg often expose
+        // the same Error reference elsewhere with their own `cause` chain).
+        if (destroyErr && stopErr) {
+          throw new AggregateError([destroyErr, stopErr], 'cleanup failed');
+        }
         if (destroyErr) {
-          if (stopErr) {
-            (destroyErr as Error & { cause?: unknown }).cause = stopErr;
-          }
           throw destroyErr;
         }
         if (stopErr) {
