@@ -545,6 +545,9 @@ export class TransactionsService {
     const updates = new Map<number, UpdateRecord>();
     const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
+    /* Dedup (userId, transactionId) pairs so a user with multiple keys signing
+       the same tx doesn't produce duplicate UNNEST rows in the receiver UPDATE. */
+    const notificationDismissalKeys = new Set<string>();
     /* Transactions with at least one persistable side-effect. Status recomputation
        and NATS emission operate on this set, not on `updates` alone. */
     const transactionsToProcess = new Map<number, Transaction>();
@@ -624,7 +627,11 @@ export class TransactionsService {
 
         for (const row of newSignersForDto) {
           newSignerRows.push(row);
-          notificationDismissals.push({ userId: row.userId, transactionId: id });
+          const dismissalKey = `${row.userId}:${id}`;
+          if (!notificationDismissalKeys.has(dismissalKey)) {
+            notificationDismissalKeys.add(dismissalKey);
+            notificationDismissals.push({ userId: row.userId, transactionId: id });
+          }
         }
 
         transactionsToProcess.set(id, transaction);
