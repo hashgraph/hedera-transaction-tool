@@ -43,6 +43,7 @@ Launch mode example:
 ```env
 ELECTRON_APP_MODE='launch'
 EXECUTABLE_PATH='/Applications/Hedera Transaction Tool.app/Contents/MacOS/Hedera Transaction Tool'
+DATABASE_DEBUG='false'
 PLAYWRIGHT_TEST=true
 PLAYWRIGHT_WORKERS=2
 PLAYWRIGHT_SHARED_ENV=true
@@ -68,6 +69,8 @@ ELECTRON_ATTACH_URL='http://127.0.0.1:9222'
 ELECTRON_REMOTE_DEBUGGING_PORT='9222'
 ELECTRON_ATTACH_TIMEOUT_MS='30000'
 ```
+
+`DATABASE_DEBUG` defaults to off and should stay `false` for normal runs. CI ignores this flag and keeps DB debug logging disabled. Set `DATABASE_DEBUG=true` only for local automation debugging when you need SQL connection/query logging. Query parameters are redacted in that debug output.
 
 If you use attach mode, start the front-end first from `front-end/`:
 

@@ -14,7 +14,7 @@ test.describe('Group transaction validation tests @local-transactions', () => {
   test('Verify that empty group and empty transaction is not saved', async () => {
     await suite.groupPage.clickOnAddTransactionButton();
     await suite.transactionPage.clickOnCreateAccountTransaction();
-    // If we click immediatly on back button, then Add To Group button appears
+    // If we click immediately on back button, then Add To Group button appears
     // If we wait a bit, then no save dialog => we wait a bit :(
     await new Promise(resolve => setTimeout(resolve, 1000));
     await suite.transactionPage.clickOnBackButton();

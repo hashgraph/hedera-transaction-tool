@@ -6,8 +6,8 @@ test.describe('Transaction draft key safety tests @local-transactions', () => {
   const suite = setupLocalTransactionSuite();
 
   test('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
-    // This test is a copy of organizationSettingsTests.test.ts 'Verify that deleting all keys prevent to sign and execute a draft transaction'
-    // If you fix something here, you probably want to do the same in organizationSettingsTests.test.ts
+    // This test mirrors organizationSettingsTransactionAccessTests.test.ts
+    // If you fix something here, update organizationSettingsTransactionAccessTests.test.ts too.
 
     // Go to Settings / Keys and delete all keys
     const settingsPage = new SettingsPage(suite.window);

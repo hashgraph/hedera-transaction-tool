@@ -17,8 +17,8 @@ test.describe('Organization Settings transaction access tests @organization-basi
   });
 
   test('Verify that deleting all keys prevent to sign and execute a draft transaction', async () => {
-    // This test is a copy of transactionTests.test.ts 'Verify that deleting all keys prevent to sign and execute a draft transaction'
-    // If you fix something here, you probably want to do the same in transactionTests.test.ts
+    // This test mirrors transactionDraftKeySafetyTests.test.ts
+    // If you fix something here, update transactionDraftKeySafetyTests.test.ts too.
 
     // Go to Settings / Keys and delete all keys
     await suite.settingsPage.clickOnSettingsButton();
@@ -41,7 +41,7 @@ test.describe('Organization Settings transaction access tests @organization-basi
     await suite.transactionPage.clickOnSaveGotoSettings();
     await suite.settingsPage.verifySettingsElements();
 
-    // Go back to Transactions / Drafs
+    // Go back to Transactions / Drafts
     await suite.transactionPage.clickOnTransactionsMenuButton();
     await suite.transactionPage.clickOnDraftsMenuButton();
 

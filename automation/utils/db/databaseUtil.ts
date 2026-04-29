@@ -15,6 +15,43 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
+type DatabaseParams = Array<string | number>;
+
+const DATABASE_DEBUG = process.env.CI !== 'true' && process.env.DATABASE_DEBUG === 'true';
+const MAX_DEBUG_QUERY_LENGTH = 500;
+
+function summarizeDatabaseParams(params: DatabaseParams): Array<number | string> {
+  return params.map(param => {
+    if (typeof param === 'number') {
+      return param;
+    }
+
+    return `[redacted string length=${param.length}]`;
+  });
+}
+
+function truncateQueryForDebugLog(query: string): string {
+  const normalizedQuery = query.replace(/\s+/g, ' ').trim();
+  if (normalizedQuery.length <= MAX_DEBUG_QUERY_LENGTH) {
+    return normalizedQuery;
+  }
+
+  return `${normalizedQuery.slice(0, MAX_DEBUG_QUERY_LENGTH)}... [truncated ${normalizedQuery.length - MAX_DEBUG_QUERY_LENGTH} chars]`;
+}
+
+function logDatabaseDebug(message: string, details?: Record<string, unknown>): void {
+  if (!DATABASE_DEBUG) {
+    return;
+  }
+
+  if (details) {
+    console.log(message, details);
+    return;
+  }
+
+  console.log(message);
+}
+
 // SQLite Functions
 export function getDatabasePath(): string {
   const isolationContext = applyPlaywrightIsolationEnv();
@@ -51,7 +88,7 @@ export function openDatabase(): sqlite3.Database | null {
     if (err) {
       console.error('Failed to connect to the SQLite database:', err.message);
     } else {
-      console.log('Connected to the SQLite database.');
+      logDatabaseDebug('Connected to the SQLite database.');
     }
   });
 }
@@ -62,13 +99,13 @@ export function closeDatabase(db: sqlite3.Database): void {
       if (err) {
         console.error('Failed to close the SQLite database:', err.message);
       } else {
-        console.log('Disconnected from the SQLite database.');
+        logDatabaseDebug('Disconnected from the SQLite database.');
       }
     });
   }
 }
 
-export function queryDatabase<T>(query: string, params: (string|number)[] = []): Promise<T> {
+export function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T> {
   return new Promise((resolve, reject) => {
     const db = openDatabase();
     if (!db) {
@@ -76,13 +113,16 @@ export function queryDatabase<T>(query: string, params: (string|number)[] = []):
       return;
     }
 
-    console.log('Executing query:', query, 'Params:', params);
+    logDatabaseDebug('Executing SQLite query', {
+      query: truncateQueryForDebugLog(query),
+      params: summarizeDatabaseParams(params),
+    });
     db.get<T>(query, params, (err, row) => {
       if (err) {
         console.error('Query error:', err.message);
         reject(err);
       } else {
-        console.log('Query result:', row);
+        logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
         resolve(row);
       }
       closeDatabase(db);
@@ -90,7 +130,7 @@ export function queryDatabase<T>(query: string, params: (string|number)[] = []):
   });
 }
 
-export function executeDatabase(query: string, params: (string|number)[] = []): Promise<number> {
+export function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
   return new Promise((resolve, reject) => {
     const db = openDatabase();
     if (!db) {
@@ -98,13 +138,16 @@ export function executeDatabase(query: string, params: (string|number)[] = []): 
       return;
     }
 
-    console.log('Executing statement:', query, 'Params:', params);
+    logDatabaseDebug('Executing SQLite statement', {
+      query: truncateQueryForDebugLog(query),
+      params: summarizeDatabaseParams(params),
+    });
     db.run(query, params, function (err) {
       if (err) {
         console.error('Statement error:', err.message);
         reject(err);
       } else {
-        console.log('Statement changes:', this.changes);
+        logDatabaseDebug('SQLite statement completed', { changes: this.changes });
         resolve(this.changes);
       }
       closeDatabase(db);
@@ -200,23 +243,26 @@ export async function connectPostgresDatabase(): Promise<Client> {
   });
 
   await client.connect();
-  console.log('Connected to PostgreSQL database');
+  logDatabaseDebug('Connected to PostgreSQL database');
 
   return client;
 }
 
 export async function disconnectPostgresDatabase(client: Client) {
   await client.end();
-  console.log('Disconnected from PostgreSQL database');
+  logDatabaseDebug('Disconnected from PostgreSQL database');
 }
 
-export async function queryPostgresDatabase<T extends QueryResultRow>(query: string, params: (string|number)[] = []) {
+export async function queryPostgresDatabase<T extends QueryResultRow>(query: string, params: DatabaseParams = []) {
   const client = await connectPostgresDatabase();
 
   try {
-    console.log('Executing query:', query, 'Params:', params);
+    logDatabaseDebug('Executing PostgreSQL query', {
+      query: truncateQueryForDebugLog(query),
+      params: summarizeDatabaseParams(params),
+    });
     const res = await client.query<T>(query, params);
-    console.log('Query result:', res.rows);
+    logDatabaseDebug('PostgreSQL query completed', { rowCount: res.rowCount });
     return res.rows;
   } catch (err: any) {
     console.error('Query error:', err.message);
