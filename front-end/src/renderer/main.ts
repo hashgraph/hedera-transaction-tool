@@ -43,8 +43,9 @@ app.component('DatePicker', DatePicker);
 app.mount('#app');
 
 // Test-only hooks for Playwright (mutates module-scoped refs that are not on Pinia).
-// Gated behind import.meta.env.DEV so production builds do not expose internal mutators.
-if (import.meta.env.DEV) {
+// Gated so released builds do not expose internal mutators; CI's automation build
+// sets VITE_EXPOSE_TEST_HOOKS=true to opt in.
+if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_TEST_HOOKS === 'true') {
   const w = window as unknown as { __testHooks__?: Record<string, unknown> };
   w.__testHooks__ = {
     ...(w.__testHooks__ ?? {}),

@@ -33,7 +33,9 @@ export interface SetupAppResult {
   window: Page;
 }
 
-export interface SetupAppOptions extends LaunchHederaTransactionToolOptions {}
+export interface SetupAppOptions extends LaunchHederaTransactionToolOptions {
+  preserveLocalState?: boolean;
+}
 
 export class AppBootstrapper {
   private readonly launchApp: typeof defaultLaunchHederaTransactionTool;
@@ -55,7 +57,7 @@ export class AppBootstrapper {
 
     console.log('[setupApp] Initializing Hedera Transaction Tool session...');
     const app = await this.launchApp(options);
-    const preserveLocalState = shouldPreserveLocalAppState(app.mode);
+    const preserveLocalState = options.preserveLocalState ?? shouldPreserveLocalAppState(app.mode);
 
     const window = await app.firstWindow();
     await window.waitForLoadState('domcontentloaded');

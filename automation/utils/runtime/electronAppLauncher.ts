@@ -17,6 +17,7 @@ dotenv.config();
 const DEFAULT_ATTACH_URL = 'http://127.0.0.1:9222';
 const DEFAULT_ATTACH_TIMEOUT_MS = 30_000;
 const WINDOW_POLL_INTERVAL_MS = 250;
+const LAUNCH_ATTEMPTS = 2;
 
 export interface TransactionToolApp {
   readonly mode: TransactionToolAppMode;
@@ -97,15 +98,7 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
     launchArgs.push(`--user-data-dir=${isolationContext.userDataDir}`);
   }
 
-  const app = await electron.launch({
-    executablePath,
-    env: {
-      ...process.env,
-      PLAYWRIGHT_TEST: 'true',
-    },
-    // These args are passed to Electron/Chromium. `user-data-dir` must be isolated before app code runs.
-    args: launchArgs,
-  });
+  const app = await launchElectronWithRetry(executablePath, launchArgs);
   const wrappedApp = new LaunchedTransactionToolApp(app);
 
   const launchTime = Date.now() - launchStart;
@@ -120,6 +113,47 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
   console.log(`[ElectronLauncher] First window ready in ${windowTime} ms`);
 
   return wrappedApp;
+}
+
+async function launchElectronWithRetry(
+  executablePath: string,
+  launchArgs: string[],
+): Promise<ElectronApplication> {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= LAUNCH_ATTEMPTS; attempt++) {
+    try {
+      return await electron.launch({
+        executablePath,
+        env: {
+          ...process.env,
+          PLAYWRIGHT_TEST: 'true',
+        },
+        // These args are passed to Electron/Chromium. `user-data-dir` must be isolated before app code runs.
+        args: launchArgs,
+      });
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === LAUNCH_ATTEMPTS || !isRetriableLaunchError(error)) {
+        throw error;
+      }
+
+      console.log(
+        `[ElectronLauncher] Electron launch attempt ${attempt} failed; retrying: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  }
+
+  throw lastError;
+}
+
+function isRetriableLaunchError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('socket hang up') || message.includes('Process failed to launch');
 }
 
 async function attachToHederaTransactionTool(): Promise<TransactionToolApp> {

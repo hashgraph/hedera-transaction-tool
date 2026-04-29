@@ -21,6 +21,7 @@ export class LoginPage extends BasePage {
   emailInputSelector = 'input-email';
   passwordInputSelector = 'input-password';
   confirmPasswordInputSelector = 'input-password-confirm';
+  encryptPasswordInputSelector = 'input-encrypt-password';
 
   // Buttons
   signInButtonSelector = 'button-login';
@@ -29,10 +30,12 @@ export class LoginPage extends BasePage {
   rejectMigrationButtonSelector = 'button-refuse-migration';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
+  cancelResetStateButtonSelector = 'button-reset-cancel';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
   logoutButtonSelector = 'button-logout';
   settingsButtonSelector = 'button-menu-settings';
   profileTabButtonSelector = 'tab-4';
+  cancelEncryptPasswordButtonSelector = 'button-cancel-encrypt-password';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -117,6 +120,38 @@ export class LoginPage extends BasePage {
     return checks.every(isTrue => isTrue);
   }
 
+  async isResetAccountLinkVisible() {
+    return await this.isElementVisible(this.resetStateButtonSelector);
+  }
+
+  async clickOnResetAccountLink() {
+    await this.dismissKnownBlockingModals();
+
+    if (await this.isResetDataModalVisible()) {
+      return;
+    }
+
+    try {
+      await this.click(this.resetStateButtonSelector);
+    } catch {
+      await this.dismissKnownBlockingModals();
+      await this.pressKey('Escape');
+      await this.click(this.resetStateButtonSelector);
+    }
+  }
+
+  async isResetDataModalVisible() {
+    return await this.isElementVisible(this.confirmResetStateButtonSelector);
+  }
+
+  async clickOnResetDataConfirmButton() {
+    await this.click(this.confirmResetStateButtonSelector);
+  }
+
+  async clickOnResetDataCancelButton() {
+    await this.click(this.cancelResetStateButtonSelector);
+  }
+
   async login(email: string, password: string) {
     await this.typeEmail(email);
     await this.typePassword(password);
@@ -195,6 +230,14 @@ export class LoginPage extends BasePage {
     await this.fill(this.passwordInputSelector, password);
   }
 
+  async clickOnKeepLoggedInCheckbox() {
+    await this.click(this.keepLoggedInCheckboxSelector);
+  }
+
+  async isKeepLoggedInChecked() {
+    return await this.isChecked(this.keepLoggedInCheckboxSelector);
+  }
+
   async clickSignIn() {
     await this.dismissKnownBlockingModals();
 
@@ -212,11 +255,25 @@ export class LoginPage extends BasePage {
   }
 
   private async dismissKnownBlockingModals() {
+    await this.closeUserPasswordModal();
     await this.closeImportantNoteModal();
     await this.closeMigrationModal();
 
     if (process.platform === 'darwin') {
       await this.closeKeyChainModal();
+    }
+  }
+
+  async closeUserPasswordModal() {
+    const isPasswordModalVisible = await this.isElementVisible(
+      this.encryptPasswordInputSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (isPasswordModalVisible) {
+      await this.click(this.cancelEncryptPasswordButtonSelector);
+      await this.waitForElementToDisappear(this.encryptPasswordInputSelector);
     }
   }
 

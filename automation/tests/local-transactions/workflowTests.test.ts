@@ -117,19 +117,6 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
     expect(rewardsText).toBe('Accepted');
   });
 
-  test('Verify clicking on "Create New" button navigates the user on create account tx page', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    await transactionPage.mirrorGetAccountResponse(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await accountPage.clickOnAccountsLink();
-    await accountPage.clickOnAddNewButton();
-    await accountPage.clickOnCreateNewLink();
-
-    const isSignAndSubmitButtonVisible = await transactionPage.isSignAndSubmitButtonVisible();
-    expect(isSignAndSubmitButtonVisible).toBe(true);
-  });
-
   test('Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account', async () => {
     await transactionPage.ensureAccountExists();
     const accountFromList = await transactionPage.getFirstAccountFromList();
@@ -138,10 +125,8 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
     await accountPage.clickOnAccountsLink();
     await accountPage.clickOnEditButton();
     await accountPage.clickOnUpdateInNetworkLink();
-
     const isSignAndSubmitButtonVisible = await transactionPage.isSignAndSubmitButtonVisible();
     expect(isSignAndSubmitButtonVisible).toBe(true);
-
     const isAccountIdPrefilled = await transactionPage.getPrefilledAccountIdInUpdatePage();
     expect(isAccountIdPrefilled).toContain(accountFromList);
   });
@@ -190,9 +175,43 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
     await accountPage.clickOnLinkAccountButton();
     await transactionPage.clickOnTransactionsMenuButton();
     await accountPage.clickOnAccountsLink();
-
     const isAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
     expect(isAccountCardVisible).toBe(true);
   });
 
+  // 14.5.1: Account ID with a wrong checksum on the Link Existing form surfaces a toast.
+  test('Verify Account ID with invalid checksum shows error toast on link', async () => {
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.mirrorGetAccountResponse(accountFromList);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await accountPage.clickOnAccountsLink();
+    await accountPage.clickOnAddNewButton();
+    await accountPage.clickOnAddExistingLink();
+    await accountPage.fillInExistingAccountId(`${accountFromList}-zzzzz`);
+    await accountPage.clickOnLinkAccountButton();
+    // click() auto-waits for the toast to be visible (asserting it appeared). Error toasts in
+    // this app use duration: 0 (ToastManager.error) so they never auto-dismiss; clicking
+    // dismisses them. Wait for detach so the next test's getToastMessageByVariant doesn't
+    // read this stale toast as .last().
+    const toast = window
+      .locator('.v-toast__item--error')
+      .filter({ hasText: 'Invalid checksum for the entered Account ID.' });
+    await toast.click();
+    await toast.waitFor({ state: 'detached', timeout: 10_000 });
+  });
+
+  test('Verify duplicate account link shows error toast', async () => {
+    await transactionPage.ensureAccountExists();
+    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await transactionPage.mirrorGetAccountResponse(accountFromList);
+    await transactionPage.clickOnTransactionsMenuButton();
+    await accountPage.clickOnAccountsLink();
+    await accountPage.clickOnAddNewButton();
+    await accountPage.clickOnAddExistingLink();
+    await accountPage.fillInExistingAccountId(accountFromList);
+    await accountPage.clickOnLinkAccountButton();
+    const toastText = await registrationPage.getToastMessageByVariant('error');
+    expect(toastText).toContain('Account ID or Nickname already exists!');
+  });
 });

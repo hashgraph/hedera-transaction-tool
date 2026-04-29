@@ -9,7 +9,10 @@ import {
 } from '../utils/db/databaseQueries.js';
 
 export class RegistrationPage extends BasePage {
-  constructor(window: Page, private recoveryPhraseWords: Record<string, string> = {}) {
+  constructor(
+    window: Page,
+    private recoveryPhraseWords: Record<string, string> = {},
+  ) {
     super(window);
   }
 
@@ -23,6 +26,7 @@ export class RegistrationPage extends BasePage {
   nicknameInputSelector = 'input-nickname';
   keyTypeInputSelector = 'input-key-type';
   understandBackedUpCheckboxSelector = 'checkbox-understand-backed-up';
+  keepLoggedInCheckboxSelector = 'checkbox-remember';
 
   // Buttons
   registerButtonSelector = 'button-login';
@@ -61,6 +65,8 @@ export class RegistrationPage extends BasePage {
   setRecoveryPhraseMessageSelector = 'text-set-recovery-phrase';
   privateKeySpanSelector = 'span-shown-private-key';
   publicKeySpanSelector = 'p-show-public-key';
+  passwordRequirementsTooltipSelector = 'css=.tooltip.show .tooltip-inner';
+  passwordRequirementsTooltipFallbackSelector = 'css=.tooltip .tooltip-inner';
 
   getRecoveryWordSelector(index: number) {
     return this.inputRecoveryWordBase + index;
@@ -435,6 +441,136 @@ export class RegistrationPage extends BasePage {
     return await this.isDisabled(this.generateButtonSelector);
   }
 
+  async isRegisterButtonDisabled() {
+    return await this.isDisabled(this.registerButtonSelector);
+  }
+
+  async isRegisterButtonEnabled() {
+    return !(await this.isRegisterButtonDisabled());
+  }
+
+  async isKeepMeLoggedInCheckboxVisible() {
+    return await this.isElementVisible(this.keepLoggedInCheckboxSelector);
+  }
+
+  async clickOnKeepMeLoggedInCheckbox() {
+    await this.click(this.keepLoggedInCheckboxSelector);
+  }
+
+  async isKeepMeLoggedInChecked() {
+    return await this.isChecked(this.keepLoggedInCheckboxSelector);
+  }
+
+  async showPasswordStrengthTooltip() {
+    await this.hover(this.passwordInputSelector);
+
+    const tooltipSelector = await this.getVisibleSelector(
+      [this.passwordRequirementsTooltipSelector, this.passwordRequirementsTooltipFallbackSelector],
+      this.SHORT_TIMEOUT,
+    ).catch(() => null);
+
+    if (!tooltipSelector) {
+      await this.click(this.passwordInputSelector);
+    }
+
+    const visibleTooltipSelector = await this.getVisibleSelector([
+      this.passwordRequirementsTooltipSelector,
+      this.passwordRequirementsTooltipFallbackSelector,
+    ]);
+    await this.waitForElementToBeVisible(visibleTooltipSelector, this.LONG_TIMEOUT);
+  }
+
+  async isPasswordLengthRequirementSatisfied() {
+    const passwordValue = await this.getTextFromInputField(
+      this.passwordInputSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+    const expectedToBeSatisfied = passwordValue.length >= 10;
+    const deadline = Date.now() + this.LONG_TIMEOUT;
+    let latestIsSatisfied = false;
+
+    while (Date.now() < deadline) {
+      const indicatorState = await this.getPasswordLengthIndicatorState();
+      if (indicatorState) {
+        latestIsSatisfied = indicatorState === 'success';
+        if (latestIsSatisfied === expectedToBeSatisfied) {
+          return latestIsSatisfied;
+        }
+      }
+
+      await this.wait(this.SHORT_TIMEOUT);
+    }
+
+    return latestIsSatisfied;
+  }
+
+  private async getPasswordLengthIndicatorState(): Promise<'success' | 'error' | null> {
+    const tooltipSelector = await this.getVisibleSelector(
+      [this.passwordRequirementsTooltipSelector, this.passwordRequirementsTooltipFallbackSelector],
+      this.SHORT_TIMEOUT,
+    ).catch(() => null);
+
+    if (!tooltipSelector) {
+      return null;
+    }
+
+    const requirementSelector = await this.getVisibleSelector(
+      [`${tooltipSelector} > div`, `${tooltipSelector} div`, tooltipSelector],
+      this.SHORT_TIMEOUT,
+    ).catch(() => null);
+
+    if (!requirementSelector) {
+      return null;
+    }
+
+    const lineClass =
+      (await this.getAttributeValue(requirementSelector, 'class', 0, this.SHORT_TIMEOUT).catch(
+        () => null,
+      )) ?? '';
+
+    const iconClass =
+      (await this.getAttributeValue(
+        `${requirementSelector} i`,
+        'class',
+        0,
+        this.SHORT_TIMEOUT,
+      ).catch(() => null)) ?? '';
+
+    const stateToken = `${lineClass} ${iconClass}`.toLowerCase();
+
+    if (stateToken.includes('text-success') || stateToken.includes('bi-check')) {
+      return 'success';
+    }
+
+    if (stateToken.includes('text-danger') || stateToken.includes('bi-x')) {
+      return 'error';
+    }
+
+    return null;
+  }
+
+  private async getVisibleSelector(
+    selectors: string[],
+    timeout: number = this.LONG_TIMEOUT,
+  ): Promise<string> {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      for (const selector of selectors) {
+        if (await this.isElementVisible(selector, 0, this.SHORT_TIMEOUT)) {
+          return selector;
+        }
+      }
+
+      await this.wait(this.SHORT_TIMEOUT);
+    }
+
+    throw new Error(
+      `None of the selectors became visible within ${timeout} ms: ${selectors.join(', ')}`,
+    );
+  }
+
   async isClearButtonVisible() {
     return await this.isElementVisible(this.clearButtonSelector);
   }
@@ -453,16 +589,18 @@ export class RegistrationPage extends BasePage {
     return message?.trim() ?? '';
   }
 
-  async clickOnGenerateAgainButton() {
-    await this.click(this.generateAgainButtonSelector);
+  async waitForToastMessageByVariant(
+    variant: 'success' | 'error' | 'warning' | 'info',
+    message: string,
+  ) {
+    const selector = `${this.toastMessageByVariantPrefix}${variant}${this.toastMessageByVariantSuffix}`;
+    const toast = this.window.locator(selector).filter({ hasText: message }).last();
+    await toast.waitFor({ state: 'visible', timeout: this.VERY_LONG_TIMEOUT });
+    return ((await toast.textContent()) ?? '').trim();
   }
 
-  async isConfirmPasswordFieldVisible() {
-    return await this.isElementVisible(
-      this.confirmPasswordInputSelector,
-      null,
-      this.VERY_LONG_TIMEOUT,
-    );
+  async clickOnGenerateAgainButton() {
+    await this.click(this.generateAgainButtonSelector);
   }
 
   async getPublicKey() {

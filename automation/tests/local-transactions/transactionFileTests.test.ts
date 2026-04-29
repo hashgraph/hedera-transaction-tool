@@ -1,6 +1,7 @@
 import { expect, Page, test } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
+import { FilePage } from '../../pages/FilePage.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
 import { setupEnvironmentForTransactions } from '../../utils/runtime/environment.js';
 import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
@@ -14,6 +15,7 @@ let app: TransactionToolApp;
 let window: Page;
 let loginPage: LoginPage;
 let transactionPage: TransactionPage;
+let filePage: FilePage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Transaction file execution tests @local-transactions', () => {
@@ -28,6 +30,7 @@ test.describe('Transaction file execution tests @local-transactions', () => {
   test.beforeEach(async () => {
     loginPage = new LoginPage(window);
     transactionPage = new TransactionPage(window);
+    filePage = new FilePage(window);
     await createSeededLocalUserSession(window, loginPage);
     transactionPage.generatedAccounts = [];
     await setupEnvironmentForTransactions(window);
@@ -79,6 +82,16 @@ test.describe('Transaction file execution tests @local-transactions', () => {
     const readContent = await transactionPage.readFile(fileId ?? '');
 
     expect(readContent).toBe(textFromCache);
+
+    // Validate Files page reflects the read state (last viewed + content displayed).
+    await filePage.clickOnFilesMenuButton();
+    await filePage.clickOnFileCardByFileId(fileId ?? '');
+    const lastViewedText = await filePage.getLastViewedText();
+    expect(lastViewedText).toContain('Last Viewed:');
+
+    expect(await filePage.isDisplayedFileContentVisible()).toBe(true);
+    const displayedContent = await filePage.getDisplayedFileContentText();
+    expect(displayedContent).toBe(readContent);
   });
 
   test('Verify user can execute file update tx', async () => {

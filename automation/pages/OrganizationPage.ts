@@ -3,19 +3,10 @@ import { Page, expect } from '@playwright/test';
 import { RegistrationPage } from './RegistrationPage.js';
 import { SettingsPage } from './SettingsPage.js';
 import { TransactionPage } from './TransactionPage.js';
-import {
-  compareJsonFiles,
-  parsePropertiesContent,
-} from '../utils/data/jsonUtils.js';
-import {
-  generateRandomEmail,
-  generateRandomPassword,
-} from '../utils/data/random.js';
-import {
-  getPrivateKeyEnv,
-  setupEnvironmentForTransactions,
-} from '../utils/runtime/environment.js';
-import { waitForValidStart } from '../utils/runtime/timing.js';
+import { compareJsonFiles, parsePropertiesContent } from '../utils/data/jsonUtils.js';
+import { generateRandomEmail, generateRandomPassword } from '../utils/data/random.js';
+import { getPrivateKeyEnv, setupEnvironmentForTransactions } from '../utils/runtime/environment.js';
+import { calculateWaitTimeUntilValidStart, waitForValidStart } from '../utils/runtime/timing.js';
 import { createTestUsersBatch } from '../utils/db/databaseUtil.js';
 import {
   clearUserKeyMnemonicHashesByEmail as clearOrganizationUserKeyMnemonicHashesByEmailQuery,
@@ -32,7 +23,10 @@ import {
 import * as fs from 'node:fs';
 import { argonHash } from '../utils/crypto/crypto.js';
 import { generateMnemonic } from '../utils/crypto/keyUtil.js';
-import { indexRecoveryPhraseWords, seedOrganizationUserKey } from '../utils/seeding/organizationSeeding.js';
+import {
+  indexRecoveryPhraseWords,
+  seedOrganizationUserKey,
+} from '../utils/seeding/organizationSeeding.js';
 import {
   encodeExchangeRates,
   encodeFeeSchedule,
@@ -103,18 +97,14 @@ export class OrganizationPage extends BasePage {
   transactionHeaderSubmitButtonSelector = 'css=form button[type="submit"]';
   nextTransactionButtonSelector = 'button-next-org-transaction';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
-  rejectAllTransactionsButtonSelector = 'button-reject-group';
-  approveAllTransactionsButtonSelector = 'button-approve-group';
   signAllTransactionsButtonSelector = 'button-sign-group';
   confirmSignAllButtonSelector = 'button-sign-all-confirm';
   confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
-  cancelGroupActionButtonSelector = 'button-cancel-group-action';
   confirmCancelButtonSelector = 'button-cancel-transaction-confirm';
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   confirmTransactionModalTitleSelector = 'h3';
   signAllTransactionsModalTitle = 'Sign all transactions?';
-  cancelAllTransactionsModalTitle = 'Cancel all transactions?';
   discardGroupModalButtonSelector = 'button-discard-group-modal';
   discardDraftForGroupModalButtonSelector = 'button-discard-draft-for-group-modal';
   deleteGroupModalButtonSelector = 'button-delete-group-modal';
@@ -125,7 +115,9 @@ export class OrganizationPage extends BasePage {
   emailForOrganizationInputSelector = 'input-login-email-for-organization';
   passwordForOrganizationInputSelector = 'input-login-password-for-organization';
   editOrganizationNicknameInputSelector = 'input-edit-nickname';
+  visibleOrganizationNicknameInputSelector = 'css=[data-testid="input-edit-nickname"]:visible';
   // Texts
+  organizationLoginInvalidFeedbackSelector = 'css=.form-login .invalid-feedback';
   organizationNicknameTextSelector = 'span-organization-nickname';
   transactionDetailsIdSelector = 'p-transaction-details-id';
   transactionValidStartSelector = 'p-transaction-details-valid-start';
@@ -134,6 +126,9 @@ export class OrganizationPage extends BasePage {
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
   toastMessageSelector = 'css=.v-toast__text';
+  globalLoaderModalSelector = 'modal-global-loader';
+  globalLoaderSpinnerSelector =
+    'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
   firstMissingKeyIndexSelector = 'cell-index-missing-0';
@@ -146,7 +141,6 @@ export class OrganizationPage extends BasePage {
   transactionNodeSignButtonIndexSelector = 'button-transaction-node-sign-';
   transactionNodeDetailsButtonIndexSelector = 'button-transaction-node-details-';
   transactionNodeTransactionIdListSelector = `css=[data-testid^="${this.transactionNodeTransactionIdIndexSelector}"]`;
-
   stageBubbleIndexSelector = 'div-stepper-nav-item-bubble-';
   observerIndexSelector = 'span-group-email-';
   userListIndexSelector = 'span-email-';
@@ -159,8 +153,11 @@ export class OrganizationPage extends BasePage {
   users: UserDetails[];
   complexAccountId: string[];
   complexFileId: string[];
+  complexFileTxId: (string | null)[];
+  complexFileValidStart: (string | null)[];
   organizationRecoveryWords: Array<Array<string>>;
   transactions: TransactionDetails[];
+  private delayedOrganizationRouteRegex: RegExp | null = null;
 
   private readonly registrationPage: RegistrationPage;
   private readonly settingsPage: SettingsPage;
@@ -173,6 +170,8 @@ export class OrganizationPage extends BasePage {
     this.organizationRecoveryWords = []; // List to store recovery phrase words for organization
     this.complexAccountId = []; // List to store complex account ids
     this.complexFileId = []; // List to store complex file ids
+    this.complexFileTxId = [];
+    this.complexFileValidStart = [];
     this.registrationPage = new RegistrationPage(window);
     this.settingsPage = new SettingsPage(window);
     this.transactionPage = new TransactionPage(window);
@@ -214,6 +213,26 @@ export class OrganizationPage extends BasePage {
     await this.fill(this.emailForOrganizationInputSelector, email);
     await this.fill(this.passwordForOrganizationInputSelector, password);
     await this.click(this.signInOrganizationButtonSelector);
+  }
+
+  async isOrganizationLoginFormVisible() {
+    return await this.isElementVisible(this.emailForOrganizationInputSelector);
+  }
+
+  async getOrganizationLoginPasswordErrorMessage() {
+    return await this.getText(this.organizationLoginInvalidFeedbackSelector, 1);
+  }
+
+  async waitForToastToDisappear() {
+    await this.waitForElementToDisappear(this.toastMessageSelector);
+  }
+
+  async waitForToastMessage(message: string, timeout: number = this.LONG_TIMEOUT) {
+    const toast = this.window
+      .locator(this.toastMessageSelector)
+      .filter({ hasText: message })
+      .last();
+    await toast.waitFor({ state: 'visible', timeout });
   }
 
   async setupOrganization(organizationNickname = 'Test Organization') {
@@ -413,10 +432,6 @@ export class OrganizationPage extends BasePage {
     return this.isElementVisible(this.notificationsIndicatorElement);
   }
 
-  async getNotificationElementFromFirstTransaction() {
-    return await this.hasBeforePseudoElement(this.transactionNodeTransactionIdIndexSelector + '0');
-  }
-
   /**
    * Finds a transaction row by its transaction ID and checks if it has the notification indicator.
    * This is more precise than checking index 0 when multiple transactions exist.
@@ -443,6 +458,14 @@ export class OrganizationPage extends BasePage {
     await this.click(this.modeSelectionIndexSelector + index);
   }
 
+  async countModeSelectionItems() {
+    return await this.countElements(this.modeSelectionIndexSelector);
+  }
+
+  async getModeSelectionItemText(index: number) {
+    return await this.getText(this.modeSelectionIndexSelector + index);
+  }
+
   async selectPersonalMode() {
     await this.clickOnSelectModeDropdown();
     await this.selectModeByIndex(0);
@@ -451,6 +474,42 @@ export class OrganizationPage extends BasePage {
   async selectOrganizationMode() {
     await this.clickOnSelectModeDropdown();
     await this.selectModeByIndex(1);
+  }
+
+  async delayFirstOrganizationServerRequest(serverUrl: string) {
+    const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const organizationOrigin = new URL(serverUrl || 'http://localhost').origin;
+    const orgUrlRegex = new RegExp(`^${escapeRegExp(organizationOrigin)}/`);
+    let delayed = false;
+
+    await this.window.route(orgUrlRegex, async route => {
+      if (!delayed) {
+        delayed = true;
+        await new Promise(resolve => setTimeout(resolve, 800));
+      }
+      await route.continue();
+    });
+
+    this.delayedOrganizationRouteRegex = orgUrlRegex;
+  }
+
+  async stopDelayingOrganizationServerRequest() {
+    if (this.delayedOrganizationRouteRegex) {
+      await this.window.unroute(this.delayedOrganizationRouteRegex);
+      this.delayedOrganizationRouteRegex = null;
+    }
+  }
+
+  async isGlobalLoaderModalVisible(timeout = this.DEFAULT_TIMEOUT) {
+    return await this.isElementVisible(this.globalLoaderModalSelector, null, timeout);
+  }
+
+  async isGlobalLoaderSpinnerVisible(timeout = this.DEFAULT_TIMEOUT) {
+    return await this.isElementVisible(this.globalLoaderSpinnerSelector, null, timeout);
+  }
+
+  async isGlobalLoaderModalHidden(timeout = this.VERY_LONG_TIMEOUT) {
+    return await this.isElementHidden(this.globalLoaderModalSelector, null, timeout);
   }
 
   async logoutFromOrganization() {
@@ -529,8 +588,32 @@ export class OrganizationPage extends BasePage {
     await this.click(this.editNicknameOrganizationButtonSelector);
   }
 
+  async clickOnEditNicknameOrganizationButtonAtIndex(index: number) {
+    await this.click(this.editNicknameOrganizationButtonSelector, index);
+  }
+
   async fillInNewOrganizationNickname(nickname: string) {
     await this.fill(this.editOrganizationNicknameInputSelector, nickname);
+  }
+
+  async fillVisibleOrganizationNicknameInput(nickname: string) {
+    await this.fill(this.visibleOrganizationNicknameInputSelector, nickname);
+  }
+
+  async saveVisibleOrganizationNicknameInput() {
+    await this.pressKey('Tab');
+  }
+
+  async updateOrganizationNicknameAtIndex(index: number, nickname: string) {
+    await this.clickOnEditNicknameOrganizationButtonAtIndex(index);
+    await expect(this.getElement(this.visibleOrganizationNicknameInputSelector)).not.toHaveValue(
+      '',
+      {
+        timeout: this.LONG_TIMEOUT,
+      },
+    );
+    await this.fillVisibleOrganizationNicknameInput(nickname);
+    await this.saveVisibleOrganizationNicknameInput();
   }
 
   async getOrganizationNicknameText() {
@@ -613,10 +696,6 @@ export class OrganizationPage extends BasePage {
 
   async clickOnUserOfObserverList(index: number) {
     await this.click(this.userListIndexSelector + index);
-  }
-
-  async getUserOfObserverList(index: number) {
-    return await this.getText(this.userListIndexSelector + index);
   }
 
   /**
@@ -786,18 +865,27 @@ export class OrganizationPage extends BasePage {
   }
 
   async logInAndSignTransactionByAllUsers(encryptionPassword: string, txId: string) {
+    console.log(
+      `[logInAndSignTransactionByAllUsers] starting - txId=${txId}, totalUsersToSign=${this.users.length - 1}`,
+    );
     for (let i = 1; i < this.users.length; i++) {
-      console.log(`Signing transaction for user ${i}`);
       const user = this.users[i];
+      console.log(`[logInAndSignTransactionByAllUsers] user ${i} (${user.email}) signing...`);
       // Close any lingering draft modals before login
       await this.closeDraftModal(this.discardDraftForGroupModalButtonSelector);
       await this.signInOrganization(user.email, user.password, encryptionPassword);
       await this.transactionPage.clickOnTransactionsMenuButton();
       await this.clickOnReadyToSignTab();
+      const visibleCount = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
+      console.log(
+        `[logInAndSignTransactionByAllUsers] user ${i} sees ${visibleCount} transaction(s) in Ready to Sign`,
+      );
       await this.clickOnSubmitSignButtonByTransactionId(txId);
       await this.waitForElementToDisappear(this.toastMessageSelector);
       await this.logoutFromOrganization();
+      console.log(`[logInAndSignTransactionByAllUsers] user ${i} signed and logged out`);
     }
+    console.log('[logInAndSignTransactionByAllUsers] all users signed');
   }
 
   async addComplexKeyAccountWithNestedThresholds(users = 99) {
@@ -939,8 +1027,7 @@ export class OrganizationPage extends BasePage {
     ).map(email => email.trim());
 
     const trackedObserver = this.users.find(
-      user =>
-        !selectedObservers.includes(user.email) && listedObserverEmails.includes(user.email),
+      user => !selectedObservers.includes(user.email) && listedObserverEmails.includes(user.email),
     );
 
     if (!trackedObserver) {
@@ -963,7 +1050,9 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSignTransactionButton() {
     // Preferred: explicit data-testid if present.
-    if (await this.isElementVisible(this.signTransactionButtonSelector, null, this.DEFAULT_TIMEOUT)) {
+    if (
+      await this.isElementVisible(this.signTransactionButtonSelector, null, this.DEFAULT_TIMEOUT)
+    ) {
       await this.click(this.signTransactionButtonSelector, 0, this.VERY_LONG_TIMEOUT);
       return;
     }
@@ -996,7 +1085,11 @@ export class OrganizationPage extends BasePage {
       return true;
     }
 
-    return await this.isElementVisible(this.transactionHeaderSubmitButtonSelector, null, this.SHORT_TIMEOUT);
+    return await this.isElementVisible(
+      this.transactionHeaderSubmitButtonSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
   }
 
   async clickOnCancelTransactionButton() {
@@ -1032,10 +1125,6 @@ export class OrganizationPage extends BasePage {
 
   getComplexAccountId() {
     return this.complexAccountId[0];
-  }
-
-  async clickOnReadyForReviewTab() {
-    await this.click(this.readyForReviewTabSelector);
   }
 
   async clickOnReadyToSignTab() {
@@ -1164,6 +1253,10 @@ export class OrganizationPage extends BasePage {
       await this.transactionPage.clickOnFileServiceLink();
       await this.transactionPage.clickOnUpdateFileSublink();
     });
+    // Explicitly set the payer to the complex multi-sig account; the auto-fill
+    // default is non-deterministic and may pick a simple-key account, which
+    // skips the multi-sig signing requirement the test depends on.
+    await this.transactionPage.fillInPayerAccountId(complexAccountId);
     await this.setDateTimeAheadBy(timeForExecution);
 
     await this.transactionPage.clickOnComplexTab();
@@ -1202,54 +1295,101 @@ export class OrganizationPage extends BasePage {
     isSignRequiredFromCreator = false,
     complexAccountId: string,
   ) {
+    console.log(
+      `[fileCreate] start - timeForExecution=${timeForExecution}s, complexAccountId=${complexAccountId}, isSignRequiredFromCreator=${isSignRequiredFromCreator}`,
+    );
     await this.startNewTransaction(async () => {
       await this.transactionPage.clickOnFileServiceLink();
       await this.transactionPage.clickOnFileCreateTransaction();
     });
+
+    const autoFilledPayer = await this.transactionPage.getPayerAccountId();
+    console.log(
+      `[fileCreate] auto-filled payer on form: ${autoFilledPayer} (overriding to complex ${complexAccountId})`,
+    );
+
+    // Explicitly set the payer to the complex multi-sig account so the test
+    // deterministically exercises the "file create with complex account" scenario.
+    // The auto-fill default is non-deterministic across runs.
+    await this.transactionPage.fillInPayerAccountId(complexAccountId);
+
+    // Use the creator's public key for the file key (simple). A complex file key
+    // built from an account reference (addAccountAtDepth) prevented the backend's
+    // signer analysis from surfacing the txn in the other key holders' Ready to
+    // Sign tabs, which blocked multi-sig completion.
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
-
-    await this.transactionPage.addAccountAtDepth('0', complexAccountId);
-
+    const creatorPublicKey = await this.getFirstPublicKeyByEmail(this.users[0].email);
+    console.log(`[fileCreate] file key set to creator pubkey: ${creatorPublicKey?.slice(0, 16)}...`);
+    await this.transactionPage.addPublicKeyAtDepth('0', creatorPublicKey);
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
+
     await this.setDateTimeAheadBy(timeForExecution);
 
-    return await this.processTransaction(isSignRequiredFromCreator);
+    console.log('[fileCreate] submitting transaction...');
+    const result = await this.processTransaction(isSignRequiredFromCreator);
+    console.log(
+      `[fileCreate] submitted - txId=${result.txId}, validStart=${JSON.stringify(result.validStart)}`,
+    );
+    return result;
   }
 
   async ensureComplexFileExists(
     complexAccountId: string,
+    timeForExecution = 10,
     globalCredentials: Credentials,
     firstUser: UserDetails,
-    timeForExecution = 10,
     isSignRequiredFromCreator = true,
-  ) {
-    let txId, validStart, fileId: string | null;
-    if (this.complexFileId.length === 0) {
-      console.log('Creating a new complex file');
-      ({ txId, validStart } = await this.fileCreate(
-        timeForExecution,
-        isSignRequiredFromCreator,
-        complexAccountId,
-      ));
-      await this.closeDraftModal();
-      console.log('DEBUG: ensureComplexFileExists txId =', txId);
-      console.log('DEBUG: ensureComplexFileExists validStart =', JSON.stringify(validStart));
-      // File Create only needs payer signature (already signed by creator)
-      // Transaction goes directly to "Awaiting Execution" - no additional signatures needed
-      await this.transactionPage.clickOnTransactionsMenuButton();
-      await waitForValidStart(validStart ?? '');
-      // Wait a bit for mirror node to index the executed transaction
-      await new Promise(resolve => setTimeout(resolve, this.LONG_TIMEOUT));
-      await this.clickOnHistoryTab();
-      const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId ?? '');
-      fileId = txResponse?.entity_id;
-      this.complexFileId.push(fileId ?? '');
-      return { txId, fileId };
-    } else {
-      fileId = this.complexFileId[0];
-      return { fileId };
+  ): Promise<{ txId?: string | null; validStart?: string | null; fileId: string | null }> {
+    if (this.complexFileId.length > 0) {
+      console.log(
+        `[ensureComplexFileExists] returning cached fileId=${this.complexFileId[0]}`,
+      );
+      return {
+        fileId: this.complexFileId[0],
+        txId: this.complexFileTxId[0] ?? null,
+        validStart: this.complexFileValidStart[0] ?? null,
+      };
     }
+
+    console.log(
+      `[ensureComplexFileExists] no cached file - creating new one (complexAccountId=${complexAccountId}, timeForExecution=${timeForExecution}s)`,
+    );
+    const { txId, validStart } = await this.fileCreate(
+      timeForExecution,
+      isSignRequiredFromCreator,
+      complexAccountId,
+    );
+    console.log(
+      `[ensureComplexFileExists] fileCreate returned txId=${txId}, validStart=${JSON.stringify(validStart)}`,
+    );
+    await this.closeDraftModal();
+
+    // Payer is the complex multi-sig account, so the remaining key holders must
+    // sign before the network will execute the File Create.
+    console.log('[ensureComplexFileExists] running signTxByAllUsersAndRefresh...');
+    await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    console.log('[ensureComplexFileExists] signTxByAllUsersAndRefresh done');
+
+    console.log(
+      `[ensureComplexFileExists] waiting for SUCCESS in history for txId=${txId}, validStart=${JSON.stringify(validStart)}`,
+    );
+    const transactionDetails = await this.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
+    if (!transactionDetails) {
+      throw new Error(`File create transaction ${txId} did not reach SUCCESS in history`);
+    }
+    console.log('[ensureComplexFileExists] history reached SUCCESS - querying mirror node');
+
+    const txResponse = await this.transactionPage.mirrorGetTransactionResponse(txId ?? '');
+    const fileId = txResponse?.entity_id ?? null;
+    console.log(`[ensureComplexFileExists] mirror returned fileId=${fileId}`);
+    this.complexFileId.push(fileId ?? '');
+    this.complexFileTxId.push(txId ?? null);
+    this.complexFileValidStart.push(validStart ?? null);
+    return { txId, validStart, fileId };
   }
 
   async signTxByAllUsersAndRefresh(
@@ -1264,6 +1404,69 @@ export class OrganizationPage extends BasePage {
     await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
 
     await this.clickOnHistoryTab();
+  }
+
+  async waitForSuccessfulHistoryTransaction(
+    transactionId: string,
+    validStart: string | null = null,
+    timeout = this.DEFAULT_TIMEOUT * 30,
+  ) {
+    return await this.waitForHistoryTransactionStatus(
+      transactionId,
+      'SUCCESS',
+      validStart,
+      timeout,
+    );
+  }
+
+  async waitForHistoryTransactionStatus(
+    transactionId: string,
+    expectedStatus: string,
+    validStart: string | null = null,
+    timeout = this.DEFAULT_TIMEOUT * 30,
+    retryInterval = this.SHORT_TIMEOUT,
+  ): Promise<{
+    transactionId: string | null;
+    transactionType: string | null;
+    validStart: string | null;
+    detailsButton: boolean;
+    [key: string]: any;
+  } | null> {
+    let matchingTransactionDetails: {
+      transactionId: string | null;
+      transactionType: string | null;
+      validStart: string | null;
+      detailsButton: boolean;
+      [key: string]: any;
+    } | null = null;
+
+    const waitTimeUntilValidStart = validStart ? calculateWaitTimeUntilValidStart(validStart) : 0;
+    // For scheduled transactions, wait until valid-start and then allow the full timeout for execution/indexing.
+    const effectiveTimeout =
+      validStart && waitTimeUntilValidStart > 0 ? waitTimeUntilValidStart + timeout : timeout;
+
+    await expect
+      .poll(
+        async () => {
+          // Re-open History each attempt to avoid stale table snapshots.
+          await this.transactionPage.clickOnTransactionsMenuButton();
+          await this.clickOnHistoryTab();
+
+          const transactionDetails = await this.getHistoryTransactionDetails(transactionId);
+          if (transactionDetails?.status?.trim() === expectedStatus) {
+            matchingTransactionDetails = transactionDetails;
+          }
+
+          return transactionDetails?.status?.trim() ?? null;
+        },
+        {
+          timeout: effectiveTimeout,
+          intervals: [retryInterval],
+        },
+      )
+      .toBe(expectedStatus);
+
+    return matchingTransactionDetails;
   }
 
   async updateSystemFile(fileId: string, timeForExecution = 10, isSignRequiredFromCreator = false) {
@@ -1548,10 +1751,6 @@ export class OrganizationPage extends BasePage {
     await this.click(this.transactionNodeSignButtonIndexSelector + index, null, 5000);
   }
 
-  async isReadyToSignDetailsButtonVisibleByIndex(index: number) {
-    return await this.isElementVisible(this.transactionNodeDetailsButtonIndexSelector + index);
-  }
-
   async clickOnReadyToSignDetailsButtonByIndex(index: number) {
     await this.click(this.transactionNodeDetailsButtonIndexSelector + index);
   }
@@ -1760,6 +1959,11 @@ export class OrganizationPage extends BasePage {
           await this.clickOnSubmitSignButtonByIndex(i);
           return;
         }
+      }
+      if (attempt === 0 || attempt === 10 || attempt === 30) {
+        console.log(
+          `[clickOnSubmitSignButtonByTransactionId] attempt=${attempt} looking for ${normalizedTransactionId}, found ${count} rows: [${lastSeenIds.join(', ') || 'empty'}]`,
+        );
       }
       await new Promise(resolve => setTimeout(resolve, retryDelay));
     }
@@ -2004,11 +2208,7 @@ export class OrganizationPage extends BasePage {
     }
 
     try {
-      return !(await this.isDisabled(
-        this.nextTransactionButtonSelector,
-        null,
-        this.SHORT_TIMEOUT,
-      ));
+      return !(await this.isDisabled(this.nextTransactionButtonSelector, null, this.SHORT_TIMEOUT));
     } catch {
       return false;
     }

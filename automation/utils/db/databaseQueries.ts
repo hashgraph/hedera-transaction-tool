@@ -1,6 +1,7 @@
 import {
   queryPostgresDatabase,
   queryDatabase,
+  executeDatabase,
   connectPostgresDatabase,
   disconnectPostgresDatabase,
 } from './databaseUtil.js';
@@ -25,6 +26,33 @@ export async function verifyTransactionExists(transactionId: string, transaction
     return row.count > 0;
   } catch (error) {
     console.error('Error verifying transaction:', error);
+    return false;
+  }
+}
+
+/**
+ * Updates a local transaction history row with a failed status code.
+ *
+ * @param transactionId - The transaction ID of the row to update.
+ * @param status - The status text to store.
+ * @param statusCode - The Hedera status code to store.
+ * @return A promise that resolves to true if the update query completed.
+ */
+export async function updateLocalTransactionStatus(
+  transactionId: string,
+  status: string,
+  statusCode: number,
+) {
+  const query = `
+        UPDATE "Transaction"
+        SET status = ?, status_code = ?
+        WHERE transaction_id = ?`;
+
+  try {
+    const changedRows = await executeDatabase(query, [status, statusCode, transactionId]);
+    return changedRows > 0;
+  } catch (error) {
+    console.error('Error updating local transaction status:', error);
     return false;
   }
 }
@@ -95,6 +123,27 @@ export async function verifyFileExists(fileId: string) {
 }
 
 /**
+ * Updates the locally stored network metadata for a Hedera file.
+ *
+ * The Files page renders file details from cached metadata, so tests that mutate
+ * a file directly through the SDK need to refresh this field explicitly.
+ */
+export async function updateLocalFileMetadata(fileId: string, metaBytes: string) {
+  const query = `
+        UPDATE HederaFile
+        SET metaBytes = ?
+        WHERE file_id = ?`;
+
+  try {
+    const changedRows = await executeDatabase(query, [metaBytes, fileId]);
+    return changedRows > 0;
+  } catch (error) {
+    console.error('Error updating local file metadata:', error);
+    return false;
+  }
+}
+
+/**
  * Verifies if a user with the given email exists in the database.
  *
  * @param {string} email - The email of the user to verify.
@@ -107,8 +156,13 @@ export async function verifyUserExists(email: string) {
         SELECT *
         FROM User
         WHERE email = ?`;
-  const user = await queryDatabase(query, [email]);
-  return user !== undefined;
+  try {
+    const user = await queryDatabase(query, [email]);
+    return user !== undefined;
+  } catch (error) {
+    console.error('Error verifying user:', error);
+    return false;
+  }
 }
 
 /**
@@ -313,6 +367,26 @@ export async function deleteUserKeysByEmail(email: string): Promise<number> {
 }
 
 /**
+ * Deletes all organization user keys.
+ *
+ * @return {Promise<number>} The number of deleted rows.
+ */
+export async function deleteAllUserKeys(): Promise<number> {
+  const query = `
+    DELETE FROM public.user_key
+    RETURNING id;
+  `;
+
+  try {
+    const deleted = await queryPostgresDatabase<{ id: number }>(query);
+    return deleted.length;
+  } catch (error) {
+    console.error('Error deleting all user keys:', error);
+    return 0;
+  }
+}
+
+/**
  * Clears mnemonic hashes for active organization user keys by email.
  * This forces recovery flow while keeping existing key rows for assertions.
  *
@@ -462,6 +536,23 @@ export async function upgradeUserToAdmin(email: string) {
     return result.length > 0;
   } catch (error) {
     console.error('Error upgrading user to admin:', error);
+    return false;
+  }
+}
+
+export async function isUserAdmin(email: string): Promise<boolean> {
+  const query = `
+    SELECT admin
+    FROM public."user"
+    WHERE email = $1
+    LIMIT 1;
+  `;
+
+  try {
+    const result = await queryPostgresDatabase<{ admin: boolean }>(query, [email]);
+    return result.length > 0 ? Boolean(result[0].admin) : false;
+  } catch (error) {
+    console.error('Error checking admin flag for user:', error);
     return false;
   }
 }

@@ -2,7 +2,6 @@ import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
-import { waitForValidStart } from '../../utils/runtime/timing.js';
 import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 import { registerOrganizationAdvancedSuiteHooks } from '../helpers/bootstrap/organizationAdvancedSuiteHooks.js';
 
@@ -18,6 +17,7 @@ let complexKeyAccountId: string;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Transaction status/signing lifecycle tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'parallel' });
   registerOrganizationAdvancedSuiteHooks({
     resolveOrganizationNickname,
     onSuiteReady: suite => {
@@ -95,11 +95,10 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
       firstUser.password,
       globalCredentials.password,
     );
-    await waitForValidStart(validStart ?? '');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnHistoryTab();
-
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -175,11 +174,9 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
   test('Verify next button is visible when user has multiple txs in history', async () => {
     const { txId } = await organizationPage.createAccount(1, 0, true);
     await organizationPage.closeDraftModal();
-    const { validStart } = await organizationPage.createAccount(3, 0, true);
+    const { txId: secondTxId, validStart } = await organizationPage.createAccount(3, 0, true);
     await organizationPage.closeDraftModal();
-    await waitForValidStart(validStart ?? '');
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnHistoryTab();
+    await organizationPage.waitForSuccessfulHistoryTransaction(secondTxId ?? '', validStart);
     await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
   });
