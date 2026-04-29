@@ -176,12 +176,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             color="secondary"
             size="small"
             type="button"
+            data-testid="button-file-details-link-file"
             @click="handleLinkEntity"
             >Link File</AppButton
           >
           <span
             v-if="files.some(f => f.file_id === entityId)"
             class="align-self-start text-small text-secondary"
+            data-testid="p-file-details-file-already-linked"
             >File already linked</span
           >
         </div>

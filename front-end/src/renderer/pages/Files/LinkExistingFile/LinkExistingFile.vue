@@ -98,11 +98,21 @@ function handleOnBlur() {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
+        <AppInput
+          v-model="nickname"
+          :filled="true"
+          placeholder="Enter nickname"
+          data-testid="input-existing-file-nickname"
+        />
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Description</label>
-        <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
+        <textarea
+          v-model="description"
+          class="form-control is-fill"
+          rows="8"
+          data-testid="textarea-existing-file-description"
+        ></textarea>
       </div>
       <AppButton
         color="primary"

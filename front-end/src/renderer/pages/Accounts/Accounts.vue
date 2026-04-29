@@ -265,6 +265,7 @@ onMounted(async () => {
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
                 data-bs-toggle="dropdown"
+                data-testid="button-sort-accounts"
                 ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
               >
               <ul class="dropdown-menu text-small">
@@ -272,6 +273,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.account_id === 'asc' ? true : undefined"
                   @click="handleSortAccounts('account_id', 'asc')"
+                  data-testid="menu-sort-account-id-asc"
                 >
                   Account ID Asc
                 </li>
@@ -279,6 +281,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.account_id === 'desc' ? true : undefined"
                   @click="handleSortAccounts('account_id', 'desc')"
+                  data-testid="menu-sort-account-id-desc"
                 >
                   Account ID Dsc
                 </li>
@@ -286,6 +289,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.nickname === 'asc' ? true : undefined"
                   @click="handleSortAccounts('nickname', 'asc')"
+                  data-testid="menu-sort-account-nickname-asc"
                 >
                   Nickname A-Z
                 </li>
@@ -293,6 +297,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.nickname === 'desc' ? true : undefined"
                   @click="handleSortAccounts('nickname', 'desc')"
+                  data-testid="menu-sort-account-nickname-desc"
                 >
                   Nickname Z-A
                 </li>
@@ -300,6 +305,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.created_at === 'asc' ? true : undefined"
                   @click="handleSortAccounts('created_at', 'asc')"
+                  data-testid="menu-sort-account-date-added-asc"
                 >
                   Date Added Asc
                 </li>
@@ -307,6 +313,7 @@ onMounted(async () => {
                   class="dropdown-item"
                   :selected="sorting.created_at === 'desc' ? true : undefined"
                   @click="handleSortAccounts('created_at', 'desc')"
+                  data-testid="menu-sort-account-date-added-desc"
                 >
                   Date Added Dsc
                 </li>
@@ -368,7 +375,12 @@ onMounted(async () => {
                   }"
                   @click="handleSelectAccount(account.account_id)"
                 >
-                  <p class="text-small text-semi-bold overflow-hidden">{{ account.nickname }}</p>
+                  <p
+                    class="text-small text-semi-bold overflow-hidden"
+                    :data-testid="'p-account-nickname-' + index"
+                  >
+                    {{ account.nickname }}
+                  </p>
                   <div class="d-flex justify-content-between align-items-center">
                     <p
                       class="text-micro text-secondary mt-2"
@@ -396,6 +408,7 @@ onMounted(async () => {
                     @blur="handleChangeNickname"
                     :filled="true"
                     placeholder="Enter Nickname"
+                    data-testid="input-account-nickname"
                   />
                   <p
                     v-if="!isNicknameInputShown"
@@ -413,6 +426,7 @@ onMounted(async () => {
                     <span
                       class="bi bi-pencil-square text-main text-primary ms-3 cursor-pointer"
                       @click="handleStartNicknameEdit"
+                      data-testid="button-edit-selected-account-nickname"
                     ></span>
                   </p>
                 </div>
@@ -687,7 +701,7 @@ onMounted(async () => {
                 </div>
                 <template v-if="accountData.accountInfo.value?.deleted">
                   <hr class="separator my-4" />
-                  <p class="text-danger">Account is deleted</p>
+                  <p class="text-danger" data-testid="p-account-is-deleted">Account is deleted</p>
                 </template>
               </div>
             </div>
