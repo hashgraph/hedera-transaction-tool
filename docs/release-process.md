@@ -26,7 +26,7 @@
 
 ### Apply core release steps for pre-release
 - [ ] Build frontend artifacts
-- [ ] Notarize frontend artifacts (all .pkg and .dmg files)
+- [ ] Notarize frontend artifacts (all .pkg and .dmg files) - Optional for pre-release, but recommended
 - [ ] Build and push backend images with correct tags
 
 ### Pre-release tagging and release
@@ -67,6 +67,7 @@
 ### Final tagging and release
 - [ ] Create final git tag: `v<major.minor.patch>`
 - [ ] Create GitHub release for `v<major.minor.patch>` with final release notes
+- [ ] Close milestone for this release
 - [ ] Create a new branch on DevOps-GitOps:
   - [ ] Update `development` overlays to use this version
   - [ ] Update `finance` overlays to use this version (if applicable)
