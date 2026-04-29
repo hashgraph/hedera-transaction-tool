@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { Brackets, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import { Brackets, DataSource, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountId,
@@ -19,11 +19,14 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
+  emitTransactionUpdate,
   ErrorCodes,
   ExecuteService,
   flattenKeyList,
   NatsPublisherService,
+  processTransactionStatus,
   safe,
   SchedulerService,
   SqlBuilderService,
@@ -69,6 +72,9 @@ jest.mock(`@app/common/utils`, () => {
     userKeysRequiredToSign: jest.fn(),
     getTransactionSignReminderKey: jest.fn(),
     emitTransactionStatusUpdate: jest.fn(),
+    emitTransactionUpdate: jest.fn(),
+    emitDismissedNotifications: jest.fn(),
+    processTransactionStatus: jest.fn(),
     flattenKeyList: jest.fn(),
     safe: jest.fn(),
 
@@ -89,6 +95,7 @@ describe('TransactionsService', () => {
   const executeService = mockDeep<ExecuteService>();
   const sqlBuilderService = mockDeep<SqlBuilderService>();
   const entityManager = mockDeep<EntityManager>();
+  const dataSource = mockDeep<DataSource>();
 
   const user: Partial<User> = {
     id: 1,
@@ -133,6 +140,10 @@ describe('TransactionsService', () => {
         {
           provide: EntityManager,
           useValue: entityManager,
+        },
+        {
+          provide: DataSource,
+          useValue: dataSource,
         },
         {
           provide: SchedulerService,
@@ -1176,6 +1187,68 @@ describe('TransactionsService', () => {
       ],
     } as User;
 
+    /* Helpers that mirror the real typeorm chain calls used in importSignatures. */
+    const makeFindDispatcher = (transactions: unknown[], userKeys: unknown[] = [], existingSigners: unknown[] = []) => {
+      return (entity: unknown) => {
+        if (entity === Transaction) return Promise.resolve(transactions);
+        if (entity === TransactionSigner) return Promise.resolve(existingSigners);
+        if (entity === UserKey) return Promise.resolve(userKeys);
+        return Promise.resolve([]);
+      };
+    };
+
+    type UpdateQb = {
+      update: jest.Mock;
+      set: jest.Mock;
+      where: jest.Mock;
+      setParameters: jest.Mock;
+      execute: jest.Mock;
+    };
+    type InsertQb = {
+      insert: jest.Mock;
+      into: jest.Mock;
+      values: jest.Mock;
+      execute: jest.Mock;
+    };
+
+    const makeUpdateQb = (execute: jest.Mock = jest.fn().mockResolvedValue(undefined)): UpdateQb => ({
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      setParameters: jest.fn().mockReturnThis(),
+      execute,
+    });
+
+    const makeInsertQb = (execute: jest.Mock = jest.fn().mockResolvedValue(undefined)): InsertQb => ({
+      insert: jest.fn().mockReturnThis(),
+      into: jest.fn().mockReturnThis(),
+      values: jest.fn().mockReturnThis(),
+      execute,
+    });
+
+    type TxManager = {
+      createQueryBuilder: jest.Mock;
+      query: jest.Mock;
+    };
+
+    const makeTxManager = (queryResult: unknown = [[], 0]): TxManager => ({
+      createQueryBuilder: jest.fn(),
+      query: jest.fn().mockResolvedValue(queryResult),
+    });
+
+    const stubTransaction = (manager: TxManager) => {
+      (dataSource.transaction as unknown as jest.Mock).mockImplementation(
+        async (arg1: unknown, arg2?: unknown) => {
+          const callback = typeof arg1 === 'function' ? arg1 : arg2;
+          return (callback as (m: TxManager) => unknown)(manager);
+        },
+      );
+    };
+
+    const stubTransactionReject = (err: Error) => {
+      (dataSource.transaction as unknown as jest.Mock).mockRejectedValue(err);
+    };
+
     beforeEach(async () => {
       sdkTransaction = new AccountCreateTransaction()
         .setTransactionId(TransactionId.generate('0.0.2'))
@@ -1185,7 +1258,123 @@ describe('TransactionsService', () => {
       jest.resetAllMocks();
     });
 
-    it('should import signatures successfully', async () => {
+    it('should import signatures atomically and persist new signers', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], [matchingUserKey]) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+      /* Simulate threshold met: status flips to WAITING_FOR_EXECUTION. */
+      jest
+        .mocked(processTransactionStatus)
+        .mockResolvedValue(new Map([[transactionId, TransactionStatus.WAITING_FOR_EXECUTION]]));
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys
+      );
+
+      expect(dataSource.transaction).toHaveBeenCalledTimes(1);
+      expect(updateQb.update).toHaveBeenCalledWith(Transaction);
+      expect(updateQb.set).toHaveBeenCalledWith({
+        transactionBytes: expect.any(Function),
+        updatedAt: expect.any(Function),
+      });
+      /* Invoke the SQL fragments so the arrow function bodies run and we can
+         assert the CASE expression and updatedAt have the correct shape. */
+      const setArg = updateQb.set.mock.calls[0][0] as {
+        transactionBytes: () => string;
+        updatedAt: () => string;
+      };
+      expect(setArg.transactionBytes()).toBe('CASE id WHEN :id0 THEN :bytes0::bytea END');
+      expect(setArg.updatedAt()).toBe('NOW()');
+      expect(updateQb.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: [transactionId] });
+      expect(updateQb.execute).toHaveBeenCalled();
+
+      /* New signer row inserted so the key owner is recognised as a participant. */
+      expect(insertQb.into).toHaveBeenCalledWith(TransactionSigner);
+      expect(insertQb.values).toHaveBeenCalledWith([
+        { userId: 7, transactionId, userKeyId: 42 },
+      ]);
+      expect(insertQb.execute).toHaveBeenCalled();
+
+      /* Status recomputation so threshold-met transitions to WAITING_FOR_EXECUTION. */
+      expect(processTransactionStatus).toHaveBeenCalledWith(
+        transactionsRepo,
+        transactionSignatureService,
+        [expect.objectContaining({ id: transactionId })],
+      );
+
+      expect(result).toEqual([{ id: transactionId }]);
+      /* Payload shape matches SignersService.updateStatusesAndNotify — no additionalData. */
+      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+        notificationsPublisher,
+        [{ entityId: transactionId }],
+      );
+      expect(emitTransactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should skip inserting a signer row if one already exists for the key', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const existingSigner = { transactionId, userKeyId: 42 };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(
+        makeFindDispatcher([transaction], [matchingUserKey], [existingSigner]) as any,
+      );
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(insertQb.execute).not.toHaveBeenCalled();
+    });
+
+    it('should update bytes but skip signer insert when no UserKey matches the imported public key', async () => {
       const transaction = {
         id: transactionId,
         transactionId: sdkTransaction.transactionId.toString(),
@@ -1195,48 +1384,267 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
-      const executeMock = jest.fn().mockResolvedValue(undefined);
-      const qbMock = {
-        update: jest.fn().mockReturnThis(),
-        set: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        setParameters: jest.fn().mockReturnThis(),
-        execute: executeMock,
-      };
-      entityManager.createQueryBuilder.mockReturnValue(qbMock as unknown as any);
+      /* UserKey find returns empty — the signature is cryptographically valid but its
+         public key isn't owned by anyone we know about. We still update the tx bytes. */
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], []) as any);
 
-      jest.mocked(safe).mockReturnValue({
-        data: [privateKey.publicKey],
-      });
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
 
-      // Any value will do here, this just shows the user has access to the transaction
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
-
-      entityManager.update.mockResolvedValue(undefined);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
-        userWithKeys
+        userWithKeys,
       );
 
-      expect(qbMock.update).toHaveBeenCalledWith(Transaction);
-      expect(qbMock.set).toHaveBeenCalledWith({ transactionBytes: expect.any(Function) });
-      expect(qbMock.where).toHaveBeenCalledWith('id IN (:...ids)', { ids: expect.any(Array) });
-      expect(qbMock.setParameters).toHaveBeenCalledWith(expect.any(Object));
-      expect(executeMock).toHaveBeenCalled();
+      expect(updateQb.execute).toHaveBeenCalled();
+      expect(insertQb.execute).not.toHaveBeenCalled();
+      expect(manager.query).not.toHaveBeenCalled();
+      expect(result).toEqual([{ id: transactionId }]);
+    });
+
+    it('should insert signer rows for every owner when multiple UserKeys match', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const secondKey = PrivateKey.generateECDSA();
+      const userKeys = [
+        { id: 42, userId: 7, publicKey: privateKey.publicKey.toStringRaw() },
+        { id: 43, userId: 9, publicKey: secondKey.publicKey.toStringRaw() },
+      ];
+      await sdkTransaction.sign(privateKey);
+      await sdkTransaction.sign(secondKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], userKeys) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({
+        data: [privateKey.publicKey, secondKey.publicKey],
+      });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(insertQb.values).toHaveBeenCalledWith([
+        { userId: 7, transactionId, userKeyId: 42 },
+        { userId: 9, transactionId, userKeyId: 43 },
+      ]);
+    });
+
+    it('should unwrap the [rows, rowCount] tuple from manager.query and emit dismissed notifications', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      const dismissedRows = [{ id: 101, userId: 7 }];
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], [matchingUserKey]) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      /* manager.query returns the [rows, rowCount] tuple produced by the pg driver on
+         UPDATE ... RETURNING. The service must destructure the first element or it
+         will send a malformed payload to the NATS consumer. */
+      const manager = makeTxManager([dismissedRows, dismissedRows.length]);
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(manager.query).toHaveBeenCalled();
+      expect(emitDismissedNotifications).toHaveBeenCalledWith(notificationsPublisher, dismissedRows);
+    });
+
+    it('should fail all touched ids with FST when the atomic transaction rolls back', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
+      stubTransactionReject(new Error('deadlock'));
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(result[0]).toEqual({ id: transactionId, error: ErrorCodes.FST });
+      /* Status and dismissal side-effects must NOT run when the write rolled back. */
+      expect(processTransactionStatus).not.toHaveBeenCalled();
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(emitTransactionUpdate).not.toHaveBeenCalled();
+    });
+
+    it('should still return success and emit an unchanged-status event when processTransactionStatus fails after commit', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], [matchingUserKey]) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+      jest.mocked(processTransactionStatus).mockRejectedValueOnce(new Error('status boom'));
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
 
       expect(result).toEqual([{ id: transactionId }]);
-      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
+      /* statusMap is empty on failure -> transaction is treated as unchanged. */
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(emitTransactionUpdate).toHaveBeenCalledWith(
         notificationsPublisher,
-        [{
-          entityId: transactionId,
-          additionalData: {
-            transactionId: sdkTransaction.transactionId.toString(),
-            network: transaction.mirrorNetwork,
-          },
-        }],
+        [{ entityId: transactionId }],
       );
+    });
+
+    it('should be a no-op when every imported signature is already on the transaction', async () => {
+      await sdkTransaction.sign(privateKey);
+      /* Pre-apply the signature to the stored bytes so the import produces no change. */
+      const alreadySignedBytes = Buffer.from(sdkTransaction.toBytes());
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: alreadySignedBytes,
+        mirrorNetwork: 'testnet',
+      };
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
+
+      /* validateSignature short-circuits keys already present on the transaction. */
+      jest.mocked(safe).mockReturnValue({ data: [] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(result).toEqual([{ id: transactionId }]);
+      /* No writes, no emissions, no status recomputation — matches the normal path. */
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(processTransactionStatus).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(emitTransactionUpdate).not.toHaveBeenCalled();
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
+    });
+
+    it('should roll back and mark all ids FST when the signer INSERT fails inside the transaction callback', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const matchingUserKey = {
+        id: 42,
+        userId: 7,
+        publicKey: privateKey.publicKey.toStringRaw(),
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], [matchingUserKey]) as any);
+
+      /* UPDATE succeeds; INSERT then rejects — typeorm propagates the rejection out
+         of dataSource.transaction, which rolls back the already-executed UPDATE. */
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb(jest.fn().mockRejectedValue(new Error('unique constraint')));
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      (dataSource.transaction as unknown as jest.Mock).mockImplementation(
+        async (arg1: unknown, arg2?: unknown) => {
+          const callback = typeof arg1 === 'function' ? arg1 : arg2;
+          return (callback as (m: TxManager) => unknown)(manager);
+        },
+      );
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(updateQb.execute).toHaveBeenCalled();
+      expect(insertQb.execute).toHaveBeenCalled();
+      expect(result[0]).toEqual({ id: transactionId, error: ErrorCodes.FST });
+      /* Rolled back — no NATS emissions, no status recomputation. */
+      expect(processTransactionStatus).not.toHaveBeenCalled();
+      expect(emitDismissedNotifications).not.toHaveBeenCalled();
+      expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
     
     it('should return error if transaction not found', async () => {
@@ -1258,7 +1666,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -1276,7 +1684,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -1301,7 +1709,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
@@ -1320,7 +1728,7 @@ describe('TransactionsService', () => {
       });
     });
 
-    it('should return error if entityManager.update throws', async () => {
+    it('should return FST error when the UPDATE inside the transaction throws', async () => {
       const transaction = {
         id: transactionId,
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
@@ -1328,35 +1736,32 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       };
       await sdkTransaction.sign(privateKey);
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
-      // Any value will do here, this just shows the user has access to the transaction
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
 
-      jest.mocked(safe).mockReturnValue({
-        data: [privateKey.publicKey],
-      });
-
-      // mock query builder to reject on execute
-      const executeMock = jest.fn().mockRejectedValue(new Error('Fail'));
-      const qbMock = {
-        update: jest.fn().mockReturnThis(),
-        set: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        setParameters: jest.fn().mockReturnThis(),
-        execute: executeMock,
-      };
-      entityManager.createQueryBuilder.mockReturnValue(qbMock as unknown as any);
+      const updateQb = makeUpdateQb(jest.fn().mockRejectedValue(new Error('Fail')));
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      /* Real DataSource.transaction propagates callback rejections after rolling back. */
+      (dataSource.transaction as unknown as jest.Mock).mockImplementation(
+        async (arg1: unknown, arg2?: unknown) => {
+          const callback = typeof arg1 === 'function' ? arg1 : arg2;
+          return (callback as (m: TxManager) => unknown)(manager);
+        },
+      );
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
         userWithKeys
       );
-      expect(executeMock).toHaveBeenCalled();
-      expect(result[0]).toMatchObject({
-        id: transactionId,
-        error: 'An unexpected error occurred while saving the signatures: Fail',
-      });
+      expect(updateQb.execute).toHaveBeenCalled();
+      expect(result[0]).toEqual({ id: transactionId, error: ErrorCodes.FST });
+      expect(processTransactionStatus).not.toHaveBeenCalled();
     });
 
     it('should return error if user does not have verified access', async () => {
@@ -1368,7 +1773,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // force verifyAccess to say the user has no access
       jest.spyOn(service, 'verifyAccess').mockResolvedValueOnce(false);
@@ -1393,7 +1798,7 @@ describe('TransactionsService', () => {
       };
       await sdkTransaction.sign(privateKey);
 
-      entityManager.find.mockResolvedValue([transaction]);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       // user has access
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
