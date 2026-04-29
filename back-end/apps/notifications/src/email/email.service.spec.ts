@@ -14,6 +14,21 @@ import { EmailService } from './email.service';
 import { Notification, NotificationType } from '@entities';
 
 jest.mock('nodemailer');
+jest.mock('ioredis', () => {
+  class MockRedis {
+    subscribe = jest.fn();
+    on = jest.fn();
+    disconnect = jest.fn();
+    set = jest.fn();
+    get = jest.fn();
+    del = jest.fn();
+    rpush = jest.fn();
+    lrange = jest.fn().mockResolvedValue([]);
+    pexpire = jest.fn();
+    keys = jest.fn().mockResolvedValue([]);
+  }
+  return { Redis: MockRedis };
+});
 jest.mock('@app/common', () => ({
   generateEmailContent: jest.fn(),
   generateUserRegisteredMessage: jest.fn(),

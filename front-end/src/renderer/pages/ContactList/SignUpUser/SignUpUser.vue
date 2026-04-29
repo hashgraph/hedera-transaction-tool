@@ -16,6 +16,7 @@ import {
   isEmail,
   assertUserLoggedIn,
   assertIsLoggedInOrganization,
+  getErrorMessage,
 } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
 
@@ -46,37 +47,44 @@ const isMultipleMode = ref(false);
 /* Handlers */
 const handleLinkAccount = async () => {
   if (isMultipleMode.value) {
-    const [validEmails, invalidEmails] = multipleEmails.value
-      .split(',')
-      .map(e => e.trim())
-      .reduce(
-        ([valid, invalid], email) => {
-          isEmail(email) ? valid.push(email) : invalid.push(email);
-          return [valid, invalid];
-        },
-        [[], []] as [string[], string[]],
-      );
+    try {
+      const [validEmails, invalidEmails] = multipleEmails.value
+        .split(',')
+        .map(e => e.trim())
+        .reduce(
+          ([valid, invalid], email) => {
+            isEmail(email) ? valid.push(email) : invalid.push(email);
+            return [valid, invalid];
+          },
+          [[], []] as [string[], string[]],
+        );
 
-    if (invalidEmails.length > 0) throw new Error(`Invalid emails: ${invalidEmails.join(', ')}`);
-
-    const failedEmails: string[] = [];
-    for (const email of validEmails) {
-      if (!isEmail(email)) throw new Error('Invalid email');
-      try {
-        await signUpUser(email);
-      } catch (error) {
-        logger.error('Failed to sign up user', { email, error });
-        failedEmails.push(email);
+      if (invalidEmails.length > 0) {
+        toastManager.error(`Invalid emails: ${invalidEmails.join(', ')}`);
+        return;
       }
-    }
-    await contacts.fetch();
 
-    if (failedEmails.length > 0) {
-      toastManager.error(
-        `Failed to sign up users with emails: ${failedEmails.join(', ')}`,
-      );
-    } else {
-      toastManager.success('All users signed up successfully');
+      const failedEmails: string[] = [];
+      for (const email of validEmails) {
+        if (!isEmail(email)) throw new Error('Invalid email');
+        try {
+          await signUpUser(email);
+        } catch (error) {
+          logger.error('Failed to sign up user', { email, error });
+          failedEmails.push(email);
+        }
+      }
+      await contacts.fetch();
+
+      if (failedEmails.length > 0) {
+        toastManager.error(`Failed to sign up users with emails: ${failedEmails.join(', ')}`);
+      } else {
+        toastManager.success('All users signed up successfully');
+      }
+    } catch (error) {
+      logger.error('Failed to sign up users', { error });
+      toastManager.error(getErrorMessage(error, 'Failed to sign up users'));
+      return;
     }
   } else {
     if (!isEmail(email.value)) throw new Error('Invalid email');
@@ -153,6 +161,7 @@ watch(
               type="checkbox"
               id="multipleModeSwitch"
               v-model="isMultipleMode"
+              data-testid="switch-multiple-emails-mode"
             />
           </div>
         </div>

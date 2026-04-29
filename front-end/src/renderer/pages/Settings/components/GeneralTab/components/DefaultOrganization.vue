@@ -52,6 +52,7 @@ onBeforeMount(async () => {
         @update:value="handleUpdateDefaultOrganization"
         :items="listedItems"
         toggle-text="Select Organization"
+        data-testid="dropdown-default-organization"
         toggler-icon
         :color="'secondary'"
         button-class="w-100"

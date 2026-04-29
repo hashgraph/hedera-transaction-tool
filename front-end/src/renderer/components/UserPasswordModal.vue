@@ -113,7 +113,13 @@ defineExpose({
         </div>
         <hr class="separator my-5" />
         <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" type="button" @click="handleCancel">Cancel</AppButton>
+          <AppButton
+            color="borderless"
+            type="button"
+            data-testid="button-cancel-encrypt-password"
+            @click="handleCancel"
+            >Cancel</AppButton
+          >
           <AppButton
             color="primary"
             data-testid="button-continue-encrypt-password"

@@ -194,6 +194,7 @@ onBeforeMount(async () => {
                     <template v-if="notifiedUserIds.includes(c.user.id)">
                       <span
                         class="indicator-circle position-absolute absolute-centered"
+                        :data-testid="`span-contact-notification-indicator-${c.user.email}`"
                         :style="{
                           left: '-8px',
                           top: '0px',
@@ -226,7 +227,12 @@ onBeforeMount(async () => {
               </template>
             </template>
             <template v-else>
-              <p class="text-small text-semi-bold text-center mt-5">No contacts found</p>
+              <p
+                class="text-small text-semi-bold text-center mt-5"
+                data-testid="p-no-contacts-found"
+              >
+                No contacts found
+              </p>
             </template>
           </div>
         </div>
