@@ -3,7 +3,7 @@ import { TransactionPage } from '../../pages/TransactionPage.js';
 import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
-import { calculateTimeout, waitForValidStart } from '../../utils/runtime/timing.js';
+import { calculateTimeout } from '../../utils/runtime/timing.js';
 import { disableNotificationsForUsers } from '../../utils/db/databaseQueries.js';
 import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
@@ -99,16 +99,16 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
       globalCredentials.password,
     );
 
-    await waitForValidStart(validStart ?? '');
-
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId ?? '');
     const transactionType = transactionResponse?.name;
     const result = transactionResponse?.result;
     expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
     expect(result).toBe('SUCCESS');
 
-    await organizationPage.clickOnHistoryTab();
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Update');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -134,16 +134,16 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
       globalCredentials.password,
     );
 
-    await waitForValidStart(validStart ?? '');
-
     const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId ?? '');
     const transactionType = transactionResponse?.name;
     const result = transactionResponse?.result;
     expect(transactionType).toBe('CRYPTOTRANSFER');
     expect(result).toBe('SUCCESS');
 
-    await organizationPage.clickOnHistoryTab();
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Transfer');
     expect(transactionDetails?.validStart).toBeTruthy();

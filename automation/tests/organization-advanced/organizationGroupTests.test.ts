@@ -34,6 +34,7 @@ let newAccountId: string;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Group Tx tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'parallel' });
   test.slow();
   test.beforeAll(async () => {
     ({

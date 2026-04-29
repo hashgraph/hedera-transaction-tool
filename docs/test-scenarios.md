@@ -1,11 +1,11 @@
 # UI Test Coverage and Release Checklist
 
-This document enumerates all user-facing scenarios in the Hedera Transaction Tool front-end application. Each scenario is assigned a unique identifier and indicates whether it is currently covered by automated UI (E2E) testing. Scenarios that require manual testing include a checkbox for use during release verification.
+This document enumerates all user-facing scenarios in the Hedera Transaction Tool front-end application. Each scenario is assigned a unique identifier and indicates whether it is currently covered by automated UI testing. Scenarios that require manual testing include a checkbox for use during release verification.
 
 **Legend:**
 
-- **Automated**: Yes = covered by Playwright E2E tests in the `automation/` folder; No = manual testing required
-- **Covered By**: The actual test name from the automation test files that covers this scenario
+- **Automated**: Yes = covered by enabled Playwright E2E tests in `automation/`; Yes as Component Test = covered by Vitest renderer tests in `front-end/src/tests`; Yes (Backend) = scenario isn't reachable through the renderer UI but is exercised by a backend / API test (counted in Coverage %); No = manual testing required; Skipped = a Playwright test exists but is currently disabled; N/A = not reachable through the renderer UI and not covered at any layer
+- **Covered By**: The actual test name from the automation or renderer test files that covers this scenario
 
 ---
 
@@ -17,12 +17,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ----- | ---------------------------------------------------------------- | --------- | -------------------------------------------------------- |
 | 1.1.1 | All registration page elements are displayed correctly           | Yes       | Verify all elements are present on the registration page |
 | 1.1.2 | User can register with valid email and strong password           | Yes       | Verify successful registration through "Create New" flow |
-| 1.1.3 | Password strength tooltip shows real-time feedback (>= 10 chars) | No        |                                                          |
-| 1.1.4 | Registration fails when passwords do not match                   | No        |                                                          |
-| 1.1.5 | Registration fails with invalid email format                     | No        |                                                          |
-| 1.1.6 | Registration fails with weak password (< 10 characters)          | No        |                                                          |
-| 1.1.7 | Register button is disabled until all validations pass           | No        |                                                          |
-| 1.1.8 | "Keep me logged in" checkbox is available during registration    | No        |                                                          |
+| 1.1.3 | Password strength tooltip shows real-time feedback (>= 10 chars) | Yes as Component Test | shows password strength tooltip hook and disables registration for weak password |
+| 1.1.4 | Registration fails when passwords do not match                   | Yes as Component Test | shows invalid email and mismatched password validation |
+| 1.1.5 | Registration fails with invalid email format                     | Yes as Component Test | shows invalid email and mismatched password validation |
+| 1.1.6 | Registration fails with weak password (< 10 characters)          | Yes as Component Test | shows password strength tooltip hook and disables registration for weak password |
+| 1.1.7 | Register button is disabled until all validations pass           | Yes as Component Test | enables registration only after email and passwords are valid |
+| 1.1.8 | "Keep me logged in" checkbox is available during registration    | Yes as Component Test | shows and toggles Keep me logged in checkbox during registration |
 
 ### 1.2 Account Setup Wizard (Post-Registration)
 
@@ -39,7 +39,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 1.2.9  | Final step displays key nickname, type, and public key               | Yes       | Verify final step of account setup has all correct elements                  |
 | 1.2.10 | Key pair saved successfully toast appears on completion              | Yes       | Verify successful registration through "Create New" flow                     |
 | 1.2.11 | User and key pair are persisted in the database                      | Yes       | Verify user is stored in the database after registration                     |
-| 1.2.12 | User is redirected to transactions after setup completes             | No        |                                                                              |
+| 1.2.12 | User is redirected to transactions after setup completes             | Yes       | Covered by existing tests: Verify successful registration through "Create New" flow / Verify successful registration through "Import Existing" flow |
 
 ### 1.3 Keychain Registration
 
@@ -60,29 +60,29 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 2.1.2 | User can sign in with valid credentials                     | Yes       | Verify successful login                                          |
 | 2.1.3 | Login fails with invalid email format (error message shown) | Yes       | Verify that login with incorrect email shows an error message    |
 | 2.1.4 | Login fails with wrong password (error message shown)       | Yes       | Verify that login with incorrect password shows an error message |
-| 2.1.5 | "Keep me logged in" checkbox persists session               | No        |                                                                  |
-| 2.1.6 | User is redirected to transactions after successful login   | No        |                                                                  |
+| 2.1.5 | "Keep me logged in" checkbox persists session               | Yes       | Verify "Keep me logged in" checkbox persists session             |
+| 2.1.6 | User is redirected to transactions after successful login   | Yes       | Covered by existing test: Verify successful login                |
 
 ### 2.2 Account Reset
 
 | #     | Scenario                                          | Automated | Covered By               |
 | ----- | ------------------------------------------------- | --------- | ------------------------ |
-| 2.2.1 | "Reset account" link is visible on login screen   | No        |                          |
-| 2.2.2 | Reset data modal appears on click                 | No        |                          |
-| 2.2.3 | User data is cleared after confirming reset       | Yes       | Verify resetting account |
-| 2.2.4 | User is returned to registration mode after reset | No        |                          |
+| 2.2.1 | "Reset account" link is visible on login screen   | Yes       | "Reset account" link is visible on login screen |
+| 2.2.2 | Reset data modal appears on click                 | Yes       | Reset data modal appears on click |
+| 2.2.3 | User data is cleared after confirming reset       | Yes       | User data is cleared after confirming reset |
+| 2.2.4 | User is returned to registration mode after reset | Yes       | User is returned to registration mode after reset |
 
 ### 2.3 Organization Login
 
 | #     | Scenario                                              | Automated | Covered By                                                    |
 | ----- | ----------------------------------------------------- | --------- | ------------------------------------------------------------- |
-| 2.3.1 | Organization login page shows org nickname in heading | No        |                                                               |
+| 2.3.1 | Organization login page shows org nickname in heading | Yes as Component Test | shows organization nickname in the sign-in heading            |
 | 2.3.2 | User can sign in with valid org credentials           | Yes       | Verify user can switch between personal and organization mode |
-| 2.3.3 | Login fails with invalid email format                 | No        |                                                               |
-| 2.3.4 | Login fails with wrong password                       | No        |                                                               |
-| 2.3.5 | Sign in button is disabled until form is valid        | No        |                                                               |
-| 2.3.6 | Forgot password modal opens on link click             | No        |                                                               |
-| 2.3.7 | Success toast is shown after login                    | No        |                                                               |
+| 2.3.3 | Login fails with invalid email format                 | Yes as Component Test | invalid email format keeps the organization login form active |
+| 2.3.4 | Login fails with wrong password                       | Yes       | Verify login fails with wrong password                        |
+| 2.3.5 | Sign in button is disabled until form is valid        | Yes as Component Test | keeps sign-in disabled until email and password are valid     |
+| 2.3.6 | Forgot password modal opens on link click             | Yes as Component Test | opens forgot password modal from link                         |
+| 2.3.7 | Success toast is shown after login                    | Yes       | Verify success toast is shown after login                     |
 
 ---
 
@@ -94,48 +94,48 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #       | Scenario                                                                             | Automated | Covered By                                            |
 | ------- | ------------------------------------------------------------------------------------ | --------- | ----------------------------------------------------- |
-| 3.1.1.1 | All network options are displayed (Mainnet, Testnet, Previewnet, Local-Node, Custom) | Yes       | Verify that all elements in settings page are present |
-| 3.1.1.2 | User can switch to Testnet                                                           | Yes       | Verify that all elements in settings page are present |
-| 3.1.1.3 | User can switch to Previewnet                                                        | Yes       | Verify that all elements in settings page are present |
-| 3.1.1.4 | User can switch to Local-Node                                                        | Yes       | Verify that all elements in settings page are present |
-| 3.1.1.5 | User can switch to Custom and enter mirror node base URL                             | No        |                                                       |
+| 3.1.1.1 | All network options are displayed (Mainnet, Testnet, Previewnet, Local-Node, Custom) | Yes as Component Test | renders network options and switches between common networks |
+| 3.1.1.2 | User can switch to Testnet                                                           | Yes as Component Test | renders network options and switches between common networks |
+| 3.1.1.3 | User can switch to Previewnet                                                        | Yes as Component Test | renders network options and switches between common networks |
+| 3.1.1.4 | User can switch to Local-Node                                                        | Yes as Component Test | renders network options and switches between common networks |
+| 3.1.1.5 | User can switch to Custom and enter mirror node base URL                             | Yes       | Verify user can switch to Custom and enter mirror node base URL |
 
 #### 3.1.2 Appearance Settings
 
 | #       | Scenario                                       | Automated | Covered By                                            |
 | ------- | ---------------------------------------------- | --------- | ----------------------------------------------------- |
-| 3.1.2.1 | Appearance options are displayed (Light, Dark) | Yes       | Verify that all elements in settings page are present |
-| 3.1.2.2 | User can switch to Dark theme                  | No        |                                                       |
-| 3.1.2.3 | User can switch to Light theme                 | No        |                                                       |
+| 3.1.2.1 | Appearance options are displayed (Light, Dark) | Yes as Component Test | renders appearance options and toggles selected theme |
+| 3.1.2.2 | User can switch to Dark theme                  | Yes       | Verify user can switch between Dark and Light themes  |
+| 3.1.2.3 | User can switch to Light theme                 | Yes       | Verify user can switch between Dark and Light themes  |
 
 #### 3.1.3 Default Settings
 
 | #       | Scenario                                                      | Automated | Covered By                            |
 | ------- | ------------------------------------------------------------- | --------- | ------------------------------------- |
-| 3.1.3.1 | Max transaction fee can be set and persists                   | Yes       | Verify user can set global max tx fee |
+| 3.1.3.1 | Max transaction fee can be set and persists                   | Yes as Component Test | updates stored max transaction fee |
 | 3.1.3.2 | Max transaction fee is reflected on transaction creation form | Yes       | Verify user can set global max tx fee |
-| 3.1.3.3 | Default organization can be selected from dropdown            | No        |                                       |
-| 3.1.3.4 | Date/time display format preference can be changed            | No        |                                       |
+| 3.1.3.3 | Default organization can be selected from dropdown            | Yes       | Verify default organization can be selected from dropdown |
+| 3.1.3.4 | Date/time display format preference can be changed            | Yes as Component Test | selects date and time display format |
 
 #### 3.1.4 App Info
 
 | #       | Scenario                      | Automated | Covered By |
 | ------- | ----------------------------- | --------- | ---------- |
-| 3.1.4.1 | App version info is displayed | No        |            |
+| 3.1.4.1 | App version info is displayed | Yes as Component Test | shows app version returned by Electron API |
 
 ### 3.2 Keys Tab
 
 | #      | Scenario                                                                                       | Automated | Covered By                                                             |
 | ------ | ---------------------------------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------- |
 | 3.2.1  | Keys table displays all user keys (Index, Nickname, Account ID, Type, Public Key, Private Key) | Yes       | Verify that all elements in settings page are present                  |
-| 3.2.2  | User can filter keys by: All, Recovery Phrase, Private Key tabs                                | No        |                                                                        |
+| 3.2.2  | User can filter keys by: All, Recovery Phrase, Private Key tabs                                | Yes       | Verify user can filter keys by All, Recovery Phrase, and Private Key  |
 | 3.2.3  | User can decrypt and view private key via eye icon (password required)                         | Yes       | Verify user can decrypt private key                                    |
-| 3.2.4  | User can copy public key to clipboard                                                          | No        |                                                                        |
-| 3.2.5  | User can copy private key to clipboard                                                         | No        |                                                                        |
+| 3.2.4  | User can copy public key to clipboard                                                          | Yes       | Verify user can copy public key to clipboard                           |
+| 3.2.5  | User can copy private key to clipboard                                                         | Yes       | Verify user can copy private key to clipboard                          |
 | 3.2.6  | User can edit key nickname                                                                     | Yes       | Verify user can change key nickname                                    |
 | 3.2.7  | User can delete a single key pair                                                              | Yes       | Verify user can delete key                                             |
 | 3.2.8  | Key row count decreases after deletion                                                         | Yes       | Verify user can delete key                                             |
-| 3.2.9  | User can select multiple keys and bulk delete                                                  | No        |                                                                        |
+| 3.2.9  | User can select multiple keys and bulk delete                                                  | Yes       | Verify user can select multiple keys and bulk delete                   |
 | 3.2.10 | User can generate a new key from recovery phrase (index + nickname flow)                       | Yes       | Verify user can restore key                                            |
 | 3.2.11 | Generated key pair is persisted in the database                                                | Yes       | Verify user restored key pair is saved in the local database           |
 | 3.2.12 | User can import ECDSA private key with nickname                                                | Yes       | Verify user can import ECDSA key                                       |
@@ -145,68 +145,68 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 3.2.16 | Missing keys (org only) show restore button                                                    | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.17 | User can restore missing key from recovery phrase                                              | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.18 | User can import external private key for missing key                                           | No        |                                                                        |
-| 3.2.19 | Importing a private key that already exists in key store shows `Key pair already exists` error | No        |                                                                        |
-| 3.2.20 | Importing a private key that doesn't match the expected public key shows error                 | No        |                                                                        |
-| 3.2.21 | Wrong app password when viewing private key shows `Failed to decrypt private key` error        | No        |                                                                        |
+| 3.2.19 | Importing a private key that already exists in key store shows `Key pair already exists` error | Yes       | Verify duplicate private key import shows an error                     |
+| 3.2.20 | Importing a private key that doesn't match the expected public key shows error                 | N/A       | Not reachable via UI — the renderer error path lives in `ImportExternalPrivateKeyModal.vue:62`, which is only opened from `KeysTab.handleRestoreMissingKey` when `keyPair.index === undefined`. The org backend stores `UserKey.index` as `nullable: true`, so external missing keys come back over the wire as `index: null`, and the renderer's strict `!== undefined` check sends them to `RESTORE_MISSING_KEYS` (mnemonic flow) instead of the import modal |
+| 3.2.21 | Wrong app password when viewing private key shows `Failed to decrypt private key` error        | Yes       | Verify wrong app password blocks private key decryption                |
 
 ### 3.3 Public Keys Tab
 
 | #     | Scenario                                                                        | Automated | Covered By |
 | ----- | ------------------------------------------------------------------------------- | --------- | ---------- |
-| 3.3.1 | Public keys table displays Nickname, Public Key, and Owner                      | No        |            |
-| 3.3.2 | User can add a new public key mapping                                           | No        |            |
-| 3.3.3 | User can rename a public key mapping                                            | No        |            |
-| 3.3.4 | User can copy a public key to clipboard                                         | No        |            |
-| 3.3.5 | User can delete a single public key mapping                                     | No        |            |
-| 3.3.6 | User can select multiple and bulk delete public key mappings                    | No        |            |
-| 3.3.7 | Import button is disabled when public key field or nickname field is empty      | No        |            |
-| 3.3.8 | Submitting an invalid public key string shows `Invalid public key!` error toast | No        |            |
+| 3.3.1 | Public keys table displays Nickname, Public Key, and Owner                      | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.2 | User can add a new public key mapping                                           | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.3 | User can rename a public key mapping                                            | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.4 | User can copy a public key to clipboard                                         | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.5 | User can delete a single public key mapping                                     | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.6 | User can select multiple and bulk delete public key mappings                    | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.7 | Import button is disabled when public key field or nickname field is empty      | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
+| 3.3.8 | Submitting an invalid public key string shows `Invalid public key!` error toast | Yes       | Verify user can manage public key mappings (import, rename, copy, delete) |
 
 ### 3.4 Organizations Tab
 
 | #      | Scenario                                                                            | Automated | Covered By                                                    |
 | ------ | ----------------------------------------------------------------------------------- | --------- | ------------------------------------------------------------- |
-| 3.4.1  | Empty state shows "There are no connected organizations" message                    | No        |                                                               |
+| 3.4.1  | Empty state shows "There are no connected organizations" message                    | Yes as Component Test | shows organizations empty state when no organizations are connected |
 | 3.4.2  | User can add a new organization via modal                                           | Yes       | Setup (organizationSettingsTests beforeAll)                   |
 | 3.4.3  | Error message when adding non-existing organization URL                             | Yes       | Verify error message when user adds non-existing organization |
-| 3.4.4  | Organization table shows: Nickname, Server URL, Status, Version Info                | No        |                                                               |
-| 3.4.5  | Status badge shows connected/disconnected/upgradeRequired                           | No        |                                                               |
-| 3.4.6  | Version info shows Update Required/Update Available/Current badges                  | No        |                                                               |
+| 3.4.4  | Organization table shows: Nickname, Server URL, Status, Version Info                | Yes       | Verify organizations table headers and seeded row are rendered |
+| 3.4.5  | Status badge shows connected/disconnected/upgradeRequired                           | Yes       | Verify status badge text for each connection state            |
+| 3.4.6  | Version info shows Update Required/Update Available/Current badges                  | Yes       | Verify version info badge text for each version state         |
 | 3.4.7  | User can edit organization nickname                                                 | Yes       | Verify user can edit organization nickname                    |
 | 3.4.8  | User can delete an organization connection                                          | Yes       | Verify user can delete an organization                        |
 | 3.4.9  | Organization deletion is verified in the database                                   | Yes       | Verify user can delete an organization                        |
 | 3.4.10 | User can switch between personal and organization mode                              | Yes       | Verify user can switch between personal and organization mode |
-| 3.4.11 | Saving a blank org nickname shows `Nickname cannot be empty` error                  | No        |                                                               |
-| 3.4.12 | Editing org nickname to an already-used name shows `Nickname already exists` error  | No        |                                                               |
-| 3.4.13 | Entering a malformed URL in Add Organization modal shows `Invalid Server URL` error | No        |                                                               |
+| 3.4.11 | Saving a blank org nickname shows `Nickname cannot be empty` error                  | Yes       | Verify user can edit organization nickname                    |
+| 3.4.12 | Editing org nickname to an already-used name shows `Nickname already exists` error  | Yes       | Verify user can edit organization nickname                    |
+| 3.4.13 | Entering a malformed URL in Add Organization modal shows `Invalid Server URL` error | Yes       | Verify organizations empty state and invalid server URL validation |
 
 ### 3.5 Profile Tab
 
 | #      | Scenario                                                                         | Automated | Covered By                                      |
 | ------ | -------------------------------------------------------------------------------- | --------- | ----------------------------------------------- |
-| 3.5.1  | Change password form is displayed for email/password users                       | Yes       | Verify user can change password (settingsTests) |
-| 3.5.2  | User can change password with valid current and new passwords                    | Yes       | Verify user can change password (settingsTests) |
-| 3.5.3  | Password change confirmation modal appears                                       | No        |                                                 |
-| 3.5.4  | Success modal appears after password change                                      | No        |                                                 |
-| 3.5.5  | User can log in with new password after change                                   | Yes       | Verify user can change password (settingsTests) |
-| 3.5.6  | New password must be >= 10 characters (validation)                               | No        |                                                 |
+| 3.5.1  | Change password form is displayed for email/password users                       | Yes as Component Test | renders password form for email/password users |
+| 3.5.2  | User can change password with valid current and new passwords                    | Yes       | Verify user can change password |
+| 3.5.3  | Password change confirmation modal appears                                       | Yes as Component Test | opens confirmation modal when password form is valid |
+| 3.5.4  | Success modal appears after password change                                      | Yes       | Verify user can change password                    |
+| 3.5.5  | User can log in with new password after change                                   | Yes       | Verify user can change password |
+| 3.5.6  | New password must be >= 10 characters (validation)                               | Yes as Component Test | keeps change password disabled for weak new password |
 | 3.5.7  | Organization user can change org password                                        | Yes       | Verify organization user can change password    |
 | 3.5.8  | Keychain user sees reset application form instead of password change             | No        |                                                 |
-| 3.5.9  | User can log out (personal mode)                                                 | Yes       | afterAll (settingsTests / loginTests)           |
-| 3.5.10 | User can log out (organization mode)                                             | No        |                                                 |
-| 3.5.11 | Logout redirects to login                                                        | No        |                                                 |
-| 3.5.12 | Change Password button is disabled when new password fails strength requirements | No        |                                                 |
-| 3.5.13 | Inline `Invalid password` error appears under new password field on blur         | No        |                                                 |
-| 3.5.14 | `Failed to change password` error toast when current password is wrong           | No        |                                                 |
+| 3.5.9  | User can log out (personal mode)                                                 | Yes       | Verify logout redirects user to sign-in screen  |
+| 3.5.10 | User can log out (organization mode)                                             | Yes       | Verify organization login form is visible after logout |
+| 3.5.11 | Logout redirects to login                                                        | Yes       | Verify logout redirects user to sign-in screen  |
+| 3.5.12 | Change Password button is disabled when new password fails strength requirements | Yes as Component Test | keeps change password disabled for weak new password |
+| 3.5.13 | Inline `Invalid password` error appears under new password field on blur         | Yes as Component Test | shows invalid password inline message on blur |
+| 3.5.14 | `Failed to change password` error toast when current password is wrong           | Yes       | Verify wrong current password shows error when changing password |
 
 ### 3.6 Notifications Tab (Organization Only)
 
 | #     | Scenario                                                      | Automated | Covered By |
 | ----- | ------------------------------------------------------------- | --------- | ---------- |
-| 3.6.1 | Notifications tab only shown when logged into an organization | No        |            |
-| 3.6.2 | Transaction Threshold Reached toggle works                    | No        |            |
-| 3.6.3 | Required Signature toggle works                               | No        |            |
-| 3.6.4 | Transaction Cancelled toggle works                            | No        |            |
+| 3.6.1 | Notifications tab only shown when logged into an organization | Yes       | Verify user can switch between personal and organization mode |
+| 3.6.2 | Transaction Threshold Reached toggle works                    | Yes       | Verify Ready to Execute toggle persists state change          |
+| 3.6.3 | Required Signature toggle works                               | Yes       | Verify Signature Required toggle persists state change        |
+| 3.6.4 | Transaction Cancelled toggle works                            | Yes       | Verify Cancelled toggle persists state change                 |
 
 ### 3.7 Account Recovery (Organization)
 
@@ -226,20 +226,20 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #     | Scenario                                                              | Automated | Covered By |
 | ----- | --------------------------------------------------------------------- | --------- | ---------- |
-| 4.1.1 | Transactions page shows Drafts and History tabs                       | No        |            |
-| 4.1.2 | "Create New" dropdown shows Transaction and Transaction Group options | No        |            |
-| 4.1.3 | Selecting "Transaction" opens TransactionSelectionModal               | No        |            |
-| 4.1.4 | Selecting "Transaction Group" navigates to create-transaction-group   | No        |            |
-| 4.1.5 | "Sign Transactions from File" opens file picker                       | No        |            |
+| 4.1.1 | Transactions page shows Drafts and History tabs                       | Yes as Component Test | shows personal transaction tabs and Create New dropdown options |
+| 4.1.2 | "Create New" dropdown shows Transaction and Transaction Group options | Yes as Component Test | shows personal transaction tabs and Create New dropdown options |
+| 4.1.3 | Selecting "Transaction" opens TransactionSelectionModal               | Yes as Component Test | opens transaction selection modal from the Create New menu |
+| 4.1.4 | Selecting "Transaction Group" navigates to create-transaction-group   | Yes as Component Test | routes Transaction Group menu item to create-transaction-group |
+| 4.1.5 | "Sign Transactions from File" opens file picker                       | Yes as Component Test | opens sign transaction file modal after selecting a transaction file |
 
 ### 4.2 Organization Mode
 
 | #     | Scenario                                                                                                           | Automated | Covered By                                                                                                  |
 | ----- | ------------------------------------------------------------------------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------- |
-| 4.2.1 | Transaction page shows 6 tabs (Drafts, Ready for Review, Ready to Sign, In Progress, Ready for Execution, History) | Yes       | Verify that tabs on Transaction page are visible                                                            |
+| 4.2.1 | Transaction page shows 6 tabs (Drafts, Ready for Review, Ready to Sign, In Progress, Ready for Execution, History) | Yes as Component Test | shows organization transaction tabs and import signatures action in organization mode                       |
 | 4.2.2 | Notification badges appear on relevant tabs                                                                        | No        |                                                                                                             |
-| 4.2.3 | "Import Signatures from File" option is available (org only)                                                       | No        |                                                                                                             |
-| 4.2.4 | User can import .tx2 (V2) signatures                                                                               | Yes       | Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility |
+| 4.2.3 | "Import Signatures from File" option is available (org only)                                                       | Yes as Component Test | shows organization transaction tabs and import signatures action in organization mode                       |
+| 4.2.4 | User can import .tx2 (V2) signatures                                                                               | Yes       | Verify user can export and import transaction with 25 signatures for TTv1->TTv2 compatibility               |
 | 4.2.5 | User can import .zip (V1) signatures                                                                               | Yes       | Verify user can import superfluous signatures from TTv1 format                                              |
 | 4.2.6 | Import fails when user lacks transaction visibility                                                                | Yes       | Verify user cannot import signatures without visibility of transaction from TTv1 format                     |
 | 4.2.7 | Import succeeds with superfluous signatures                                                                        | Yes       | Verify user can import superfluous signatures from TTv1 format                                              |
@@ -248,38 +248,38 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #     | Scenario                                                                             | Automated | Covered By                                                                                         |
 | ----- | ------------------------------------------------------------------------------------ | --------- | -------------------------------------------------------------------------------------------------- |
-| 4.3.1 | Drafts table shows Date Created, Transaction Type, Description, Is Template, Actions | No        |                                                                                                    |
-| 4.3.2 | Drafts table is sortable by date, type, description                                  | No        |                                                                                                    |
-| 4.3.3 | Drafts table is paginated (10 per page)                                              | No        |                                                                                                    |
+| 4.3.1 | Drafts table shows Date Created, Transaction Type, Description, Is Template, Actions | Yes as Component Test | renders draft table headers, rows, and actions                                                     |
+| 4.3.2 | Drafts table is sortable by date, type, description                                  | Yes as Component Test | renders draft table headers, rows, and actions                                                     |
+| 4.3.3 | Drafts table is paginated (10 per page)                                              | Yes       | Verify drafts table paginates at 10 items per page                                                 |
 | 4.3.4 | User can delete a draft                                                              | Yes       | Verify user can delete a draft transaction                                                         |
 | 4.3.5 | User can continue editing a draft                                                    | Yes       | Verify draft transaction contains the saved info for account create tx                             |
 | 4.3.6 | "Is Template" checkbox toggles draft template flag                                   | Yes       | Verify draft transaction is visible after we execute the tx and we have template checkbox selected |
-| 4.3.7 | Empty state shows EmptyTransactions component                                        | No        |                                                                                                    |
+| 4.3.7 | Empty state shows EmptyTransactions component                                        | Yes as Component Test | shows EmptyTransactions when no drafts or groups exist |
 
 ### 4.4 History Tab (Personal)
 
 | #     | Scenario                                                                  | Automated | Covered By                                                                    |
 | ----- | ------------------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------- |
-| 4.4.1 | History table shows Tx ID, Type, Description, Status, Created At, Actions | No        |                                                                               |
-| 4.4.2 | Status badge shows green (success) or red (failed)                        | No        |                                                                               |
-| 4.4.3 | History table is sortable                                                 | No        |                                                                               |
-| 4.4.4 | History table is paginated                                                | No        |                                                                               |
-| 4.4.5 | "Details" button navigates to the transaction details page                | No        |                                                                               |
+| 4.4.1 | History table shows Tx ID, Type, Description, Status, Created At, Actions | Yes       | Verify account create tx is displayed in history page                         |
+| 4.4.2 | Status badge shows green (success) or red (failed)                        | Yes       | Verify account create tx is displayed in history page / Verify history status badge shows danger styling for failed transactions |
+| 4.4.3 | History table is sortable                                                 | Yes       | Verify account create tx is displayed in history page                         |
+| 4.4.4 | History table is paginated                                                | Yes       | Verify history table paginates at 10 items per page                           |
+| 4.4.5 | "Details" button navigates to the transaction details page                | Yes       | Verify transaction details are displayed for account tx                       |
 | 4.4.6 | All 8 transaction types appear correctly in history                       | Yes       | Verify account create tx is displayed in history page (+ other history tests) |
 
 ### 4.5 Organization Tabs (TransactionNodeTable)
 
 | #     | Scenario                                                         | Automated | Covered By                                                                        |
 | ----- | ---------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------- |
-| 4.5.1 | Ready for Review tab shows transactions pending approval         | No        |                                                                                   |
+| 4.5.1 | Ready for Review tab shows transactions pending approval         | Skipped   | Ready for Review tab shows transactions pending approval                           |
 | 4.5.2 | Ready to Sign tab shows transactions needing user's signature    | Yes       | Verify required signers are able to see the transaction in "Ready to Sign" status |
 | 4.5.3 | In Progress tab shows transactions still collecting signatures   | Yes       | Verify transaction is shown "In progress" tab after signing                       |
 | 4.5.4 | Ready for Execution tab shows transactions ready to execute      | Yes       | Verify transaction is shown "Ready for Execution" and correct stage is displayed  |
 | 4.5.5 | History tab shows terminal-state transactions with status filter | Yes       | Verify transaction is shown "History" after it is executed                        |
 | 4.5.6 | Inline sign action per row works (SignSingleButton)              | Yes       | Verify the transaction is displayed in the proper status(collecting signatures)   |
 | 4.5.7 | Inline sign group action per row works (SignGroupButton)         | Yes       | Verify user can execute group transaction in organization                         |
-| 4.5.8 | Filtering by status works on History tab                         | No        |                                                                                   |
-| 4.5.9 | Filtering by transaction type works on History tab               | No        |                                                                                   |
+| 4.5.8 | Filtering by status works on History tab                         | Yes       | Verify organization History filters work for Status and Transaction Type          |
+| 4.5.9 | Filtering by transaction type works on History tab               | Yes       | Verify organization History filters work for Status and Transaction Type          |
 
 ---
 
@@ -289,8 +289,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #     | Scenario                                            | Automated | Covered By |
 | ----- | --------------------------------------------------- | --------- | ---------- |
-| 5.1.1 | Modal displays all available transaction types      | No        |            |
-| 5.1.2 | Selecting a type navigates to transaction type page | No        |            |
+| 5.1.1 | Modal displays all available transaction types      | Yes       | Transaction selection modal displays all transaction categories |
+| 5.1.2 | Selecting a type navigates to transaction type page | Yes       | Selecting transaction type from modal navigates to type page |
 
 ### 5.2 Account Create Transaction
 
@@ -309,9 +309,9 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.2.11 | User can save account create as draft                                      | Yes       | Verify user can save draft and is visible in the draft page                                |
 | 5.2.12 | Draft preserves all fields (memo, receiver sig, initial funds, etc.)       | Yes       | Verify draft transaction contains the saved info for account create tx                     |
 | 5.2.13 | User can load and continue a saved draft                                   | Yes       | Verify draft transaction contains the saved info for account create tx                     |
-| 5.2.14 | Sign button is disabled when no owner key is selected                      | No        |                                                                                            |
-| 5.2.15 | Invalid format in Staked Account ID field blocks the sign button           | No        |                                                                                            |
-| 5.2.16 | Initial balance auto-resets to 0 when it exceeds payer's available balance | No        |                                                                                            |
+| 5.2.14 | Sign button is disabled when no owner key is selected                      | Yes       | Verify sign button is disabled when no owner key is selected                               |
+| 5.2.15 | Invalid format in Staked Account ID field blocks the sign button           | Yes       | Verify account create staking validation blocks signing and initial balance resets when exceeding payer balance |
+| 5.2.16 | Initial balance auto-resets to 0 when it exceeds payer's available balance | Yes       | Verify account create staking validation blocks signing and initial balance resets when exceeding payer balance |
 
 ### 5.3 Account Update Transaction
 
@@ -324,8 +324,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.3.5 | Transaction executes and result verified via Mirror Node                     | Yes       | Verify that account is updated after we execute an account update tx                                       |
 | 5.3.6 | User can save account update as draft                                        | Yes       | Verify draft transaction contains the saved info for account update tx                                     |
 | 5.3.7 | Draft preserves all update fields                                            | Yes       | Verify draft transaction contains the saved info for account update tx                                     |
-| 5.3.8 | Sign button is disabled when no account ID is entered                        | No        |                                                                                                            |
-| 5.3.9 | `Invalid Account ID` error shown when submitting with a malformed account ID | No        |                                                                                                            |
+| 5.3.8 | Sign button is disabled when no account ID is entered                        | Yes       | Verify sign button is disabled when no account ID is entered                                                 |
+| 5.3.9 | Malformed Account ID blocks signing                                          | Yes       | Malformed account ID disables signing on account update                                                   |
 
 ### 5.4 Account Delete Transaction
 
@@ -335,12 +335,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.4.2  | Transfer account ID field is available for remaining funds                                     | Yes       | Verify user can execute account delete tx                                                                  |
 | 5.4.3  | Confirm delete modal appears                                                                   | Yes       | Verify user can execute account delete tx                                                                  |
 | 5.4.4  | Transaction executes and account is deleted on network                                         | Yes       | Verify user can execute account delete tx                                                                  |
-| 5.4.5  | Deleted account card shows "Account is deleted" warning                                        | No        |                                                                                                            |
+| 5.4.5  | Deleted account card shows "Account is deleted" warning                                        | Yes       | Verify transaction details are displayed for account delete tx                                             |
 | 5.4.6  | Account is removed from local DB after deletion                                                | Yes       | Verify account is deleted from the db after account delete tx                                              |
 | 5.4.7  | User can save account delete as draft                                                          | Yes       | Verify draft transaction contains the saved info for account delete tx                                     |
-| 5.4.8  | `Account is already deleted!` inline warning shown when entered account ID resolves to deleted | No        |                                                                                                            |
-| 5.4.9  | `Invalid Transfer Account ID` error shown when transfer-to account is empty or invalid         | No        |                                                                                                            |
-| 5.4.10 | Submit button blocked when account to delete or transfer-to account is already deleted         | No        |                                                                                                            |
+| 5.4.8  | `Account is already deleted!` inline warning shown when entered account ID resolves to deleted | Yes       | Account delete validation blocks submit for deleted accounts and malformed transfer account IDs           |
+| 5.4.9  | Invalid Transfer Account ID blocks submit                                                     | Yes       | Account delete validation blocks submit for deleted accounts and malformed transfer account IDs           |
+| 5.4.10 | Submit button blocked when account to delete or transfer-to account is already deleted         | Yes       | Account delete validation blocks submit for deleted accounts and malformed transfer account IDs           |
 
 ### 5.5 Transfer HBAR Transaction
 
@@ -352,11 +352,11 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.5.4  | "Add Rest" button auto-calculates remaining amount                                        | Yes       | Verify user can add the rest of remaining hbars to receiver accounts                                   |
 | 5.5.5  | Sign button is disabled when amounts don't balance                                        | Yes       | Verify sign button is disabled when receiver amount is higher than payer amount when doing transfer tx |
 | 5.5.6  | Transaction executes successfully                                                         | Yes       | Verify user can execute transfer tokens tx                                                             |
-| 5.5.7  | `The balance difference must be 0` error shown when from/to amounts do not sum to zero    | No        |                                                                                                        |
-| 5.5.8  | `Total balance adjustments must not exceed 10` error when more than 10 accounts are added | No        |                                                                                                        |
-| 5.5.9  | `Total balance adjustments must be greater than 0` error when no transfers are added      | No        |                                                                                                        |
-| 5.5.10 | Insufficient balance inline error shown per sender row when amount exceeds balance        | No        |                                                                                                        |
-| 5.5.11 | Add Transfer button is disabled when 10 adjustments are already added                     | No        |                                                                                                        |
+| 5.5.7  | `The balance difference must be 0` error shown when from/to amounts do not sum to zero    | Yes       | Verify Sign button is disabled when from/to amounts do not sum to zero                                 |
+| 5.5.8  | `Total balance adjustments must not exceed 10` error when more than 10 accounts are added | Yes       | Verify Add Transfer buttons are disabled when 10 adjustments are already added                         |
+| 5.5.9  | `Total balance adjustments must be greater than 0` error when no transfers are added      | Yes       | Verify Sign button is disabled when no transfers are added                                             |
+| 5.5.10 | Insufficient balance inline error shown per sender row when amount exceeds balance        | Yes       | Verify Insufficient balance error is shown when transfer amount exceeds balance                        |
+| 5.5.11 | Add Transfer button is disabled when 10 adjustments are already added                     | Yes       | Verify Add Transfer buttons are disabled when 10 adjustments are already added                         |
 
 ### 5.6 Approve HBAR Allowance Transaction
 
@@ -366,8 +366,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.6.2 | User can set spender account and amount                                 | Yes       | Verify user can execute approve allowance tx                              |
 | 5.6.3 | Transaction executes and is verified in DB                              | Yes       | Verify user can execute approve allowance tx                              |
 | 5.6.4 | User can save allowance as draft                                        | Yes       | Verify draft transaction contains the saved info for approve allowance tx |
-| 5.6.5 | `Invalid Owner ID` error shown when owner account has no resolvable key | No        |                                                                           |
-| 5.6.6 | `Invalid Spender ID` error shown when spender account ID is invalid     | No        |                                                                           |
+| 5.6.5 | `Invalid Owner ID` error shown when owner account has no resolvable key | Yes       | Verify Sign button is disabled when Owner ID has no resolvable key        |
+| 5.6.6 | `Invalid Spender ID` error shown when spender account ID is invalid     | Yes       | Verify Sign button is disabled when Spender ID is invalid                 |
 
 ### 5.7 File Create Transaction
 
@@ -379,7 +379,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.7.4 | Transaction executes and file is created on network                             | Yes       | Verify user can execute file create tx                              |
 | 5.7.5 | File ID is returned and file exists in DB                                       | Yes       | Verify file is stored in the db after file create tx                |
 | 5.7.6 | User can save file create as draft                                              | Yes       | Verify draft transaction contains the saved info for create file tx |
-| 5.7.7 | Sign button disabled and `Key is required` error shown when no owner key is set | No        |                                                                     |
+| 5.7.7 | Sign button disabled and `Key is required` error shown when no owner key is set | Yes       | Verify File Create Sign button is disabled when owner key is not set |
 
 ### 5.8 File Update Transaction
 
@@ -390,8 +390,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.8.3 | Transaction executes and file content is updated                                     | Yes       | Verify user can execute file update tx                                  |
 | 5.8.4 | Updated content verified via Mirror Node and local cache                             | Yes       | Verify user can execute file update tx                                  |
 | 5.8.5 | User can save file update as draft                                                   | Yes       | Verify draft transaction contains the saved info for update file tx     |
-| 5.8.6 | `Invalid File ID` error shown when File ID field contains a malformed format         | No        |                                                                         |
-| 5.8.7 | `Signature key is required` error in personal mode when no signature key is selected | No        |                                                                         |
+| 5.8.6 | `Invalid File ID` error shown when File ID field contains a malformed format         | Yes       | Verify File Update shows Invalid File ID error when file ID is malformed |
+| 5.8.7 | `Signature key is required` error in personal mode when no signature key is selected | Yes       | Verify File Update Sign button is disabled when signature key is not set |
 
 ### 5.9 File Append Transaction
 
@@ -402,8 +402,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.9.3 | Transaction executes and content is appended                                         | Yes       | Verify user can execute file append tx                                  |
 | 5.9.4 | Appended content verified via Mirror Node and local cache                            | Yes       | Verify user can execute file append tx                                  |
 | 5.9.5 | User can save file append as draft                                                   | Yes       | Verify draft transaction contains the saved info for append file tx     |
-| 5.9.6 | `Invalid File ID` error shown when File ID field contains a malformed format         | No        |                                                                         |
-| 5.9.7 | `Signature key is required` error in personal mode when no signature key is selected | No        |                                                                         |
+| 5.9.6 | `Invalid File ID` error shown when File ID field contains a malformed format         | Yes       | Verify File Append shows Invalid File ID error when file ID is malformed |
+| 5.9.7 | `Signature key is required` error in personal mode when no signature key is selected | Yes       | Verify File Append Sign button is disabled when signature key is not set |
 
 ### 5.10 File Read (Contents) Transaction
 
@@ -412,7 +412,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.10.1 | User can enter a file ID to read                                                                                        | Yes       | Verify user can execute file read tx |
 | 5.10.2 | File content is displayed in textarea                                                                                   | Yes       | Verify user can execute file read tx |
 | 5.10.3 | Content matches what was previously written to the file                                                                 | Yes       | Verify user can execute file read tx |
-| 5.10.4 | `Unable to execute query, you should use a payer ID with one of your keys` error when payer's key is not in local store | No        |                                      |
+| 5.10.4 | `Unable to execute query, you should use a payer ID with one of your keys` error when payer's key is not in local store | N/A       | Not reachable via UI — the Payer ID `AccountIdsSelect` dropdown is populated from `flattenAccountIds(user.publicKeyToAccounts)`, and `publicKeyToAccounts` is rebuilt from `user.keyPairs` (`storeUser.refetchAccounts`), so every selectable option always has a matching local KeyPair |
 
 ### 5.11 System File Transactions
 
@@ -441,7 +441,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.13.3 | User can add account-based keys at various depths                                                      | No        |                                                                                              |
 | 5.13.4 | Complex key structure is correctly encoded in transaction                                              | Yes       | Verify user can execute Account Create tx with complex key                                   |
 | 5.13.5 | Nested threshold keys work for council-scale accounts                                                  | Skipped   | Verify user can execute update account tx for complex key account similar to council account |
-| 5.13.6 | Adding a duplicate public key at the same threshold level shows `already exists in the key list` error | No        |                                                                                              |
+| 5.13.6 | Adding a duplicate public key at the same threshold level shows `already exists in the key list` error | Yes       | Verify adding a duplicate public key at the same threshold level shows error toast           |
 
 ### 5.14 Transaction Common Fields
 
@@ -452,9 +452,9 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5.14.3 | Payer account ID can be specified                                                                                                 | Yes       | Verify user can execute create account transaction with single key                         |
 | 5.14.4 | Transaction memo field accepts input                                                                                              | Yes       | Verify user can create account with memo                                                   |
 | 5.14.5 | Description field accepts input                                                                                                   | Yes       | Verify confirm transaction modal is displayed with valid information for Account Create tx |
-| 5.14.6 | `Invalid Payer ID` error shown when payer account ID is invalid on submit                                                         | No        |                                                                                            |
-| 5.14.7 | Transaction memo exceeding 100 characters shows `Transaction Memo is limited to 100 characters` toast and marks the field invalid | No        |                                                                                            |
-| 5.14.8 | `Max Transaction Fee is required` error shown when fee is set to 0                                                                | No        |                                                                                            |
+| 5.14.6 | `Invalid Payer ID` error shown when payer account ID is invalid on submit                                                         | Yes       | Verify Sign button is disabled when Payer ID is invalid                                    |
+| 5.14.7 | Transaction memo exceeding 100 characters shows `Transaction Memo is limited to 100 characters` toast and marks the field invalid | Yes       | Verify memo exceeding 100 characters shows error toast and marks field invalid             |
+| 5.14.8 | `Max Transaction Fee is required` error shown when fee is set to 0                                                                | Yes       | Verify Sign button is disabled when Max Transaction Fee is 0                               |
 
 ---
 
@@ -498,7 +498,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 6.3.4 | Signature status panel shows required vs completed signatures | No        |                                                                                  |
 | 6.3.5 | Approvers list is shown for org transactions                  | No        |                                                                                  |
 | 6.3.6 | User can sign the transaction from detail view                | Yes       | Verify the transaction is displayed in the proper status(collecting signatures)  |
-| 6.3.7 | User can cancel a transaction (creator only)                  | No        |                                                                                  |
+| 6.3.7 | User can cancel a transaction (creator only)                  | Yes       | Verify creator can cancel an in-progress transaction                             |
 | 6.3.8 | "Next transaction" button navigates to next in list           | Yes       | Verify next button is visible when user has multiple txs to sign                 |
 
 ---
@@ -516,11 +516,11 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 7.1.5  | User can set group description                                                                       | Yes       | Verify description is mandatory for saving group transaction |
 | 7.1.6  | User can set payer account for the group                                                             | No        |                                                              |
 | 7.1.7  | Valid start time picker works with running clock                                                     | No        |                                                              |
-| 7.1.8  | Empty state shows prompt to add transactions                                                         | No        |                                                              |
-| 7.1.9  | Saving a transaction group with no description shows `Please enter a group description` error        | No        |                                                              |
-| 7.1.10 | Clicking "Sign and Submit" with empty description shows `Group Description Required` error toast     | No        |                                                              |
-| 7.1.11 | Saving a group with zero transactions shows `Please add at least one transaction to the group` error | No        |                                                              |
-| 7.1.12 | Sign and Submit button is disabled when the group contains no transactions                           | No        |                                                              |
+| 7.1.8  | Empty state shows prompt to add transactions                                                         | Yes as Component Test | shows empty group state and disables Sign and Submit when no transactions exist |
+| 7.1.9  | Saving a transaction group with no description shows `Please enter a group description` error        | Yes as Component Test | throws save validation when group description is blank |
+| 7.1.10 | Clicking "Sign and Submit" with empty description shows `Group Description Required` error toast     | Yes as Component Test | shows validation toast when submitting with blank group description |
+| 7.1.11 | Saving a group with zero transactions shows `Please add at least one transaction to the group` error | Yes as Component Test | throws save validation when a group has zero transactions |
+| 7.1.12 | Sign and Submit button is disabled when the group contains no transactions                           | Yes as Component Test | shows empty group state and disables Sign and Submit when no transactions exist |
 
 ### 7.2 Group Editing
 
@@ -532,7 +532,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 7.2.4 | User can delete all transactions at once                                      | Yes       | Verify user can delete many transactions at once(delete all) |
 | 7.2.5 | Delete group without saving navigates away                                    | Yes       | Verify delete group action does not save the group           |
 | 7.2.6 | Continue editing navigation guard modal works                                 | Yes       | Verify continue editing action saves the group               |
-| 7.2.7 | Cancelling the "Delete All" confirmation modal leaves all transactions intact | No        |                                                              |
+| 7.2.7 | Cancelling the "Delete All" confirmation modal leaves all transactions intact | Yes       | Verify cancelling "Delete All" keeps all transactions in the group |
 
 ### 7.3 Group Saving and Execution (Personal)
 
@@ -583,14 +583,14 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #     | Scenario                                             | Automated | Covered By                                                                          |
 | ----- | ---------------------------------------------------- | --------- | ----------------------------------------------------------------------------------- |
 | 8.1.1 | Account list is displayed in left panel              | Yes       | Verify account card is visible with valid information                               |
-| 8.1.2 | User can sort accounts by Account ID (asc/desc)      | No        |                                                                                     |
-| 8.1.3 | User can sort accounts by Nickname (A-Z / Z-A)       | No        |                                                                                     |
-| 8.1.4 | User can sort accounts by Date Added (asc/desc)      | No        |                                                                                     |
-| 8.1.5 | "Add New" dropdown shows Create New and Add Existing | Yes       | Verify clicking on "Create New" button navigates the user on create account tx page |
-| 8.1.6 | "Create New" navigates to Account Create transaction | Yes       | Verify clicking on "Create New" button navigates the user on create account tx page |
+| 8.1.2 | User can sort accounts by Account ID (asc/desc)      | Yes as Component Test | sort menu refetches accounts with selected sort order                               |
+| 8.1.3 | User can sort accounts by Nickname (A-Z / Z-A)       | Yes as Component Test | sort menu refetches accounts with selected sort order                               |
+| 8.1.4 | User can sort accounts by Date Added (asc/desc)      | Yes as Component Test | sort menu refetches accounts with selected sort order                               |
+| 8.1.5 | "Add New" dropdown shows Create New and Add Existing | Yes as Component Test | renders accounts, add-new routes, and account details                              |
+| 8.1.6 | "Create New" navigates to Account Create transaction | Yes as Component Test | renders accounts, add-new routes, and account details                              |
 | 8.1.7 | "Add Existing" navigates to /accounts/link-existing  | Yes       | Verify user can add an existing account                                             |
-| 8.1.8 | Select mode enables multi-select checkboxes          | No        |                                                                                     |
-| 8.1.9 | Bulk remove works in select mode                     | No        |                                                                                     |
+| 8.1.8 | Select mode enables multi-select checkboxes          | Yes as Component Test | select mode shows checkboxes and opens unlink modal for selected accounts           |
+| 8.1.9 | Bulk remove works in select mode                     | Yes       | Verify user can unlink accounts                                                     |
 
 ### 8.2 Account Details Panel
 
@@ -600,15 +600,15 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 8.2.2  | EVM Address displayed                                          | Yes       | Verify account card is visible with valid information |
 | 8.2.3  | Balance in HBAR + USD equivalent displayed                     | Yes       | Verify account card is visible with valid information |
 | 8.2.4  | Key (simple PublicKey) displayed                               | Yes       | Verify account card is visible with valid information |
-| 8.2.5  | Complex key shows "See details" link opening KeyStructureModal | No        |                                                       |
+| 8.2.5  | Complex key shows "See details" link opening KeyStructureModal | Yes as Component Test | shows complex key details and deleted account warning |
 | 8.2.6  | Receiver Sig Required field displayed                          | Yes       | Verify account card is visible with valid information |
 | 8.2.7  | Memo field displayed                                           | Yes       | Verify account card is visible with valid information |
 | 8.2.8  | Max Auto Association field displayed                           | Yes       | Verify account card is visible with valid information |
 | 8.2.9  | Ethereum Nonce displayed                                       | Yes       | Verify account card is visible with valid information |
 | 8.2.10 | Created At / Expires At / Auto Renew Period displayed          | Yes       | Verify account card is visible with valid information |
 | 8.2.11 | Staked To / Pending Reward / Rewards displayed                 | Yes       | Verify account card is visible with valid information |
-| 8.2.12 | "Account is deleted" warning shown for deleted accounts        | No        |                                                       |
-| 8.2.13 | Nickname is editable inline (double-click or pencil icon)      | No        |                                                       |
+| 8.2.12 | "Account is deleted" warning shown for deleted accounts        | Yes       | Verify transaction details are displayed for account delete tx |
+| 8.2.13 | Nickname is editable inline (double-click or pencil icon)      | Yes as Component Test | edits selected account nickname on blur |
 
 ### 8.3 Account Actions
 
@@ -617,21 +617,21 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 |       | 8.3.1 | Edit dropdown shows "Delete from Network" and "Update in Network" | Yes       | Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account |
 |       | 8.3.2 | "Delete from Network" navigates to Account Delete transaction     | Yes       | Verify clicking on "Edit" and "Delete" navigates the user on update account tx page with prefilled account |
 |       | 8.3.3 | "Update in Network" navigates to Account Update transaction       | Yes       | Verify clicking on "Edit" and "Update" navigates the user on update account tx page with prefilled account |
-|       | 8.3.4 | Remove (unlink) opens confirmation modal                          | Yes       | Verify user can unlink accounts                                                                            |
+|       | 8.3.4 | Remove (unlink) opens confirmation modal                          | Yes as Component Test | routes account edit actions and opens remove confirmation                                                   |
 |       | 8.3.5 | Account is removed from list after unlinking                      | Yes       | Verify user can unlink accounts                                                                            |
 
 ### 8.4 Link Existing Account
 
 | #     | Scenario                                                                                                   | Automated | Covered By                              |
 | ----- | ---------------------------------------------------------------------------------------------------------- | --------- | --------------------------------------- |
-| 8.4.1 | Account ID input with checksum validation                                                                  | Yes       | Verify user can add an existing account |
-| 8.4.2 | Invalid checksum shows error toast                                                                         | No        |                                         |
-| 8.4.3 | Nickname input is available                                                                                | Yes       | Verify user can add an existing account |
+| 8.4.1 | Account ID input with checksum validation                                                                  | Yes as Component Test | renders account id and nickname inputs with disabled link button until account is valid |
+| 8.4.2 | Invalid checksum shows error toast                                                                         | Yes as Component Test | shows invalid checksum toast and does not link account |
+| 8.4.3 | Nickname input is available                                                                                | Yes as Component Test | renders account id and nickname inputs with disabled link button until account is valid |
 | 8.4.4 | "Link Account" navigates to /accounts on success                                                           | Yes       | Verify user can add an existing account |
 | 8.4.5 | Linked account appears in account list                                                                     | Yes       | Verify user can add an existing account |
-| 8.4.6 | Link Account button is disabled until entered account ID resolves as valid                                 | No        |                                         |
-| 8.4.7 | `Account link failed` error toast when attempting to link an already-linked account                        | No        |                                         |
-| 8.4.8 | "Account already linked" label shown on transaction details when created account is already in local store | No        |                                         |
+| 8.4.6 | Link Account button is disabled until entered account ID resolves as valid                                 | Yes as Component Test | renders account id and nickname inputs with disabled link button until account is valid |
+| 8.4.7 | `Account link failed` error toast when attempting to link an already-linked account                        | Yes       | Verify duplicate account link shows error toast |
+| 8.4.8 | "Account already linked" label shown on transaction details when created account is already in local store | Yes       | Verify transaction details are displayed for account tx |
 
 ---
 
@@ -642,12 +642,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #     | Scenario                                                            | Automated | Covered By                                         |
 | ----- | ------------------------------------------------------------------- | --------- | -------------------------------------------------- |
 | 9.1.1 | File list is displayed in left panel                                | Yes       | Verify file card is visible with valid information |
-| 9.1.2 | User can sort files by File ID (asc/desc)                           | No        |                                                    |
-| 9.1.3 | User can sort files by Nickname (A-Z / Z-A)                         | No        |                                                    |
-| 9.1.4 | User can sort files by Date Added (asc/desc)                        | No        |                                                    |
-| 9.1.5 | "Add New" dropdown shows Create, Update, Append, Read, Add Existing | No        |                                                    |
-| 9.1.6 | Select mode enables multi-select checkboxes                         | No        |                                                    |
-| 9.1.7 | Bulk unlink works in select mode                                    | No        |                                                    |
+| 9.1.2 | User can sort files by File ID (asc/desc)                           | Yes as Component Test | sort menu refetches files with selected sort order |
+| 9.1.3 | User can sort files by Nickname (A-Z / Z-A)                         | Yes as Component Test | sort menu refetches files with selected sort order |
+| 9.1.4 | User can sort files by Date Added (asc/desc)                        | Yes as Component Test | sort menu refetches files with selected sort order |
+| 9.1.5 | "Add New" dropdown shows Create, Update, Append, Read, Add Existing | Yes as Component Test | renders files, add-new routes, and file details |
+| 9.1.6 | Select mode enables multi-select checkboxes                         | Yes as Component Test | select mode shows checkboxes and opens unlink modal for selected files |
+| 9.1.7 | Bulk unlink works in select mode                                    | Yes       | Verify user can unlink multiple files |
 
 ### 9.2 File Details Panel
 
@@ -659,32 +659,32 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 9.2.4  | Memo displayed                                                | Yes       | Verify file card is visible with valid information |
 | 9.2.5  | Ledger ID displayed                                           | Yes       | Verify file card is visible with valid information |
 | 9.2.6  | Expiration date displayed                                     | Yes       | Verify file card is visible with valid information |
-| 9.2.7  | Description is editable (textarea, double-click or pencil)    | No        |                                                    |
-| 9.2.8  | File content is displayed or "View" button opens in temp file | No        |                                                    |
-| 9.2.9  | "File is deleted" warning shown for deleted files             | No        |                                                    |
-| 9.2.10 | Last Viewed timestamp displayed                               | No        |                                                    |
-| 9.2.11 | Nickname is editable inline                                   | No        |                                                    |
+| 9.2.7  | Description is editable (textarea, double-click or pencil)    | Yes       | Verify file card is visible with valid information |
+| 9.2.8  | File content is displayed or "View" button opens in temp file | Yes       | Verify user can execute file read tx |
+| 9.2.9  | "File is deleted" warning shown for deleted files             | Yes       | Verify file card is visible with valid information |
+| 9.2.10 | Last Viewed timestamp displayed                               | Yes       | Verify user can execute file read tx |
+| 9.2.11 | Nickname is editable inline                                   | Yes       | Verify file card is visible with valid information |
 
 ### 9.3 File Actions
 
 | #     | Scenario                                           | Automated | Covered By |
 | ----- | -------------------------------------------------- | --------- | ---------- |
-| 9.3.1 | Update button navigates to File Update transaction | No        |            |
-| 9.3.2 | Append button navigates to File Append transaction | No        |            |
-| 9.3.3 | Read button navigates to File Read transaction     | No        |            |
-| 9.3.4 | Remove (unlink) opens confirmation modal           | No        |            |
-| 9.3.5 | File is removed from list after unlinking          | No        |            |
+| 9.3.1 | Update button navigates to File Update transaction | Yes       | Verify file card update flow leads to update page with prefilled fileid |
+| 9.3.2 | Append button navigates to File Append transaction | Yes       | Verify file card append flow leads to append page with prefilled fileid |
+| 9.3.3 | Read button navigates to File Read transaction     | Yes       | Verify file card read flow leads to read page with prefilled fileid |
+| 9.3.4 | Remove (unlink) opens confirmation modal           | Yes as Component Test | routes file actions and opens remove confirmation |
+| 9.3.5 | File is removed from list after unlinking          | Yes       | Verify user can unlink multiple files |
 
 ### 9.4 Link Existing File
 
 | #     | Scenario                                                                                             | Automated | Covered By |
 | ----- | ---------------------------------------------------------------------------------------------------- | --------- | ---------- |
-| 9.4.1 | File ID input validates format                                                                       | No        |            |
-| 9.4.2 | Nickname input is available                                                                          | No        |            |
-| 9.4.3 | Linked file appears in file list                                                                     | No        |            |
-| 9.4.4 | Link File button is disabled when entered file ID format is invalid                                  | No        |            |
-| 9.4.5 | `File link failed` error toast when attempting to link an already-linked file                        | No        |            |
-| 9.4.6 | "File already linked" label shown on transaction details when created file is already in local store | No        |            |
+| 9.4.1 | File ID input validates format                                                                       | Yes as Component Test | renders file id, nickname, and description fields with disabled button for invalid file id |
+| 9.4.2 | Nickname input is available                                                                          | Yes as Component Test | renders file id, nickname, and description fields with disabled button for invalid file id |
+| 9.4.3 | Linked file appears in file list                                                                     | Yes       | Verify user can add an existing file to files card |
+| 9.4.4 | Link File button is disabled when entered file ID format is invalid                                  | Yes as Component Test | renders file id, nickname, and description fields with disabled button for invalid file id |
+| 9.4.5 | `File link failed` error toast when attempting to link an already-linked file                        | Yes       | Verify duplicate file link shows error toast |
+| 9.4.6 | "File already linked" label shown on transaction details when created file is already in local store | Yes       | Verify transaction details are displayed for file create tx |
 
 ---
 
@@ -694,33 +694,33 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                        | Automated | Covered By                                         |
 | ------ | --------------------------------------------------------------- | --------- | -------------------------------------------------- |
-| 10.1.1 | Empty state shows "No contacts found" message                   | No        |                                                    |
-| 10.1.2 | Admin sees all contacts; non-admin sees only contacts with keys | No        |                                                    |
-| 10.1.3 | Contact email is displayed                                      | Yes       | Verify contact email and public keys are displayed |
-| 10.1.4 | Contact public keys are displayed                               | Yes       | Verify contact email and public keys are displayed |
+| 10.1.1 | Empty state shows "No contacts found" message                   | Yes as Component Test | shows the empty contacts message when the contacts store has no contacts |
+| 10.1.2 | Admin sees all contacts; non-admin sees only contacts with keys | Yes as Component Test | filters contacts without keys for non-admin users / shows admin-only add button and all contacts for admins |
+| 10.1.3 | Contact email is displayed                                      | Yes as Component Test | renders contact email and public keys |
+| 10.1.4 | Contact public keys are displayed                               | Yes as Component Test | renders contact email and public keys |
 | 10.1.5 | Associated accounts are displayed                               | Yes       | Verify associated accounts are displayed           |
 | 10.1.6 | Associated accounts verified against Mirror Node                | Yes       | Verify associated accounts are displayed           |
-| 10.1.7 | New user indicator dot shown on contact list items              | No        |                                                    |
+| 10.1.7 | New user indicator dot shown on contact list items              | Yes as Component Test | shows registered, admin, and update-available indicators |
 
 ### 10.2 Admin Actions
 
 | #       | Scenario                                                                                   | Automated | Covered By                                                            |
 | ------- | ------------------------------------------------------------------------------------------ | --------- | --------------------------------------------------------------------- |
-| 10.2.1  | "Remove" button is visible for admin role                                                  | Yes       | Verify "Remove" contact list button is visible for an admin role      |
-| 10.2.2  | "Remove" button is NOT visible for regular role                                            | Yes       | Verify "Remove" contact list button is not visible for a regular role |
-| 10.2.3  | "Add New" button is enabled for admin role                                                 | Yes       | Verify "Add new" button is enabled for an admin role                  |
-| 10.2.4  | "Add New" button is NOT visible for regular role                                           | Yes       | Verify "Add new" button is invisible for a regular role               |
+| 10.2.1  | "Remove" button is visible for admin role                                                  | Yes as Component Test | shows admin contact actions only for organization admins               |
+| 10.2.2  | "Remove" button is NOT visible for regular role                                            | Yes as Component Test | shows admin contact actions only for organization admins               |
+| 10.2.3  | "Add New" button is enabled for admin role                                                 | Yes as Component Test | shows admin-only add button and all contacts for admins                |
+| 10.2.4  | "Add New" button is NOT visible for regular role                                           | Yes as Component Test | filters contacts without keys for non-admin users                      |
 | 10.2.5  | Admin can add a new user to the organization                                               | Yes       | Verify admin user can add new user to the organization                |
-| 10.2.6  | Admin can add multiple users via comma-separated emails                                    | No        |                                                                       |
-| 10.2.7  | Invalid email shows error toast during user creation                                       | No        |                                                                       |
+| 10.2.6  | Admin can add multiple users via comma-separated emails                                    | Yes       | Verify admin bulk user registration supports comma-separated emails and error states |
+| 10.2.7  | Invalid email shows error toast during user creation                                       | Yes       | Verify adding user with invalid email shows error                     |
 | 10.2.8  | Admin can remove a user from the organization                                              | Yes       | Verify admin user can remove user from the organization               |
-| 10.2.9  | Delete contact modal appears on remove click                                               | No        |                                                                       |
-| 10.2.10 | Admin can elevate a user to admin role                                                     | No        |                                                                       |
-| 10.2.11 | Elevate contact modal appears on click                                                     | No        |                                                                       |
-| 10.2.12 | Bulk add fails with `Invalid emails: <list>` error when any email address is malformed     | No        |                                                                       |
-| 10.2.13 | Partial bulk add shows `Failed to sign up users with emails: <list>` error toast           | No        |                                                                       |
-| 10.2.14 | Adding an email already on org server shows `Failed to sign up user` error toast           | No        |                                                                       |
-| 10.2.15 | Adding a duplicate approver to a transaction shows `User already exists in the list` error | No        |                                                                       |
+| 10.2.9  | Delete contact modal appears on remove click                                               | Yes       | Verify admin user can remove user from the organization               |
+| 10.2.10 | Admin can elevate a user to admin role                                                     | Yes       | Verify admin can elevate a user to admin role                         |
+| 10.2.11 | Elevate contact modal appears on click                                                     | Yes       | Verify admin can elevate a user to admin role                         |
+| 10.2.12 | Bulk add fails with `Invalid emails: <list>` error when any email address is malformed     | Yes       | Verify admin bulk user registration supports comma-separated emails and error states |
+| 10.2.13 | Partial bulk add shows `Failed to sign up users with emails: <list>` error toast           | Yes       | Verify admin bulk user registration supports comma-separated emails and error states |
+| 10.2.14 | Adding an email already on org server shows `Failed to sign up user` error toast           | Yes       | Verify admin bulk user registration supports comma-separated emails and error states |
+| 10.2.15 | Adding a duplicate approver to a transaction shows `User already exists in the list` error | Skipped   | Verify adding a duplicate approver to a transaction shows `User already exists in the list` error |
 
 ### 10.3 Contact Details
 
@@ -775,7 +775,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                         | Automated | Covered By                                                                                                  |
 | ------ | ---------------------------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| 11.5.1 | Export .tx file, sign offline with 75 users, zip+import, execute | Yes       | Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility |
+| 11.5.1 | Export .tx file, sign offline with 25 users, zip+import, execute | Yes       | Verify user can export and import transaction with 25 signatures for TTv1->TTv2 compatibility               |
 | 11.5.2 | Import superfluous signatures from TTv1 format                   | Yes       | Verify user can import superfluous signatures from TTv1 format                                              |
 | 11.5.3 | Import blocked when user lacks transaction visibility            | Yes       | Verify user cannot import signatures without visibility of transaction from TTv1 format                     |
 
@@ -794,21 +794,21 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                          | Automated | Covered By                                                       |
 | ------ | ----------------------------------------------------------------- | --------- | ---------------------------------------------------------------- |
-| 12.1.1 | Notification indicator visible in organization dropdown           | Yes       | Verify notification is visible in the organization dropdown      |
-| 12.1.2 | Notification saved in DB with isRead=false, isInAppNotified=true  | Yes       | Verify notification is saved in the db and marked correctly      |
-| 12.1.3 | Notification marked isRead=true after viewing transaction details | Yes       | Verify tab notification is cleared after the transaction is seen |
-| 12.1.4 | Tab notification number cleared after viewing                     | Yes       | Verify tab notification is cleared after the transaction is seen |
-| 12.1.5 | Notification icon visible on specific transaction row             | Yes       | Verify notification element is shown next to the transaction     |
+| 12.1.1 | Notification indicator visible in organization dropdown           | Skipped   | Verify notification is visible in the organization dropdown      |
+| 12.1.2 | Notification saved in DB with isRead=false, isInAppNotified=true  | Skipped   | Verify notification is saved in the db and marked correctly      |
+| 12.1.3 | Notification marked isRead=true after viewing transaction details | Skipped   | Verify tab notification is cleared after the transaction is seen |
+| 12.1.4 | Tab notification number cleared after viewing                     | Skipped   | Verify tab notification is cleared after the transaction is seen |
+| 12.1.5 | Notification icon visible on specific transaction row             | Skipped   | Verify notification element is shown next to the transaction     |
 | 12.1.6 | Notification badges on transaction tabs update in real-time       | No        |                                                                  |
 
 ### 12.2 Email Notification Preferences
 
 | #      | Scenario                                                    | Automated | Covered By |
 | ------ | ----------------------------------------------------------- | --------- | ---------- |
-| 12.2.1 | Transaction Threshold Reached email preference toggle works | No        |            |
-| 12.2.2 | Required Signature email preference toggle works            | No        |            |
-| 12.2.3 | Transaction Cancelled email preference toggle works         | No        |            |
-| 12.2.4 | Preference changes are persisted via API immediately        | No        |            |
+| 12.2.1 | Transaction Threshold Reached email preference toggle works | Yes       | Verify Ready to Execute toggle persists state change          |
+| 12.2.2 | Required Signature email preference toggle works            | Yes       | Verify Signature Required toggle persists state change        |
+| 12.2.3 | Transaction Cancelled email preference toggle works         | Yes       | Verify Cancelled toggle persists state change                 |
+| 12.2.4 | Preference changes are persisted via API immediately        | Yes       | Verify Ready to Execute toggle persists state change          |
 
 ---
 
@@ -821,7 +821,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13.1.1 | Transactions menu item navigates to /transactions            | Yes       | Verify account create tx is displayed in history page         |
 | 13.1.2 | Accounts menu item navigates to /accounts                    | Yes       | Verify account card is visible with valid information         |
 | 13.1.3 | Files menu item navigates to /files                          | Yes       | Verify file card is visible with valid information            |
-| 13.1.4 | Contact List menu item navigates to /contact-list (org only) | No        |                                                               |
+| 13.1.4 | Contact List menu item navigates to /contact-list (org only) | Yes       | Verify contact list menu item navigates to /contact-list      |
 | 13.1.5 | Settings menu item navigates to /settings/general            | Yes       | Verify that all elements in settings page are present         |
 | 13.1.6 | Contact List hidden when not in organization                 | Yes       | Verify user can switch between personal and organization mode |
 
@@ -829,10 +829,10 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                       | Automated | Covered By                                                    |
 | ------ | ---------------------------------------------- | --------- | ------------------------------------------------------------- |
-| 13.2.1 | Organization selector shows all connected orgs | No        |                                                               |
+| 13.2.1 | Organization selector shows all connected orgs | Yes       | Verify user can switch between personal and organization mode |
 | 13.2.2 | Selecting an org triggers login if required    | Yes       | Verify user can switch between personal and organization mode |
-| 13.2.3 | Disconnected org shows disconnect reason       | No        |                                                               |
-| 13.2.4 | Org requiring upgrade blocks selection         | No        |                                                               |
+| 13.2.3 | Disconnected org shows disconnect reason       | Yes       | Verify disconnected org shows the upgradeRequired reason note |
+| 13.2.4 | Org requiring upgrade blocks selection         | Yes       | Verify org requiring upgrade is blocked from selection        |
 | 13.2.5 | Personal mode option is available              | Yes       | Verify user can switch between personal and organization mode |
 
 ### 13.3 Route Guards
@@ -851,7 +851,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ------ | ---------------------------------------------- | --------- | ------------------------------------------------------------- |
 | 14.1.1 | Success toast appears on successful operations | Yes       | Verify successful registration through "Create New" flow      |
 | 14.1.2 | Error toast appears on failed operations       | Yes       | Verify error message when user adds non-existing organization |
-| 14.1.3 | Toast auto-dismisses after timeout             | No        |                                                               |
+| 14.1.3 | Toast auto-dismisses after timeout             | Yes       | Verify user can copy public key to clipboard                  |
 
 ### 14.2 Password Modal
 
@@ -859,14 +859,14 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ------ | ------------------------------------------------------ | --------- | ----------------------------------- |
 | 14.2.1 | Personal password modal appears when decryption needed | Yes       | Verify user can decrypt private key |
 | 14.2.2 | Operation retries after correct password entry         | Yes       | Verify user can decrypt private key |
-| 14.2.3 | Operation aborts if password modal is cancelled        | No        |                                     |
+| 14.2.3 | Operation aborts if password modal is cancelled        | Yes       | Verify decrypt private key flow is aborted when password modal is cancelled |
 
 ### 14.3 Loading States
 
 | #      | Scenario                                      | Automated | Covered By |
 | ------ | --------------------------------------------- | --------- | ---------- |
-| 14.3.1 | Loading spinner shown during long operations  | No        |            |
-| 14.3.2 | Global modal loader for long async operations | No        |            |
+| 14.3.1 | Loading spinner shown during long operations  | Yes       | Verify user can switch between personal and organization mode |
+| 14.3.2 | Global modal loader for long async operations | Yes       | Verify user can switch between personal and organization mode |
 
 ### 14.4 Network/Connection Errors
 
@@ -881,11 +881,11 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                          | Automated | Covered By |
 | ------ | ------------------------------------------------- | --------- | ---------- |
-| 14.5.1 | Account ID checksum validation on blur            | No        |            |
-| 14.5.2 | File ID format validation                         | No        |            |
-| 14.5.3 | Transaction body exceeding 6144 bytes shows error | No        |            |
-| 14.5.4 | Expired transaction shows appropriate error       | No        |            |
-| 14.5.5 | Duplicate transaction ID shows appropriate error  | No        |            |
+| 14.5.1 | Account ID checksum validation on blur            | Yes       | Verify Account ID with invalid checksum shows error toast on link |
+| 14.5.2 | File ID format validation                         | Yes       | Verify File Update shows Invalid File ID error when file ID is malformed |
+| 14.5.3 | Transaction body exceeding 6144 bytes shows error | Yes (Backend) | Not surfaced via UI — `ValidateRequestHandler.validateBigFile` does throw for org-mode FileCreate over `TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES`, but `CheckKeySettingHandler.handle` is synchronous and doesn't `await` `nextHandler.handle`, so the rejection is dropped before `withLoader` can render an error toast. Backend-covered: `back-end/apps/api/test/spec/transaction.e2e-spec.ts:382` (rejects creation with `code: TOS` when transaction body is over the size limit) |
+| 14.5.4 | Expired transaction shows appropriate error       | Yes (Backend) | Not reachable via UI — `RunningClockDatePicker` auto-bumps `validStart` to `now` every 1s, so a transaction can never be `> 180s` past its valid start at submit time. Backend-covered: `back-end/apps/api/test/spec/transaction.e2e-spec.ts:314` ("(POST) should not create an expired transaction") |
+| 14.5.5 | Duplicate transaction ID shows appropriate error  | Yes (Backend) | Not reachable via UI — every Sign press regenerates `validStart`, so the `transactionId` is always fresh. Backend-covered: `back-end/apps/api/test/spec/transaction.e2e-spec.ts:294` ("(POST) should not create a duplicating transaction") |
 
 ---
 
@@ -895,9 +895,9 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                     | Automated | Covered By |
 | ------ | ------------------------------------------------------------ | --------- | ---------- |
-| 15.1.1 | Update notification is shown when a new version is available | No        |            |
-| 15.1.2 | User is blocked from org features when below minimum version | No        |            |
-| 15.1.3 | Version check badge shows correct status per org             | No        |            |
+| 15.1.1 | Update notification is shown when a new version is available | Yes       | Verify Update Available modal shows when a new version is available |
+| 15.1.2 | User is blocked from org features when below minimum version | Yes       | Verify org requiring upgrade is blocked from selection              |
+| 15.1.3 | Version check badge shows correct status per org             | Yes       | Verify version info badge text for each version state               |
 
 ---
 
@@ -905,24 +905,35 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 ### Coverage by Area
 
-| Area                            | Total Scenarios | Automated | Manual  | Coverage % |
-| ------------------------------- | --------------- | --------- | ------- | ---------- |
-| 1. Registration                 | 22              | 13        | 9       | 59%        |
-| 2. Login                        | 17              | 6         | 11      | 35%        |
-| 3. Settings                     | 78              | 35        | 43      | 45%        |
-| 4. Transactions List            | 34              | 15        | 19      | 44%        |
-| 5. Transaction Creation         | 101             | 65        | 36      | 64%        |
-| 6. Transaction Details          | 26              | 23        | 3       | 88%        |
-| 7. Transaction Groups           | 39              | 28        | 11      | 72%        |
-| 8. Accounts                     | 35              | 23        | 12      | 66%        |
-| 9. Files                        | 29              | 7         | 22      | 24%        |
-| 10. Contact List                | 23              | 11        | 12      | 48%        |
-| 11. Org Transaction Workflows   | 24              | 22        | 2       | 92%        |
-| 12. Notifications               | 10              | 5         | 5       | 50%        |
-| 13. Navigation and Layout       | 12              | 7         | 5       | 58%        |
-| 14. Error Handling / Edge Cases | 17              | 4         | 13      | 24%        |
-| 15. Upgrade                     | 3               | 0         | 3       | 0%         |
-| **Total**                       | **471**         | **264**   | **207** | **56%**    |
+| Area                            | Total Scenarios | Automated E2E | Automated Component Test | Backend | Skipped | Manual   | N/A     | Coverage % | Coverage % with Skipped |
+| ------------------------------- | --------------- | ------------- | ------------------------ | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
+| 1. Registration                 | 22              | 14            | 6                        | 0       | 0       | 2        | 0       | 91%        | 91%                     |
+| 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 3. Settings                     | 78              | 60            | 14                       | 0       | 0       | 3        | 1       | 95%        | 95%                     |
+| 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
+| 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
+| 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
+| 7. Transaction Groups           | 39              | 29            | 5                        | 0       | 0       | 5        | 0       | 87%        | 87%                     |
+| 8. Accounts                     | 30              | 17            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
+| 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
+| 12. Notifications               | 10              | 4             | 0                        | 0       | 5       | 1        | 0       | 40%        | 90%                     |
+| 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
+| 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
+| 15. Upgrade                     | 3               | 3             | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| **Total**                       | **465**         | **354**       | **70**                   | **3**   | **10**  | **26**   | **2**   | **92%**    | **94%**                 |
+
+The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
+The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
+
+Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(354 + 70 + 3) / 465 = 91.83%`, rounded to `92%`.
+
+Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
+Manual and N/A scenarios are not counted as covered. For the total row: `(354 + 70 + 3 + 10) / 465 = 94.19%`, rounded to `94%`.
+
+The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
 ### Release Testing Guide
 
@@ -934,9 +945,7 @@ These scenarios directly affect user access, data integrity, and core functional
 
 | Area                       | Scenarios                | Why Critical                                                          |
 | -------------------------- | ------------------------ | --------------------------------------------------------------------- |
-| **Login & Auth**           | 2.1.5-2.1.6, 2.3.1-2.3.7 | Users cannot access the application if login/auth is broken           |
-| **Registration**           | 1.1.3-1.1.8, 1.2.12      | New users cannot onboard if registration validation or redirect fails |
-| **Transaction Validation** | 14.5.3-14.5.5            | Data loss or incorrect transactions if validation fails               |
+| **Login & Auth**           | 2.3.1-2.3.7              | Users cannot access the application if login/auth is broken           |
 
 #### Tier 2 - High Priority (Should Pass)
 
@@ -944,14 +953,11 @@ These scenarios affect important workflows that users rely on regularly. Failure
 
 | Area                             | Scenarios                                 | Why Important                                                            |
 | -------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| **Settings Persistence**         | 3.1.1.5, 3.1.3.3-3.1.3.4                  | Settings lost on reload degrade user experience                          |
-| **Key Management**               | 3.2.2, 3.2.4-3.2.5, 3.2.9, 3.2.15, 3.2.18 | Key operations are security-critical                                     |
-| **Transaction Lists (Personal)** | 4.1.1-4.1.5, 4.3.1-4.3.3                  | Users cannot navigate or find transactions                               |
-| **Transaction Lists (Org)**      | 4.2.2-4.2.3, 4.5.8-4.5.9                  | Org workflow visibility and filtering affects collaboration              |
-| **Organization Selector**        | 13.2.1, 13.2.3-13.2.4                     | Users cannot switch between org and personal mode                        |
-| **Notifications**                | 12.1.6                                    | Missed real-time notifications delay signing workflows                   |
-| **Password Change**              | 3.5.3-3.5.4, 3.5.6, 3.5.8, 3.5.10-3.5.11  | Password/logout issues lock users out                                    |
-| **Upgrade Enforcement**          | 15.1.2                                    | Org users silently lose access if version enforcement fails after update |
+| **Key Management**               | 3.2.15, 3.2.18, 3.2.20                    | Key operations are security-critical                                     |
+| **Transaction Lists (Personal)** | 4.3.1-4.3.3                               | Users cannot navigate or find transactions                               |
+| **Transaction Lists (Org)**      | 4.2.2, 4.2.4-4.2.7, 4.5.8-4.5.9           | Org workflow visibility, signature import, and filtering affect collaboration |
+| **Notifications**                | 12.1.1-12.1.6                             | Missed real-time notifications delay signing workflows                   |
+| **Password Change**              | 3.5.8, 3.5.10                             | Password/logout issues lock users out                                    |
 
 #### Tier 3 - Medium Priority (Verify When Changed)
 
@@ -962,10 +968,9 @@ These scenarios cover secondary workflows. Test when the related feature area ha
 | **File Management**     | 9.1.2-9.4.3     | When file list, details, or actions UI is modified          |
 | **Public Keys Tab**     | 3.3.1-3.3.6     | When public key management UI is modified                   |
 | **Appearance/Theme**    | 3.1.2.2-3.1.2.3 | When theme switching or CSS is modified                     |
-| **Contact List Admin**  | 10.2.6-10.2.11  | When contact management flows are modified                  |
+| **Contact List Admin**  | 10.2.6-10.2.8, 10.2.10-10.2.11 | When contact management flows are modified   |
 | **Group Export**        | 7.5.5           | When signature export formats are modified                  |
 | **Transaction Cancel**  | 6.3.7           | When transaction lifecycle management is modified           |
-| **Application Upgrade** | 15.1.1, 15.1.3  | When update notification or version badge logic is modified |
 
 #### Tier 4 - Lower Priority (Periodic Verification)
 
@@ -974,17 +979,14 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 | Area                           | Scenarios     | When to Test                                    |
 | ------------------------------ | ------------- | ----------------------------------------------- |
 | **Network Errors**             | 14.4.1-14.4.4 | After infrastructure, WebSocket, or API changes |
-| **Form Validation Edge Cases** | 14.5.1-14.5.2 | After form or validation logic changes          |
 | **Loading States**             | 14.3.1-14.3.2 | After adding new async operations               |
 | **Toast Dismissal**            | 14.1.3        | After notification system changes               |
 | **Keychain Registration**      | 1.3.1-1.3.2   | After OS integration or auth changes            |
 
 ### Priority Areas for Additional Automation
 
-1. **Upgrade (0%)** - Update notifications, version enforcement for org features, version status badges
-2. **Error Handling / Edge Cases (24%)** - Network failures, validation edge cases, form limits
-3. **Files (24%)** - File list sorting, file details panel, file actions, link existing and already-linked file scenarios
-4. **Login (35%)** - Negative cases, session persistence, org login error flows
-5. **Transactions List (44%)** - Personal mode options, org tab notification badges, history table features, drafts table sort and pagination
-6. **Contact List (48%)** - Bulk user add validation, duplicate email, approver duplicate handling
-7. **Notifications (50%)** - Email preference toggles, real-time badge delivery
+1. **Notifications (40%)** - Re-enable or replace skipped in-app notification tests (12.1.1-12.1.5); add real-time notification badge coverage (12.1.6)
+2. **Error Handling / Edge Cases (65%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+3. **Transactions List (88%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
+4. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
+5. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)

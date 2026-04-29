@@ -177,6 +177,25 @@ export class BasePage {
   }
 
   /**
+   * Hovers over an element specified by the selector.
+   * @param {string} selector - The selector of the element to hover.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<void>}
+   */
+  async hover(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(`Hovering over element with selector: ${selector}`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    await element.hover();
+    await this.captureStepScreenshot(`hover-${selector}`);
+  }
+
+  /**
    * Clicks on a button once it is enabled.
    * @param {string} testId - The data-testid of the button.
    * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the button to be enabled.
@@ -587,6 +606,46 @@ export class BasePage {
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
     return await element.isDisabled();
+  }
+
+  /**
+   * Checks if an element is checked.
+   * @param {string} selector - The selector of the element to check.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<boolean>} - True if the element is checked, false otherwise.
+   */
+  async isChecked(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
+    console.log(`Checking if element with selector: ${selector} is checked`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    return await element.isChecked();
+  }
+
+  /**
+   * Gets an attribute value from an element.
+   * @param {string} selector - The selector of the element.
+   * @param {string} attributeName - The attribute name.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<string|null>} - The attribute value or null if missing.
+   */
+  async getAttributeValue(
+    selector: string,
+    attributeName: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<string | null> {
+    console.log(
+      `Getting attribute "${attributeName}" for element with selector: ${selector}`,
+    );
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    return await element.getAttribute(attributeName);
   }
 
   /**

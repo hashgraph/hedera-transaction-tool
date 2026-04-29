@@ -1,4 +1,7 @@
 import { defineConfig } from '@playwright/test';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
 
 const configuredWorkers = Number.parseInt(process.env.PLAYWRIGHT_WORKERS ?? '', 10);
 const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
@@ -8,8 +11,17 @@ const workers = Number.isFinite(configuredWorkers) && configuredWorkers > 0
 export default defineConfig({
   testDir: './tests',
   reporter: process.env.CI
-    ? [['github'], ['list'], ['html', { outputFolder: 'reports/playwright', open: 'never' }]]
-    : [['list'], ['html', { outputFolder: 'reports/playwright', open: 'on-failure' }]],
+    ? [
+        ['github'],
+        ['list'],
+        ['json', { outputFile: 'reports/playwright-json/results.json' }],
+        ['html', { outputFolder: 'reports/playwright', open: 'never' }],
+      ]
+    : [
+        ['list'],
+        ['json', { outputFile: 'reports/playwright-json/results.json' }],
+        ['html', { outputFolder: 'reports/playwright', open: 'on-failure' }],
+      ],
   use: {
     screenshot: {
       mode: 'only-on-failure',

@@ -29,6 +29,7 @@ let complexKeyAccountId: string;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Transaction status/signing tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'parallel' });
   test.slow();
 
   test.beforeAll(async () => {
@@ -188,6 +189,92 @@ test.describe('Organization Transaction status/signing tests @organization-advan
 
     const isSignerSignVisible = await organizationPage.isSecondSignerCheckmarkVisible();
     expect(isSignerSignVisible).toBe(true);
+  });
+
+  test.skip(
+    'Ready for Review tab shows transactions pending approval',
+    async () => {
+      // Approvers-related workflows are behind a feature flag in this repo/environment.
+      // When enabled, this test should create a transaction requiring approval and assert it is visible in the
+      // "Ready for Review" tab.
+    },
+  );
+
+  test('Verify organization History filters work for Status and Transaction Type', async () => {
+    const creator = organizationPage.users[0];
+
+    // Create a Transfer transaction, then cancel it -> should show as CANCELED in History.
+    const { txId: canceledTxId } = await organizationPage.transferAmountBetweenAccounts(
+      complexKeyAccountId,
+      '1',
+      30,
+      true,
+    );
+    await organizationPage.closeDraftModal();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.clickOnInProgressTab();
+    await organizationPage.clickOnInProgressDetailsButtonByTransactionId(canceledTxId ?? '');
+    await organizationPage.clickOnCancelTransactionButton();
+    await organizationPage.clickOnConfirmCancelButton();
+
+    // Create an Account Update that will execute successfully -> should show as SUCCESS in History.
+    await transactionPage.clickOnTransactionsMenuButton();
+    const { txId: executedTxId, validStart } = await organizationPage.updateAccount(
+      complexKeyAccountId,
+      'history-filter-executed',
+      8,
+      true,
+    );
+    await organizationPage.closeDraftModal();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await organizationPage.logInAndSignTransactionByAllUsers(
+      globalCredentials.password,
+      executedTxId ?? '',
+    );
+    await organizationPage.signInOrganization(
+      creator.email,
+      creator.password,
+      globalCredentials.password,
+    );
+    await organizationPage.waitForSuccessfulHistoryTransaction(executedTxId ?? '', validStart);
+
+    const normalizedCanceledTxId = (canceledTxId ?? '').replace(/\s+/g, '');
+    const normalizedExecutedTxId = (executedTxId ?? '').replace(/\s+/g, '');
+    const historyIdCells = window.locator('[data-testid^="td-transaction-node-transaction-id-"]');
+
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedCanceledTxId }).count())
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedExecutedTxId }).count())
+      .toBeGreaterThan(0);
+
+    // 4.5.8: Filter by status.
+    await window.getByRole('button', { name: /Status/i }).click();
+    await window.locator('.dropdown-menu.show').getByText('Canceled', { exact: true }).click();
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedCanceledTxId }).count())
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedExecutedTxId }).count())
+      .toBe(0);
+
+    const statusClear = window
+      .locator('.rounded.border')
+      .filter({ hasText: 'Status' })
+      .locator('.bi-x-lg');
+    await statusClear.click();
+
+    // 4.5.9: Filter by transaction type.
+    await window.getByRole('button', { name: /Transaction Type/i }).click();
+    await window.locator('.dropdown-menu.show').getByText('Transfer', { exact: true }).click();
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedCanceledTxId }).count())
+      .toBeGreaterThan(0);
+    await expect
+      .poll(async () => historyIdCells.filter({ hasText: normalizedExecutedTxId }).count())
+      .toBe(0);
   });
 
   test('Verify transaction is shown "In progress" tab after signing', async () => {

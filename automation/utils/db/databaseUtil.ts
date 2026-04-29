@@ -90,6 +90,28 @@ export function queryDatabase<T>(query: string, params: (string|number)[] = []):
   });
 }
 
+export function executeDatabase(query: string, params: (string|number)[] = []): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const db = openDatabase();
+    if (!db) {
+      reject(new Error('SQLite database file does not exist.'));
+      return;
+    }
+
+    console.log('Executing statement:', query, 'Params:', params);
+    db.run(query, params, function (err) {
+      if (err) {
+        console.error('Statement error:', err.message);
+        reject(err);
+      } else {
+        console.log('Statement changes:', this.changes);
+        resolve(this.changes);
+      }
+      closeDatabase(db);
+    });
+  });
+}
+
 export async function resetDbState() {
   if (shouldPreserveLocalAppState()) {
     console.log('Preserving local SQLite state. Skipping database reset.');

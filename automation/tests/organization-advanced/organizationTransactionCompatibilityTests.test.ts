@@ -3,15 +3,13 @@ import { OrganizationPage } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
 import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
-import { signatureMapToV1Json } from '../../utils/data/transactionUtil.js';
 import { waitAndReadFile } from '../../utils/files/fileWait.js';
+import { writeMergedV1SignatureZip } from '../../utils/files/v1SignatureZip.js';
 import { setDialogMockState } from '../../utils/runtime/dialogMocks.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
-import { waitForValidStart } from '../../utils/runtime/timing.js';
-import { PrivateKey, Transaction } from '@hiero-ledger/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import * as path from 'node:path';
 import * as fsp from 'fs/promises';
-import JSZip from 'jszip';
 import { setupOrganizationAdvancedFixture } from '../helpers/fixtures/organizationAdvancedFixture.js';
 import {
   setupOrganizationSuiteApp,
@@ -32,19 +30,39 @@ let organizationNickname = 'Test Organization';
 
 let complexKeyAccountId: string;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
+const LARGE_SIGNATURE_IMPORT_ADDITIONAL_USER_COUNT = 23;
+const LARGE_SIGNATURE_IMPORT_SIGNER_COUNT = 25;
+const FIRST_ADDITIONAL_USER_INDEX = 1;
+const SINGLE_ADDITIONAL_USER_COUNT = 1;
+const SUPERFLUOUS_SIGNATURE_USER_INDEXES = [1, 2, 3] as const;
+const INVISIBLE_TRANSACTION_SIGNATURE_USER_INDEXES = [0, 1, 2] as const;
+const INVISIBLE_TRANSACTION_LOGIN_USER_INDEX = 3;
+
+function getFileReadTimeout() {
+  return organizationPage.getLongTimeout();
+}
+
+async function expectSuccessfulAccountCreateInHistory(
+  txId: string | null,
+  validStart: string | null,
+) {
+  const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+    txId ?? '',
+    validStart,
+  );
+  expect(transactionDetails?.transactionId).toBe(txId);
+  expect(transactionDetails?.transactionType).toBe('Account Create');
+  expect(transactionDetails?.validStart).toBeTruthy();
+  expect(transactionDetails?.detailsButton).toBe(true);
+  expect(transactionDetails?.status).toBe('SUCCESS');
+}
 
 test.describe('Organization Transaction compatibility tests @organization-advanced', () => {
   test.slow();
 
   test.beforeAll(async () => {
-    ({
-      app,
-      window,
-      loginPage,
-      transactionPage,
-      organizationPage,
-      isolationContext,
-    } = await setupOrganizationSuiteApp(test.info()));
+    ({ app, window, loginPage, transactionPage, organizationPage, isolationContext } =
+      await setupOrganizationSuiteApp(test.info()));
     window.on('console', msg => {
       const text = msg.text();
       if (
@@ -73,12 +91,8 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
     complexKeyAccountId = fixture.complexKeyAccountId;
     await transactionPage.clickOnTransactionsMenuButton();
 
-    await organizationPage.waitForElementToDisappear('.v-toast__text');
+    await organizationPage.waitForToastToDisappear();
     await organizationPage.closeDraftModal();
-
-    if (process.env.CI) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
   });
 
   test.afterEach(async () => {
@@ -115,130 +129,111 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       }
     });
 
-    test.skip('Verify user can export and import transaction and a large number of signatures for TTv1->TTv2 compatibility', async () => {
-      await organizationPage.createAdditionalUsers(73, globalCredentials.password);
+    test('Verify user can export and import transaction with 25 signatures for TTv1->TTv2 compatibility', async () => {
+      await organizationPage.createAdditionalUsers(
+        LARGE_SIGNATURE_IMPORT_ADDITIONAL_USER_COUNT,
+        globalCredentials.password,
+      );
 
-      const newAccountId = (await organizationPage.createComplexKeyAccountForUsers(75)) ?? '';
+      const newAccountId =
+        (await organizationPage.createComplexKeyAccountForUsers(
+          LARGE_SIGNATURE_IMPORT_SIGNER_COUNT,
+        )) ?? '';
 
       await transactionPage.clickOnTransactionsMenuButton();
       const { txId, validStart } = await organizationPage.createAccountWithFeePayerId(newAccountId);
 
       await transactionPage.clickOnExportTransactionButton('Export');
 
-      const txBytes = await waitAndReadFile(transactionPath, 5000);
+      const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
 
-      const openPaths = [];
-      for (let i = 1; i < 76; i++) {
-        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
-        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
-        const pk = PrivateKey.fromStringED25519(organizationPage.getUser(i).privateKey);
-        const sig = signatureMapToV1Json(pk.signTransaction(tx));
+      const sigZipPath = await writeMergedV1SignatureZip(
+        exportDir,
+        'signatures',
+        tx,
+        txBytes,
+        Array.from(
+          { length: LARGE_SIGNATURE_IMPORT_SIGNER_COUNT },
+          (_, index) => organizationPage.getUser(index + FIRST_ADDITIONAL_USER_INDEX).privateKey,
+        ),
+        transactionPath,
+      );
 
-        const zip = new JSZip();
-        zip.file(path.basename(sigJsonPath), Buffer.from(sig));
-        zip.file(path.basename(transactionPath), txBytes);
-        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-        await fsp.writeFile(sigZipPath, zipContent);
-        openPaths.push(sigZipPath);
-      }
-
-      await setDialogMockState(window, { openPaths });
+      await setDialogMockState(window, { openPaths: [sigZipPath] });
       await transactionPage.importV1Signatures();
 
-      await waitForValidStart(validStart ?? '');
-
-      await organizationPage.clickOnHistoryTab();
-      const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
-      expect(transactionDetails?.transactionId).toBe(txId);
-      expect(transactionDetails?.transactionType).toBe('Account Create');
-      expect(transactionDetails?.validStart).toBeTruthy();
-      expect(transactionDetails?.detailsButton).toBe(true);
-      expect(transactionDetails?.status).toBe('SUCCESS');
+      await expectSuccessfulAccountCreateInHistory(txId, validStart);
     });
 
-    test.skip('Verify user can import superfluous signatures from TTv1 format', async () => {
-      await organizationPage.createAdditionalUsers(1, globalCredentials.password);
+    test('Verify user can import superfluous signatures from TTv1 format', async () => {
+      await organizationPage.createAdditionalUsers(
+        SINGLE_ADDITIONAL_USER_COUNT,
+        globalCredentials.password,
+      );
 
       const { txId, validStart } =
         await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
       await transactionPage.clickOnExportTransactionButton('Export');
 
-      const txBytes = await waitAndReadFile(transactionPath, 5000);
+      const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
-
-      const openPaths = [];
-      for (let i = 1; i < 4; i++) {
-        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
-        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
-        const pk = PrivateKey.fromStringED25519(organizationPage.getUser(i).privateKey);
-        const sig = signatureMapToV1Json(pk.signTransaction(tx));
-
-        const zip = new JSZip();
-        zip.file(path.basename(sigJsonPath), Buffer.from(sig));
-        zip.file(path.basename(transactionPath), txBytes);
-        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-        await fsp.writeFile(sigZipPath, zipContent);
-        openPaths.push(sigZipPath);
-      }
+      const sigZipPath = await writeMergedV1SignatureZip(
+        exportDir,
+        'superfluous-signatures',
+        tx,
+        txBytes,
+        SUPERFLUOUS_SIGNATURE_USER_INDEXES.map(index => organizationPage.getUser(index).privateKey),
+        transactionPath,
+      );
 
       await organizationPage.clickOnSignTransactionButton();
 
-      await setDialogMockState(window, { openPaths });
+      await setDialogMockState(window, { openPaths: [sigZipPath] });
       await transactionPage.importV1Signatures();
 
-      await waitForValidStart(validStart ?? '');
-
-      await organizationPage.clickOnHistoryTab();
-      const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
-      expect(transactionDetails?.transactionId).toBe(txId);
-      expect(transactionDetails?.transactionType).toBe('Account Create');
-      expect(transactionDetails?.validStart).toBeTruthy();
-      expect(transactionDetails?.detailsButton).toBe(true);
-      expect(transactionDetails?.status).toBe('SUCCESS');
+      await expectSuccessfulAccountCreateInHistory(txId, validStart);
     });
 
-    test.skip('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
-      await organizationPage.createAdditionalUsers(1, globalCredentials.password);
+    test('Verify user cannot import signatures without visibility of transaction from TTv1 format', async () => {
+      await organizationPage.createAdditionalUsers(
+        SINGLE_ADDITIONAL_USER_COUNT,
+        globalCredentials.password,
+      );
 
       await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
       await transactionPage.clickOnExportTransactionButton('Export');
 
-      const txBytes = await waitAndReadFile(transactionPath, 5000);
+      const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
-
-      const openPaths = [];
-      for (let i = 0; i < 3; i++) {
-        const sigJsonPath = path.join(exportDir, `sig${i}.json`);
-        const sigZipPath = path.join(exportDir, `sig${i}.zip`);
-        const pk = PrivateKey.fromStringED25519(organizationPage.getUser(i).privateKey);
-        const sig = signatureMapToV1Json(pk.signTransaction(tx));
-
-        const zip = new JSZip();
-        zip.file(path.basename(sigJsonPath), Buffer.from(sig));
-        zip.file(path.basename(transactionPath), txBytes);
-        const zipContent = await zip.generateAsync({ type: 'nodebuffer' });
-        await fsp.writeFile(sigZipPath, zipContent);
-        openPaths.push(sigZipPath);
-      }
+      const sigZipPath = await writeMergedV1SignatureZip(
+        exportDir,
+        'invisible-transaction-signatures',
+        tx,
+        txBytes,
+        INVISIBLE_TRANSACTION_SIGNATURE_USER_INDEXES.map(
+          index => organizationPage.getUser(index).privateKey,
+        ),
+        transactionPath,
+      );
 
       await transactionPage.clickOnTransactionsMenuButton();
       await organizationPage.logoutFromOrganization();
 
-      const fourthUser = organizationPage.getUser(3);
+      const fourthUser = organizationPage.getUser(INVISIBLE_TRANSACTION_LOGIN_USER_INDEX);
       await organizationPage.signInOrganization(
         fourthUser.email,
         fourthUser.password,
         globalCredentials.password,
       );
 
-      await setDialogMockState(window, { openPaths });
+      await setDialogMockState(window, { openPaths: [sigZipPath] });
       await transactionPage.clickOnTransactionsMenuButton();
       await transactionPage.clickOnImportButton();
       expect(await transactionPage.isConfirmImportButtonDisabled()).toBe(true);
-      await window.keyboard.press('Escape');
+      await transactionPage.closeImportModal();
     });
   });
 });

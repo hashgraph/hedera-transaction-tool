@@ -23,6 +23,7 @@
     "build:mac": "pnpm run build && electron-builder --mac",
     "build:mac:arm64": "pnpm run build && electron-builder --mac default --arm64",
     "build:linux": "pnpm run build && electron-builder --linux --config",
+    "build:linux:e2e": "VITE_EXPOSE_TEST_HOOKS=true pnpm run build && electron-builder --linux --config",
     "publish": "pnpm run build && electron-builder -m -p 'onTagOrDraft'",
     "test": "pnpm run test:main && pnpm run test:renderer && pnpm run test:shared",
     "test:main": "vitest --config src/tests/vitest.config.main.ts --passWithNoTests --run",

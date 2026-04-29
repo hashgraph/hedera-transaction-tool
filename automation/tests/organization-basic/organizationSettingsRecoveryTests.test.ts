@@ -167,6 +167,12 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     expect(isButtonVisible).toBe(true);
   });
 
+  test('Verify organization login form is visible after logout', async () => {
+    await organizationPage.logoutFromOrganization();
+    const isLoginFormVisible = await organizationPage.isOrganizationLoginFormVisible();
+    expect(isLoginFormVisible).toBe(true);
+  });
+
   test('Verify user can restore account with new mnemonic phrase', async () => {
     const publicKeyBeforeReset = await organizationPage.getFirstPublicKeyByEmail(firstUser.email);
     const userId = await organizationPage.getUserIdByEmail(firstUser.email);

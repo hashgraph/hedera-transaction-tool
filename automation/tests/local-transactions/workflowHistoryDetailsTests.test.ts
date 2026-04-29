@@ -1,71 +1,105 @@
-import { expect, Page, test } from '@playwright/test';
-import { LoginPage } from '../../pages/LoginPage.js';
-import { TransactionPage } from '../../pages/TransactionPage.js';
+import { expect, test } from '@playwright/test';
 import { DetailsPage } from '../../pages/DetailsPage.js';
-import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
-import { setupEnvironmentForTransactions } from '../../utils/runtime/environment.js';
-import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
-import {
-  setupLocalSuiteApp,
-  teardownLocalSuiteApp,
-} from '../helpers/bootstrap/localSuiteBootstrap.js';
-import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
+import { updateLocalTransactionStatus } from '../../utils/db/databaseQueries.js';
+import { setupLocalTransactionSuite } from '../helpers/fixtures/localTransactionSuite.js';
 
-let app: TransactionToolApp;
-let window: Page;
-let loginPage: LoginPage;
-let transactionPage: TransactionPage;
-let detailsPage: DetailsPage;
-let isolationContext: ActivatedTestIsolationContext | null = null;
-
-test.describe('Workflow history/detail account and transfer tests @local-transactions', () => {
-  test.beforeAll(async () => {
-    ({ app, window, isolationContext } = await setupLocalSuiteApp(test.info()));
-  });
-
-  test.afterAll(async () => {
-    await teardownLocalSuiteApp(app, isolationContext);
-  });
+test.describe('Workflow history/detail account tests @local-transactions', () => {
+  const suite = setupLocalTransactionSuite();
+  let detailsPage: DetailsPage;
 
   test.beforeEach(async () => {
-    loginPage = new LoginPage(window);
-    transactionPage = new TransactionPage(window);
-    detailsPage = new DetailsPage(window);
-    await createSeededLocalUserSession(window, loginPage);
-    transactionPage.generatedAccounts = [];
-    await setupEnvironmentForTransactions(window);
-    await transactionPage.clickOnTransactionsMenuButton();
-
-    if (process.env.CI) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-
-    await transactionPage.closeDraftModal();
+    detailsPage = new DetailsPage(suite.window);
   });
 
   test('Verify account create tx is displayed in history page', async () => {
-    const txDescription = 'test account create tx description';
-    const { newTransactionId } = await transactionPage.createNewAccount({
-      description: txDescription,
+    // Create multiple history items so we can verify sorting in the History table.
+    const { newTransactionId: txB } = await suite.transactionPage.createNewAccount({
+      description: 'B history sort',
     });
-    await transactionPage.clickOnTransactionsMenuButton();
+    const { newTransactionId: txA } = await suite.transactionPage.createNewAccount({
+      description: 'A history sort',
+    });
+    await suite.transactionPage.clickOnTransactionsMenuButton();
+    await suite.transactionPage.clickOnHistoryTab();
+
+    // Assert History table column headers are present
+    const headerTexts = await detailsPage.getHistoryTableHeaderTexts();
+    expect(headerTexts).toContain('Transaction ID');
+    expect(headerTexts).toContain('Transaction Type');
+    expect(headerTexts).toContain('Description');
+    expect(headerTexts).toContain('Status');
+    expect(headerTexts).toContain('Created At');
+    expect(headerTexts).toContain('Actions');
+
+    const isDescriptionBefore = async (firstDescription: string, secondDescription: string) => {
+      const firstIndex = await detailsPage.getHistoryDescriptionRowIndex(firstDescription);
+      const secondIndex = await detailsPage.getHistoryDescriptionRowIndex(secondDescription);
+
+      return firstIndex >= 0 && secondIndex >= 0 && firstIndex < secondIndex;
+    };
+
+    // Verify sorting by Description (asc/desc)
+    await detailsPage.sortHistoryByDescription();
+    await detailsPage.waitForHistoryDescriptionSortDirection('asc');
+    await expect.poll(() => isDescriptionBefore('A history sort', 'B history sort')).toBe(true);
+    await detailsPage.sortHistoryByDescription();
+    await detailsPage.waitForHistoryDescriptionSortDirection('desc');
+    await expect.poll(() => isDescriptionBefore('B history sort', 'A history sort')).toBe(true);
+    await detailsPage.sortHistoryByDescription();
+    await detailsPage.waitForHistoryDescriptionSortDirection('asc');
+    await expect.poll(() => isDescriptionBefore('A history sort', 'B history sort')).toBe(true);
+
+    // Keep the original "is displayed" assertion for txA after sorting asc.
+    const newTransactionId = txA;
+    const txDescription = 'A history sort';
+    const transactionIndex = await detailsPage.getHistoryDescriptionRowIndex(txDescription);
+    expect(transactionIndex).toBeGreaterThanOrEqual(0);
     await detailsPage.assertTransactionDisplayed(
       newTransactionId ?? '',
       'Account Create',
       txDescription,
+      transactionIndex,
     );
+
+    // 4.4.2: Status badge style (success should not be marked as danger).
+    expect(await detailsPage.isTransactionStatusBadgeSuccess(transactionIndex)).toBe(true);
   });
 
-  test('Verify transaction details are displayed for account tx ', async () => {
-    const { newTransactionId } = await transactionPage.createNewAccount({
+  test('Verify history status badge shows danger styling for failed transactions', async () => {
+    const { newAccountId: receiverAccountId } = await suite.transactionPage.createNewAccount({
+      description: 'failed transfer receiver',
+    });
+    expect(receiverAccountId).toBeTruthy();
+
+    const failedTransactionId = await suite.transactionPage.transferAmountBetweenAccounts(
+      receiverAccountId ?? '',
+      '1',
+    );
+    expect(failedTransactionId).toBeTruthy();
+    expect(
+      await updateLocalTransactionStatus(failedTransactionId ?? '', 'INVALID_TRANSACTION', 21),
+    ).toBe(true);
+    await suite.transactionPage.clickOnTransactionsMenuButton();
+    await suite.transactionPage.clickOnHistoryTab();
+
+    expect(
+      await detailsPage.isTransactionStatusBadgeDangerForTransaction(failedTransactionId ?? ''),
+    ).toBe(true);
+  });
+
+  test('Verify transaction details are displayed for account tx', async () => {
+    const { newTransactionId } = await suite.transactionPage.createNewAccount({
       description: 'testDescription',
     });
-    await transactionPage.clickOnTransactionsMenuButton();
+    await suite.transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId ?? '',
-      'Account Create',
-    );
+
+    // Assert details page route and title explicitly
+    await expect.poll(() => suite.window.url()).toContain('/transaction/');
+    const detailsType = await detailsPage.getTransactionDetailsType();
+    expect(detailsType).toBe('Account Create');
+
+    await detailsPage.assertTransactionDetails(newTransactionId ?? '', 'Account Create');
     const getAccountDetailsKey = await detailsPage.getAccountDetailsKey();
     expect(getAccountDetailsKey).toBeTruthy();
 
@@ -84,24 +118,28 @@ test.describe('Workflow history/detail account and transfer tests @local-transac
 
     const getTransactionDescription = await detailsPage.getTransactionDescription();
     expect(getTransactionDescription).toBe('testDescription');
+
+    // Link the newly created account into local store, then verify the details view reflects that state.
+    if (await detailsPage.isLinkAccountButtonVisible()) {
+      await detailsPage.clickOnLinkAccountButton();
+      await suite.loginPage.waitForToastToDisappear();
+    }
+    expect(await detailsPage.isAccountAlreadyLinkedLabelVisible()).toBe(true);
   });
 
-  test('Verify transaction details are displayed for account update tx ', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
+  test('Verify transaction details are displayed for account update tx', async () => {
+    await suite.transactionPage.ensureAccountExists();
+    const accountFromList = await suite.transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo';
     const maxAutoAssociationsNumber = '44';
-    const newTransactionId = await transactionPage.updateAccount(
+    const newTransactionId = await suite.transactionPage.updateAccount(
       accountFromList,
       maxAutoAssociationsNumber,
       updatedMemoText,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
+    await suite.transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId ?? '',
-      'Account Update',
-    );
+    await detailsPage.assertTransactionDetails(newTransactionId ?? '', 'Account Update');
     const getTransactionMemo = await detailsPage.getTransactionDetailsMemo();
     expect(getTransactionMemo).toBe('Transaction memo update');
 
@@ -113,126 +151,38 @@ test.describe('Workflow history/detail account and transfer tests @local-transac
   });
 
   test('Verify account update tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
+    await suite.transactionPage.ensureAccountExists();
+    const accountFromList = await suite.transactionPage.getFirstAccountFromList();
     const updatedMemoText = 'Updated memo again';
     const maxAutoAssociationsNumber = '44';
-    const newTransactionId = await transactionPage.updateAccount(
+    const newTransactionId = await suite.transactionPage.updateAccount(
       accountFromList,
       maxAutoAssociationsNumber,
       updatedMemoText,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(
-      newTransactionId ?? '',
-      'Account Update',
-    );
+    await suite.transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.assertTransactionDisplayed(newTransactionId ?? '', 'Account Update');
   });
 
   test('Verify account delete tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const newTransactionId = await transactionPage.deleteAccount(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(
-      newTransactionId ?? '',
-      'Account Delete',
-    );
+    await suite.transactionPage.ensureAccountExists();
+    const accountFromList = await suite.transactionPage.getFirstAccountFromList();
+    const newTransactionId = await suite.transactionPage.deleteAccount(accountFromList);
+    await suite.transactionPage.clickOnTransactionsMenuButton();
+    await detailsPage.assertTransactionDisplayed(newTransactionId ?? '', 'Account Delete');
   });
 
-  test('Verify transaction details are displayed for account delete tx ', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const newTransactionId = await transactionPage.deleteAccount(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
+  test('Verify transaction details are displayed for account delete tx', async () => {
+    await suite.transactionPage.ensureAccountExists();
+    const accountFromList = await suite.transactionPage.getFirstAccountFromList();
+    const newTransactionId = await suite.transactionPage.deleteAccount(accountFromList);
+    await suite.transactionPage.clickOnTransactionsMenuButton();
     await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId ?? '',
-      'Account Delete',
-    );
+    await detailsPage.assertTransactionDetails(newTransactionId ?? '', 'Account Delete');
     const getDeletedAccountId = await detailsPage.getDeletedAccountId();
     expect(getDeletedAccountId).toContain(accountFromList);
 
     const getTransferAccountId = await detailsPage.getAccountDeleteDetailsTransferId();
     expect(getTransferAccountId).toBeTruthy();
   });
-
-  test('Verify transfer tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const amountToBeTransferred = '1';
-    const newTransactionId = await transactionPage.transferAmountBetweenAccounts(
-      accountFromList,
-      amountToBeTransferred,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(newTransactionId ?? '', 'Transfer');
-  });
-
-  test('Verify transaction details are displayed for transfer tx ', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const amountToBeTransferred = '1';
-    const newTransactionId = await transactionPage.transferAmountBetweenAccounts(
-      accountFromList,
-      amountToBeTransferred,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId ?? '',
-      'Transfer',
-    );
-    const transferDetailsFromAccount = await detailsPage.getTransferDetailsFromAccount();
-    expect(transferDetailsFromAccount).toBeTruthy();
-
-    const transferDetailsFromAmount = await detailsPage.getTransferDetailsFromAmount();
-    expect(transferDetailsFromAmount).toContain('-' + amountToBeTransferred + ' ℏ');
-
-    const transferDetailsToAccount = await detailsPage.getTransferDetailsToAccount();
-    expect(transferDetailsToAccount).toContain(accountFromList);
-
-    const transferDetailsToAmount = await detailsPage.getTransferDetailsToAmount();
-    expect(transferDetailsToAmount).toContain(amountToBeTransferred + ' ℏ');
-  });
-
-  test('Verify approve allowance tx is displayed in history page', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const amountToBeApproved = '10';
-    const newTransactionId = await transactionPage.approveAllowance(
-      accountFromList,
-      amountToBeApproved,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.assertTransactionDisplayed(
-      newTransactionId ?? '',
-      'Account Allowance Approve',
-    );
-  });
-
-  test('Verify transaction details are displayed for approve allowance tx ', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    const amountToBeApproved = '10';
-    const newTransactionId = await transactionPage.approveAllowance(
-      accountFromList,
-      amountToBeApproved,
-    );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await detailsPage.clickOnFirstTransactionDetailsButton();
-    await detailsPage.assertTransactionDetails(
-      newTransactionId ?? '',
-      'Account Allowance Approve',
-    );
-    const allowanceOwnerAccount = await detailsPage.getAllowanceDetailsOwnerAccount();
-    expect(allowanceOwnerAccount).toBeTruthy();
-
-    const allowanceSpenderAccount = await detailsPage.getAllowanceDetailsSpenderAccount();
-    expect(allowanceSpenderAccount).toContain(accountFromList);
-
-    const allowanceAmount = await detailsPage.getAllowanceDetailsAmount();
-    expect(allowanceAmount).toContain(amountToBeApproved + ' ℏ');
-  });
-
 });

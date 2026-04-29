@@ -65,6 +65,13 @@ test.describe('Workflow history/detail file and breadcrumb tests @local-transact
 
     const isViewContentButtonVisible = await detailsPage.isViewContentsButtonVisible();
     expect(isViewContentButtonVisible).toBe(true);
+
+    // Link the newly created file into local store, then verify the details view reflects that state.
+    if (await detailsPage.isLinkFileButtonVisible()) {
+      await detailsPage.clickOnLinkFileButton();
+      await loginPage.waitForToastToDisappear();
+    }
+    expect(await detailsPage.isFileAlreadyLinkedLabelVisible()).toBe(true);
   });
 
   test('Verify file update tx is displayed in history page', async () => {
