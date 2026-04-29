@@ -34,6 +34,7 @@ onBeforeMount(async () => {
         :value="currentSetting"
         button-class="w-100"
         toggle-text="Select Format"
+        data-testid="dropdown-date-time-format"
         toggler-icon
         @update:value="handleUpdateSetting"
       />

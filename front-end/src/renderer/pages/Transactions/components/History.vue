@@ -79,7 +79,10 @@ const { recentlyUpdatedTxIds, highlightAndFetch } = useTransactionLiveHighlight(
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransactionsOnNotif(); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchTransactionsOnNotif();
+    return;
+  } // Legacy fallback
 
   const silentFetch = () => fetchTransactionsOnNotif({ silent: true });
 
@@ -105,11 +108,8 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
-  HISTORY_SORT_URL_VALUES,
-  'created_at',
-  'desc',
-);
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
+  useTableQueryState(HISTORY_SORT_URL_VALUES, 'created_at', 'desc');
 
 /* State */
 const organizationTransactions = ref<
@@ -297,10 +297,20 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
-watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
-  await fetchTransactions();
-});
+watch(
+  [
+    currentPage,
+    pageSize,
+    () => user.selectedOrganization,
+    orgFilters,
+    () => localSort.field,
+    () => localSort.direction,
+  ],
+  async () => {
+    syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
+    await fetchTransactions();
+  },
+);
 
 watch(
   () => notifications.notifications,
@@ -374,6 +384,7 @@ watch(
               </th>
               <th>
                 <div
+                  data-testid="button-sort-history-description"
                   class="table-sort-link"
                   @click="
                     handleSort(
@@ -603,7 +614,11 @@ watch(
 }
 @keyframes flash-update {
   0%,
-  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
-  100% { background-color: transparent; }
+  25% {
+    background-color: rgba(var(--bs-info-rgb), 0.45);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>
