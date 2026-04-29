@@ -914,7 +914,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
 | 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
 | 7. Transaction Groups           | 39              | 29            | 5                        | 0       | 0       | 5        | 0       | 87%        | 87%                     |
-| 8. Accounts                     | 30              | 17            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
@@ -922,66 +922,72 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
 | 15. Upgrade                     | 3               | 3             | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| **Total**                       | **465**         | **354**       | **70**                   | **3**   | **10**  | **26**   | **2**   | **92%**    | **94%**                 |
+| **Total**                       | **470**         | **359**       | **70**                   | **3**   | **10**  | **26**   | **2**   | **92%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(354 + 70 + 3) / 465 = 91.83%`, rounded to `92%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(359 + 70 + 3) / 470 = 91.91%`, rounded to `92%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(354 + 70 + 3 + 10) / 465 = 94.19%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(359 + 70 + 3 + 10) / 470 = 94.04%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
 ### Release Testing Guide
 
-The following sections highlight the most critical manual tests to perform before each release, organized by priority tier. These are the scenarios that carry the highest risk if missed.
+The following sections list every scenario that is **not yet automated** (marked `No`), organized by priority tier. All other scenarios are covered by E2E, component, or backend tests and do not require manual verification on every release.
 
 #### Tier 1 - Release Blockers (Must Pass)
 
-These scenarios directly affect user access, data integrity, and core functionality. A failure in any of these should block the release.
+These scenarios are security-critical. A failure in any of these should block the release.
 
-| Area                       | Scenarios                | Why Critical                                                          |
-| -------------------------- | ------------------------ | --------------------------------------------------------------------- |
-| **Login & Auth**           | 2.3.1-2.3.7              | Users cannot access the application if login/auth is broken           |
+| Area               | Scenario # | Description                                            | Why Critical                                               |
+| ------------------ | ---------- | ------------------------------------------------------ |------------------------------------------------------------|
+| **Key Management** | 3.2.15     | Import encrypted private key                           | Security-critical key operation with no automated coverage |
+| **Key Management** | 3.2.18     | Import external private key for a missing key          | Security-critical key operation with no automated coverage |
 
 #### Tier 2 - High Priority (Should Pass)
 
-These scenarios affect important workflows that users rely on regularly. Failures cause significant user friction.
+These scenarios affect core access paths or org collaboration workflows that users rely on regularly. Failures cause significant user friction.
 
-| Area                             | Scenarios                                 | Why Important                                                            |
-| -------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------ |
-| **Key Management**               | 3.2.15, 3.2.18, 3.2.20                    | Key operations are security-critical                                     |
-| **Transaction Lists (Personal)** | 4.3.1-4.3.3                               | Users cannot navigate or find transactions                               |
-| **Transaction Lists (Org)**      | 4.2.2, 4.2.4-4.2.7, 4.5.8-4.5.9           | Org workflow visibility, signature import, and filtering affect collaboration |
-| **Notifications**                | 12.1.1-12.1.6                             | Missed real-time notifications delay signing workflows                   |
-| **Password Change**              | 3.5.8, 3.5.10                             | Password/logout issues lock users out                                    |
+| Area                        | Scenario # | Description                                                  | Why Important                                                                                  |
+| --------------------------- | ---------- | ------------------------------------------------------------ |------------------------------------------------------------------------------------------------|
+| **Keychain Auth**           | 1.3.1      | "Sign in with Keychain" button visible when OS keychain available | Users relying on OS keychain cannot register if broken                                    |
+| **Keychain Auth**           | 1.3.2      | User can register using OS keychain                          | Users relying on OS keychain cannot register if broken                                         |
+| **Profile / Auth**          | 3.5.8      | Keychain user sees reset application form instead of password change | Keychain users see a different profile view; breakage leaves them with no auth option  |
+| **Org Transaction List**    | 4.2.2      | Notification badges appear on relevant org transaction tabs  | Missing badges cause org users to miss signing obligations                                     |
+| **Org Transaction Details** | 6.3.4      | Signature status panel shows required vs completed signatures | Signers cannot see their outstanding obligations in detail view                               |
+| **Org Transaction Details** | 6.3.5      | Approvers list is shown for org transactions                 | Approvers cannot verify who needs to approve the transaction                                   |
 
 #### Tier 3 - Medium Priority (Verify When Changed)
 
-These scenarios cover secondary workflows. Test when the related feature area has changed.
+These scenarios cover secondary workflows and infrequently used transaction types. Test when the related feature area has changed.
 
-| Area                    | Scenarios       | When to Test                                                |
-| ----------------------- | --------------- | ----------------------------------------------------------- |
-| **File Management**     | 9.1.2-9.4.3     | When file list, details, or actions UI is modified          |
-| **Public Keys Tab**     | 3.3.1-3.3.6     | When public key management UI is modified                   |
-| **Appearance/Theme**    | 3.1.2.2-3.1.2.3 | When theme switching or CSS is modified                     |
-| **Contact List Admin**  | 10.2.6-10.2.8, 10.2.10-10.2.11 | When contact management flows are modified   |
-| **Group Export**        | 7.5.5           | When signature export formats are modified                  |
-| **Transaction Cancel**  | 6.3.7           | When transaction lifecycle management is modified           |
+| Area                     | Scenario #     | Description                                                  | When to Test                                        |
+| ------------------------ | -------------- | ------------------------------------------------------------ | --------------------------------------------------- |
+| **System Transactions**  | 5.11.3, 5.11.4 | System Delete / System Undelete transactions                 | When system file transaction UI is modified         |
+| **Node Transactions**    | 5.12.1–5.12.4  | Freeze, Node Create, Node Update, Node Delete transactions   | When node transaction types are modified            |
+| **Complex Key Builder**  | 5.13.3         | User can add account-based keys at various depths            | When the complex key builder UI is modified         |
+| **Transaction Groups**   | 7.1.6          | User can set a payer account for the group                   | When group creation form is modified                |
+| **Transaction Groups**   | 7.1.7          | Valid start time picker works with running clock             | When the date/time picker is modified               |
+| **Group Export**         | 7.5.5          | Export group as .tx2 (V2 format)                             | When signature export format is modified            |
+| **Group Details**        | 7.6.2          | User can navigate between transactions in group details      | When group detail view is modified                  |
+| **Group Details**        | 7.6.4          | Approval decision state is displayed (org admin)             | When org approval flows are modified                |
+| **Notifications**        | 12.1.6         | Notification badges on transaction tabs update in real-time  | When WebSocket or notification system is modified   |
 
 #### Tier 4 - Lower Priority (Periodic Verification)
 
 These scenarios cover edge cases and error handling. Verify periodically or after infrastructure changes.
 
-| Area                           | Scenarios     | When to Test                                    |
-| ------------------------------ | ------------- | ----------------------------------------------- |
-| **Network Errors**             | 14.4.1-14.4.4 | After infrastructure, WebSocket, or API changes |
-| **Loading States**             | 14.3.1-14.3.2 | After adding new async operations               |
-| **Toast Dismissal**            | 14.1.3        | After notification system changes               |
-| **Keychain Registration**      | 1.3.1-1.3.2   | After OS integration or auth changes            |
+| Area              | Scenario #     | Description                                                     | When to Test                                       |
+| ----------------- | -------------- | --------------------------------------------------------------- |----------------------------------------------------|
+| **Route Guards**  | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
+| **Network Errors** | 14.4.1        | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
+| **Network Errors** | 14.4.2        | WebSocket reconnection after disconnect                         | After WebSocket or real-time system changes        |
+| **Network Errors** | 14.4.3        | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
+| **Network Errors** | 14.4.4        | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
 
 ### Priority Areas for Additional Automation
 
