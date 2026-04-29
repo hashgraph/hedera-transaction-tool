@@ -164,12 +164,7 @@ const handleSort = async (
   localSort.direction = direction;
   orgSort.field = organizationField;
   orgSort.direction = direction;
-  if (currentPage.value !== 1) {
-    currentPage.value = 1;
-  } else {
-    syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
-    await fetchTransactions();
-  }
+  currentPage.value = 1;
 };
 
 const handleDetails = async (id: string | number) => {
@@ -302,10 +297,20 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
-watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
-  await fetchTransactions();
-});
+watch(
+  [
+    currentPage,
+    pageSize,
+    () => user.selectedOrganization,
+    orgFilters,
+    () => localSort.field,
+    () => localSort.direction,
+  ],
+  async () => {
+    syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
+    await fetchTransactions();
+  },
+);
 
 watch(
   () => notifications.notifications,
