@@ -59,7 +59,7 @@
     "@nestjs/typeorm": "10.0.2",
     "@nestjs/websockets": "10.4.22",
     "amqp-connection-manager": "5.0.0",
-    "amqplib": "0.10.9",
+    "amqplib": "1.0.3",
     "argon2": "0.44.0",
     "axios": "1.15.2",
     "bcryptjs": "3.0.3",
