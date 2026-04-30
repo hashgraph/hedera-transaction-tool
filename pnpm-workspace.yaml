@@ -1,6 +1,9 @@
 packages:
-  - apps/*
-  - typeorm
+  - back-end
+  - back-end/apps/*
+  - back-end/typeorm
+  - front-end
+  - automation
 
 catalog:
   '@types/jest': 30.0.0
@@ -14,10 +17,20 @@ catalog:
 
 onlyBuiltDependencies:
   - '@nestjs/core'
+  - '@parcel/watcher'
+  - '@prisma/client'
+  - '@prisma/engines'
   - '@scarf/scarf'
   - argon2
+  - bcrypt
+  - better-sqlite3
   - cpu-features
+  - electron
+  - esbuild
+  - msgpackr-extract
+  - prisma
   - protobufjs
   - sqlite3
   - ssh2
   - unrs-resolver
+  - vue-demi
