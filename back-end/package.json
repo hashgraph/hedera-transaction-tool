@@ -49,7 +49,7 @@
     "@nestjs/config": "3.3.0",
     "@nestjs/core": "10.4.22",
     "@nestjs/jwt": "10.2.0",
-    "@nestjs/microservices": "10.4.22",
+    "@nestjs/microservices": "11.1.19",
     "@nestjs/passport": "10.0.3",
     "@nestjs/platform-express": "10.4.22",
     "@nestjs/platform-socket.io": "10.4.22",
