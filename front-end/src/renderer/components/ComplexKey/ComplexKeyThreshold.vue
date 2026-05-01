@@ -16,11 +16,18 @@ import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/Complex
 import ComplexKeySelectAccountModal from '@renderer/components/ComplexKey/ComplexKeySelectAccountModal.vue';
 
 /* Props */
-const props = defineProps<{
-  keyList: KeyList;
-  onRemoveKeyList: () => void;
-  depth?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    keyList: KeyList;
+    onRemoveKeyList: () => void;
+    depth?: string;
+    noThreshold?: boolean;
+  }>(),
+  {
+    depth: '0',
+    noThreshold: false,
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:keyList']);
@@ -100,7 +107,7 @@ const handleKeyListUpdate = (index: number, newKeyList: KeyList) => {
   emit('update:keyList', newParentKeyList);
 };
 
-/* Funtions */
+/* Functions */
 function emitNewKeyList(keys: Key[], threshold: number | null) {
   const newKeyList = new KeyList(keys, threshold);
   emit('update:keyList', newKeyList);
@@ -124,8 +131,8 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
           @click="areChildrenShown = !areChildrenShown"
         ></span>
       </Transition>
-      <p class="text-small text-semi-bold ms-3">Threshold</p>
-      <div class="ms-3">
+      <p class="text-small text-semi-bold ms-3">{{ noThreshold ? 'Key list' : 'Threshold' }}</p>
+      <div v-if="!noThreshold" class="ms-3">
         <select
           class="form-select is-fill"
           :value="keyList.threshold || keyList.toArray().length"
@@ -170,6 +177,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
               <span class="text-small">Public Key</span>
             </li>
             <li
+              v-if="!noThreshold"
               class="dropdown-item cursor-pointer mt-3"
               @click="handleAddThreshold"
               :data-testid="`button-complex-key-add-element-threshold-${depth}`"
@@ -222,6 +230,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
               @update:key-list="newKeyList => handleKeyListUpdate(i, newKeyList)"
               :on-remove-key-list="() => handleRemoveThreshold(i)"
               :depth="`${depth || 0}-${i}`"
+              :no-threshold="noThreshold"
             />
           </div>
         </template>
