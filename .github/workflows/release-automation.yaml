@@ -191,11 +191,6 @@ jobs:
           ref: main
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
-      - name: Reset main to release branch
-        run: |
-          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
-          git reset --hard $RELEASE_BRANCH
-
       - name: Import GPG Key
         id: gpg_importer
         uses: step-security/ghaction-import-gpg@c0b4a334b9b72bfaaebec86ef022a78a5b17f828 # v7.0.0
@@ -207,6 +202,11 @@ jobs:
           git_user_signingkey: true
           gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Reset main to release branch
+        run: |
+          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
+          git reset --hard $RELEASE_BRANCH
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
