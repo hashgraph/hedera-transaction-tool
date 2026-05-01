@@ -40,6 +40,7 @@ const { dateTimeSettingLabel } = useDateTimeSetting();
         "
         :is-required="keyRequired"
         :label="keyRequired ? 'Owner Key' : 'New Key'"
+        :noThreshold="true"
       />
     </div>
   </div>
