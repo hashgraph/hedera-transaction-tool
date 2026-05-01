@@ -44,7 +44,6 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return [];
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getNodeKeys(
     _mirrorNodeLink: string,
     _accountInfoCache: AccountByIdCache,
@@ -53,7 +52,6 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     return null;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async getNewNodeAccountKeys(
     _mirrorNodeLink: string,
     _accountInfoCache: AccountByIdCache,
