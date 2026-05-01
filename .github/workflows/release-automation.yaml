@@ -141,7 +141,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --tags
-          PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${RELEASE_TAG}$" | head -1)
+          PREV_TAG=$(git tag | grep -v "^${RELEASE_TAG}$" | sort -V | tail -1)
           if [[ -n "${{ steps.version_parser.outputs.prerelease }}" ]]; then
             RELEASE_BODY="**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${RELEASE_TAG}"
           else
@@ -150,8 +150,7 @@ jobs:
               -f previous_tag_name="${PREV_TAG}" \
               --jq '.body')
 
-            RELEASE_BODY=$(node .github/scripts/sort-release-notes.mjs \
-              "$RAW_NOTES" \
+            RELEASE_BODY=$(echo "$RAW_NOTES" | node .github/scripts/sort-release-notes.mjs \
               "https://github.com/${{ github.repository }}" \
               "$PREV_TAG" \
               "$RELEASE_TAG")
@@ -191,6 +190,11 @@ jobs:
         with:
           ref: main
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+      - name: Reset main to release branch
+        run: |
+          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
+          git reset --hard $RELEASE_BRANCH
 
       - name: Import GPG Key
         id: gpg_importer

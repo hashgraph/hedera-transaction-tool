@@ -6,7 +6,10 @@
  * Usage: node sort-release-notes.mjs <raw-notes> <repo-url> <prev-tag> <release-tag>
  */
 
-const [rawNotes, repoUrl, prevTag, releaseTag] = process.argv.slice(2);
+import { readFileSync } from 'fs';
+
+const [repoUrl, prevTag, releaseTag] = process.argv.slice(2);
+const rawNotes = readFileSync('/dev/stdin', 'utf8');
 
 const sections = {
   Features: [],
@@ -29,9 +32,10 @@ const prefixMap = [
 ];
 
 for (const line of rawNotes.split('\n')) {
-  if (!line.startsWith('* ')) continue;
-  const section = prefixMap.find(([re]) => re.test(line))?.[1] ?? 'Other';
-  sections[section].push(line);
+  if (!line.trimStart().startsWith('* ')) continue;
+  const trimmed = line.trimStart();
+  const section = prefixMap.find(([re]) => re.test(trimmed))?.[1] ?? 'Other';
+  sections[section].push(trimmed);
 }
 
 let body = '';
