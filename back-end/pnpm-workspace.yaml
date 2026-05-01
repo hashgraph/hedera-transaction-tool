@@ -10,7 +10,7 @@ catalog:
   ts-jest: 29.4.6
   ts-node: 10.9.2
   typeorm: 0.3.28
-  typescript: 5.9.3
+  typescript: 6.0.3
 
 onlyBuiltDependencies:
   - '@nestjs/core'
