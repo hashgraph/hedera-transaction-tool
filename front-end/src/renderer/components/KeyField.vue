@@ -35,9 +35,11 @@ const props = withDefaults(
     modelKey: Key | null;
     isRequired?: boolean;
     label?: string;
+    noThreshold?: boolean;
   }>(),
   {
     label: 'Key',
+    noThreshold: false,
   },
 );
 
@@ -224,6 +226,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           :model-key="modelKey"
           @update:model-key="handleComplexKeyUpdate"
           :on-save-complex-key="selectedComplexKey ? undefined : handleSaveComplexKeyButtonClick"
+          :no-threshold="noThreshold"
         >
           <ComplexKeySaveKeyModal
             v-if="saveKeyListModalShown && modelKey instanceof KeyList && true"
