@@ -418,6 +418,20 @@ export class BasePage {
   }
 
   /**
+   * Waits for an element to be attached to the DOM, regardless of visibility.
+   * Useful for inputs that are visually hidden (e.g. styled `<input role="switch">`)
+   * where waiting for `visible` would never resolve.
+   */
+  async waitForElementToBeAttached(
+    selector: string,
+    timeout: number = this.LONG_TIMEOUT,
+    index: number | null = null,
+  ): Promise<void> {
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'attached', timeout });
+  }
+
+  /**
    * Waits for an element to have the exact expected text.
    * @param {string} selector - The selector of the element to check.
    * @param {string} expectedText - The exact text expected in the element.
