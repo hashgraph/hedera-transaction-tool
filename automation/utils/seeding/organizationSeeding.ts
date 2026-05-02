@@ -105,6 +105,10 @@ export async function createSeededOrganizationSession(
 
   organizationPage.users = [];
   organizationPage.organizationRecoveryWords = [];
+  organizationPage.complexAccountId = [];
+  organizationPage.complexFileId = [];
+  organizationPage.complexFileTxId = [];
+  organizationPage.complexFileValidStart = [];
   organizationPage.transactions = [];
 
   if (options.organizationUsers) {

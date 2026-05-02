@@ -331,6 +331,12 @@ export class SettingsPage extends BasePage {
 
   async clickOnNotificationsTab(): Promise<void> {
     await this.click(this.notificationsTabButtonSelector);
+    // Tab click resolves before the panel mounts; wait for the first toggle to attach
+    // so later reads don't race the render on slow CI.
+    await this.waitForElementToBeAttached(
+      this.getNotificationToggleSelector(this.notificationToggleNameReadyForExecution),
+      this.VERY_LONG_TIMEOUT,
+    );
   }
 
   async clickOnDarkThemeTab(): Promise<void> {

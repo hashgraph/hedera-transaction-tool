@@ -6,8 +6,7 @@ import { flushRateLimiter } from '../../utils/db/databaseUtil.js';
 import type { TransactionToolApp } from '../../utils/runtime/appSession.js';
 import {
   disableNotificationsForUsers,
-  getLatestInAppNotificationStatusByEmail,
-  getNotifiedTransactionIdByEmail,
+  getInAppNotificationStatusByEmailAndTransactionId,
 } from '../../utils/db/databaseQueries.js';
 import { createSeededOrganizationSession } from '../../utils/seeding/organizationSeeding.js';
 import {
@@ -31,25 +30,27 @@ let firstUser: UserDetails;
 let secondUser: UserDetails;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
-test.describe.skip('Organization Notification tests @organization-basic', () => {
+async function gotoReadyToSignTab() {
+  await transactionPage.clickOnTransactionsMenuButton();
+  await organizationPage.clickOnReadyToSignTab();
+}
+
+// NOTE: Do not enable test.describe.configure({ mode: 'parallel' }) here.
+// Tests in this suite share a single seeded organization, complex-key account, and
+// secondUser notification state set up in beforeAll. They also depend on sequential
+// read/unread transitions of that notification — tests 1 and 4 leave it unread for
+// later reuse, tests 2/3/5 mark it read so the next test creates a fresh one.
+// Running these in parallel would race on shared DB rows and the complex account.
+test.describe('Organization Notification tests @organization-basic', () => {
   test.slow();
 
   test.beforeAll(async () => {
-    ({
-      app,
-      window,
-      transactionPage,
-      organizationPage,
-      loginPage,
-      isolationContext,
-    } = await setupOrganizationSuiteApp(test.info()));
-  });
+    ({ app, window, transactionPage, organizationPage, loginPage, isolationContext } =
+      await setupOrganizationSuiteApp(test.info()));
 
-  test.beforeEach(async ({}, testInfo) => {
-    // Flush rate limiter before each test to prevent "too many requests" errors
     await flushRateLimiter();
 
-    organizationNickname = resolveOrganizationNickname(testInfo.title);
+    organizationNickname = resolveOrganizationNickname('organization-notification-suite');
     const seededSession = await createSeededOrganizationSession(
       window,
       loginPage,
@@ -66,16 +67,18 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
 
     await disableNotificationsForUsers([firstUser.email, secondUser.email], true);
 
-    // Set complex account for transactions
+    // Complex-key account is reused across every test in this suite.
+    // ensureNotificationStateForUser re-funds it via updateAccount each time it
+    // needs to generate a fresh notification.
     await organizationPage.addComplexKeyAccountForTransactions(globalCredentials.password);
   });
 
-  test.afterEach(async () => {
-    try {
-      await organizationPage.logoutFromOrganization();
-    } catch {
-      // The next beforeEach recreates the full org fixture from scratch.
-    }
+  test.beforeEach(async () => {
+    // Flush rate limiter before each test to prevent "too many requests" errors.
+    // The org, users, and complex-key account are seeded once in beforeAll and
+    // shared across tests; ensureNotificationStateForUser handles re-login and
+    // either reuses an existing unread notification or creates a new one.
+    await flushRateLimiter();
   });
 
   test.afterAll(async () => {
@@ -89,61 +92,139 @@ test.describe.skip('Organization Notification tests @organization-basic', () => 
   });
 
   test('Verify notification is saved in the db and marked correctly', async () => {
-    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+    const notifiedTransactionId = await organizationPage.ensureNotificationStateForUser(
+      firstUser,
+      secondUser,
+      globalCredentials,
+    );
+    expect(notifiedTransactionId).toBeTruthy();
 
-    let status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
-    expect(status?.isRead).toBe(false);
-    expect(status?.isInAppNotified).toBe(true);
+    await expect
+      .poll(
+        async () => {
+          const status = await getInAppNotificationStatusByEmailAndTransactionId(
+            secondUser.email,
+            notifiedTransactionId!,
+          );
+          return status?.isRead === false && status?.isInAppNotified === true;
+        },
+        {
+          timeout: organizationPage.getVeryLongTimeout(),
+          intervals: [organizationPage.getShortTimeout()],
+        },
+      )
+      .toBe(true);
 
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
-    // Wait for notifications to be fetched and linked to transaction rows
-    await expect.poll(
-      () => getNotifiedTransactionIdByEmail(secondUser.email),
-      { timeout: 5000, intervals: [500] },
-    ).toBeTruthy();
     // Click Details to VIEW the transaction - this marks the notification as read
-    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
+    await organizationPage.openReadyToSignDetailsForTransaction(notifiedTransactionId!);
 
     // Wait for backend to process the "mark as read" request and update DB
-    await expect.poll(
-      async () => (await getLatestInAppNotificationStatusByEmail(secondUser.email))?.isRead,
-      { timeout: 10000, intervals: [500] },
-    ).toBe(true);
+    await expect
+      .poll(
+        async () =>
+          (
+            await getInAppNotificationStatusByEmailAndTransactionId(
+              secondUser.email,
+              notifiedTransactionId!,
+            )
+          )?.isRead,
+        {
+          timeout: organizationPage.getVeryLongTimeout(),
+          intervals: [organizationPage.getShortTimeout()],
+        },
+      )
+      .toBe(true);
   });
 
   test('Verify tab notification is cleared after the transaction is seen', async () => {
-    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+    const notifiedTransactionId = await organizationPage.ensureNotificationStateForUser(
+      firstUser,
+      secondUser,
+      globalCredentials,
+    );
+    expect(notifiedTransactionId).toBeTruthy();
 
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
-    // Wait for notifications to be fetched and linked to transaction rows
-    await expect.poll(
-      () => getNotifiedTransactionIdByEmail(secondUser.email),
-      { timeout: 5000, intervals: [500] },
-    ).toBeTruthy();
     // Click Details to VIEW the transaction - this marks the notification as read and clears the indicator
-    await organizationPage.clickOnReadyToSignDetailsButtonByIndex(0);
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    await organizationPage.openReadyToSignDetailsForTransaction(notifiedTransactionId!);
 
-    expect(await organizationPage.isNotificationNumberHidden()).toBe(true);
+    await expect
+      .poll(() => organizationPage.isNotificationNumberHidden(), {
+        timeout: organizationPage.getLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(true);
   });
 
   test('Verify notification element is shown next to the transaction', async () => {
-    await organizationPage.ensureNotificationStateForUser(firstUser, secondUser, globalCredentials);
+    const notifiedTransactionId = await organizationPage.ensureNotificationStateForUser(
+      firstUser,
+      secondUser,
+      globalCredentials,
+    );
+    expect(notifiedTransactionId).toBeTruthy();
 
-    const notifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
-    expect(notifiedTransactionId).not.toBeNull();
+    await gotoReadyToSignTab();
+    await expect
+      .poll(() => organizationPage.hasNotificationForTransaction(notifiedTransactionId!), {
+        timeout: organizationPage.getVeryLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(true);
+  });
 
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.clickOnReadyToSignTab();
-    // Wait for notifications to be fetched and linked to transaction rows
-    await expect.poll(
-      () => getNotifiedTransactionIdByEmail(secondUser.email),
-      { timeout: 5000, intervals: [500] },
-    ).toBeTruthy();
+  test('Verify Ready to Sign tab badge count tracks notifications as transactions are viewed', async () => {
+    const firstTransactionId = await organizationPage.ensureNotificationStateForUser(
+      firstUser,
+      secondUser,
+      globalCredentials,
+    );
+    expect(firstTransactionId).toBeTruthy();
 
-    const hasNotification = await organizationPage.hasNotificationForTransaction(notifiedTransactionId!);
-    expect(hasNotification).toBe(true);
+    await gotoReadyToSignTab();
+
+    await expect
+      .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+        timeout: organizationPage.getVeryLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(1);
+
+    const secondTransactionId = await organizationPage.createAdditionalNotificationForUser(
+      firstUser,
+      secondUser,
+      globalCredentials,
+      firstTransactionId!,
+    );
+    expect(secondTransactionId).toBeTruthy();
+    expect(secondTransactionId).not.toBe(firstTransactionId);
+
+    await gotoReadyToSignTab();
+
+    await expect
+      .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+        timeout: organizationPage.getVeryLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(2);
+
+    await organizationPage.openReadyToSignDetailsForTransaction(firstTransactionId!);
+    await gotoReadyToSignTab();
+
+    await expect
+      .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+        timeout: organizationPage.getVeryLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(1);
+
+    await organizationPage.openReadyToSignDetailsForTransaction(secondTransactionId!);
+    await gotoReadyToSignTab();
+
+    await expect
+      .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+        timeout: organizationPage.getVeryLongTimeout(),
+        intervals: [organizationPage.getShortTimeout()],
+      })
+      .toBe(0);
   });
 });

@@ -794,12 +794,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                          | Automated | Covered By                                                       |
 | ------ | ----------------------------------------------------------------- | --------- | ---------------------------------------------------------------- |
-| 12.1.1 | Notification indicator visible in organization dropdown           | Skipped   | Verify notification is visible in the organization dropdown      |
-| 12.1.2 | Notification saved in DB with isRead=false, isInAppNotified=true  | Skipped   | Verify notification is saved in the db and marked correctly      |
-| 12.1.3 | Notification marked isRead=true after viewing transaction details | Skipped   | Verify tab notification is cleared after the transaction is seen |
-| 12.1.4 | Tab notification number cleared after viewing                     | Skipped   | Verify tab notification is cleared after the transaction is seen |
-| 12.1.5 | Notification icon visible on specific transaction row             | Skipped   | Verify notification element is shown next to the transaction     |
-| 12.1.6 | Notification badges on transaction tabs update in real-time       | No        |                                                                  |
+| 12.1.1 | Notification indicator visible in organization dropdown           | Yes       | Verify notification is visible in the organization dropdown      |
+| 12.1.2 | Notification saved in DB with isRead=false, isInAppNotified=true  | Yes       | Verify notification is saved in the db and marked correctly      |
+| 12.1.3 | Notification marked isRead=true after viewing transaction details | Yes       | Verify tab notification is cleared after the transaction is seen |
+| 12.1.4 | Tab notification number cleared after viewing                     | Yes       | Verify tab notification is cleared after the transaction is seen |
+| 12.1.5 | Notification icon visible on specific transaction row             | Yes       | Verify notification element is shown next to the transaction     |
+| 12.1.6 | Notification badges on transaction tabs update in real-time       | Yes       | Verify Ready to Sign tab badge count tracks notifications as transactions are viewed |
 
 ### 12.2 Email Notification Preferences
 
@@ -918,20 +918,20 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
-| 12. Notifications               | 10              | 4             | 0                        | 0       | 5       | 1        | 0       | 40%        | 90%                     |
+| 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
 | 15. Upgrade                     | 3               | 3             | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| **Total**                       | **470**         | **359**       | **70**                   | **3**   | **10**  | **26**   | **2**   | **92%**    | **94%**                 |
+| **Total**                       | **470**         | **365**       | **70**                   | **3**   | **5**   | **25**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(359 + 70 + 3) / 470 = 91.91%`, rounded to `92%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 470 = 93.19%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(359 + 70 + 3 + 10) / 470 = 94.04%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 470 = 94.26%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -975,7 +975,6 @@ These scenarios cover secondary workflows and infrequently used transaction type
 | **Group Export**         | 7.5.5          | Export group as .tx2 (V2 format)                             | When signature export format is modified            |
 | **Group Details**        | 7.6.2          | User can navigate between transactions in group details      | When group detail view is modified                  |
 | **Group Details**        | 7.6.4          | Approval decision state is displayed (org admin)             | When org approval flows are modified                |
-| **Notifications**        | 12.1.6         | Notification badges on transaction tabs update in real-time  | When WebSocket or notification system is modified   |
 
 #### Tier 4 - Lower Priority (Periodic Verification)
 
@@ -991,8 +990,7 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 
 ### Priority Areas for Additional Automation
 
-1. **Notifications (40%)** - Re-enable or replace skipped in-app notification tests (12.1.1-12.1.5); add real-time notification badge coverage (12.1.6)
-2. **Error Handling / Edge Cases (65%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
-3. **Transactions List (88%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
-4. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
-5. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)
+1. **Error Handling / Edge Cases (65%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+2. **Transactions List (88%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
+3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
+4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)
