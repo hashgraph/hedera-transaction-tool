@@ -1133,4 +1133,5 @@ async function seedData(): Promise<void> {
 const isMainModule = process.argv[1] === __filename;
 if (isMainModule) {
   await seedData();
+  setImmediate(() => process.exit(0));
 }
