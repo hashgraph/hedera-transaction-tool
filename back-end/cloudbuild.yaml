@@ -1,3 +1,7 @@
+# Build context is the repo root: the Dockerfiles need the root pnpm-lock.yaml,
+# pnpm-workspace.yaml, and the front-end/automation package manifests. The Cloud
+# Build trigger must be configured to use the repository root as its source
+# (not back-end/).
 steps:
   # API service
   - name: 'gcr.io/cloud-builders/docker'
@@ -7,7 +11,7 @@ steps:
         '-t',
         'gcr.io/transaction-tool-dev/api',
         '-f',
-        'apps/api/Dockerfile',
+        'back-end/apps/api/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
@@ -21,7 +25,7 @@ steps:
         '-t',
         'gcr.io/transaction-tool-dev/chain',
         '-f',
-        'apps/chain/Dockerfile',
+        'back-end/apps/chain/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
@@ -35,7 +39,7 @@ steps:
         '-t',
         'gcr.io/transaction-tool-dev/notifications',
         '-f',
-        'apps/notifications/Dockerfile',
+        'back-end/apps/notifications/Dockerfile',
         '.'
       ]
   - name: 'gcr.io/cloud-builders/docker'
