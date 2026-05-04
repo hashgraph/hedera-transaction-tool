@@ -131,6 +131,16 @@ function acquireSingleInstanceLock(): boolean {
   return app.requestSingleInstanceLock();
 }
 
+// Pin the Electron app name so `app.getPath('userData')` remains
+// `~/.config/hedera-transaction-tool/` (Linux) / `Application Support/hedera-transaction-tool/`
+// (macOS) / `AppData/Roaming/hedera-transaction-tool/` (Windows) regardless of the
+// npm package name. The workspace package was renamed to `front-end` for pnpm
+// filter ergonomics; without this pin Electron would derive the userData
+// directory from `package.json#name`, silently relocating the database, logs,
+// and automation assertions in `automation/utils/db/databaseUtil.ts`.
+// MUST run before any code reads `app.getPath('userData')` (it's cached on first read).
+app.setName('hedera-transaction-tool');
+
 configurePlaywrightUserDataPath();
 initLogger();
 configureAutomationCommandLineSwitches();

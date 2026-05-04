@@ -50,6 +50,11 @@ mac:
         - universal
   mergeASARs: false
 linux:
+  # Pin the linux-unpacked binary name so it doesn't follow package.json#name.
+  # The npm package was renamed `front-end` (workspace ergonomics), but downstream
+  # consumers — CI EXECUTABLE_PATH, snap packaging, desktop shortcuts — still expect
+  # the historical `hedera-transaction-tool` binary.
+  executableName: hedera-transaction-tool
   target:
     - snap
 pkg:
