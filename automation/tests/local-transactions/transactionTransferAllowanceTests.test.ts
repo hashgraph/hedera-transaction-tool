@@ -138,4 +138,21 @@ test.describe('Transaction transfer and allowance execution tests @local-transac
 
     expect(isTxExistingInDb).toBe(true);
   });
+
+  // 5.5.10: Insufficient balance inline error shown per sender row when amount exceeds balance.
+  // Lives in @local-transactions because it depends on a real mirror-node balance lookup.
+  test('Verify Insufficient balance error is shown when transfer amount exceeds balance', async () => {
+    await transactionPage.ensureAccountExists();
+    const receiverAccount = await transactionPage.getFirstAccountFromList();
+    await loginPage.waitForToastToDisappear();
+    await transactionPage.openTransferForm();
+    const exceedingAmount = '99999999999';
+    await transactionPage.fillInTransferFromAccountId();
+    await transactionPage.fillInTransferAmountFromAccount(exceedingAmount);
+    await transactionPage.fillInTransferToAccountId(receiverAccount);
+    await transactionPage.clickOnAddTransferFromButton();
+    await transactionPage.fillInTransferAmountToAccount(exceedingAmount);
+    await transactionPage.clickOnAddTransferToButton();
+    await transactionPage.waitForInsufficientBalanceError();
+  });
 });

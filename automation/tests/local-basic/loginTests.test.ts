@@ -1,7 +1,13 @@
 import { Page } from '@playwright/test';
 import { test, expect } from '@playwright/test';
-import { resetAppState, type TransactionToolApp } from '../../utils/runtime/appSession.js';
+import {
+  closeApp,
+  resetAppState,
+  setupApp,
+  type TransactionToolApp,
+} from '../../utils/runtime/appSession.js';
 import { LoginPage } from '../../pages/LoginPage.js';
+import { TransactionPage } from '../../pages/TransactionPage.js';
 import { createSeededLocalUserSession } from '../../utils/seeding/localUserSeeding.js';
 import {
   setupLocalSuiteApp,
@@ -13,6 +19,7 @@ let app: TransactionToolApp;
 let window: Page;
 const globalCredentials = { email: '', password: '' };
 let loginPage: LoginPage;
+let transactionPage: TransactionPage;
 let isolationContext: ActivatedTestIsolationContext | null = null;
 
 test.describe('Login tests @local-basic', () => {
@@ -26,6 +33,7 @@ test.describe('Login tests @local-basic', () => {
 
   test.beforeEach(async () => {
     loginPage = new LoginPage(window);
+    transactionPage = new TransactionPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage);
     globalCredentials.email = seededUser.email;
     globalCredentials.password = seededUser.password;
@@ -57,6 +65,24 @@ test.describe('Login tests @local-basic', () => {
     await loginPage.login(globalCredentials.email, globalCredentials.password);
     const isButtonVisible = await loginPage.isSettingsButtonVisible();
     expect(isButtonVisible).toBe(true);
+    expect(await transactionPage.isCreateNewTransactionButtonVisible()).toBe(true);
+  });
+
+  test('Verify "Keep me logged in" checkbox persists session', async () => {
+    expect(await loginPage.isKeepLoggedInChecked()).toBe(false);
+    await loginPage.clickOnKeepLoggedInCheckbox();
+    expect(await loginPage.isKeepLoggedInChecked()).toBe(true);
+
+    await loginPage.login(globalCredentials.email, globalCredentials.password);
+    expect(await transactionPage.isCreateNewTransactionButtonVisible()).toBe(true);
+
+    await closeApp(app);
+    ({ app, window } = await setupApp({ preserveLocalState: true }));
+    loginPage = new LoginPage(window);
+    transactionPage = new TransactionPage(window);
+
+    expect(await loginPage.isSettingsButtonVisible()).toBe(true);
+    expect(await transactionPage.isCreateNewTransactionButtonVisible(10000)).toBe(true);
   });
 
   test('Verify resetting account', async () => {

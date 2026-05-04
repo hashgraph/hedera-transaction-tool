@@ -1,8 +1,22 @@
 import { DataSource } from 'typeorm';
 import { CachedAccount, CachedNode } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
+import { enableDiag } from '../../../../../test-utils/diag-enabled';
 import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';
+
+const DIAG_TAG = '[cache.queries.spec]';
+function diag(message: string, extra?: Record<string, unknown>) {
+  if (!enableDiag) return;
+  const payload = {
+    ts: new Date().toISOString(),
+    pid: process.pid,
+    testName: expect.getState?.().currentTestName ?? null,
+    ...extra,
+  };
+  // eslint-disable-next-line no-console
+  console.log(`${DIAG_TAG} ${message}`, payload);
+}
 
 describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
   let dataSource: DataSource;
@@ -10,19 +24,64 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
   let sqlBuilder: SqlBuilderService;
 
   beforeAll(async () => {
-    const testDb = await createTestPostgresDataSource();
-    dataSource = testDb.dataSource;
-    cleanup = testDb.cleanup;
-    sqlBuilder = new SqlBuilderService(dataSource.manager);
-  }, 60000);
+    const start = Date.now();
+    diag('beforeAll:start');
+    try {
+      const testDb = await createTestPostgresDataSource();
+      dataSource = testDb.dataSource;
+      cleanup = testDb.cleanup;
+      sqlBuilder = new SqlBuilderService(dataSource.manager);
+      diag('beforeAll:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('beforeAll:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        name: (err as Error)?.name,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
+  }, 90000);
 
   afterAll(async () => {
-    await cleanup();
+    const start = Date.now();
+    diag('afterAll:start');
+    try {
+      if (cleanup) {
+        await cleanup();
+      } else {
+        diag('afterAll:skip (cleanup undefined — beforeAll likely failed)');
+      }
+      diag('afterAll:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('afterAll:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
+  });
+
+  beforeEach(() => {
+    diag('beforeEach');
   });
 
   afterEach(async () => {
-    await dataSource.getRepository(CachedNode).createQueryBuilder().delete().execute();
-    await dataSource.getRepository(CachedAccount).createQueryBuilder().delete().execute();
+    const start = Date.now();
+    diag('afterEach:start');
+    try {
+      await dataSource.getRepository(CachedNode).createQueryBuilder().delete().execute();
+      await dataSource.getRepository(CachedAccount).createQueryBuilder().delete().execute();
+      diag('afterEach:done', { elapsedMs: Date.now() - start });
+    } catch (err) {
+      diag('afterEach:error', {
+        elapsedMs: Date.now() - start,
+        message: (err as Error)?.message,
+        stack: (err as Error)?.stack,
+      });
+      throw err;
+    }
   });
 
   describe('INSERT path - new records', () => {

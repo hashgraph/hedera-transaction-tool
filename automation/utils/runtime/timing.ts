@@ -2,19 +2,7 @@ export function calculateTimeout(totalUsers: number, timePerUser: number): numbe
   return totalUsers * timePerUser * 2000;
 }
 
-/**
- * Waits until a transaction start time becomes valid.
- * Supports both Hedera UI format and ISO date formats.
- */
-export async function waitForValidStart(
-  dateTimeString: string,
-  bufferSeconds: number = 15,
-): Promise<void> {
-  if (!dateTimeString || !dateTimeString.trim()) {
-    console.log('waitForValidStart: start time is empty. Skipping wait.');
-    return;
-  }
-
+function normalizeValidStartDateString(dateTimeString: string): string {
   let normalizedDate = dateTimeString.trim();
 
   if (normalizedDate.endsWith(' UTC')) {
@@ -29,6 +17,18 @@ export async function waitForValidStart(
     normalizedDate = `${normalizedDate}Z`;
   }
 
+  return normalizedDate;
+}
+
+export function calculateWaitTimeUntilValidStart(
+  dateTimeString: string,
+  bufferSeconds: number = 15,
+): number {
+  if (!dateTimeString || !dateTimeString.trim()) {
+    return 0;
+  }
+
+  const normalizedDate = normalizeValidStartDateString(dateTimeString);
   const targetDate = new Date(normalizedDate);
 
   if (isNaN(targetDate.getTime())) {
@@ -39,7 +39,23 @@ export async function waitForValidStart(
 
   const now = new Date();
   const timeDifference = targetDate.getTime() - now.getTime();
-  const waitTime = Math.max(timeDifference + bufferSeconds * 1000, 0);
+  return Math.max(timeDifference + bufferSeconds * 1000, 0);
+}
+
+/**
+ * Waits until a transaction start time becomes valid.
+ * Supports both Hedera UI format and ISO date formats.
+ */
+export async function waitForValidStart(
+  dateTimeString: string,
+  bufferSeconds: number = 15,
+): Promise<void> {
+  if (!dateTimeString || !dateTimeString.trim()) {
+    console.log('waitForValidStart: start time is empty. Skipping wait.');
+    return;
+  }
+
+  const waitTime = calculateWaitTimeUntilValidStart(dateTimeString, bufferSeconds);
 
   if (waitTime > 0) {
     const seconds = Math.ceil(waitTime / 1000);

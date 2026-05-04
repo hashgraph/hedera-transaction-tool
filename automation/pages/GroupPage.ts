@@ -84,6 +84,10 @@ export class GroupPage extends BasePage {
     await this.click(this.signAndExecuteButtonSelector);
   }
 
+  async isSignAndExecuteButtonDisabled() {
+    return await this.isDisabled(this.signAndExecuteButtonSelector);
+  }
+
   async clickOnAddTransactionButton() {
     await this.click(this.addTransactionButtonSelector);
   }
@@ -129,7 +133,49 @@ export class GroupPage extends BasePage {
   }
 
   async clickAddToGroupButton() {
-    await this.click(this.addToGroupButtonSelector, 0);
+    const buttonCount = await this.getElement(this.addToGroupButtonSelector).count();
+
+    for (let index = 0; index < buttonCount; index++) {
+      const isVisible = await this.isElementVisible(
+        this.addToGroupButtonSelector,
+        index,
+        this.SHORT_TIMEOUT,
+      );
+      const isDisabled = isVisible
+        ? await this.isDisabled(this.addToGroupButtonSelector, index, this.SHORT_TIMEOUT)
+        : true;
+
+      if (isVisible && !isDisabled) {
+        await this.click(this.addToGroupButtonSelector, index, this.SHORT_TIMEOUT);
+        return;
+      }
+    }
+
+    throw new Error(
+      `No visible and enabled "${this.addToGroupButtonSelector}" button was found among ${buttonCount} element(s).`,
+    );
+  }
+
+  async isAddToGroupButtonEnabled() {
+    const buttonCount = await this.getElement(this.addToGroupButtonSelector).count();
+
+    for (let index = 0; index < buttonCount; index++) {
+      const isVisible = await this.isElementVisible(
+        this.addToGroupButtonSelector,
+        index,
+        this.SHORT_TIMEOUT,
+      );
+      if (!isVisible) continue;
+
+      const isDisabled = await this.isDisabled(
+        this.addToGroupButtonSelector,
+        index,
+        this.SHORT_TIMEOUT,
+      );
+      return !isDisabled;
+    }
+
+    return false;
   }
 
   async getTransactionType(index: number) {
@@ -270,12 +316,25 @@ export class GroupPage extends BasePage {
     return this.isElementVisible(this.emptyTransactionTextSelector);
   }
 
+  async getEmptyTransactionText() {
+    return ((await this.getText(this.emptyTransactionTextSelector)) ?? '').trim();
+  }
+
   async clickOnDeleteAllButton() {
     await this.click(this.deleteAllButtonSelector);
   }
 
   async clickOnConfirmDeleteAllButton() {
     await this.click(this.confirmDeleteAllButtonSelector);
+  }
+
+  async clickOnCancelDeleteAllButton() {
+    const confirmButton = this.getElement(this.confirmDeleteAllButtonSelector);
+    await confirmButton.waitFor({ state: 'visible', timeout: this.LONG_TIMEOUT });
+    const modalContent = confirmButton
+      .locator('xpath=ancestor::*[contains(@class,"modal-content")]')
+      .first();
+    await modalContent.getByRole('button', { name: 'Cancel', exact: true }).click();
   }
 
   async clickOnConfirmGroupTransactionButton() {

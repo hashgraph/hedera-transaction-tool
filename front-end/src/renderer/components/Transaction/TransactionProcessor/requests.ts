@@ -80,7 +80,6 @@ export class CustomRequest extends BaseRequest {
     this.description = opts.description ?? '';
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async deriveRequestKey(_mirrorNodeBaseURL: string, _accountInfoCache: AccountByIdCache) {
     throw new Error('Not implemented');
   }

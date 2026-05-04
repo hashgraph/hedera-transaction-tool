@@ -2,7 +2,6 @@ import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
-import { waitForValidStart } from '../../utils/runtime/timing.js';
 import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 import { registerOrganizationAdvancedSuiteHooks } from '../helpers/bootstrap/organizationAdvancedSuiteHooks.js';
 
@@ -15,9 +14,11 @@ let loginPage: LoginPage;
 
 let firstUser: UserDetails;
 let complexKeyAccountId: string;
+const COMPLEX_FILE_EXECUTION_DELAY_SECONDS = 30;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
 test.describe('Organization Transaction execution-type tests @organization-advanced', () => {
+  test.describe.configure({ mode: 'parallel' });
   registerOrganizationAdvancedSuiteHooks({
     resolveOrganizationNickname,
     onSuiteReady: suite => {
@@ -51,10 +52,10 @@ test.describe('Organization Transaction execution-type tests @organization-advan
       firstUser.password,
       globalCredentials.password,
     );
-    await waitForValidStart(validStart ?? '');
-
-    await organizationPage.clickOnHistoryTab();
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Transfer');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -63,10 +64,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
   });
 
   test('Verify user can execute approve allowance with complex account', async () => {
-    const { txId, validStart } = await organizationPage.approveAllowance(
-      complexKeyAccountId,
-      '10',
-    );
+    const { txId, validStart } = await organizationPage.approveAllowance(complexKeyAccountId, '10');
     await organizationPage.closeDraftModal();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();
@@ -80,10 +78,10 @@ test.describe('Organization Transaction execution-type tests @organization-advan
       firstUser.password,
       globalCredentials.password,
     );
-    await waitForValidStart(validStart ?? '');
-
-    await organizationPage.clickOnHistoryTab();
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Allowance Approve');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -91,12 +89,12 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test.skip('Verify user can execute file create with complex account', async () => {
+  test('Verify user can execute file create with complex account', async () => {
     const { txId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
+      COMPLEX_FILE_EXECUTION_DELAY_SECONDS,
       globalCredentials,
       firstUser,
-      600,
     );
     const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
     expect(transactionDetails?.transactionId).toBe(txId);
@@ -106,12 +104,12 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test.skip('Verify user can execute file update with complex account', async () => {
+  test('Verify user can execute file update with complex account', async () => {
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
+      COMPLEX_FILE_EXECUTION_DELAY_SECONDS,
       globalCredentials,
       firstUser,
-      600,
     );
     const { txId, validStart } = await organizationPage.fileUpdate(
       fileId ?? '',
@@ -120,9 +118,10 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     );
     await organizationPage.closeDraftModal();
     await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
-    await waitForValidStart(validStart ?? '');
-
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('File Update');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -130,12 +129,12 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     expect(transactionDetails?.status).toBe('SUCCESS');
   });
 
-  test.skip('Verify user can execute file append with complex account', async () => {
+  test('Verify user can execute file append with complex account', async () => {
     const { fileId } = await organizationPage.ensureComplexFileExists(
       complexKeyAccountId,
+      COMPLEX_FILE_EXECUTION_DELAY_SECONDS,
       globalCredentials,
       firstUser,
-      600,
     );
     const { txId, validStart } = await organizationPage.fileAppend(
       fileId ?? '',
@@ -144,9 +143,10 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     );
     await organizationPage.closeDraftModal();
     await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
-    await waitForValidStart(validStart ?? '');
-
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('File Append');
     expect(transactionDetails?.validStart).toBeTruthy();
@@ -158,9 +158,10 @@ test.describe('Organization Transaction execution-type tests @organization-advan
     const { txId, validStart } = await organizationPage.deleteAccount(complexKeyAccountId);
     await organizationPage.closeDraftModal();
     await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
-    await waitForValidStart(validStart ?? '');
-
-    const transactionDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
     expect(transactionDetails?.transactionId).toBe(txId);
     expect(transactionDetails?.transactionType).toBe('Account Delete');
     expect(transactionDetails?.validStart).toBeTruthy();

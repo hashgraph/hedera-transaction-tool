@@ -51,7 +51,7 @@ onBeforeUnmount(() => {
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
     inert
-    data-testid="modal-confirm-transaction"
+    data-testid="modal-global-loader"
     :style="{ display: show ? 'block' : 'none' }"
   >
     <div class="modal-dialog modal-dialog-centered flex-centered" ref="modalRef">

@@ -24,6 +24,8 @@ export async function setupOrganizationAdvancedFixture(
 ): Promise<OrganizationAdvancedFixture> {
   organizationPage.complexAccountId = [];
   organizationPage.complexFileId = [];
+  organizationPage.complexFileTxId = [];
+  organizationPage.complexFileValidStart = [];
   organizationPage.transactions = [];
 
   const seededSession = await createSeededOrganizationSession(

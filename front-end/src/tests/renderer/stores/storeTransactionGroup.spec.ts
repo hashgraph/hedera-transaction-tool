@@ -2,16 +2,20 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 
-vi.mock('@hiero-ledger/sdk', () => ({
-  Transaction: {
-    fromBytes: vi.fn(() => ({
-      setTransactionId: vi.fn(),
-      toBytes: vi.fn(() => new Uint8Array([1, 2, 3])),
-    })),
-  },
-  KeyList: { from: vi.fn() },
-  PublicKey: { fromString: vi.fn() },
-}));
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
+  const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
+  return {
+    ...actual,
+    Transaction: {
+      fromBytes: vi.fn(() => ({
+        setTransactionId: vi.fn(),
+        toBytes: vi.fn(() => new Uint8Array([1, 2, 3])),
+      })),
+    },
+    KeyList: { from: vi.fn() },
+    PublicKey: { fromString: vi.fn() },
+  };
+});
 
 vi.mock('@renderer/utils/sdk', () => ({
   createTransactionId: vi.fn(() => 'mock-tx-id'),

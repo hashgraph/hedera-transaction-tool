@@ -34,11 +34,12 @@ const contactsStore = {
   ],
 };
 
-vi.mock('@hiero-ledger/sdk', () => {
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
+  const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
   class Transaction {
     static fromBytes = vi.fn(() => new Transaction());
   }
-  return { Transaction };
+  return { ...actual, Transaction };
 });
 
 vi.mock('vue-router', () => ({

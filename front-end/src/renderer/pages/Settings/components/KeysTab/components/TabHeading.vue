@@ -141,6 +141,7 @@ watch(
         @update:value="emit('update:selectedRecoveryPhrase', $event)"
         :items="recoveryPhraseHashes"
         :toggle-text="Tabs.RECOVERY_PHRASE"
+        :data-testid="'dropdown-recovery-phrase-filter'"
         :active="selectedTab === Tabs.RECOVERY_PHRASE"
         :color="'primary'"
         :button-class="['rounded-3', selectedTab !== Tabs.RECOVERY_PHRASE ? 'text-body' : '']"
