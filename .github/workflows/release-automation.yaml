@@ -165,7 +165,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --tags
-          PREV_TAG=$(git tag | grep -v "^${RELEASE_TAG}$" | sort -V | tail -1)
+          PREV_TAG=$(git tag | grep -v "^${RELEASE_TAG}$" | grep -v -- '-' | sort -V | tail -1)
           if [[ -n "${{ steps.version_parser.outputs.prerelease }}" ]]; then
             RELEASE_BODY="**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${RELEASE_TAG}"
           else
