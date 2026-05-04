@@ -45,25 +45,35 @@ and is at your own risk.
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd hedera-transaction-tool/front-end
+cd hedera-transaction-tool
 ```
 
 ## 2. Install dependencies
+
+The repository is a single pnpm workspace; install once from the root for all modules (`back-end`, `front-end`, `automation`):
 
 ```bash
 pnpm install
 ```
 
+Front-end-specific scripts can then be run via the workspace filter (from any directory):
+
+```bash
+pnpm -F front-end <script>          # e.g. pnpm -F front-end dev
+```
+
+Or by `cd front-end` and running the script as before — both work.
+
 ## 3. Generate Prisma client library
 
 ```bash
-pnpm generate:database
+pnpm -F front-end generate:database
 ```
 
 ## 4. Start developing
 
 ```bash
-pnpm dev
+pnpm -F front-end dev
 ```
 
 ## 5. Build for distribution

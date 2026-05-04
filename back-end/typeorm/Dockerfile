@@ -4,26 +4,30 @@ WORKDIR /usr/src/app
 
 RUN npm install -g pnpm
 
-# Copy workspace config and root package files
-COPY pnpm-workspace.yaml ./
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-COPY tsconfig.json ./
-COPY nest-cli.json ./
+# Root workspace files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 
-# Copy source files
-COPY typeorm ./typeorm
-COPY libs ./libs
+# Workspace package manifests
+COPY front-end/package.json ./front-end/
+COPY automation/package.json ./automation/
+COPY back-end/package.json back-end/tsconfig.json back-end/nest-cli.json ./back-end/
+COPY back-end/scripts ./back-end/scripts
+COPY back-end/typeorm/package.json ./back-end/typeorm/
+COPY back-end/apps/api/package.json ./back-end/apps/api/
+COPY back-end/apps/chain/package.json ./back-end/apps/chain/
+COPY back-end/apps/notifications/package.json ./back-end/apps/notifications/
 
-RUN pnpm install -F typeorm --ignore-scripts
+ENV SKIP_NOTICE_GEN=true
 
-# Build the common library (contains entities)
-RUN pnpm build:common
+RUN pnpm install --filter "back-end..." --filter "typeorm..." --frozen-lockfile --ignore-scripts
 
-# Build migrations
-RUN pnpm build:migrations
+# Copy source for libs (entities) and typeorm
+COPY back-end/libs ./back-end/libs
+COPY back-end/typeorm ./back-end/typeorm
 
-# Production stage - minimal runtime image
+WORKDIR /usr/src/app/back-end
+RUN pnpm build:common && pnpm build:migrations
+
 FROM node:22.12.0-alpine
 
 WORKDIR /usr/src/app
@@ -36,17 +40,25 @@ RUN npm install -g pnpm
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /usr/src/app/.npmrc ./.npmrc
 
-COPY --from=builder /usr/src/app/typeorm/package.json ./typeorm/package.json
+COPY --from=builder /usr/src/app/front-end/package.json ./front-end/package.json
+COPY --from=builder /usr/src/app/automation/package.json ./automation/package.json
+COPY --from=builder /usr/src/app/back-end/package.json ./back-end/package.json
+COPY --from=builder /usr/src/app/back-end/scripts ./back-end/scripts
+COPY --from=builder /usr/src/app/back-end/typeorm/package.json ./back-end/typeorm/package.json
+COPY --from=builder /usr/src/app/back-end/apps/api/package.json ./back-end/apps/api/package.json
+COPY --from=builder /usr/src/app/back-end/apps/chain/package.json ./back-end/apps/chain/package.json
+COPY --from=builder /usr/src/app/back-end/apps/notifications/package.json ./back-end/apps/notifications/package.json
 
 ENV CI=true
+ENV SKIP_NOTICE_GEN=true
 
-# Install only typeorm production dependencies
-RUN pnpm install --prod --filter typeorm --ignore-scripts
+RUN pnpm install --prod --filter typeorm --frozen-lockfile --ignore-scripts
 
-# Copy compiled code
-COPY --from=builder /usr/src/app/dist/typeorm ./dist/typeorm
-COPY --from=builder /usr/src/app/dist/libs ./dist/libs
+# Copy compiled migrations + libs
+COPY --from=builder /usr/src/app/back-end/dist/typeorm ./back-end/dist/typeorm
+COPY --from=builder /usr/src/app/back-end/dist/libs ./back-end/dist/libs
 
-# Run migration script
+WORKDIR /usr/src/app/back-end
 CMD ["pnpm", "-F", "typeorm", "migration:run"]

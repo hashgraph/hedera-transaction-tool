@@ -17,24 +17,22 @@ This folder contains automated test tooling for Hedera Transaction Tool:
 ## Setup
 
 1. Clone the repository.
-2. Go to the automation folder:
+2. Install dependencies from the **repository root** — the repo is a single pnpm workspace, so all modules (`back-end`, `front-end`, `automation`) install together:
 
    ```bash
-   cd hedera-transaction-tool/automation
-   ```
-
-3. Install dependencies:
-
-   ```bash
+   cd hedera-transaction-tool
    pnpm install
    pnpm approve-builds # only if pnpm requests approval
    ```
 
-4. Create your env file:
+3. Create your env file:
 
    ```bash
+   cd automation
    cp example.env .env
    ```
+
+Automation-specific scripts can be run via the workspace filter from any directory (`pnpm -F automation <script>`) or by `cd automation` and running them as before.
 
 ## Environment Configuration
 

@@ -1,8 +1,8 @@
 services:
   migration:
     build:
-      context: .
-      dockerfile: ./typeorm/Dockerfile
+      context: ..
+      dockerfile: back-end/typeorm/Dockerfile
     env_file:
       - ./typeorm/.env
     depends_on:
@@ -12,8 +12,8 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: ./apps/api/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/api/Dockerfile
       target: production
     env_file:
       - ./apps/api/.env
@@ -25,8 +25,8 @@ services:
     restart: always
   chain:
     build:
-      context: .
-      dockerfile: ./apps/chain/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/chain/Dockerfile
       target: production
     env_file:
       - ./apps/chain/.env
@@ -36,8 +36,8 @@ services:
     restart: always
   notifications:
     build:
-      context: .
-      dockerfile: ./apps/notifications/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/notifications/Dockerfile
       target: production
     env_file:
       - ./apps/notifications/.env

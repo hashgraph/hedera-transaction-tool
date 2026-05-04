@@ -1,0 +1,28 @@
+**/node_modules
+**/dist
+**/dist-electron
+**/release
+**/.git
+**/.github
+**/.vscode
+**/.idea
+**/coverage
+**/.turbo
+**/.next
+**/.cache
+**/.env
+**/.env.*
+!**/.env.example
+**/example.env
+
+# front-end build artifacts
+front-end/build
+front-end/release
+front-end/dist
+front-end/dist-electron
+front-end/src/generated
+
+# automation outputs
+automation/reports
+automation/test-results
+automation/k6/dist

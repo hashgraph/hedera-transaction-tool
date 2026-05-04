@@ -42,14 +42,13 @@ jobs:
           node-version: 22.12.0
           cache: 'npm'
           cache-dependency-path: |
-            front-end/pnpm-lock.yaml
+            pnpm-lock.yaml
 
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
 
-      - name: Install front-end Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Build Linux executable
         run: pnpm run build:linux:e2e
@@ -96,7 +95,7 @@ jobs:
           node-version: 22.12.0
           cache: 'npm'
           cache-dependency-path: |
-            automation/pnpm-lock.yaml
+            pnpm-lock.yaml
 
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
@@ -117,9 +116,8 @@ jobs:
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
           docker compose version
 
-      - name: Install Automation Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: automation
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -484,14 +482,13 @@ jobs:
           node-version: 22.12.0
           cache: 'npm'
           cache-dependency-path: |
-            front-end/pnpm-lock.yaml
+            pnpm-lock.yaml
 
       - name: Install pnpm
         run: npm install -g pnpm@9.15.3
 
-      - name: Install front-end Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}
