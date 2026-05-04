@@ -102,7 +102,16 @@ jobs:
             git checkout ${RELEASE_BRANCH}
           fi
 
+      - name: Check Tag Exists
+        run: |
+          if git ls-remote --tags --exit-code origin refs/tags/${RELEASE_TAG}; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
+
       - name: Bump Versions
+        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
           npm pkg set version=${{ env.VERSION }} --prefix back-end
           npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/api
@@ -112,21 +121,25 @@ jobs:
           npm pkg set version=${{ env.VERSION }} --prefix front-end
 
       - name: Update Lockfiles
+        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
           pnpm install
         working-directory: back-end
 
       - name: Update Lockfiles (front-end)
+        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
           pnpm install
         working-directory: front-end
 
       - name: Update Lockfiles (automation)
+        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
           pnpm install
         working-directory: automation
 
       - name: Commit and Tag
+        if: ${{ env.TAG_EXISTS == 'false' }}
         uses: step-security/git-auto-commit-action@749bc1cc775376092cc4227ba537137f445ca7c3 # v7.1.1
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
@@ -136,7 +149,18 @@ jobs:
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
           tagging_message: ${{ env.RELEASE_TAG }}
 
+      - name: Check Release Exists
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh release view ${RELEASE_TAG} --repo ${{ github.repository }} 2>/dev/null; then
+            echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
+          fi
+
       - name: Set Release Body
+        if: ${{ env.RELEASE_EXISTS == 'false' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -160,6 +184,7 @@ jobs:
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release
+        if: ${{ env.RELEASE_EXISTS == 'false' }}
         uses: step-security/release-action@a0d8e0f90f554c15366ca2c9046bf4090d24adbe # v1.21.0
         with:
           body: ${{ env.RELEASE_BODY }}
