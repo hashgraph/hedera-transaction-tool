@@ -1,6 +1,9 @@
 appId: com.hiero.transactiontool.app
 productName: Hedera Transaction Tool
-artifactName: ${name}-${version}-${os}-${arch}.${ext}
+# Hardcoded artifact prefix (was `${name}`); decoupled from package.json#name so
+# the npm package can be renamed (e.g. `front-end`) without changing release
+# filenames consumed by electron-updater (see src/main/services/update.ts).
+artifactName: hedera-transaction-tool-${version}-${os}-${arch}.${ext}
 protocols:
   name: Hedera Transaction Tool
   schemes:

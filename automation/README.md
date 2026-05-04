@@ -32,7 +32,13 @@ This folder contains automated test tooling for Hedera Transaction Tool:
    cp example.env .env
    ```
 
-Automation-specific scripts can be run via the workspace filter from any directory (`pnpm -F automation <script>`) or by `cd automation` and running them as before.
+Automation-specific scripts can be run via the workspace filter from any directory:
+
+```bash
+pnpm -F automation <script>
+```
+
+Or by `cd automation` and running the script as before — both work.
 
 ## Environment Configuration
 

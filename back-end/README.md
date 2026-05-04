@@ -73,11 +73,13 @@ The repository is a single pnpm workspace, so dependencies are installed from th
 pnpm install
 ```
 
-Back-end-specific scripts can then be run via the workspace filter (from any directory):
+Back-end-specific scripts can then be run via the workspace filter (from any directory). pnpm matches against the `name` field in `package.json`; the back-end's NestJS apps are scoped (`@back-end/api`, `@back-end/chain`, `@back-end/notifications`), and `-F` matches the un-scoped tail:
 
 ```bash
 pnpm -F back-end <script>          # e.g. pnpm -F back-end build:all
-pnpm -F api test:cov               # run a script inside one of the apps
+pnpm -F api test:cov               # resolves to @back-end/api
+pnpm -F chain test:cov             # resolves to @back-end/chain
+pnpm -F notifications test:cov     # resolves to @back-end/notifications
 ```
 
 Or by `cd back-end` and running the script as before — both work.
