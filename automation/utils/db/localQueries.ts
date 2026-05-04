@@ -84,8 +84,8 @@ export async function deleteAccountById(accountId: string) {
         WHERE account_id = ?`;
 
   try {
-    const result = await queryDatabase<number>(query, [accountId]);
-    return result > 0;
+    const changedRows = await executeDatabase(query, [accountId]);
+    return changedRows > 0;
   } catch (error) {
     console.error('Error deleting account:', error);
     return false;

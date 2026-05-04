@@ -145,9 +145,6 @@ export async function getInAppNotificationStatusByEmailAndTransactionId(
       return { isRead, isInAppNotified };
     }
 
-    console.error(
-      `No in-app sign notification found for user with ID ${userId} and transaction ${transactionId}.`,
-    );
     return null;
   } catch (error) {
     console.error('Error fetching in-app notification status by email and transaction ID:', error);
