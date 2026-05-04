@@ -244,6 +244,27 @@ const useNotificationsStore = defineStore('notifications', () => {
   /* Watchers */
   watch(loggedInOrganization, async () => await fetchPreferences(), { immediate: true });
   watch(organizationServerUrls, async () => await fetchNotifications(), { immediate: true });
+  // Refetch (and drop stale rows) whenever the active org user identity changes.
+  // Without this, switching users inside a single org keeps the previous user's
+  // notification_receiver IDs in the store; markAsRead then PATCHes those IDs
+  // and the API rejects with 400/NNF (notification not found for current user).
+  watch(
+    () => {
+      const org = loggedInOrganization.value;
+      if (!org || !isLoggedInOrganization(org)) return null;
+      return `${org.serverUrl}|${org.userId}`;
+    },
+    async (current, previous) => {
+      if (current === previous) return;
+      if (!current && previous) {
+        const [previousServerUrl] = previous.split('|');
+        notifications.value[previousServerUrl] = [];
+        notifications.value = { ...notifications.value };
+        return;
+      }
+      await fetchNotifications();
+    },
+  );
 
   return {
     notificationsPreferences,
