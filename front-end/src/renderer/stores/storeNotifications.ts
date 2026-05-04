@@ -262,6 +262,8 @@ const useNotificationsStore = defineStore('notifications', () => {
         notifications.value = { ...notifications.value };
         return;
       }
+      // Skip the initial login transition; organizationServerUrls already refetches on login.
+      if (!previous) return;
       await fetchNotifications();
     },
   );

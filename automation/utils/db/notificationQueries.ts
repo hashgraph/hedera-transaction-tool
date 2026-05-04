@@ -184,12 +184,11 @@ export async function getNotifiedTransactionIdByEmail(email: string): Promise<st
       LIMIT 1;
     `;
 
-    const result = await queryPostgresDatabase(query, [userId]);
+    const result = await queryPostgresDatabase<{ transactionId: string }>(query, [userId]);
     if (result.length > 0) {
       return result[0].transactionId;
     }
 
-    console.error(`No unread in-app notification found for user with ID ${userId}.`);
     return null;
   } catch (error) {
     console.error('Error fetching notified transaction ID:', error);

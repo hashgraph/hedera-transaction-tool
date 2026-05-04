@@ -1,6 +1,6 @@
 import { v4 as uuid } from 'uuid';
 
-import { executeDatabase, queryDatabase } from './databaseUtil.js';
+import { executeDatabase, queryAllDatabase, queryDatabase } from './databaseUtil.js';
 
 /**
  * Verifies if a transaction with the given ID and type exists in the local SQLite database.
@@ -377,47 +377,42 @@ export async function verifyOrganizationExists(nickname: string) {
 export async function getTransactionGroupsForTransactionId(inputTransactionId: string) {
   await new Promise(resolve => setTimeout(resolve, 2000));
   // 1. Get the Transaction by its transaction_id column
-  let query = `
-    SELECT id
-  FROM "Transaction"
-  WHERE transaction_id = ?
-  `;
-
-  let result;
+  let transactionRow: { id: number } | undefined;
   try {
-    result = await queryDatabase<{ id: number }>(query, [inputTransactionId]);
+    transactionRow = await queryDatabase<{ id: number }>(
+      `SELECT id FROM "Transaction" WHERE transaction_id = ?`,
+      [inputTransactionId],
+    );
   } catch (error) {
     console.error('Error fetching Transaction by transaction_id:', error);
     return [];
   }
 
-  const transactionId = result.id;
+  if (!transactionRow) return [];
 
   // 2. Get GroupItem rows for this Transaction's id
-  query = `
-    SELECT transaction_group_id
-  FROM "GroupItem"
-  WHERE transaction_id = ?
-  `;
-
+  let groupItems: { transaction_group_id: number }[];
   try {
-    result = await queryDatabase<{ transaction_group_id: number }>(query, [transactionId]);
+    groupItems = await queryAllDatabase<{ transaction_group_id: number }>(
+      `SELECT transaction_group_id FROM "GroupItem" WHERE transaction_id = ?`,
+      [transactionRow.id],
+    );
   } catch (error) {
     console.error('Error fetching GroupItem by Transaction.id:', error);
     return [];
   }
 
-  const transactionGroupIds = [result.transaction_group_id];
+  if (groupItems.length === 0) return [];
+
+  const transactionGroupIds = groupItems.map(row => row.transaction_group_id);
 
   // 3. Find the TransactionGroup rows by these transaction_group_id values
-  query = `
-    SELECT *
-    FROM "TransactionGroup"
-  WHERE id = ?
-  `;
-
+  const placeholders = transactionGroupIds.map(() => '?').join(', ');
   try {
-    return await queryDatabase(query, transactionGroupIds);
+    return await queryAllDatabase(
+      `SELECT * FROM "TransactionGroup" WHERE id IN (${placeholders})`,
+      transactionGroupIds,
+    );
   } catch (error) {
     console.error('Error fetching TransactionGroup by transaction_group_ids:', error);
     return [];

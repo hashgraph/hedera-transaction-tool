@@ -194,8 +194,12 @@ export async function isKeyDeleted(publicKey: string) {
   `;
 
   try {
-    const deletionResult = await queryPostgresDatabase(checkDeletionQuery, [publicKey]);
-    return deletionResult[0]?.deletedAt !== null;
+    const deletionResult = await queryPostgresDatabase<{ deletedAt: Date | null }>(
+      checkDeletionQuery,
+      [publicKey],
+    );
+    if (!deletionResult[0]) return false;
+    return deletionResult[0].deletedAt !== null;
   } catch (error) {
     console.error('Error checking if key is deleted:', error);
     return false;
@@ -257,11 +261,12 @@ export async function upgradeUserToAdmin(email: string) {
   const query = `
     UPDATE public."user"
     SET admin = true, "updatedAt" = now()
-    WHERE email = $1;
+    WHERE email = $1
+    RETURNING 1;
   `;
 
   try {
-    const result = await queryPostgresDatabase<{ rowCount: number }>(query, [email]);
+    const result = await queryPostgresDatabase<{ '?column?': number }>(query, [email]);
     return result.length > 0;
   } catch (error) {
     console.error('Error upgrading user to admin:', error);
@@ -328,8 +333,9 @@ export async function isUserDeleted(email: string) {
   `;
 
   try {
-    const result = await queryPostgresDatabase<{ deletedAt: string }>(query, [email]);
-    return result[0]?.deletedAt !== null;
+    const result = await queryPostgresDatabase<{ deletedAt: string | null }>(query, [email]);
+    if (result.length === 0) return false;
+    return result[0].deletedAt !== null;
   } catch (error) {
     console.error('Error checking if user is deleted:', error);
     return false;

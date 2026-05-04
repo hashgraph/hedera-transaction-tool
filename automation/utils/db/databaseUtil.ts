@@ -130,6 +130,31 @@ export function queryDatabase<T>(query: string, params: DatabaseParams = []): Pr
   });
 }
 
+export function queryAllDatabase<T>(query: string, params: DatabaseParams = []): Promise<T[]> {
+  return new Promise((resolve, reject) => {
+    const db = openDatabase();
+    if (!db) {
+      reject(new Error('SQLite database file does not exist.'));
+      return;
+    }
+
+    logDatabaseDebug('Executing SQLite query (all)', {
+      query: truncateQueryForDebugLog(query),
+      params: summarizeDatabaseParams(params),
+    });
+    db.all<T>(query, params, (err, rows) => {
+      if (err) {
+        console.error('Query error:', err.message);
+        reject(err);
+      } else {
+        logDatabaseDebug('SQLite query completed', { rowCount: rows?.length ?? 0 });
+        resolve(rows ?? []);
+      }
+      closeDatabase(db);
+    });
+  });
+}
+
 export function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
   return new Promise((resolve, reject) => {
     const db = openDatabase();
