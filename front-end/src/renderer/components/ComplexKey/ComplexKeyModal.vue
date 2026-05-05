@@ -124,6 +124,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               <div v-else>
                 <KeyStructure
                   :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
+                  :no-threshold="noThreshold"
                 />
               </div>
             </Transition>

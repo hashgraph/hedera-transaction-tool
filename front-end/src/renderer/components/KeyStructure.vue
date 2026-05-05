@@ -4,16 +4,23 @@ import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 
 /* Props */
-defineProps<{
-  keyList: KeyList;
-}>();
+withDefaults(
+  defineProps<{
+    keyList: KeyList;
+    noThreshold?: boolean;
+  }>(),
+  {
+    noThreshold: false,
+  },
+);
 
 /* Emits */
 defineEmits(['update:keyList']);
 </script>
 <template>
   <div class="text-nowrap">
-    <p>
+    <p v-if="noThreshold">Key List of {{ keyList.toArray().length }}</p>
+    <p v-else>
       Threshold ({{
         !keyList.threshold || keyList.threshold === keyList.toArray().length
           ? keyList.toArray().length
