@@ -149,7 +149,7 @@ watch(currentTab, tab => {
 watch(
   () => props.modelKey,
   async newKey => {
-    if (newKey && newKey instanceof PublicKey && true) {
+    if (newKey && newKey instanceof PublicKey) {
       const formatted = await formatPublicKey(newKey.toStringRaw(), publicKeyOwnerCache);
       formattedKey.value = formatted;
       identifier.value = extractIdentifier(formatted)?.identifier;
@@ -273,6 +273,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           v-if="selectSavedKeyModalShown"
           v-model:show="selectSavedKeyModalShown"
           :on-key-list-select="handleSelectSavedComplexKey"
+          :no-threshold="noThreshold"
         />
       </template>
     </div>
