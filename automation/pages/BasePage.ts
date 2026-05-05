@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
-import { Page, Locator, test } from '@playwright/test';
+import { Page, Locator, test, expect } from '@playwright/test';
 
 export class BasePage {
   protected readonly SHORT_TIMEOUT = 500;
@@ -415,6 +415,20 @@ export class BasePage {
       );
       throw error;
     }
+  }
+
+  /**
+   * Waits for an element to be attached to the DOM, regardless of visibility.
+   * Useful for inputs that are visually hidden (e.g. styled `<input role="switch">`)
+   * where waiting for `visible` would never resolve.
+   */
+  async waitForElementToBeAttached(
+    selector: string,
+    timeout: number = this.LONG_TIMEOUT,
+    index: number | null = null,
+  ): Promise<void> {
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'attached', timeout });
   }
 
   /**
@@ -964,6 +978,81 @@ export class BasePage {
     const count = await elements.count();
     console.log(`Found ${count} elements with prefix: ${selectorPrefix}`);
     return count;
+  }
+
+  /**
+   * Returns the index of the first element matching `selectorPrefix` whose whitespace-
+   * normalized text content equals `expectedText`, or -1 if none. One round-trip.
+   *
+   * @param selectorPrefix - CSS selector or data-testid prefix used to address the cells.
+   * @param expectedText - Target text; matched after stripping all whitespace.
+   */
+  async findIndexByCellText(selectorPrefix: string, expectedText: string): Promise<number> {
+    const baseSelector = this.isCssSelector(selectorPrefix)
+      ? selectorPrefix
+      : `[data-testid^="${selectorPrefix}"]`;
+    const target = expectedText.replace(/\s+/g, '');
+    return await this.window.locator(baseSelector).evaluateAll((els, normalizedTarget) => {
+      for (let i = 0; i < els.length; i++) {
+        if ((els[i].textContent ?? '').replace(/\s+/g, '') === normalizedTarget) return i;
+      }
+      return -1;
+    }, target);
+  }
+
+  /**
+   * Polls `findIndexByCellText` until it returns a non-negative index, then returns it.
+   * Uses Playwright's `expect.poll` so the wait participates in test timeouts/tracing.
+   */
+  async waitForIndexByCellText(
+    selectorPrefix: string,
+    expectedText: string,
+    options: { timeout?: number; interval?: number } = {},
+  ): Promise<number> {
+    const { timeout = this.VERY_LONG_TIMEOUT, interval = this.SHORT_TIMEOUT } = options;
+    let resolvedIndex = -1;
+    await expect
+      .poll(
+        async () => {
+          resolvedIndex = await this.findIndexByCellText(selectorPrefix, expectedText);
+          return resolvedIndex;
+        },
+        { timeout, intervals: [interval] },
+      )
+      .toBeGreaterThanOrEqual(0);
+    return resolvedIndex;
+  }
+
+  /**
+   * Returns true if the row containing `cellSelector` carries `highlightClass`, OR if
+   * the cell exposes a visible `::before` pseudo-element. Combines the row-class check
+   * and the pseudo-element probe into a single page evaluate.
+   */
+  async cellRowHasIndicator(
+    cellSelector: string,
+    highlightClass: string = 'highlight',
+  ): Promise<boolean> {
+    const cell = this.getElement(cellSelector);
+    await cell.waitFor({ state: 'visible', timeout: this.DEFAULT_TIMEOUT });
+    return await cell.evaluate((el, args) => {
+      const tr = (el as HTMLElement).closest('tr');
+      if (tr && tr.classList.contains(args.highlightClass)) return true;
+      const styles = window.getComputedStyle(el, '::before');
+      const display = styles.getPropertyValue('display');
+      const visibility = styles.getPropertyValue('visibility');
+      const opacity = parseFloat(styles.getPropertyValue('opacity'));
+      const width = parseFloat(styles.getPropertyValue('width'));
+      const height = parseFloat(styles.getPropertyValue('height'));
+      const borderLeft = parseFloat(styles.getPropertyValue('border-left-width'));
+      const borderTop = parseFloat(styles.getPropertyValue('border-top-width'));
+      const hasBorders = borderLeft > 0 || borderTop > 0;
+      return (
+        display !== 'none' &&
+        visibility !== 'hidden' &&
+        opacity !== 0 &&
+        (width > 0 || height > 0 || hasBorders)
+      );
+    }, { highlightClass });
   }
 
   /**

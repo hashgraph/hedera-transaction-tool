@@ -1452,6 +1452,155 @@ describe('TransactionsService', () => {
       ]);
     });
 
+    it('should insert signer rows for every UserKey when two rows share the same publicKey', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      // UserKey.publicKey is indexed but not unique; both rows must surface.
+      const sharedPublicKey = privateKey.publicKey.toStringRaw();
+      const userKeys = [
+        { id: 42, userId: 7, publicKey: sharedPublicKey },
+        { id: 43, userId: 9, publicKey: sharedPublicKey },
+      ];
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], userKeys) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(insertQb.values).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          { userId: 7, transactionId, userKeyId: 42 },
+          { userId: 9, transactionId, userKeyId: 43 },
+        ]),
+      );
+    });
+
+    it('should issue a single UserKey lookup across multiple DTOs', async () => {
+      const txA = {
+        id: 10,
+        transactionId: '0.0.2@111.0',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const txB = {
+        id: 11,
+        transactionId: '0.0.2@222.0',
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      const secondKey = PrivateKey.generateECDSA();
+      const userKeys = [
+        { id: 42, userId: 7, publicKey: privateKey.publicKey.toStringRaw() },
+        { id: 43, userId: 9, publicKey: secondKey.publicKey.toStringRaw() },
+      ];
+      await sdkTransaction.sign(privateKey);
+      await sdkTransaction.sign(secondKey);
+
+      let userKeyFindCalls = 0;
+      entityManager.find.mockImplementation(((entity: unknown) => {
+        if (entity === Transaction) return Promise.resolve([txA, txB]);
+        if (entity === TransactionSigner) return Promise.resolve([]);
+        if (entity === UserKey) {
+          userKeyFindCalls++;
+          return Promise.resolve(userKeys);
+        }
+        return Promise.resolve([]);
+      }) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({
+        data: [privateKey.publicKey, secondKey.publicKey],
+      });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [
+          { id: txA.id, signatureMap: sdkTransaction.getSignatures() },
+          { id: txB.id, signatureMap: sdkTransaction.getSignatures() },
+        ],
+        userWithKeys,
+      );
+
+      // One query regardless of DTO count, and both DTOs reach pass 2.
+      expect(userKeyFindCalls).toBe(1);
+      expect(insertQb.values).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ transactionId: txA.id }),
+          expect.objectContaining({ transactionId: txB.id }),
+        ]),
+      );
+    });
+
+    it('should not insert a signer row when the matching UserKey is soft-deleted', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId.toString(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(((entity: unknown, options: unknown) => {
+        if (entity === Transaction) return Promise.resolve([transaction]);
+        if (entity === TransactionSigner) return Promise.resolve([]);
+        if (entity === UserKey) {
+          // Production must not pass withDeleted:true — would re-grant signer access to revoked keys.
+          expect((options as { withDeleted?: boolean })?.withDeleted).not.toBe(true);
+          return Promise.resolve([]);
+        }
+        return Promise.resolve([]);
+      }) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      // Confirms the lookup ran, so the inner withDeleted assertion was actually exercised.
+      expect(entityManager.find).toHaveBeenCalledWith(UserKey, expect.anything());
+      expect(insertQb.values).not.toHaveBeenCalled();
+    });
+
     it('should unwrap the [rows, rowCount] tuple from manager.query and emit dismissed notifications', async () => {
       const transaction = {
         id: transactionId,

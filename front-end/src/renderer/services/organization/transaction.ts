@@ -153,8 +153,8 @@ export const importSignatures = async (
 
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
-  _serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-  _transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _serverUrl: string,
+  _transactionId: number,
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
     //TODO Approve is not implemented yet, and doing it this way is not correct
