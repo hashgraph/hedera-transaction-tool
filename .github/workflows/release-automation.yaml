@@ -32,7 +32,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
@@ -102,16 +102,7 @@ jobs:
             git checkout ${RELEASE_BRANCH}
           fi
 
-      - name: Check Tag Exists
-        run: |
-          if git ls-remote --tags --exit-code origin refs/tags/${RELEASE_TAG}; then
-            echo "TAG_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "TAG_EXISTS=false" >> $GITHUB_ENV
-          fi
-
       - name: Bump Versions
-        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
           npm pkg set version=${{ env.VERSION }} --prefix back-end
           npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/api
@@ -121,22 +112,26 @@ jobs:
           npm pkg set version=${{ env.VERSION }} --prefix front-end
 
       - name: Update Lockfiles
-        if: ${{ env.TAG_EXISTS == 'false' }}
         run: |
-          pnpm install
-        working-directory: back-end
+          pnpm install --dir back-end
+          pnpm install --dir front-end
+          pnpm install --dir automation
 
-      - name: Update Lockfiles (front-end)
-        if: ${{ env.TAG_EXISTS == 'false' }}
+      - name: Check Tag Exists
         run: |
-          pnpm install
-        working-directory: front-end
+          if git ls-remote --tags --exit-code origin refs/tags/${RELEASE_TAG}; then
+            echo "TAG_EXISTS=true" >> $GITHUB_ENV
+          else
+            echo "TAG_EXISTS=false" >> $GITHUB_ENV
+          fi
 
-      - name: Update Lockfiles (automation)
-        if: ${{ env.TAG_EXISTS == 'false' }}
-        run: |
-          pnpm install
-        working-directory: automation
+      - name: Close the Milestone
+        if: ${{ steps.version_parser.outputs.prerelease == '' }}
+        uses: step-security/close-milestone@b097272a7aaa0f5c40dc6bc671d45d35c5e85b51 # v2.2.1
+        with:
+          milestone_name: ${{ steps.version_parser.outputs.release }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Commit and Tag
         if: ${{ env.TAG_EXISTS == 'false' }}
@@ -149,42 +144,25 @@ jobs:
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
           tagging_message: ${{ env.RELEASE_TAG }}
 
-      - name: Check Release Exists
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh release view ${RELEASE_TAG} --repo ${{ github.repository }} 2>/dev/null; then
-            echo "RELEASE_EXISTS=true" >> $GITHUB_ENV
-          else
-            echo "RELEASE_EXISTS=false" >> $GITHUB_ENV
-          fi
-
       - name: Set Release Body
-        if: ${{ env.RELEASE_EXISTS == 'false' }}
+        if: ${{ steps.version_parser.outputs.prerelease == '' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git fetch --tags
           PREV_TAG=$(git tag | grep -v "^${RELEASE_TAG}$" | grep -v -- '-' | sort -V | tail -1)
-          if [[ -n "${{ steps.version_parser.outputs.prerelease }}" ]]; then
-            RELEASE_BODY="**Full Changelog**: https://github.com/${{ github.repository }}/compare/${PREV_TAG}...${RELEASE_TAG}"
-          else
-            RAW_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
-              -f tag_name="${RELEASE_TAG}" \
-              -f previous_tag_name="${PREV_TAG}" \
-              --jq '.body')
+          RAW_NOTES=$(gh api repos/${{ github.repository }}/releases/generate-notes \
+            -f tag_name="${RELEASE_TAG}" \
+            -f previous_tag_name="${PREV_TAG}" \
+            --jq '.body')
 
-            RELEASE_BODY=$(echo "$RAW_NOTES" | node .github/scripts/sort-release-notes.mjs \
-              "https://github.com/${{ github.repository }}" \
-              "$PREV_TAG" \
-              "$RELEASE_TAG")
-          fi
+          RELEASE_BODY=$(echo "$RAW_NOTES" | node .github/scripts/sort-release-notes.mjs)
+
           echo "RELEASE_BODY<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_BODY" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
 
       - name: Create GitHub Release
-        if: ${{ env.RELEASE_EXISTS == 'false' }}
         uses: step-security/release-action@a0d8e0f90f554c15366ca2c9046bf4090d24adbe # v1.21.0
         with:
           body: ${{ env.RELEASE_BODY }}
@@ -192,6 +170,7 @@ jobs:
           draft: true
           name: ${{ env.RELEASE_TAG }}
           prerelease: ${{ steps.version_parser.outputs.prerelease != '' }}
+          skipIfReleaseExists: true
           tag: ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -206,7 +185,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
@@ -254,18 +233,9 @@ jobs:
 
       - name: Update Lockfiles
         run: |
-          pnpm install
-        working-directory: back-end
-
-      - name: Update Lockfiles (front-end)
-        run: |
-          pnpm install
-        working-directory: front-end
-
-      - name: Update Lockfiles (automation)
-        run: |
-          pnpm install
-        working-directory: automation
+          pnpm install --dir back-end
+          pnpm install --dir front-end
+          pnpm install --dir automation
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1

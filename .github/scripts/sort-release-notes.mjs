@@ -3,17 +3,17 @@
 /**
  * Sorts auto-generated GitHub release notes into sections by conventional commit prefix.
  *
- * Usage: node sort-release-notes.mjs <raw-notes> <repo-url> <prev-tag> <release-tag>
+ * Usage: node sort-release-notes.mjs < <raw-notes>
  */
 
 import { readFileSync } from 'fs';
 
-const [repoUrl, prevTag, releaseTag] = process.argv.slice(2);
 const rawNotes = readFileSync('/dev/stdin', 'utf8');
 
 const sections = {
   Features: [],
   Fixes: [],
+  Documentation: [],
   Maintenance: [],
   'Dependency Updates': [],
   Other: [],
@@ -25,7 +25,7 @@ const prefixMap = [
   [/^\* chore\(deps/, 'Dependency Updates'],
   [/^\* chore(\(.*?\))?!?:/, 'Maintenance'],
   [/^\* ci(\(.*?\))?!?:/, 'Maintenance'],
-  [/^\* docs(\(.*?\))?!?:/, 'Maintenance'],
+  [/^\* docs(\(.*?\))?!?:/, 'Documentation'],
   [/^\* refactor(\(.*?\))?!?:/, 'Maintenance'],
   [/^\* test(\(.*?\))?!?:/, 'Maintenance'],
   [/^\* perf(\(.*?\))?!?:/, 'Maintenance'],
@@ -43,6 +43,5 @@ for (const [title, entries] of Object.entries(sections)) {
   if (entries.length === 0) continue;
   body += `## ${title}\n\n${entries.join('\n')}\n\n`;
 }
-body += `**Full Changelog**: ${repoUrl}/compare/${prevTag}...${releaseTag}`;
 
-process.stdout.write(body);
+process.stdout.write(body.trimEnd());
