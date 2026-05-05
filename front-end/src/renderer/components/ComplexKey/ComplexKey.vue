@@ -5,9 +5,15 @@ import { Key, KeyList } from '@hiero-ledger/sdk';
 import ComplexKeyThreshold from '@renderer/components/ComplexKey/ComplexKeyThreshold.vue';
 
 /* Props */
-const props = defineProps<{
-  modelKey: Key | null;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelKey: Key | null;
+    noThreshold?: boolean;
+  }>(),
+  {
+    noThreshold: false,
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:modelKey']);
@@ -38,5 +44,6 @@ onMounted(() => {
     @update:key-list="handleKeyListChange"
     :on-remove-key-list="handleKeyListRemove"
     :depth="'0'"
+    :no-threshold="noThreshold"
   />
 </template>
