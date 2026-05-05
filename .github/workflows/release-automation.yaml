@@ -110,6 +110,7 @@ jobs:
           npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/notifications
           npm pkg set version=${{ env.VERSION }} --prefix back-end/typeorm
           npm pkg set version=${{ env.VERSION }} --prefix front-end
+          npm pkg set version=${{ env.VERSION }} --prefix automation
 
       - name: Update Lockfiles
         run: |
@@ -230,6 +231,7 @@ jobs:
           npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/apps/notifications
           npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/typeorm
           npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix front-end
+          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix automation
 
       - name: Update Lockfiles
         run: |
