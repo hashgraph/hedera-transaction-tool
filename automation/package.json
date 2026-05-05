@@ -1,5 +1,5 @@
 {
-  "name": "automation",
+  "name": "hedera-transaction-tool-tests-v2",
   "type": "module",
   "scripts": {
     "build": "tsc",

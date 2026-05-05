@@ -1,5 +1,5 @@
 {
-  "name": "front-end",
+  "name": "hedera-transaction-tool",
   "version": "0.30.0-SNAPSHOT",
   "description": "Transaction tool application",
   "author": {

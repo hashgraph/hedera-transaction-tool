@@ -1,9 +1,6 @@
 appId: com.hiero.transactiontool.app
 productName: Hedera Transaction Tool
-# Hardcoded artifact prefix (was `${name}`); decoupled from package.json#name so
-# the npm package can be renamed (e.g. `front-end`) without changing release
-# filenames consumed by electron-updater (see src/main/services/update.ts).
-artifactName: hedera-transaction-tool-${version}-${os}-${arch}.${ext}
+artifactName: ${name}-${version}-${os}-${arch}.${ext}
 protocols:
   name: Hedera Transaction Tool
   schemes:
@@ -50,11 +47,6 @@ mac:
         - universal
   mergeASARs: false
 linux:
-  # Pin the linux-unpacked binary name so it doesn't follow package.json#name.
-  # The npm package was renamed `front-end` (workspace ergonomics), but downstream
-  # consumers — CI EXECUTABLE_PATH, snap packaging, desktop shortcuts — still expect
-  # the historical `hedera-transaction-tool` binary.
-  executableName: hedera-transaction-tool
   target:
     - snap
 pkg:

@@ -59,7 +59,7 @@ pnpm install
 Front-end-specific scripts can then be run via the workspace filter (from any directory):
 
 ```bash
-pnpm -F front-end <script>          # e.g. pnpm -F front-end dev
+pnpm -F hedera-transaction-tool <script>          # e.g. pnpm -F hedera-transaction-tool dev
 ```
 
 Or by `cd front-end` and running the script as before — both work.
@@ -67,13 +67,13 @@ Or by `cd front-end` and running the script as before — both work.
 ## 3. Generate Prisma client library
 
 ```bash
-pnpm -F front-end generate:database
+pnpm -F hedera-transaction-tool generate:database
 ```
 
 ## 4. Start developing
 
 ```bash
-pnpm -F front-end dev
+pnpm -F hedera-transaction-tool dev
 ```
 
 ## 5. Build for distribution

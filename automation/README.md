@@ -35,7 +35,7 @@ This folder contains automated test tooling for Hedera Transaction Tool:
 Automation-specific scripts can be run via the workspace filter from any directory:
 
 ```bash
-pnpm -F automation <script>
+pnpm -F hedera-transaction-tool-tests-v2 <script>
 ```
 
 Or by `cd automation` and running the script as before — both work.
