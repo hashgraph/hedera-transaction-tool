@@ -14,6 +14,7 @@ vi.mock('electron', () => {
     app: {
       on: vi.fn(),
       setAsDefaultProtocolClient: vi.fn(),
+      setName: vi.fn(),
       quit: vi.fn(),
       requestSingleInstanceLock: vi.fn(() => true),
     },
