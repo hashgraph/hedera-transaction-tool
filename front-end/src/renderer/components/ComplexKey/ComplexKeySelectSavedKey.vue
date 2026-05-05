@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ComplexKey } from '@prisma/client';
 
-import { computed, onBeforeMount, ref, withDefaults } from 'vue';
+import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -23,7 +23,7 @@ const props = withDefaults(
     noThreshold?: boolean;
   }>(),
   {
-    noThreshold: true,
+    noThreshold: false,
   },
 );
 
@@ -82,7 +82,7 @@ const filterKeyList = (kl: ComplexKey): boolean => {
   return (
     (kl.nickname.toLocaleLowerCase().includes(search.value.toLocaleLowerCase()) ||
       keyList.toArray().length.toString().includes(search.value) ||
-      '' == search.value) &&
+      search.value === '') &&
     (keyList.threshold === null || !props.noThreshold)
   );
 };
