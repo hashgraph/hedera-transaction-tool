@@ -47,6 +47,9 @@ export default function useAfterOrganizationSelection() {
   };
 
   const handleNavigation = async () => {
+    // Don't redirect away from the migration wizard — it manages its own flow.
+    if (router.currentRoute.value.name === 'migrate') return;
+
     const organization = user.selectedOrganization;
     if (organization !== null && !isOrganizationActive(organization)) {
       await user.selectOrganization(null);

@@ -10,6 +10,9 @@ import { addOrganizationCredentials } from '@renderer/services/organizationCrede
 
 import { safeAwait, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+import { getVersionStatusForOrg } from '@renderer/stores/versionState';
+
 import SetupOrganizationForm from './SetupOrganizationForm.vue';
 
 /* Props */
@@ -22,6 +25,9 @@ const emit = defineEmits<{
   (event: 'setOrganizationId', value: string | null): void;
   (event: 'migration:cancel'): void;
 }>();
+
+/* Composables */
+const { performVersionCheck } = useVersionCheck();
 
 /* State */
 const loading = ref(false);
@@ -42,6 +48,16 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
 
   /* Add Organization */
   if (!organizationId.value || !sameOrganization) {
+    loadingText.value = 'Checking version compatibility...';
+    await performVersionCheck(formData.organizationURL);
+    if (getVersionStatusForOrg(formData.organizationURL) === 'belowMinimum') {
+      loading.value = false;
+      return {
+        error:
+          'Your app version is no longer supported by this organization. Please update the app before continuing migration.',
+      };
+    }
+
     loadingText.value = 'Adding Organization...';
     if (organizationId.value) {
       await safeAwait(deleteOrganization(organizationId.value));

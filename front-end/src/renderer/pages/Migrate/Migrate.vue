@@ -106,10 +106,11 @@ const handleSetOrganizationId = async (value: string | null) => {
   organizationId.value = value;
   await initializeUserStore();
   userInitialized.value = true;
+  // Store the skip claim now that the org (if any) is selected, ensuring the correct claim key is used.
+  await handleSkipSetupAfterMigration();
   if (allUserKeysToRecover.value.length !== 0) {
     step.value = 'selectKeys';
   } else {
-    await handleSkipSetupAfterMigration();
     step.value = 'summary';
   }
 };
@@ -142,11 +143,14 @@ const initializeUserStore = async () => {
   } else {
     await user.login(personalUser.value.personalId, personalUser.value.email, false);
   }
+
+  // Persist the flag now that userId is available so a mid-migration crash or force-quit
+  // is detected on next startup and triggers resetDataLocal(), allowing migration to restart.
+  user.setAccountSetupStarted(true);
+
   await user.refetchOrganizations();
 
   if (user.organizations[0]) {
-    // before the org is selected, set the org to skip setup.
-    await handleSkipSetupAfterMigration();
     await user.selectOrganization(user.organizations[0]);
   }
 

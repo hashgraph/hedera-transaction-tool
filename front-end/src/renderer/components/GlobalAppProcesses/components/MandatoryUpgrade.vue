@@ -37,14 +37,16 @@ const user = useUserStore();
 const toastManager = ToastManager.inject();
 const { setLast } = useDefaultOrganization();
 
-const cancelLabel = 'Disconnect';
-
 const affectedOrg = computed(() => {
   const serverUrl =
     triggeringOrganizationServerUrl.value || getMostRecentOrganizationRequiringUpdate();
   if (!serverUrl) return null;
   return user.organizations.find(org => org.serverUrl === serverUrl) || null;
 });
+
+// 'Disconnect' when an org is in the store; 'Cancel' during migration before the org is
+// saved to DB (affectedOrg is null because it hasn't been added yet).
+const cancelLabel = computed(() => (affectedOrg.value ? 'Disconnect' : 'Cancel'));
 
 const compatibilityResult = computed(() => {
   const serverUrl = triggeringOrganizationServerUrl.value;
@@ -137,6 +139,14 @@ const handleDisconnect = async () => {
     } catch (error) {
       logger.error('Failed to disconnect organization', { error });
       toastManager.error('Failed to disconnect organization');
+    }
+  } else {
+    // No org in the store yet (e.g. during migration before the org is saved to DB).
+    // Just clear the version state so the modal closes. The migration form will show
+    // its own error explaining that an upgrade is required.
+    const serverUrl = triggeringOrganizationServerUrl.value;
+    if (serverUrl) {
+      resetVersionStatusForOrg(serverUrl);
     }
   }
 };
@@ -240,7 +250,7 @@ const handleCompatibilityCancel = () => {
       <hr class="separator my-4" />
       <div class="d-flex gap-4 justify-content-center">
         <AppButton type="button" color="secondary" @click="handleDisconnect">
-          Disconnect
+          {{ cancelLabel }}
         </AppButton>
         <AppButton type="button" color="primary" @click="handleDownload">
           <i class="bi bi-download me-2"></i>Download Update
