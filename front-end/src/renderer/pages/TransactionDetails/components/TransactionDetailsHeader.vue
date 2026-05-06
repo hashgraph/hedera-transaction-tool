@@ -317,7 +317,7 @@ const computeVisibleButtons = (
         </div>
         <div v-else>
           <AppButton color="primary" :disabled="true" class="extra-width" type="submit"
-            >coucou</AppButton
+            >…</AppButton
           >
         </div>
 
