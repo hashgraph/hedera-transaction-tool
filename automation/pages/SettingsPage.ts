@@ -444,7 +444,8 @@ export class SettingsPage extends BasePage {
     await this.fill(this.mirrorNodeBaseURLInputSelector, mirrorNodeBaseURL);
   }
 
-  async applyMirrorNodeBaseURL(): Promise<void> {
+  async setMirrorNodeBaseURL(mirrorNodeBaseURL: string): Promise<void> {
+    await this.fillInMirrorNodeBaseURL(mirrorNodeBaseURL);
     await this.click(this.mirrorNodeBaseURLInputSelector);
     await this.pressKey('Tab');
   }
@@ -457,20 +458,24 @@ export class SettingsPage extends BasePage {
     return await this.getTextFromInputField(this.mirrorNodeBaseURLInputSelector);
   }
 
-  async fillInECDSAPrivateKey(ecdsaPrivateKey: string): Promise<void> {
-    await this.fill(this.ecdsaPrivateKeyInputSelector, ecdsaPrivateKey);
+  async importECDSAPrivateKey(
+    privateKey: string,
+    nickname: string,
+    expectModalToClose = true,
+  ): Promise<void> {
+    await this.fill(this.ecdsaPrivateKeyInputSelector, privateKey);
+    await this.fill(this.ecdsaNicknameInputSelector, nickname);
+    await this.clickOnECDSAImportButton(expectModalToClose);
   }
 
-  async fillInED25519PrivateKey(ecdsaPrivateKey: string): Promise<void> {
-    await this.fill(this.ed25519PrivateKeyInputSelector, ecdsaPrivateKey);
-  }
-
-  async fillInECDSANickname(ecdsaNickname: string): Promise<void> {
-    await this.fill(this.ecdsaNicknameInputSelector, ecdsaNickname);
-  }
-
-  async fillInED25519Nickname(ecdsaNickname: string): Promise<void> {
-    await this.fill(this.ed25519PNicknameInputSelector, ecdsaNickname);
+  async importED25519PrivateKey(
+    privateKey: string,
+    nickname: string,
+    expectModalToClose = true,
+  ): Promise<void> {
+    await this.fill(this.ed25519PrivateKeyInputSelector, privateKey);
+    await this.fill(this.ed25519PNicknameInputSelector, nickname);
+    await this.clickOnED25519ImportButton(expectModalToClose);
   }
 
   async clickOnECDSAImportButton(expectModalToClose = true): Promise<void> {

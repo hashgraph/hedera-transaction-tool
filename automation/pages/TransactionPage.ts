@@ -271,9 +271,9 @@ export class TransactionPage extends BasePage {
         return;
       } catch (error) {
         if (attempt === 2) throw error;
-        await this.window.keyboard.press('Escape');
+        await this.pressKey('Escape');
         await this.captureStepScreenshot('dismiss-create-transaction-modal');
-        await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+        await this.wait(this.SHORT_TIMEOUT);
       }
     }
   }
@@ -403,17 +403,24 @@ export class TransactionPage extends BasePage {
 
   async addPublicKeyAtDepth(depth: string, publicKey: string | null = null) {
     await this.clickAddButton(depth);
-    await this.window.waitForTimeout(300);
+    // Wait for the dropdown's "public key" option to be ready instead of a
+    // fixed sleep — a 300ms guess races slow CI runs and wastes time on fast
+    // ones.
+    await this.waitForElementToBeVisible(this.addPublicKeyButtonIndex + depth);
     await this.selectPublicKeyOption(depth);
-    await this.window.waitForTimeout(300);
+    // Wait for the public-key input modal to mount before filling it.
+    await this.waitForElementToBeVisible(this.publicKeyComplexInputSelector);
     if (publicKey === null) {
       publicKey = await this.generateRandomPublicKey();
     }
     await this.fillInPublicKeyField(publicKey);
-    await this.window.waitForTimeout(300);
+    // Ensure Vue has registered the value (and therefore enabled "Insert")
+    // before clicking, instead of guessing 300ms.
+    await this.waitForInputFieldToBeFilled(this.publicKeyComplexInputSelector);
     await this.clickInsertPublicKey();
-    // Wait for DOM to update after key insertion (needed for CI)
-    await this.window.waitForTimeout(300);
+    // Wait for the modal to actually close so the next dropdown click in a
+    // loop doesn't race with the closing animation.
+    await this.waitForElementToDisappear(this.publicKeyComplexInputSelector);
   }
 
   async addAccountAtDepth(depth: string, accountId: string) {
@@ -995,7 +1002,9 @@ export class TransactionPage extends BasePage {
   }
 
   async clickAddButton(depth: string) {
-    await this.click(this.addComplexButtonIndex + depth);
+    // Bootstrap re-mounts this dropdown trigger on Vue updates, so a single
+    // click can race with re-render and time out as "detached from the DOM".
+    await this.clickWithRetryOnDetach(this.addComplexButtonIndex + depth);
   }
 
   async selectPublicKeyOption(depth: string) {

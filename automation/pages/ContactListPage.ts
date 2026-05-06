@@ -4,7 +4,7 @@ import {
   isUserDeleted,
   upgradeUserToAdmin,
   verifyUserExistsInOrganization,
-} from '../utils/db/databaseQueries.js';
+} from '../utils/db/userQueries.js';
 import { getAssociatedAccounts } from '../utils/network/mirrorNodeAPI.js';
 
 export class ContactListPage extends BasePage {
@@ -76,27 +76,15 @@ export class ContactListPage extends BasePage {
     await this.click(this.registerNewUserButtonSelector);
   }
 
-  async clickOnRemoveContactButton() {
+  async removeContact() {
     await this.click(this.removeContactButtonSelector);
-  }
-
-  async clickOnConfirmRemoveContactButton() {
+    await this.waitForElementToBeVisible(this.confirmRemovingContactButtonSelector);
     await this.click(this.confirmRemovingContactButtonSelector);
   }
 
-  async isConfirmRemoveContactButtonVisible() {
-    return await this.isElementVisible(this.confirmRemovingContactButtonSelector);
-  }
-
-  async clickOnElevateContactButton() {
+  async elevateContactToAdmin() {
     await this.click(this.elevateContactButtonSelector);
-  }
-
-  async isConfirmElevateContactButtonVisible() {
-    return await this.isElementVisible(this.confirmElevateContactButtonSelector);
-  }
-
-  async clickOnConfirmElevateContactButton() {
+    await this.waitForElementToBeVisible(this.confirmElevateContactButtonSelector);
     await this.click(this.confirmElevateContactButtonSelector);
   }
 

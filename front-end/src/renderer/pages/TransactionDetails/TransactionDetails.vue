@@ -255,7 +255,11 @@ onBeforeMount(async () => {
     return;
   }
 
-  await fetchTransaction();
+  // Always invalidate the cached entry on mount so the stepper reflects the
+  // latest backend status. Status-changing WebSocket events fired before the
+  // detail page mounted are dropped (the subscriber only exists while mounted),
+  // so a fresh fetch is the only way to avoid rendering a stale `transaction`.
+  await fetchTransactionOnNotif();
 });
 
 onBeforeRouteLeave(to => {

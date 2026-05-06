@@ -42,17 +42,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     );
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyForExecutionTab();
 
@@ -66,11 +56,8 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
 
     await organizationPage.clickOnReadyForExecutionDetailsButtonByTransactionId(txId ?? '');
 
-    const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
-    expect(isStageOneCompleted).toBe(true);
-
-    const isStageTwoCompleted = await organizationPage.isTransactionStageCompleted(1);
-    expect(isStageTwoCompleted).toBe(true);
+    await organizationPage.waitForStageCompleted(0);
+    await organizationPage.waitForStageCompleted(1);
 
     const isStageThreeCompleted = await organizationPage.isTransactionStageCompleted(2);
     expect(isStageThreeCompleted).toBe(false);
@@ -80,21 +67,11 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
-      5,
+      10,
       true,
     );
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
@@ -107,17 +84,10 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
 
     await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
 
-    const isStageOneCompleted = await organizationPage.isTransactionStageCompleted(0);
-    expect(isStageOneCompleted).toBe(true);
-
-    const isStageTwoCompleted = await organizationPage.isTransactionStageCompleted(1);
-    expect(isStageTwoCompleted).toBe(true);
-
-    const isStageThreeCompleted = await organizationPage.isTransactionStageCompleted(2);
-    expect(isStageThreeCompleted).toBe(true);
-
-    const isStageFourCompleted = await organizationPage.isTransactionStageCompleted(3);
-    expect(isStageFourCompleted).toBe(true);
+    await organizationPage.waitForStageCompleted(0);
+    await organizationPage.waitForStageCompleted(1);
+    await organizationPage.waitForStageCompleted(2);
+    await organizationPage.waitForStageCompleted(3);
   });
 
   test('Verify next button is visible when user has multiple txs to sign', async () => {

@@ -64,7 +64,7 @@ export function registerOrganizationAdvancedSuiteHooks({
     await onFixtureReady(fixture);
     await transactionPage.clickOnTransactionsMenuButton();
 
-    await organizationPage.waitForElementToDisappear('.v-toast__text');
+    await organizationPage.waitForElementToDisappear(organizationPage.toastMessageSelector);
     await organizationPage.closeDraftModal();
 
     if (process.env.CI) {

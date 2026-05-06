@@ -12,16 +12,12 @@ test.describe('Settings keys management tests @local-basic', () => {
     const { privateKey: firstPrivateKey } = generateEd25519KeyPair();
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.fillInED25519PrivateKey(firstPrivateKey);
-    await suite.settingsPage.fillInED25519Nickname('Bulk-Delete-ED25519-1');
-    await suite.settingsPage.clickOnED25519ImportButton();
+    await suite.settingsPage.importED25519PrivateKey(firstPrivateKey, 'Bulk-Delete-ED25519-1');
 
     const { privateKey: secondPrivateKey } = generateEd25519KeyPair();
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.fillInED25519PrivateKey(secondPrivateKey);
-    await suite.settingsPage.fillInED25519Nickname('Bulk-Delete-ED25519-2');
-    await suite.settingsPage.clickOnED25519ImportButton();
+    await suite.settingsPage.importED25519PrivateKey(secondPrivateKey, 'Bulk-Delete-ED25519-2');
     await suite.loginPage.waitForToastToDisappear();
 
     const rowCountAfterImport = await suite.settingsPage.getKeyRowCount();
@@ -47,16 +43,12 @@ test.describe('Settings keys management tests @local-basic', () => {
     const { privateKey } = generateEd25519KeyPair();
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.fillInED25519PrivateKey(privateKey);
-    await suite.settingsPage.fillInED25519Nickname('Duplicate-Import-Key');
-    await suite.settingsPage.clickOnED25519ImportButton();
+    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Duplicate-Import-Key');
     await suite.loginPage.waitForToastToDisappear();
 
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.fillInED25519PrivateKey(privateKey);
-    await suite.settingsPage.fillInED25519Nickname('Duplicate-Import-Key-Again');
-    await suite.settingsPage.clickOnED25519ImportButton(false);
+    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Duplicate-Import-Key-Again', false);
 
     const toastMessage = await suite.registrationPage.getToastMessageByVariant('error');
     expect(toastMessage).toContain('Key pair already exists');
