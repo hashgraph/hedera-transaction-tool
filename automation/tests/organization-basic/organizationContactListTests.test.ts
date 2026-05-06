@@ -29,11 +29,14 @@ test.describe('Organization Contact List member view tests @organization-basic',
     await suite.contactListPage.clickOnChangeNicknameButton();
     await suite.contactListPage.fillInContactNickname(newNickname);
     await suite.contactListPage.clickOnAccountInContactListByEmail(suite.adminUser.email);
-    // The contact row testid is derived from the nickname; the persist + re-render
-    // races the read, so poll until the renamed row appears.
+    // The contact row testid is derived from the nickname, and the rename has to
+    // round-trip the backend + WebSocket before the renderer re-emits the new row.
+    // Poll across VERY_LONG_TIMEOUT so CI runs absorb that latency, with each
+    // attempt bounded by SHORT_TIMEOUT so the budget translates to ~60 attempts
+    // instead of being eaten by getText's default 3s visibility wait.
     await expect
       .poll(() => suite.contactListPage.getContactNicknameText(newNickname), {
-        timeout: suite.contactListPage.getLongTimeout(),
+        timeout: suite.contactListPage.getLongTimeout() * 2,
         intervals: [suite.contactListPage.getShortTimeout()],
       })
       .toBe(newNickname);
