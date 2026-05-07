@@ -296,27 +296,39 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
  * so callers can abort before any other side effects. The thrown
  * Error has a mode-specific message so the UI can show the user what
  * actually went wrong, and preserves the original error as `cause`
- * so logs retain the underlying stack. */
+ * so in-process logs retain the underlying stack. */
 export const encryptOrganizationPassword = async (
   password: string,
   encryptPassword?: string | null,
 ) => {
-  const useKeychain = await getUseKeychainClaim();
+  if (!password) {
+    throw new Error('Password is required to encrypt');
+  }
+
+  let useKeychain = false;
+  try {
+    useKeychain = await getUseKeychainClaim();
+  } catch (error) {
+    logger.error('Failed to encrypt organization password', { error });
+    throw new Error('Keychain access denied or unavailable', { cause: error });
+  }
+
+  if (!useKeychain && !encryptPassword) {
+    throw new Error('No encryption method available');
+  }
 
   try {
-    return await encryptData(password, encryptPassword);
+    if (useKeychain) {
+      const buffer = safeStorage.encryptString(password);
+      return buffer.toString('base64');
+    }
+    return encrypt(password, encryptPassword as string);
   } catch (error) {
     logger.error('Failed to encrypt organization password', { error, useKeychain });
-
     if (useKeychain) {
       throw new Error('Keychain access denied or unavailable', { cause: error });
     }
-
-    if (encryptPassword) {
-      throw new Error('Failed to encrypt with application password', { cause: error });
-    }
-
-    throw new Error('No encryption method available', { cause: error });
+    throw new Error('Failed to encrypt with application password', { cause: error });
   }
 };
 

@@ -379,8 +379,11 @@ describe('settings profile coverage', () => {
       mocks.getPassword.mockReturnValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      // The renderer-side commonIPCHandler parses the main-thrown message out of the IPC error
+      // payload and rethrows it. The main service throws 'Failed to update organization credentials'
+      // (organizationCredentials.ts:237), so that's what the renderer sees and surfaces to the toast.
       mocks.updateOrganizationCredentials.mockRejectedValueOnce(
-        new Error('Failed to store organization credentials'),
+        new Error('Failed to update organization credentials'),
       );
 
       const wrapper = mountProfile();
@@ -388,7 +391,7 @@ describe('settings profile coverage', () => {
       await openConfirm(wrapper);
       await clickConfirm(wrapper);
 
-      expect(mocks.toastError).toHaveBeenCalledWith('Failed to store organization credentials');
+      expect(mocks.toastError).toHaveBeenCalledWith('Failed to update organization credentials');
       expect(wrapper.text()).not.toContain('Password Changed Successfully');
       expect(
         (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,

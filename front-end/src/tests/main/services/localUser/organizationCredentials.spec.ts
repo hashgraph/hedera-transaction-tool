@@ -691,6 +691,29 @@ describe('Services Local User Organization Credentials', () => {
       expect(result).toEqual(encryptedPassword);
     });
 
+    test('Should reject with empty-password guard before touching getUseKeychainClaim', async () => {
+      await expect(encryptOrganizationPassword('', 'anything')).rejects.toThrow(
+        'Password is required to encrypt',
+      );
+      expect(getUseKeychainClaim).not.toHaveBeenCalled();
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+    });
+
+    test('Should rethrow as the keychain-specific message when getUseKeychainClaim itself throws', async () => {
+      const underlying = new Error('Keychain mode not initialized');
+      vi.mocked(getUseKeychainClaim).mockRejectedValue(underlying);
+
+      const promise = encryptOrganizationPassword('newPassword', null);
+
+      await expect(promise).rejects.toThrow('Keychain access denied or unavailable');
+      // toHaveProperty uses Object.is — verifies the exact original reference was preserved as cause.
+      await expect(promise).rejects.toHaveProperty('cause', underlying);
+      // We must not reach the actual encryption attempt when claim resolution fails.
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+    });
+
     test('Should rethrow with the keychain-specific message when keychain encrypt throws (Deny scenario)', async () => {
       const password = 'newPassword';
       const underlying = new Error(
@@ -705,8 +728,7 @@ describe('Services Local User Organization Credentials', () => {
       const promise = encryptOrganizationPassword(password, null);
 
       await expect(promise).rejects.toThrow('Keychain access denied or unavailable');
-      // cause must be preserved so logs retain the underlying stack chain
-      await expect(promise).rejects.toMatchObject({ cause: underlying });
+      await expect(promise).rejects.toHaveProperty('cause', underlying);
     });
 
     test('Should rethrow with the application-password message when AES encrypt throws', async () => {
@@ -722,19 +744,27 @@ describe('Services Local User Organization Credentials', () => {
       const promise = encryptOrganizationPassword(password, personalPassword);
 
       await expect(promise).rejects.toThrow('Failed to encrypt with application password');
-      await expect(promise).rejects.toMatchObject({ cause: underlying });
+      await expect(promise).rejects.toHaveProperty('cause', underlying);
     });
 
-    test('Should rethrow with the no-method-available message when neither keychain nor personal password is available', async () => {
-      const password = 'newPassword';
-
+    test('Should reject with the no-method-available message before any encrypt call', async () => {
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
 
-      await expect(encryptOrganizationPassword(password, null)).rejects.toThrow(
+      await expect(encryptOrganizationPassword('newPassword', null)).rejects.toThrow(
         'No encryption method available',
       );
       expect(safeStorage.encryptString).not.toHaveBeenCalled();
       expect(encrypt).not.toHaveBeenCalled();
+    });
+
+    test('Should call getUseKeychainClaim exactly once on the success path (no duplicate DB hit)', async () => {
+      const buffer = Buffer.from('encrypted');
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(buffer);
+
+      await encryptOrganizationPassword('newPassword', null);
+
+      expect(getUseKeychainClaim).toHaveBeenCalledTimes(1);
     });
   });
 
