@@ -67,9 +67,6 @@ export const updateOrganizationCredentials = async (
     );
   }, 'Failed to store organization credentials');
 
-/* Encrypts a password for organization credentials storage.
- * Use this to surface keychain/personal-password failures up front,
- * before any irreversible side effects (e.g. backend password change). */
 export const encryptOrganizationPassword = async (
   password: string,
   encryptPassword?: string | null,

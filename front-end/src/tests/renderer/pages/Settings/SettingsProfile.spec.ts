@@ -242,8 +242,6 @@ describe('settings profile coverage', () => {
     });
 
     test('happy path (keychain mode): encrypts first, then rotates BE, then writes encrypted blob to local DB', async () => {
-      // Realistic state: keychain users have no cached personal password,
-      // so getPassword returns null and the second arg to encrypt is undefined.
       mocks.userStore.personal = { id: 'local-user-id', useKeychain: true };
 
       const encryptedBlob = 'encrypted-blob';
@@ -257,7 +255,6 @@ describe('settings profile coverage', () => {
       await openConfirm(wrapper);
       await clickConfirm(wrapper);
 
-      // Encrypt is called BEFORE the BE rotation, which is BEFORE the local DB write.
       const encryptOrder = mocks.encryptOrganizationPassword.mock.invocationCallOrder[0];
       const beOrder = mocks.organizationChangePassword.mock.invocationCallOrder[0];
       const dbOrder = mocks.updateOrganizationCredentials.mock.invocationCallOrder[0];
@@ -270,7 +267,6 @@ describe('settings profile coverage', () => {
         STRONG_OLD,
         STRONG_NEW,
       );
-      // DB write must use the already-encrypted blob and pass passwordIsEncrypted=true.
       expect(mocks.updateOrganizationCredentials).toHaveBeenCalledWith(
         ORG.id,
         'local-user-id',
@@ -309,30 +305,36 @@ describe('settings profile coverage', () => {
       );
     });
 
-    test('keychain Deny: encrypt throws -> BE never called, DB never called, fields preserved, modal stays open', async () => {
-      mocks.getPassword.mockReturnValueOnce(null);
-      mocks.encryptOrganizationPassword.mockRejectedValueOnce(
-        new Error('Keychain access denied or unavailable'),
-      );
+    test.each([
+      ['Keychain access denied or unavailable'],
+      ['Failed to encrypt with application password'],
+      ['No encryption method available'],
+    ])(
+      'encrypt failure mode "%s" surfaces to the toast and aborts before BE / DB',
+      async message => {
+        mocks.getPassword.mockReturnValueOnce(null);
+        mocks.encryptOrganizationPassword.mockRejectedValueOnce(new Error(message));
 
-      const wrapper = mountProfile();
-      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
-      await openConfirm(wrapper);
-      await clickConfirm(wrapper);
+        const wrapper = mountProfile();
+        await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+        await openConfirm(wrapper);
+        await clickConfirm(wrapper);
 
-      expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
-      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
-      expect(mocks.toastError).toHaveBeenCalledWith('Keychain access denied or unavailable');
+        expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
+        expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+        expect(mocks.toastError).toHaveBeenCalledWith(message);
 
-      expect(
-        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
-      ).toBe(STRONG_OLD);
-      expect(
-        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
-      ).toBe(STRONG_NEW);
-      expect(wrapper.text()).toContain('Change Password?');
-      expect(wrapper.text()).not.toContain('Password Changed Successfully');
-    });
+        expect(
+          (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement)
+            .value,
+        ).toBe(STRONG_OLD);
+        expect(
+          (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+        ).toBe(STRONG_NEW);
+        expect(wrapper.text()).toContain('Change Password?');
+        expect(wrapper.text()).not.toContain('Password Changed Successfully');
+      },
+    );
 
     test('BE rotation failure after encrypt: DB never written, fields preserved', async () => {
       mocks.getPassword.mockReturnValueOnce(null);
@@ -379,9 +381,6 @@ describe('settings profile coverage', () => {
       mocks.getPassword.mockReturnValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
-      // The renderer-side commonIPCHandler parses the main-thrown message out of the IPC error
-      // payload and rethrows it. The main service throws 'Failed to update organization credentials'
-      // (organizationCredentials.ts:237), so that's what the renderer sees and surfaces to the toast.
       mocks.updateOrganizationCredentials.mockRejectedValueOnce(
         new Error('Failed to update organization credentials'),
       );
@@ -413,7 +412,6 @@ describe('settings profile coverage', () => {
       expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
       expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
       expect(mocks.toastError).not.toHaveBeenCalled();
-      // Field state must survive — the personal-password modal callback re-invokes the handler and needs the values.
       expect(
         (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
       ).toBe(STRONG_OLD);
@@ -423,8 +421,6 @@ describe('settings profile coverage', () => {
     });
 
     test('modal callback re-invocation: second call sees populated fields and runs the full flow', async () => {
-      // First invocation: personal-password modal opens, getPassword returns false → early return.
-      // Second invocation (driven by the modal's onSubmitted callback): cached password is now available.
       mocks.getPassword.mockReturnValueOnce(false).mockReturnValueOnce('entered-personal-password');
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted-blob');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
@@ -434,7 +430,6 @@ describe('settings profile coverage', () => {
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
       await openConfirm(wrapper);
 
-      // First confirm click — early return path, fields must survive.
       await clickConfirm(wrapper);
       expect(mocks.encryptOrganizationPassword).not.toHaveBeenCalled();
       expect(
@@ -444,10 +439,6 @@ describe('settings profile coverage', () => {
         (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
       ).toBe(STRONG_NEW);
 
-      // Simulate the personal-password modal's submit callback re-entering handleChangePassword.
-      // The composable's contract is that `getPassword(callback, …)` invokes `callback(password)`
-      // when the modal is submitted — that callback is `handleChangePassword` itself, which we
-      // trigger here by clicking confirm a second time.
       await clickConfirm(wrapper);
 
       expect(mocks.encryptOrganizationPassword).toHaveBeenCalledTimes(1);
@@ -477,7 +468,6 @@ describe('settings profile coverage', () => {
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
       await openConfirm(wrapper);
 
-      // Simulate the legacy bug shape: fields somehow ended up empty while the confirm modal is open.
       await wrapper.find('[data-testid="input-current-password"]').setValue('');
       await wrapper.find('[data-testid="input-new-password"]').setValue('');
 
@@ -495,7 +485,6 @@ describe('settings profile coverage', () => {
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
       await openConfirm(wrapper);
 
-      // Then degrade the new password to a weak one and blur to mark it invalid.
       const newPasswordInput = wrapper.find('[data-testid="input-new-password"]');
       await newPasswordInput.setValue('short');
       await newPasswordInput.trigger('blur');

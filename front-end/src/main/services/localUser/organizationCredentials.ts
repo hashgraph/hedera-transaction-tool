@@ -291,12 +291,8 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   return failedLogins;
 };
 
-/* Encrypts an organization password for local storage.
- * Surfaces keychain-deny / wrong-personal-password failures up front
- * so callers can abort before any other side effects. The thrown
- * Error has a mode-specific message so the UI can show the user what
- * actually went wrong, and preserves the original error as `cause`
- * so in-process logs retain the underlying stack. */
+// Surfaces keychain / personal-password failures synchronously so callers can abort
+// before triggering irreversible side effects (e.g. the backend password rotation).
 export const encryptOrganizationPassword = async (
   password: string,
   encryptPassword?: string | null,
@@ -314,6 +310,9 @@ export const encryptOrganizationPassword = async (
   }
 
   if (!useKeychain && !encryptPassword) {
+    logger.warn('encryptOrganizationPassword called without a viable encryption method', {
+      useKeychain,
+    });
     throw new Error('No encryption method available');
   }
 

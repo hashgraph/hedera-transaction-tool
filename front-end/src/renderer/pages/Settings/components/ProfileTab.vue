@@ -84,8 +84,7 @@ const handleChangePassword = async () => {
       });
       if (passwordModalOpened(personalPassword)) return;
 
-      /* Encrypt-first: surface keychain-deny / wrong-personal-password failures
-       * before the irreversible backend password change. */
+      // Encrypt before the BE rotation so a keychain failure aborts cleanly with both stores in sync.
       const encryptedNewPassword = await encryptOrganizationPassword(
         newPassword.value,
         personalPassword || undefined,
