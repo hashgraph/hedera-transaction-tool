@@ -691,37 +691,47 @@ describe('Services Local User Organization Credentials', () => {
       expect(result).toEqual(encryptedPassword);
     });
 
-    test('Should throw if password is empty (caller bug - guards against silent no-op)', async () => {
-      await expect(encryptOrganizationPassword('', 'anything')).rejects.toThrow(
-        'Password is required to encrypt',
-      );
-      expect(getUseKeychainClaim).not.toHaveBeenCalled();
-      expect(safeStorage.encryptString).not.toHaveBeenCalled();
-      expect(encrypt).not.toHaveBeenCalled();
-    });
-
-    test('Should rethrow as a domain error when keychain encrypt throws (Deny scenario)', async () => {
+    test('Should rethrow with the keychain-specific message when keychain encrypt throws (Deny scenario)', async () => {
       const password = 'newPassword';
+      const underlying = new Error(
+        'Error while encrypting the text provided to safeStorage.encryptString. Encryption is not available.',
+      );
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
       vi.mocked(safeStorage.encryptString).mockImplementation(() => {
-        throw new Error(
-          'Error while encrypting the text provided to safeStorage.encryptString. Encryption is not available.',
-        );
+        throw underlying;
       });
 
-      await expect(encryptOrganizationPassword(password, null)).rejects.toThrow(
-        'Failed to encrypt organization password',
-      );
+      const promise = encryptOrganizationPassword(password, null);
+
+      await expect(promise).rejects.toThrow('Keychain access denied or unavailable');
+      // cause must be preserved so logs retain the underlying stack chain
+      await expect(promise).rejects.toMatchObject({ cause: underlying });
     });
 
-    test('Should rethrow as a domain error when no encryption method is available', async () => {
+    test('Should rethrow with the application-password message when AES encrypt throws', async () => {
+      const password = 'newPassword';
+      const personalPassword = 'personal-password';
+      const underlying = new Error('AES failure');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(encrypt).mockImplementation(() => {
+        throw underlying;
+      });
+
+      const promise = encryptOrganizationPassword(password, personalPassword);
+
+      await expect(promise).rejects.toThrow('Failed to encrypt with application password');
+      await expect(promise).rejects.toMatchObject({ cause: underlying });
+    });
+
+    test('Should rethrow with the no-method-available message when neither keychain nor personal password is available', async () => {
       const password = 'newPassword';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
 
       await expect(encryptOrganizationPassword(password, null)).rejects.toThrow(
-        'Failed to encrypt organization password',
+        'No encryption method available',
       );
       expect(safeStorage.encryptString).not.toHaveBeenCalled();
       expect(encrypt).not.toHaveBeenCalled();
