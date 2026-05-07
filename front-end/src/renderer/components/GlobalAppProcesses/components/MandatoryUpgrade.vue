@@ -32,7 +32,7 @@ import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/
 import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
 
 const { versionStatus, updateUrl } = useVersionCheck();
-const { state, progress, error, updateInfo, startUpdate, installUpdate } = useElectronUpdater();
+const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } = useElectronUpdater();
 const user = useUserStore();
 const toastManager = ToastManager.inject();
 const { setLast } = useDefaultOrganization();
@@ -142,8 +142,9 @@ const handleDisconnect = async () => {
     }
   } else {
     // No org in the store yet (e.g. during migration before the org is saved to DB).
-    // Just clear the version state so the modal closes. The migration form will show
-    // its own error explaining that an upgrade is required.
+    // Cancel any in-progress download, then clear version state so the modal closes.
+    // The migration form will show its own error explaining that an upgrade is required.
+    cancelUpdate();
     const serverUrl = triggeringOrganizationServerUrl.value;
     if (serverUrl) {
       resetVersionStatusForOrg(serverUrl);
