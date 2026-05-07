@@ -10,7 +10,7 @@ import { addOrganizationCredentials } from '@renderer/services/organizationCrede
 
 import { safeAwait, toggleAuthTokenInSessionStorage } from '@renderer/utils';
 
-import useVersionCheck from '@renderer/composables/useVersionCheck';
+import { healthCheck } from '@renderer/services/organization';
 import { getVersionStatusForOrg } from '@renderer/stores/versionState';
 
 import SetupOrganizationForm from './SetupOrganizationForm.vue';
@@ -26,8 +26,6 @@ const emit = defineEmits<{
   (event: 'migration:cancel'): void;
 }>();
 
-/* Composables */
-const { performVersionCheck } = useVersionCheck();
 
 /* State */
 const loading = ref(false);
@@ -49,7 +47,7 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   /* Add Organization */
   if (!organizationId.value || !sameOrganization) {
     loadingText.value = 'Checking version compatibility...';
-    await performVersionCheck(formData.organizationURL);
+    await healthCheck(formData.organizationURL);
     if (getVersionStatusForOrg(formData.organizationURL) === 'belowMinimum') {
       loading.value = false;
       return {
