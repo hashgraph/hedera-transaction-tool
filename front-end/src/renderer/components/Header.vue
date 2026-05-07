@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { computed, onUpdated } from 'vue';
+import { computed } from 'vue';
 
 import { networkMapping } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import Logo from '@renderer/components/Logo.vue';
 import LogoText from '@renderer/components/LogoText.vue';
@@ -17,16 +15,10 @@ import UserModeSelect from './UserModeSelect.vue';
 const user = useUserStore();
 const networkStore = useNetworkStore();
 
-/* Composables */
-const createTooltips = useCreateTooltips();
-
 /* Computed */
 const isAccountSetupComplete = computed(() => {
   return user.personal && user.personal.isLoggedIn && !user.accountSetupStarted;
 });
-
-/* Hooks */
-onUpdated(createTooltips);
 </script>
 
 <template>

@@ -2,7 +2,7 @@
 import type { KeyPair } from '@prisma/client';
 import type { ConnectedOrganization } from '@renderer/types';
 
-import { onBeforeMount, onUpdated, ref } from 'vue';
+import { onBeforeMount, ref } from 'vue';
 
 import { Prisma } from '@prisma/client';
 
@@ -10,7 +10,6 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
@@ -44,9 +43,8 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const router = useRouter();
-const createTooltips = useCreateTooltips();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -236,10 +234,6 @@ onBeforeMount(async () => {
   if (error) {
     throwError(getErrorMessage(error, 'Failed to restore keys'));
   }
-});
-
-onUpdated(() => {
-  createTooltips();
 });
 
 /* Expose */

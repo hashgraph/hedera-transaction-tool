@@ -9,7 +9,7 @@ import {
   NotificationType,
 } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -20,7 +20,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
@@ -102,7 +101,6 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   if (isAffected) await fetchGroupOnNotif(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const createTooltips = useCreateTooltips();
 
 /* Injected */
 const appCache = AppCache.inject();
@@ -114,7 +112,6 @@ const firstSignableGroupItem = ref<IGroupItem | null>(null);
 
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
-const tooltipRef = ref<HTMLElement[]>([]);
 
 const fullyLoaded = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -316,12 +313,6 @@ watch(
   },
 );
 
-watchEffect(() => {
-  if (tooltipRef.value && tooltipRef.value.length > 0) {
-    createTooltips();
-  }
-});
-
 /* Functions */
 async function fetchGroup(id: string | number) {
   fullyLoaded.value = false;
@@ -371,9 +362,6 @@ async function fetchGroup(id: string | number) {
 
       await updateFirstSignableGroupItemAfterFetch();
 
-      // bootstrap tooltips needs to be recreated when the items' status might have changed
-      // since their title is not updated
-      createTooltips();
     } catch (error) {
       router.back();
       throw error;

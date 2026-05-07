@@ -1,20 +1,19 @@
 <script setup lang="ts">
 import type { TransactionDraft, TransactionGroup } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { computed, nextTick, onBeforeMount, onUnmounted, ref, watch } from 'vue';
-
-import { Prisma } from '@prisma/client';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useUserStore from '@renderer/stores/storeUser';
 
 import {
+  deleteDraft,
   getDraft,
   getDrafts,
-  deleteDraft,
-  updateDraft,
   getDraftsCount,
+  updateDraft,
 } from '@renderer/services/transactionDraftsService';
 import {
   deleteGroup,
@@ -31,7 +30,6 @@ import AppPager from '@renderer/components/ui/AppPager.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
@@ -42,7 +40,6 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const createTooltips = useCreateTooltips();
 
 const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
   useTableQueryState(DRAFTS_SORT_URL_VALUES, 'created_at', 'desc');
@@ -364,14 +361,6 @@ function checkTruncation(el: HTMLElement) {
   }
 
   truncationState.value.set(elementId, isNowTruncated);
-
-  const tooltip = Tooltip.getInstance(el);
-
-  if (wasTruncated && !isNowTruncated && tooltip) {
-    tooltip.dispose();
-  } else if (!wasTruncated && isNowTruncated) {
-    nextTick(() => createTooltips());
-  }
 }
 
 function isTruncated(draft: TransactionDraft | TransactionGroup): boolean {
