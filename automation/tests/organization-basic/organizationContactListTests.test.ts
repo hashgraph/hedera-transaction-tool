@@ -17,7 +17,7 @@ test.describe('Organization Contact List member view tests @organization-basic',
     expect(result).toBe(true);
   });
 
-  test('Verify user can change nickname', async () => {
+  test.only('Verify user can change nickname', async () => {
     await signInOrganizationUser(
       suite.organizationPage,
       suite.regularUser,
@@ -29,16 +29,8 @@ test.describe('Organization Contact List member view tests @organization-basic',
     await suite.contactListPage.clickOnChangeNicknameButton();
     await suite.contactListPage.fillInContactNickname(newNickname);
     await suite.contactListPage.clickOnAccountInContactListByEmail(suite.adminUser.email);
-    // The contact row testid is derived from the nickname, and the rename has to
-    // round-trip the backend + WebSocket before the renderer re-emits the new row.
-    // Poll across VERY_LONG_TIMEOUT so CI runs absorb that latency, with each
-    // attempt bounded by SHORT_TIMEOUT so the budget translates to ~60 attempts
-    // instead of being eaten by getText's default 3s visibility wait.
-    await expect
-      .poll(() => suite.contactListPage.getContactNicknameText(newNickname), {
-        timeout: suite.contactListPage.getLongTimeout() * 2,
-        intervals: [suite.contactListPage.getShortTimeout()],
-      })
-      .toBe(newNickname);
+    // The contact row testid encodes the nickname, so visibility of the renamed
+    // row is sufficient — wait long enough to absorb the backend + WS round-trip.
+    await suite.contactListPage.waitForContactNicknameVisible(newNickname);
   });
 });

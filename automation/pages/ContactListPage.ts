@@ -60,8 +60,14 @@ export class ContactListPage extends BasePage {
     await this.fill(this.inputChangeNicknameSelector, nickname);
   }
 
-  async getContactNicknameText(nickname: string, timeout: number = this.SHORT_TIMEOUT) {
-    return await this.getText(this.contactListNicknameIndexSelector + nickname, null, timeout);
+  async waitForContactNicknameVisible(
+    nickname: string,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+  ) {
+    await this.waitForElementToBeVisible(
+      this.contactListNicknameIndexSelector + nickname,
+      timeout,
+    );
   }
 
   async clickOnAddNewContactButton() {
