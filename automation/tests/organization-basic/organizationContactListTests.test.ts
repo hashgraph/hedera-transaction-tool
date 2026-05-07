@@ -17,7 +17,7 @@ test.describe('Organization Contact List member view tests @organization-basic',
     expect(result).toBe(true);
   });
 
-  test.only('Verify user can change nickname', async () => {
+  test('Verify user can change nickname', async () => {
     await signInOrganizationUser(
       suite.organizationPage,
       suite.regularUser,
