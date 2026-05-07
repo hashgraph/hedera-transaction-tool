@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription.ts';
 
 import {
   provideDynamicLayout,
@@ -19,8 +20,10 @@ import OrganizationStatusModal from '@renderer/components/Organization/Organizat
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
 import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 import { ToastManager } from './utils/ToastManager';
-import { createLogger, getErrorMessage } from '@renderer/utils';
+import { createLogger, getErrorMessage, isLoggedInOrganization } from '@renderer/utils';
 import { AppCache } from './caches/AppCache';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload.ts';
+import { TRANSACTION_ACTION } from '@shared/constants';
 
 /* Composables */
 const router = useRouter();
@@ -67,11 +70,30 @@ ToastManager.provide();
 
 /* AppCache */
 const appCache = AppCache.inject();
-watch([() => user.personal, () => user.selectedOrganization], () => {
-  // User identity has changed => backend transaction cache is obsolete
-  appCache.backendTransaction.clear();
-}, { immediate: true });
+watch(
+  [() => user.personal, () => user.selectedOrganization],
+  () => {
+    // User identity has changed => backend transaction cache is obsolete
+    appCache.backendTransaction.clear();
+  },
+  { immediate: true },
+);
+useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
+  const parsed = parseTransactionActionPayload(payload);
+  if (!parsed) {
+    // We clear all entries from backend transaction cache
+    appCache.backendTransaction.clear();
+    return;
+  } // Legacy fallback
 
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const serverUrl = user.selectedOrganization.serverUrl;
+    for (const transactionId of parsed.transactionIds) {
+      // We clear cache with strict==false to keep young data
+      appCache.backendTransaction.forget(transactionId, serverUrl, false);
+    }
+  }
+});
 </script>
 <template>
   <AppHeader
