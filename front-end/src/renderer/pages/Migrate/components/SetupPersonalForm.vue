@@ -106,15 +106,6 @@ function checkPassword(pass: string) {
   passwordRequirements.length = length;
   return result;
 }
-//
-// function setTooltipContent() {
-//   tooltipContent.value = ;
-//   const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-//   Array.from(tooltipList).forEach(tooltipEl => {
-//     const tooltip = Tooltip.getInstance(tooltipEl);
-//     tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
-//   });
-// }
 
 /* Hooks */
 onBeforeMount(async () => {

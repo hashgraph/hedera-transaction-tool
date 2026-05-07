@@ -188,14 +188,6 @@ function checkTruncation() {
   }
   const isNowTruncated = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
   isTruncated.value = isNowTruncated;
-
-  // const tooltip = Tooltip.getInstance(descriptionRef.value);
-  //
-  // if (!isNowTruncated && tooltip) {
-  //   tooltip.dispose();
-  // } else if (!wasTruncated && isNowTruncated) {
-  //   nextTick(() => createTooltips());
-  // }
 }
 
 /* Hooks */
