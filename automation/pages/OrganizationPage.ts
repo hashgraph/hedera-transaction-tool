@@ -27,6 +27,7 @@ import {
   indexRecoveryPhraseWords,
   seedOrganizationUserKey,
 } from '../utils/seeding/organizationSeeding.js';
+import { signTransactionByAllUsersViaApi } from '../utils/api/signByAllUsersViaApi.js';
 import {
   encodeExchangeRates,
   encodeFeeSchedule,
@@ -593,32 +594,20 @@ export class OrganizationPage extends BasePage {
     await this.click(this.editNicknameOrganizationButtonSelector);
   }
 
-  async clickOnEditNicknameOrganizationButtonAtIndex(index: number) {
-    await this.click(this.editNicknameOrganizationButtonSelector, index);
-  }
-
   async fillInNewOrganizationNickname(nickname: string) {
     await this.fill(this.editOrganizationNicknameInputSelector, nickname);
   }
 
-  async fillVisibleOrganizationNicknameInput(nickname: string) {
-    await this.fill(this.visibleOrganizationNicknameInputSelector, nickname);
-  }
-
-  async saveVisibleOrganizationNicknameInput() {
-    await this.pressKey('Tab');
-  }
-
   async updateOrganizationNicknameAtIndex(index: number, nickname: string) {
-    await this.clickOnEditNicknameOrganizationButtonAtIndex(index);
+    await this.click(this.editNicknameOrganizationButtonSelector, index);
     await expect(this.getElement(this.visibleOrganizationNicknameInputSelector)).not.toHaveValue(
       '',
       {
         timeout: this.LONG_TIMEOUT,
       },
     );
-    await this.fillVisibleOrganizationNicknameInput(nickname);
-    await this.saveVisibleOrganizationNicknameInput();
+    await this.fill(this.visibleOrganizationNicknameInputSelector, nickname);
+    await this.pressKey('Tab');
   }
 
   async getOrganizationNicknameText() {
@@ -865,6 +854,16 @@ export class OrganizationPage extends BasePage {
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     return transactionResponse?.entity_id;
+  }
+
+  async signTransactionByAllUsersViaApi(txId: string) {
+    console.log(
+      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`,
+    );
+    const result = await signTransactionByAllUsersViaApi(this.users, txId);
+    console.log(
+      `[signTransactionByAllUsersViaApi] tx db-id=${result.transactionDbId}: sent ${result.signedUsers} signer(s), backend registered ${result.totalAcceptedSigners} new signer(s) total`,
+    );
   }
 
   async logInAndSignTransactionByAllUsers(encryptionPassword: string, txId: string) {
@@ -1371,7 +1370,7 @@ export class OrganizationPage extends BasePage {
     // Payer is the complex multi-sig account, so the remaining key holders must
     // sign before the network will execute the File Create.
     console.log('[ensureComplexFileExists] running signTxByAllUsersAndRefresh...');
-    await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    await this.signTxByAllUsersAndRefresh(txId ?? '');
     console.log('[ensureComplexFileExists] signTxByAllUsersAndRefresh done');
 
     console.log(
@@ -1395,17 +1394,9 @@ export class OrganizationPage extends BasePage {
     return { txId, validStart, fileId };
   }
 
-  async signTxByAllUsersAndRefresh(
-    globalCredentials: Credentials,
-    firstUser: UserDetails,
-    txId: string,
-  ) {
+  async signTxByAllUsersAndRefresh(txId: string) {
+    await this.signTransactionByAllUsersViaApi(txId);
     await this.transactionPage.clickOnTransactionsMenuButton();
-    await this.logoutFromOrganization();
-
-    await this.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
-    await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
-
     await this.clickOnHistoryTab();
   }
 
@@ -1558,7 +1549,7 @@ export class OrganizationPage extends BasePage {
       txId = txIdArray.length > 0 ? txIdArray[txIdArray.length - 1] : null; // Get the last item in the array
       validStart = validStartArray.length > 0 ? validStartArray[0] : null;
       await this.clickOnSignAllTransactionsButton();
-      await this.clickOnConfirmSignAllGroupActionButton();
+      await this.clickOnConfirmGroupActionButton(this.signAllTransactionsModalTitle);
     } else {
       // Standard transaction processing
       ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
@@ -1711,10 +1702,6 @@ export class OrganizationPage extends BasePage {
 
   async clickOnConfirmGroupActionButton(modalTitle?: string) {
     await this.click(this.getConfirmGroupActionButtonSelector(modalTitle), null, this.LONG_TIMEOUT);
-  }
-
-  async clickOnConfirmSignAllGroupActionButton() {
-    await this.clickOnConfirmGroupActionButton(this.signAllTransactionsModalTitle);
   }
 
   async clickOnConfirmSignAllButton() {
@@ -2124,6 +2111,25 @@ export class OrganizationPage extends BasePage {
   async isTransactionStageCompleted(stageIndex: number): Promise<boolean> {
     const bubbleContent = await this.getInnerContent(this.stageBubbleIndexSelector + stageIndex);
     return bubbleContent.trim().includes('bi-check-lg');
+  }
+
+  /**
+   * Polls until a stage bubble shows the completed checkmark, allowing the FE's
+   * WebSocket-driven cache to absorb a status change after fast API signing.
+   * Use this instead of a one-shot isTransactionStageCompleted assertion when the
+   * test has just triggered a status transition (e.g. WAITING_FOR_SIGNATURES →
+   * WAITING_FOR_EXECUTION).
+   */
+  async waitForStageCompleted(
+    stageIndex: number,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+  ): Promise<void> {
+    await expect
+      .poll(async () => this.isTransactionStageCompleted(stageIndex), {
+        timeout,
+        intervals: [this.SHORT_TIMEOUT],
+      })
+      .toBe(true);
   }
 
   async isSecondSignerCheckmarkVisible() {

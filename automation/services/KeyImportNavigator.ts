@@ -44,15 +44,11 @@ export class KeyImportNavigator {
   }
 
   async importEd25519PrivateKey(privateKey: string, nickname: string): Promise<void> {
-    await this.settingsPage.fillInED25519PrivateKey(privateKey);
-    await this.settingsPage.fillInED25519Nickname(nickname);
-    await this.settingsPage.clickOnED25519ImportButton();
+    await this.settingsPage.importED25519PrivateKey(privateKey, nickname);
   }
 
   async importEcdsaPrivateKey(privateKey: string, nickname: string): Promise<void> {
-    await this.settingsPage.fillInECDSAPrivateKey(privateKey);
-    await this.settingsPage.fillInECDSANickname(nickname);
-    await this.settingsPage.clickOnECDSAImportButton();
+    await this.settingsPage.importECDSAPrivateKey(privateKey, nickname);
   }
 
   async deleteKeyPairAtIndex(index: number): Promise<void> {

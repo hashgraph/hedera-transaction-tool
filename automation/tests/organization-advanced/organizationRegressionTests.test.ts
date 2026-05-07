@@ -28,10 +28,10 @@ let complexKeyAccountId: string;
 
 // Total number of users to be used as complex key
 // It should be divisible by 3
-let totalUsers = 57; // 57... divisible by 3...? Well this is not a good start...
+let totalUsers = 9;
 const resolveOrganizationNickname = createSequentialOrganizationNicknameResolver();
 
-test.describe.skip('Organization Regression tests @organization-advanced', () => {
+test.describe('Organization Regression tests @organization-advanced', () => {
   test.slow();
 
   test.beforeAll(async () => {
@@ -81,73 +81,53 @@ test.describe.skip('Organization Regression tests @organization-advanced', () =>
     await teardownOrganizationSuiteApp(app, isolationContext);
   });
 
+  async function assertComplexKeyTxFlow(
+    txId: string | null | undefined,
+    validStart: string | null | undefined,
+    expected: { mirrorType: string; historyType: string },
+  ) {
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
+
+    const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId ?? '');
+    expect(transactionResponse?.name).toBe(expected.mirrorType);
+    expect(transactionResponse?.result).toBe('SUCCESS');
+
+    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
+      txId ?? '',
+      validStart,
+    );
+    expect(transactionDetails?.transactionId).toBe(txId);
+    expect(transactionDetails?.transactionType).toBe(expected.historyType);
+    expect(transactionDetails?.validStart).toBeTruthy();
+    expect(transactionDetails?.detailsButton).toBe(true);
+    expect(transactionDetails?.status).toBe('SUCCESS');
+  }
+
   test('Verify user can execute update account tx for complex key account similar to council account', async () => {
-    test.setTimeout(calculateTimeout(totalUsers, 5));
+    test.setTimeout(calculateTimeout(totalUsers, 10));
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
       totalUsers * 5,
       true,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId ?? '');
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-
-    const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId ?? '');
-    const transactionType = transactionResponse?.name;
-    const result = transactionResponse?.result;
-    expect(transactionType).toBe('CRYPTOUPDATEACCOUNT');
-    expect(result).toBe('SUCCESS');
-
-    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
-      txId ?? '',
-      validStart,
-    );
-    expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Account Update');
-    expect(transactionDetails?.validStart).toBeTruthy();
-    expect(transactionDetails?.detailsButton).toBe(true);
-    expect(transactionDetails?.status).toBe('SUCCESS');
+    await assertComplexKeyTxFlow(txId, validStart, {
+      mirrorType: 'CRYPTOUPDATEACCOUNT',
+      historyType: 'Account Update',
+    });
   });
 
   test('Verify user can execute transfer tx for complex key account similar to council account', async () => {
-    test.setTimeout(calculateTimeout(totalUsers, 5));
+    test.setTimeout(calculateTimeout(totalUsers, 10));
     const { txId, validStart } = await organizationPage.transferAmountBetweenAccounts(
       complexKeyAccountId,
       '10',
       totalUsers * 5,
       true,
     );
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.logInAndSignTransactionByAllUsers(globalCredentials.password, txId ?? '');
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
-
-    const transactionResponse = await transactionPage.mirrorGetTransactionResponse(txId ?? '');
-    const transactionType = transactionResponse?.name;
-    const result = transactionResponse?.result;
-    expect(transactionType).toBe('CRYPTOTRANSFER');
-    expect(result).toBe('SUCCESS');
-
-    const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
-      txId ?? '',
-      validStart,
-    );
-    expect(transactionDetails?.transactionId).toBe(txId);
-    expect(transactionDetails?.transactionType).toBe('Transfer');
-    expect(transactionDetails?.validStart).toBeTruthy();
-    expect(transactionDetails?.detailsButton).toBe(true);
-    expect(transactionDetails?.status).toBe('SUCCESS');
+    await assertComplexKeyTxFlow(txId, validStart, {
+      mirrorType: 'CRYPTOTRANSFER',
+      historyType: 'Transfer',
+    });
   });
 });

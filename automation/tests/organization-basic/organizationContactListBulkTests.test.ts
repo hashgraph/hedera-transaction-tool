@@ -66,11 +66,7 @@ test.describe('Organization Contact List bulk and role tests @organization-basic
 
     await expect.poll(() => suite.contactListPage.isContactVisible(newUserEmail)).toBe(true);
     await suite.contactListPage.clickOnAccountInContactListByEmail(newUserEmail);
-    await suite.contactListPage.clickOnElevateContactButton();
-
-    // 10.2.11: elevate modal appears
-    expect(await suite.contactListPage.isConfirmElevateContactButtonVisible()).toBe(true);
-    await suite.contactListPage.clickOnConfirmElevateContactButton();
+    await suite.contactListPage.elevateContactToAdmin();
     await suite.registrationPage.waitForToastMessageByVariant(
       'success',
       'elevate to admin successfully',

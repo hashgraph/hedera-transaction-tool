@@ -1,6 +1,7 @@
 import { BasePage } from './BasePage.js';
 import { TransactionPage } from './TransactionPage.js';
 import { Page } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
 import { generateCSVFile } from '../utils/files/csvGenerator.js';
 import { getTransactionGroupsForTransactionId } from '../utils/db/databaseQueries.js';
 import { OrganizationPage } from './OrganizationPage.js';
@@ -133,49 +134,41 @@ export class GroupPage extends BasePage {
   }
 
   async clickAddToGroupButton() {
-    const buttonCount = await this.getElement(this.addToGroupButtonSelector).count();
+    // Poll across the LONG_TIMEOUT window: the button can be in the DOM but
+    // briefly disabled while the create-account form initializes, so a single
+    // SHORT_TIMEOUT sweep races the UI. Match waitForButtonEnabled and use
+    // SHORT_TIMEOUT as the poll interval.
+    const deadline = Date.now() + this.LONG_TIMEOUT;
+    let lastButtonCount = 0;
 
-    for (let index = 0; index < buttonCount; index++) {
-      const isVisible = await this.isElementVisible(
-        this.addToGroupButtonSelector,
-        index,
-        this.SHORT_TIMEOUT,
-      );
-      const isDisabled = isVisible
-        ? await this.isDisabled(this.addToGroupButtonSelector, index, this.SHORT_TIMEOUT)
-        : true;
+    while (Date.now() < deadline) {
+      lastButtonCount = await this.getElement(this.addToGroupButtonSelector).count();
 
-      if (isVisible && !isDisabled) {
+      for (let index = 0; index < lastButtonCount; index++) {
+        const isVisible = await this.isElementVisible(
+          this.addToGroupButtonSelector,
+          index,
+          this.SHORT_TIMEOUT,
+        );
+        if (!isVisible) continue;
+
+        const isDisabled = await this.isDisabled(
+          this.addToGroupButtonSelector,
+          index,
+          this.SHORT_TIMEOUT,
+        );
+        if (isDisabled) continue;
+
         await this.click(this.addToGroupButtonSelector, index, this.SHORT_TIMEOUT);
         return;
       }
+
+      await this.wait(this.SHORT_TIMEOUT);
     }
 
     throw new Error(
-      `No visible and enabled "${this.addToGroupButtonSelector}" button was found among ${buttonCount} element(s).`,
+      `No visible and enabled "${this.addToGroupButtonSelector}" button was found among ${lastButtonCount} element(s).`,
     );
-  }
-
-  async isAddToGroupButtonEnabled() {
-    const buttonCount = await this.getElement(this.addToGroupButtonSelector).count();
-
-    for (let index = 0; index < buttonCount; index++) {
-      const isVisible = await this.isElementVisible(
-        this.addToGroupButtonSelector,
-        index,
-        this.SHORT_TIMEOUT,
-      );
-      if (!isVisible) continue;
-
-      const isDisabled = await this.isDisabled(
-        this.addToGroupButtonSelector,
-        index,
-        this.SHORT_TIMEOUT,
-      );
-      return !isDisabled;
-    }
-
-    return false;
   }
 
   async getTransactionType(index: number) {
@@ -184,10 +177,6 @@ export class GroupPage extends BasePage {
 
   async getTransactionTimestamp(index: number, timeout?: number): Promise<string | null> {
     return await this.getText(this.transactionTimestampIndexSelector + index, null, timeout);
-  }
-
-  async getTransactionGroupDetailsId(index: number): Promise<string | null> {
-    return await this.getText(this.transactionGroupDetailsIdSelector, index);
   }
 
   async getAllTransactionTimestamps(
@@ -257,7 +246,9 @@ export class GroupPage extends BasePage {
     numberOfTransactions: number = 10,
     feePayerAccountId: string | null = null,
   ) {
-    const fileName = 'groupTransactions.csv';
+    // Unique filename per call to prevent parallel workers from racing on a
+    // shared `groupTransactions.csv` and uploading each other's CSV content.
+    const fileName = `groupTransactions-${randomUUID()}.csv`;
     const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
@@ -278,7 +269,9 @@ export class GroupPage extends BasePage {
     numberOfTransactions: number = 10,
     feePayerAccountId: string | null = null,
   ) {
-    const fileName = 'groupTransactions.csv';
+    // Unique filename per call to prevent parallel workers from racing on a
+    // shared `groupTransactions.csv` and uploading each other's CSV content.
+    const fileName = `groupTransactions-${randomUUID()}.csv`;
     const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
