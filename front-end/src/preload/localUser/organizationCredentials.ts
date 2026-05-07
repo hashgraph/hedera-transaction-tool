@@ -44,6 +44,7 @@ export default {
       password?: string | null,
       jwtToken?: string | null,
       encryptPassword?: string,
+      passwordIsEncrypted: boolean = false,
     ): Promise<boolean> =>
       ipcRenderer.invoke(
         'organizationCredentials:updateOrganizationCredentials',
@@ -52,6 +53,16 @@ export default {
         email,
         password,
         jwtToken,
+        encryptPassword,
+        passwordIsEncrypted,
+      ),
+    encryptOrganizationPassword: (
+      password: string,
+      encryptPassword?: string | null,
+    ): Promise<string> =>
+      ipcRenderer.invoke(
+        'organizationCredentials:encryptOrganizationPassword',
+        password,
         encryptPassword,
       ),
     deleteOrganizationCredentials: (organization_id: string, user_id: string): Promise<boolean> =>

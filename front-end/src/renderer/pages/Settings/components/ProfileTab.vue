@@ -13,7 +13,10 @@ import useLoader from '@renderer/composables/useLoader';
 
 import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
-import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import {
+  encryptOrganizationPassword,
+  updateOrganizationCredentials,
+} from '@renderer/services/organizationCredentials';
 import { logout } from '@renderer/services/organization';
 
 import {
@@ -81,6 +84,13 @@ const handleChangePassword = async () => {
       });
       if (passwordModalOpened(personalPassword)) return;
 
+      /* Encrypt-first: surface keychain-deny / wrong-personal-password failures
+       * before the irreversible backend password change. */
+      const encryptedNewPassword = await encryptOrganizationPassword(
+        newPassword.value,
+        personalPassword || undefined,
+      );
+
       await organizationChangePassword(
         user.selectedOrganization.serverUrl,
         currentPassword.value,
@@ -91,9 +101,10 @@ const handleChangePassword = async () => {
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
-        newPassword.value,
+        encryptedNewPassword,
         undefined,
-        personalPassword || undefined,
+        undefined,
+        true,
       );
 
       if (!isUpdated) {
@@ -107,14 +118,14 @@ const handleChangePassword = async () => {
 
     isConfirmModalShown.value = false;
     isSuccessModalShown.value = true;
+    currentPassword.value = '';
+    newPassword.value = '';
 
     await user.refetchAccounts();
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to change password'));
   } finally {
     isChangingPassword.value = false;
-    currentPassword.value = '';
-    newPassword.value = '';
   }
 };
 

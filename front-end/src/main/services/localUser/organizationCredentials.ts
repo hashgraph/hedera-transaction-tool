@@ -204,11 +204,12 @@ export const updateOrganizationCredentials = async (
   password?: string | null,
   jwtToken?: string | null,
   encryptPassword?: string | null,
+  passwordIsEncrypted: boolean = false,
 ) => {
   const prisma = getPrismaClient();
 
   try {
-    if (password) {
+    if (password && !passwordIsEncrypted) {
       password = await encryptData(password, encryptPassword);
     }
 
@@ -288,6 +289,25 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   }
 
   return failedLogins;
+};
+
+/* Encrypts an organization password for local storage.
+ * Surfaces keychain-deny / wrong-personal-password failures up front
+ * so callers can abort before any other side effects. */
+export const encryptOrganizationPassword = async (
+  password: string,
+  encryptPassword?: string | null,
+) => {
+  if (!password) {
+    throw new Error('Password is required to encrypt');
+  }
+
+  try {
+    return await encryptData(password, encryptPassword);
+  } catch (error) {
+    logger.error('Failed to encrypt organization password', { error });
+    throw new Error('Failed to encrypt organization password');
+  }
 };
 
 /* Encrypt data */
