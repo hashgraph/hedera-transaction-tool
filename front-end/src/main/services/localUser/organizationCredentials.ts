@@ -291,7 +291,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   return failedLogins;
 };
 
-// Surfaces keychain / personal-password failures synchronously so callers can abort
+// Surfaces keychain / personal-password failures up front so callers can abort
 // before triggering irreversible side effects (e.g. the backend password rotation).
 export const encryptOrganizationPassword = async (
   password: string,

@@ -27,6 +27,33 @@ import { decrypt, encrypt } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
+vi.mock('@main/modules/logger', () => ({
+  default: vi.fn(),
+  createLogger: () => loggerMock,
+  getAppUpdateLogger: () => loggerMock,
+  getDatabaseLogger: () => loggerMock,
+  getLogsDirectoryPath: () => '/tmp/test-logs',
+  getLogFilePath: () => '/tmp/test-logs/app.log',
+  getLoggerSettings: () => ({
+    archiveCount: 5,
+    directory: '/tmp/test-logs',
+    fileName: 'app.log',
+    level: 'info',
+    maxSizeBytes: 5 * 1024 * 1024,
+  }),
+  logRendererMessage: vi.fn(),
+}));
+
 vi.mock('@main/db/prisma');
 vi.mock('electron', () => ({
   session: { fromPartition: vi.fn() },
@@ -708,6 +735,7 @@ describe('Services Local User Organization Credentials', () => {
 
       const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
 
+      expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe('Keychain access denied or unavailable');
       // toBe uses Object.is — locks in that the original reference is preserved on `cause`.
       expect((err as Error).cause).toBe(underlying);
@@ -727,6 +755,7 @@ describe('Services Local User Organization Credentials', () => {
 
       const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
 
+      expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe('Keychain access denied or unavailable');
       expect((err as Error).cause).toBe(underlying);
     });
@@ -743,22 +772,28 @@ describe('Services Local User Organization Credentials', () => {
         (e: unknown) => e,
       );
 
+      expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe('Failed to encrypt with application password');
       expect((err as Error).cause).toBe(underlying);
     });
 
-    test('Should reject with the no-method-available message before any encrypt call (no cause)', async () => {
+    test('Should reject with the no-method-available message before any encrypt call (no cause) and emit a warn for observability', async () => {
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
 
       const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
 
+      expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe('No encryption method available');
       expect(err).not.toHaveProperty('cause');
       expect(safeStorage.encryptString).not.toHaveBeenCalled();
       expect(encrypt).not.toHaveBeenCalled();
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        'encryptOrganizationPassword called without a viable encryption method',
+        { useKeychain: false },
+      );
     });
 
-    test('Should call getUseKeychainClaim exactly once on the success path (no duplicate DB hit)', async () => {
+    test('Should call getUseKeychainClaim exactly once on the success path (no duplicate DB hit) and not emit the no-method warn', async () => {
       const buffer = Buffer.from('encrypted');
       vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
       vi.mocked(safeStorage.encryptString).mockReturnValue(buffer);
@@ -766,6 +801,7 @@ describe('Services Local User Organization Credentials', () => {
       await encryptOrganizationPassword('newPassword', null);
 
       expect(getUseKeychainClaim).toHaveBeenCalledTimes(1);
+      expect(loggerMock.warn).not.toHaveBeenCalled();
     });
   });
 

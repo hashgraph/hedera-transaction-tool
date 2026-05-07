@@ -84,7 +84,8 @@ const handleChangePassword = async () => {
       });
       if (passwordModalOpened(personalPassword)) return;
 
-      // Encrypt before the BE rotation so a keychain failure aborts cleanly with both stores in sync.
+      // Encrypt before the BE rotation so a keychain / personal-password failure aborts before
+      // the backend is touched.
       const encryptedNewPassword = await encryptOrganizationPassword(
         newPassword.value,
         personalPassword || undefined,
