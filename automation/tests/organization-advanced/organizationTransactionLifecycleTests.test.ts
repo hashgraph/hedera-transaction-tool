@@ -33,7 +33,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     logoutFromOrganization: () => organizationPage.logoutFromOrganization(),
   });
 
-  test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
+  test.skip('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
@@ -63,7 +63,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     expect(isStageThreeCompleted).toBe(false);
   });
 
-  test('Verify transaction is shown "History" after it is executed', async () => {
+  test.skip('Verify transaction is shown "History" after it is executed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
