@@ -302,8 +302,29 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnImportButton() {
-    await this.click(this.transactionListMoreDropdownSelector);
-    await this.click(this.importSignaturesMenuItemSelector);
+    // The "Import Signatures from File" item in Transactions.vue dropDownMenuItems is gated on
+    // isLoggedInOrganization(user.selectedOrganization). If the dropdown is opened before the
+    // org session has rehydrated (e.g. immediately after re-login), the menu renders with only
+    // "Sign Transactions from File" and the import item never appears. Reopen the dropdown
+    // until the gated item attaches.
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT;
+    while (Date.now() < deadline) {
+      await this.click(this.transactionListMoreDropdownSelector);
+      try {
+        await this.waitForElementToBeAttached(
+          this.importSignaturesMenuItemSelector,
+          this.LONG_TIMEOUT,
+        );
+        await this.click(this.importSignaturesMenuItemSelector);
+        return;
+      } catch {
+        await this.pressKey('Escape');
+        await this.wait(this.SHORT_TIMEOUT);
+      }
+    }
+    throw new Error(
+      `Import Signatures menu item (${this.importSignaturesMenuItemSelector}) did not appear within ${this.VERY_LONG_TIMEOUT}ms`,
+    );
   }
 
   async clickOnTransactionFileActionsDropdown() {

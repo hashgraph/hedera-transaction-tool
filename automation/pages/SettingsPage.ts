@@ -330,6 +330,13 @@ export class SettingsPage extends BasePage {
   }
 
   async clickOnNotificationsTab(): Promise<void> {
+    // The Notifications tab is gated on isLoggedInOrganization in Settings.vue; if the org
+    // session hasn't rehydrated yet, the tab is filtered out of visibleTabItems and tab-5
+    // doesn't exist. Wait for the tab itself to render before clicking.
+    await this.waitForElementToBeVisible(
+      this.notificationsTabButtonSelector,
+      this.VERY_LONG_TIMEOUT,
+    );
     await this.click(this.notificationsTabButtonSelector);
     // Tab click resolves before the panel mounts; wait for the first toggle to attach
     // so later reads don't race the render on slow CI.
