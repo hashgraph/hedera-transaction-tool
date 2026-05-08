@@ -64,6 +64,13 @@ pnpm -F hedera-transaction-tool <script>          # e.g. pnpm -F hedera-transact
 
 Or by `cd front-end` and running the script as before — both work.
 
+> **Do not rename this workspace package.** The `name` field in `front-end/package.json` is `hedera-transaction-tool` because Electron reads it as `app.getName()`, which determines:
+>
+> - the `userData` directory (`~/Library/Application Support/hedera-transaction-tool/` on macOS, `~/.config/hedera-transaction-tool/` on Linux, `%APPDATA%\hedera-transaction-tool\` on Windows) — where the local SQLite database, logs, and Prisma data live;
+> - the macOS Keychain entry name (`hedera-transaction-tool Safe Storage`) — which holds the symmetric key Electron's `safeStorage` uses to encrypt private keys, mnemonics, and other sensitive blobs.
+>
+> Renaming the package would silently relocate every existing user's database to a fresh empty path and decouple their encrypted blobs from the keychain entry that can decrypt them. Effectively a mass invisible data loss on every install.
+
 ## 3. Generate Prisma client library
 
 ```bash

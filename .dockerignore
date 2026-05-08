@@ -26,3 +26,10 @@ front-end/src/generated
 automation/reports
 automation/test-results
 automation/k6/dist
+
+# local dev artifacts that bloat the build context now that it is the repo root
+back-end/pgdata
+**/*.log
+**/*.tsbuildinfo
+**/.DS_Store
+**/Thumbs.db
