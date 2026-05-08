@@ -1,7 +1,8 @@
-# Build context is the repo root: the Dockerfiles need the root pnpm-lock.yaml,
-# pnpm-workspace.yaml, and the front-end/automation package manifests. The Cloud
-# Build trigger must be configured to use the repository root as its source
-# (not back-end/).
+# This file lives at the repo root because the build context (`.` below) must
+# include the root pnpm-lock.yaml, pnpm-workspace.yaml, and the front-end /
+# automation package manifests — the Dockerfiles all install from the root
+# workspace via `pnpm install --filter "back-end..." --filter "@back-end/<app>..."`.
+# All paths in `args` are repo-relative.
 steps:
   # API service
   - name: 'gcr.io/cloud-builders/docker'
