@@ -1,19 +1,35 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 
 import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   userStore: {
-    personal: { id: 'local-user-id', useKeychain: false },
-    selectedOrganization: null as any,
+    personal: { id: 'local-user-id', useKeychain: false } as {
+      id: string;
+      useKeychain: boolean;
+    } | null,
+    selectedOrganization: null as null | {
+      id: string;
+      nickname: string;
+      serverUrl: string;
+      key: string;
+    },
     logout: vi.fn(),
     refetchAccounts: vi.fn(),
     refetchKeys: vi.fn(),
     setPassword: vi.fn(),
+    selectOrganization: vi.fn(),
   },
+  getPasswordAsync: vi.fn(),
+  changePasswordUser: vi.fn(),
+  organizationChangePassword: vi.fn(),
+  encryptOrganizationPassword: vi.fn(),
+  updateOrganizationCredentials: vi.fn(),
+  organizationLogout: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -32,31 +48,31 @@ vi.mock('@renderer/composables/useLoader', () => ({
 
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
   default: vi.fn(() => ({
-    getPassword: vi.fn(),
-    passwordModalOpened: vi.fn(() => false),
+    getPasswordAsync: mocks.getPasswordAsync,
   })),
 }));
 
 vi.mock('@renderer/services/userService', () => ({
-  changePassword: vi.fn(),
+  changePassword: mocks.changePasswordUser,
 }));
 
 vi.mock('@renderer/services/organization/auth', () => ({
-  changePassword: vi.fn(),
+  changePassword: mocks.organizationChangePassword,
 }));
 
 vi.mock('@renderer/services/organizationCredentials', () => ({
-  updateOrganizationCredentials: vi.fn(),
+  encryptOrganizationPassword: mocks.encryptOrganizationPassword,
+  updateOrganizationCredentials: mocks.updateOrganizationCredentials,
 }));
 
 vi.mock('@renderer/services/organization', () => ({
-  logout: vi.fn(),
+  logout: mocks.organizationLogout,
 }));
 
 vi.mock('@renderer/utils/ToastManager', () => ({
   ToastManager: {
     inject: vi.fn(() => ({
-      error: vi.fn(),
+      error: mocks.toastError,
     })),
   },
 }));
@@ -97,63 +113,473 @@ const stubs = {
   },
 };
 
+const ORG = {
+  id: 'org-1',
+  nickname: 'Acme',
+  serverUrl: 'https://acme.example',
+  key: 'org-key',
+};
+
+const STRONG_OLD = 'old-password';
+const STRONG_NEW = 'new-strong-password';
+
+const mountProfile = () => mount(ProfileTab, { global: { stubs } });
+
+const setPasswords = async (wrapper: ReturnType<typeof mountProfile>, current: string, next: string) => {
+  await wrapper.find('[data-testid="input-current-password"]').setValue(current);
+  await wrapper.find('[data-testid="input-new-password"]').setValue(next);
+};
+
+const openConfirm = async (wrapper: ReturnType<typeof mountProfile>) => {
+  await wrapper.find('form').trigger('submit');
+};
+
+const clickConfirm = async (wrapper: ReturnType<typeof mountProfile>) => {
+  await wrapper.find('[data-testid="button-confirm-change-password"]').trigger('click');
+  await flushPromises();
+};
+
 describe('settings profile coverage', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mocks.userStore.personal = { id: 'local-user-id', useKeychain: false };
     mocks.userStore.selectedOrganization = null;
   });
 
-  test('renders password form for email/password users', () => {
-    const wrapper = mount(ProfileTab, {
-      global: {
-        stubs,
-      },
+  describe('local user (no organization) flow', () => {
+    test('renders password form for email/password users', () => {
+      const wrapper = mountProfile();
+
+      expect(wrapper.find('[data-testid="input-current-password"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="input-new-password"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="button-change-password"]').exists()).toBe(true);
+      expect(wrapper.find('[data-testid="button-logout"]').exists()).toBe(true);
     });
 
-    expect(wrapper.find('[data-testid="input-current-password"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="input-new-password"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="button-change-password"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="button-logout"]').exists()).toBe(true);
+    test('keeps change password disabled for weak new password', async () => {
+      const wrapper = mountProfile();
+
+      await setPasswords(wrapper, STRONG_OLD, '123456789');
+
+      expect(
+        wrapper.find('[data-testid="button-change-password"]').attributes('disabled'),
+      ).toBeDefined();
+    });
+
+    test('shows invalid password inline message on blur', async () => {
+      const wrapper = mountProfile();
+
+      await wrapper.find('[data-testid="input-new-password"]').setValue('123456789');
+      await wrapper.find('[data-testid="input-new-password"]').trigger('blur');
+
+      expect(wrapper.text()).toContain('Invalid password');
+    });
+
+    test('opens confirmation modal when password form is valid', async () => {
+      const wrapper = mountProfile();
+
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+
+      expect(wrapper.text()).toContain('Change Password?');
+      expect(wrapper.find('[data-testid="button-confirm-change-password"]').exists()).toBe(true);
+    });
+
+    test('happy path: calls user changePassword, refetches keys, clears fields, opens success modal', async () => {
+      mocks.changePasswordUser.mockResolvedValueOnce(undefined);
+      mocks.userStore.refetchKeys.mockResolvedValueOnce(undefined);
+      mocks.userStore.refetchAccounts.mockResolvedValueOnce(undefined);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.changePasswordUser).toHaveBeenCalledWith(
+        'local-user-id',
+        STRONG_OLD,
+        STRONG_NEW,
+      );
+      expect(mocks.userStore.setPassword).toHaveBeenCalledWith(STRONG_NEW);
+      expect(mocks.userStore.refetchKeys).toHaveBeenCalled();
+      expect(mocks.userStore.refetchAccounts).toHaveBeenCalled();
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe('');
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe('');
+      expect(wrapper.text()).toContain('Password Changed Successfully');
+      expect(mocks.toastError).not.toHaveBeenCalled();
+    });
+
+    test('error path: surfaces toast and preserves the form when changePassword throws', async () => {
+      mocks.changePasswordUser.mockRejectedValueOnce(new Error('Wrong current password'));
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.toastError).toHaveBeenCalledWith('Wrong current password');
+      expect(mocks.userStore.setPassword).not.toHaveBeenCalled();
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_OLD);
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_NEW);
+      expect(wrapper.text()).not.toContain('Password Changed Successfully');
+    });
   });
 
-  test('keeps change password disabled for weak new password', async () => {
-    const wrapper = mount(ProfileTab, {
-      global: {
-        stubs,
-      },
+  describe('organization flow', () => {
+    beforeEach(() => {
+      mocks.userStore.selectedOrganization = { ...ORG };
     });
 
-    await wrapper.find('[data-testid="input-current-password"]').setValue('current-password');
-    await wrapper.find('[data-testid="input-new-password"]').setValue('123456789');
+    test('happy path (keychain mode): encrypts first, then rotates BE, then writes encrypted blob to local DB', async () => {
+      mocks.userStore.personal = { id: 'local-user-id', useKeychain: true };
 
-    expect(wrapper.find('[data-testid="button-change-password"]').attributes('disabled')).toBeDefined();
+      const encryptedBlob = 'encrypted-blob';
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce(encryptedBlob);
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      const encryptOrder = mocks.encryptOrganizationPassword.mock.invocationCallOrder[0];
+      const beOrder = mocks.organizationChangePassword.mock.invocationCallOrder[0];
+      const dbOrder = mocks.updateOrganizationCredentials.mock.invocationCallOrder[0];
+      expect(encryptOrder).toBeLessThan(beOrder);
+      expect(beOrder).toBeLessThan(dbOrder);
+
+      expect(mocks.encryptOrganizationPassword).toHaveBeenCalledWith(STRONG_NEW, undefined);
+      expect(mocks.organizationChangePassword).toHaveBeenCalledWith(
+        ORG.serverUrl,
+        STRONG_OLD,
+        STRONG_NEW,
+      );
+      expect(mocks.updateOrganizationCredentials).toHaveBeenCalledWith(
+        ORG.id,
+        'local-user-id',
+        undefined,
+        encryptedBlob,
+        undefined,
+        undefined,
+        true,
+      );
+
+      expect(wrapper.text()).toContain('Password Changed Successfully');
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe('');
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe('');
+      expect(mocks.toastError).not.toHaveBeenCalled();
+    });
+
+    test('happy path (non-keychain): forwards the cached personal password as encryption key', async () => {
+      mocks.userStore.personal = { id: 'local-user-id', useKeychain: false };
+      mocks.getPasswordAsync.mockResolvedValueOnce('cached-personal-password');
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).toHaveBeenCalledWith(
+        STRONG_NEW,
+        'cached-personal-password',
+      );
+    });
+
+    test.each([
+      ['Keychain access denied or unavailable'],
+      ['Failed to encrypt with application password'],
+      ['No encryption method available'],
+    ])(
+      'encrypt failure mode "%s" surfaces to the toast and aborts before BE / DB',
+      async message => {
+        mocks.getPasswordAsync.mockResolvedValueOnce(null);
+        mocks.encryptOrganizationPassword.mockRejectedValueOnce(new Error(message));
+
+        const wrapper = mountProfile();
+        await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+        await openConfirm(wrapper);
+        await clickConfirm(wrapper);
+
+        expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
+        expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+        expect(mocks.toastError).toHaveBeenCalledWith(message);
+
+        expect(
+          (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement)
+            .value,
+        ).toBe(STRONG_OLD);
+        expect(
+          (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+        ).toBe(STRONG_NEW);
+        expect(wrapper.text()).toContain('Change Password?');
+        expect(wrapper.text()).not.toContain('Password Changed Successfully');
+      },
+    );
+
+    test('BE rotation failure after encrypt: DB never written, fields preserved', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockRejectedValueOnce(new Error('Invalid old password'));
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).toHaveBeenCalled();
+      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+      expect(mocks.toastError).toHaveBeenCalledWith('Invalid old password');
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_OLD);
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_NEW);
+    });
+
+    test('DB write returns false -> raises domain error toast and preserves fields', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(false);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.toastError).toHaveBeenCalledWith('Failed to update organization credentials');
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_OLD);
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_NEW);
+    });
+
+    test('DB write rejects (IPC error) -> surfaces the thrown message and preserves fields', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockRejectedValueOnce(
+        new Error('Failed to update organization credentials'),
+      );
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.toastError).toHaveBeenCalledWith('Failed to update organization credentials');
+      expect(wrapper.text()).not.toContain('Password Changed Successfully');
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_OLD);
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_NEW);
+    });
+
+    test('user cancels the personal-password modal: no encrypt / BE / DB, no toast, fields preserved', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(false);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).not.toHaveBeenCalled();
+      expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
+      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+      expect(mocks.toastError).not.toHaveBeenCalled();
+      expect(
+        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_OLD);
+      expect(
+        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
+      ).toBe(STRONG_NEW);
+    });
+
+    test('personal-password modal submit: linear flow runs the full encrypt / BE / DB sequence', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce('entered-personal-password');
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted-blob');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).toHaveBeenCalledWith(
+        STRONG_NEW,
+        'entered-personal-password',
+      );
+      expect(mocks.organizationChangePassword).toHaveBeenCalledWith(
+        ORG.serverUrl,
+        STRONG_OLD,
+        STRONG_NEW,
+      );
+      expect(mocks.updateOrganizationCredentials).toHaveBeenCalledWith(
+        ORG.id,
+        'local-user-id',
+        undefined,
+        'encrypted-blob',
+        undefined,
+        undefined,
+        true,
+      );
+      expect(wrapper.text()).toContain('Password Changed Successfully');
+    });
+
+    test('confirm modal stays in loading state while getPasswordAsync is pending (no flicker between modals)', async () => {
+      // Arrange: getPasswordAsync hangs until we resolve it manually, simulating the
+      // personal-password modal being open on top of the confirm modal.
+      let resolvePersonal: (value: string | false | null) => void = () => {};
+      mocks.getPasswordAsync.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolvePersonal = resolve;
+        }),
+      );
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+
+      wrapper.find('[data-testid="button-confirm-change-password"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Change Password?');
+      const confirmButton = wrapper.find('[data-testid="button-confirm-change-password"]');
+      expect(confirmButton.attributes('disabled')).toBeDefined();
+
+      resolvePersonal('entered-personal-password');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Password Changed Successfully');
+    });
+
+    test('clicking Confirm with empty fields throws "Password cannot be empty" without side effects', async () => {
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+
+      await wrapper.find('[data-testid="input-current-password"]').setValue('');
+      await wrapper.find('[data-testid="input-new-password"]').setValue('');
+
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).not.toHaveBeenCalled();
+      expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
+      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+      expect(mocks.toastError).toHaveBeenCalledWith('Password cannot be empty');
+    });
+
+    test('clicking Confirm after the new password becomes invalid raises the strength error', async () => {
+      const wrapper = mountProfile();
+      // Open the modal with a strong new password.
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+
+      const newPasswordInput = wrapper.find('[data-testid="input-new-password"]');
+      await newPasswordInput.setValue('short');
+      await newPasswordInput.trigger('blur');
+
+      await clickConfirm(wrapper);
+
+      expect(mocks.encryptOrganizationPassword).not.toHaveBeenCalled();
+      expect(mocks.organizationChangePassword).not.toHaveBeenCalled();
+      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+      expect(mocks.toastError).toHaveBeenCalledWith(
+        'Password must be at least 10 characters long',
+      );
+    });
   });
 
-  test('shows invalid password inline message on blur', async () => {
-    const wrapper = mount(ProfileTab, {
-      global: {
-        stubs,
-      },
+  describe('logout flow', () => {
+    test('organization logout: logs out, clears local credentials, re-selects the org', async () => {
+      mocks.userStore.selectedOrganization = { ...ORG };
+      mocks.organizationLogout.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await wrapper.find('[data-testid="button-logout"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.organizationLogout).toHaveBeenCalledWith(ORG.serverUrl);
+      expect(mocks.updateOrganizationCredentials).toHaveBeenCalledWith(
+        ORG.id,
+        'local-user-id',
+        undefined,
+        '',
+        null,
+      );
+      expect(mocks.userStore.selectOrganization).toHaveBeenCalledWith({
+        id: ORG.id,
+        nickname: ORG.nickname,
+        serverUrl: ORG.serverUrl,
+        key: ORG.key,
+      });
     });
 
-    await wrapper.find('[data-testid="input-new-password"]').setValue('123456789');
-    await wrapper.find('[data-testid="input-new-password"]').trigger('blur');
+    test('local-user logout: clears HTX_USER from localStorage, calls store.logout, pushes to login route', async () => {
+      mocks.userStore.selectedOrganization = null;
+      const removeItemSpy = vi.spyOn(window.localStorage, 'removeItem');
 
-    expect(wrapper.text()).toContain('Invalid password');
+      const wrapper = mountProfile();
+      await wrapper.find('[data-testid="button-logout"]').trigger('click');
+      await flushPromises();
+
+      expect(removeItemSpy).toHaveBeenCalledWith('htx_user');
+      expect(mocks.userStore.logout).toHaveBeenCalled();
+      expect(mocks.routerPush).toHaveBeenCalledWith({ name: 'login' });
+      expect(mocks.organizationLogout).not.toHaveBeenCalled();
+    });
+
+    test('organization logout no-ops when there is no logged-in personal user', async () => {
+      mocks.userStore.selectedOrganization = { ...ORG };
+      mocks.userStore.personal = null;
+
+      const wrapper = mountProfile();
+      await wrapper.find('[data-testid="button-logout"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.organizationLogout).not.toHaveBeenCalled();
+      expect(mocks.updateOrganizationCredentials).not.toHaveBeenCalled();
+      expect(mocks.userStore.selectOrganization).not.toHaveBeenCalled();
+    });
   });
 
-  test('opens confirmation modal when password form is valid', async () => {
-    const wrapper = mount(ProfileTab, {
-      global: {
-        stubs,
-      },
+  describe('keychain-only personal user (no organization)', () => {
+    test('renders the Reset Application form instead of the password change form', () => {
+      mocks.userStore.personal = { id: 'local-user-id', useKeychain: true };
+      mocks.userStore.selectedOrganization = null;
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).toContain('Reset Application');
+      expect(wrapper.find('[data-testid="input-current-password"]').exists()).toBe(false);
+      expect(wrapper.find('[data-testid="input-new-password"]').exists()).toBe(false);
     });
-
-    await wrapper.find('[data-testid="input-current-password"]').setValue('current-password');
-    await wrapper.find('[data-testid="input-new-password"]').setValue('new-password');
-    await wrapper.find('form').trigger('submit');
-
-    expect(wrapper.text()).toContain('Change Password?');
-    expect(wrapper.find('[data-testid="button-confirm-change-password"]').exists()).toBe(true);
   });
 });
