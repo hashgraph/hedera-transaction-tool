@@ -60,6 +60,7 @@ export class NatsJetStreamService implements OnModuleDestroy {
       name: 'nestjs-service',
       maxReconnectAttempts: -1,
       reconnectTimeWait: 1000,
+      waitOnFirstConnect: true,
     });
 
     this.js = this.nc.jetstream();
