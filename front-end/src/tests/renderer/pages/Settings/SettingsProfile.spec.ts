@@ -23,8 +23,7 @@ const mocks = vi.hoisted(() => ({
     setPassword: vi.fn(),
     selectOrganization: vi.fn(),
   },
-  getPassword: vi.fn(),
-  passwordModalOpened: vi.fn((value: unknown) => value === false),
+  getPasswordAsync: vi.fn(),
   changePasswordUser: vi.fn(),
   organizationChangePassword: vi.fn(),
   encryptOrganizationPassword: vi.fn(),
@@ -49,8 +48,7 @@ vi.mock('@renderer/composables/useLoader', () => ({
 
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
   default: vi.fn(() => ({
-    getPassword: mocks.getPassword,
-    passwordModalOpened: mocks.passwordModalOpened,
+    getPasswordAsync: mocks.getPasswordAsync,
   })),
 }));
 
@@ -146,7 +144,6 @@ describe('settings profile coverage', () => {
     vi.clearAllMocks();
     mocks.userStore.personal = { id: 'local-user-id', useKeychain: false };
     mocks.userStore.selectedOrganization = null;
-    mocks.passwordModalOpened.mockImplementation((value: unknown) => value === false);
   });
 
   describe('local user (no organization) flow', () => {
@@ -245,7 +242,7 @@ describe('settings profile coverage', () => {
       mocks.userStore.personal = { id: 'local-user-id', useKeychain: true };
 
       const encryptedBlob = 'encrypted-blob';
-      mocks.getPassword.mockReturnValueOnce(null);
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce(encryptedBlob);
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
       mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
@@ -289,7 +286,7 @@ describe('settings profile coverage', () => {
 
     test('happy path (non-keychain): forwards the cached personal password as encryption key', async () => {
       mocks.userStore.personal = { id: 'local-user-id', useKeychain: false };
-      mocks.getPassword.mockReturnValueOnce('cached-personal-password');
+      mocks.getPasswordAsync.mockResolvedValueOnce('cached-personal-password');
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
       mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
@@ -312,7 +309,7 @@ describe('settings profile coverage', () => {
     ])(
       'encrypt failure mode "%s" surfaces to the toast and aborts before BE / DB',
       async message => {
-        mocks.getPassword.mockReturnValueOnce(null);
+        mocks.getPasswordAsync.mockResolvedValueOnce(null);
         mocks.encryptOrganizationPassword.mockRejectedValueOnce(new Error(message));
 
         const wrapper = mountProfile();
@@ -337,7 +334,7 @@ describe('settings profile coverage', () => {
     );
 
     test('BE rotation failure after encrypt: DB never written, fields preserved', async () => {
-      mocks.getPassword.mockReturnValueOnce(null);
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockRejectedValueOnce(new Error('Invalid old password'));
 
@@ -358,7 +355,7 @@ describe('settings profile coverage', () => {
     });
 
     test('DB write returns false -> raises domain error toast and preserves fields', async () => {
-      mocks.getPassword.mockReturnValueOnce(null);
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
       mocks.updateOrganizationCredentials.mockResolvedValueOnce(false);
@@ -378,7 +375,7 @@ describe('settings profile coverage', () => {
     });
 
     test('DB write rejects (IPC error) -> surfaces the thrown message and preserves fields', async () => {
-      mocks.getPassword.mockReturnValueOnce(null);
+      mocks.getPasswordAsync.mockResolvedValueOnce(null);
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
       mocks.updateOrganizationCredentials.mockRejectedValueOnce(
@@ -400,8 +397,8 @@ describe('settings profile coverage', () => {
       ).toBe(STRONG_NEW);
     });
 
-    test('personal-password modal opens (early return): no encrypt, no BE, no DB; fields stay populated for the callback', async () => {
-      mocks.getPassword.mockReturnValueOnce(false);
+    test('user cancels the personal-password modal: no encrypt / BE / DB, no toast, fields preserved', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(false);
 
       const wrapper = mountProfile();
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
@@ -420,8 +417,8 @@ describe('settings profile coverage', () => {
       ).toBe(STRONG_NEW);
     });
 
-    test('modal callback re-invocation: second call sees populated fields and runs the full flow', async () => {
-      mocks.getPassword.mockReturnValueOnce(false).mockReturnValueOnce('entered-personal-password');
+    test('personal-password modal submit: linear flow runs the full encrypt / BE / DB sequence', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce('entered-personal-password');
       mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted-blob');
       mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
       mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
@@ -429,19 +426,8 @@ describe('settings profile coverage', () => {
       const wrapper = mountProfile();
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
       await openConfirm(wrapper);
-
-      await clickConfirm(wrapper);
-      expect(mocks.encryptOrganizationPassword).not.toHaveBeenCalled();
-      expect(
-        (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
-      ).toBe(STRONG_OLD);
-      expect(
-        (wrapper.find('[data-testid="input-new-password"]').element as HTMLInputElement).value,
-      ).toBe(STRONG_NEW);
-
       await clickConfirm(wrapper);
 
-      expect(mocks.encryptOrganizationPassword).toHaveBeenCalledTimes(1);
       expect(mocks.encryptOrganizationPassword).toHaveBeenCalledWith(
         STRONG_NEW,
         'entered-personal-password',
@@ -460,6 +446,36 @@ describe('settings profile coverage', () => {
         undefined,
         true,
       );
+      expect(wrapper.text()).toContain('Password Changed Successfully');
+    });
+
+    test('confirm modal stays in loading state while getPasswordAsync is pending (no flicker between modals)', async () => {
+      // Arrange: getPasswordAsync hangs until we resolve it manually, simulating the
+      // personal-password modal being open on top of the confirm modal.
+      let resolvePersonal: (value: string | false | null) => void = () => {};
+      mocks.getPasswordAsync.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolvePersonal = resolve;
+        }),
+      );
+      mocks.encryptOrganizationPassword.mockResolvedValueOnce('encrypted');
+      mocks.organizationChangePassword.mockResolvedValueOnce(undefined);
+      mocks.updateOrganizationCredentials.mockResolvedValueOnce(true);
+
+      const wrapper = mountProfile();
+      await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
+      await openConfirm(wrapper);
+
+      wrapper.find('[data-testid="button-confirm-change-password"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Change Password?');
+      const confirmButton = wrapper.find('[data-testid="button-confirm-change-password"]');
+      expect(confirmButton.attributes('disabled')).toBeDefined();
+
+      resolvePersonal('entered-personal-password');
+      await flushPromises();
+
       expect(wrapper.text()).toContain('Password Changed Successfully');
     });
 

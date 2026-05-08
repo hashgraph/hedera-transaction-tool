@@ -40,7 +40,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const withLoader = useLoader();
-const { getPassword, passwordModalOpened } = usePersonalPassword();
+const { getPasswordAsync } = usePersonalPassword();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -79,10 +79,12 @@ const handleChangePassword = async () => {
     if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const personalPassword = getPassword(handleChangePassword, {
+      // Linear flow: confirm modal stays open with isChangingPassword = true while the
+      // personal-password modal is on top. Loading state is visible end-to-end.
+      const personalPassword = await getPasswordAsync({
         subHeading: 'Enter your application password to encrypt your organization credentials',
       });
-      if (passwordModalOpened(personalPassword)) return;
+      if (personalPassword === false) return; // user cancelled the personal-password modal
 
       // Encrypt before the BE rotation so a keychain / personal-password failure aborts before
       // the backend is touched.
