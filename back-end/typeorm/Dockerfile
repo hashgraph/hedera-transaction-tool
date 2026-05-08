@@ -54,7 +54,7 @@ COPY --from=builder /usr/src/app/back-end/apps/notifications/package.json ./back
 ENV CI=true
 ENV SKIP_NOTICE_GEN=true
 
-RUN pnpm install --prod --filter typeorm --frozen-lockfile --ignore-scripts
+RUN pnpm install --prod --filter "back-end..." --filter "typeorm..." --frozen-lockfile --ignore-scripts
 
 # Copy compiled migrations + libs
 COPY --from=builder /usr/src/app/back-end/dist/typeorm ./back-end/dist/typeorm
