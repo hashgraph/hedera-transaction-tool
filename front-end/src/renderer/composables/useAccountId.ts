@@ -82,7 +82,8 @@ export default function useAccountId() {
       accountInfoController.value = new AbortController();
       const accountInfoRes = await accountByIdCache.lookup(
         baseId,
-        networkStore.mirrorNodeBaseURL
+        networkStore.mirrorNodeBaseURL,
+        true /* To get the latest balance */
       );
 
       allowancesController.value = new AbortController();

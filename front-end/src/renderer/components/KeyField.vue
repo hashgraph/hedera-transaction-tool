@@ -35,9 +35,11 @@ const props = withDefaults(
     modelKey: Key | null;
     isRequired?: boolean;
     label?: string;
+    noThreshold?: boolean;
   }>(),
   {
     label: 'Key',
+    noThreshold: false,
   },
 );
 
@@ -147,7 +149,7 @@ watch(currentTab, tab => {
 watch(
   () => props.modelKey,
   async newKey => {
-    if (newKey && newKey instanceof PublicKey && true) {
+    if (newKey && newKey instanceof PublicKey) {
       const formatted = await formatPublicKey(newKey.toStringRaw(), publicKeyOwnerCache);
       formattedKey.value = formatted;
       identifier.value = extractIdentifier(formatted)?.identifier;
@@ -224,6 +226,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           :model-key="modelKey"
           @update:model-key="handleComplexKeyUpdate"
           :on-save-complex-key="selectedComplexKey ? undefined : handleSaveComplexKeyButtonClick"
+          :no-threshold="noThreshold"
         >
           <ComplexKeySaveKeyModal
             v-if="saveKeyListModalShown && modelKey instanceof KeyList && true"
@@ -270,6 +273,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           v-if="selectSavedKeyModalShown"
           v-model:show="selectSavedKeyModalShown"
           :on-key-list-select="handleSelectSavedComplexKey"
+          :no-threshold="noThreshold"
         />
       </template>
     </div>

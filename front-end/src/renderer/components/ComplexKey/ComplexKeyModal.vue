@@ -12,11 +12,17 @@ import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
-const props = defineProps<{
-  modelKey: Key | null;
-  show: boolean;
-  onSaveComplexKey?: () => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelKey: Key | null;
+    show: boolean;
+    onSaveComplexKey?: () => void;
+    noThreshold?: boolean;
+  }>(),
+  {
+    noThreshold: false,
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
@@ -109,11 +115,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
+                <ComplexKey
+                  :model-key="currentKey"
+                  :no-threshold="noThreshold"
+                  @update:model-key="handleComplexKeyUpdate"
+                />
               </div>
               <div v-else>
                 <KeyStructure
                   :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
+                  :no-threshold="noThreshold"
                 />
               </div>
             </Transition>
