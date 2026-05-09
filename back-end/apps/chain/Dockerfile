@@ -31,6 +31,7 @@ WORKDIR /usr/src/app
 
 COPY package.json ./
 COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
 COPY scripts/postinstall.sh scripts/postinstall.sh
 
 RUN npm install -g pnpm@9.15.3
