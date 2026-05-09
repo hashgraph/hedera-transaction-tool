@@ -2,7 +2,7 @@ FROM node:24.15.0-alpine AS builder
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 # Copy workspace config and root package files
 COPY pnpm-workspace.yaml ./
@@ -31,7 +31,7 @@ WORKDIR /usr/src/app
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml
