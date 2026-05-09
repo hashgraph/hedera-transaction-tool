@@ -1,4 +1,4 @@
-FROM node:22.12.0-alpine AS development
+FROM node:24.15.0-alpine AS development
 
 WORKDIR /usr/src/app
 
@@ -23,7 +23,7 @@ COPY cert cert
 
 RUN pnpm build:api
 
-FROM node:22.12.0-alpine AS production
+FROM node:24.15.0-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
