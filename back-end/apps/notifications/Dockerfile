@@ -2,7 +2,7 @@ FROM node:24.15.0-alpine AS development
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 COPY package.json ./
 COPY pnpm-lock.yaml ./
@@ -33,7 +33,7 @@ COPY package.json ./
 COPY pnpm-lock.yaml ./
 COPY scripts/postinstall.sh scripts/postinstall.sh
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 ENV SKIP_NOTICE_GEN=true
 
