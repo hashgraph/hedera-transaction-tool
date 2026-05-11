@@ -13,7 +13,7 @@ catalog:
   '@types/node': 25.5.0
   '@types/semver': 7.7.1
   argon2: 0.44.0
-  axios: 1.15.2
+  axios: 1.16.0
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
   dotenv: 17.4.2
