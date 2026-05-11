@@ -18,7 +18,6 @@ import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 import { getUserShouldApprove } from '@renderer/services/organization';
 
 import {
-  assertIsLoggedInOrganization,
   getErrorMessage,
   hexToUint8Array,
   isLoggedInOrganization,
@@ -197,20 +196,22 @@ const didSign = async (signed: boolean) => {
 watch(
   () => props.organizationTransaction,
   async transaction => {
-    assertIsLoggedInOrganization(user.selectedOrganization);
-
     if (!transaction) return;
 
     isRefreshing.value = true;
 
-    const approvePromise: Promise<boolean> = FEATURE_APPROVERS_ENABLED
-      ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
-      : Promise.resolve(false);
+    const approvePromise: Promise<boolean> =
+      FEATURE_APPROVERS_ENABLED && isLoggedInOrganization(user.selectedOrganization)
+        ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
+        : Promise.resolve(false);
 
+    const userKeys = isLoggedInOrganization(user.selectedOrganization)
+      ? user.selectedOrganization.userKeys
+      : [];
     const results = await Promise.allSettled([
       usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
-        user.selectedOrganization.userKeys,
+        userKeys,
         network.mirrorNodeBaseURL,
         appCache,
         user.selectedOrganization,
