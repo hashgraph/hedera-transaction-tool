@@ -20,7 +20,7 @@ To setup the frontend application, Follow the complete setup process below..
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
 
-  - Required version: `>= 22.12.0`
+  - Required version: `>= 24.0.0`
   - Verify installation:
 
     ```bash
@@ -317,13 +317,13 @@ dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage
 1. Pull from mirror registry:
 
    ```bash
-   docker pull mirror.gcr.io/library/node:22-alpine
+   docker pull mirror.gcr.io/library/node:24.15.0-alpine
    ```
 
 2. Tag the image:
 
    ```bash
-   docker tag mirror.gcr.io/library/node:22-alpine node:22-alpine
+   docker tag mirror.gcr.io/library/node:24.15.0-alpine node:24.15.0-alpine
    ```
 
 **Alternative**: Configure Docker Desktop Registry Mirrors:

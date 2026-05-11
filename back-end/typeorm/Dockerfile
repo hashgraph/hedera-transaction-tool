@@ -1,8 +1,8 @@
-FROM node:22.12.0-alpine AS builder
+FROM node:24.15.0-alpine AS builder
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 # Root workspace files
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
@@ -28,14 +28,15 @@ COPY back-end/typeorm ./back-end/typeorm
 WORKDIR /usr/src/app/back-end
 RUN pnpm build:common && pnpm build:migrations
 
-FROM node:22.12.0-alpine
+# Production stage - minimal runtime image
+FROM node:24.15.0-alpine
 
 WORKDIR /usr/src/app
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml

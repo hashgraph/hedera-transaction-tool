@@ -1,8 +1,8 @@
-FROM node:22.12.0-alpine AS development
+FROM node:24.15.0-alpine AS development
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 # Root workspace files
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
@@ -27,14 +27,14 @@ COPY back-end/apps/notifications ./back-end/apps/notifications
 WORKDIR /usr/src/app/back-end
 RUN pnpm build:notifications
 
-FROM node:22.12.0-alpine AS production
+FROM node:24.15.0-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 

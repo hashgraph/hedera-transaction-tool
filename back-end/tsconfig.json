@@ -23,5 +23,17 @@
       "@transactionModels/*": ["libs/common/src/models/*"],
       "@entities": ["libs/common/src/database/entities"]
     }
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/jest.config.ts",
+    "**/jest-e2e.config.ts"
+  ],
+  "ts-node": {
+    "compilerOptions": {
+      "allowImportingTsExtensions": true,
+      "noEmit": true
+    }
   }
 }
