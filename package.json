@@ -1,7 +1,6 @@
 {
   "name": "hedera-transaction-tool-root",
   "private": true,
-  "packageManager": "pnpm@9.15.3",
   "devDependencies": {
     "prettier": "catalog:"
   },
