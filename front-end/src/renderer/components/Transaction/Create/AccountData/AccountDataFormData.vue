@@ -148,7 +148,6 @@ const columnClass = 'col-4 col-xxxl-3';
             <option
               value="unselected"
               :selected="data.stakedNodeId === null"
-              default
               data-testid="option-no-node-selected"
             >
               No node selected
