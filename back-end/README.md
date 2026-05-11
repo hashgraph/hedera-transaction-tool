@@ -62,14 +62,27 @@ To setup the frontend application, Follow the complete setup process below..
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd hedera-transaction-tool/back-end
+cd hedera-transaction-tool
 ```
 
 ## 2. Install dependencies
 
+The repository is a single pnpm workspace, so dependencies are installed from the root once for all modules (`back-end`, `front-end`, `automation`):
+
 ```bash
 pnpm install
 ```
+
+Back-end-specific scripts can then be run via the workspace filter (from any directory). pnpm matches against the `name` field in `package.json`; the back-end's NestJS apps are scoped (`@back-end/api`, `@back-end/chain`, `@back-end/notifications`), and `-F` matches the un-scoped tail:
+
+```bash
+pnpm -F back-end <script>          # e.g. pnpm -F back-end build:all
+pnpm -F api test:cov               # resolves to @back-end/api
+pnpm -F chain test:cov             # resolves to @back-end/chain
+pnpm -F notifications test:cov     # resolves to @back-end/notifications
+```
+
+Or by `cd back-end` and running the script as before — both work.
 
 ## 3. Environment Configuration
 
@@ -113,7 +126,7 @@ Example: Create Brevo Account:
 ## Local Docker Compose Development
 
 Use the base compose file for CI-style container runs, and add the dev overlay when you want source bind mounts and a
-persisted local Postgres data directory:
+persisted local Postgres data directory. Run from the `back-end/` directory — the compose files use `context: ..` so the build context resolves to the repository root:
 
 ```bash
 docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build
@@ -173,20 +186,20 @@ Option 2: Manual Deployment
    kubectl create secret tls self-signed-certificate --cert=./cert/cert.pem --key=./cert/key.pem
    ```
 
-2. (On backend changes only) Build Docker images from the root back-end folder:
+2. (On backend changes only) Build Docker images from the **repository root** (the build context is the root, so the workspace lockfile and shared package manifests are visible):
 
    ```bash
    # API service
-   docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .
+   docker build -t back-end-api:1.0.0 -f back-end/apps/api/Dockerfile .
 
    # Chain service
-   docker build -t back-end-chain:1.0.0 -f ./apps/chain/Dockerfile .
+   docker build -t back-end-chain:1.0.0 -f back-end/apps/chain/Dockerfile .
 
    # Notifications service
-   docker build -t back-end-notifications:1.0.0 -f ./apps/notifications/Dockerfile .
+   docker build -t back-end-notifications:1.0.0 -f back-end/apps/notifications/Dockerfile .
    ```
 
-3. Apply deployments:
+3. Apply deployments (from `back-end/`):
 
    ```bash
    kubectl apply -f ./k8s/dev/deployments
