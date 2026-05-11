@@ -6,8 +6,8 @@ packages:
   - automation
 
 catalog:
-  '@hiero-ledger/proto': 2.28.0
-  '@hiero-ledger/sdk': 2.82.0
+  '@hiero-ledger/proto': 2.30.0
+  '@hiero-ledger/sdk': 2.84.0
   '@types/bcrypt': 6.0.0
   '@types/jest': 30.0.0
   '@types/node': 25.5.0
