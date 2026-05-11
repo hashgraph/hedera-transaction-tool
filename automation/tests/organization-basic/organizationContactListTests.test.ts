@@ -29,7 +29,8 @@ test.describe('Organization Contact List member view tests @organization-basic',
     await suite.contactListPage.clickOnChangeNicknameButton();
     await suite.contactListPage.fillInContactNickname(newNickname);
     await suite.contactListPage.clickOnAccountInContactListByEmail(suite.adminUser.email);
-    const nickNameText = await suite.contactListPage.getContactNicknameText(newNickname);
-    expect(nickNameText).toBe(newNickname);
+    // The contact row testid encodes the nickname, so visibility of the renamed
+    // row is sufficient — wait long enough to absorb the backend + WS round-trip.
+    await suite.contactListPage.waitForContactNicknameVisible(newNickname);
   });
 });

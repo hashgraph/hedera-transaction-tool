@@ -53,6 +53,7 @@ export const updateOrganizationCredentials = async (
   password?: string | null,
   jwtToken?: string | null,
   encryptPassword?: string,
+  passwordIsEncrypted: boolean = false,
 ) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.updateOrganizationCredentials(
@@ -62,8 +63,20 @@ export const updateOrganizationCredentials = async (
       password,
       jwtToken,
       encryptPassword,
+      passwordIsEncrypted,
     );
   }, 'Failed to store organization credentials');
+
+export const encryptOrganizationPassword = async (
+  password: string,
+  encryptPassword?: string | null,
+) =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.organizationCredentials.encryptOrganizationPassword(
+      password,
+      encryptPassword,
+    );
+  }, 'Failed to encrypt organization password');
 
 /* Deletes the organization credentials */
 export const deleteOrganizationCredentials = async (organization_id: string, user_id: string) =>

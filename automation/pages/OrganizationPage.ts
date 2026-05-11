@@ -14,7 +14,7 @@ import {
   findNewKey,
   getAllTransactionIdsForUserObserver,
   getFirstPublicKeyByEmail,
-  getLatestInAppNotificationStatusByEmail,
+  getNotifiedTransactionIdByEmail,
   getUserIdByEmail,
   isKeyDeleted,
   setUserKeyMnemonicHashesByEmail as setOrganizationUserKeyMnemonicHashesByEmailQuery,
@@ -27,6 +27,7 @@ import {
   indexRecoveryPhraseWords,
   seedOrganizationUserKey,
 } from '../utils/seeding/organizationSeeding.js';
+import { signTransactionByAllUsersViaApi } from '../utils/api/signByAllUsersViaApi.js';
 import {
   encodeExchangeRates,
   encodeFeeSchedule,
@@ -79,7 +80,8 @@ export class OrganizationPage extends BasePage {
   deleteNextButtonSelector = 'button-delete-next';
   addObserverButtonSelector = 'button-add-observer';
   addUserButtonSelector = 'button-add-user';
-  openDatePickerButtonSelector = '[data-testid="date-picker-valid-start"] [data-test-id="dp-input"]';
+  openDatePickerButtonSelector =
+    '[data-testid="date-picker-valid-start"] [data-test-id="dp-input"]';
   datePickerCalendarSelector = 'css=.dp__instance_calendar';
   datePickerInputSelector = 'css=.dp__time_input';
   timePickerIconSelector = 'css=.dp--tp-wrap button[aria-label="Open time picker"]';
@@ -123,6 +125,7 @@ export class OrganizationPage extends BasePage {
   transactionValidStartSelector = 'p-transaction-details-valid-start';
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
   spanNotificationNumberSelector = 'span-notification-number';
+  readyToSignTabBadgeSelector = '[data-testid="tab-2"] [data-testid="span-notification-number"]';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
   toastMessageSelector = 'css=.v-toast__text';
@@ -201,6 +204,9 @@ export class OrganizationPage extends BasePage {
     if (await this.isEncryptPasswordInputVisible()) {
       await this.fillOrganizationEncryptionPasswordAndContinue(encryptionPassword);
     }
+    await expect(this.getElement(this.emailForOrganizationInputSelector)).toBeHidden({
+      timeout: this.VERY_LONG_TIMEOUT,
+    });
   }
 
   async isEncryptPasswordInputVisible() {
@@ -439,19 +445,15 @@ export class OrganizationPage extends BasePage {
    * @returns true if the transaction row has the notification indicator, false otherwise
    */
   async hasNotificationForTransaction(transactionId: string): Promise<boolean> {
-    const rowCount = await this.getElement(this.transactionNodeTransactionIdListSelector).count();
-
-    for (let i = 0; i < rowCount; i++) {
-      const rowText = await this.getText(this.transactionNodeTransactionIdIndexSelector + i);
-
-      if (rowText && rowText.includes(transactionId)) {
-        return await this.hasBeforePseudoElement(
-          this.transactionNodeTransactionIdIndexSelector + i,
-        );
-      }
-    }
-
-    return false;
+    const index = await this.findIndexByCellText(
+      this.transactionNodeTransactionIdIndexSelector,
+      transactionId,
+    );
+    if (index < 0) return false;
+    return await this.cellRowHasIndicator(
+      this.transactionNodeTransactionIdIndexSelector + index,
+      'highlight',
+    );
   }
 
   async selectModeByIndex(index: number) {
@@ -521,6 +523,10 @@ export class OrganizationPage extends BasePage {
     await this.selectOrganizationMode();
     await this.settingsPage.navigateToLogout();
     await this.click(this.logoutButtonSelector);
+    await this.waitForElementToBeVisible(
+      this.emailForOrganizationInputSelector,
+      this.VERY_LONG_TIMEOUT,
+    );
   }
 
   async verifyOrganizationExists(nickname: string) {
@@ -588,32 +594,20 @@ export class OrganizationPage extends BasePage {
     await this.click(this.editNicknameOrganizationButtonSelector);
   }
 
-  async clickOnEditNicknameOrganizationButtonAtIndex(index: number) {
-    await this.click(this.editNicknameOrganizationButtonSelector, index);
-  }
-
   async fillInNewOrganizationNickname(nickname: string) {
     await this.fill(this.editOrganizationNicknameInputSelector, nickname);
   }
 
-  async fillVisibleOrganizationNicknameInput(nickname: string) {
-    await this.fill(this.visibleOrganizationNicknameInputSelector, nickname);
-  }
-
-  async saveVisibleOrganizationNicknameInput() {
-    await this.pressKey('Tab');
-  }
-
   async updateOrganizationNicknameAtIndex(index: number, nickname: string) {
-    await this.clickOnEditNicknameOrganizationButtonAtIndex(index);
+    await this.click(this.editNicknameOrganizationButtonSelector, index);
     await expect(this.getElement(this.visibleOrganizationNicknameInputSelector)).not.toHaveValue(
       '',
       {
         timeout: this.LONG_TIMEOUT,
       },
     );
-    await this.fillVisibleOrganizationNicknameInput(nickname);
-    await this.saveVisibleOrganizationNicknameInput();
+    await this.fill(this.visibleOrganizationNicknameInputSelector, nickname);
+    await this.pressKey('Tab');
   }
 
   async getOrganizationNicknameText() {
@@ -795,11 +789,9 @@ export class OrganizationPage extends BasePage {
       await this.fillOrganizationEncryptionPasswordAndContinue(encryptionPassword);
     }
     const transactionId = (await this.getTransactionDetailsId()) ?? '';
-    console.log('DEBUG: transactionId =', transactionId, 'URL:', this.window.url());
     await this.clickOnSignTransactionButton();
     await this.closeDraftModal(); // Close "Save Draft?" modal after signing
     const validStart = (await this.getValidStart()) ?? '';
-    console.log('DEBUG: addComplexKey validStart =', JSON.stringify(validStart));
 
     // Account Create only needs payer signature - the new account's key doesn't sign creation
     // Navigate to Transactions and wait for execution
@@ -862,6 +854,16 @@ export class OrganizationPage extends BasePage {
     const transactionResponse =
       await this.transactionPage.mirrorGetTransactionResponse(transactionId);
     return transactionResponse?.entity_id;
+  }
+
+  async signTransactionByAllUsersViaApi(txId: string) {
+    console.log(
+      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`,
+    );
+    const result = await signTransactionByAllUsersViaApi(this.users, txId);
+    console.log(
+      `[signTransactionByAllUsersViaApi] tx db-id=${result.transactionDbId}: sent ${result.signedUsers} signer(s), backend registered ${result.totalAcceptedSigners} new signer(s) total`,
+    );
   }
 
   async logInAndSignTransactionByAllUsers(encryptionPassword: string, txId: string) {
@@ -1320,7 +1322,9 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
     const creatorPublicKey = await this.getFirstPublicKeyByEmail(this.users[0].email);
-    console.log(`[fileCreate] file key set to creator pubkey: ${creatorPublicKey?.slice(0, 16)}...`);
+    console.log(
+      `[fileCreate] file key set to creator pubkey: ${creatorPublicKey?.slice(0, 16)}...`,
+    );
     await this.transactionPage.addPublicKeyAtDepth('0', creatorPublicKey);
     await this.transactionPage.clickOnDoneButtonForComplexKeyCreation();
 
@@ -1342,9 +1346,7 @@ export class OrganizationPage extends BasePage {
     isSignRequiredFromCreator = true,
   ): Promise<{ txId?: string | null; validStart?: string | null; fileId: string | null }> {
     if (this.complexFileId.length > 0) {
-      console.log(
-        `[ensureComplexFileExists] returning cached fileId=${this.complexFileId[0]}`,
-      );
+      console.log(`[ensureComplexFileExists] returning cached fileId=${this.complexFileId[0]}`);
       return {
         fileId: this.complexFileId[0],
         txId: this.complexFileTxId[0] ?? null,
@@ -1368,7 +1370,7 @@ export class OrganizationPage extends BasePage {
     // Payer is the complex multi-sig account, so the remaining key holders must
     // sign before the network will execute the File Create.
     console.log('[ensureComplexFileExists] running signTxByAllUsersAndRefresh...');
-    await this.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    await this.signTxByAllUsersAndRefresh(txId ?? '');
     console.log('[ensureComplexFileExists] signTxByAllUsersAndRefresh done');
 
     console.log(
@@ -1392,17 +1394,9 @@ export class OrganizationPage extends BasePage {
     return { txId, validStart, fileId };
   }
 
-  async signTxByAllUsersAndRefresh(
-    globalCredentials: Credentials,
-    firstUser: UserDetails,
-    txId: string,
-  ) {
+  async signTxByAllUsersAndRefresh(txId: string) {
+    await this.signTransactionByAllUsersViaApi(txId);
     await this.transactionPage.clickOnTransactionsMenuButton();
-    await this.logoutFromOrganization();
-
-    await this.logInAndSignTransactionByAllUsers(globalCredentials.password, txId);
-    await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
-
     await this.clickOnHistoryTab();
   }
 
@@ -1555,7 +1549,7 @@ export class OrganizationPage extends BasePage {
       txId = txIdArray.length > 0 ? txIdArray[txIdArray.length - 1] : null; // Get the last item in the array
       validStart = validStartArray.length > 0 ? validStartArray[0] : null;
       await this.clickOnSignAllTransactionsButton();
-      await this.clickOnConfirmSignAllGroupActionButton();
+      await this.clickOnConfirmGroupActionButton(this.signAllTransactionsModalTitle);
     } else {
       // Standard transaction processing
       ({ txId, validStart } = await this.processTransaction(isSignRequiredFromCreator));
@@ -1708,10 +1702,6 @@ export class OrganizationPage extends BasePage {
 
   async clickOnConfirmGroupActionButton(modalTitle?: string) {
     await this.click(this.getConfirmGroupActionButtonSelector(modalTitle), null, this.LONG_TIMEOUT);
-  }
-
-  async clickOnConfirmSignAllGroupActionButton() {
-    await this.clickOnConfirmGroupActionButton(this.signAllTransactionsModalTitle);
   }
 
   async clickOnConfirmSignAllButton() {
@@ -1941,63 +1931,52 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSubmitSignButtonByTransactionId(
     transactionId: string,
-    maxRetries = 60,
-    retryDelay = this.SHORT_TIMEOUT,
+    timeout: number = this.VERY_LONG_TIMEOUT,
   ) {
-    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
-    let lastSeenIds: string[] = [];
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
-      lastSeenIds = [];
-      for (let i = 0; i < count; i++) {
-        const id = await this.getReadyForSignTransactionIdByIndex(i);
-        if (id) {
-          lastSeenIds.push(id);
-        }
-        if (id === normalizedTransactionId) {
-          await this.clickOnSubmitSignButtonByIndex(i);
-          return;
-        }
-      }
-      if (attempt === 0 || attempt === 10 || attempt === 30) {
-        console.log(
-          `[clickOnSubmitSignButtonByTransactionId] attempt=${attempt} looking for ${normalizedTransactionId}, found ${count} rows: [${lastSeenIds.join(', ') || 'empty'}]`,
-        );
-      }
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-    }
-    throw new Error(
-      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId) ?? transactionId;
+    const index = await this.waitForIndexByCellText(
+      this.transactionNodeTransactionIdIndexSelector,
+      normalizedTransactionId,
+      { timeout },
     );
+    await this.clickOnSubmitSignButtonByIndex(index);
   }
 
   async clickOnReadyToSignDetailsButtonByTransactionId(
     transactionId: string,
-    maxRetries = 60,
-    retryDelay = this.SHORT_TIMEOUT,
+    timeout: number = this.VERY_LONG_TIMEOUT,
   ) {
-    const normalizedTransactionId = this.normalizeTransactionId(transactionId);
-    let lastSeenIds: string[] = [];
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const count = await this.countElements(this.transactionNodeTransactionIdIndexSelector);
-      lastSeenIds = [];
-      for (let i = 0; i < count; i++) {
-        const id = await this.getReadyForSignTransactionIdByIndex(i);
-        if (id) {
-          lastSeenIds.push(id);
-        }
-        if (id === normalizedTransactionId) {
-          await this.clickOnReadyToSignDetailsButtonByIndex(i);
-          return;
-        }
-      }
-      await new Promise(resolve => setTimeout(resolve, retryDelay));
-    }
-    throw new Error(
-      `Transaction ${normalizedTransactionId} not found after ${maxRetries} retries. Last visible transaction IDs: ${lastSeenIds.join(', ') || 'none'}`,
+    const normalizedTransactionId = this.normalizeTransactionId(transactionId) ?? transactionId;
+    const index = await this.waitForIndexByCellText(
+      this.transactionNodeTransactionIdIndexSelector,
+      normalizedTransactionId,
+      { timeout },
     );
+    await this.clickOnReadyToSignDetailsButtonByIndex(index);
+  }
+
+  /**
+   * Navigates to Transactions → Ready to Sign, opens the Details view for the given
+   * transaction ID, and waits until the details page reflects the same ID. Replaces
+   * three sequential poll cycles (open + click + wait) used by the notification tests.
+   */
+  async openReadyToSignDetailsForTransaction(transactionId: string) {
+    await this.transactionPage.clickOnTransactionsMenuButton();
+    await this.clickOnReadyToSignTab();
+    await this.clickOnReadyToSignDetailsButtonByTransactionId(transactionId);
+    const expectedId = this.normalizeTransactionId(transactionId) ?? transactionId;
+    await expect
+      .poll(
+        async () => {
+          try {
+            return (await this.getTransactionDetailsId())?.replace(/\s+/g, '') ?? null;
+          } catch {
+            return null;
+          }
+        },
+        { timeout: this.VERY_LONG_TIMEOUT, intervals: [this.SHORT_TIMEOUT] },
+      )
+      .toBe(expectedId);
   }
 
   async clickOnReadyForExecutionDetailsButtonByTransactionId(
@@ -2134,6 +2113,25 @@ export class OrganizationPage extends BasePage {
     return bubbleContent.trim().includes('bi-check-lg');
   }
 
+  /**
+   * Polls until a stage bubble shows the completed checkmark, allowing the FE's
+   * WebSocket-driven cache to absorb a status change after fast API signing.
+   * Use this instead of a one-shot isTransactionStageCompleted assertion when the
+   * test has just triggered a status transition (e.g. WAITING_FOR_SIGNATURES →
+   * WAITING_FOR_EXECUTION).
+   */
+  async waitForStageCompleted(
+    stageIndex: number,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+  ): Promise<void> {
+    await expect
+      .poll(async () => this.isTransactionStageCompleted(stageIndex), {
+        timeout,
+        intervals: [this.SHORT_TIMEOUT],
+      })
+      .toBe(true);
+  }
+
   async isSecondSignerCheckmarkVisible() {
     return await this.isElementVisible(this.secondSignerCheckmarkSelector);
   }
@@ -2146,6 +2144,30 @@ export class OrganizationPage extends BasePage {
     return await this.isElementHidden(this.spanNotificationNumberSelector);
   }
 
+  /**
+   * Reads the notification badge count rendered next to the Ready to Sign tab.
+   *
+   * The badge span is only rendered while the count is greater than zero, so a hidden
+   * element is treated as zero. Used by tests that assert tab badges update as
+   * transactions are signed/viewed.
+   *
+   * @returns The current badge count, or `0` when the badge is not visible.
+   */
+  async getReadyToSignTabBadgeCount(): Promise<number> {
+    const visible = await this.isElementVisible(
+      this.readyToSignTabBadgeSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
+    if (!visible) return 0;
+
+    const text = (
+      await this.getText(this.readyToSignTabBadgeSelector, null, this.SHORT_TIMEOUT)
+    )?.trim();
+    const parsed = Number.parseInt(text ?? '', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
   async createNotificationForUser(
     firstUser: UserDetails,
     secondUser: UserDetails,
@@ -2154,7 +2176,12 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnTransactionsMenuButton();
     await this.logoutFromOrganization();
     await this.signInOrganization(firstUser.email, firstUser.password, globalCredentials.password);
-    await this.updateAccount(this.getComplexAccountId(), 'update', 10, false);
+    const transactionDetails = await this.updateAccount(
+      this.getComplexAccountId(),
+      'update',
+      1000,
+      false,
+    );
     await this.settingsPage.clickOnSettingsButton();
     await this.logoutFromOrganization();
     await this.signInOrganization(
@@ -2162,6 +2189,7 @@ export class OrganizationPage extends BasePage {
       secondUser.password,
       globalCredentials.password,
     );
+    return transactionDetails;
   }
 
   async ensureNotificationStateForUser(
@@ -2169,23 +2197,74 @@ export class OrganizationPage extends BasePage {
     secondUser: UserDetails,
     globalCredentials: Credentials,
   ) {
-    const notificationStatus = await getLatestInAppNotificationStatusByEmail(secondUser.email);
-
-    // If there's no notification or the latest is read, create a new one
-    if (!notificationStatus || notificationStatus.isRead) {
-      await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
-
-      // Poll until the indicator notification is created by the backend (async process)
-      await expect
-        .poll(
-          async () => {
-            const status = await getLatestInAppNotificationStatusByEmail(secondUser.email);
-            return status !== null && !status.isRead;
-          },
-          { timeout: this.LONG_TIMEOUT * 2, intervals: [this.SHORT_TIMEOUT] },
-        )
-        .toBe(true);
+    const existingNotifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
+    if (existingNotifiedTransactionId) {
+      await this.transactionPage.clickOnTransactionsMenuButton();
+      await this.logoutFromOrganization();
+      await this.signInOrganization(
+        secondUser.email,
+        secondUser.password,
+        globalCredentials.password,
+      );
+      return existingNotifiedTransactionId;
     }
+
+    const { txId } = await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
+    const expectedTransactionId = this.normalizeTransactionId(txId);
+
+    await expect
+      .poll(
+        async () => {
+          const notifiedTransactionId = await getNotifiedTransactionIdByEmail(secondUser.email);
+          return expectedTransactionId
+            ? notifiedTransactionId === expectedTransactionId
+            : Boolean(notifiedTransactionId);
+        },
+        { timeout: this.VERY_LONG_TIMEOUT, intervals: [this.SHORT_TIMEOUT] },
+      )
+      .toBe(true);
+
+    return expectedTransactionId ?? (await getNotifiedTransactionIdByEmail(secondUser.email));
+  }
+
+  /**
+   * Forces creation of an additional in-app notification for `secondUser` even when an
+   * earlier unread notification still exists.
+   *
+   * `ensureNotificationStateForUser` short-circuits if any unread notification is already
+   * present, which is unsuitable for tests that need to observe a *changing* badge count.
+   * This helper always runs the create flow and polls until the latest notified
+   * transaction differs from `previousTransactionId`.
+   *
+   * @param firstUser - The user that will create the transaction requiring secondUser's signature.
+   * @param secondUser - The recipient user whose notifications are being asserted.
+   * @param globalCredentials - The shared local-app credentials used for re-login.
+   * @param previousTransactionId - The transaction ID returned by the prior notification step.
+   * @returns The normalized SDK transaction ID of the newly created notification, or `null`.
+   */
+  async createAdditionalNotificationForUser(
+    firstUser: UserDetails,
+    secondUser: UserDetails,
+    globalCredentials: Credentials,
+    previousTransactionId: string,
+  ): Promise<string | null> {
+    const { txId } = await this.createNotificationForUser(firstUser, secondUser, globalCredentials);
+    const expectedTransactionId = this.normalizeTransactionId(txId);
+
+    await expect
+      .poll(
+        async () => {
+          const latest = await getNotifiedTransactionIdByEmail(secondUser.email);
+          if (!latest) return false;
+          return expectedTransactionId
+            ? latest === expectedTransactionId
+            : latest !== previousTransactionId;
+        },
+        { timeout: this.VERY_LONG_TIMEOUT, intervals: [this.SHORT_TIMEOUT] },
+      )
+      .toBe(true);
+
+    return expectedTransactionId ?? (await getNotifiedTransactionIdByEmail(secondUser.email));
   }
 
   async clickOnNextTransactionButton() {

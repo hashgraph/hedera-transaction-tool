@@ -93,15 +93,11 @@ test.describe('Workflow file navigation tests @local-transactions', () => {
 
     // Verify nickname and description can be edited in-place.
     const newNickname = 'My File Nickname';
-    await filePage.clickOnEditSelectedFileNickname();
-    await filePage.fillSelectedFileNickname(newNickname);
-    await filePage.saveSelectedFileNickname();
+    await filePage.editAndSaveFileNickname(newNickname);
     expect(await filePage.getSelectedFileNicknameText()).toBe(newNickname);
 
     const newDescription = 'My file description';
-    await filePage.clickOnEditSelectedFileDescription();
-    await filePage.fillSelectedFileDescription(newDescription);
-    await filePage.saveSelectedFileDescription();
+    await filePage.editAndSaveFileDescription(newDescription);
     expect((await filePage.getFileDescriptionText())?.trim()).toBe(newDescription);
 
     // 9.2.9: "File is deleted" warning shown for deleted files
@@ -212,9 +208,7 @@ test.describe('Workflow file navigation tests @local-transactions', () => {
     await filePage.clickOnFilesMenuButton();
     const fileFromPage = (await filePage.getFirstFileIdFromPage()) ?? '';
     await filePage.clickOnAddNewButtonForFile();
-    await filePage.clickOnAddExistingFileLink();
-    await filePage.fillInExistingFileId(fileFromPage);
-    await filePage.clickOnLinkFileButton();
+    await filePage.linkExistingFile(fileFromPage);
     const toastText = await registrationPage.getToastMessageByVariant('error');
     expect(toastText).toContain('File ID or Nickname already exists!');
   });

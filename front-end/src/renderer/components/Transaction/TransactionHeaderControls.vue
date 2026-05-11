@@ -4,8 +4,6 @@ import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-
 import { isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -37,9 +35,6 @@ const reminder = defineModel<number | null>('reminder', { required: true });
 
 /* Stores */
 const user = useUserStore();
-
-/* Composables */
-useCreateTooltips();
 
 /* State */
 const showAddReminder = ref(false);
@@ -74,17 +69,16 @@ watch(showAddReminder, show => {
             !($route.query.group === 'true') && isLoggedInOrganization(user.selectedOrganization)
           "
         >
-          <div
-            data-bs-toggle="tooltip"
-            data-bs-trigger="hover"
-            data-bs-placement="bottom"
-            data-bs-custom-class="wide-xxl-tooltip"
-            data-bs-title="Transaction will have to be submitted to the network manually."
-          >
+          <div>
             <AppCheckBox
               v-model:checked="submitManually"
               label="Schedule manually"
               name="submit-manually"
+              data-bs-toggle="tooltip"
+              data-bs-trigger="hover"
+              data-bs-placement="bottom"
+              data-bs-custom-class="wide-xxl-tooltip"
+              data-bs-title="Transaction will have to be submitted to the network manually."
             />
           </div>
 

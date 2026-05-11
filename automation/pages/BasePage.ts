@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
-import { Page, Locator, test } from '@playwright/test';
+import { Page, Locator, test, expect } from '@playwright/test';
 
 export class BasePage {
   protected readonly SHORT_TIMEOUT = 500;
@@ -92,11 +92,6 @@ export class BasePage {
     }
   }
 
-  // Debug helper - pauses test execution for manual inspection
-  async pause() {
-    await this.window.pause();
-  }
-
   async pressKey(key: string): Promise<void> {
     console.log(`Pressing key: ${key}`);
     await this.window.keyboard.press(key);
@@ -174,6 +169,41 @@ export class BasePage {
     await element.waitFor({ state: 'visible', timeout });
     await element.click();
     await this.captureStepScreenshot(`click-${selector}`);
+  }
+
+  /**
+   * Clicks on an element, retrying when the element is repeatedly detached
+   * from the DOM (e.g. components that re-mount during Vue updates). The
+   * locator is re-resolved on every attempt and the action itself is bounded
+   * so the outer retry loop can drive progress instead of being blocked by
+   * Playwright's default 30s actionability timeout.
+   */
+  async clickWithRetryOnDetach(
+    selector: string,
+    index: number | null = null,
+    overallTimeout: number = this.LONG_TIMEOUT,
+    perAttemptTimeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(`Clicking on element with selector: ${selector} (with retry on detach)`);
+    const deadline = Date.now() + overallTimeout;
+    let lastError: unknown;
+
+    while (Date.now() < deadline) {
+      const element = this.getElement(selector, index);
+      try {
+        await element.waitFor({ state: 'visible', timeout: perAttemptTimeout });
+        await element.click({ timeout: perAttemptTimeout });
+        await this.captureStepScreenshot(`click-${selector}`);
+        return;
+      } catch (error) {
+        lastError = error;
+        await this.wait(this.SHORT_TIMEOUT);
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to click "${selector}" within ${overallTimeout} ms`);
   }
 
   /**
@@ -381,9 +411,10 @@ export class BasePage {
     longTimeout: number = this.LONG_TIMEOUT,
   ): Promise<void> {
     console.log(`Waiting for element with selector: ${selector} to disappear`);
+    const element = this.getElement(selector);
     try {
-      await this.window.waitForSelector(selector, { state: 'attached', timeout: timeout });
-      await this.window.waitForSelector(selector, { state: 'detached', timeout: longTimeout });
+      await element.waitFor({ state: 'attached', timeout });
+      await element.waitFor({ state: 'detached', timeout: longTimeout });
     } catch {
       console.error(`Element with selector ${selector} did not disappear.`);
     }
@@ -415,6 +446,20 @@ export class BasePage {
       );
       throw error;
     }
+  }
+
+  /**
+   * Waits for an element to be attached to the DOM, regardless of visibility.
+   * Useful for inputs that are visually hidden (e.g. styled `<input role="switch">`)
+   * where waiting for `visible` would never resolve.
+   */
+  async waitForElementToBeAttached(
+    selector: string,
+    timeout: number = this.LONG_TIMEOUT,
+    index: number | null = null,
+  ): Promise<void> {
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'attached', timeout });
   }
 
   /**
@@ -915,7 +960,7 @@ export class BasePage {
   async waitForInputFieldToBeFilled(
     selector: string,
     index: number | null = null,
-    timeout = this.LONG_TIMEOUT,
+    timeout: number = this.LONG_TIMEOUT,
   ): Promise<string> {
     console.log(`Waiting for input field with selector: ${selector} to be filled`);
     const element = this.getElement(selector, index);
@@ -964,6 +1009,81 @@ export class BasePage {
     const count = await elements.count();
     console.log(`Found ${count} elements with prefix: ${selectorPrefix}`);
     return count;
+  }
+
+  /**
+   * Returns the index of the first element matching `selectorPrefix` whose whitespace-
+   * normalized text content equals `expectedText`, or -1 if none. One round-trip.
+   *
+   * @param selectorPrefix - CSS selector or data-testid prefix used to address the cells.
+   * @param expectedText - Target text; matched after stripping all whitespace.
+   */
+  async findIndexByCellText(selectorPrefix: string, expectedText: string): Promise<number> {
+    const baseSelector = this.isCssSelector(selectorPrefix)
+      ? selectorPrefix
+      : `[data-testid^="${selectorPrefix}"]`;
+    const target = expectedText.replace(/\s+/g, '');
+    return await this.window.locator(baseSelector).evaluateAll((els, normalizedTarget) => {
+      for (let i = 0; i < els.length; i++) {
+        if ((els[i].textContent ?? '').replace(/\s+/g, '') === normalizedTarget) return i;
+      }
+      return -1;
+    }, target);
+  }
+
+  /**
+   * Polls `findIndexByCellText` until it returns a non-negative index, then returns it.
+   * Uses Playwright's `expect.poll` so the wait participates in test timeouts/tracing.
+   */
+  async waitForIndexByCellText(
+    selectorPrefix: string,
+    expectedText: string,
+    options: { timeout?: number; interval?: number } = {},
+  ): Promise<number> {
+    const { timeout = this.VERY_LONG_TIMEOUT, interval = this.SHORT_TIMEOUT } = options;
+    let resolvedIndex = -1;
+    await expect
+      .poll(
+        async () => {
+          resolvedIndex = await this.findIndexByCellText(selectorPrefix, expectedText);
+          return resolvedIndex;
+        },
+        { timeout, intervals: [interval] },
+      )
+      .toBeGreaterThanOrEqual(0);
+    return resolvedIndex;
+  }
+
+  /**
+   * Returns true if the row containing `cellSelector` carries `highlightClass`, OR if
+   * the cell exposes a visible `::before` pseudo-element. Combines the row-class check
+   * and the pseudo-element probe into a single page evaluate.
+   */
+  async cellRowHasIndicator(
+    cellSelector: string,
+    highlightClass: string = 'highlight',
+  ): Promise<boolean> {
+    const cell = this.getElement(cellSelector);
+    await cell.waitFor({ state: 'visible', timeout: this.DEFAULT_TIMEOUT });
+    return await cell.evaluate((el, args) => {
+      const tr = (el as HTMLElement).closest('tr');
+      if (tr && tr.classList.contains(args.highlightClass)) return true;
+      const styles = window.getComputedStyle(el, '::before');
+      const display = styles.getPropertyValue('display');
+      const visibility = styles.getPropertyValue('visibility');
+      const opacity = parseFloat(styles.getPropertyValue('opacity'));
+      const width = parseFloat(styles.getPropertyValue('width'));
+      const height = parseFloat(styles.getPropertyValue('height'));
+      const borderLeft = parseFloat(styles.getPropertyValue('border-left-width'));
+      const borderTop = parseFloat(styles.getPropertyValue('border-top-width'));
+      const hasBorders = borderLeft > 0 || borderTop > 0;
+      return (
+        display !== 'none' &&
+        visibility !== 'hidden' &&
+        opacity !== 0 &&
+        (width > 0 || height > 0 || hasBorders)
+      );
+    }, { highlightClass });
   }
 
   /**

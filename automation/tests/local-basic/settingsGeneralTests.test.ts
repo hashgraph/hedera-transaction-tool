@@ -61,8 +61,7 @@ test.describe('Settings general tests @local-basic', () => {
     expect(await settingsPage.isCustomNodeTabActive()).toBe(true);
     expect(await settingsPage.isMirrorNodeBaseURLInputVisible()).toBe(true);
 
-    await settingsPage.fillInMirrorNodeBaseURL(customMirrorNodeBaseURL);
-    await settingsPage.applyMirrorNodeBaseURL();
+    await settingsPage.setMirrorNodeBaseURL(customMirrorNodeBaseURL);
 
     const mirrorNodeBaseURL = await settingsPage.getMirrorNodeBaseURL();
     expect(mirrorNodeBaseURL).toBe('mainnet-public.mirrornode.hedera.com');

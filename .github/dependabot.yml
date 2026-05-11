@@ -11,18 +11,15 @@ updates:
     schedule:
       interval: weekly
     versioning-strategy: increase
-    open-pull-requests-limit: 10
-
-  - package-ecosystem: npm
-    directory: "/front-end"
-    schedule:
-      interval: weekly
-    versioning-strategy: increase
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 15
     groups:
       hiero-sdk:
         patterns:
           - "@hiero-ledger/*"
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+          - "@nest-lab/*"
       electron:
         patterns:
           - "electron"
@@ -46,32 +43,6 @@ updates:
           - "prisma"
           - "better-sqlite3"
           - "@types/better-sqlite3"
-      build-and-test:
-        patterns:
-          - "vite"
-          - "vite-*"
-          - "vitest"
-          - "@vitest/*"
-          - "typescript"
-          - "eslint"
-          - "@eslint/*"
-          - "prettier"
-          - "sass"
-
-  - package-ecosystem: npm
-    directory: "/back-end"
-    schedule:
-      interval: weekly
-    versioning-strategy: increase
-    open-pull-requests-limit: 10
-    groups:
-      hiero-sdk:
-        patterns:
-          - "@hiero-ledger/*"
-      nestjs:
-        patterns:
-          - "@nestjs/*"
-          - "@nest-lab/*"
       redis-cache:
         patterns:
           - "ioredis"
@@ -97,27 +68,8 @@ updates:
           - "@types/supertest"
           - "@hashgraph/hedera-local"
           - "@nestjs/testing"
-      build-tools:
-        patterns:
-          - "typescript"
-          - "eslint"
-          - "eslint-*"
-          - "@eslint/*"
-          - "@typescript-eslint/*"
-          - "prettier"
-          - "@nestjs/cli"
-          - "@nestjs/schematics"
-
-  - package-ecosystem: npm
-    directory: "/automation"
-    schedule:
-      interval: weekly
-    versioning-strategy: increase
-    open-pull-requests-limit: 10
-    groups:
-      hiero-sdk:
-        patterns:
-          - "@hiero-ledger/*"
+          - "vitest"
+          - "@vitest/*"
       playwright:
         patterns:
           - "playwright"
@@ -126,7 +78,18 @@ updates:
           - "@playwright/*"
       build-tools:
         patterns:
+          - "vite"
+          - "vite-*"
           - "typescript"
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "@nestjs/cli"
+          - "@nestjs/schematics"
           - "webpack"
           - "webpack-cli"
+          - "ts-loader"
           - "tsx"
+          - "sass"

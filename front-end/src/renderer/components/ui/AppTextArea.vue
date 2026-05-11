@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import useCreateTooltip from '@renderer/composables/useCreateTooltip.ts';
 
 /* Props */
 const props = defineProps<{
@@ -11,7 +12,8 @@ const props = defineProps<{
 defineEmits(['update:modelValue']);
 
 /* State */
-const inputRef = ref<HTMLInputElement | null>();
+const inputRef = ref<HTMLInputElement | null>(null);
+useCreateTooltip(inputRef);
 
 /* Computed */
 const fillClass = computed(() => (props.filled ? 'is-fill' : ''));

@@ -8,7 +8,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
@@ -32,7 +31,6 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
-useCreateTooltips();
 
 /* State */
 const fileId = ref('');

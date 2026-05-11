@@ -522,11 +522,8 @@ export class TransactionsService {
       }));
     }
 
-    // Create a map for quick lookup
     const transactionMap = new Map(transactions.map(t => [t.id, t]));
 
-    /* Soft-deleted UserKey rows are intentionally excluded (TypeORM default):
-       a revoked key must not regain signer access via a historical TTv1 import. */
     const existingSigners = await this.entityManager.find(TransactionSigner, {
       where: { transactionId: In(ids) },
       select: ['transactionId', 'userKeyId'],
@@ -545,34 +542,38 @@ export class TransactionsService {
     const updates = new Map<number, UpdateRecord>();
     const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
-    /* Dedup (userId, transactionId) pairs so a user with multiple keys signing
-       the same tx doesn't produce duplicate UNNEST rows in the receiver UPDATE. */
+    // Dedups (userId, txId) so one user with multiple keys produces one UNNEST row.
     const notificationDismissalKeys = new Set<string>();
-    /* Transactions with at least one persistable side-effect. Status recomputation
-       and NATS emission operate on this set, not on `updates` alone. */
+    // DTOs with persistable side-effects; drives status recompute + NATS emission.
     const transactionsToProcess = new Map<number, Transaction>();
 
+    type DtoIntermediate = {
+      transaction: Transaction;
+      publicKeys: PublicKey[];
+      newBytes: Buffer;
+      isSameBytes: boolean;
+    };
+    const intermediate = new Map<number, DtoIntermediate>();
+    const allPubKeyStrings = new Set<string>();
+
+    // Two-pass: defer UserKey resolution to a single bulk find below (was N+1).
     for (const { id, signatureMap: map } of dto) {
       const transaction = transactionMap.get(id);
 
       try {
-        /* Verify that the transaction exists and access is verified */
         if (!(await this.verifyAccess(transaction, user))) {
           throw new BadRequestException(ErrorCodes.TNF);
         }
 
-        /* Checks if the transaction is canceled */
         if (
           transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
           transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
         )
           throw new BadRequestException(ErrorCodes.TNRS);
 
-        /* Checks if the transaction is expired */
         const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
         if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
-        /* Validates the signatures */
         const { data: publicKeys, error } = safe<PublicKey[]>(
           validateSignature.bind(this, sdkTransaction, map),
         );
@@ -586,55 +587,12 @@ export class TransactionsService {
         const newBytes = Buffer.from(sdkTransaction.toBytes());
         const isSameBytes = newBytes.equals(originalBytes);
 
-        /* Record the signer relation for each imported key — without this, the
-           signing user fails verifyAccess post-import (the original bug). */
-        const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
-        if (publicKeys.length > 0) {
-          const pubKeyStrings = new Set<string>();
-          for (const pk of publicKeys) {
-            pubKeyStrings.add(pk.toStringRaw());
-            pubKeyStrings.add(pk.toStringDer());
-          }
-          const userKeys = await this.entityManager.find(UserKey, {
-            where: { publicKey: In([...pubKeyStrings]) },
-          });
-          let txExistingSigners = signersByTransaction.get(id);
-          if (!txExistingSigners) {
-            txExistingSigners = new Set<number>();
-            signersByTransaction.set(id, txExistingSigners);
-          }
-          for (const uk of userKeys) {
-            if (txExistingSigners.has(uk.id)) continue;
-            txExistingSigners.add(uk.id);
-            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
-          }
+        for (const pk of publicKeys) {
+          allPubKeyStrings.add(pk.toStringRaw());
+          allPubKeyStrings.add(pk.toStringDer());
         }
 
-        /* No-op: skip DB writes and NATS emission so duplicate imports don't
-           produce spurious status-update events. */
-        if (isSameBytes && newSignersForDto.length === 0) {
-          results.set(id, { id });
-          continue;
-        }
-
-        if (!isSameBytes) {
-          transaction.transactionBytes = newBytes;
-          updates.set(id, {
-            id,
-            transactionBytes: newBytes,
-          });
-        }
-
-        for (const row of newSignersForDto) {
-          newSignerRows.push(row);
-          const dismissalKey = `${row.userId}:${id}`;
-          if (!notificationDismissalKeys.has(dismissalKey)) {
-            notificationDismissalKeys.add(dismissalKey);
-            notificationDismissals.push({ userId: row.userId, transactionId: id });
-          }
-        }
-
-        transactionsToProcess.set(id, transaction);
+        intermediate.set(id, { transaction, publicKeys, newBytes, isSameBytes });
       } catch (error) {
         results.set(id, {
           id,
@@ -646,13 +604,75 @@ export class TransactionsService {
       }
     }
 
+    // Soft-deleted UserKeys excluded by default — a revoked key must not regain
+    // signer access via a historical import. Buckets are arrays because
+    // UserKey.publicKey is indexed but not unique (users can share a key).
+    const userKeysByPublicKey = new Map<string, UserKey[]>();
+    if (allPubKeyStrings.size > 0) {
+      const userKeys = await this.entityManager.find(UserKey, {
+        where: { publicKey: In([...allPubKeyStrings]) },
+      });
+      for (const uk of userKeys) {
+        const bucket = userKeysByPublicKey.get(uk.publicKey);
+        if (bucket) bucket.push(uk);
+        else userKeysByPublicKey.set(uk.publicKey, [uk]);
+      }
+    }
+
+    for (const [id, { transaction, publicKeys, newBytes, isSameBytes }] of intermediate) {
+      // Without these signer rows, the signing user fails verifyAccess post-import (issue #2552).
+      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
+      if (publicKeys.length > 0) {
+        let txExistingSigners = signersByTransaction.get(id);
+        if (!txExistingSigners) {
+          txExistingSigners = new Set<number>();
+          signersByTransaction.set(id, txExistingSigners);
+        }
+        for (const pk of publicKeys) {
+          const matches = [
+            ...(userKeysByPublicKey.get(pk.toStringRaw()) ?? []),
+            ...(userKeysByPublicKey.get(pk.toStringDer()) ?? []),
+          ];
+          for (const uk of matches) {
+            if (txExistingSigners.has(uk.id)) continue;
+            txExistingSigners.add(uk.id);
+            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+          }
+        }
+      }
+
+      // Skip duplicate imports so we don't emit spurious status-update events.
+      if (isSameBytes && newSignersForDto.length === 0) {
+        results.set(id, { id });
+        continue;
+      }
+
+      if (!isSameBytes) {
+        transaction.transactionBytes = newBytes;
+        updates.set(id, {
+          id,
+          transactionBytes: newBytes,
+        });
+      }
+
+      for (const row of newSignersForDto) {
+        newSignerRows.push(row);
+        const dismissalKey = `${row.userId}:${id}`;
+        if (!notificationDismissalKeys.has(dismissalKey)) {
+          notificationDismissalKeys.add(dismissalKey);
+          notificationDismissals.push({ userId: row.userId, transactionId: id });
+        }
+      }
+
+      transactionsToProcess.set(id, transaction);
+    }
+
     const BATCH_SIZE = 500;
     const updateArray = Array.from(updates.values());
     let dismissedRows: Array<{ id: number; userId: number }> = [];
     let committed = false;
 
-    /* Atomic write: bytes, signer rows, and dismissals must all commit together —
-       a half-applied write recreates the original access bug. */
+    // Bytes + signer rows + dismissals must commit together; partial state recreates issue #2552.
     if (updateArray.length > 0 || newSignerRows.length > 0) {
       try {
         await this.dataSource.transaction(async manager => {
@@ -738,8 +758,7 @@ export class TransactionsService {
       emitDismissedNotifications(this.notificationsPublisher, dismissedRows);
     }
 
-    /* Re-evaluate status only after a successful commit — transactionsToProcess
-       is cleared on rollback to prevent promoting a tx whose bytes never landed. */
+    // Status recompute runs only after commit; rollback path clears transactionsToProcess.
     if (committed && transactionsToProcess.size > 0) {
       let statusMap = new Map<number, TransactionStatus>();
       try {
@@ -756,8 +775,7 @@ export class TransactionsService {
         );
       }
 
-      /* Mirror SignersService.updateStatusesAndNotify so NATS consumers see a
-         consistent payload shape regardless of which signing path produced it. */
+      // Payload shape mirrors SignersService.updateStatusesAndNotify for NATS consumers.
       const changed: number[] = [];
       const unchanged: number[] = [];
       for (const id of transactionsToProcess.keys()) {
@@ -785,7 +803,6 @@ export class TransactionsService {
     return Array.from(results.values());
   }
 
-  /* Remove the transaction for the given transaction id. */
   async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
