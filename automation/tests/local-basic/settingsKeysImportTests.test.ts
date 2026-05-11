@@ -11,10 +11,8 @@ test.describe('Settings keys import tests @local-basic', () => {
     await suite.settingsPage.clickOnECDSADropDown();
 
     const privateKey = generateECDSAKeyPair();
-    await suite.settingsPage.fillInECDSAPrivateKey(privateKey);
-    await suite.settingsPage.fillInECDSANickname('Test-ECDSA-Import');
     await suite.loginPage.waitForToastToDisappear();
-    await suite.settingsPage.clickOnECDSAImportButton();
+    await suite.settingsPage.importECDSAPrivateKey(privateKey, 'Test-ECDSA-Import');
 
     const toastMessage = await suite.registrationPage.getToastMessage();
     expect(toastMessage).toBe('ECDSA private key imported successfully');
@@ -37,10 +35,8 @@ test.describe('Settings keys import tests @local-basic', () => {
     await suite.settingsPage.clickOnED25519DropDown();
 
     const { privateKey } = generateEd25519KeyPair();
-    await suite.settingsPage.fillInED25519PrivateKey(privateKey);
-    await suite.settingsPage.fillInED25519Nickname('Test-ED25519-Import');
     await suite.loginPage.waitForToastToDisappear();
-    await suite.settingsPage.clickOnED25519ImportButton();
+    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Test-ED25519-Import');
 
     const toastMessage = await suite.registrationPage.getToastMessage();
     expect(toastMessage).toBe('ED25519 private key imported successfully');
@@ -63,10 +59,8 @@ test.describe('Settings keys import tests @local-basic', () => {
     const { privateKey } = generateEd25519KeyPair();
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnED25519DropDown();
-    await suite.settingsPage.fillInED25519PrivateKey(privateKey);
-    await suite.settingsPage.fillInED25519Nickname('Filter-ED25519-Import');
     await suite.loginPage.waitForToastToDisappear();
-    await suite.settingsPage.clickOnED25519ImportButton();
+    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Filter-ED25519-Import');
 
     await suite.settingsPage.clickOnPrivateKeyFilterTab();
     const privateKeyRows = await suite.settingsPage.getKeyRowCount();

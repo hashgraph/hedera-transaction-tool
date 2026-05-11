@@ -7,7 +7,6 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { add } from '@renderer/services/accountsService';
@@ -29,8 +28,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
-const toastManager = ToastManager.inject()
-useCreateTooltips();
+const toastManager = ToastManager.inject();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */

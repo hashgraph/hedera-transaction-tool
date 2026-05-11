@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
 
-import { onMounted, onUpdated, ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import useLoader from '@renderer/composables/useLoader';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
@@ -23,7 +22,6 @@ const user = useUserStore();
 
 /* Composables */
 const withLoader = useLoader();
-const createTooltips = useCreateTooltips();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 const { setLast } = useDefaultOrganization();
 
@@ -100,10 +98,6 @@ const initialize = () => {
 
 /* Hooks */
 onMounted(initialize);
-
-onUpdated(() => {
-  createTooltips();
-});
 
 watch(
   () => user.organizations,

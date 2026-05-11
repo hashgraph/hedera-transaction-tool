@@ -13,6 +13,7 @@ export interface StoreAccountSetup {
   passwordChangeRequired: () => Promise<boolean>;
   recoveryPhraseRequired: () => Promise<boolean>;
   handleSkipRecoveryPhrase: () => Promise<void>;
+  storeSkipRecoveryPhraseClaim: () => Promise<void>;
 }
 
 const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSetup => {
@@ -63,10 +64,16 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
   };
 
   const handleSkipRecoveryPhrase = async () => {
+    await storeSkipRecoveryPhraseClaim();
+    user.setAccountSetupStarted(false);
+  };
+
+  // Writes only the skip claim without touching accountSetupStarted. Use this during
+  // migration so the crash-detection flag remains set until migration fully completes.
+  const storeSkipRecoveryPhraseClaim = async () => {
     if (isUserLoggedIn(user.personal) && skipClaimKey.value !== null) {
       await setStoredClaim(user.personal.id, skipClaimKey.value, 'true');
     }
-    user.setAccountSetupStarted(false);
   };
 
   /* Functions */
@@ -93,6 +100,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
     passwordChangeRequired,
     recoveryPhraseRequired,
     handleSkipRecoveryPhrase,
+    storeSkipRecoveryPhraseClaim,
   };
 });
 

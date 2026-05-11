@@ -1,46 +1,59 @@
-FROM node:22.12.0-alpine AS development
+FROM node:24.15.0-alpine AS development
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm
+RUN npm install -g pnpm@9.15.3
 
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
-COPY scripts/postinstall.sh scripts/postinstall.sh
-COPY tsconfig.json tsconfig.json
-COPY nest-cli.json nest-cli.json
-COPY apps/api/package.json apps/api/package.json
-COPY apps/api/tsconfig.app.json apps/api/tsconfig.app.json
+# Root workspace files
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+
+# All workspace package manifests so pnpm-workspace.yaml + lockfile resolve
+COPY front-end/package.json ./front-end/
+COPY automation/package.json ./automation/
+COPY back-end/package.json back-end/tsconfig.json back-end/nest-cli.json ./back-end/
+COPY back-end/scripts ./back-end/scripts
+COPY back-end/typeorm/package.json ./back-end/typeorm/
+COPY back-end/apps/api/package.json back-end/apps/api/tsconfig.app.json ./back-end/apps/api/
+COPY back-end/apps/chain/package.json ./back-end/apps/chain/
+COPY back-end/apps/notifications/package.json ./back-end/apps/notifications/
 
 ENV SKIP_NOTICE_GEN=true
 
-RUN pnpm install && cd apps/api && pnpm install
+RUN pnpm install --filter "back-end..." --filter "@back-end/api..." --frozen-lockfile
 
-COPY libs libs
-COPY apps/api apps/api
-COPY cert cert
+COPY back-end/libs ./back-end/libs
+COPY back-end/apps/api ./back-end/apps/api
+COPY back-end/cert ./back-end/cert
 
+WORKDIR /usr/src/app/back-end
 RUN pnpm build:api
 
-FROM node:22.12.0-alpine AS production
+FROM node:24.15.0-alpine AS production
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/src/app
 
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-COPY scripts/postinstall.sh scripts/postinstall.sh
+RUN npm install -g pnpm@9.15.3
 
-RUN npm install -g pnpm
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+
+COPY front-end/package.json ./front-end/
+COPY automation/package.json ./automation/
+COPY back-end/package.json ./back-end/
+COPY back-end/scripts ./back-end/scripts
+COPY back-end/typeorm/package.json ./back-end/typeorm/
+COPY back-end/apps/api/package.json ./back-end/apps/api/
+COPY back-end/apps/chain/package.json ./back-end/apps/chain/
+COPY back-end/apps/notifications/package.json ./back-end/apps/notifications/
 
 ENV SKIP_NOTICE_GEN=true
 
-RUN pnpm install --prod
+RUN pnpm install --filter "back-end..." --filter "@back-end/api..." --prod --frozen-lockfile
 
-COPY --from=development /usr/src/app/dist ./dist
-COPY cert cert
+COPY --from=development /usr/src/app/back-end/dist ./back-end/dist
+COPY back-end/cert ./back-end/cert
 
+WORKDIR /usr/src/app/back-end
 CMD ["node", "dist/apps/api/main"]

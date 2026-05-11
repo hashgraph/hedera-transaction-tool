@@ -46,6 +46,7 @@ mac:
         - arm64
         - universal
   mergeASARs: false
+  x64ArchFiles: '**/*.node'
 linux:
   target:
     - snap

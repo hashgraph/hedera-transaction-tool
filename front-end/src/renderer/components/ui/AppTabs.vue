@@ -36,7 +36,7 @@ defineEmits(['update:active-index']);
           <span
             v-if="item.notifications"
             data-testid="span-notification-number"
-            class="notification d-inline-block rounded-circle bg-danger text-white"
+            class="badge tab-badge bg-danger text-white"
             >{{ item.notifications.toFixed(0) }}</span
           >
         </AppButton>
@@ -47,3 +47,13 @@ defineEmits(['update:active-index']);
     </div>
   </div>
 </template>
+<style scoped>
+.tab-badge {
+  border-radius: 16px;
+  font-size: 0.8rem;
+  padding: 0.3em 0.5em;
+  min-width: 1.6em;
+  height: 1.6em;
+  font-weight: 500;
+}
+</style>

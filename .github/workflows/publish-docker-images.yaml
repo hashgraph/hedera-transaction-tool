@@ -22,12 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         image: [api, chain, notifications]
-    defaults:
-        run:
-            working-directory: back-end/apps/${{ matrix.image }}
     steps:
       - name: Harden the runner (Audit all outbound calls)
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
@@ -51,7 +48,7 @@ jobs:
         id: push
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # 7.1.0
         with:
-          context: back-end/
+          context: .
           file: back-end/apps/${{ matrix.image }}/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}

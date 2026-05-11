@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import useCreateTooltip from '@renderer/composables/useCreateTooltip';
 import { computed, ref } from 'vue';
 
 /* Props */
@@ -7,6 +8,7 @@ export type Props = {
   filled?: boolean;
   size?: 'small' | 'large' | undefined;
   autoTrim?: boolean;
+  htmlTooltip?: boolean;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -17,7 +19,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits(['update:modelValue']);
 
 /* State */
-const inputRef = ref<HTMLInputElement | null>();
+const inputRef = ref<HTMLInputElement | null>(null);
+useCreateTooltip(inputRef, props.htmlTooltip === true);
 
 /* Computed */
 const sizeClass = computed(() => {

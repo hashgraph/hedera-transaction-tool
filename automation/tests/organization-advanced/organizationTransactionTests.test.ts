@@ -71,7 +71,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     complexKeyAccountId = fixture.complexKeyAccountId;
     await transactionPage.clickOnTransactionsMenuButton();
 
-    await organizationPage.waitForElementToDisappear('.v-toast__text');
+    await organizationPage.waitForElementToDisappear(organizationPage.toastMessageSelector);
     await organizationPage.closeDraftModal();
 
     if (process.env.CI) {
@@ -175,7 +175,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     );
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnSubmitSignButtonByTransactionId(txId ?? '');
-    await organizationPage.waitForElementToDisappear('.v-toast__text');
+    await organizationPage.waitForElementToDisappear(organizationPage.toastMessageSelector);
 
     await organizationPage.logoutFromOrganization();
     await organizationPage.signInOrganization(
@@ -201,8 +201,6 @@ test.describe('Organization Transaction status/signing tests @organization-advan
   );
 
   test('Verify organization History filters work for Status and Transaction Type', async () => {
-    const creator = organizationPage.users[0];
-
     // Create a Transfer transaction, then cancel it -> should show as CANCELED in History.
     const { txId: canceledTxId } = await organizationPage.transferAmountBetweenAccounts(
       complexKeyAccountId,
@@ -226,17 +224,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
       true,
     );
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      executedTxId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      creator.email,
-      creator.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(executedTxId ?? '');
     await organizationPage.waitForSuccessfulHistoryTransaction(executedTxId ?? '', validStart);
 
     const normalizedCanceledTxId = (canceledTxId ?? '').replace(/\s+/g, '');

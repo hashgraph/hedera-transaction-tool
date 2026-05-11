@@ -7,6 +7,7 @@ import prisma from '@main/db/__mocks__/prisma';
 import {
   addOrganizationCredentials,
   deleteOrganizationCredentials,
+  encryptOrganizationPassword,
   getAccessToken,
   getOrganizationTokens,
   getCurrentUser,
@@ -25,6 +26,33 @@ import { jwtDecode } from 'jwt-decode';
 import { decrypt, encrypt } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
+
+const { loggerMock } = vi.hoisted(() => ({
+  loggerMock: {
+    debug: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+    log: vi.fn(),
+    warn: vi.fn(),
+  },
+}));
+
+vi.mock('@main/modules/logger', () => ({
+  default: vi.fn(),
+  createLogger: () => loggerMock,
+  getAppUpdateLogger: () => loggerMock,
+  getDatabaseLogger: () => loggerMock,
+  getLogsDirectoryPath: () => '/tmp/test-logs',
+  getLogFilePath: () => '/tmp/test-logs/app.log',
+  getLoggerSettings: () => ({
+    archiveCount: 5,
+    directory: '/tmp/test-logs',
+    fileName: 'app.log',
+    level: 'info',
+    maxSizeBytes: 5 * 1024 * 1024,
+  }),
+  logRendererMessage: vi.fn(),
+}));
 
 vi.mock('@main/db/prisma');
 vi.mock('electron', () => ({
@@ -576,6 +604,204 @@ describe('Services Local User Organization Credentials', () => {
       expect(() => updateOrganizationCredentials('123', '321', email, password)).rejects.toThrow(
         'Failed to update organization credentials',
       );
+    });
+
+    test('Should write the password as-is when passwordIsEncrypted is true (skips encryption)', async () => {
+      const email = 'email';
+      const alreadyEncryptedPassword = 'already-encrypted-blob';
+
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      const result = await updateOrganizationCredentials(
+        '123',
+        '321',
+        email,
+        alreadyEncryptedPassword,
+        undefined,
+        undefined,
+        true,
+      );
+
+      expect(result).toBe(true);
+      expect(getUseKeychainClaim).not.toHaveBeenCalled();
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+      expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
+        where: { id: organizationCredentials.id },
+        data: {
+          email,
+          password: alreadyEncryptedPassword,
+          jwtToken: organizationCredentials.jwtToken,
+        },
+      });
+    });
+
+    test('Should still encrypt when passwordIsEncrypted is explicitly false', async () => {
+      const email = 'email';
+      const password = 'password';
+      const encryptPassword = 'password for encryption';
+      const encryptedPassword = 'the encryption of password with encryptPassword';
+
+      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      await updateOrganizationCredentials(
+        '123',
+        '321',
+        email,
+        password,
+        undefined,
+        encryptPassword,
+        false,
+      );
+
+      expect(encrypt).toHaveBeenCalledWith(password, encryptPassword);
+      expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
+        where: { id: organizationCredentials.id },
+        data: { email, password: encryptedPassword, jwtToken: organizationCredentials.jwtToken },
+      });
+    });
+
+    test('Should not run the encrypt branch when password is empty even with passwordIsEncrypted=true', async () => {
+      const email = 'email';
+
+      prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
+
+      // An empty password string is the "clear stored credential" signal used by logout — it must
+      // bypass the encryption branches and write through as-is.
+      await updateOrganizationCredentials('123', '321', email, '', undefined, undefined, true);
+
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+      expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
+        where: { id: organizationCredentials.id },
+        data: {
+          email,
+          password: '',
+          jwtToken: organizationCredentials.jwtToken,
+        },
+      });
+    });
+  });
+
+  describe('encryptOrganizationPassword', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('Should encrypt with keychain when useKeychain claim is true', async () => {
+      const password = 'newPassword';
+      const encryptedBuffer = Buffer.from('keychain-encrypted-blob');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(encryptedBuffer);
+
+      const result = await encryptOrganizationPassword(password, undefined);
+
+      expect(safeStorage.encryptString).toHaveBeenCalledWith(password);
+      expect(encrypt).not.toHaveBeenCalled();
+      expect(result).toEqual(encryptedBuffer.toString('base64'));
+    });
+
+    test('Should encrypt with the personal password when useKeychain claim is false', async () => {
+      const password = 'newPassword';
+      const personalPassword = 'personal-password';
+      const encryptedPassword = 'aes-encrypted-blob';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+
+      const result = await encryptOrganizationPassword(password, personalPassword);
+
+      expect(encrypt).toHaveBeenCalledWith(password, personalPassword);
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(result).toEqual(encryptedPassword);
+      expect(getUseKeychainClaim).toHaveBeenCalledTimes(1);
+    });
+
+    test('Should reject empty password without invoking encryption side effects', async () => {
+      const err = await encryptOrganizationPassword('', 'anything').catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe('Password is required to encrypt');
+      expect(err).not.toHaveProperty('cause');
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+    });
+
+    test('Should rethrow as the keychain-specific message when getUseKeychainClaim itself throws', async () => {
+      const underlying = new Error('Keychain mode not initialized');
+      vi.mocked(getUseKeychainClaim).mockRejectedValue(underlying);
+
+      const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe('Keychain access denied or unavailable');
+      // toBe uses Object.is — locks in that the original reference is preserved on `cause`.
+      expect((err as Error).cause).toBe(underlying);
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+    });
+
+    test('Should rethrow with the keychain-specific message when keychain encrypt throws (Deny scenario)', async () => {
+      const underlying = new Error(
+        'Error while encrypting the text provided to safeStorage.encryptString. Encryption is not available.',
+      );
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockImplementation(() => {
+        throw underlying;
+      });
+
+      const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe('Keychain access denied or unavailable');
+      expect((err as Error).cause).toBe(underlying);
+    });
+
+    test('Should rethrow with the application-password message when AES encrypt throws', async () => {
+      const underlying = new Error('AES failure');
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(encrypt).mockImplementation(() => {
+        throw underlying;
+      });
+
+      const err = await encryptOrganizationPassword('newPassword', 'personal-password').catch(
+        (e: unknown) => e,
+      );
+
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe('Failed to encrypt with application password');
+      expect((err as Error).cause).toBe(underlying);
+    });
+
+    test('Should reject with the no-method-available message before any encrypt call (no cause) and emit a warn for observability', async () => {
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+
+      const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
+
+      expect(err).toBeInstanceOf(Error);
+      expect((err as Error).message).toBe('No encryption method available');
+      expect(err).not.toHaveProperty('cause');
+      expect(safeStorage.encryptString).not.toHaveBeenCalled();
+      expect(encrypt).not.toHaveBeenCalled();
+      expect(loggerMock.warn).toHaveBeenCalledWith(
+        'encryptOrganizationPassword called without a viable encryption method',
+        { useKeychain: false },
+      );
+    });
+
+    test('Should call getUseKeychainClaim exactly once on the success path (no duplicate DB hit) and not emit the no-method warn', async () => {
+      const buffer = Buffer.from('encrypted');
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockReturnValue(buffer);
+
+      await encryptOrganizationPassword('newPassword', null);
+
+      expect(getUseKeychainClaim).toHaveBeenCalledTimes(1);
+      expect(loggerMock.warn).not.toHaveBeenCalled();
     });
   });
 

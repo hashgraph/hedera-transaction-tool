@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { HederaFile } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
 import { Client, FileId, FileInfo } from '@hiero-ledger/sdk';
-
-import { Prisma } from '@prisma/client';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
@@ -13,7 +12,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
@@ -30,6 +28,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -39,7 +38,6 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const createTooltips = useCreateTooltips();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 // const specialFiles: HederaFile[] = [
@@ -134,7 +132,7 @@ const isNicknameInputShown = ref(false);
 const selectedFileIds = ref<string[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isDescriptionInputShown = ref(false);
-const descriptionInputRef = ref<HTMLTextAreaElement | null>(null);
+const descriptionInputRef = ref<InstanceType<typeof AppTextArea> | null>(null);
 const sorting = ref<{
   [key: string]: Prisma.SortOrder;
 }>({
@@ -214,11 +212,10 @@ const handleStartNicknameEdit = () => {
   if (!selectedFile.value) return;
 
   isNicknameInputShown.value = true;
-  descriptionInputRef.value?.blur();
+  descriptionInputRef.value?.inputRef?.blur();
 
   setTimeout(() => {
     if (nicknameInputRef.value) {
-      createTooltips();
       if (nicknameInputRef.value.inputRef) {
         nicknameInputRef.value.inputRef.value = selectedFile.value?.nickname || '';
       }
@@ -250,8 +247,10 @@ const handleStartDescriptionEdit = () => {
 
   setTimeout(() => {
     if (descriptionInputRef.value) {
-      createTooltips();
-      descriptionInputRef.value?.focus();
+      if (descriptionInputRef.value.inputRef) {
+        descriptionInputRef.value.inputRef.value = selectedFile.value?.description || '';
+        descriptionInputRef.value.inputRef.focus();
+      }
     }
   }, 50);
 };
@@ -265,7 +264,7 @@ const handleChangeDescription = async () => {
 
   if (selectedFile.value) {
     await update(selectedFile.value.file_id, user.personal.id, {
-      description: descriptionInputRef.value?.value,
+      description: descriptionInputRef.value?.inputRef?.value ?? null,
     });
     await fetchFiles();
   }
@@ -812,20 +811,18 @@ watch(files, newFiles => {
                     <div class="text-small text-semi-bold">Description</div>
                   </div>
                   <div class="col-7">
-                    <textarea
+                    <AppTextArea
                       v-if="isDescriptionInputShown"
                       ref="descriptionInputRef"
                       class="form-control is-fill"
                       rows="8"
-                      v-model="selectedFile.description"
                       @blur="handleChangeDescription"
                       data-testid="textarea-file-description"
                       data-bs-toggle="tooltip"
                       data-bs-placement="left"
                       data-bs-custom-class="wide-tooltip"
                       data-bs-title="This information is not stored on the network"
-                    >
-                    </textarea>
+                    />
                     <p
                       v-if="!isDescriptionInputShown"
                       data-testid="p-file-description"

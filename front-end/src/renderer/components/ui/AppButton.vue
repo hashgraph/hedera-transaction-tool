@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import useCreateTooltip from '@renderer/composables/useCreateTooltip';
+import { ref } from 'vue';
+
 /* Props */
 const props = withDefaults(
   defineProps<{
@@ -14,6 +17,10 @@ const props = withDefaults(
     disableOnLoading: true,
   },
 );
+
+/* State */
+const buttonRef = ref<HTMLButtonElement | null>(null);
+useCreateTooltip(buttonRef);
 
 /* Misc */
 const sizeMapping = {
@@ -32,6 +39,7 @@ const colorMapping = {
 </script>
 <template>
   <button
+    ref="buttonRef"
     :disabled="disabled || (loading && disableOnLoading)"
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
   >
