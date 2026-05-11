@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "@electron-toolkit/utils": "3.0.0",
+    "@hiero-ledger/cryptography": "1.18.0",
     "@hiero-ledger/proto": "catalog:",
     "@hiero-ledger/sdk": "catalog:",
     "@prisma/adapter-better-sqlite3": "7.8.0",
