@@ -52,7 +52,7 @@ export class TransactionSignatureService {
     await this.addSigningAccountKeys(signatureKey, transaction, requirements.signingAccounts);
     await this.addReceiverAccountKeys(signatureKey, transaction, requirements.receiverAccounts, showAll);
 
-    if (requirements.nodeId) {
+    if (requirements.nodeId !== null) {
       await this.addNodeKeys(signatureKey, transaction, requirements.nodeId);
     }
 

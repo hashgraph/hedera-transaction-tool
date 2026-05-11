@@ -8,6 +8,8 @@ import { ref } from 'vue';
 import { getStaticUser, initializeUseKeychain } from '@renderer/services/safeStorageService';
 import { registerLocal } from '@renderer/services/userService';
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService';
+import { setStoredClaim } from '@renderer/services/claimService';
+import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
 import { safeAwait } from '@renderer/utils';
 
@@ -72,6 +74,10 @@ const setupPersonal = async ({
   const personalId = useKeychain
     ? (await getStaticUser()).id
     : (await registerLocal(email, password, true)).id;
+
+  // Persist migration-in-progress flag as early as possible so a crash anywhere
+  // from here forward is detected on restart and triggers resetDataLocal().
+  await setStoredClaim(personalId, ACCOUNT_SETUP_STARTED, 'true');
 
   /* Restore first key pair */
   if (props.recoveryPhrase) {

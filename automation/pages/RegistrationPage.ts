@@ -77,9 +77,9 @@ export class RegistrationPage extends BasePage {
     const selector = this.getRecoveryWordSelector(lastWordIndex);
     await this.click(selector);
     for (let i = 0; i < this.recoveryPhraseWords[lastWordIndex].length; i++) {
-      await this.window.keyboard.press('Backspace');
+      await this.pressKey('Backspace');
     }
-    await this.window.keyboard.press('Backspace');
+    await this.pressKey('Backspace');
     await this.captureStepScreenshot(`clear-recovery-word-${lastWordIndex}`);
   }
 

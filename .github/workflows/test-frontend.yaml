@@ -29,27 +29,28 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Install pnpm
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
+
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 22.12.0
-          cache: 'npm'
+          node-version: 24.15.0
+          cache: 'pnpm'
           cache-dependency-path: |
-            front-end/pnpm-lock.yaml
+            pnpm-lock.yaml
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
-
-      - name: Install front-end Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Build Linux executable
         run: pnpm run build:linux:e2e
@@ -83,23 +84,25 @@ jobs:
             workers: 8
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Install pnpm
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
+
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 22.12.0
-          cache: 'npm'
+          node-version: 24.15.0
+          cache: 'pnpm'
           cache-dependency-path: |
-            automation/pnpm-lock.yaml
-
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
+            pnpm-lock.yaml
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
@@ -117,9 +120,8 @@ jobs:
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
           docker compose version
 
-      - name: Install Automation Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: automation
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -471,27 +473,28 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@8d3c67de8e2fe68ef647c8db1e6a09f647780f40 # v2.19.0
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Install pnpm
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
+
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 22.12.0
-          cache: 'npm'
+          node-version: 24.15.0
+          cache: 'pnpm'
           cache-dependency-path: |
-            front-end/pnpm-lock.yaml
+            pnpm-lock.yaml
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
-
-      - name: Install front-end Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}

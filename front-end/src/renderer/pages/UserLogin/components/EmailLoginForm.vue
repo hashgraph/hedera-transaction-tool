@@ -2,12 +2,10 @@
 import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 
 import { computed, inject, onMounted, reactive, ref, watch } from 'vue';
-import Tooltip from 'bootstrap/js/dist/tooltip';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRouter } from 'vue-router';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
@@ -47,7 +45,6 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
-const createTooltips = useCreateTooltips();
 const setupStores = useSetupStores();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
 const { select: selectDefaultOrganization } = useDefaultOrganization();
@@ -71,7 +68,6 @@ const passwordRequirements = reactive({
   // number: false,
   // special: false,
 });
-const tooltipContent = ref('');
 const keepLoggedIn = ref(false);
 const isResetDataModalShown = ref(false);
 
@@ -89,6 +85,17 @@ const isPrimaryButtonDisabled = computed(() => {
         inputPassword.value !== inputConfirmPassword.value))
   );
 });
+const tooltipContent = computed(
+  () => `
+          <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
+            <div class='${
+              passwordRequirements.length ? 'text-success' : 'text-danger'
+            }'><i class='bi bi-${
+              passwordRequirements.length ? 'check' : 'x'
+            }'></i>Be at least 10 characters</div>
+          </div>
+        `,
+);
 
 /* Handlers */
 const handleOnFormSubmit = async () => {
@@ -171,11 +178,6 @@ const handleResetData = async () => {
   inputConfirmPasswordInvalid.value = false;
 
   emit('data:reset');
-
-  setTimeout(() => {
-    createTooltips();
-    setTooltipContent();
-  }, 300);
 };
 
 const handleBlur = (inputType: string, value: string) => {
@@ -194,32 +196,9 @@ const handleBlur = (inputType: string, value: string) => {
   }
 };
 
-/* Misc */
-function setTooltipContent() {
-  tooltipContent.value = `
-          <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
-            <div class='${
-              passwordRequirements.length ? 'text-success' : 'text-danger'
-            }'><i class='bi bi-${
-              passwordRequirements.length ? 'check' : 'x'
-            }'></i>Be at least 10 characters</div>
-          </div>
-        `;
-  const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipList).forEach(tooltipEl => {
-    const tooltip = Tooltip.getInstance(tooltipEl);
-    tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
-  });
-}
-
 /* Hooks */
 onMounted(async () => {
   passwordRequirements.length = isPasswordStrong(inputPassword.value).length;
-
-  setTimeout(() => {
-    createTooltips();
-    setTooltipContent();
-  }, 300);
 });
 
 /* Watchers */
@@ -235,7 +214,6 @@ watch(inputPassword, pass => {
     inputEmailInvalid.value = false;
     inputPasswordInvalid.value = false;
   }
-  setTooltipContent();
 });
 
 watch(inputConfirmPassword, pass => {
@@ -281,7 +259,8 @@ watch(inputEmail, pass => {
       data-bs-placement="right"
       data-bs-custom-class="wide-xl-tooltip text-start"
       data-bs-html="true"
-      data-bs-title="_"
+      :data-bs-title="tooltipContent"
+      :html-tooltip="true"
       data-testid="input-password"
       @blur="handleBlur('inputPassword', $event.target.value)"
     />

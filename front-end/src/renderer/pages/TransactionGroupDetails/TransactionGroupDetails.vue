@@ -9,7 +9,7 @@ import {
   NotificationType,
 } from '@shared/interfaces';
 
-import { computed, onBeforeMount, reactive, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -20,7 +20,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
@@ -102,7 +101,6 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   if (isAffected) await fetchGroupOnNotif(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const createTooltips = useCreateTooltips();
 
 /* Injected */
 const appCache = AppCache.inject();
@@ -114,7 +112,6 @@ const firstSignableGroupItem = ref<IGroupItem | null>(null);
 
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
-const tooltipRef = ref<HTMLElement[]>([]);
 
 const fullyLoaded = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
@@ -316,12 +313,6 @@ watch(
   },
 );
 
-watchEffect(() => {
-  if (tooltipRef.value && tooltipRef.value.length > 0) {
-    createTooltips();
-  }
-});
-
 /* Functions */
 async function fetchGroup(id: string | number) {
   fullyLoaded.value = false;
@@ -371,9 +362,6 @@ async function fetchGroup(id: string | number) {
 
       await updateFirstSignableGroupItemAfterFetch();
 
-      // bootstrap tooltips needs to be recreated when the items' status might have changed
-      // since their title is not updated
-      createTooltips();
     } catch (error) {
       router.back();
       throw error;
@@ -416,21 +404,25 @@ async function fetchGroupOnNotif(groupId: string | number) {
 
           <div class="flex-centered gap-4">
             <NextTransactionCursor />
-            <Transition mode="out-in" name="fade">
-              <template v-if="visibleButtons.length > 0">
-                <div>
-                  <AppButton
-                    :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-                    :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                    :disabled="Boolean(loadingStates[visibleButtons[0]])"
-                    :loading="Boolean(loadingStates[visibleButtons[0]])"
-                    :loading-text="loadingStates[visibleButtons[0]] || ''"
-                    type="submit"
-                    >{{ visibleButtons[0] }}
-                  </AppButton>
-                </div>
-              </template>
-            </Transition>
+            <template v-if="visibleButtons.length > 0">
+              <div>
+                <AppButton
+                  :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+                  :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+                  :disabled="Boolean(loadingStates[visibleButtons[0]])"
+                  :loading="Boolean(loadingStates[visibleButtons[0]])"
+                  :loading-text="loadingStates[visibleButtons[0]] || ''"
+                  class="extra-width"
+                  type="submit"
+                  >{{ visibleButtons[0] }}
+                </AppButton>
+              </div>
+            </template>
+            <template v-else-if="!fullyLoaded">
+              <div>
+                <AppButton color="secondary" :disabled="true" class="extra-width">... </AppButton>
+              </div>
+            </template>
 
             <Transition mode="out-in" name="fade">
               <template v-if="dropDownItems.length > 0">
@@ -530,3 +522,8 @@ async function fetchGroupOnNotif(groupId: string | number) {
     </div>
   </form>
 </template>
+<style lang="scss" scoped>
+.extra-width {
+  min-width: 156px;
+}
+</style>

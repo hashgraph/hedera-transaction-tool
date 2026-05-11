@@ -92,11 +92,6 @@ export class BasePage {
     }
   }
 
-  // Debug helper - pauses test execution for manual inspection
-  async pause() {
-    await this.window.pause();
-  }
-
   async pressKey(key: string): Promise<void> {
     console.log(`Pressing key: ${key}`);
     await this.window.keyboard.press(key);
@@ -174,6 +169,41 @@ export class BasePage {
     await element.waitFor({ state: 'visible', timeout });
     await element.click();
     await this.captureStepScreenshot(`click-${selector}`);
+  }
+
+  /**
+   * Clicks on an element, retrying when the element is repeatedly detached
+   * from the DOM (e.g. components that re-mount during Vue updates). The
+   * locator is re-resolved on every attempt and the action itself is bounded
+   * so the outer retry loop can drive progress instead of being blocked by
+   * Playwright's default 30s actionability timeout.
+   */
+  async clickWithRetryOnDetach(
+    selector: string,
+    index: number | null = null,
+    overallTimeout: number = this.LONG_TIMEOUT,
+    perAttemptTimeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(`Clicking on element with selector: ${selector} (with retry on detach)`);
+    const deadline = Date.now() + overallTimeout;
+    let lastError: unknown;
+
+    while (Date.now() < deadline) {
+      const element = this.getElement(selector, index);
+      try {
+        await element.waitFor({ state: 'visible', timeout: perAttemptTimeout });
+        await element.click({ timeout: perAttemptTimeout });
+        await this.captureStepScreenshot(`click-${selector}`);
+        return;
+      } catch (error) {
+        lastError = error;
+        await this.wait(this.SHORT_TIMEOUT);
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to click "${selector}" within ${overallTimeout} ms`);
   }
 
   /**
@@ -381,9 +411,10 @@ export class BasePage {
     longTimeout: number = this.LONG_TIMEOUT,
   ): Promise<void> {
     console.log(`Waiting for element with selector: ${selector} to disappear`);
+    const element = this.getElement(selector);
     try {
-      await this.window.waitForSelector(selector, { state: 'attached', timeout: timeout });
-      await this.window.waitForSelector(selector, { state: 'detached', timeout: longTimeout });
+      await element.waitFor({ state: 'attached', timeout });
+      await element.waitFor({ state: 'detached', timeout: longTimeout });
     } catch {
       console.error(`Element with selector ${selector} did not disappear.`);
     }
@@ -929,7 +960,7 @@ export class BasePage {
   async waitForInputFieldToBeFilled(
     selector: string,
     index: number | null = null,
-    timeout = this.LONG_TIMEOUT,
+    timeout: number = this.LONG_TIMEOUT,
   ): Promise<string> {
     console.log(`Waiting for input field with selector: ${selector} to be filled`);
     const element = this.getElement(selector, index);

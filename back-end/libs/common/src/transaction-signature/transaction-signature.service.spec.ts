@@ -339,6 +339,22 @@ describe('TransactionSignatureService', () => {
 
       expect(nodeCacheMock.getNodeInfoForTransaction).toHaveBeenCalledWith(expect.anything(), 5);
     });
+
+    it('calls addNodeKeys when nodeId is 0 (node ID zero must not be skipped)', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({ getNodeId: jest.fn().mockReturnValue(0) }),
+      );
+      accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
+        makeAccountInfo('fee-payer-key'),
+      );
+      nodeCacheMock.getNodeInfoForTransaction.mockResolvedValue(makeNodeInfo('admin-key'));
+
+      const result = await service.computeSignatureKey(makeTransaction());
+
+      expect(nodeCacheMock.getNodeInfoForTransaction).toHaveBeenCalledWith(expect.anything(), 0);
+      expect((result as unknown as AsMockKeyList).getItems()).toContainEqual(mockKey('admin-key'));
+    });
   });
 
   // -------------------------------------------------------------------------

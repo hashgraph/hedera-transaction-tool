@@ -29,9 +29,7 @@ test.describe('Organization Contact List admin management tests @organization-ba
     await suite.organizationPage.clickOnContactListButton();
     await suite.contactListPage.addNewUser(newUserEmail);
     await suite.contactListPage.clickOnAccountInContactListByEmail(newUserEmail);
-    await suite.contactListPage.clickOnRemoveContactButton();
-    expect(await suite.contactListPage.isConfirmRemoveContactButtonVisible()).toBe(true);
-    await suite.contactListPage.clickOnConfirmRemoveContactButton();
+    await suite.contactListPage.removeContact();
     const isUsedDeleted = await suite.contactListPage.isUserDeleted(newUserEmail);
     expect(isUsedDeleted).toBe(true);
   });

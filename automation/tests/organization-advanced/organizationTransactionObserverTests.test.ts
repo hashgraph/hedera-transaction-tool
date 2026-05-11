@@ -64,7 +64,7 @@ test.describe('Organization Transaction observer/visibility tests @organization-
     globalCredentials.password = fixture.localCredentials.password;
     await transactionPage.clickOnTransactionsMenuButton();
 
-    await organizationPage.waitForElementToDisappear('.v-toast__text');
+    await organizationPage.waitForElementToDisappear(organizationPage.toastMessageSelector);
     await organizationPage.closeDraftModal();
 
     if (process.env.CI) {
