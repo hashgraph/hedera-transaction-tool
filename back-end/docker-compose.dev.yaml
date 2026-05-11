@@ -1,15 +1,15 @@
 services:
   api:
     volumes:
-      - .:/usr/src/app
+      - .:/usr/src/app/back-end
 
   chain:
     volumes:
-      - .:/usr/src/app
+      - .:/usr/src/app/back-end
 
   notifications:
     volumes:
-      - .:/usr/src/app
+      - .:/usr/src/app/back-end
 
   database:
     volumes:
