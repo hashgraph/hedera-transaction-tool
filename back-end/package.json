@@ -67,7 +67,7 @@
     "dotenv": "catalog:",
     "express": "5.2.1",
     "ioredis": "5.10.1",
-    "joi": "18.1.2",
+    "joi": "18.2.1",
     "murlock": "4.4.0",
     "nats": "2.29.3",
     "nest-winston": "1.10.2",
