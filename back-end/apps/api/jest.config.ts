@@ -1,5 +1,5 @@
 import type { Config } from 'jest';
-import baseConfig from '../../jest.config.ts';
+import baseConfig from '../../jest.config';
 
 const includeLibs = process.env.INCLUDE_LIBS !== '0';
 
