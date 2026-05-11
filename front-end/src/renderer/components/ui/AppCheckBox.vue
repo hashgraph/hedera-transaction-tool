@@ -1,5 +1,8 @@
 <script setup lang="ts">
 /* Props */
+import useCreateTooltip from '@renderer/composables/useCreateTooltip.js';
+import { ref } from 'vue';
+
 defineProps<{
   checked: boolean;
   name: string;
@@ -10,10 +13,15 @@ defineProps<{
 
 /* Emits */
 defineEmits(['update:checked']);
+
+/* State */
+const inputRef = ref<HTMLInputElement | null>(null);
+useCreateTooltip(inputRef);
 </script>
 <template>
   <div class="form-check">
     <input
+      ref="inputRef"
       class="form-check-input"
       type="checkbox"
       :checked="checked"

@@ -40,18 +40,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
       '15',
     );
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
@@ -66,18 +55,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
   test('Verify user can execute approve allowance with complex account', async () => {
     const { txId, validStart } = await organizationPage.approveAllowance(complexKeyAccountId, '10');
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
@@ -117,7 +95,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
       'newContent',
     );
     await organizationPage.closeDraftModal();
-    await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    await organizationPage.signTxByAllUsersAndRefresh(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
@@ -142,7 +120,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
       'appendContent',
     );
     await organizationPage.closeDraftModal();
-    await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    await organizationPage.signTxByAllUsersAndRefresh(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
@@ -157,7 +135,7 @@ test.describe('Organization Transaction execution-type tests @organization-advan
   test('Verify user can execute account delete with complex account', async () => {
     const { txId, validStart } = await organizationPage.deleteAccount(complexKeyAccountId);
     await organizationPage.closeDraftModal();
-    await organizationPage.signTxByAllUsersAndRefresh(globalCredentials, firstUser, txId ?? '');
+    await organizationPage.signTxByAllUsersAndRefresh(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,

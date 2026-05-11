@@ -204,11 +204,12 @@ export const updateOrganizationCredentials = async (
   password?: string | null,
   jwtToken?: string | null,
   encryptPassword?: string | null,
+  passwordIsEncrypted: boolean = false,
 ) => {
   const prisma = getPrismaClient();
 
   try {
-    if (password) {
+    if (password && !passwordIsEncrypted) {
       password = await encryptData(password, encryptPassword);
     }
 
@@ -288,6 +289,46 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
   }
 
   return failedLogins;
+};
+
+// Surfaces keychain / personal-password failures up front so callers can abort
+// before triggering irreversible side effects (e.g. the backend password rotation).
+export const encryptOrganizationPassword = async (
+  password: string,
+  encryptPassword?: string | null,
+) => {
+  if (!password) {
+    throw new Error('Password is required to encrypt');
+  }
+
+  let useKeychain = false;
+  try {
+    useKeychain = await getUseKeychainClaim();
+  } catch (error) {
+    logger.error('Failed to encrypt organization password', { error });
+    throw new Error('Keychain access denied or unavailable', { cause: error });
+  }
+
+  if (!useKeychain && !encryptPassword) {
+    logger.warn('encryptOrganizationPassword called without a viable encryption method', {
+      useKeychain,
+    });
+    throw new Error('No encryption method available');
+  }
+
+  try {
+    if (useKeychain) {
+      const buffer = safeStorage.encryptString(password);
+      return buffer.toString('base64');
+    }
+    return encrypt(password, encryptPassword as string);
+  } catch (error) {
+    logger.error('Failed to encrypt organization password', { error, useKeychain });
+    if (useKeychain) {
+      throw new Error('Keychain access denied or unavailable', { cause: error });
+    }
+    throw new Error('Failed to encrypt with application password', { cause: error });
+  }
 };
 
 /* Encrypt data */

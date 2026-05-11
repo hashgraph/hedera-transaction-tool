@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { INotificationReceiver, ITransactionFull } from '@shared/interfaces';
+import { NotificationType, TransactionStatus } from '@shared/interfaces';
 
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 import { computedAsync } from '@vueuse/core';
@@ -19,9 +20,6 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '../../../../../../shared/src/ITransactionNode.ts';
-import { NotificationType, TransactionStatus } from '@shared/interfaces';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
-import Tooltip from 'bootstrap/js/dist/tooltip';
 import { FEATURE_EXTERNAL_BADGE_ENABLED } from '@shared/constants';
 
 /* Props */
@@ -50,7 +48,6 @@ const isExternal = ref(false);
 let resizeObserver: ResizeObserver | null = null;
 
 /* Composables */
-const createTooltips = useCreateTooltips();
 const transactionId = computed(() => props.node.transactionId ?? null);
 const transactionAudit = useTransactionAudit(transactionId);
 
@@ -189,17 +186,8 @@ function checkTruncation() {
   if (!descriptionRef.value) {
     return;
   }
-  const wasTruncated = isTruncated.value;
   const isNowTruncated = descriptionRef.value.scrollHeight > descriptionRef.value.clientHeight;
   isTruncated.value = isNowTruncated;
-
-  const tooltip = Tooltip.getInstance(descriptionRef.value);
-
-  if (!isNowTruncated && tooltip) {
-    tooltip.dispose();
-  } else if (!wasTruncated && isNowTruncated) {
-    nextTick(() => createTooltips());
-  }
 }
 
 /* Hooks */

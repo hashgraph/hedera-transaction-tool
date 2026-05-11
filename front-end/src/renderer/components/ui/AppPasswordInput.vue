@@ -15,9 +15,11 @@ const props = withDefaults(
     size?: 'small' | 'large' | undefined;
     autoTrim?: boolean;
     showIcon?: boolean;
+    htmlTooltip?: boolean;
   }>(),
   {
     showIcon: true,
+    htmlTooltip: false
   },
 );
 
@@ -49,6 +51,7 @@ const togglePasswordVisibility = () => {
       v-bind="mergedProps"
       :type="isPasswordVisible ? 'text' : 'password'"
       @update:modelValue="$emit('update:modelValue', $event)"
+      :html-tooltip="props.htmlTooltip"
     />
     <button
       v-if="props.showIcon"

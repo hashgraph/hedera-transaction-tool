@@ -58,15 +58,9 @@ export class FilePage extends BasePage {
     await this.click(this.removeMultipleButtonSelector);
   }
 
-  async clickOnEditSelectedFileNickname() {
+  async editAndSaveFileNickname(nickname: string) {
     await this.click(this.editNicknameButtonSelector);
-  }
-
-  async fillSelectedFileNickname(nickname: string) {
     await this.fill(this.fileNicknameInputSelector, nickname);
-  }
-
-  async saveSelectedFileNickname() {
     await this.pressKey('Tab');
   }
 
@@ -74,15 +68,9 @@ export class FilePage extends BasePage {
     return await this.getText(this.selectedFileNicknameSelector);
   }
 
-  async clickOnEditSelectedFileDescription() {
+  async editAndSaveFileDescription(description: string) {
     await this.click(this.editDescriptionButtonSelector);
-  }
-
-  async fillSelectedFileDescription(description: string) {
     await this.fill(this.fileDescriptionTextareaSelector, description);
-  }
-
-  async saveSelectedFileDescription() {
     await this.pressKey('Tab');
   }
 
@@ -148,6 +136,12 @@ export class FilePage extends BasePage {
 
   async fillInExistingFileId(fileId: string) {
     await this.fill(this.existingFileIdInputSelector, fileId);
+  }
+
+  async linkExistingFile(fileId: string) {
+    await this.clickOnAddExistingFileLink();
+    await this.fillInExistingFileId(fileId);
+    await this.clickOnLinkFileButton();
   }
 
   async getFileIdText() {
