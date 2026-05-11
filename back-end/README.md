@@ -317,13 +317,13 @@ dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage
 1. Pull from mirror registry:
 
    ```bash
-   docker pull mirror.gcr.io/library/node:24-alpine
+   docker pull mirror.gcr.io/library/node:24.15.0-alpine
    ```
 
 2. Tag the image:
 
    ```bash
-   docker tag mirror.gcr.io/library/node:24-alpine node:24-alpine
+   docker tag mirror.gcr.io/library/node:24.15.0-alpine node:24.15.0-alpine
    ```
 
 **Alternative**: Configure Docker Desktop Registry Mirrors:
