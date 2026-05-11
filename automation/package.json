@@ -56,7 +56,7 @@
     "dotenv": "catalog:",
     "fsevents": "2.3.3",
     "jszip": "catalog:",
-    "lodash": "4.17.21",
+    "lodash": "4.18.1",
     "long": "catalog:",
     "pg": "catalog:",
     "playwright": "1.59.1",
