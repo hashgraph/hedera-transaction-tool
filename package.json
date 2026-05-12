@@ -23,7 +23,8 @@
       "hono": "4.12.14",
       "@hono/node-server": "1.19.13",
       "@xmldom/xmldom": "0.8.12",
-      "tar": "7.5.11"
+      "tar": "7.5.11",
+      "fast-uri": "3.1.2"
     }
   },
   "engines": {
