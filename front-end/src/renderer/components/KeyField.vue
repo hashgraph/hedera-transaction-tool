@@ -73,6 +73,7 @@ const saveKeyListModalShown = ref(false);
 const formattedKey = ref('');
 const identifier = ref<string | null | undefined>(null);
 
+/* Functions */
 const findSavedKeyMatching = (keyList: KeyList): ComplexKey | null => {
   const encoded = encodeKey(keyList).toString();
   return savedComplexKeys.value.find(k => k.protobufEncoded === encoded) ?? null;
@@ -80,7 +81,13 @@ const findSavedKeyMatching = (keyList: KeyList): ComplexKey | null => {
 
 const loadSavedComplexKeys = async () => {
   if (!ush.isUserLoggedIn(user.personal)) return;
-  savedComplexKeys.value = await getComplexKeys(user.personal.id);
+  try {
+    savedComplexKeys.value = await getComplexKeys(user.personal.id);
+  } catch (error) {
+    toastManager.error(
+      error instanceof Error ? error.message : 'Failed to load saved complex keys',
+    );
+  }
 };
 
 /* Handlers */
@@ -130,13 +137,31 @@ const handleEditComplexKey = () => {
 };
 
 const handleComplexKeyUpdate = async (keyList: KeyList) => {
+  if (!selectedComplexKey.value) {
+    emit('update:modelKey', keyList);
+    return;
+  }
+
+  const keyListBytes = encodeKey(keyList);
+  const targetId = selectedComplexKey.value.id;
+  const idx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+  if (idx !== -1) {
+    savedComplexKeys.value[idx] = {
+      ...savedComplexKeys.value[idx],
+      protobufEncoded: keyListBytes.toString(),
+    };
+  }
+
   emit('update:modelKey', keyList);
 
-  if (selectedComplexKey.value) {
-    const keyListBytes = encodeKey(keyList);
-    selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
-    toastManager.success('Key list updated successfully');
+  const updated = await updateComplexKey(targetId, keyListBytes);
+  selectedComplexKey.value = updated;
+  if (idx !== -1) {
+    savedComplexKeys.value[idx] = updated;
+  } else {
+    await loadSavedComplexKeys();
   }
+  toastManager.success('Key list updated successfully');
 };
 
 const handleSaveComplexKeyButtonClick = () => {
@@ -170,21 +195,29 @@ watch(
   { immediate: true },
 );
 
-watch([() => props.modelKey, publicKeyInputRef, savedComplexKeys], ([newKey, newInputRef]) => {
-  if (!ush.isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+watch([() => props.modelKey, publicKeyInputRef], ([newKey, newInputRef]) => {
+  if (!ush.isUserLoggedIn(user.personal)) return;
 
   if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
   } else if (newKey instanceof KeyList) {
-    selectedComplexKey.value = findSavedKeyMatching(newKey);
     currentTab.value = Tabs.COMPLEX;
   } else if (newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = '';
   }
 });
 
+watch([() => props.modelKey, savedComplexKeys], ([newKey]) => {
+  if (newKey instanceof KeyList) {
+    selectedComplexKey.value = findSavedKeyMatching(newKey);
+  }
+});
+
+watch(selectSavedKeyModalShown, open => {
+  if (!open) loadSavedComplexKeys();
+});
+
+/* Hooks */
 onMounted(loadSavedComplexKeys);
 </script>
 <template>
