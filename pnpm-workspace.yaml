@@ -30,6 +30,22 @@ catalog:
   typeorm: 0.3.28
   typescript: 5.9.3
 
+catalogs:
+  # @nestjs/* packages from the nest monorepo (nestjs/nest) ship together and
+  # always share a version. The YAML anchor (&nestjsCore / *nestjsCore) keeps
+  # the version literal in one place — change it once on Nest upgrades.
+  # Do NOT add independently-versioned packages here (e.g. @nestjs/jwt,
+  # @nestjs/passport, @nestjs/config, @nestjs/swagger) — their version match
+  # is coincidental.
+  nestjs-core:
+    '@nestjs/common': &nestjsCore 11.1.19
+    '@nestjs/core': *nestjsCore
+    '@nestjs/microservices': *nestjsCore
+    '@nestjs/platform-express': *nestjsCore
+    '@nestjs/platform-socket.io': *nestjsCore
+    '@nestjs/testing': *nestjsCore
+    '@nestjs/websockets': *nestjsCore
+
 onlyBuiltDependencies:
   - '@nestjs/core'
   - '@parcel/watcher'
