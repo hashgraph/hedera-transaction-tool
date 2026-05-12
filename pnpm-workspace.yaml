@@ -17,14 +17,14 @@ catalog:
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
   dotenv: 17.4.2
-  jest: 30.3.0
+  jest: 30.4.2
   jszip: 3.10.1
   long: 5.3.2
   pg: 8.20.0
   prettier: 3.8.3
   reflect-metadata: 0.2.2
   semver: 7.8.0
-  ts-jest: 29.4.6
+  ts-jest: 29.4.9
   ts-loader: 9.5.7
   ts-node: 10.9.2
   typeorm: 0.3.28
