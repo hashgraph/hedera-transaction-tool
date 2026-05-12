@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import type { StringValue } from 'ms';
 
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
@@ -71,7 +72,7 @@ export class AuthService {
   /* The user is already verified, return jwt */
   async login(user: User) {
     const payload: JwtPayload = { userId: user.id, email: user.email };
-    const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d`;
+    const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d` as StringValue;
 
     const accessToken: string = this.jwtService.sign(payload, {
       expiresIn,
