@@ -333,6 +333,36 @@ describe('KeyField.vue — complex key pre-fetch and pass-through', () => {
       expect(modal.props('savedComplexKeys')).toEqual([savedOriginal]);
       expect(mocks.toastManager.error).toHaveBeenCalledWith('Complex key not found!');
       expect(mocks.toastManager.success).not.toHaveBeenCalled();
+
+      const listItem = wrapper.find('[data-testid="key-list-item"]');
+      expect(listItem.exists()).toBe(true);
+      expect(listItem.text()).toContain('Edited Key');
+      expect(listItem.text()).not.toContain('Unsaved Key List');
+    });
+
+    it('ignores concurrent handleComplexKeyUpdate calls while one is in flight', async () => {
+      const original = new KeyList([pk1, pk2]);
+      const edited1 = new KeyList([pk1, pk3]);
+      const edited2 = new KeyList([pk2, pk3]);
+      const savedOriginal = makeSavedKey(original, { id: 'saved-1' });
+      mocks.getComplexKeys.mockResolvedValue([savedOriginal]);
+      mocks.updateComplexKey.mockReturnValue(new Promise(() => {}));
+
+      const wrapper = mountField({ modelKey: original });
+      await flushPromises();
+
+      const modal = wrapper.findComponent(ComplexKeyModalStub);
+      modal.vm.$emit('update:modelKey', edited1);
+      await wrapper.setProps({ modelKey: edited1 });
+      await flushPromises();
+
+      expect(mocks.updateComplexKey).toHaveBeenCalledTimes(1);
+
+      modal.vm.$emit('update:modelKey', edited2);
+      await wrapper.setProps({ modelKey: edited2 });
+      await flushPromises();
+
+      expect(mocks.updateComplexKey).toHaveBeenCalledTimes(1);
     });
 
     it('preserves selectedComplexKey while updateComplexKey is pending (optimistic cache write)', async () => {

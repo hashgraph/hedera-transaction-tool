@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ComplexKey } from '@prisma/client';
 
-import { onMounted, ref, watch } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
 import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
@@ -70,6 +70,7 @@ const complexKeyModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
 const selectSavedKeyModalShown = ref(false);
 const saveKeyListModalShown = ref(false);
+const updateInFlight = ref(false);
 const formattedKey = ref('');
 const identifier = ref<string | null | undefined>(null);
 
@@ -141,36 +142,46 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
     emit('update:modelKey', keyList);
     return;
   }
+  if (updateInFlight.value) return;
 
   const keyListBytes = encodeKey(keyList);
   const targetId = selectedComplexKey.value.id;
-  const idx = savedComplexKeys.value.findIndex(k => k.id === targetId);
-  const snapshot = idx !== -1 ? savedComplexKeys.value[idx] : null;
-  if (idx !== -1) {
-    savedComplexKeys.value[idx] = {
-      ...savedComplexKeys.value[idx],
+  const initialIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+  const snapshot = initialIdx !== -1 ? savedComplexKeys.value[initialIdx] : null;
+  if (initialIdx !== -1) {
+    savedComplexKeys.value[initialIdx] = {
+      ...savedComplexKeys.value[initialIdx],
       protobufEncoded: keyListBytes.toString(),
     };
   }
 
   emit('update:modelKey', keyList);
+  updateInFlight.value = true;
 
   try {
     const updated = await updateComplexKey(targetId, keyListBytes);
     selectedComplexKey.value = updated;
-    if (idx !== -1) {
-      savedComplexKeys.value[idx] = updated;
+    const successIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+    if (successIdx !== -1) {
+      savedComplexKeys.value[successIdx] = updated;
     } else {
       await loadSavedComplexKeys();
     }
     toastManager.success('Key list updated successfully');
   } catch (error) {
-    if (snapshot && idx !== -1) {
-      savedComplexKeys.value[idx] = snapshot;
+    if (snapshot) {
+      const rejectIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+      if (rejectIdx !== -1) {
+        savedComplexKeys.value[rejectIdx] = snapshot;
+      }
+      selectedComplexKey.value = snapshot;
     }
     toastManager.error(
       error instanceof Error ? error.message : 'Failed to update complex key',
     );
+  } finally {
+    await nextTick();
+    updateInFlight.value = false;
   }
 };
 
@@ -218,6 +229,7 @@ watch([() => props.modelKey, publicKeyInputRef], ([newKey, newInputRef]) => {
 });
 
 watch([() => props.modelKey, savedComplexKeys], ([newKey]) => {
+  if (updateInFlight.value) return;
   if (newKey instanceof KeyList) {
     selectedComplexKey.value = findSavedKeyMatching(newKey);
   }
