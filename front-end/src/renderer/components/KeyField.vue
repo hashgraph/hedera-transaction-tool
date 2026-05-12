@@ -180,9 +180,10 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
       error instanceof Error ? error.message : 'Failed to update complex key',
     );
   } finally {
-    // Hold the in-flight flag through one tick so any pre-flush watcher queued during
-    // this handler (e.g. from the parent's v-model setProps) fires before the flag flips.
-    // If watcher at line 232 is ever switched to flush: 'post', this invariant breaks.
+    // Hold updateInFlight through one tick so the pre-flush watcher of
+    // [props.modelKey, savedComplexKeys] (below) — which assigns selectedComplexKey
+    // from findSavedKeyMatching — fires while the guard is still on and bails out.
+    // If that watcher is ever switched to flush: 'post', this invariant breaks.
     await nextTick();
     updateInFlight.value = false;
   }
