@@ -43,7 +43,7 @@ import type {
   SystemUndeleteData,
   TransactionCommonData,
   TransferHbarData,
-} from './createTransactions';
+} from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
 
@@ -101,9 +101,13 @@ const getAccountData = (transaction: Transaction): AccountData => {
     receiverSignatureRequired: transaction.receiverSignatureRequired || false,
     declineStakingReward: transaction.declineStakingRewards || false,
     maxAutomaticTokenAssociations: transaction.maxAutomaticTokenAssociations?.toNumber() || 0,
-    stakeType: transaction.stakedAccountId ? 'Account' : transaction.stakedNodeId ? 'Node' : 'None',
+    stakeType: transaction.stakedAccountId
+      ? 'Account'
+      : transaction.stakedNodeId !== null
+        ? 'Node'
+        : 'None',
     stakedAccountId: transaction.stakedAccountId?.toString() || '',
-    stakedNodeId: transaction.stakedNodeId?.toNumber() || null,
+    stakedNodeId: transaction.stakedNodeId !== null ? transaction.stakedNodeId.toNumber() : null,
     accountMemo: transaction.accountMemo || '',
     ownerKey: transaction.key || null,
   };

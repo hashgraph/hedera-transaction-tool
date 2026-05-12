@@ -35,7 +35,7 @@ import {
 import { SignersService } from './signers.service';
 
 @ApiTags('Transaction Signers')
-@Controller('transactions/:transactionId?/signers')
+@Controller('transactions{/:transactionId}/signers')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 export class SignersController {
   constructor(private signaturesService: SignersService) {}

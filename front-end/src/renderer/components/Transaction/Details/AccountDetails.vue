@@ -288,7 +288,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         {{
           transaction.stakedAccountId && transaction.stakedAccountId.toString() !== '0.0.0'
             ? `Account ${transaction.stakedAccountId.toString()}`
-            : transaction.stakedNodeId && isAccountId(transaction.stakedNodeId.toString())
+            : transaction.stakedNodeId !== null && isAccountId(transaction.stakedNodeId.toString())
               ? `Node ${transaction.stakedNodeId.toString()}`
               : transaction instanceof AccountCreateTransaction
                 ? 'None'

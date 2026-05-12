@@ -108,6 +108,9 @@ watch(
   },
 );
 watch(accountData.accountInfo, accountInfo => {
+  const isBrandNewDraft =
+    route.query.group === 'true' ? !route.query.groupIndex : !route.query.draftId;
+
   if (!accountInfo) {
     data.receiverSignatureRequired = false;
     data.maxAutomaticTokenAssociations = 0;
@@ -117,7 +120,7 @@ watch(accountData.accountInfo, accountInfo => {
     data.declineStakingReward = false;
     data.accountMemo = '';
     data.ownerKey = null;
-  } else if (!route.query.draftId) {
+  } else if (isBrandNewDraft) {
     data.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     data.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     data.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';
