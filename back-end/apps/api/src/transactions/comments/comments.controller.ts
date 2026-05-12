@@ -12,7 +12,7 @@ import { CommentsService } from './comments.service';
 import { CreateCommentDto } from '../dto/create-comment.dto';
 
 @ApiTags('Transaction Comments')
-@Controller('transactions/:transactionId?/comments')
+@Controller('transactions{/:transactionId}/comments')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 //TODO add serializer
 export class CommentsController {

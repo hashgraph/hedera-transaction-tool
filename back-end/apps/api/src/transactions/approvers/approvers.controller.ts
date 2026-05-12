@@ -29,7 +29,7 @@ import {
 } from '../dto';
 
 @ApiTags('Transaction Approvers')
-@Controller('transactions/:transactionId?/approvers')
+@Controller('transactions{/:transactionId}/approvers')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionApproverDto)
 export class ApproversController {

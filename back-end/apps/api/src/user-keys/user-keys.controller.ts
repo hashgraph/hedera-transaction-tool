@@ -21,7 +21,7 @@ import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto, UserKeyDto } from './dt
 import { UserKeysService } from './user-keys.service';
 
 @ApiTags('User Keys')
-@Controller('user/:userId?/keys')
+@Controller('user{/:userId}/keys')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(UserKeyDto)
 export class UserKeysController {

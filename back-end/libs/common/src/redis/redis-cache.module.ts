@@ -1,32 +1,26 @@
-import { Inject, Module } from '@nestjs/common';
+import { Inject, Module, type OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CacheModule, CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
-import { redisStore } from 'cache-manager-redis-yet';
-import type { RedisClientOptions } from 'redis';
+import { createKeyv } from '@keyv/redis';
+
 @Module({
   imports: [
-    CacheModule.registerAsync<RedisClientOptions>({
+    CacheModule.registerAsync({
       isGlobal: true,
-      useFactory: async (configService: ConfigService) => {
-        return {
-          store: await redisStore({
-            url: configService.getOrThrow('REDIS_URL'),
-            ttl:
-              configService.get<number>('REDIS_DEFAULT_TTL_MS', { infer: true }) || 1 * 60 * 1_000,
-          }),
-        };
-      },
+      useFactory: (configService: ConfigService) => ({
+        stores: [createKeyv(configService.getOrThrow('REDIS_URL'))],
+        ttl:
+          configService.get<number>('REDIS_DEFAULT_TTL_MS', { infer: true }) || 1 * 60 * 1_000,
+      }),
       inject: [ConfigService],
     }),
   ],
 })
-export class RedisCacheModule {
+export class RedisCacheModule implements OnModuleDestroy {
   constructor(@Inject(CACHE_MANAGER) private cache: Cache) {}
 
   onModuleDestroy() {
-    // @ts-expect-error client is not visible
-    const client = this.cache.store.client;
-    client.quit();
+    return this.cache.disconnect();
   }
 }
