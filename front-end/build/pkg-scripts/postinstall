@@ -1,0 +1,44 @@
+#!/bin/bash
+# postinstall — runs as root AFTER the macOS Installer copies files.
+# Clears stale Electron / Chromium caches that can cause blank screens or
+# old-version artifacts after an upgrade.  User data (database, preferences)
+# is NOT touched.
+
+set -euo pipefail
+
+APP_SUPPORT_DIR_NAME="Hedera Transaction Tool"
+
+# Cache subdirectories to remove (relative to the app-support root).
+CACHE_DIRS=(
+  "GPUCache"
+  "Code Cache"
+  "Cache"
+  "Partitions/persist:main/GPUCache"
+  "Partitions/persist:main/Code Cache"
+  "Partitions/persist:main/Cache"
+)
+
+# ---------------------------------------------------------------------------
+# Iterate over every user home that contains our app-support folder.
+# ---------------------------------------------------------------------------
+for user_home in /Users/*; do
+  [ -d "${user_home}" ] || continue
+
+  # Only consider real user homes: they should have a Library directory,
+  # and skip well-known non-user directories like Shared and Guest.
+  user_name="$(basename "${user_home}")"
+  [ -d "${user_home}/Library" ] || continue
+  [ "${user_name}" = "Shared" ] && continue
+  [ "${user_name}" = "Guest" ] && continue
+  app_support="${user_home}/Library/Application Support/${APP_SUPPORT_DIR_NAME}"
+  [ -d "${app_support}" ] || continue
+
+  for cache_dir in "${CACHE_DIRS[@]}"; do
+    target="${app_support}/${cache_dir}"
+    if [ -d "${target}" ]; then
+      rm -rf "${target}" 2>/dev/null || true
+    fi
+  done
+done
+
+exit 0
