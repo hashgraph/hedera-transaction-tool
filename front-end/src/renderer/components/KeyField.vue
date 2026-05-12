@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ComplexKey } from '@prisma/client';
 
-import { ref, watch } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 
 import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
@@ -9,7 +9,7 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
+import { getComplexKeys, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import {
   isPublicKey,
@@ -65,12 +65,23 @@ const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
 const selectedComplexKey = ref<ComplexKey | null>(null);
+const savedComplexKeys = ref<ComplexKey[]>([]);
 const complexKeyModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
 const selectSavedKeyModalShown = ref(false);
 const saveKeyListModalShown = ref(false);
 const formattedKey = ref('');
 const identifier = ref<string | null | undefined>(null);
+
+const findSavedKeyMatching = (keyList: KeyList): ComplexKey | null => {
+  const encoded = encodeKey(keyList).toString();
+  return savedComplexKeys.value.find(k => k.protobufEncoded === encoded) ?? null;
+};
+
+const loadSavedComplexKeys = async () => {
+  if (!ush.isUserLoggedIn(user.personal)) return;
+  savedComplexKeys.value = await getComplexKeys(user.personal.id);
+};
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -111,6 +122,7 @@ const handleSaveKeyList = async (complexKey: ComplexKey) => {
   selectedComplexKey.value = complexKey;
   complexKeyModalShown.value = false;
   saveKeyListModalShown.value = false;
+  await loadSavedComplexKeys();
 };
 
 const handleEditComplexKey = () => {
@@ -158,7 +170,7 @@ watch(
   { immediate: true },
 );
 
-watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
+watch([() => props.modelKey, publicKeyInputRef, savedComplexKeys], ([newKey, newInputRef]) => {
   if (!ush.isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
@@ -166,12 +178,14 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
   if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
   } else if (newKey instanceof KeyList) {
-    selectedComplexKey.value = (await getComplexKey(user.personal.id, newKey)) || null;
+    selectedComplexKey.value = findSavedKeyMatching(newKey);
     currentTab.value = Tabs.COMPLEX;
   } else if (newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = '';
   }
 });
+
+onMounted(loadSavedComplexKeys);
 </script>
 <template>
   <div class="border rounded p-4">
@@ -227,6 +241,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           @update:model-key="handleComplexKeyUpdate"
           :on-save-complex-key="selectedComplexKey ? undefined : handleSaveComplexKeyButtonClick"
           :no-threshold="noThreshold"
+          :saved-complex-keys="savedComplexKeys"
         >
           <ComplexKeySaveKeyModal
             v-if="saveKeyListModalShown && modelKey instanceof KeyList && true"
