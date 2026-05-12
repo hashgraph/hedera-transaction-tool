@@ -38,21 +38,10 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
       complexKeyAccountId,
       'update',
       600,
-      true,
     );
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyForExecutionTab();
 
@@ -77,20 +66,9 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
       complexKeyAccountId,
       'newUpdate',
       10,
-      true,
     );
     await organizationPage.closeDraftModal();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await organizationPage.logoutFromOrganization();
-    await organizationPage.logInAndSignTransactionByAllUsers(
-      globalCredentials.password,
-      txId ?? '',
-    );
-    await organizationPage.signInOrganization(
-      firstUser.email,
-      firstUser.password,
-      globalCredentials.password,
-    );
+    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,

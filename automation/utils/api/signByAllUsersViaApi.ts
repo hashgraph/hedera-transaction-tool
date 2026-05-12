@@ -17,29 +17,28 @@ export async function signTransactionByAllUsersViaApi(
   users: UserDetails[],
   hederaTxId: string,
 ): Promise<SignByAllUsersResult> {
-  if (users.length < 2) {
+  if (users.length < 1) {
     throw new Error(
-      `signTransactionByAllUsersViaApi requires at least 2 users (creator + signers); got ${users.length}`,
+      `signTransactionByAllUsersViaApi requires at least 1 user; got ${users.length}`,
     );
   }
   if (!hederaTxId) {
     throw new Error('signTransactionByAllUsersViaApi: hederaTxId is empty');
   }
 
-  const creator = users[0];
-  const creatorToken = await loginToOrganizationApi(creator.email, creator.password);
+  const fetcherToken = await loginToOrganizationApi(users[0].email, users[0].password);
   const tx: OrganizationTransaction = await getOrganizationTransactionByHederaId(
-    creatorToken,
+    fetcherToken,
     hederaTxId,
   );
 
-  const signers = users.slice(1);
   let totalAcceptedSigners = 0;
-  // Signers must run sequentially: each upload triggers a read-modify-write on the
+  // All users sign sequentially: each upload triggers a read-modify-write on the
   // server-side `transactionBytes` (sdkTransaction.addSignature → UPDATE). Concurrent
-  // uploads race and lose signatures in the persisted bytes — even though the
-  // TransactionSigner rows for both still get inserted.
-  for (const user of signers) {
+  // uploads — including a UI-creator-sign racing with the first API upload — lose
+  // signatures in the persisted bytes even though TransactionSigner rows still get
+  // inserted. Signing the creator through this helper avoids that race entirely.
+  for (const user of users) {
     const token = await loginToOrganizationApi(user.email, user.password);
     const signatureMap = signTransactionForBackend(tx.transactionBytes, user.privateKey);
     const response = await uploadOrganizationSignatures(token, [{ id: tx.id, signatureMap }]);
@@ -52,9 +51,9 @@ export async function signTransactionByAllUsersViaApi(
 
   if (totalAcceptedSigners === 0) {
     throw new Error(
-      `signTransactionByAllUsersViaApi: backend accepted 0 signatures across ${signers.length} signer(s) for tx db-id=${tx.id}; check server-side validation logs (likely PNY/ISNMP/TNRS).`,
+      `signTransactionByAllUsersViaApi: backend accepted 0 signatures across ${users.length} signer(s) for tx db-id=${tx.id}; check server-side validation logs (likely PNY/ISNMP/TNRS).`,
     );
   }
 
-  return { signedUsers: signers.length, transactionDbId: tx.id, totalAcceptedSigners };
+  return { signedUsers: users.length, transactionDbId: tx.id, totalAcceptedSigners };
 }

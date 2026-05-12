@@ -858,7 +858,7 @@ export class OrganizationPage extends BasePage {
 
   async signTransactionByAllUsersViaApi(txId: string) {
     console.log(
-      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`,
+      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length}`,
     );
     const result = await signTransactionByAllUsersViaApi(this.users, txId);
     console.log(
