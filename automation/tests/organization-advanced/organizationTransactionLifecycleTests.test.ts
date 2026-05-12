@@ -33,7 +33,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     logoutFromOrganization: () => organizationPage.logoutFromOrganization(),
   });
 
-  test.skip('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
+  test('Verify transaction is shown "Ready for Execution" and correct stage is displayed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'update',
@@ -42,7 +42,17 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     );
     const validStartTime = await organizationPage.getValidStartTimeOnly(validStart);
     await organizationPage.closeDraftModal();
-    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await organizationPage.logInAndSignTransactionByAllUsers(
+      globalCredentials.password,
+      txId ?? '',
+    );
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.clickOnReadyForExecutionTab();
 
@@ -55,7 +65,6 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     expect(transactionDetails?.detailsButton).toBe(true);
 
     await organizationPage.clickOnReadyForExecutionDetailsButtonByTransactionId(txId ?? '');
-
     await organizationPage.waitForStageCompleted(0);
     await organizationPage.waitForStageCompleted(1);
 
@@ -63,7 +72,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     expect(isStageThreeCompleted).toBe(false);
   });
 
-  test.skip('Verify transaction is shown "History" after it is executed', async () => {
+  test('Verify transaction is shown "History" after it is executed', async () => {
     const { txId, validStart } = await organizationPage.updateAccount(
       complexKeyAccountId,
       'newUpdate',
@@ -71,7 +80,17 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
       true,
     );
     await organizationPage.closeDraftModal();
-    await organizationPage.signTransactionByAllUsersViaApi(txId ?? '');
+    await transactionPage.clickOnTransactionsMenuButton();
+    await organizationPage.logoutFromOrganization();
+    await organizationPage.logInAndSignTransactionByAllUsers(
+      globalCredentials.password,
+      txId ?? '',
+    );
+    await organizationPage.signInOrganization(
+      firstUser.email,
+      firstUser.password,
+      globalCredentials.password,
+    );
     const transactionDetails = await organizationPage.waitForSuccessfulHistoryTransaction(
       txId ?? '',
       validStart,
