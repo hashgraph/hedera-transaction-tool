@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import Diff from 'deep-diff';
 
 export function compareJsonFiles(
@@ -8,7 +7,7 @@ export function compareJsonFiles(
 ) {
   const jsonData1Cleaned = removeKeys(jsonData1, keysToIgnore);
   const jsonData2Cleaned = removeKeys(jsonData2, keysToIgnore);
-  const isEqual = _.isEqual(jsonData1Cleaned, jsonData2Cleaned);
+  const isEqual = JSON.stringify(jsonData1Cleaned) === JSON.stringify(jsonData2Cleaned);
 
   if (isEqual) {
     return null;
