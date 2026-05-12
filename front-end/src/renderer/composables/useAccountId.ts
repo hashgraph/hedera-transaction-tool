@@ -121,7 +121,7 @@ export default function useAccountId() {
   }
 
   function getStakedToString() {
-    if (accountInfo.value?.stakedNodeId) {
+    if (accountInfo.value?.stakedNodeId != null) {
       return `Node ${accountInfo.value?.stakedNodeId}`;
     } else if (accountInfo.value?.stakedAccountId) {
       return `Account ${accountInfo.value?.stakedAccountId}`;

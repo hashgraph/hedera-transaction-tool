@@ -121,7 +121,7 @@ watch(showAddReminder, show => {
             :disabled="createButtonDisabled"
           >
             <span class="bi bi-plus-lg" />
-            {{ $route.params.seq ? 'Edit Group Item' : 'Add to Group' }}
+            {{ $route.params.seq ? 'Save Group Item' : 'Add to Group' }}
           </AppButton>
         </div>
       </template>
