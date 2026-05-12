@@ -145,6 +145,7 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
   const keyListBytes = encodeKey(keyList);
   const targetId = selectedComplexKey.value.id;
   const idx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+  const snapshot = idx !== -1 ? savedComplexKeys.value[idx] : null;
   if (idx !== -1) {
     savedComplexKeys.value[idx] = {
       ...savedComplexKeys.value[idx],
@@ -154,14 +155,23 @@ const handleComplexKeyUpdate = async (keyList: KeyList) => {
 
   emit('update:modelKey', keyList);
 
-  const updated = await updateComplexKey(targetId, keyListBytes);
-  selectedComplexKey.value = updated;
-  if (idx !== -1) {
-    savedComplexKeys.value[idx] = updated;
-  } else {
-    await loadSavedComplexKeys();
+  try {
+    const updated = await updateComplexKey(targetId, keyListBytes);
+    selectedComplexKey.value = updated;
+    if (idx !== -1) {
+      savedComplexKeys.value[idx] = updated;
+    } else {
+      await loadSavedComplexKeys();
+    }
+    toastManager.success('Key list updated successfully');
+  } catch (error) {
+    if (snapshot && idx !== -1) {
+      savedComplexKeys.value[idx] = snapshot;
+    }
+    toastManager.error(
+      error instanceof Error ? error.message : 'Failed to update complex key',
+    );
   }
-  toastManager.success('Key list updated successfully');
 };
 
 const handleSaveComplexKeyButtonClick = () => {

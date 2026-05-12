@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
-import { KeyList, PrivateKey } from '@hiero-ledger/sdk';
+import { Key, KeyList, PrivateKey } from '@hiero-ledger/sdk';
 import { proto } from '@hiero-ledger/proto';
 import type { ComplexKey } from '@prisma/client';
 
@@ -133,7 +133,10 @@ describe('KeyField.vue — complex key pre-fetch and pass-through', () => {
     );
     mocks.encodeKey.mockImplementation(realEncodeKey);
     mocks.isPublicKey.mockReturnValue(false);
-    mocks.decodeKeyList.mockImplementation((b: string) => b);
+    mocks.decodeKeyList.mockImplementation((b: string) => {
+      const bytes = Uint8Array.from(b.split(',').map(n => Number(n)));
+      return Key._fromProtobufKey(proto.Key.decode(bytes));
+    });
     mocks.formatPublicKey.mockImplementation(async (raw: string) => raw);
     mocks.extractIdentifier.mockReturnValue({ identifier: 'id' });
     mocks.getComplexKeys.mockResolvedValue([]);
@@ -277,6 +280,81 @@ describe('KeyField.vue — complex key pre-fetch and pass-through', () => {
 
       const modal = wrapper.findComponent(ComplexKeyModalStub);
       expect(modal.props('onSaveComplexKey')).toBeUndefined();
+    });
+  });
+
+  describe('handleComplexKeyUpdate (in-place edit of a saved complex key)', () => {
+    it('calls updateComplexKey, refreshes the cache row, and shows a success toast', async () => {
+      const original = new KeyList([pk1, pk2]);
+      const edited = new KeyList([pk1, pk3]);
+      const savedOriginal = makeSavedKey(original, { id: 'saved-1', nickname: 'Edited Key' });
+      mocks.getComplexKeys.mockResolvedValue([savedOriginal]);
+
+      const editedSaved: ComplexKey = {
+        ...savedOriginal,
+        protobufEncoded: realEncodeKey(edited).toString(),
+      };
+      mocks.updateComplexKey.mockResolvedValueOnce(editedSaved);
+
+      const wrapper = mountField({ modelKey: original });
+      await flushPromises();
+
+      const modal = wrapper.findComponent(ComplexKeyModalStub);
+      modal.vm.$emit('update:modelKey', edited);
+      await wrapper.setProps({ modelKey: edited });
+      await flushPromises();
+
+      expect(mocks.updateComplexKey).toHaveBeenCalledTimes(1);
+      expect(mocks.updateComplexKey).toHaveBeenCalledWith(
+        'saved-1',
+        expect.any(Uint8Array),
+      );
+      expect(modal.props('savedComplexKeys')).toEqual([editedSaved]);
+      expect(mocks.toastManager.success).toHaveBeenCalledWith('Key list updated successfully');
+      expect(mocks.toastManager.error).not.toHaveBeenCalled();
+    });
+
+    it('reverts the cache and shows an error toast when updateComplexKey rejects', async () => {
+      const original = new KeyList([pk1, pk2]);
+      const edited = new KeyList([pk1, pk3]);
+      const savedOriginal = makeSavedKey(original, { id: 'saved-1', nickname: 'Edited Key' });
+      mocks.getComplexKeys.mockResolvedValue([savedOriginal]);
+      mocks.updateComplexKey.mockRejectedValueOnce(new Error('Complex key not found!'));
+
+      const wrapper = mountField({ modelKey: original });
+      await flushPromises();
+
+      const modal = wrapper.findComponent(ComplexKeyModalStub);
+      modal.vm.$emit('update:modelKey', edited);
+      await wrapper.setProps({ modelKey: edited });
+      await flushPromises();
+
+      expect(mocks.updateComplexKey).toHaveBeenCalledTimes(1);
+      expect(modal.props('savedComplexKeys')).toEqual([savedOriginal]);
+      expect(mocks.toastManager.error).toHaveBeenCalledWith('Complex key not found!');
+      expect(mocks.toastManager.success).not.toHaveBeenCalled();
+    });
+
+    it('preserves selectedComplexKey while updateComplexKey is pending (optimistic cache write)', async () => {
+      const original = new KeyList([pk1, pk2]);
+      const edited = new KeyList([pk1, pk3]);
+      const savedOriginal = makeSavedKey(original, { id: 'saved-1', nickname: 'Pending Edit' });
+      mocks.getComplexKeys.mockResolvedValue([savedOriginal]);
+      mocks.updateComplexKey.mockReturnValueOnce(new Promise(() => {}));
+
+      const wrapper = mountField({ modelKey: original });
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="key-list-item"]').text()).toContain('Pending Edit');
+
+      const modal = wrapper.findComponent(ComplexKeyModalStub);
+      modal.vm.$emit('update:modelKey', edited);
+      await wrapper.setProps({ modelKey: edited });
+      await flushPromises();
+
+      const listItem = wrapper.find('[data-testid="key-list-item"]');
+      expect(listItem.text()).toContain('Pending Edit');
+      expect(listItem.text()).not.toContain('Unsaved Key List');
     });
   });
 });
