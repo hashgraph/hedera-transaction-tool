@@ -171,7 +171,7 @@ const defaultTransaction = {
 
 const mountHeader = (
   overrides?: Partial<any>,
-  onAction?: ReturnType<typeof vi.fn>,
+  onAction?: () => Promise<void>,
   sdkTransaction?: SDKTransaction,
 ) => {
   return mount(TransactionDetailsHeader, {
@@ -179,7 +179,7 @@ const mountHeader = (
       organizationTransaction: { ...defaultTransaction, ...overrides },
       localTransaction: null,
       sdkTransaction: sdkTransaction ?? null,
-      onAction: onAction ?? vi.fn().mockResolvedValue(undefined),
+      onAction: onAction ?? vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
     global: {
       stubs: {
