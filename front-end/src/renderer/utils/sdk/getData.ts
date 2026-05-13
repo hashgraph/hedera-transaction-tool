@@ -11,15 +11,21 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  BlockNodeServiceEndpoint,
   FileAppendTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
   FreezeTransaction,
+  GeneralServiceEndpoint,
   Hbar,
   KeyList,
+  MirrorNodeServiceEndpoint,
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  RegisteredNodeCreateTransaction,
+  type RegisteredServiceEndpoint,
+  RpcRelayServiceEndpoint,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
 
@@ -29,6 +35,7 @@ import type {
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
+  ComponentRegisteredServiceEndpoint,
   ComponentServiceEndpoint,
   FileAppendData,
   FileCreateData,
@@ -38,6 +45,8 @@ import type {
   NodeData,
   NodeDeleteData,
   NodeUpdateData,
+  RegisteredEndpointType,
+  RegisteredNodeData,
   SystemData,
   SystemDeleteData,
   SystemUndeleteData,
@@ -61,6 +70,7 @@ export type ExtendedTransactionData = TransactionCommonData &
     | NodeData
     | NodeUpdateData
     | NodeDeleteData
+    | RegisteredNodeData
     | SystemDeleteData
     | SystemUndeleteData
   );
@@ -288,6 +298,65 @@ export function getNodeDeleteData(transaction: Transaction): NodeDeleteData {
   };
 }
 
+/* HIP-1137 — Registered Node */
+const getRegisteredEndpointType = (
+  endpoint: RegisteredServiceEndpoint,
+): RegisteredEndpointType => {
+  if (endpoint instanceof BlockNodeServiceEndpoint) return 'blockNode';
+  if (endpoint instanceof MirrorNodeServiceEndpoint) return 'mirrorNode';
+  if (endpoint instanceof RpcRelayServiceEndpoint) return 'rpcRelay';
+  if (endpoint instanceof GeneralServiceEndpoint) return 'generalService';
+  // Fallback: trust the base-class `type` getter if subclass detection misses.
+  return endpoint.type;
+};
+
+/**
+ * Extract an endpoint from a decoded SDK transaction back into the FE-facing
+ * shape. Deliberately does NOT populate `uiId` — that field is a render-side
+ * concern owned by the form component (see `decorateEndpointsWithUiIds` in
+ * `RegisteredNodeCreate.vue`). Including `uiId` here would make every call to
+ * `transactionsDataMatch` produce mismatched JSON (uiIds are freshly generated
+ * per call), spuriously marking every loaded draft as "unsaved".
+ */
+const getComponentRegisteredEndpoint = (
+  endpoint: RegisteredServiceEndpoint,
+): ComponentRegisteredServiceEndpoint => {
+  const ipBytes = endpoint.ipAddress;
+  const ipAddressV4 =
+    ipBytes && ipBytes.length === 4 ? Array.from(ipBytes).join('.') : '';
+  const base: ComponentRegisteredServiceEndpoint = {
+    ipAddressV4,
+    port: endpoint.port != null ? endpoint.port.toString() : '',
+    domainName: endpoint.domainName ?? '',
+    type: getRegisteredEndpointType(endpoint),
+    requiresTls: Boolean(endpoint.requiresTls),
+  };
+
+  if (endpoint instanceof BlockNodeServiceEndpoint) {
+    // Use Number(api), which calls BlockNodeApi.valueOf() → numeric code.
+    // Avoids reaching into the SDK's underscore-prefixed `_code` field.
+    base.endpointApis = (endpoint.endpointApis ?? []).map(api => Number(api));
+  } else if (endpoint instanceof GeneralServiceEndpoint) {
+    base.endpointDescription = endpoint.description ?? '';
+  }
+
+  return base;
+};
+
+export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeData {
+  assertTransactionType(transaction, RegisteredNodeCreateTransaction);
+
+  const endpoints = (transaction.serviceEndpoints ?? []).map(
+    getComponentRegisteredEndpoint,
+  );
+
+  return {
+    description: transaction.description ?? '',
+    adminKey: transaction.adminKey ?? null,
+    serviceEndpoints: endpoints,
+  };
+}
+
 export function getSystemData(
   transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
 ): SystemData {
@@ -415,6 +484,14 @@ const transactionHandlers = new Map<
   ],
 
   [
+    RegisteredNodeCreateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getRegisteredNodeData(tx),
+    }),
+  ],
+
+  [
     SystemDeleteTransaction,
     tx => ({
       ...getTransactionCommonData(tx),
@@ -468,5 +545,22 @@ export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean
   t2Data.validStart = undefined
   t1Data.startTimestamp = undefined;
   t2Data.startTimestamp = undefined;
+  // Defensive: `uiId` is a render-side stable key for endpoint rows and must
+  // never affect the "has the user edited anything?" comparison. The current
+  // `getRegisteredNodeData` does not emit it, but strip here too so that any
+  // future code path which accidentally carries it through is harmless.
+  stripUiIds(t1Data);
+  stripUiIds(t2Data);
   return JSON.stringify(t1Data) === JSON.stringify(t2Data);
 }
+
+const stripUiIds = (data: Record<string, unknown>) => {
+  const endpoints = data['serviceEndpoints'];
+  if (Array.isArray(endpoints)) {
+    for (const ep of endpoints) {
+      if (ep && typeof ep === 'object' && 'uiId' in ep) {
+        delete (ep as { uiId?: unknown }).uiId;
+      }
+    }
+  }
+};

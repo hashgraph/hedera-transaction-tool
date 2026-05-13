@@ -48,6 +48,11 @@ const transactionGroups = computed(() => {
         { label: 'Node Create', name: transactionTypeKeys.nodeCreate },
         { label: 'Node Delete', name: transactionTypeKeys.nodeDelete },
         { label: 'Node Update', name: transactionTypeKeys.nodeUpdate },
+        { separator: true },
+        {
+          label: 'Registered Node Create',
+          name: transactionTypeKeys.registeredNodeCreate,
+        },
       ],
     },
     {
@@ -91,8 +96,17 @@ const transactionGroups = computed(() => {
         </div>
         <div class="col-7">
           <div class="border-start ps-2">
-            <template v-for="item in transactionGroups[activeGroupIndex].items" :key="item.name">
+            <template
+              v-for="(item, idx) in transactionGroups[activeGroupIndex].items"
+              :key="'separator' in item ? `sep-${idx}` : item.name"
+            >
+              <hr
+                v-if="'separator' in item && item.separator"
+                class="separator my-2"
+                data-testid="menu-sub-separator"
+              />
               <a
+                v-else-if="'name' in item"
                 :data-testid="`menu-sub-link-${item.name.toLowerCase()}`"
                 class="link-menu cursor-pointer"
                 @click="
