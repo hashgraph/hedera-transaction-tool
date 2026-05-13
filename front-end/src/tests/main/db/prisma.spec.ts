@@ -22,14 +22,18 @@ vi.mock('path', () => ({
 }));
 
 vi.mock('@prisma/adapter-better-sqlite3', () => ({
-  PrismaBetterSqlite3: vi.fn(() => ({})),
+  PrismaBetterSqlite3: vi.fn(function () {
+    return {};
+  }),
 }));
 
 vi.mock('@prisma/client', () => ({
-  PrismaClient: vi.fn(() => ({
-    $connect: vi.fn(),
-    $disconnect: vi.fn(),
-  })),
+  PrismaClient: vi.fn(function () {
+    return {
+      $connect: vi.fn(),
+      $disconnect: vi.fn(),
+    };
+  }),
 }));
 
 describe('Database path', () => {
