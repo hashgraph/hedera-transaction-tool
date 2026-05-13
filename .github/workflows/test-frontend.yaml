@@ -297,7 +297,7 @@ jobs:
 
           for service in redis migration api chain notifications; do
             for attempt in $(seq 1 3); do
-              if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
+              if docker compose -f "${BACKEND_COMPOSE_FILE}" build --no-cache --progress plain "${service}"; then
                 break
               fi
 
