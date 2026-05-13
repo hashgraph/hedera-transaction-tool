@@ -81,7 +81,7 @@
     "@vitest/coverage-v8": "catalog:vitest",
     "@vue/eslint-config-prettier": "10.2.0",
     "@vue/eslint-config-typescript": "14.1.3",
-    "@vue/test-utils": "2.4.6",
+    "@vue/test-utils": "2.4.10",
     "@vue/tsconfig": "0.7.0",
     "electron": "41.5.1",
     "electron-builder": "26.8.1",
@@ -91,7 +91,7 @@
     "prebuild-install": "7.1.3",
     "prettier": "catalog:",
     "prisma": "7.8.0",
-    "sass": "1.97.3",
+    "sass": "1.99.0",
     "typescript": "5.7.3",
     "vite": "6.4.2",
     "vite-plugin-electron": "0.29.1",
@@ -99,7 +99,7 @@
     "vite-plugin-vue-devtools": "7.7.9",
     "vitest": "catalog:vitest",
     "vitest-mock-extended": "3.1.1",
-    "vue": "3.5.29",
+    "vue": "3.5.34",
     "vue-tsc": "2.2.12"
   },
   "engines": {
