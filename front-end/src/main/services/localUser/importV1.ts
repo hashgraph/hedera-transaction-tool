@@ -43,9 +43,8 @@ async function filterCandidate(filePath: string): Promise<V1ImportCandidate | nu
           transactionBytes: txHex,
           nodeSignatures: jsonObj,
         };
+      /* v8 ignore next 3 -- It's unclear how we can get a transaction without id */
       } else {
-        /* It's unclear how we can get a transaction without id => we disable code coverage here */
-        /* v8 ignore next 2 */
         result = null
       }
     } else {

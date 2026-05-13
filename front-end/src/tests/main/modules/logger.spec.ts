@@ -161,6 +161,18 @@ describe('logger', () => {
     );
   });
 
+  test('log method routes through info level', () => {
+    createLogger('renderer.websocket').log('test message');
+
+    expect(rootLogger.processMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: ['test message'],
+        level: 'info',
+        logId: 'renderer.websocket',
+      }),
+    );
+  });
+
   test('uses fixed component names for updater and database loggers', () => {
     getAppUpdateLogger().info('Checking for update');
     getDatabaseLogger().error('Database failed');
