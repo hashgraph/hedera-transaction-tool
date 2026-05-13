@@ -452,7 +452,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        () => mockX509Certificate as unknown as X509Certificate,
+        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),
@@ -480,7 +480,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        () => mockX509Certificate as unknown as X509Certificate,
+        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),
@@ -507,7 +507,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        () => mockX509Certificate as unknown as X509Certificate,
+        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),

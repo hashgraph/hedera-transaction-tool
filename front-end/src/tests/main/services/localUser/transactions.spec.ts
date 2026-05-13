@@ -98,7 +98,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
 
       const client = await getClientFromNetwork(mirrorNetwork);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -121,7 +121,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
 
       const client = await getClientFromNetwork(mirrorNetwork, ledgerId);
       expect(forNetwork).toHaveBeenCalledWith({});

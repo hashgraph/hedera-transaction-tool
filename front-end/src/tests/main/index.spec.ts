@@ -83,13 +83,16 @@ describe('Electron entry file', async () => {
     return handler[1];
   };
 
-  vi.mocked(BrowserWindow).mockReturnValue({
+  const mockBrowserWindowInstance = {
     on: vi.fn(),
     close: vi.fn(),
     isMinimized: vi.fn(),
     restore: vi.fn(),
     focus: vi.fn(),
-  } as unknown as BrowserWindow);
+  };
+  vi.mocked(BrowserWindow).mockImplementation(function () {
+    return mockBrowserWindowInstance;
+  } as unknown as typeof BrowserWindow);
 
   test('Should initialize the main process', async () => {
     is.dev = false;

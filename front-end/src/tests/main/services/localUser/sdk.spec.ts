@@ -31,7 +31,7 @@ describe('SDK Service', () => {
       };
 
       vi.spyOn(SDK.Client, 'forNetwork').mockReturnValue(mockClient as any);
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => mockAddressBookQuery as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return mockAddressBookQuery; } as any);
 
       const result = await getNodeAddressBook(mockMirrorNetwork);
 
