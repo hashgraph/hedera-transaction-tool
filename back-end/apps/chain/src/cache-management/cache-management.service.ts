@@ -327,14 +327,14 @@ export class CacheManagementService {
   private extractAffectedCount(result: any): number {
     if (result == null) return 0;
     if (typeof result === 'number') return result;
-    return (
-      result.affectedRows ??
-      result.rowCount ??
-      (Array.isArray(result) && typeof result[1] === 'number' ? result[1] : null) ??
-      (Array.isArray(result) ? result[1]?.affectedRows ?? null : null) ??
-      (Array.isArray(result) ? result[1]?.rowCount ?? null : null) ??
-      0
-    );
+    if (result.affectedRows != null) return result.affectedRows;
+    if (result.rowCount != null) return result.rowCount;
+    if (Array.isArray(result)) {
+      if (typeof result[1] === 'number') return result[1];
+      if (result[1]?.affectedRows != null) return result[1].affectedRows;
+      if (result[1]?.rowCount != null) return result[1].rowCount;
+    }
+    return 0;
   }
 
   /**

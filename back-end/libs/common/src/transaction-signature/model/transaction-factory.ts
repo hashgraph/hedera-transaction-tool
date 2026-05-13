@@ -33,7 +33,7 @@ const TRANSACTION_MODEL_MAP = new Map<string, TxModelCtor>([
   ['SystemDeleteTransaction', SystemDeleteTransactionModel],
   ['SystemUndeleteTransaction', SystemUndeleteTransactionModel],
   ['TransferTransaction', TransferTransactionModel],
-]);
+] as unknown as Array<[string, TxModelCtor]>);
 
 export default class TransactionFactory {
   static fromTransaction(tx: Transaction): TransactionBaseModel<any> {

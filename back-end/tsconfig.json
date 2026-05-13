@@ -16,7 +16,9 @@
     "strictBindCallApply": false,
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
+    "useUnknownInCatchVariables": false,
     "resolveJsonModule": true,
+    "types": ["jest", "node"],
     "paths": {
       "@app/common": ["libs/common/src"],
       "@app/common/*": ["libs/common/src/*"],

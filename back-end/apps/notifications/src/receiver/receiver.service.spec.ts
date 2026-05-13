@@ -1111,9 +1111,9 @@ describe('ReceiverService', () => {
       jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockImplementation(
         async (
           _entityManager: any,
-          _notificationType: NotificationType,
-          userIds: Set<number>,
-          cache: Map<number, User>,
+          _notificationType: any,
+          userIds: any,
+          cache: any,
         ) => {
           for (const id of Array.from(userIds)) {
             cache.set(id, {
