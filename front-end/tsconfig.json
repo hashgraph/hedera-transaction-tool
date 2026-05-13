@@ -2,7 +2,9 @@
   "files": [],
   "compilerOptions": {
     "skipLibCheck": true,
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
+
     "paths": {
       "@main/*": ["src/main/*"],
       "@renderer/*": ["src/renderer/*"],

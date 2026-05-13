@@ -15,7 +15,9 @@
   "compilerOptions": {
     "composite": true,
     "types": ["vitest/globals"],
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
+
     "paths": {
       "@renderer/*": ["src/renderer/*"],
       "@main/*": ["src/main/*"],

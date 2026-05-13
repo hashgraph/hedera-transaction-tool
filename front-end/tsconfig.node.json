@@ -14,11 +14,13 @@
   ],
   "compilerOptions": {
     "composite": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "types": ["vitest/globals"],
     "strict": true,
-    "baseUrl": ".",
+
     "paths": {
       "@main/*": ["src/main/*"],
       "@renderer/*": ["src/renderer/*"],
