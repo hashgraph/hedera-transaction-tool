@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi, type Mock } from 'vitest';
 import { TransactionStatus } from '@shared/interfaces';
 
 vi.mock('@renderer/utils', () => ({
@@ -31,10 +31,10 @@ function makeGroupItem(
 }
 
 describe('cancelGroupFallback', () => {
-  let cancelOne: ReturnType<typeof vi.fn>;
+  let cancelOne: Mock<(serverUrl: string, id: number) => Promise<boolean>>;
 
   beforeEach(() => {
-    cancelOne = vi.fn().mockResolvedValue(true);
+    cancelOne = vi.fn<(serverUrl: string, id: number) => Promise<boolean>>().mockResolvedValue(true);
   });
 
   test('cancels all in-progress items successfully', async () => {
