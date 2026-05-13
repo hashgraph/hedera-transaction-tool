@@ -45,9 +45,8 @@ async function filterCandidate(filePath: string): Promise<V1ImportCandidate | nu
         };
       } else {
         /* It's unclear how we can get a transaction without id => we disable code coverage here */
-        /* c8 ignore next */
+        /* v8 ignore next 2 */
         result = null
-        /* c8 ignore next */
       }
     } else {
       result = null;
