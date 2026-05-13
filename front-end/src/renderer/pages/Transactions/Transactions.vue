@@ -216,6 +216,7 @@ async function handleTransactionFileAction(action: string) {
 /* Functions */
 async function importSignaturesFromV2File(filePath: string) {
   assertIsLoggedInOrganization(user.selectedOrganization);
+  const serverUrl = user.selectedOrganization.serverUrl;
 
   const transactionFile = await readTransactionFile(filePath);
   const importInputs: ISignatureImport[] = [];
@@ -229,10 +230,7 @@ async function importSignaturesFromV2File(filePath: string) {
 
     const transactionId = sdkTransaction.transactionId;
     try {
-      const transaction = await transactionCache.lookup(
-        transactionId!.toString(),
-        user.selectedOrganization.serverUrl,
-      );
+      const transaction = await transactionCache.lookup(transactionId!.toString(), serverUrl);
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
@@ -268,6 +266,11 @@ async function importSignaturesFromV2File(filePath: string) {
         `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
       );
     }
+  }
+
+  for (const i of importInputs) {
+    // We forget cached data for transaction i.id
+    transactionCache.forget(i.id, serverUrl);
   }
 }
 
