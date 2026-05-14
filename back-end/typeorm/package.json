@@ -1,6 +1,6 @@
 {
   "name": "typeorm",
-  "version": "0.30.0-SNAPSHOT",
+  "version": "0.30.0-beta.1",
   "private": true,
   "scripts": {
     "build": "tsc",
@@ -12,15 +12,15 @@
     "test:watch:cov": "jest --config ./jest.config.ts --watch --coverage"
   },
   "dependencies": {
-    "typeorm": "catalog:",
     "pg": "catalog:",
-    "reflect-metadata": "catalog:"
+    "reflect-metadata": "catalog:",
+    "typeorm": "catalog:"
   },
   "devDependencies": {
-    "typescript": "catalog:",
-    "ts-node": "catalog:",
-    "jest": "catalog:",
     "@types/jest": "catalog:",
-    "ts-jest": "catalog:"
+    "jest": "catalog:",
+    "ts-jest": "catalog:",
+    "ts-node": "catalog:",
+    "typescript": "catalog:"
   }
 }

@@ -18,25 +18,6 @@ The Initial Developer of @electron-toolkit/utils@4.0.0,
 is Alex Wei (https://github.com/alex8088/electron-toolkit).
 Copyright Alex Wei. All Rights Reserved.
 
-The Initial Developer of @eslint-community/eslint-utils@4.9.1,
-is Toru Nagashima (https://github.com/eslint-community/eslint-utils).
-Copyright Toru Nagashima. All Rights Reserved.
-
-The Initial Developer of @eslint-community/regexpp@4.12.2,
-is Toru Nagashima (https://github.com/eslint-community/regexpp).
-Copyright Toru Nagashima. All Rights Reserved.
-
-The Initial Developer of @eslint/config-array@0.23.3,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
-This product includes software (@eslint/config-helpers@0.5.3) developed at
-(https://github.com/eslint/rewrite).
-
-The Initial Developer of @eslint/core@1.1.1,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
 The Initial Developer of @eslint/eslintrc@3.3.4,
 is Nicholas C. Zakas (https://github.com/eslint/eslintrc).
 Copyright Nicholas C. Zakas. All Rights Reserved.
@@ -50,14 +31,6 @@ This product includes software (@eslint/js@10.0.1) developed at
 
 This product includes software (@eslint/js@9.39.3) developed at
 (https://github.com/eslint/eslint).
-
-The Initial Developer of @eslint/object-schema@3.0.3,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
-The Initial Developer of @eslint/plugin-kit@0.6.1,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
 
 The Initial Developer of @hashgraph/hedera-local@2.40.1,
 is hashgraph (https://github.com/hiero-ledger/hiero-local-node).
@@ -90,7 +63,7 @@ The Initial Developer of @nestjs/cache-manager@3.1.2,
 is Kamil Mysliwiec (https://github.com/nestjs/cache-manager).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-This product includes software (@nestjs/cli@11.0.16) developed at
+This product includes software (@nestjs/cli@11.0.21) developed at
 (https://github.com/nestjs/nest-cli).
 
 The Initial Developer of @nestjs/common@11.1.19,
@@ -129,7 +102,7 @@ The Initial Developer of @nestjs/schedule@6.1.3,
 is Kamil Mysliwiec (https://github.com/nestjs/schedule).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-This product includes software (@nestjs/schematics@11.0.9) developed at
+This product includes software (@nestjs/schematics@11.1.0) developed at
 (https://github.com/nestjs/schematics).
 
 The Initial Developer of @nestjs/swagger@11.4.2,
@@ -198,12 +171,6 @@ This product includes software (@types/bootstrap@5.2.10) developed at
 This product includes software (@types/deep-diff@1.0.5) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/eslint-scope@3.7.7) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint@9.6.1) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
 This product includes software (@types/express@5.0.6) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
@@ -249,30 +216,6 @@ This product includes software (@typescript-eslint/eslint-plugin@8.57.0) develop
 This product includes software (@typescript-eslint/parser@8.57.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/project-service@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/scope-manager@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/tsconfig-utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/type-utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/types@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/typescript-estree@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/visitor-keys@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 The Initial Developer of @vitejs/plugin-vue@5.2.4,
 is Evan You (https://github.com/vitejs/vite-plugin-vue).
 Copyright Evan You. All Rights Reserved.
@@ -289,7 +232,7 @@ The Initial Developer of @vue/eslint-config-typescript@14.1.3,
 is Evan You (https://github.com/vuejs/eslint-config-typescript).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/test-utils@2.4.6,
+The Initial Developer of @vue/test-utils@2.4.10,
 is Lachlan Miller (https://github.com/vuejs/test-utils).
 Copyright Lachlan Miller. All Rights Reserved.
 
@@ -391,16 +334,6 @@ Copyright Teddy Katz. All Rights Reserved.
 
 The Initial Developer of eslint-plugin-vue@9.33.0,
 is Toru Nagashima (https://github.com/vuejs/eslint-plugin-vue).
-Copyright Toru Nagashima. All Rights Reserved.
-
-This product includes software (eslint-scope@5.1.1) developed at
-(https://github.com/eslint/eslint-scope).
-
-This product includes software (eslint-scope@9.1.2) developed at
-(https://github.com/eslint/js).
-
-The Initial Developer of eslint-visitor-keys@5.0.1,
-is Toru Nagashima (https://github.com/eslint/js).
 Copyright Toru Nagashima. All Rights Reserved.
 
 The Initial Developer of eslint@10.0.3,
@@ -524,9 +457,6 @@ The Initial Developer of prebuild-install@7.1.3,
 is Mathias Buus (https://github.com/prebuild/prebuild-install).
 Copyright Mathias Buus. All Rights Reserved.
 
-This product includes software (prettier-linter-helpers@1.0.1) developed at
-(https://github.com/prettier/prettier-linter-helpers).
-
 The Initial Developer of prettier@3.8.3,
 is James Long (https://github.com/prettier/prettier).
 Copyright James Long. All Rights Reserved.
@@ -550,7 +480,7 @@ The Initial Developer of rxjs@7.8.2,
 is Ben Lesh (https://github.com/reactivex/rxjs).
 Copyright Ben Lesh. All Rights Reserved.
 
-The Initial Developer of sass@1.97.3,
+The Initial Developer of sass@1.99.0,
 is Natalie Weizenbaum (https://github.com/sass/dart-sass).
 Copyright Natalie Weizenbaum. All Rights Reserved.
 
@@ -653,14 +583,14 @@ Copyright ankurk91. All Rights Reserved.
 This product includes software (vue-tsc@2.2.12) developed at
 (https://github.com/vuejs/language-tools).
 
-The Initial Developer of vue@3.5.29,
+The Initial Developer of vue@3.5.34,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-This product includes software (webpack-cli@6.0.1) developed at
+This product includes software (webpack-cli@7.0.2) developed at
 (https://github.com/webpack/webpack-cli).
 
-The Initial Developer of webpack@5.105.4,
+The Initial Developer of webpack@5.106.2,
 is Tobias Koppers @sokra (https://github.com/webpack/webpack).
 Copyright Tobias Koppers @sokra. All Rights Reserved.
 
