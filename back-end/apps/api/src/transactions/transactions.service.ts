@@ -14,6 +14,7 @@ import {
   NodeCreateTransaction,
   NodeUpdateTransaction,
   PublicKey,
+  RegisteredNodeCreateTransaction,
   Transaction as SDKTransaction,
   TransactionId,
 } from '@hiero-ledger/sdk';
@@ -1127,6 +1128,11 @@ export class TransactionsService {
         keyToExtract = (sdkTransaction as NodeUpdateTransaction).adminKey;
       } else if (transactionType === TransactionType.NODE_CREATE) {
         keyToExtract = (sdkTransaction as NodeCreateTransaction).adminKey;
+      } else if (transactionType === TransactionType.REGISTERED_NODE_CREATE) {
+        // HIP-1137: same shape as NODE_CREATE — the new entry's admin_key
+        // is the signer requirement, so we surface its flattened public keys
+        // for the signer-notification workflow.
+        keyToExtract = (sdkTransaction as RegisteredNodeCreateTransaction).adminKey;
       }
 
       if (keyToExtract) {

@@ -13,6 +13,8 @@ import { TransactionBaseModel } from '@app/common/transaction-signature/model/tr
 import { AccountCacheService } from '@app/common/transaction-signature/account-cache.service';
 import { NodeCacheService } from '@app/common/transaction-signature/node-cache.service';
 import { COUNCIL_ACCOUNTS } from '@app/common/constants';
+// TODO(HIP-1137 diag): remove these once the signer/required mismatch is confirmed and fixed
+import { flattenKeyList, hasValidSignatureKey } from '@app/common/utils/sdk/key';
 
 export interface SignatureRequirements {
   feePayerAccount: string;
@@ -57,6 +59,36 @@ export class TransactionSignatureService {
     }
 
     signatureKey.push(...requirements.newKeys);
+
+    // ============================================================
+    // TODO(HIP-1137 diag): temporary diagnostic — REMOVE before merge.
+    // Logs which signer keys are already on the SDK tx bytes vs. which
+    // public keys we require, so we can pinpoint mismatches between FE
+    // auto-signing and BE expectations.
+    // ============================================================
+    try {
+      const signers = [...sdkTransaction._signerPublicKeys];
+      const requiredLeaves = flattenKeyList(signatureKey).map(pk => pk.toStringRaw());
+      const missing = requiredLeaves.filter(pk => !signers.includes(pk));
+      const extra = signers.filter(pk => !requiredLeaves.includes(pk));
+      const isAble = hasValidSignatureKey(signers, signatureKey);
+
+      this.logger.warn(
+        `[HIP-1137 diag] tx=${transaction.id} ` +
+          `type=${sdkTransaction.constructor?.name} ` +
+          `payer=${requirements.feePayerAccount} ` +
+          `hasValidSignatureKey=${isAble} ` +
+          `signers=${JSON.stringify(signers)} ` +
+          `requiredLeaves=${JSON.stringify(requiredLeaves)} ` +
+          `missing=${JSON.stringify(missing)} ` +
+          `extra=${JSON.stringify(extra)}`,
+      );
+    } catch (diagErr) {
+      this.logger.warn(`[HIP-1137 diag] log failed for tx=${transaction.id}: ${diagErr?.message ?? diagErr}`);
+    }
+    // ============================================================
+    // END diagnostic
+    // ============================================================
 
     return signatureKey;
   }
