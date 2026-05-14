@@ -1,11 +1,13 @@
 {
-  "name": "hedera-transaction-tool",
+  "name": "@hashgraph/transaction-tool-front-end",
   "version": "0.31.0-SNAPSHOT",
-  "description": "Transaction tool application",
+  "description": "Transaction tool front end",
   "author": {
     "name": "Hedera",
-    "url": "https://github.com/hashgraph"
+    "url": "https://hedera.com"
   },
+  "license": "Apache-2.0",
+  "private": true,
   "repository": "https://github.com/hashgraph/hedera-transaction-tool",
   "main": "dist-electron/main/index.js",
   "scripts": {

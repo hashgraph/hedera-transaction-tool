@@ -1,6 +1,8 @@
 {
-  "name": "typeorm",
+  "name": "@hashgraph/transaction-tool-typeorm",
   "version": "0.31.0-SNAPSHOT",
+  "description": "Transaction tool back end typeorm",
+  "license": "Apache-2.0",
   "private": true,
   "scripts": {
     "build": "tsc",
