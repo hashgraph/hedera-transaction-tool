@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 name: Test Frontend
 
 on:
@@ -14,6 +16,9 @@ on:
 defaults:
   run:
     shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 permissions:
   contents: read
@@ -38,16 +43,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -63,6 +65,8 @@ jobs:
           key: build-artifacts-${{ github.sha }}
 
   test:
+    env:
+      BACKEND_COMPOSE_FILE: docker-compose.yaml
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
     needs: build
@@ -93,16 +97,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
@@ -127,75 +128,30 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
-          install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
-          version: v0.26.0
-          kubectl_version: v1.31.4
+          cluster_name: solo
+          node_image: kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48
+          version: v0.31.0
           verbosity: 3
           wait: 120s
 
       - name: Install Solo CLI
         if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          npm install -g @hashgraph/solo@0.64.0
-          solo --version
-          kind --version
+        run: npm install -g @hashgraph/solo@0.73.0
 
       - name: Deploy Solo
         if: ${{ matrix.test-suite.soloRequired }}
         id: solo_deploy
         env:
-          SOLO_CLUSTER_NAME: solo
           SOLO_NAMESPACE: solo
           SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
           SOLO_DEPLOYMENT: solo-deployment
-        run: |
-          set -euo pipefail
-          kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          solo one-shot single deploy | tee solo-deploy.log
-
-      - name: Check port forwarding
-        if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-
-          wait_for_tcp() {
-            local host="$1"
-            local port="$2"
-            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
-          }
-
-          ps -ef | grep port-forward || true
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
-               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
-              echo "Solo port forwarding is ready on attempt ${attempt}"
-              break
-            fi
-
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo port forwarding did not become ready in time" >&2
-              ps -ef | grep port-forward || true
-              kubectl get pods -A || true
-              exit 1
-            fi
-
-            echo "Waiting for Solo port forwarding... attempt ${attempt}/60"
-            sleep 5
-          done
-
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
-          wait_for_tcp 127.0.0.1 50211
+        run: solo one-shot falcon deploy --deploy-explorer=false --deploy-relay=false -f .github/values.yaml | tee solo-deploy.log
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
         env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
+          COMPOSE_PARALLEL_LIMIT: 4
         run: |
           set -euo pipefail
 
@@ -258,8 +214,8 @@ jobs:
           done
 
           for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
+            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 35211; then
               echo "Solo network endpoints are ready on attempt ${attempt}"
               break
             fi
@@ -280,18 +236,18 @@ jobs:
 
           # Solo binds its localnet services to localhost on the runner.
           # Docker containers reach the host via the bridge gateway, so expose the ports there first.
-          for port in 50211 8081; do
+          for port in 35211 38081; do
             sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
           done
 
           sleep 2
 
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 50211; then
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:38081/api/v1/network/nodes" >/dev/null 2>&1 || \
+             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 35211; then
             echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
             ss -lnt || true
-            sudo tail -n 50 /tmp/socat-50211.log || true
-            sudo tail -n 50 /tmp/socat-8081.log || true
+            sudo tail -n 50 /tmp/socat-35211.log || true
+            sudo tail -n 50 /tmp/socat-38081.log || true
             exit 1
           fi
 
@@ -391,7 +347,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
           path: |
@@ -402,7 +358,7 @@ jobs:
 
       - name: Upload Playwright Test Results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-test-results-${{ matrix.test-suite.name }}
           path: automation/test-results
@@ -411,8 +367,6 @@ jobs:
 
       - name: Show Back-end Logs
         if: ${{ failure() && matrix.test-suite.backendRequired }}
-        env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
         run: docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300
         working-directory: back-end
 
@@ -430,7 +384,7 @@ jobs:
 
       - name: Upload Solo Diagnostics
         if: ${{ always() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: solo-diagnostics-${{ matrix.test-suite.name }}
           path: solo-diagnostics
@@ -443,7 +397,7 @@ jobs:
 
       - name: Upload Kind Logs
         if: ${{ failure() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kind-logs-${{ matrix.test-suite.name }}
           path: kind-logs
@@ -452,8 +406,6 @@ jobs:
 
       - name: Stop Back-end Services
         if: ${{ always() && matrix.test-suite.backendRequired }}
-        env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
         run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
         working-directory: back-end
 
@@ -482,16 +434,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
