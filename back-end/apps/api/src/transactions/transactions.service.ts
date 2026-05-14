@@ -8,13 +8,8 @@ import {
 import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
-  AccountUpdateTransaction,
   Client,
-  Key,
-  NodeCreateTransaction,
-  NodeUpdateTransaction,
   PublicKey,
-  RegisteredNodeCreateTransaction,
   Transaction as SDKTransaction,
   TransactionId,
 } from '@hiero-ledger/sdk';
@@ -72,6 +67,8 @@ import {
   getNodeAccountIdsFromClientNetwork,
   isTransactionValidForNodes,
 } from '@app/common';
+
+import TransactionFactory from '@app/common/transaction-signature/model/transaction-factory';
 
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
@@ -1117,26 +1114,17 @@ export class TransactionsService {
     const transactionHash = await sdkTransaction.getTransactionHash();
     const transactionType = getTransactionTypeEnumValue(sdkTransaction);
 
-    // Extract new keys if applicable
+    // Extract the public keys of any "new key" the transaction is introducing
+    // (e.g. the new account/admin key) so the notification subsystem can route
+    // sign requests to the right users. The rule for what counts as a new key
+    // is owned by each transaction model's `getNewKeys()` — adding a new type
+    // therefore only requires registering a model in TransactionFactory, not
+    // editing this service.
     let publicKeys: string[] | null = null;
     try {
-      let keyToExtract: Key | null = null;
-
-      if (transactionType === TransactionType.ACCOUNT_UPDATE) {
-        keyToExtract = (sdkTransaction as AccountUpdateTransaction).key;
-      } else if (transactionType === TransactionType.NODE_UPDATE) {
-        keyToExtract = (sdkTransaction as NodeUpdateTransaction).adminKey;
-      } else if (transactionType === TransactionType.NODE_CREATE) {
-        keyToExtract = (sdkTransaction as NodeCreateTransaction).adminKey;
-      } else if (transactionType === TransactionType.REGISTERED_NODE_CREATE) {
-        // HIP-1137: same shape as NODE_CREATE — the new entry's admin_key
-        // is the signer requirement, so we surface its flattened public keys
-        // for the signer-notification workflow.
-        keyToExtract = (sdkTransaction as RegisteredNodeCreateTransaction).adminKey;
-      }
-
-      if (keyToExtract) {
-        publicKeys = flattenKeyList(keyToExtract).map(pk => pk.toStringRaw());
+      const newKeys = TransactionFactory.fromTransaction(sdkTransaction).getNewKeys();
+      if (newKeys.length > 0) {
+        publicKeys = newKeys.flatMap(k => flattenKeyList(k).map(pk => pk.toStringRaw()));
       }
     } catch (error) {
       // Log but don't fail - publicKeys will remain null

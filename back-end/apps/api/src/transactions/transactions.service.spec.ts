@@ -13,6 +13,7 @@ import {
   NodeUpdateTransaction,
   PrivateKey,
   PublicKey,
+  RegisteredNodeCreateTransaction,
   SignatureMap,
   Timestamp,
   TransactionId,
@@ -1003,6 +1004,50 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.NODE_CREATE);
+      jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
+
+      let capturedTransaction: any;
+      transactionsRepo.create.mockImplementationOnce(((input: DeepPartial<Transaction>) => {
+        capturedTransaction = input;
+        return { ...input } as Transaction;
+      }) as any);
+
+      await service.createTransaction(dto, user as User);
+
+      expect(capturedTransaction.publicKeys).toBeDefined();
+      expect(capturedTransaction.publicKeys).toContain(adminKey.toStringRaw());
+      expect(capturedTransaction.publicKeys).toHaveLength(1);
+
+      client.close();
+    });
+
+    it('should extract publicKeys from RegisteredNodeCreateTransaction with admin key', async () => {
+      const adminKey = PrivateKey.generateECDSA().publicKey;
+      const sdkTransaction = new RegisteredNodeCreateTransaction()
+        .setTransactionId(new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())))
+        .setAdminKey(adminKey);
+
+      const dto: CreateTransactionDto = {
+        name: 'Registered Node Create',
+        description: 'Create registered node with admin key',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.REGISTERED_NODE_CREATE);
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
       let capturedTransaction: any;
