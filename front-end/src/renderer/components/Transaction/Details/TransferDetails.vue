@@ -12,6 +12,7 @@ import { getAll } from '@renderer/services/accountsService';
 
 import { isUserLoggedIn } from '@renderer/utils';
 import HBarTransferDetails from './TransferDetails/HBarTransferDetails.vue';
+import TokenTransferDetails from '@renderer/components/Transaction/Details/TransferDetails/TokenTransferDetails.vue';
 
 /* Props */
 const props = defineProps<{
@@ -44,6 +45,13 @@ onBeforeMount(async () => {
         :hbar-transfers="props.transaction.hbarTransfersList"
         :linkedAccounts="linkedAccounts"
       />
+      <template v-for="tokenId in props.transaction.tokenTransfers.keys()" :key="tokenId">
+        <TokenTransferDetails
+          :token-id="tokenId"
+          :transaction="props.transaction"
+          :linkedAccounts="linkedAccounts"
+        />
+      </template>
     </div>
   </div>
 </template>
