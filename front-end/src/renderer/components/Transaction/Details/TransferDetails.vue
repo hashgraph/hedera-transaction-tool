@@ -13,6 +13,7 @@ import { getAll } from '@renderer/services/accountsService';
 import { isUserLoggedIn } from '@renderer/utils';
 import HBarTransferDetails from './TransferDetails/HBarTransferDetails.vue';
 import TokenTransferDetails from '@renderer/components/Transaction/Details/TransferDetails/TokenTransferDetails.vue';
+import NftTransferDetails from '@renderer/components/Transaction/Details/TransferDetails/NftTransferDetails.vue';
 
 /* Props */
 const props = defineProps<{
@@ -47,6 +48,13 @@ onBeforeMount(async () => {
       />
       <template v-for="tokenId in props.transaction.tokenTransfers.keys()" :key="tokenId">
         <TokenTransferDetails
+          :token-id="tokenId"
+          :transaction="props.transaction"
+          :linkedAccounts="linkedAccounts"
+        />
+      </template>
+      <template v-for="tokenId in props.transaction.nftTransfers.keys()" :key="tokenId">
+        <NftTransferDetails
           :token-id="tokenId"
           :transaction="props.transaction"
           :linkedAccounts="linkedAccounts"
