@@ -161,9 +161,8 @@ jobs:
           ps -ef | grep port-forward || true
 
           for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
-               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
+            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1
+               wait_for_tcp 127.0.0.1 35211; then
               echo "Solo port forwarding is ready on attempt ${attempt}"
               break
             fi
@@ -179,9 +178,8 @@ jobs:
             sleep 5
           done
 
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
-          wait_for_tcp 127.0.0.1 50211
+          curl -fsS http://localhost:38081/api/v1/network/nodes
+          wait_for_tcp 127.0.0.1 35211
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
@@ -248,8 +246,8 @@ jobs:
           done
 
           for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
+            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 35211; then
               echo "Solo network endpoints are ready on attempt ${attempt}"
               break
             fi
@@ -270,18 +268,18 @@ jobs:
 
           # Solo binds its localnet services to localhost on the runner.
           # Docker containers reach the host via the bridge gateway, so expose the ports there first.
-          for port in 50211 8081; do
+          for port in 35211 38081; do
             sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
           done
 
           sleep 2
 
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 50211; then
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:38081/api/v1/network/nodes" >/dev/null 2>&1 || \
+             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 35211; then
             echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
             ss -lnt || true
-            sudo tail -n 50 /tmp/socat-50211.log || true
-            sudo tail -n 50 /tmp/socat-8081.log || true
+            sudo tail -n 50 /tmp/socat-35211.log || true
+            sudo tail -n 50 /tmp/socat-38081.log || true
             exit 1
           fi
 
