@@ -33,8 +33,8 @@ export interface ITokenInfo {
 export interface CustomFees {
   created_timestamp: string;
   fixed_fees: FixedFee[]; // Always present
-  fractional_fees: FractionalFee[] | undefined; // Present when FUNGIBLE
-  royalty_fees: RoyaltyFee[] | undefined; // Present when NON_FUNGIBLE
+  fractional_fees?: FractionalFee[]; // Present when FUNGIBLE
+  royalty_fees?: RoyaltyFee[]; // Present when NON_FUNGIBLE
 }
 
 export interface FixedFee {
