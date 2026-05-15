@@ -49,10 +49,6 @@ const matchingSavedKey = computed<SavedComplexKey | null>(() => {
   return props.savedComplexKeys.find(k => k.protobufEncoded === encoded) ?? null;
 });
 
-const isSingleKey = computed(
-  () => currentKey.value instanceof KeyList && currentKey.value.toArray().length < 2,
-);
-
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
@@ -120,7 +116,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
             >
             <AppButton
-              v-if="onSaveComplexKey && !currentKeyInvalid && !matchingSavedKey && !isSingleKey"
+              v-if="onSaveComplexKey && !currentKeyInvalid && !matchingSavedKey"
               type="button"
               color="primary"
               class="ms-3"

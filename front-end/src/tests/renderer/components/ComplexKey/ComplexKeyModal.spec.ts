@@ -115,13 +115,13 @@ describe('ComplexKeyModal.vue', () => {
       expect(wrapper.find(SAVE_BTN).exists()).toBe(false);
     });
 
-    it('hides when KeyList contains a single key (isSingleKey)', () => {
+    it('renders when KeyList contains a single key', () => {
       const wrapper = mountModal({
         modelKey: new KeyList([pk1]),
         onSaveComplexKey: vi.fn(),
         savedComplexKeys: [],
       });
-      expect(wrapper.find(SAVE_BTN).exists()).toBe(false);
+      expect(wrapper.find(SAVE_BTN).exists()).toBe(true);
     });
 
     it('hides when KeyList is empty', () => {
@@ -284,21 +284,6 @@ describe('ComplexKeyModal.vue', () => {
 
       expect(wrapper.find(SAVE_BTN).exists()).toBe(false);
       expect(wrapper.find(WARN_SPAN).exists()).toBe(true);
-    });
-
-    it('hides Save button after the inner key list is reduced to a single key', async () => {
-      const wrapper = mountModal({
-        modelKey: new KeyList([pk1, pk2]),
-        onSaveComplexKey: vi.fn(),
-        savedComplexKeys: [],
-      });
-
-      expect(wrapper.find(SAVE_BTN).exists()).toBe(true);
-
-      const innerComplexKey = wrapper.findComponent({ name: 'ComplexKey' });
-      await innerComplexKey.vm.$emit('update:model-key', new KeyList([pk1]));
-
-      expect(wrapper.find(SAVE_BTN).exists()).toBe(false);
     });
 
     it('re-shows Save button after a previously matching key list is mutated away from the match', async () => {
