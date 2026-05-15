@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 name: Test Frontend
 
 on:
@@ -14,6 +16,9 @@ on:
 defaults:
   run:
     shell: bash
+
+env:
+  LC_ALL: C.UTF-8
 
 permissions:
   contents: read
@@ -38,16 +43,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -63,6 +65,8 @@ jobs:
           key: build-artifacts-${{ github.sha }}
 
   test:
+    env:
+      BACKEND_COMPOSE_FILE: docker-compose.yaml
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
     needs: build
@@ -93,16 +97,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
@@ -127,33 +128,24 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
         with:
-          install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
-          version: v0.26.0
-          kubectl_version: v1.31.4
+          cluster_name: solo
+          node_image: kindest/node:v1.34.3@sha256:08497ee19eace7b4b5348db5c6a1591d7752b164530a36f855cb0f2bdcbadd48
+          version: v0.31.0
           verbosity: 3
           wait: 120s
 
       - name: Install Solo CLI
         if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          npm install -g @hashgraph/solo@0.64.0
-          solo --version
-          kind --version
+        run: npm install -g @hashgraph/solo@0.73.0
 
       - name: Deploy Solo
         if: ${{ matrix.test-suite.soloRequired }}
         id: solo_deploy
         env:
-          SOLO_CLUSTER_NAME: solo
           SOLO_NAMESPACE: solo
           SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
           SOLO_DEPLOYMENT: solo-deployment
-        run: |
-          set -euo pipefail
-          kind create cluster -n "${SOLO_CLUSTER_NAME}"
-          solo one-shot single deploy | tee solo-deploy.log
+        run: solo one-shot single deploy | tee solo-deploy.log
 
       - name: Check port forwarding
         if: ${{ matrix.test-suite.soloRequired }}
@@ -194,8 +186,6 @@ jobs:
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
-        env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
         run: |
           set -euo pipefail
 
@@ -391,7 +381,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
           path: |
@@ -402,7 +392,7 @@ jobs:
 
       - name: Upload Playwright Test Results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-test-results-${{ matrix.test-suite.name }}
           path: automation/test-results
@@ -411,8 +401,6 @@ jobs:
 
       - name: Show Back-end Logs
         if: ${{ failure() && matrix.test-suite.backendRequired }}
-        env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
         run: docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300
         working-directory: back-end
 
@@ -430,7 +418,7 @@ jobs:
 
       - name: Upload Solo Diagnostics
         if: ${{ always() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: solo-diagnostics-${{ matrix.test-suite.name }}
           path: solo-diagnostics
@@ -443,7 +431,7 @@ jobs:
 
       - name: Upload Kind Logs
         if: ${{ failure() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kind-logs-${{ matrix.test-suite.name }}
           path: kind-logs
@@ -452,8 +440,6 @@ jobs:
 
       - name: Stop Back-end Services
         if: ${{ always() && matrix.test-suite.backendRequired }}
-        env:
-          BACKEND_COMPOSE_FILE: docker-compose.yaml
         run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
         working-directory: back-end
 
@@ -482,16 +468,13 @@ jobs:
 
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
 
       - name: Set up Node.js
         uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile

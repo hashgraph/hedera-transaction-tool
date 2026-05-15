@@ -1,8 +1,8 @@
 {
-  "name": "back-end",
+  "name": "@hashgraph/transaction-tool-back-end",
   "version": "0.31.0-SNAPSHOT",
-  "description": "",
-  "author": "",
+  "description": "Transaction tool back end",
+  "license": "Apache-2.0",
   "private": true,
   "scripts": {
     "build": "nest build",

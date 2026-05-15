@@ -1,5 +1,8 @@
 {
-  "name": "hedera-transaction-tool-tests-v2",
+  "name": "@hashgraph/transaction-tool-automation",
+  "description": "Transaction tool automation",
+  "license": "Apache-2.0",
+  "private": true,
   "version": "0.31.0-SNAPSHOT",
   "type": "module",
   "scripts": {

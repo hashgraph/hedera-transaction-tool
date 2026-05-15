@@ -3,7 +3,7 @@ import { DataSource } from 'typeorm';
 import { AppDataSource } from '../typeorm/data-source';
 import { enableDiag } from './diag-enabled';
 
-const POSTGRES_TEST_IMAGE = 'postgres:16.13-alpine3.22';
+const POSTGRES_TEST_IMAGE = 'postgres:16-alpine';
 
 const DIAG_TAG = '[pg-test-db]';
 function diag(message: string, extra?: Record<string, unknown>) {

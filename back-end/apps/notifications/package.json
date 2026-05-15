@@ -1,10 +1,10 @@
 {
-  "name": "@back-end/notifications",
+  "name": "@hashgraph/transaction-tool-notifications",
   "version": "0.31.0-SNAPSHOT",
-  "description": "",
-  "author": "",
+  "description": "Transaction tool back end notifications",
   "main": "index.js",
-  "license": "ISC",
+  "license": "Apache-2.0",
+  "private": true,
   "directories": {
     "test": "test"
   },

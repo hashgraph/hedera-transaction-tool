@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: postgres:latest
+          image: postgres:16-alpine
           args: ['-c', 'max_connections=100']
           env:
             - name: POSTGRES_USER
