@@ -88,15 +88,17 @@ Staging tests use raw `k6 run` commands with `-e ENV=staging` and `-e BASE_URL=.
 
 ```bash
 export BASE_URL=https://your-staging-url.com
+export ENV=staging
+export VUS=20
 
 # Quick health check
-k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/smoke-test.js
+k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL k6/dist/smoke-test.js
 
 # All tabs baseline (1 VU)
-k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/tab-load-times.js
+k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL k6/dist/tab-load-times.js
 
 # Individual load tests (default 100 VUs)
-k6 run -e ENV=staging -e BASE_URL=$BASE_URL k6/dist/ready-to-sign.js
+k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL k6/dist/ready-to-sign.js
 ```
 
 ### Configurable Load (VUs)
@@ -105,7 +107,7 @@ The number of virtual users (VUs) can be overridden using the `VUS` environment 
 
 ```bash
 # Custom VUs:
-k6 run -e ENV=staging -e BASE_URL=$BASE_URL -e VUS=50 k6/dist/ready-to-sign.js
+k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/ready-to-sign.js
 ```
 
 **Recommended progression:**
