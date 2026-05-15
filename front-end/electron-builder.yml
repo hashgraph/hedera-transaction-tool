@@ -1,6 +1,6 @@
 appId: com.hiero.transactiontool.app
 productName: Hedera Transaction Tool
-artifactName: ${name}-${version}-${os}-${arch}.${ext}
+artifactName: hedera-transaction-tool-${version}-${os}-${arch}.${ext}
 protocols:
   name: Hedera Transaction Tool
   schemes:
@@ -48,6 +48,7 @@ mac:
   mergeASARs: false
   x64ArchFiles: '**/*.node'
 linux:
+  executableName: hedera-transaction-tool
   target:
     - snap
 pkg:
