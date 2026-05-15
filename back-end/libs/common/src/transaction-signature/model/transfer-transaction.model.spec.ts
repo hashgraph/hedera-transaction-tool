@@ -1,4 +1,4 @@
-import { TransferTransaction } from '@hashgraph/sdk';
+import { TransferTransaction } from '@hiero-ledger/sdk';
 import { TransferTransactionModel } from './transfer-transaction.model';
 
 describe('TransferTransactionModel', () => {

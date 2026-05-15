@@ -3,7 +3,7 @@ import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount } from 'vue';
 
-import { Transaction, SystemDeleteTransaction, SystemUndeleteTransaction } from '@hashgraph/sdk';
+import { Transaction, SystemDeleteTransaction, SystemUndeleteTransaction } from '@hiero-ledger/sdk';
 
 import { getFormattedDateFromTimestamp } from '@renderer/utils';
 

@@ -3,7 +3,7 @@ import type { KeyPair } from '@prisma/client';
 
 import { onBeforeMount, ref } from 'vue';
 
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 

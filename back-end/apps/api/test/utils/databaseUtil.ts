@@ -9,7 +9,7 @@ import {
   FileCreateTransaction,
   KeyList,
   Transaction as SDKTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   CachedAccount,

@@ -1,4 +1,4 @@
-import { AccountId, Key, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, Key, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected readonly transaction: T) {}

@@ -1,4 +1,4 @@
-import { AccountId } from '@hashgraph/sdk';
+import { AccountId } from '@hiero-ledger/sdk';
 
 export const accountId = AccountId.fromString('0.0.123');
 

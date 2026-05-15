@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { formatHbar } from '@renderer/utils/sdk';
 

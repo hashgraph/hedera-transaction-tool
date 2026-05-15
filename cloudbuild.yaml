@@ -1,0 +1,48 @@
+# This file lives at the repo root because the build context (`.` below) must
+# include the root pnpm-lock.yaml, pnpm-workspace.yaml, and the front-end /
+# automation package manifests — the Dockerfiles all install from the root
+# workspace via `pnpm install --filter "back-end..." --filter "@back-end/<app>..."`.
+# All paths in `args` are repo-relative.
+steps:
+  # API service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'gcr.io/transaction-tool-dev/api',
+        '-f',
+        'back-end/apps/api/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'gcr.io/transaction-tool-dev/api']
+  # Chain service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'gcr.io/transaction-tool-dev/chain',
+        '-f',
+        'back-end/apps/chain/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'gcr.io/transaction-tool-dev/chain']
+  # Notifications service
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      [
+        'build',
+        '-t',
+        'gcr.io/transaction-tool-dev/notifications',
+        '-f',
+        'back-end/apps/notifications/Dockerfile',
+        '.'
+      ]
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      ['push', 'gcr.io/transaction-tool-dev/notifications']

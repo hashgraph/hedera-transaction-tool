@@ -98,7 +98,6 @@ const handleSetRecoveryPhrase = async (value: {
 const handleSetPersonalUser = async (value: PersonalUser) => {
   personalUser.value = value;
   user.setAccountSetupStarted(true);
-  await handleSkipSetupAfterMigration();
   step.value = 'organization';
 };
 
@@ -106,10 +105,13 @@ const handleSetOrganizationId = async (value: string | null) => {
   organizationId.value = value;
   await initializeUserStore();
   userInitialized.value = true;
+  // Write the skip claim now that the org (if any) is selected, using the correct claim key.
+  // Use storeSkipRecoveryPhraseClaim (not handleSkipSetupAfterMigration) so accountSetupStarted
+  // stays true until Summary clears it — preserving crash-detection for the rest of migration.
+  await accountSetupStore.storeSkipRecoveryPhraseClaim();
   if (allUserKeysToRecover.value.length !== 0) {
     step.value = 'selectKeys';
   } else {
-    await handleSkipSetupAfterMigration();
     step.value = 'summary';
   }
 };
@@ -117,7 +119,7 @@ const handleSetOrganizationId = async (value: string | null) => {
 const handleKeysImported = async (value: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
   if (!value) {
-    await handleSkipSetupAfterMigration();
+    await accountSetupStore.storeSkipRecoveryPhraseClaim();
   }
   keysImported.value = value;
   step.value = 'summary';
@@ -142,11 +144,14 @@ const initializeUserStore = async () => {
   } else {
     await user.login(personalUser.value.personalId, personalUser.value.email, false);
   }
+
+  // Persist the flag now that userId is available so a mid-migration crash or force-quit
+  // is detected on next startup and triggers resetDataLocal(), allowing migration to restart.
+  user.setAccountSetupStarted(true);
+
   await user.refetchOrganizations();
 
   if (user.organizations[0]) {
-    // before the org is selected, set the org to skip setup.
-    await handleSkipSetupAfterMigration();
     await user.selectOrganization(user.organizations[0]);
   }
 
@@ -156,9 +161,6 @@ const initializeUserStore = async () => {
   personalUser.value.password && user.setPassword(personalUser.value.password);
 };
 
-const handleSkipSetupAfterMigration = async () => {
-  await accountSetupStore.handleSkipRecoveryPhrase();
-};
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">

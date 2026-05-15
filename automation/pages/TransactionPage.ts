@@ -1,17 +1,15 @@
 import { BasePage } from './BasePage.js';
-import { Page } from '@playwright/test';
-import { getAccountDetails, getTransactionDetails } from '../utils/mirrorNodeAPI.js';
+import { Page, expect } from '@playwright/test';
+import { getAccountDetails, getTransactionDetails } from '../utils/network/mirrorNodeAPI.js';
 import {
   verifyAccountExists,
   verifyFileExists,
   verifyTransactionExists,
-} from '../utils/databaseQueries.js';
-import { decodeAndFlattenKeys } from '../utils/keyUtil.js';
-import {
-  getCleanAccountId,
-  isLocalnetEnvironment,
-  LOCALNET_PAYER_ACCOUNT_ID,
-} from '../utils/automationSupport.js';
+} from '../utils/db/databaseQueries.js';
+import { decodeAndFlattenKeys } from '../utils/crypto/keyUtil.js';
+import { LOCALNET_PAYER_ACCOUNT_ID } from '../constants/index.js';
+import { getCleanAccountId } from '../utils/data/transactionFormatting.js';
+import { isLocalnetEnvironment } from '../utils/runtime/environment.js';
 import { Transaction } from '../../front-end/src/shared/interfaces/index.js';
 import * as path from 'node:path';
 
@@ -66,6 +64,8 @@ export class TransactionPage extends BasePage {
   fileIdInputForReadSelector = 'input-file-id-for-read';
   fileContentReadTextFieldSelector = 'text-area-read-file-content';
   publicKeyInputSelector = 'input-public-key';
+  stakingAccountDropdownSelector = 'dropdown-staking-account';
+  stakedAccountInputSelector = 'input-stake-accountid';
   fileIdUpdateInputSelector = 'input-file-id-for-update';
   fileContentUpdateTextFieldSelector = 'textarea-file-content';
   fileIdInputForAppendSelector = 'input-file-id-for-append';
@@ -99,10 +99,8 @@ export class TransactionPage extends BasePage {
   receiverSigRequiredSwitchSelector = 'switch-receiver-sig-required';
   receiverSigRequiredSwitchForUpdateSelector = 'switch-receiver-sig-required';
   acceptStakingRewardsSwitchSelector = 'switch-accept-staking-rewards';
-  discardModalDraftButtonSelector = 'button-discard-draft-for-group-modal';
   buttonSignTransactionSelector = 'button-sign-transaction';
   buttonCancelTransactionSelector = 'button-cancel-transaction';
-  closeCompletedTxButtonSelector = 'button-close-completed-tx';
   addComplexButtonIndex = 'button-complex-key-add-element-';
   selectThresholdValueByIndex = 'select-complex-key-threshold-';
   selectThresholdNumberIndex = 'button-complex-key-add-element-threshold-';
@@ -114,7 +112,9 @@ export class TransactionPage extends BasePage {
   addTransferFromButtonSelector = 'button-add-transfer-from';
   addRestButtonSelector = 'button-transfer-to-rest';
   addTransferToButtonSelector = 'button-add-transfer-to';
+  insufficientBalanceErrorSelector = 'css=.text-danger:has-text("Insufficient balance for transfer")';
   draftsTabSelector = 'tab-0';
+  historyTabSelector = 'tab-1';
   draftDeleteButtonIndexSelector = 'button-draft-delete-';
   draftContinueButtonIndexSelector = 'button-draft-continue-';
   confirmDeleteAccountButtonSelector = 'button-confirm-delete-account';
@@ -122,15 +122,26 @@ export class TransactionPage extends BasePage {
   uploadFileButtonSelector = '#append-transaction-file[type="file"]';
   insertAccountIdButtonSelector = 'button-insert-account-id';
   moreDropdownButtonSelector = 'button-more-dropdown-lg';
-  importButtonSelector = 'button-transaction-page-import';
+  transactionFileActionsDropdownSelector = 'button-more-dropdown-sm';
+  importSignaturesFromFileOptionSelector = 'button-more-dropdown-sm-item-importSignaturesFromFile';
+  transactionListMoreDropdownSelector = 'button-more-dropdown-sm';
+  importSignaturesMenuItemSelector = 'button-more-dropdown-sm-item-importSignaturesFromFile';
   confirmImportButtonSelector = 'button-import-files-public';
   saveGotoSettingsButtonSelector = 'button-save-goto-settings';
   gotoSettingsButtonSelector = 'button-goto-settings';
+  addApproverButtonSelector = 'button-add-approver';
+  addApproverStructureElementButtonSelector = 'button-approver-structure-edit-add-element-0';
+  addApproverStructurePublicKeyButtonSelector = 'button-approver-structure-edit-add-element-public-key-0';
+  firstApproverEmailSelector = 'span-email-0';
+  addApproverUserButtonSelector = 'button-add-user';
 
   //Other
   confirmTransactionModalSelector = 'modal-confirm-transaction';
   spanCreateNewComplexKeyButtonSelector = 'span-create-new-complex-key';
   updateAccountIdFetchedDivSelector = 'div-account-info-fetched';
+  // AppPager has no data-testids; selectors target structural CSS classes.
+  pagerNextChevronSelector = 'css=.pager .pagination .bi-chevron-right';
+  pagerPageLinkSelector = 'css=.pager .pagination .page-link';
   //Messages
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
@@ -147,6 +158,7 @@ export class TransactionPage extends BasePage {
   draftDetailsTypeIndexSelector = 'span-draft-tx-type-';
   draftDetailsDescriptionIndexSelector = 'span-draft-tx-description-';
   draftDetailsIsTemplateCheckboxSelector = 'checkbox-is-template-';
+  historyTransactionIdIndexSelector = 'td-transaction-id-';
 
   // Combined method to verify all elements on Create transaction page
   async verifyAccountCreateTransactionElements() {
@@ -202,14 +214,28 @@ export class TransactionPage extends BasePage {
     return checks.every(isTrue => isTrue);
   }
 
-  async mirrorGetAccountResponse(accountId: string) {
-    const accountDetails = await getAccountDetails(
-      accountId,
-      this.VERY_LONG_TIMEOUT,
-      this.DEFAULT_TIMEOUT,
-    );
+  async mirrorGetAccountResponse(
+    accountId: string,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+    interval: number = this.DEFAULT_TIMEOUT,
+  ) {
+    const accountDetails = await getAccountDetails(accountId, timeout, interval);
     console.log('Account Details:', accountDetails);
     return accountDetails;
+  }
+
+  async waitForMirrorAccountDeleted(accountId: string) {
+    const startedAt = Date.now();
+
+    while (Date.now() - startedAt < this.VERY_LONG_TIMEOUT) {
+      const accountDetails = await this.mirrorGetAccountResponse(accountId, this.LONG_TIMEOUT);
+      if (accountDetails?.accounts?.[0]?.deleted === true) {
+        return;
+      }
+      await this.wait(this.DEFAULT_TIMEOUT);
+    }
+
+    throw new Error(`Account ${accountId} was not marked deleted by mirror node`);
   }
 
   async mirrorGetTransactionResponse(transactionId: string): Promise<Transaction> {
@@ -233,10 +259,6 @@ export class TransactionPage extends BasePage {
     await this.click(this.transactionsMenuButtonSelector);
   }
 
-  async clickOnSingleTransactionButton() {
-    await this.click(this.singleTransactionButtonSelector);
-  }
-
   async clickOnAccountsMenuButton() {
     await this.click(this.accountsMenuButtonSelector);
   }
@@ -249,19 +271,81 @@ export class TransactionPage extends BasePage {
         return;
       } catch (error) {
         if (attempt === 2) throw error;
-        await this.window.keyboard.press('Escape');
+        await this.pressKey('Escape');
         await this.captureStepScreenshot('dismiss-create-transaction-modal');
-        await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+        await this.wait(this.SHORT_TIMEOUT);
       }
     }
   }
 
+  async clickOnAddApproverButton() {
+    await this.click(this.addApproverButtonSelector);
+  }
+
+  async clickOnComplexApproverTab() {
+    await this.click('role=tab[name="Complex"]');
+  }
+
+  async addFirstUserToComplexApproverStructure() {
+    await this.click(this.addApproverStructureElementButtonSelector);
+    await this.click(this.addApproverStructurePublicKeyButtonSelector);
+    await this.click(this.firstApproverEmailSelector);
+    await this.click(this.addApproverUserButtonSelector);
+  }
+
+  async isCreateNewTransactionButtonVisible(timeout: number = this.DEFAULT_TIMEOUT) {
+    return await this.isElementVisible(this.createNewTransactionButtonSelector, null, timeout);
+  }
+
+  async clickOnHistoryTab() {
+    await this.click(this.historyTabSelector);
+  }
+
   async clickOnImportButton() {
-    await this.click(this.importButtonSelector);
+    // The "Import Signatures from File" item in Transactions.vue dropDownMenuItems is gated on
+    // isLoggedInOrganization(user.selectedOrganization). If the dropdown is opened before the
+    // org session has rehydrated (e.g. immediately after re-login), the menu renders with only
+    // "Sign Transactions from File" and the import item never appears. Reopen the dropdown
+    // until the gated item attaches.
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT;
+    while (Date.now() < deadline) {
+      await this.click(this.transactionListMoreDropdownSelector);
+      try {
+        await this.waitForElementToBeAttached(
+          this.importSignaturesMenuItemSelector,
+          this.LONG_TIMEOUT,
+        );
+        await this.click(this.importSignaturesMenuItemSelector);
+        return;
+      } catch {
+        await this.pressKey('Escape');
+        await this.wait(this.SHORT_TIMEOUT);
+      }
+    }
+    throw new Error(
+      `Import Signatures menu item (${this.importSignaturesMenuItemSelector}) did not appear within ${this.VERY_LONG_TIMEOUT}ms`,
+    );
+  }
+
+  async clickOnTransactionFileActionsDropdown() {
+    await this.click(this.transactionFileActionsDropdownSelector);
+  }
+
+  async isImportSignaturesFromFileOptionVisible() {
+    return await this.isElementVisible(this.importSignaturesFromFileOptionSelector);
   }
 
   async clickOnConfirmImportButton() {
     await this.click(this.confirmImportButtonSelector);
+    await this.waitForElementToDisappear(
+      this.confirmImportButtonSelector,
+      this.DEFAULT_TIMEOUT,
+      this.LONG_TIMEOUT * 2,
+    );
+  }
+
+  async closeImportModal() {
+    await this.pressKey('Escape');
   }
 
   async isConfirmImportButtonDisabled() {
@@ -340,17 +424,24 @@ export class TransactionPage extends BasePage {
 
   async addPublicKeyAtDepth(depth: string, publicKey: string | null = null) {
     await this.clickAddButton(depth);
-    await this.window.waitForTimeout(300);
+    // Wait for the dropdown's "public key" option to be ready instead of a
+    // fixed sleep — a 300ms guess races slow CI runs and wastes time on fast
+    // ones.
+    await this.waitForElementToBeVisible(this.addPublicKeyButtonIndex + depth);
     await this.selectPublicKeyOption(depth);
-    await this.window.waitForTimeout(300);
+    // Wait for the public-key input modal to mount before filling it.
+    await this.waitForElementToBeVisible(this.publicKeyComplexInputSelector);
     if (publicKey === null) {
       publicKey = await this.generateRandomPublicKey();
     }
     await this.fillInPublicKeyField(publicKey);
-    await this.window.waitForTimeout(300);
+    // Ensure Vue has registered the value (and therefore enabled "Insert")
+    // before clicking, instead of guessing 300ms.
+    await this.waitForInputFieldToBeFilled(this.publicKeyComplexInputSelector);
     await this.clickInsertPublicKey();
-    // Wait for DOM to update after key insertion (needed for CI)
-    await this.window.waitForTimeout(300);
+    // Wait for the modal to actually close so the next dropdown click in a
+    // loop doesn't race with the closing animation.
+    await this.waitForElementToDisappear(this.publicKeyComplexInputSelector);
   }
 
   async addAccountAtDepth(depth: string, accountId: string) {
@@ -461,7 +552,25 @@ export class TransactionPage extends BasePage {
 
   async ensureAccountExists() {
     if (await this.isAccountsListEmpty()) {
-      await this.createNewAccount();
+      const maxAttempts = 2;
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        try {
+          await this.createNewAccount();
+          return;
+        } catch (error) {
+          if (attempt === maxAttempts) {
+            throw error;
+          }
+
+          console.log(
+            `Failed to create setup account on attempt ${attempt}; retrying: ${
+              error instanceof Error ? error.message : error
+            }`,
+          );
+          await this.clickOnTransactionsMenuButton();
+          await this.closeDraftModal();
+        }
+      }
     }
   }
 
@@ -564,10 +673,11 @@ export class TransactionPage extends BasePage {
 
   async deleteAccount(accountId: string) {
     await this.clickOnTransactionsMenuButton();
+    const transferAccountId = await this.getTransferAccountIdForDelete(accountId);
+    await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnDeleteAccountTransaction();
-    const payerID = await this.getPayerAccountId();
-    await this.fillInTransferAccountIdNormally(payerID);
+    await this.fillInTransferAccountIdNormally(transferAccountId);
     await this.fillInDeletedAccountId(accountId);
     await this.clickOnSignAndSubmitButton(true);
     await this.clickOnConfirmDeleteAccountButton();
@@ -577,6 +687,23 @@ export class TransactionPage extends BasePage {
     await this.clickOnTransactionsMenuButton();
     await this.removeAccountFromList(accountId);
     return transactionId;
+  }
+
+  private async getTransferAccountIdForDelete(accountId: string) {
+    let transferAccountId = this.generatedAccounts.find(id => id !== accountId);
+
+    if (!transferAccountId) {
+      const { newAccountId } = await this.createNewAccount({
+        description: 'delete transfer account',
+      });
+      transferAccountId = newAccountId ?? undefined;
+    }
+
+    if (!transferAccountId) {
+      throw new Error('Unable to resolve a transfer account for account delete');
+    }
+
+    return transferAccountId;
   }
 
   async updateAccountKey(
@@ -732,31 +859,25 @@ export class TransactionPage extends BasePage {
   async transferAmountBetweenAccounts(
     toAccountId: string,
     amount: string,
-    options: { isSupposedToFail?: boolean } = {},
+    options: { isSupposedToFail?: boolean; fromAccountId?: string } = {},
   ) {
-    const { isSupposedToFail = false } = options;
+    const { isSupposedToFail = false, fromAccountId } = options;
 
     await this.clickOnTransactionsMenuButton();
     await this.clickOnCreateNewTransactionButton();
     await this.clickOnTransferTokensTransaction();
-    await this.fillInTransferFromAccountId();
+    await this.fillInTransferFromAccountId(fromAccountId);
     await this.fillInTransferAmountFromAccount(amount);
     await this.fillInTransferToAccountId(toAccountId);
     await this.clickOnAddTransferFromButton();
-    await this.fillInTransferAmountToAccount(amount);
-    await this.clickOnAddTransferToButton();
+    await this.clickOnAddRestButton();
 
     await this.clickOnSignAndSubmitButton(true);
     await this.clickSignTransactionButton();
-
-    if (isSupposedToFail) {
-      return null;
-    } else {
-      await this.waitForCreatedAtToBeVisible();
-      const transactionId = await this.getTransactionDetailsId();
-      await this.clickOnTransactionsMenuButton();
-      return transactionId;
-    }
+    await this.waitForCreatedAtToBeVisible();
+    const transactionId = await this.getTransactionDetailsId();
+    await this.clickOnTransactionsMenuButton();
+    return isSupposedToFail ? null : transactionId;
   }
 
   async importV1Signatures() {
@@ -813,6 +934,38 @@ export class TransactionPage extends BasePage {
     return this.getTextFromInputField(this.initialBalanceInputSelector);
   }
 
+  async fillInInitialFundsAndBlur(amount: string) {
+    await this.fill(this.initialBalanceInputSelector, amount);
+    await this.getElement(this.initialBalanceInputSelector).press('Tab');
+  }
+
+  async blurPayerAccountId() {
+    await this.getElement(this.payerAccountInputSelector).press('Tab');
+  }
+
+  async selectStaking(stakeType: 'None' | 'Account' | 'Node') {
+    await this.selectOptionByValue(this.stakingAccountDropdownSelector, stakeType);
+  }
+
+  private async fillIncompleteAccountIdAndBlur(inputSelector: string, value = '0.0.') {
+    const input = this.getElement(inputSelector);
+    await input.fill(value);
+    await input.press('Escape');
+    await input.press('Tab');
+  }
+
+  async fillMalformedStakedAccountIdAndBlur(value = '0.0.') {
+    await this.fillIncompleteAccountIdAndBlur(this.stakedAccountInputSelector, value);
+  }
+
+  async fillMalformedUpdateAccountIdAndBlur(value = '0.0.') {
+    await this.fillIncompleteAccountIdAndBlur(this.updateAccountInputSelector, value);
+  }
+
+  async fillMalformedTransferAccountIdAndBlur(value = '0.0.') {
+    await this.fillIncompleteAccountIdAndBlur(this.transferAccountInputSelector, value);
+  }
+
   async fillInMaxAccountAssociations(amount: string) {
     await this.fill(this.maxAutoAssociationsInputSelector, amount);
   }
@@ -857,10 +1010,6 @@ export class TransactionPage extends BasePage {
     await this.click(enabledSignButtonSelector);
   }
 
-  async clickOnCloseButtonForCompletedTransaction() {
-    await this.click(this.closeCompletedTxButtonSelector);
-  }
-
   async clickOnExportTransactionButton(index: string) {
     await this.isElementVisible(this.moreDropdownButtonSelector);
     await this.click(this.moreDropdownButtonSelector);
@@ -874,7 +1023,9 @@ export class TransactionPage extends BasePage {
   }
 
   async clickAddButton(depth: string) {
-    await this.click(this.addComplexButtonIndex + depth);
+    // Bootstrap re-mounts this dropdown trigger on Vue updates, so a single
+    // click can race with re-render and time out as "detached from the DOM".
+    await this.clickWithRetryOnDetach(this.addComplexButtonIndex + depth);
   }
 
   async selectPublicKeyOption(depth: string) {
@@ -990,6 +1141,24 @@ export class TransactionPage extends BasePage {
     await this.fill(this.transferAccountInputSelector, accountId);
   }
 
+  async fillInTransferAccountIdAndBlur(accountId: string) {
+    await this.fillInTransferAccountIdNormally(accountId);
+    await this.pressKey('Tab');
+  }
+
+  async fillInDeletedAccountIdNormally(accountId: string) {
+    await this.fill(this.deletedAccountInputSelector, accountId);
+  }
+
+  async fillInDeletedAccountIdAndBlur(accountId: string) {
+    await this.fillInDeletedAccountIdNormally(accountId);
+    await this.pressKey('Tab');
+  }
+
+  async isAccountAlreadyDeletedWarningVisible() {
+    return await this.isElementVisible('text=Account is already deleted!', null, this.LONG_TIMEOUT);
+  }
+
   async getPayerAccountId() {
     const payerID = await this.getTextFromInputField(this.payerAccountInputSelector);
     return getCleanAccountId(payerID);
@@ -1090,10 +1259,10 @@ export class TransactionPage extends BasePage {
     await this.fill(this.nicknameInputSelector, nickname);
   }
 
-  async fillInTransferFromAccountId() {
-    const payerID = await this.getPayerAccountId();
-    await this.fill(this.transferFromAccountIdInputSelector, payerID);
-    return payerID;
+  async fillInTransferFromAccountId(accountId?: string) {
+    const transferFromAccountId = accountId ?? (await this.getPayerAccountId());
+    await this.fill(this.transferFromAccountIdInputSelector, transferFromAccountId);
+    return transferFromAccountId;
   }
 
   async fillInTransferAmountFromAccount(amount: string) {
@@ -1108,12 +1277,137 @@ export class TransactionPage extends BasePage {
     await this.fill(this.transferAmountToAccountInputSelector, amount);
   }
 
+  async openTransferForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnTransferTokensTransaction();
+  }
+
+  async openCreateAccountForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnCreateAccountTransaction();
+  }
+
+  async openFileUpdateForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnFileServiceLink();
+    await this.clickOnUpdateFileSublink();
+  }
+
+  async openFileCreateForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnFileServiceLink();
+    await this.clickOnFileCreateTransaction();
+  }
+
+  async openApproveAllowanceForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnApproveAllowanceTransaction();
+  }
+
+  async openComplexKeyBuilderFromAccountCreate() {
+    await this.openCreateAccountForm();
+    await this.clickOnComplexTab();
+    await this.clickOnCreateNewComplexKeyButton();
+  }
+
+  async openFileAppendForm() {
+    await this.clickOnTransactionsMenuButton();
+    await this.clickOnCreateNewTransactionButton();
+    await this.clickOnFileServiceLink();
+    await this.clickOnAppendFileSublink();
+  }
+
+  // Bypasses HTML maxlength so the @input validator fires with > 100 chars
+  // and the memo's is-invalid class + error toast can be exercised.
+  async fillInTransactionMemoBypassingMaxLength(memo: string) {
+    const element = this.getElement(this.transactionMemoInputSelector);
+    await element.evaluate((el: HTMLInputElement, value: string) => {
+      el.value = value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }, memo);
+  }
+
+  async isTransactionMemoMarkedInvalid() {
+    const className =
+      (await this.getElement(this.transactionMemoInputSelector).getAttribute('class')) ?? '';
+    return className.split(/\s+/).includes('is-invalid');
+  }
+
+  async isPagerMultiPageVisible() {
+    return await this.isElementVisible(this.pagerNextChevronSelector);
+  }
+
+  async clickOnPagerPage(pageNumber: number) {
+    // AppPager wires `@click` on the `<li class="page-item">`, but the actual
+    // hit target is the inner `<a class="page-link">{{ page }}</a>`. The
+    // `:text-is(...)` Playwright pseudo gives an exact-text match so we don't
+    // substring-collide "1" with "10" or "11", and routing through the page
+    // class's own `click`/`scrollIntoView` keeps screenshot capture and
+    // visibility waiting consistent with every other action.
+    const selector = `${this.pagerPageLinkSelector}:text-is("${pageNumber}")`;
+    await this.scrollIntoView(selector);
+    await this.click(selector);
+  }
+
+  async getDraftRowCount(): Promise<number> {
+    return await this.countElements(this.draftDetailsDescriptionIndexSelector);
+  }
+
+  async getHistoryRowCount(): Promise<number> {
+    return await this.countElements(this.historyTransactionIdIndexSelector);
+  }
+
   async clickOnAddTransferFromButton() {
     await this.click(this.addTransferFromButtonSelector);
   }
 
   async clickOnAddTransferToButton() {
     await this.click(this.addTransferToButtonSelector);
+  }
+
+  async isAddTransferFromButtonEnabled() {
+    return await this.isButtonEnabled(this.addTransferFromButtonSelector);
+  }
+
+  async isAddTransferToButtonEnabled() {
+    return await this.isButtonEnabled(this.addTransferToButtonSelector);
+  }
+
+  async waitForInsufficientBalanceError(timeout = this.LONG_TIMEOUT) {
+    await expect
+      .poll(async () => this.isElementVisible(this.insufficientBalanceErrorSelector), {
+        timeout,
+        intervals: [this.SHORT_TIMEOUT],
+      })
+      .toBe(true);
+  }
+
+  async addBalancedTransferAdjustment(
+    payerAccount: string,
+    receiverAccount: string,
+    amount: string,
+  ) {
+    await this.fillInTransferFromAccountId(payerAccount);
+    await this.fillInTransferAmountFromAccount(amount);
+    await this.clickOnAddTransferFromButton();
+    await this.fillInTransferToAccountId(receiverAccount);
+    await this.fillInTransferAmountToAccount(amount);
+    await this.clickOnAddTransferToButton();
+  }
+
+  async addBalancedTransferAdjustments(
+    payerAccount: string,
+    receiverAccount: string,
+    pairCount: number,
+  ) {
+    for (let i = 0; i < pairCount; i++) {
+      await this.addBalancedTransferAdjustment(payerAccount, receiverAccount, String(i + 1));
+    }
   }
 
   async clickOnAddRestButton() {
@@ -1270,20 +1564,12 @@ export class TransactionPage extends BasePage {
     return await this.getText(this.draftDetailsDescriptionIndexSelector + '0');
   }
 
-  async getFirstDraftIsTemplateCheckboxVisible() {
-    return await this.isElementVisible(this.draftDetailsIsTemplateCheckboxSelector + '0');
-  }
-
   async clickOnFirstDraftIsTemplateCheckbox() {
     await this.click(this.draftDetailsIsTemplateCheckboxSelector + '0');
   }
 
   async clickOnFirstDraftDeleteButton() {
     await this.click(this.draftDeleteButtonIndexSelector + '0');
-  }
-
-  async isFirstDraftDeleteButtonVisible() {
-    return await this.isElementVisible(this.draftDeleteButtonIndexSelector + '0');
   }
 
   async clickOnFirstDraftContinueButton() {

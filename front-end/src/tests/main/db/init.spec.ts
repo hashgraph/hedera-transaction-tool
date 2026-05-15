@@ -23,15 +23,18 @@ vi.mock('path', () => ({
     join: vi.fn(),
   },
 }));
-vi.mock('better-sqlite3', () => ({
-  default: vi.fn().mockReturnValue({
-    prepare: vi.fn(() => ({
-      run: vi.fn(),
-    })),
+vi.mock('better-sqlite3', () => {
+  const mockInstance = {
+    prepare: vi.fn(() => ({ run: vi.fn() })),
     exec: vi.fn(),
     inTransaction: true,
-  }),
-}));
+  };
+  return {
+    default: vi.fn(function () {
+      return mockInstance;
+    }),
+  };
+});
 vi.mock('fsp', () => ({
   readdir: vi.fn(),
   readFile: vi.fn(),

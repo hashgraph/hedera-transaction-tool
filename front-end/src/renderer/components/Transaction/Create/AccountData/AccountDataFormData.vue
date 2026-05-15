@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Key } from '@hashgraph/sdk';
+import type { Key } from '@hiero-ledger/sdk';
 import type { AccountData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -148,7 +148,6 @@ const columnClass = 'col-4 col-xxxl-3';
             <option
               value="unselected"
               :selected="data.stakedNodeId === null"
-              default
               data-testid="option-no-node-selected"
             >
               No node selected

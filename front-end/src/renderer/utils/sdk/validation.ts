@@ -1,4 +1,4 @@
-import { FileUpdateTransaction, type Transaction } from '@hashgraph/sdk';
+import { FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
 
 const TREASURY = '0.0.2';
 const SYSTEM_ADMIN = '0.0.50';

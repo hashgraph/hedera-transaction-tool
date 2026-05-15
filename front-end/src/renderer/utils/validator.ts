@@ -1,4 +1,4 @@
-import { AccountId, ContractId, FileId, PublicKey } from '@hashgraph/sdk';
+import { AccountId, ContractId, FileId, PublicKey } from '@hiero-ledger/sdk';
 
 export function isEmail(email: string) {
   return /^[A-Za-z0-9_!#$%&'*+/=?`{|}~^.-]+@[A-Za-z0-9.-]+$/.test(email);

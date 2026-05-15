@@ -5,7 +5,7 @@ import { EntityManager } from 'typeorm';
 import { plainToInstance } from 'class-transformer';
 import { validateOrReject } from 'class-validator';
 
-import { SignatureMap, TransactionId } from '@hashgraph/sdk';
+import { SignatureMap, TransactionId } from '@hiero-ledger/sdk';
 
 import { BlacklistService, Pagination, guardMock } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';

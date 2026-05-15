@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { FreezeData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 
 import { createFreezeTransaction, getFreezeData } from '@renderer/utils/sdk';
 

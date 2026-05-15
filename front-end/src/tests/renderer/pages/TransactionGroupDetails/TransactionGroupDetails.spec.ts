@@ -9,6 +9,7 @@ import {
   cancelTransactionGroup,
   getTransactionGroupById,
   getUserShouldApprove,
+  sendApproverChoice,
 } from '@renderer/services/organization';
 import { isUserLoggedIn } from '@renderer/utils';
 
@@ -120,6 +121,7 @@ vi.mock('@renderer/composables/usePersonalPassword', () => ({
   default: vi.fn(() => ({
     getPassword: vi.fn(() => null),
     getPasswordV2: vi.fn((callback: (password: string | null) => void) => callback(null)),
+    getPasswordAsync: vi.fn(() => Promise.resolve(null)),
     passwordModalOpened: vi.fn(() => false),
   })),
 }));
@@ -136,6 +138,11 @@ vi.mock('@renderer/composables/useCreateTooltips', () => ({
 vi.mock('@renderer/composables/useWebsocketSubscription', () => ({
   default: vi.fn(),
 }));
+
+vi.mock('@shared/constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@shared/constants')>();
+  return { ...actual, FEATURE_APPROVERS_ENABLED: true };
+});
 
 vi.mock('@renderer/services/organization', () => ({
   cancelTransactionGroup: vi.fn(),
@@ -181,8 +188,8 @@ vi.mock('@shared/utils/byteUtils', () => ({
   areByteArraysEqual: vi.fn(() => true),
 }));
 
-vi.mock('@hashgraph/sdk', async importOriginal => {
-  const actual = await importOriginal<typeof import('@hashgraph/sdk')>();
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
+  const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
 
   return {
     ...actual,
@@ -194,24 +201,6 @@ vi.mock('@hashgraph/sdk', async importOriginal => {
     },
   };
 });
-
-vi.mock('@renderer/caches/mirrorNode/AccountByIdCache.ts', () => ({
-  AccountByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/mirrorNode/NodeByIdCache.ts', () => ({
-  NodeByIdCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
-
-vi.mock('@renderer/caches/backend/PublicKeyOwnerCache.ts', () => ({
-  PublicKeyOwnerCache: {
-    inject: vi.fn(() => ({})),
-  },
-}));
 
 const AppButtonStub = defineComponent({
   name: 'AppButton',
@@ -236,9 +225,25 @@ const AppConfirmModalStub = defineComponent({
   template: '<div data-testid="group-confirm-modal" />',
 });
 
-const mountGroupDetails = async () => {
-  vi.mocked(getTransactionGroupById).mockResolvedValue(groupResponse as any);
-  vi.mocked(getUserShouldApprove).mockResolvedValue(false);
+const executedGroupResponse = {
+  ...groupResponse,
+  groupItems: [
+    {
+      ...groupResponse.groupItems[0],
+      transaction: {
+        ...groupResponse.groupItems[0].transaction,
+        status: TransactionStatus.EXECUTED,
+      },
+    },
+  ],
+};
+
+const mountGroupDetails = async (
+  group = groupResponse,
+  shouldApprove = false,
+) => {
+  vi.mocked(getTransactionGroupById).mockResolvedValue(group as any);
+  vi.mocked(getUserShouldApprove).mockResolvedValue(shouldApprove);
 
   const wrapper = mount(TransactionGroupDetails, {
     global: {
@@ -271,7 +276,7 @@ const confirmCancelAll = async (wrapper: ReturnType<typeof mount>) => {
   await flushPromises();
 
   const modals = wrapper.findAllComponents({ name: 'AppConfirmModal' });
-  const modal = modals[modals.length - 2];
+  const modal = modals[0];
   const callback = modal.props('callback') as (() => Promise<void>) | null;
   expect(typeof callback).toBe('function');
   await callback?.();
@@ -423,5 +428,43 @@ describe('TransactionGroupDetails.vue', () => {
       'refresh failed',
       expect.objectContaining({ duration: 0 }),
     );
+  });
+
+  test('calls sendApproverChoice for each item when reject all is confirmed', async () => {
+    const wrapper = await mountGroupDetails(groupResponse, true);
+
+    const form = wrapper.find('form');
+    const rejectButton = wrapper.get('[data-testid="button-reject-group"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: rejectButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    const approveController = wrapper.findComponent({ name: 'ApproveAllController' });
+    const modal = approveController.findComponent({ name: 'AppConfirmModal' });
+    const callback = modal.props('callback') as (() => Promise<void>) | null;
+    expect(typeof callback).toBe('function');
+    await callback?.();
+    await flushPromises();
+
+    expect(sendApproverChoice).toHaveBeenCalledTimes(1);
+    expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
+  });
+
+  test('shows error toast and still invokes callback when export all is triggered without key pairs', async () => {
+    const wrapper = await mountGroupDetails(executedGroupResponse);
+
+    const form = wrapper.find('form');
+    const exportButton = wrapper.get('[data-testid="button-export-group"]');
+    const submitEvent = new Event('submit', { cancelable: true });
+    Object.defineProperty(submitEvent, 'submitter', { value: exportButton.element });
+    form.element.dispatchEvent(submitEvent);
+    await flushPromises();
+
+    expect(toastError).toHaveBeenCalledWith(
+      'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
+      expect.objectContaining({ duration: 0 }),
+    );
+    expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
   });
 });

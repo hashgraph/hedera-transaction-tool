@@ -1,14 +1,10 @@
 import { type ITransaction, type IUserKey, TransactionStatus } from '@shared/interfaces';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
-import TransactionFactory from './transaction-factory';
 import { flattenKeyList } from '../../services/keyPairService';
-import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import type { SignatureAudit } from './transaction.model';
+import type { AppCache } from '@renderer/caches/AppCache';
 import type { ConnectedOrganization, LoggedInOrganization } from '@renderer/types';
-import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { hexToUint8Array } from '@renderer/utils';
 
 export * from './account-create-transaction.model';
@@ -26,33 +22,12 @@ export * from './transfer-transaction.model';
 
 export const COUNCIL_ACCOUNTS = ['0.0.2', '0.0.50', '0.0.55'];
 
-export const computeSignatureKey = async (
-  transaction: SDKTransaction,
-  mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
-  organization: ConnectedOrganization | null,
-): Promise<SignatureAudit> => {
-  const transactionModel = TransactionFactory.fromTransaction(transaction);
-
-  return await transactionModel.computeSignatureKey(
-    mirrorNodeLink,
-    accountInfoCache,
-    nodeInfoCache,
-    publicKeyOwnerCache,
-    organization,
-  );
-};
-
 /* Returns only users PK required to sign */
 export const usersPublicRequiredToSign = async (
   transaction: SDKTransaction,
   userKeys: IUserKey[],
   mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
   organization: ConnectedOrganization | null,
 ): Promise<string[]> => {
   const publicKeysRequired: Set<string> = new Set<string>();
@@ -63,13 +38,10 @@ export const usersPublicRequiredToSign = async (
   /* Transaction signers' public keys */
   const signerPublicKeys = new Set([...transaction._signerPublicKeys]);
 
-  const requiredKeys = await computeSignatureKey(
+  const requiredKeys = await appCache.computeSignatureKey(
     transaction,
-    mirrorNodeLink,
-    accountInfoCache,
-    nodeInfoCache,
-    publicKeyOwnerCache,
     organization,
+    mirrorNodeLink,
   );
 
   const requiredUnsignedKeys = new Set<string>();
@@ -94,13 +66,14 @@ export const usersPublicRequiredToSign = async (
 export const isSignableTransaction = async (
   tx: ITransaction,
   mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
   organization: ConnectedOrganization & LoggedInOrganization,
 ): Promise<boolean> => {
   let result: boolean;
-  if (tx.status === TransactionStatus.WAITING_FOR_SIGNATURES) {
+  if (
+    tx.status === TransactionStatus.WAITING_FOR_SIGNATURES ||
+    tx.status === TransactionStatus.WAITING_FOR_EXECUTION
+  ) {
     const transactionBytes = hexToUint8Array(tx.transactionBytes);
     try {
       const sdkTransaction = SDKTransaction.fromBytes(transactionBytes);
@@ -108,9 +81,7 @@ export const isSignableTransaction = async (
         sdkTransaction,
         organization.userKeys,
         mirrorNodeLink,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
+        appCache,
         organization,
       );
       result = usersPublicKeys.length > 0;

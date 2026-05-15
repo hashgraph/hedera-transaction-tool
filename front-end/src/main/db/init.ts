@@ -8,7 +8,7 @@ import * as sqlite3 from 'better-sqlite3';
 
 import { getDatabaseLogger } from '@main/modules/logger';
 
-import { dbPath, getPrismaClient } from './prisma';
+import { getDatabasePath, getPrismaClient } from './prisma';
 
 export default async function initDatabase() {
   const migrationsPath = path.join(
@@ -18,7 +18,7 @@ export default async function initDatabase() {
 
   const databaseLogger = getDatabaseLogger();
 
-  const db = new sqlite3.default(dbPath);
+  const db = new sqlite3.default(getDatabasePath());
 
   let currentMigration = await getCurrentMigration();
 
@@ -147,7 +147,7 @@ export async function deleteDatabase() {
   const databaseLogger = getDatabaseLogger();
 
   try {
-    await fsp.rm(dbPath);
+    await fsp.rm(getDatabasePath());
     databaseLogger.log('Database deleted successfully');
   } catch (error) {
     databaseLogger.error('Failed to delete database', { error });

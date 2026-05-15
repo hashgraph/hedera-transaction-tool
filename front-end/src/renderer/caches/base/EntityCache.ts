@@ -7,7 +7,7 @@ export abstract class EntityCache<K extends string | number, E> {
   //
 
   public constructor(
-    public readonly youngDuration: number = 60000, // ms
+    public readonly youngDuration: number = 10 * 60_000, // ms
   ) {}
 
   public async lookup(key: K, mirrorNodeUrl: string, forceLoad = false): Promise<E> {
@@ -28,15 +28,21 @@ export abstract class EntityCache<K extends string | number, E> {
     return result;
   }
 
-  // public forget(key: K, mirrorNodeUrl: string): void {
-  //   const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
-  //   this.records.delete(recordKey);
-  // }
-  //
-  // public clear(): void {
-  //   this.records.clear();
-  // }
-  //
+  public forget(key: K, mirrorNodeUrl: string, strict = true): void {
+    const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
+    const currentRecord = this.records.get(recordKey);
+    if (currentRecord) {
+      // When strict is off, we forget only if data is 1s old (help for notification mgt)
+      if (strict || currentRecord.age() > 1000) {
+        this.records.delete(recordKey);
+      }
+    }
+  }
+
+  public clear(): void {
+    this.records.clear();
+  }
+
   // public contains(key: K, mirrorNodeUrl: string, forceLoad = false): boolean {
   //   const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
   //   const r = this.records.get(recordKey);

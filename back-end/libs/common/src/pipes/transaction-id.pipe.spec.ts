@@ -1,4 +1,4 @@
-import { TransactionId } from '@hashgraph/sdk';
+import { TransactionId } from '@hiero-ledger/sdk';
 
 import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 

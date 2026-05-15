@@ -1,6 +1,6 @@
 import { expect, vi } from 'vitest';
 
-import { getUserStorageFolderPath, resetData } from '@main/services/localUser/index';
+import { getUserStorageFolderPath, resetData } from '@main/services/localUser';
 
 import { session } from 'electron';
 import initDatabase, { deleteDatabase } from '@main/db/init';

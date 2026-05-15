@@ -13,7 +13,10 @@ import useLoader from '@renderer/composables/useLoader';
 
 import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
-import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import {
+  encryptOrganizationPassword,
+  updateOrganizationCredentials,
+} from '@renderer/services/organizationCredentials';
 import { logout } from '@renderer/services/organization';
 
 import {
@@ -37,7 +40,7 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 const withLoader = useLoader();
-const { getPassword, passwordModalOpened } = usePersonalPassword();
+const { getPasswordAsync } = usePersonalPassword();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -76,10 +79,19 @@ const handleChangePassword = async () => {
     if (newPasswordInvalid.value) throw new Error('Password must be at least 10 characters long');
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const personalPassword = getPassword(handleChangePassword, {
+      // Linear flow: confirm modal stays open with isChangingPassword = true while the
+      // personal-password modal is on top. Loading state is visible end-to-end.
+      const personalPassword = await getPasswordAsync({
         subHeading: 'Enter your application password to encrypt your organization credentials',
       });
-      if (passwordModalOpened(personalPassword)) return;
+      if (personalPassword === false) return; // user cancelled the personal-password modal
+
+      // Encrypt before the BE rotation so a keychain / personal-password failure aborts before
+      // the backend is touched.
+      const encryptedNewPassword = await encryptOrganizationPassword(
+        newPassword.value,
+        personalPassword || undefined,
+      );
 
       await organizationChangePassword(
         user.selectedOrganization.serverUrl,
@@ -91,9 +103,10 @@ const handleChangePassword = async () => {
         user.selectedOrganization.id,
         user.personal.id,
         undefined,
-        newPassword.value,
+        encryptedNewPassword,
         undefined,
-        personalPassword || undefined,
+        undefined,
+        true,
       );
 
       if (!isUpdated) {
@@ -107,14 +120,14 @@ const handleChangePassword = async () => {
 
     isConfirmModalShown.value = false;
     isSuccessModalShown.value = true;
+    currentPassword.value = '';
+    newPassword.value = '';
 
     await user.refetchAccounts();
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to change password'));
   } finally {
     isChangingPassword.value = false;
-    currentPassword.value = '';
-    newPassword.value = '';
   }
 };
 

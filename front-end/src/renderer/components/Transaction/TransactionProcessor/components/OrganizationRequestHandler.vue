@@ -3,7 +3,7 @@ import type { TransactionApproverDto } from '@shared/interfaces/organization/app
 import { TransactionRequest, type Handler, type Processable } from '..';
 
 import { computed, ref } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';

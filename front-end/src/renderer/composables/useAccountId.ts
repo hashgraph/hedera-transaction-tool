@@ -1,7 +1,7 @@
 import type { IAccountInfoParsed, CryptoAllowance } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
-import { AccountId, Client, Hbar } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -10,7 +10,7 @@ import { getAccountAllowances } from '@renderer/services/mirrorNodeDataService';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 
 import { stringifyHbar } from '@renderer/utils';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 export default function useAccountId() {
   /* Stores */
@@ -28,7 +28,7 @@ export default function useAccountId() {
   const isValid = computed(() => Boolean(accountInfo.value));
 
   /* Injected */
-  const accountByIdCache = AccountByIdCache.inject();
+  const accountByIdCache = AppCache.inject().mirrorAccountById;
 
   const accountIdFormatted = computed(() => {
     if (!isValid.value) {
@@ -82,7 +82,8 @@ export default function useAccountId() {
       accountInfoController.value = new AbortController();
       const accountInfoRes = await accountByIdCache.lookup(
         baseId,
-        networkStore.mirrorNodeBaseURL
+        networkStore.mirrorNodeBaseURL,
+        true /* To get the latest balance */
       );
 
       allowancesController.value = new AbortController();
@@ -120,7 +121,7 @@ export default function useAccountId() {
   }
 
   function getStakedToString() {
-    if (accountInfo.value?.stakedNodeId) {
+    if (accountInfo.value?.stakedNodeId != null) {
       return `Node ${accountInfo.value?.stakedNodeId}`;
     } else if (accountInfo.value?.stakedAccountId) {
       return `Account ${accountInfo.value?.stakedAccountId}`;

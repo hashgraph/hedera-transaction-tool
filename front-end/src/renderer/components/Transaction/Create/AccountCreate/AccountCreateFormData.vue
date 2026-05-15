@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AccountCreateData, AccountData } from '@renderer/utils/sdk';
 
-import { Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountDataFormData from '@renderer/components/Transaction/Create/AccountData';

@@ -5,6 +5,9 @@ export * from './updateErrors';
 export * from './featureFlags';
 
 export const TRANSACTION_MAX_SIZE = 6144; // in bytes
+// HIP-1300: privileged governance fee payers (0.0.2 and 0.0.42-0.0.799) get an
+// increased transaction size limit of 128 KB to accommodate council signatures.
+export const TRANSACTION_MAX_PRIVILEGED_SIZE = 131_072; // in bytes (128 KB)
 export const TRANSACTION_SIGNATURE_ESTIMATED_MAX_SIZE = 100; // in bytes
 export const MEMO_MAX_LENGTH = 100;
 

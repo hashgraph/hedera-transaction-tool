@@ -96,6 +96,7 @@ const organizationOnly = ['/contact-list'];
         class="link-menu mt-2"
         to="/settings/general"
         :class="{ active: $route.path.startsWith('/settings') }"
+        @click="router.appMenuItem = 'settings'"
         draggable="false"
         data-testid="button-menu-settings"
         ><i class="bi bi-gear"></i><span>Settings</span></RouterLink

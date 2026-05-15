@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
-import { AccountCreateTransaction } from '@hashgraph/sdk';
+import { AccountCreateTransaction } from '@hiero-ledger/sdk';
 
 import {
   emitTransactionStatusUpdate,

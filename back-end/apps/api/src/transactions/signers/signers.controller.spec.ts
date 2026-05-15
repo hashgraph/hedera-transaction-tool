@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 import { EntityManager } from 'typeorm';
-import { SignatureMap } from '@hashgraph/sdk';
+import { SignatureMap } from '@hiero-ledger/sdk';
 
 import { BlacklistService, guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';

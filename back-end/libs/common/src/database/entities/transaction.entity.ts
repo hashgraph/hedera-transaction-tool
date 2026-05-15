@@ -56,6 +56,9 @@ export enum TransactionStatus {
 }
 
 export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
+// HIP-1300: privileged governance fee payers (0.0.2 and 0.0.42-0.0.799) get an
+// increased transaction size limit of 128 KB to accommodate council signatures.
+export const MAX_PRIVILEGED_TRANSACTION_BYTE_SIZE = 131_072;
 
 @Entity()
 @Index(['status', 'mirrorNetwork'])

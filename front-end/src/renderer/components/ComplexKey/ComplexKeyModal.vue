@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { ComplexKey as SavedComplexKey } from '@prisma/client';
+
 import { computed, ref, watch } from 'vue';
 
-import { Key, KeyList } from '@hashgraph/sdk';
+import { Key, KeyList } from '@hiero-ledger/sdk';
 
-import { isKeyListValid } from '@renderer/utils';
+import { encodeKey, isKeyListValid } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -12,11 +14,19 @@ import ComplexKey from '@renderer/components/ComplexKey/ComplexKey.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
 
 /* Props */
-const props = defineProps<{
-  modelKey: Key | null;
-  show: boolean;
-  onSaveComplexKey?: () => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelKey: Key | null;
+    show: boolean;
+    onSaveComplexKey?: () => void;
+    noThreshold?: boolean;
+    savedComplexKeys?: SavedComplexKey[];
+  }>(),
+  {
+    noThreshold: false,
+    savedComplexKeys: () => [],
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:show', 'update:modelKey']);
@@ -32,6 +42,12 @@ const currentKeyInvalid = computed(
     currentKey.value === null ||
     (currentKey.value instanceof KeyList && !isKeyListValid(currentKey.value)),
 );
+
+const matchingSavedKey = computed<SavedComplexKey | null>(() => {
+  if (!(currentKey.value instanceof KeyList) || !isKeyListValid(currentKey.value)) return null;
+  const encoded = encodeKey(currentKey.value).toString();
+  return props.savedComplexKeys.find(k => k.protobufEncoded === encoded) ?? null;
+});
 
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
@@ -82,6 +98,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
+            <span
+              v-if="matchingSavedKey && onSaveComplexKey"
+              class="text-warning text-small me-3"
+              data-testid="span-complex-key-already-exists"
+            >
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Complex key already exists{{
+                matchingSavedKey.nickname ? ` ("${matchingSavedKey.nickname}")` : ''
+              }}
+            </span>
             <AppButton
               color="borderless"
               type="button"
@@ -90,7 +116,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
             >
             <AppButton
-              v-if="onSaveComplexKey && !currentKeyInvalid"
+              v-if="onSaveComplexKey && !currentKeyInvalid && !matchingSavedKey"
               type="button"
               color="primary"
               class="ms-3"
@@ -109,11 +135,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
           <div v-if="show" class="mt-5 h-100 overflow-auto">
             <Transition name="fade" :mode="'out-in'">
               <div v-if="!summaryMode">
-                <ComplexKey :model-key="currentKey" @update:model-key="handleComplexKeyUpdate" />
+                <ComplexKey
+                  :model-key="currentKey"
+                  :no-threshold="noThreshold"
+                  @update:model-key="handleComplexKeyUpdate"
+                />
               </div>
               <div v-else>
                 <KeyStructure
                   :key-list="currentKey instanceof KeyList ? currentKey : new KeyList([])"
+                  :no-threshold="noThreshold"
                 />
               </div>
             </Transition>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue';
 
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 import useUserStore from '@renderer/stores/storeUser';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { getErrorMessage } from '@renderer/utils';

@@ -3,7 +3,7 @@ import type { HederaAccount } from '@prisma/client';
 
 import { computed, onMounted, ref } from 'vue';
 
-import { Key } from '@hashgraph/sdk';
+import { Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';

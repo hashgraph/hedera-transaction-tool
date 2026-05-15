@@ -7,7 +7,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import useUserStore from '@renderer/stores/storeUser';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 
 import {
   getErrorMessage,

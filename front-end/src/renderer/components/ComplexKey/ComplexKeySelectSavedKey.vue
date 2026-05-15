@@ -16,10 +16,16 @@ import AppListItem from '@renderer/components/ui/AppListItem.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
 /* Props */
-const props = defineProps<{
-  show: boolean;
-  onKeyListSelect: (complexKey: ComplexKey) => void;
-}>();
+const props = withDefaults(
+  defineProps<{
+    show: boolean;
+    onKeyListSelect: (complexKey: ComplexKey) => void;
+    noThreshold?: boolean;
+  }>(),
+  {
+    noThreshold: false,
+  },
+);
 
 /* Emits */
 const emit = defineEmits(['update:show']);
@@ -70,6 +76,17 @@ const handleDone = () => {
   }
 };
 
+/* Functions */
+const filterKeyList = (kl: ComplexKey): boolean => {
+  const keyList = decodeKeyList(kl.protobufEncoded);
+  return (
+    (kl.nickname.toLocaleLowerCase().includes(search.value.toLocaleLowerCase()) ||
+      keyList.toArray().length.toString().includes(search.value) ||
+      search.value === '') &&
+    (keyList.threshold === null || !props.noThreshold)
+  );
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   if (!isUserLoggedIn(user.personal)) {
@@ -88,27 +105,12 @@ onBeforeMount(async () => {
         </div>
         <h1 class="text-title text-semi-bold text-center">Saved Complex Keys</h1>
         <div class="mt-5">
-          <AppInput
-            :model-value="complexKey?.nickname"
-            filled
-            readonly
-            type="text"
-            placeholder="Search Complex Key"
-          />
+          <AppInput v-model="search" filled placeholder="Search Complex Key" type="text" />
         </div>
         <hr class="separator my-5" />
         <div>
           <div class="overflow-auto" :style="{ height: '20vh', paddingRight: '10px' }">
-            <template
-              v-for="kl in keyLists.filter(
-                kl =>
-                  kl.nickname.toLocaleLowerCase().includes(search.toLocaleLowerCase()) ||
-                  decodeKeyList(kl.protobufEncoded).toArray().length.toString().includes(search) ||
-                  decodeKeyList(kl.protobufEncoded).threshold ||
-                  '' == search,
-              )"
-              :key="kl.id"
-            >
+            <template v-for="kl in keyLists.filter(filterKeyList)" :key="kl.id">
               <AppListItem
                 :value="kl.id"
                 @click="handleSelectKeyList(kl.id)"
@@ -123,16 +125,14 @@ onBeforeMount(async () => {
                       {{ kl.nickname }}
                     </span>
                     <p
-                      class="text-body bg-dark-blue-800 flex-centered rounded ms-3"
-                      style="width: 36px; height: 36px"
+                      v-if="decodeKeyList(kl.protobufEncoded).threshold !== null"
+                      class="text-secondary ms-3"
                     >
-                      {{
-                        decodeKeyList(kl.protobufEncoded).threshold ||
-                        decodeKeyList(kl.protobufEncoded).toArray().length
-                      }}
+                      ({{ decodeKeyList(kl.protobufEncoded).threshold }} of
+                      {{ decodeKeyList(kl.protobufEncoded).toArray().length }})
                     </p>
-                    <p class="text-secondary ms-3">
-                      of {{ decodeKeyList(kl.protobufEncoded).toArray().length }}
+                    <p v-else class="text-secondary ms-3">
+                      ({{ decodeKeyList(kl.protobufEncoded).toArray().length }})
                     </p>
                     <p class="text-secondary border-start border-secondary-subtle ps-4 ms-4">
                       {{ kl.updated_at.toDateString() }}

@@ -1,12 +1,11 @@
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
-import { computeSignatureKey, hexToUint8Array, type SignatureAudit } from '@renderer/utils';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
+import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
-import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
-import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
+import { getTransactionGroupById } from '@renderer/services/organization';
+import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
-import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.transactionFile');
@@ -14,6 +13,7 @@ const logger = createLogger('renderer.transactionFile');
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],
   serverUrl: string,
+  transactionCache: BackendTransactionCache,
 ): Promise<ITransaction[]> {
   const result: ITransaction[] = [];
 
@@ -25,7 +25,7 @@ export async function flattenNodeCollection(
       }
     } else {
       if (node.transactionId !== undefined) {
-        const transaction = await getTransactionById(serverUrl, node.transactionId);
+        const transaction = await transactionCache.lookup(node.transactionId, serverUrl);
         result.push(transaction);
       }
     }
@@ -42,9 +42,7 @@ export async function filterTransactionFileItemsToBeSigned(
   transactionFileItems: TransactionFileItem[],
   userPublicKeys: string[],
   mirrorNetwork: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
 ): Promise<TransactionFileItemsStatus> {
   const fullySigned: TransactionFileItem[] = [];
   const needSigning: TransactionFileItem[] = [];
@@ -52,14 +50,7 @@ export async function filterTransactionFileItemsToBeSigned(
     try {
       const transactionBytes = hexToUint8Array(item.transactionBytes);
       const sdkTransaction = SDKTransaction.fromBytes(transactionBytes);
-      const audit = await computeSignatureKey(
-        sdkTransaction,
-        mirrorNetwork,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
-        null,
-      );
+      const audit = await appCache.computeSignatureKey(sdkTransaction, null, mirrorNetwork);
       const requiredKeys = filterAuditByUser(audit, userPublicKeys);
       const signingKeys = filterTransactionSignersByUser(sdkTransaction, userPublicKeys);
 
@@ -84,20 +75,11 @@ export async function collectMissingSignerKeys(
   transaction: SDKTransaction,
   userPublicKeys: string[],
   mirrorNodeLink: string,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
+  appCache: AppCache,
 ): Promise<string[]> {
   const result: string[] = [];
 
-  const audit = await computeSignatureKey(
-    transaction,
-    mirrorNodeLink,
-    accountInfoCache,
-    nodeInfoCache,
-    publicKeyOwnerCache,
-    null,
-  );
+  const audit = await appCache.computeSignatureKey(transaction, null, mirrorNodeLink);
 
   const signatureKeys = transaction._signerPublicKeys;
 

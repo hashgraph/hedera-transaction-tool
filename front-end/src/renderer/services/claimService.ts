@@ -54,7 +54,7 @@ export const setStoredClaim = async (userId: string, key: string, newValue: stri
     // Claim is unset
     if (newValue) {
       // We add
-      add(userId, key, newValue);
+      await add(userId, key, newValue);
     } else {
       // We leave unset
     }

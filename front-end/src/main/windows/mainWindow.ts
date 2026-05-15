@@ -4,6 +4,7 @@ import { BrowserWindow, screen, session as ses } from 'electron';
 
 import { removeListeners, sendUpdateThemeEventTo } from '@main/modules/ipcHandlers/theme';
 import { getWindowBounds, setWindowBounds } from '@main/services/windowState';
+import { getSessionPartitionName } from '@main/utils/playwrightIsolation';
 
 async function createWindow() {
   process.env.DIST_ELECTRON = join(__dirname, '..');
@@ -13,7 +14,7 @@ async function createWindow() {
     : process.env.DIST;
 
   const preload = join(__dirname, '../preload/index.js');
-  const session = ses.fromPartition('persist:main');
+  const session = ses.fromPartition(getSessionPartitionName());
 
   const storedBounds = await getWindowBounds();
   const { width, height } = screen.getPrimaryDisplay().workAreaSize;

@@ -1,5 +1,5 @@
 import TransactionFactory from './transaction-factory';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import * as Models from '.';
 import { getTransactionType } from '@app/common';
 

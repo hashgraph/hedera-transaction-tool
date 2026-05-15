@@ -1,4 +1,4 @@
-import { NodeCreateTransaction } from '@hashgraph/sdk';
+import { NodeCreateTransaction } from '@hiero-ledger/sdk';
 
 import { TransactionBaseModel } from './transaction.model';
 

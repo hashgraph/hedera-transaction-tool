@@ -1,7 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 
-import { Page, Locator, test } from '@playwright/test';
+import { Page, Locator, test, expect } from '@playwright/test';
 
 export class BasePage {
   protected readonly SHORT_TIMEOUT = 500;
@@ -11,6 +11,22 @@ export class BasePage {
   private static stepScreenshotCounter = 0;
 
   constructor(protected readonly window: Page) {}
+
+  getShortTimeout(): number {
+    return this.SHORT_TIMEOUT;
+  }
+
+  getLongTimeout(): number {
+    return this.LONG_TIMEOUT;
+  }
+
+  getDefaultTimeout(): number {
+    return this.DEFAULT_TIMEOUT;
+  }
+
+  getVeryLongTimeout(): number {
+    return this.VERY_LONG_TIMEOUT;
+  }
 
   private shouldCaptureStepScreenshots(): boolean {
     return process.env.PLAYWRIGHT_STEP_SCREENSHOTS === 'true';
@@ -76,9 +92,13 @@ export class BasePage {
     }
   }
 
-  // Debug helper - pauses test execution for manual inspection
-  async pause() {
-    await this.window.pause();
+  async pressKey(key: string): Promise<void> {
+    console.log(`Pressing key: ${key}`);
+    await this.window.keyboard.press(key);
+  }
+
+  async wait(timeout: number): Promise<void> {
+    await this.window.waitForTimeout(timeout);
   }
 
   // --------------------------
@@ -149,6 +169,60 @@ export class BasePage {
     await element.waitFor({ state: 'visible', timeout });
     await element.click();
     await this.captureStepScreenshot(`click-${selector}`);
+  }
+
+  /**
+   * Clicks on an element, retrying when the element is repeatedly detached
+   * from the DOM (e.g. components that re-mount during Vue updates). The
+   * locator is re-resolved on every attempt and the action itself is bounded
+   * so the outer retry loop can drive progress instead of being blocked by
+   * Playwright's default 30s actionability timeout.
+   */
+  async clickWithRetryOnDetach(
+    selector: string,
+    index: number | null = null,
+    overallTimeout: number = this.LONG_TIMEOUT,
+    perAttemptTimeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(`Clicking on element with selector: ${selector} (with retry on detach)`);
+    const deadline = Date.now() + overallTimeout;
+    let lastError: unknown;
+
+    while (Date.now() < deadline) {
+      const element = this.getElement(selector, index);
+      try {
+        await element.waitFor({ state: 'visible', timeout: perAttemptTimeout });
+        await element.click({ timeout: perAttemptTimeout });
+        await this.captureStepScreenshot(`click-${selector}`);
+        return;
+      } catch (error) {
+        lastError = error;
+        await this.wait(this.SHORT_TIMEOUT);
+      }
+    }
+
+    throw lastError instanceof Error
+      ? lastError
+      : new Error(`Failed to click "${selector}" within ${overallTimeout} ms`);
+  }
+
+  /**
+   * Hovers over an element specified by the selector.
+   * @param {string} selector - The selector of the element to hover.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<void>}
+   */
+  async hover(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(`Hovering over element with selector: ${selector}`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    await element.hover();
+    await this.captureStepScreenshot(`hover-${selector}`);
   }
 
   /**
@@ -337,9 +411,10 @@ export class BasePage {
     longTimeout: number = this.LONG_TIMEOUT,
   ): Promise<void> {
     console.log(`Waiting for element with selector: ${selector} to disappear`);
+    const element = this.getElement(selector);
     try {
-      await this.window.waitForSelector(selector, { state: 'attached', timeout: timeout });
-      await this.window.waitForSelector(selector, { state: 'detached', timeout: longTimeout });
+      await element.waitFor({ state: 'attached', timeout });
+      await element.waitFor({ state: 'detached', timeout: longTimeout });
     } catch {
       console.error(`Element with selector ${selector} did not disappear.`);
     }
@@ -371,6 +446,56 @@ export class BasePage {
       );
       throw error;
     }
+  }
+
+  /**
+   * Waits for an element to be attached to the DOM, regardless of visibility.
+   * Useful for inputs that are visually hidden (e.g. styled `<input role="switch">`)
+   * where waiting for `visible` would never resolve.
+   */
+  async waitForElementToBeAttached(
+    selector: string,
+    timeout: number = this.LONG_TIMEOUT,
+    index: number | null = null,
+  ): Promise<void> {
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'attached', timeout });
+  }
+
+  /**
+   * Waits for an element to have the exact expected text.
+   * @param {string} selector - The selector of the element to check.
+   * @param {string} expectedText - The exact text expected in the element.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the text update.
+   * @returns {Promise<void>}
+   */
+  async waitForElementToHaveText(
+    selector: string,
+    expectedText: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    console.log(
+      `Waiting for element with selector: ${selector} to have text: "${expectedText}"`,
+    );
+    const normalizedExpectedText = expectedText.trim();
+    const start = Date.now();
+
+    while (Date.now() - start < timeout) {
+      const currentText = (await this.getText(selector, index, this.SHORT_TIMEOUT))?.trim() ?? '';
+
+      if (currentText === normalizedExpectedText) {
+        return;
+      }
+
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+    }
+
+    const finalText = (await this.getText(selector, index, this.SHORT_TIMEOUT))?.trim() ?? '';
+    throw new Error(
+      `Element with selector: ${selector} did not have expected text "${normalizedExpectedText}" within ${timeout} ms. Current text: "${finalText}"`,
+    );
   }
 
   /**
@@ -526,6 +651,46 @@ export class BasePage {
     const element = this.getElement(selector, index);
     await element.waitFor({ state: 'visible', timeout });
     return await element.isDisabled();
+  }
+
+  /**
+   * Checks if an element is checked.
+   * @param {string} selector - The selector of the element to check.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<boolean>} - True if the element is checked, false otherwise.
+   */
+  async isChecked(
+    selector: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<boolean> {
+    console.log(`Checking if element with selector: ${selector} is checked`);
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    return await element.isChecked();
+  }
+
+  /**
+   * Gets an attribute value from an element.
+   * @param {string} selector - The selector of the element.
+   * @param {string} attributeName - The attribute name.
+   * @param {number|null} [index=null] - Optional index to select a specific element when multiple are present.
+   * @param {number} [timeout=this.DEFAULT_TIMEOUT] - Optional timeout to wait for the element to be visible.
+   * @returns {Promise<string|null>} - The attribute value or null if missing.
+   */
+  async getAttributeValue(
+    selector: string,
+    attributeName: string,
+    index: number | null = null,
+    timeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<string | null> {
+    console.log(
+      `Getting attribute "${attributeName}" for element with selector: ${selector}`,
+    );
+    const element = this.getElement(selector, index);
+    await element.waitFor({ state: 'visible', timeout });
+    return await element.getAttribute(attributeName);
   }
 
   /**
@@ -795,7 +960,7 @@ export class BasePage {
   async waitForInputFieldToBeFilled(
     selector: string,
     index: number | null = null,
-    timeout = this.LONG_TIMEOUT,
+    timeout: number = this.LONG_TIMEOUT,
   ): Promise<string> {
     console.log(`Waiting for input field with selector: ${selector} to be filled`);
     const element = this.getElement(selector, index);
@@ -844,6 +1009,81 @@ export class BasePage {
     const count = await elements.count();
     console.log(`Found ${count} elements with prefix: ${selectorPrefix}`);
     return count;
+  }
+
+  /**
+   * Returns the index of the first element matching `selectorPrefix` whose whitespace-
+   * normalized text content equals `expectedText`, or -1 if none. One round-trip.
+   *
+   * @param selectorPrefix - CSS selector or data-testid prefix used to address the cells.
+   * @param expectedText - Target text; matched after stripping all whitespace.
+   */
+  async findIndexByCellText(selectorPrefix: string, expectedText: string): Promise<number> {
+    const baseSelector = this.isCssSelector(selectorPrefix)
+      ? selectorPrefix
+      : `[data-testid^="${selectorPrefix}"]`;
+    const target = expectedText.replace(/\s+/g, '');
+    return await this.window.locator(baseSelector).evaluateAll((els, normalizedTarget) => {
+      for (let i = 0; i < els.length; i++) {
+        if ((els[i].textContent ?? '').replace(/\s+/g, '') === normalizedTarget) return i;
+      }
+      return -1;
+    }, target);
+  }
+
+  /**
+   * Polls `findIndexByCellText` until it returns a non-negative index, then returns it.
+   * Uses Playwright's `expect.poll` so the wait participates in test timeouts/tracing.
+   */
+  async waitForIndexByCellText(
+    selectorPrefix: string,
+    expectedText: string,
+    options: { timeout?: number; interval?: number } = {},
+  ): Promise<number> {
+    const { timeout = this.VERY_LONG_TIMEOUT, interval = this.SHORT_TIMEOUT } = options;
+    let resolvedIndex = -1;
+    await expect
+      .poll(
+        async () => {
+          resolvedIndex = await this.findIndexByCellText(selectorPrefix, expectedText);
+          return resolvedIndex;
+        },
+        { timeout, intervals: [interval] },
+      )
+      .toBeGreaterThanOrEqual(0);
+    return resolvedIndex;
+  }
+
+  /**
+   * Returns true if the row containing `cellSelector` carries `highlightClass`, OR if
+   * the cell exposes a visible `::before` pseudo-element. Combines the row-class check
+   * and the pseudo-element probe into a single page evaluate.
+   */
+  async cellRowHasIndicator(
+    cellSelector: string,
+    highlightClass: string = 'highlight',
+  ): Promise<boolean> {
+    const cell = this.getElement(cellSelector);
+    await cell.waitFor({ state: 'visible', timeout: this.DEFAULT_TIMEOUT });
+    return await cell.evaluate((el, args) => {
+      const tr = (el as HTMLElement).closest('tr');
+      if (tr && tr.classList.contains(args.highlightClass)) return true;
+      const styles = window.getComputedStyle(el, '::before');
+      const display = styles.getPropertyValue('display');
+      const visibility = styles.getPropertyValue('visibility');
+      const opacity = parseFloat(styles.getPropertyValue('opacity'));
+      const width = parseFloat(styles.getPropertyValue('width'));
+      const height = parseFloat(styles.getPropertyValue('height'));
+      const borderLeft = parseFloat(styles.getPropertyValue('border-left-width'));
+      const borderTop = parseFloat(styles.getPropertyValue('border-top-width'));
+      const hasBorders = borderLeft > 0 || borderTop > 0;
+      return (
+        display !== 'none' &&
+        visibility !== 'hidden' &&
+        opacity !== 0 &&
+        (width > 0 || height > 0 || hasBorders)
+      );
+    }, { highlightClass });
   }
 
   /**

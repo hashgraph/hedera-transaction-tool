@@ -3,7 +3,7 @@ import type { Contact, IUserKey } from '@shared/interfaces';
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
 
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from './storeUser';
 

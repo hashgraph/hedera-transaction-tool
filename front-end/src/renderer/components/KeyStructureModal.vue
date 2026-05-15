@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onBeforeMount, ref } from 'vue';
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 import { formatPublicKey } from '@renderer/utils';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructure from '@renderer/components/KeyStructure.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -17,7 +17,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:show']);
 
 /* Injected */
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
 const formattedKey = ref('');

@@ -1,4 +1,4 @@
-import { AccountId, EvmAddress, Hbar, Key, Timestamp } from '@hashgraph/sdk';
+import { AccountId, EvmAddress, Hbar, Key, Timestamp } from '@hiero-ledger/sdk';
 
 export interface AccountInfoParsed {
   accountId: AccountId;

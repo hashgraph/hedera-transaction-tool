@@ -1,4 +1,4 @@
-import { TransactionReceipt, TransactionResponse } from '@hashgraph/sdk';
+import { TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import TransactionProcessor from './TransactionProcessor.vue';
 import type { CustomRequest, TransactionRequest } from './requests';

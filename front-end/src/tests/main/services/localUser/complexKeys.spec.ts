@@ -1,7 +1,7 @@
 import { expect, vi } from 'vitest';
 
-import { KeyList, PrivateKey } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
+import { KeyList, PrivateKey } from '@hiero-ledger/sdk';
+import { proto } from '@hiero-ledger/proto';
 
 import { ComplexKey } from '@prisma/client';
 

@@ -3,7 +3,7 @@ import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { ref } from 'vue';
-import { Key } from '@hashgraph/sdk';
+import { Key } from '@hiero-ledger/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';

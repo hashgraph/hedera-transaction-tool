@@ -64,7 +64,7 @@ export const addGroupWithDrafts = async (
         user_id: userId,
         transactionBytes: item.transactionBytes.toString(),
         type: getTransactionType(item.transactionBytes),
-        description: '', //TO DO: Add description
+        description: item.description,
         details: details || null,
       };
       const draft = await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
@@ -138,6 +138,7 @@ export async function updateGroup(
         created_at: new Date(),
         updated_at: new Date(),
         user_id: userId,
+        description: item.description,
         transactionBytes: item.transactionBytes.toString(),
         type: getTransactionType(item.transactionBytes),
       };
@@ -152,7 +153,7 @@ export async function updateGroup(
           created_at: new Date(),
           updated_at: new Date(),
           user_id: userId,
-          description: '', //TO DO: Add description
+          description: item.description,
           transactionBytes: item.transactionBytes.toString(),
           type: getTransactionType(item.transactionBytes),
         };

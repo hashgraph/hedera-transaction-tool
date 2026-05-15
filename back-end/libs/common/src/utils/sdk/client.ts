@@ -1,4 +1,4 @@
-import { AccountId, AddressBookQuery, Client, FileId, LedgerId } from '@hashgraph/sdk';
+import { AccountId, AddressBookQuery, Client, FileId, LedgerId } from '@hiero-ledger/sdk';
 
 import { MirrorNetworkGRPC } from '../mirrorNode';
 

@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import { onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
-import Tooltip from 'bootstrap/js/dist/tooltip';
-
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
+import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 
 import { encrypt, isKeychainAvailable } from '@renderer/services/safeStorageService';
 
@@ -51,10 +48,18 @@ const passwordRequirements = reactive({
   length: false,
 });
 
-const tooltipContent = ref('');
-
-/* Composables */
-const createTooltips = useCreateTooltips();
+/* Computed */
+const tooltipContent = computed(
+  () => `
+    <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
+      <div class='${
+        passwordRequirements.length ? 'text-success' : 'text-danger'
+      }'><i class='bi bi-${
+        passwordRequirements.length ? 'check' : 'x'
+      }'></i>Be at least 10 characters</div>
+    </div>
+  `,
+);
 
 /* Handlers */
 const handleOnFormSubmit = async () => {
@@ -102,23 +107,6 @@ function checkPassword(pass: string) {
   return result;
 }
 
-function setTooltipContent() {
-  tooltipContent.value = `
-    <div class='d-flex flex-column align-items-start px-3' data-testid='tooltip-requirements'>
-      <div class='${
-        passwordRequirements.length ? 'text-success' : 'text-danger'
-      }'><i class='bi bi-${
-        passwordRequirements.length ? 'check' : 'x'
-      }'></i>Be at least 10 characters</div>
-    </div>
-  `;
-  const tooltipList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
-  Array.from(tooltipList).forEach(tooltipEl => {
-    const tooltip = Tooltip.getInstance(tooltipEl);
-    tooltip?.setContent({ '.tooltip-inner': tooltipContent.value });
-  });
-}
-
 /* Hooks */
 onBeforeMount(async () => {
   keychainAvailable.value = await isKeychainAvailable();
@@ -126,8 +114,6 @@ onBeforeMount(async () => {
 
 onMounted(async () => {
   checkPassword(inputPassword.value);
-  createTooltips();
-  setTooltipContent();
 });
 
 /* Watchers */
@@ -136,7 +122,6 @@ watch(inputEmail, email => {
 });
 watch(inputPassword, pass => {
   if (checkPassword(pass) || pass.length === 0) inputPasswordInvalid.value = false;
-  setTooltipContent();
 });
 </script>
 <template>
@@ -172,7 +157,7 @@ watch(inputPassword, pass => {
           data-bs-placement="right"
           data-bs-custom-class="wide-xl-tooltip text-start"
           data-bs-html="true"
-          data-bs-title="_"
+          :data-bs-title="tooltipContent"
           data-testid="input-password"
         />
         <div

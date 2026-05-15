@@ -8,7 +8,7 @@ and is at your own risk.
 # Prerequisites
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
-  - Required version: `>= 22.12.0`
+  - Required version: `>= 24.0.0`
   - Verify installation:
 
     ```bash
@@ -45,25 +45,42 @@ and is at your own risk.
 
 ```bash
 git clone https://github.com/hashgraph/hedera-transaction-tool.git
-cd hedera-transaction-tool/front-end
+cd hedera-transaction-tool
 ```
 
 ## 2. Install dependencies
+
+The repository is a single pnpm workspace; install once from the root for all modules (`back-end`, `front-end`, `automation`):
 
 ```bash
 pnpm install
 ```
 
+Front-end-specific scripts can then be run via the workspace filter (from any directory):
+
+```bash
+pnpm -F hedera-transaction-tool <script>          # e.g. pnpm -F hedera-transaction-tool dev
+```
+
+Or by `cd front-end` and running the script as before — both work.
+
+> **Do not rename this workspace package.** The `name` field in `front-end/package.json` is `hedera-transaction-tool` because Electron reads it as `app.getName()`, which determines:
+>
+> - the `userData` directory (`~/Library/Application Support/hedera-transaction-tool/` on macOS, `~/.config/hedera-transaction-tool/` on Linux, `%APPDATA%\hedera-transaction-tool\` on Windows) — where the local SQLite database, logs, and Prisma data live;
+> - the macOS Keychain entry name (`hedera-transaction-tool Safe Storage`) — which holds the symmetric key Electron's `safeStorage` uses to encrypt private keys, mnemonics, and other sensitive blobs.
+>
+> Renaming the package would silently relocate every existing user's database to a fresh empty path and decouple their encrypted blobs from the keychain entry that can decrypt them. Effectively a mass invisible data loss on every install.
+
 ## 3. Generate Prisma client library
 
 ```bash
-pnpm generate:database
+pnpm -F hedera-transaction-tool generate:database
 ```
 
 ## 4. Start developing
 
 ```bash
-pnpm dev
+pnpm -F hedera-transaction-tool dev
 ```
 
 ## 5. Build for distribution

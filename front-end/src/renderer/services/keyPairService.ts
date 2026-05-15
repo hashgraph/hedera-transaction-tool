@@ -1,5 +1,5 @@
-import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
+import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
+import { proto } from '@hiero-ledger/proto';
 
 import { Prisma } from '@prisma/client';
 import { KeyType } from '@renderer/types';

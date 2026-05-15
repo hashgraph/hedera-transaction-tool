@@ -9,7 +9,6 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
   assertIsLoggedInOrganization,
-  computeSignatureKey,
   generateTransactionExportFileName,
   generateTransactionV2ExportContent,
   hexToUint8Array,
@@ -24,11 +23,10 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { Transaction } from '@hashgraph/sdk';
+
+import { Transaction } from '@hiero-ledger/sdk';
 import { createLogger } from '@renderer/utils/logger';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const logger = createLogger('renderer.component.exportTransactionsModal');
 
@@ -43,9 +41,7 @@ const network = useNetworkStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const accountInfoCache = AccountByIdCache.inject();
-const nodeInfoCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const isOnlyExternalSelected = ref(false);
@@ -60,29 +56,32 @@ async function handleExport() {
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
     user.selectedOrganization.serverUrl,
+    appCache.backendTransaction,
   );
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
 
   if (isOnlyExternalSelected.value) {
-    const filteredTransactions: ITransaction[] = [];
-    for (const tx of collectionTransactions) {
-      const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
-      const mirrorNodeLink = network.getMirrorNodeREST(network.network);
-      const audit = await computeSignatureKey(
-        sdkTransaction,
-        mirrorNodeLink,
-        accountInfoCache,
-        nodeInfoCache,
-        publicKeyOwnerCache,
-        user.selectedOrganization,
-      );
-      if (audit.externalKeys.size > 0) {
-        filteredTransactions.push(tx);
+    try {
+      const filteredTransactions: ITransaction[] = [];
+      for (const tx of collectionTransactions) {
+        const sdkTransaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
+        const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+        const audit = await appCache.computeSignatureKey(
+          sdkTransaction,
+          user.selectedOrganization,
+          mirrorNodeLink,
+        );
+        if (audit.externalKeys.size > 0) {
+          filteredTransactions.push(tx);
+        }
       }
+      collectionTransactions = filteredTransactions;
+      logger.debug('Filtered external transactions', { count: collectionTransactions.length });
+    } catch (error) {
+      collectionTransactions = [];
+      toastManager.error('Failed to filter external transactions');
+      logger.error('Failed to filter external transactions: ' + error?.toString());
     }
-    collectionTransactions = filteredTransactions;
-
-    logger.debug('Filtered external transactions', { count: collectionTransactions.length });
   }
 
   show.value = false;

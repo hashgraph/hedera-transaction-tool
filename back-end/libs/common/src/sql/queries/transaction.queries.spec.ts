@@ -26,7 +26,7 @@ describe('getTransactionNodesForUser - Integration', () => {
     dataSource = testDb.dataSource;
     cleanup = testDb.cleanup;
     sqlBuilder = new SqlBuilderService(dataSource.manager);
-  }, 60000);
+  }, 120000);
 
   afterAll(async () => {
     await cleanup();

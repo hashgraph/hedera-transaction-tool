@@ -5,11 +5,12 @@ import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
   resolve: {
-    alias: {
-      '@main': resolve('src/main'),
-      '@renderer': resolve('src/renderer'),
-      '@shared': resolve('src/shared'),
-    },
+    alias: [
+      { find: '@main', replacement: resolve('src/main') },
+      { find: '@renderer', replacement: resolve('src/renderer') },
+      { find: '@shared', replacement: resolve('src/shared') },
+      { find: /^@prisma\/client$/, replacement: resolve('src/generated/prisma/browser.ts') },
+    ],
   },
   test: {
     environment: 'happy-dom',

@@ -1,4 +1,4 @@
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 import * as unzipper from 'unzipper';
 import * as path from 'path';
 import { extractUnzipperFileToBuffer } from '@main/utils/files';
@@ -43,12 +43,11 @@ async function filterCandidate(filePath: string): Promise<V1ImportCandidate | nu
           transactionBytes: txHex,
           nodeSignatures: jsonObj,
         };
+      /* v8 ignore start */
       } else {
-        /* It's unclear how we can get a transaction without id => we disable code coverage here */
-        /* c8 ignore next */
         result = null
-        /* c8 ignore next */
       }
+      /* v8 ignore stop */
     } else {
       result = null;
     }

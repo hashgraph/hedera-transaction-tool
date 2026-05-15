@@ -10,7 +10,7 @@ import {
   KeyList,
   PublicKey,
   AccountUpdateTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TransactionStatus } from '@shared/interfaces';
 
@@ -34,8 +34,7 @@ import {
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -48,11 +47,12 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Injected */
-const transactionByIdCache = TransactionByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
+const transactionByIdCache = appCache.mirrorTransactionById;
+const publicKeyOwnerCache = appCache.backendPublicKeyOwner;
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -213,12 +213,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             color="secondary"
             size="small"
             type="button"
+            data-testid="button-account-details-link-account"
             @click="handleLinkEntity"
             >Link Account</AppButton
           >
           <span
             v-if="accounts.some(f => f.account_id === entityId)"
             class="align-self-start text-small text-secondary"
+            data-testid="p-account-details-account-already-linked"
             >Account already linked</span
           >
         </div>
@@ -286,7 +288,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         {{
           transaction.stakedAccountId && transaction.stakedAccountId.toString() !== '0.0.0'
             ? `Account ${transaction.stakedAccountId.toString()}`
-            : transaction.stakedNodeId && isAccountId(transaction.stakedNodeId.toString())
+            : transaction.stakedNodeId !== null && isAccountId(transaction.stakedNodeId.toString())
               ? `Node ${transaction.stakedNodeId.toString()}`
               : transaction instanceof AccountCreateTransaction
                 ? 'None'

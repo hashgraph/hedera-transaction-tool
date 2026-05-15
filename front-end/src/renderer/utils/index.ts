@@ -1,7 +1,7 @@
 import type { AccountInfo, ITransaction } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
-import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hashgraph/sdk';
+import { AccountId, Client, Hbar, HbarUnit, Long, Transaction } from '@hiero-ledger/sdk';
 
 import pLimit from 'p-limit';
 
@@ -20,11 +20,9 @@ import {
 } from './userStoreHelpers';
 import { isAccountId } from './validator';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { ToastManager } from '@renderer/utils/ToastManager';
-import type { SignatureItem } from '@renderer/types';
+import type { AppCache } from '@renderer/caches/AppCache';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import type { SignatureItem } from '@renderer/types';
 import { createLogger } from './logger';
 
 const logger = createLogger('renderer.utils');
@@ -190,86 +188,89 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-se
   return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
 }
 
-export async function signTransactions(
+export async function collectRequiredKeys(
   transactions: ITransaction[],
-  password: string | null,
-  accountInfoCache: AccountByIdCache,
-  nodeInfoCache: NodeByIdCache,
-  publicKeyOwnerCache: PublicKeyOwnerCache,
-  toastManager: ToastManager,
-): Promise<boolean> {
+  appCache: AppCache,
+): Promise<SignatureItem[]> {
   const user = useUserStore();
   const network = useNetworkStore();
-  const notificationStore = useNotificationsStore();
-  assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
-
-  // Capture the narrowed, non-null organization for use across async callbacks
   const selectedOrganization = user.selectedOrganization;
 
-  const items: SignatureItem[] = [];
-  let signed = false;
-
   const limit = pLimit(10);
-
   const results = await Promise.all(
     transactions.map(tx =>
-      limit(async () => {
+      limit(async (): Promise<SignatureItem> => {
         const transaction = Transaction.fromBytes(hexToUint8Array(tx.transactionBytes));
 
         const publicKeysRequired = await usersPublicRequiredToSign(
           transaction,
           selectedOrganization.userKeys,
           network.mirrorNodeBaseURL,
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
           selectedOrganization,
         );
 
-        return { id: tx.id, transaction, publicKeysRequired };
+        return { transactionId: tx.id, transaction, publicKeys: publicKeysRequired };
       }),
     ),
   );
 
+  return results;
+}
+
+export function collectMissingKeys(signatureItems: SignatureItem[]): string[] {
+  const result = new Set<string>();
+  const user = useUserStore();
   const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
 
-  for (const { id, transaction, publicKeysRequired } of results) {
-    const missingKeys = publicKeysRequired.filter(k => !userPublicKeys.has(k));
+  for (const { publicKeys } of signatureItems) {
+    const missingKeys = publicKeys.filter(k => !userPublicKeys.has(k));
+    missingKeys.forEach(k => result.add(k));
+  }
 
-    if (missingKeys.length > 0) {
-      toastManager.error(
-        `You need to restore the following public keys to fully sign the transaction: ${missingKeys.join(
-          ', ',
-        )}`,
-      );
-      return false;
-    }
+  return Array.from(result);
+}
 
-    if (publicKeysRequired.length > 0) {
-      items.push({ publicKeys: publicKeysRequired, transaction, transactionId: id });
+export async function signItems(items: SignatureItem[], password: string | null): Promise<SignatureItem[]> {
+
+  if (items.length === 0) return [];
+
+  const user = useUserStore();
+  assertUserLoggedIn(user.personal);
+  const selectedOrganization = user.selectedOrganization;
+  assertIsLoggedInOrganization(selectedOrganization);
+  const notificationStore = useNotificationsStore();
+
+  const uploadResults = await uploadSignatures(
+    user.personal.id,
+    password,
+    selectedOrganization,
+    undefined,
+    undefined,
+    undefined,
+    items,
+  );
+
+  const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
+  if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
+    notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
+  }
+
+  const signers: { transactionId: number }[] = uploadResults?.data?.signers ?? [];
+  const signedTransactionIds = new Set<number>(signers.map((s) => s.transactionId));
+  const unsignedCount = items.length - signers.length;
+  const result: SignatureItem[] = [];
+  if (unsignedCount > 0) {
+    // Collects items that have not been signed
+    for (const item of items) {
+      if (!signedTransactionIds.has(item.transactionId)) {
+        result.push(item);
+      }
     }
   }
 
-  if (items.length > 0) {
-    const uploadResults = await uploadSignatures(
-      user.personal.id,
-      password,
-      selectedOrganization,
-      undefined,
-      undefined,
-      undefined,
-      items,
-    );
-
-    const notificationReceiverIds = uploadResults?.data?.notificationReceiverIds;
-    if (Array.isArray(notificationReceiverIds) && notificationReceiverIds.length > 0) {
-      notificationStore.dismissNotifications(selectedOrganization.serverUrl, notificationReceiverIds);
-    }
-
-    signed = true;
-  }
-  return signed;
+  return result;
 }
 
 export const splitMultipleAccounts = (input: string, client: Client): string[] => {

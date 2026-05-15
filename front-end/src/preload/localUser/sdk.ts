@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron';
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 
 export default {
   sdk: {

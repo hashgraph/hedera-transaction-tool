@@ -10,7 +10,7 @@ import {
   KeyList,
   FileUpdateTransaction,
   FileAppendTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { TransactionStatus } from '@shared/interfaces';
 
@@ -26,8 +26,7 @@ import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@rende
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
-
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = defineProps<{
@@ -40,10 +39,10 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Injected */
-const transactionByIdCache = TransactionByIdCache.inject();
+const transactionByIdCache = AppCache.inject().mirrorTransactionById;
 
 /* State */
 const isKeyStructureModalShown = ref(false);
@@ -177,12 +176,14 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             color="secondary"
             size="small"
             type="button"
+            data-testid="button-file-details-link-file"
             @click="handleLinkEntity"
             >Link File</AppButton
           >
           <span
             v-if="files.some(f => f.file_id === entityId)"
             class="align-self-start text-small text-secondary"
+            data-testid="p-file-details-file-already-linked"
             >File already linked</span
           >
         </div>

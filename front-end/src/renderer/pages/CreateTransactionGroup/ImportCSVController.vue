@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import ActionController from '@renderer/pages/TransactionGroupDetails/ActionController.vue';
+import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createLogger, createTransactionId } from '@renderer/utils';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup.ts';
-import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hashgraph/sdk';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { Hbar, HbarUnit, KeyList, TransferTransaction } from '@hiero-ledger/sdk';
+import { AppCache } from '@renderer/caches/AppCache';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
 
 const logger = createLogger('renderer.page.importCSVController');
 
@@ -25,7 +26,7 @@ const payerData = useAccountId();
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const accountByIdCache = AccountByIdCache.inject();
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
@@ -33,13 +34,13 @@ const network = useNetworkStore();
 
 const progressText = computed(() =>
   transactionGroup.groupItems.length === 1
-    ? '1 transaction'
-    : `${transactionGroup.groupItems.length} transactions`,
+    ? 'Imported 1 transaction'
+    : `Imported ${transactionGroup.groupItems.length} transactions`,
 );
 
 /* Handlers */
-async function handleImportCsv() {
-  if (!props.selectedFile) return;
+async function handleImportCsv(): Promise<ActionReport | null> {
+  if (!props.selectedFile) return null;
   try {
     const result = await readFileAsText(props.selectedFile);
     const rows = result.split(/\r?\n|\r|\n/g);
@@ -72,7 +73,7 @@ async function handleImportCsv() {
               `Sender account ${senderAccount} does not exist on network. Review the CSV file.`,
             );
             logger.error('Sender account lookup failed', { senderAccount, error });
-            return;
+            return null;
           }
           break;
         case 'fee payer account':
@@ -84,7 +85,7 @@ async function handleImportCsv() {
               `Fee payer account ${feePayer} does not exist on network. Review the CSV file.`,
             );
             logger.error('Fee payer account lookup failed', { feePayer, error });
-            return;
+            return null;
           }
           break;
         case 'sending time':
@@ -128,7 +129,7 @@ async function handleImportCsv() {
             );
             logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
-            return;
+            return null;
           }
 
           const transaction = new TransferTransaction()
@@ -180,6 +181,8 @@ async function handleImportCsv() {
     activate.value = false;
     await props.callback();
   }
+
+  return null;
 }
 
 /* Functions */
@@ -197,8 +200,7 @@ async function readFileAsText(file: File): Promise<string> {
   <ActionController
     v-model:activate="activate"
     :actionCallback="handleImportCsv"
-    progress-icon-name="group"
-    progress-title="Importing from CSV File"
+    progress-title="Import CSV File"
     :progress-text="progressText"
   />
 </template>

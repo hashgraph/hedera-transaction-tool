@@ -18,10 +18,10 @@ import {
   SignatureMap,
   Timestamp,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import { KeyType } from '../../types';
 
-import { proto } from '@hashgraph/proto';
+import { proto } from '@hiero-ledger/proto';
 
 import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
@@ -31,6 +31,7 @@ import { getNodeAddressBook } from '@renderer/services/sdkService';
 export * from './createTransactions';
 export * from './getData';
 export * from './validation';
+export * from './privilegedPayer';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;

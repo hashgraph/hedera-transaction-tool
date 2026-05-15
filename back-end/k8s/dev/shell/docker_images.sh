@@ -25,7 +25,9 @@ assert_docker_images() {
 
     local apps_path=$(realpath "$BASEDIR/../../apps")
     local typeorm_path=$(realpath "$BASEDIR/../../typeorm")
-    local context_path=$(realpath "$BASEDIR/../..")
+    # Build context is the repo root: the Dockerfiles COPY the root pnpm-lock.yaml,
+    # pnpm-workspace.yaml, and front-end/automation manifests.
+    local context_path=$(realpath "$BASEDIR/../../..")
 
     for name in $api_name $chain_name $notifications_name
     do

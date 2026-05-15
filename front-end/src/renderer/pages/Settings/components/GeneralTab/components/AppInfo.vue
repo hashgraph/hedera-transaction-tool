@@ -38,7 +38,7 @@ const itemValueClass = 'text-small overflow-hidden mt-1';
       <h4 :class="itemLabelClass">Version</h4>
       <div class="d-flex align-items-center gap-3">
         <p :class="itemValueClass" class="mb-0">
-          {{ version }}
+          <span data-testid="app-version-value">{{ version }}</span>
         </p>
         <div v-if="showUpgradeButton" class="d-flex align-items-center gap-3 ms-5">
           <button

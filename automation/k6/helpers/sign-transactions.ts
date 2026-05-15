@@ -1,7 +1,7 @@
 /**
  * Node.js helper script for pre-signing transactions
  *
- * This runs in Node.js (not k6) because k6 cannot use @hashgraph/sdk.
+ * This runs in Node.js (not k6) because k6 cannot use @hiero-ledger/sdk.
  * Run this before k6 tests to generate signature files.
  *
  * Usage:
@@ -14,7 +14,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'node:url';
-import { Transaction, PrivateKey } from '@hashgraph/sdk';
+import { Transaction, PrivateKey } from '@hiero-ledger/sdk';
 import type { SignatureMap } from '../src/types/api.types.js';
 
 /** Input for signing multiple transactions */

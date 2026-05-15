@@ -29,7 +29,7 @@ import {
   Transaction as SDKTransaction,
   Timestamp,
   Status,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 jest.mock('@app/common/utils');
 jest.mock('@nestjs/schedule', () => {

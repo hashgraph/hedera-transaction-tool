@@ -1,13 +1,9 @@
 import { BasePage } from './BasePage.js';
 import { TransactionPage } from './TransactionPage.js';
 import { Page } from '@playwright/test';
-import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { generateCSVFile } from '../utils/csvGenerator.js';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-import { getTransactionGroupsForTransactionId } from '../utils/databaseQueries.js';
+import { randomUUID } from 'node:crypto';
+import { generateCSVFile } from '../utils/files/csvGenerator.js';
+import { getTransactionGroupsForTransactionId } from '../utils/db/databaseQueries.js';
 import { OrganizationPage } from './OrganizationPage.js';
 
 export class GroupPage extends BasePage {
@@ -89,6 +85,10 @@ export class GroupPage extends BasePage {
     await this.click(this.signAndExecuteButtonSelector);
   }
 
+  async isSignAndExecuteButtonDisabled() {
+    return await this.isDisabled(this.signAndExecuteButtonSelector);
+  }
+
   async clickOnAddTransactionButton() {
     await this.click(this.addTransactionButtonSelector);
   }
@@ -134,7 +134,41 @@ export class GroupPage extends BasePage {
   }
 
   async clickAddToGroupButton() {
-    await this.click(this.addToGroupButtonSelector, 0);
+    // Poll across the LONG_TIMEOUT window: the button can be in the DOM but
+    // briefly disabled while the create-account form initializes, so a single
+    // SHORT_TIMEOUT sweep races the UI. Match waitForButtonEnabled and use
+    // SHORT_TIMEOUT as the poll interval.
+    const deadline = Date.now() + this.LONG_TIMEOUT;
+    let lastButtonCount = 0;
+
+    while (Date.now() < deadline) {
+      lastButtonCount = await this.getElement(this.addToGroupButtonSelector).count();
+
+      for (let index = 0; index < lastButtonCount; index++) {
+        const isVisible = await this.isElementVisible(
+          this.addToGroupButtonSelector,
+          index,
+          this.SHORT_TIMEOUT,
+        );
+        if (!isVisible) continue;
+
+        const isDisabled = await this.isDisabled(
+          this.addToGroupButtonSelector,
+          index,
+          this.SHORT_TIMEOUT,
+        );
+        if (isDisabled) continue;
+
+        await this.click(this.addToGroupButtonSelector, index, this.SHORT_TIMEOUT);
+        return;
+      }
+
+      await this.wait(this.SHORT_TIMEOUT);
+    }
+
+    throw new Error(
+      `No visible and enabled "${this.addToGroupButtonSelector}" button was found among ${lastButtonCount} element(s).`,
+    );
   }
 
   async getTransactionType(index: number) {
@@ -143,10 +177,6 @@ export class GroupPage extends BasePage {
 
   async getTransactionTimestamp(index: number, timeout?: number): Promise<string | null> {
     return await this.getText(this.transactionTimestampIndexSelector + index, null, timeout);
-  }
-
-  async getTransactionGroupDetailsId(index: number): Promise<string | null> {
-    return await this.getText(this.transactionGroupDetailsIdSelector, index);
   }
 
   async getAllTransactionTimestamps(
@@ -216,8 +246,10 @@ export class GroupPage extends BasePage {
     numberOfTransactions: number = 10,
     feePayerAccountId: string | null = null,
   ) {
-    const fileName = 'groupTransactions.csv';
-    await generateCSVFile({
+    // Unique filename per call to prevent parallel workers from racing on a
+    // shared `groupTransactions.csv` and uploading each other's CSV content.
+    const fileName = `groupTransactions-${randomUUID()}.csv`;
+    const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
       accountId: receiverAccountId,
@@ -225,10 +257,7 @@ export class GroupPage extends BasePage {
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
     });
-    await this.uploadFile(
-      this.importCsvButtonSelector,
-      path.resolve(__dirname, '..', 'data', fileName),
-    );
+    await this.uploadFile(this.importCsvButtonSelector, filePath);
     // Wait for all transactions to be loaded before proceeding
     const lastTxIndex = numberOfTransactions - 1;
     await this.waitForElementToBeVisible(this.transactionTypeIndexSelector + lastTxIndex);
@@ -240,8 +269,10 @@ export class GroupPage extends BasePage {
     numberOfTransactions: number = 10,
     feePayerAccountId: string | null = null,
   ) {
-    const fileName = 'groupTransactions.csv';
-    await generateCSVFile({
+    // Unique filename per call to prevent parallel workers from racing on a
+    // shared `groupTransactions.csv` and uploading each other's CSV content.
+    const fileName = `groupTransactions-${randomUUID()}.csv`;
+    const filePath = await generateCSVFile({
       senderAccount: fromAccountId,
       feePayerAccount: feePayerAccountId,
       accountId: receiverAccountId,
@@ -249,10 +280,7 @@ export class GroupPage extends BasePage {
       numberOfTransactions: numberOfTransactions,
       fileName: fileName,
     });
-    await this.uploadFile(
-      this.importCsvButtonSelector,
-      path.resolve(__dirname, '..', 'data', fileName),
-    );
+    await this.uploadFile(this.importCsvButtonSelector, filePath);
     return await this.getToastMessage(true);
   }
 
@@ -281,12 +309,25 @@ export class GroupPage extends BasePage {
     return this.isElementVisible(this.emptyTransactionTextSelector);
   }
 
+  async getEmptyTransactionText() {
+    return ((await this.getText(this.emptyTransactionTextSelector)) ?? '').trim();
+  }
+
   async clickOnDeleteAllButton() {
     await this.click(this.deleteAllButtonSelector);
   }
 
   async clickOnConfirmDeleteAllButton() {
     await this.click(this.confirmDeleteAllButtonSelector);
+  }
+
+  async clickOnCancelDeleteAllButton() {
+    const confirmButton = this.getElement(this.confirmDeleteAllButtonSelector);
+    await confirmButton.waitFor({ state: 'visible', timeout: this.LONG_TIMEOUT });
+    const modalContent = confirmButton
+      .locator('xpath=ancestor::*[contains(@class,"modal-content")]')
+      .first();
+    await modalContent.getByRole('button', { name: 'Cancel', exact: true }).click();
   }
 
   async clickOnConfirmGroupTransactionButton() {
@@ -363,16 +404,13 @@ export class GroupPage extends BasePage {
           // Wait for 1 second to allow details to load
           // await new Promise(resolve => setTimeout(resolve, 5000));
 
-          // Check if there's a "Next" button to move to the next transaction
-          // the main issue is the 'next' button is not visible as long as there is a 'previous' button. I think these really should be done differently anyway
-          // not really sure how this ever worked
-          const hasNext = await this.isElementVisible(
-            this.organizationPage.nextTransactionButtonSelector,
-          );
+          // Next cursor can be visible but disabled at collection boundaries.
+          const hasEnabledNext = (await this.organizationPage.isNextTransactionButtonVisible()) &&
+            (await this.organizationPage.isNextTransactionButtonEnabled());
 
-          if (hasNext) {
+          if (hasEnabledNext) {
             console.log(`User ${i} signed a transaction, moving to the next one.`);
-            await this.click(this.organizationPage.nextTransactionButtonSelector);
+            await this.organizationPage.clickOnNextTransactionButton();
           } else {
             console.log(`No more transactions to sign for user ${i}.`);
             break;

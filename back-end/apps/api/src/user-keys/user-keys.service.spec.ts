@@ -11,7 +11,7 @@ import { User, UserKey } from '@entities';
 import { UserKeysService } from './user-keys.service';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
-import { PrivateKey } from '@hashgraph/sdk';
+import { PrivateKey } from '@hiero-ledger/sdk';
 
 jest.mock('@app/common/utils');
 describe('UserKeysService', () => {

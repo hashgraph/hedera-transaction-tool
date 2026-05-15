@@ -1,8 +1,8 @@
 services:
   migration:
     build:
-      context: .
-      dockerfile: ./typeorm/Dockerfile
+      context: ..
+      dockerfile: back-end/typeorm/Dockerfile
     env_file:
       - ./typeorm/.env
     depends_on:
@@ -11,8 +11,8 @@ services:
     restart: "no"  # Run once and exit
   api:
     build:
-      context: .
-      dockerfile: ./apps/api/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/api/Dockerfile
       target: development
     command: pnpm start:dev api
     env_file:
@@ -31,8 +31,8 @@ services:
     restart: always
   chain:
     build:
-      context: .
-      dockerfile: ./apps/chain/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/chain/Dockerfile
       target: development
     command: pnpm start:dev chain
     env_file:
@@ -49,8 +49,8 @@ services:
     restart: always
   notifications:
     build:
-      context: .
-      dockerfile: ./apps/notifications/Dockerfile
+      context: ..
+      dockerfile: back-end/apps/notifications/Dockerfile
       target: development
     command: pnpm start:dev notifications
     env_file:
@@ -112,8 +112,9 @@ services:
     depends_on:
       - database
   redis:
-    build: ./redis
+    image: redis
     container_name: cache
+    command: redis-server --notify-keyspace-events Ex
     ports:
       - "6380:6379"
     volumes:

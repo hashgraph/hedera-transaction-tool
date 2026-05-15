@@ -2,16 +2,15 @@
 import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
-import { FileCreateTransaction, Transaction } from '@hashgraph/sdk';
-
-import { TRANSACTION_MAX_SIZE } from '@shared/constants';
+import { FileCreateTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { getMaxTransactionSizeForTransaction } from '@renderer/utils/sdk/privilegedPayer';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Constants */
 const SIZE_BUFFER_BYTES = 200;
@@ -21,7 +20,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject()
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
@@ -84,8 +83,10 @@ function validateSignableInPersonal(request: BaseRequest) {
 
 function validateBigFile(transaction: FileCreateTransaction) {
   const size = transaction.toBytes().length;
+  // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit.
+  const maxSize = getMaxTransactionSizeForTransaction(transaction);
 
-  if (size <= TRANSACTION_MAX_SIZE - SIZE_BUFFER_BYTES) {
+  if (size <= maxSize - SIZE_BUFFER_BYTES) {
     return;
   }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 
-import { Hbar } from '@hashgraph/sdk';
+import { Hbar } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -17,6 +17,8 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import SummaryItem from './SummaryItem.vue';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+
 /* Props */
 defineProps<{
   importedKeysCount: number;
@@ -31,13 +33,18 @@ const user = useUserStore();
 
 /* Composables */
 const router = useRouter();
+const { performVersionCheck } = useVersionCheck();
 
 /* State */
 const recoveryPhraseItemRef = ref<HTMLElement | null>(null);
 
 /* Handlers */
-const handleFinishMigration = () => {
-  router.push({ name: 'settingsKeys' });
+const handleFinishMigration = async () => {
+  await router.push({ name: 'settingsKeys' });
+  // Now fully out of migration — check for optional updates.
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    performVersionCheck(user.selectedOrganization.serverUrl);
+  }
 };
 
 const handleCopy = (event: ClipboardEvent) => {

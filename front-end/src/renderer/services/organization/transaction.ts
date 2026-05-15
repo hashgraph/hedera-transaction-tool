@@ -1,6 +1,6 @@
 import type { Organization } from '@prisma/client';
-import type { TransactionId } from '@hashgraph/sdk';
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import type { TransactionId } from '@hiero-ledger/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import type { LoggedInOrganization, SignatureItem } from '@renderer/types';
 import type {
   ISignatureImport,
@@ -153,8 +153,8 @@ export const importSignatures = async (
 
 /* Get if user should approve a transaction */
 export const getUserShouldApprove = async (
-  _serverUrl: string, // eslint-disable-line @typescript-eslint/no-unused-vars
-  _transactionId: number, // eslint-disable-line @typescript-eslint/no-unused-vars
+  _serverUrl: string,
+  _transactionId: number,
 ): Promise<boolean> =>
   commonRequestHandler(async () => {
     //TODO Approve is not implemented yet, and doing it this way is not correct

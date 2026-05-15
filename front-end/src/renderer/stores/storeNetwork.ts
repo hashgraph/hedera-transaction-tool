@@ -5,7 +5,7 @@ import type { Network, NetworkExchangeRateSetResponse } from '@shared/interfaces
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import { defineStore } from 'pinia';
 
-import { Client } from '@hashgraph/sdk';
+import { Client } from '@hiero-ledger/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 

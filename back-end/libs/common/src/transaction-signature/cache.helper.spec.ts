@@ -1,6 +1,6 @@
 import { DataSource } from 'typeorm';
 import { CacheHelper } from './cache.helper';
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 import { mockDeep } from 'jest-mock-extended';
 import { SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';

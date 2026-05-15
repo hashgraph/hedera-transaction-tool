@@ -5,9 +5,91 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
       interval: weekly
     versioning-strategy: increase
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 15
+    groups:
+      hiero-sdk:
+        patterns:
+          - "@hiero-ledger/*"
+      nestjs:
+        patterns:
+          - "@nestjs/*"
+          - "@nest-lab/*"
+      electron:
+        patterns:
+          - "electron"
+          - "electron-*"
+          - "vite-plugin-electron"
+          - "@electron-toolkit/*"
+      vue:
+        patterns:
+          - "vue"
+          - "vue-*"
+          - "@vue/*"
+          - "@vitejs/plugin-vue"
+          - "pinia"
+          - "@pinia/*"
+          - "@vueuse/*"
+          - "@vuepic/*"
+          - "eslint-plugin-vue"
+      prisma:
+        patterns:
+          - "@prisma/*"
+          - "prisma"
+          - "better-sqlite3"
+          - "@types/better-sqlite3"
+      redis-cache:
+        patterns:
+          - "ioredis"
+          - "redis"
+          - "cache-manager"
+          - "cache-manager-*"
+          - "murlock"
+      messaging:
+        patterns:
+          - "amqp-connection-manager"
+          - "amqplib"
+          - "nats"
+      testing:
+        patterns:
+          - "jest"
+          - "ts-jest"
+          - "jest-*"
+          - "jest-mock-extended"
+          - "testcontainers"
+          - "@testcontainers/*"
+          - "supertest"
+          - "@types/jest"
+          - "@types/supertest"
+          - "@hashgraph/hedera-local"
+          - "@nestjs/testing"
+          - "vitest"
+          - "@vitest/*"
+      playwright:
+        patterns:
+          - "playwright"
+          - "playwright-*"
+          - "playwright-core"
+          - "@playwright/*"
+      build-tools:
+        patterns:
+          - "vite"
+          - "vite-*"
+          - "typescript"
+          - "eslint"
+          - "eslint-*"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "prettier"
+          - "@nestjs/cli"
+          - "@nestjs/schematics"
+          - "webpack"
+          - "webpack-cli"
+          - "ts-loader"
+          - "tsx"
+          - "sass"

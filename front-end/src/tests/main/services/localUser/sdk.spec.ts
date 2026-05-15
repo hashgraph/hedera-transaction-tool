@@ -1,9 +1,9 @@
-import * as SDK from '@hashgraph/sdk';
+import * as SDK from '@hiero-ledger/sdk';
 import { getNodeAddressBook } from '@main/services/localUser/sdk';
 
-vi.mock('@hashgraph/sdk', async importOriginal => {
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
   return {
-    ...(await importOriginal<typeof import('@hashgraph/sdk')>()),
+    ...(await importOriginal<typeof import('@hiero-ledger/sdk')>()),
   };
 });
 
@@ -31,7 +31,7 @@ describe('SDK Service', () => {
       };
 
       vi.spyOn(SDK.Client, 'forNetwork').mockReturnValue(mockClient as any);
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => mockAddressBookQuery as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return mockAddressBookQuery; } as any);
 
       const result = await getNodeAddressBook(mockMirrorNetwork);
 

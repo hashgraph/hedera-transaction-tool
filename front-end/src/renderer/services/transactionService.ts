@@ -6,7 +6,7 @@ import {
   Transaction,
   TransactionReceipt,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
 

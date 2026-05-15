@@ -1,4 +1,4 @@
-import { KeyList } from '@hashgraph/sdk';
+import { KeyList } from '@hiero-ledger/sdk';
 
 import { commonIPCHandler, encodeKey } from '@renderer/utils';
 

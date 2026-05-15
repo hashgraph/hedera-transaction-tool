@@ -4,12 +4,12 @@ import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { ref, onMounted, computed } from 'vue';
-import { Hbar, Transfer } from '@hashgraph/sdk';
+import { Hbar, Transfer } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import { getAll } from '@renderer/services/accountsService';
 
 import { getAccountIdWithChecksum, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
@@ -42,7 +42,7 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
+const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);

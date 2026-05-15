@@ -10,7 +10,7 @@ import {
 import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
@@ -22,19 +22,24 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 
-import { getTransactionById, getTransactionGroupById } from '@renderer/services/organization';
+import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
 
-import { getTransactionPayerId, getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions';
 import {
-  computeSignatureKey,
+  getTransactionPayerId,
+  getTransactionType,
+  getTransactionValidStart,
+} from '@renderer/utils/sdk/transactions';
+import {
   getAccountIdWithChecksum,
   getAccountNicknameFromId,
+  getErrorMessage,
   getStatusFromCode,
   getUInt8ArrayFromBytesString,
   hexToUint8Array,
   isLoggedInOrganization,
   openTransactionInHashscan,
+  type SignatureAudit,
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
@@ -47,13 +52,15 @@ import txTypeComponentMapping from '@renderer/components/Transaction/Details/txT
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
+
+/* Injectables */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -65,11 +72,11 @@ const notifications = useNotificationsStore();
 const router = useRouter();
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransaction(); return; } // Legacy fallback
+  if (!parsed) { await fetchTransactionOnNotif(); return; } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
-    await fetchTransaction();
+    await fetchTransactionOnNotif();
     return;
   }
 
@@ -77,22 +84,20 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const currentGroupId = orgTransaction.value?.groupItem?.groupId;
   if (parsed.transactionIds.includes(currentId) ||
       (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
-    await fetchTransaction();
+    await fetchTransactionOnNotif();
   }
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const route = useRoute();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const orgTransaction = ref<ITransactionFull | null>(null);
 const localTransaction = ref<Transaction | null>(null);
 const sdkTransaction = ref<SDKTransaction | null>(null);
-const signatureKeyObject: Ref<Awaited<ReturnType<typeof computeSignatureKey>> | null> = ref(null);
+const signatureKeyObject: Ref<SignatureAudit | null> = ref(null);
 const feePayer = ref<string | null>(null);
 const feePayerNickname = ref<string | null>(null);
 const groupDescription = ref<string | undefined>(undefined);
@@ -155,9 +160,9 @@ async function fetchTransaction() {
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await getTransactionById(
-        user.selectedOrganization?.serverUrl || '',
+      orgTransaction.value = await appCache.backendTransaction.lookup(
         Number(id),
+        user.selectedOrganization?.serverUrl || '',
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
@@ -187,7 +192,6 @@ async function fetchTransaction() {
       }
     }
   } catch (error) {
-    router.back();
     throw error;
   }
 
@@ -216,17 +220,30 @@ async function fetchTransaction() {
   }
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    signatureKeyObject.value = await computeSignatureKey(
-      sdkTransaction.value,
-      network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      user.selectedOrganization,
-    );
+    try {
+      signatureKeyObject.value = await appCache.computeSignatureKey(
+        sdkTransaction.value,
+        user.selectedOrganization,
+        network.mirrorNodeBaseURL,
+      );
+    } catch (error) {
+      signatureKeyObject.value = null;
+      toastManager.error(getErrorMessage(error, 'Failed to compute signature key'));
+    }
   }
 
   feePayer.value = getTransactionPayerId(sdkTransaction.value);
+}
+
+async function fetchTransactionOnNotif(): Promise<void> {
+  // 1) Before calling fetchTransaction(), we clear transaction cache
+  const id = Number(formattedId.value);
+  if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
+    // We clear cache with strict==false to keep young data
+    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl, false);
+  }
+  // 2) Now fetch transaction
+  await fetchTransaction();
 }
 
 /* Hooks */

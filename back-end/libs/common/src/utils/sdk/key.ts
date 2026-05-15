@@ -1,5 +1,5 @@
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
+import { proto } from '@hiero-ledger/proto';
 
 export function flattenKeyList(keyList: Key): PublicKey[] {
   if (keyList instanceof PublicKey) {

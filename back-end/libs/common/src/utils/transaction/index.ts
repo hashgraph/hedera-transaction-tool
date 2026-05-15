@@ -1,4 +1,4 @@
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { EntityManager, In, Repository } from 'typeorm';
 

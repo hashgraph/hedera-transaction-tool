@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { HederaFile } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Client, FileId, FileInfo } from '@hashgraph/sdk';
-
-import { Prisma } from '@prisma/client';
+import { Client, FileId, FileInfo } from '@hiero-ledger/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
@@ -13,7 +12,6 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
@@ -30,6 +28,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
+import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -39,7 +38,6 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const createTooltips = useCreateTooltips();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 // const specialFiles: HederaFile[] = [
@@ -134,7 +132,7 @@ const isNicknameInputShown = ref(false);
 const selectedFileIds = ref<string[]>([]);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isDescriptionInputShown = ref(false);
-const descriptionInputRef = ref<HTMLTextAreaElement | null>(null);
+const descriptionInputRef = ref<InstanceType<typeof AppTextArea> | null>(null);
 const sorting = ref<{
   [key: string]: Prisma.SortOrder;
 }>({
@@ -214,11 +212,10 @@ const handleStartNicknameEdit = () => {
   if (!selectedFile.value) return;
 
   isNicknameInputShown.value = true;
-  descriptionInputRef.value?.blur();
+  descriptionInputRef.value?.inputRef?.blur();
 
   setTimeout(() => {
     if (nicknameInputRef.value) {
-      createTooltips();
       if (nicknameInputRef.value.inputRef) {
         nicknameInputRef.value.inputRef.value = selectedFile.value?.nickname || '';
       }
@@ -250,8 +247,10 @@ const handleStartDescriptionEdit = () => {
 
   setTimeout(() => {
     if (descriptionInputRef.value) {
-      createTooltips();
-      descriptionInputRef.value?.focus();
+      if (descriptionInputRef.value.inputRef) {
+        descriptionInputRef.value.inputRef.value = selectedFile.value?.description || '';
+        descriptionInputRef.value.inputRef.focus();
+      }
     }
   }, 50);
 };
@@ -265,7 +264,7 @@ const handleChangeDescription = async () => {
 
   if (selectedFile.value) {
     await update(selectedFile.value.file_id, user.personal.id, {
-      description: descriptionInputRef.value?.value,
+      description: descriptionInputRef.value?.inputRef?.value ?? null,
     });
     await fetchFiles();
   }
@@ -348,7 +347,9 @@ onMounted(async () => {
 
 /* Watchers */
 watch(files, newFiles => {
-  selectedFile.value = newFiles.find(f => f.file_id === selectedFile.value?.file_id) || newFiles[0];
+  selectedFile.value =
+    newFiles.find(f => f.file_id === selectedFile.value?.file_id) || newFiles[0] || null;
+  syncSelectedFileDisplayContent();
 });
 </script>
 
@@ -440,6 +441,7 @@ watch(files, newFiles => {
               <AppButton
                 class="d-flex align-items-center text-dark-emphasis min-w-unset border-0 p-0"
                 data-bs-toggle="dropdown"
+                data-testid="button-sort-files"
                 ><i class="bi bi-arrow-down-up me-2"></i> Sort by</AppButton
               >
               <ul class="dropdown-menu text-small">
@@ -447,13 +449,15 @@ watch(files, newFiles => {
                   class="dropdown-item"
                   :selected="sorting.file_id === 'asc' ? true : undefined"
                   @click="handleSortFiles('file_id', 'asc')"
+                  data-testid="menu-sort-file-id-asc"
                 >
                   File ID Asc
                 </li>
                 <li
                   class="dropdown-item"
-                  :selected="sorting.account_id === 'desc' ? true : undefined"
+                  :selected="sorting.file_id === 'desc' ? true : undefined"
                   @click="handleSortFiles('file_id', 'desc')"
+                  data-testid="menu-sort-file-id-desc"
                 >
                   File ID Dsc
                 </li>
@@ -461,6 +465,7 @@ watch(files, newFiles => {
                   class="dropdown-item"
                   :selected="sorting.nickname === 'asc' ? true : undefined"
                   @click="handleSortFiles('nickname', 'asc')"
+                  data-testid="menu-sort-file-nickname-asc"
                 >
                   Nickname A-Z
                 </li>
@@ -468,6 +473,7 @@ watch(files, newFiles => {
                   class="dropdown-item"
                   :selected="sorting.nickname === 'desc' ? true : undefined"
                   @click="handleSortFiles('nickname', 'desc')"
+                  data-testid="menu-sort-file-nickname-desc"
                 >
                   Nickname Z-A
                 </li>
@@ -475,6 +481,7 @@ watch(files, newFiles => {
                   class="dropdown-item"
                   :selected="sorting.created_at === 'asc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'asc')"
+                  data-testid="menu-sort-file-date-added-asc"
                 >
                   Date Added Asc
                 </li>
@@ -482,6 +489,7 @@ watch(files, newFiles => {
                   class="dropdown-item"
                   :selected="sorting.created_at === 'desc' ? true : undefined"
                   @click="handleSortFiles('created_at', 'desc')"
+                  data-testid="menu-sort-file-date-added-desc"
                 >
                   Date Added Dsc
                 </li>
@@ -542,7 +550,12 @@ watch(files, newFiles => {
                   }"
                   @click="handleSelectFile(file.file_id)"
                 >
-                  <p class="text-small text-semi-bold overflow-hidden">{{ file.nickname }}</p>
+                  <p
+                    class="text-small text-semi-bold overflow-hidden"
+                    :data-testid="'p-file-nickname-' + index"
+                  >
+                    {{ file.nickname }}
+                  </p>
                   <div class="d-flex justify-content-between align-items-center">
                     <p class="text-micro text-secondary mt-2" :data-testid="'p-file-id-' + index">
                       {{ file.file_id }}
@@ -564,6 +577,7 @@ watch(files, newFiles => {
                     @blur="handleChangeNickname"
                     :filled="true"
                     placeholder="Enter Nickname"
+                    data-testid="input-file-nickname"
                     data-bs-toggle="tooltip"
                     data-bs-placement="left"
                     data-bs-custom-class="wide-tooltip"
@@ -574,7 +588,10 @@ watch(files, newFiles => {
                     class="text-title text-semi-bold py-3"
                     @dblclick="handleStartNicknameEdit"
                   >
-                    {{ selectedFile?.nickname || 'None' }}
+                    <span
+                      data-testid="p-file-selected-nickname"
+                      v-text="selectedFile?.nickname || 'None'"
+                    ></span>
 
                     <!-- <span
                       v-if="!specialFilesIds.includes(selectedFile.file_id)"
@@ -583,6 +600,7 @@ watch(files, newFiles => {
                     ></span> -->
                     <span
                       class="bi bi-pencil-square text-primary text-main cursor-pointer ms-1"
+                      data-testid="span-edit-file-nickname"
                       @click="handleStartNicknameEdit"
                     ></span>
                   </p>
@@ -643,7 +661,10 @@ watch(files, newFiles => {
                 </div>
               </div>
 
-              <p class="text-secondary text-small text-semi-bold mt-3">
+              <p
+                class="text-secondary text-small text-semi-bold mt-3"
+                data-testid="p-file-last-viewed"
+              >
                 <template v-if="selectedFile.lastRefreshed">
                   Last Viewed:
                   <span>{{ selectedFile.lastRefreshed.toDateString() }}</span>
@@ -703,6 +724,7 @@ watch(files, newFiles => {
                     <AppButton
                       color="primary"
                       size="small"
+                      data-testid="button-view-stored-file"
                       @click="
                         isUserLoggedIn(user.personal) &&
                         showStoredFileInTemp(user.personal.id, selectedFile.file_id)
@@ -779,7 +801,7 @@ watch(files, newFiles => {
                 </div>
                 <template v-if="selectedFileInfo?.isDeleted">
                   <hr class="separator my-4" />
-                  <p class="text-danger">File is deleted</p>
+                  <p class="text-danger" data-testid="p-file-is-deleted">File is deleted</p>
                 </template>
 
                 <hr class="separator my-4" />
@@ -789,19 +811,18 @@ watch(files, newFiles => {
                     <div class="text-small text-semi-bold">Description</div>
                   </div>
                   <div class="col-7">
-                    <textarea
+                    <AppTextArea
                       v-if="isDescriptionInputShown"
                       ref="descriptionInputRef"
                       class="form-control is-fill"
                       rows="8"
-                      v-model="selectedFile.description"
                       @blur="handleChangeDescription"
+                      data-testid="textarea-file-description"
                       data-bs-toggle="tooltip"
                       data-bs-placement="left"
                       data-bs-custom-class="wide-tooltip"
                       data-bs-title="This information is not stored on the network"
-                    >
-                    </textarea>
+                    />
                     <p
                       v-if="!isDescriptionInputShown"
                       data-testid="p-file-description"
@@ -817,6 +838,7 @@ watch(files, newFiles => {
                       ></span> -->
                       <span
                         class="bi bi-pencil-square text-primary ms-1 cursor-pointer"
+                        data-testid="span-edit-file-description"
                         @click="handleStartDescriptionEdit"
                       ></span>
                     </p>
@@ -833,6 +855,7 @@ watch(files, newFiles => {
                       class="form-control is-fill"
                       rows="11"
                       disabled
+                      data-testid="textarea-file-content"
                     ></textarea>
                   </div>
                 </div>

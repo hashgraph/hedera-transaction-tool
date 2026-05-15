@@ -1,4 +1,4 @@
-import { AccountId, PrivateKey, PublicKey } from '@hashgraph/sdk';
+import { AccountId, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
 
 export const ecdsaDerPrefix = '3030020100300706052b8104000a04220420';
 export const ecdsaDerPrefix2 = '30540201010420';

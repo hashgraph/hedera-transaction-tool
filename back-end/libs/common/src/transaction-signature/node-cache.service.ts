@@ -1,7 +1,7 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DataSource } from 'typeorm';
-import { AccountId, PublicKey } from '@hashgraph/sdk';
+import { AccountId, PublicKey } from '@hiero-ledger/sdk';
 
 import {
   CachedNode,

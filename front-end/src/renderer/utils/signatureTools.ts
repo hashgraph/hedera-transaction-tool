@@ -1,4 +1,4 @@
-import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hashgraph/sdk';
+import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hiero-ledger/sdk';
 import { base64ToUint8Array } from '@renderer/utils/index.ts';
 import type { V1ImportCandidate } from '@shared/interfaces';
 

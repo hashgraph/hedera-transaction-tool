@@ -1,4 +1,4 @@
-import type { Transfer } from '@hashgraph/sdk';
+import type { Transfer } from '@hiero-ledger/sdk';
 
 import { stringifyHbarWithFont } from './index';
 

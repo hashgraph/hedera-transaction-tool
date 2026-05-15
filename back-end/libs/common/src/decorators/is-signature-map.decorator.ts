@@ -1,6 +1,6 @@
 import { BadRequestException } from '@nestjs/common';
 
-import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hashgraph/sdk';
+import { AccountId, PublicKey, SignatureMap, TransactionId } from '@hiero-ledger/sdk';
 
 import { decode, ErrorCodes, isAccountId, isTransactionId } from '@app/common';
 

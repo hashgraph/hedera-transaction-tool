@@ -5,7 +5,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -28,7 +28,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
-import { AccountByPublicKeyCache } from '@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
 import { getLatestClient } from '@renderer/utils/clientVersion.ts';
@@ -50,7 +50,7 @@ const network = useNetworkStore();
 const contacts = useContactsStore();
 
 /* Injected */
-const accountByPublicKeyCache = AccountByPublicKeyCache.inject();
+const accountByPublicKeyCache = AppCache.inject().mirrorAccountByPublicKey;
 
 /* State */
 const isNicknameInputShown = ref(false);

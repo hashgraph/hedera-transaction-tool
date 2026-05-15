@@ -1,4 +1,4 @@
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import { areKeysEqual, computeShortenedPublicKeyList } from '.';
 

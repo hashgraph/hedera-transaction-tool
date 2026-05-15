@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { ComplexKey } from '@prisma/client';
 
-import { ref, watch } from 'vue';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
-import { Key, KeyList, PublicKey } from '@hashgraph/sdk';
+import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { getComplexKey, updateComplexKey } from '@renderer/services/complexKeysService';
+import { getComplexKeys, updateComplexKey } from '@renderer/services/complexKeysService';
 
 import {
   isPublicKey,
@@ -27,7 +27,7 @@ import ComplexKeyModal from '@renderer/components/ComplexKey/ComplexKeyModal.vue
 import ComplexKeyAddPublicKeyModal from '@renderer/components/ComplexKey/ComplexKeyAddPublicKeyModal.vue';
 import ComplexKeySelectSavedKey from '@renderer/components/ComplexKey/ComplexKeySelectSavedKey.vue';
 import ComplexKeySaveKeyModal from '@renderer/components/ComplexKey/ComplexKeySaveKeyModal.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache';
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = withDefaults(
@@ -35,9 +35,11 @@ const props = withDefaults(
     modelKey: Key | null;
     isRequired?: boolean;
     label?: string;
+    noThreshold?: boolean;
   }>(),
   {
     label: 'Key',
+    noThreshold: false,
   },
 );
 
@@ -57,18 +59,37 @@ const user = useUserStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
 const currentTab = ref(Tabs.SIGNLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
 const selectedComplexKey = ref<ComplexKey | null>(null);
+const savedComplexKeys = ref<ComplexKey[]>([]);
 const complexKeyModalShown = ref(false);
 const addPublicKeyModalShown = ref(false);
 const selectSavedKeyModalShown = ref(false);
 const saveKeyListModalShown = ref(false);
+const updateInFlight = ref(false);
 const formattedKey = ref('');
 const identifier = ref<string | null | undefined>(null);
+
+/* Functions */
+const findSavedKeyMatching = (keyList: KeyList): ComplexKey | null => {
+  const encoded = encodeKey(keyList).toString();
+  return savedComplexKeys.value.find(k => k.protobufEncoded === encoded) ?? null;
+};
+
+const loadSavedComplexKeys = async () => {
+  if (!ush.isUserLoggedIn(user.personal)) return;
+  try {
+    savedComplexKeys.value = await getComplexKeys(user.personal.id);
+  } catch (error) {
+    toastManager.error(
+      error instanceof Error ? error.message : 'Failed to load saved complex keys',
+    );
+  }
+};
 
 /* Handlers */
 const handleTabChange = (tab: Tabs) => {
@@ -109,6 +130,7 @@ const handleSaveKeyList = async (complexKey: ComplexKey) => {
   selectedComplexKey.value = complexKey;
   complexKeyModalShown.value = false;
   saveKeyListModalShown.value = false;
+  await loadSavedComplexKeys();
 };
 
 const handleEditComplexKey = () => {
@@ -116,12 +138,54 @@ const handleEditComplexKey = () => {
 };
 
 const handleComplexKeyUpdate = async (keyList: KeyList) => {
-  emit('update:modelKey', keyList);
+  if (!selectedComplexKey.value) {
+    emit('update:modelKey', keyList);
+    return;
+  }
+  if (updateInFlight.value) return;
 
-  if (selectedComplexKey.value) {
-    const keyListBytes = encodeKey(keyList);
-    selectedComplexKey.value = await updateComplexKey(selectedComplexKey.value.id, keyListBytes);
+  const keyListBytes = encodeKey(keyList);
+  const targetId = selectedComplexKey.value.id;
+  const initialIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+  const snapshot = initialIdx !== -1 ? savedComplexKeys.value[initialIdx] : null;
+  if (initialIdx !== -1) {
+    savedComplexKeys.value[initialIdx] = {
+      ...savedComplexKeys.value[initialIdx],
+      protobufEncoded: keyListBytes.toString(),
+    };
+  }
+
+  emit('update:modelKey', keyList);
+  updateInFlight.value = true;
+
+  try {
+    const updated = await updateComplexKey(targetId, keyListBytes);
+    selectedComplexKey.value = updated;
+    const successIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+    if (successIdx !== -1) {
+      savedComplexKeys.value[successIdx] = updated;
+    } else {
+      await loadSavedComplexKeys();
+    }
     toastManager.success('Key list updated successfully');
+  } catch (error) {
+    if (snapshot) {
+      const rejectIdx = savedComplexKeys.value.findIndex(k => k.id === targetId);
+      if (rejectIdx !== -1) {
+        savedComplexKeys.value[rejectIdx] = snapshot;
+      }
+      selectedComplexKey.value = snapshot;
+    }
+    toastManager.error(
+      error instanceof Error ? error.message : 'Failed to update complex key',
+    );
+  } finally {
+    // Hold updateInFlight through one tick so the pre-flush watcher of
+    // [props.modelKey, savedComplexKeys] (below) — which assigns selectedComplexKey
+    // from findSavedKeyMatching — fires while the guard is still on and bails out.
+    // If that watcher is ever switched to flush: 'post', this invariant breaks.
+    await nextTick();
+    updateInFlight.value = false;
   }
 };
 
@@ -147,7 +211,7 @@ watch(currentTab, tab => {
 watch(
   () => props.modelKey,
   async newKey => {
-    if (newKey && newKey instanceof PublicKey && true) {
+    if (newKey && newKey instanceof PublicKey) {
       const formatted = await formatPublicKey(newKey.toStringRaw(), publicKeyOwnerCache);
       formattedKey.value = formatted;
       identifier.value = extractIdentifier(formatted)?.identifier;
@@ -156,20 +220,31 @@ watch(
   { immediate: true },
 );
 
-watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) => {
-  if (!ush.isUserLoggedIn(user.personal)) {
-    throw new Error('User is not logged in');
-  }
+watch([() => props.modelKey, publicKeyInputRef], ([newKey, newInputRef]) => {
+  if (!ush.isUserLoggedIn(user.personal)) return;
 
   if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
   } else if (newKey instanceof KeyList) {
-    selectedComplexKey.value = (await getComplexKey(user.personal.id, newKey)) || null;
     currentTab.value = Tabs.COMPLEX;
   } else if (newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = '';
   }
 });
+
+watch([() => props.modelKey, savedComplexKeys], ([newKey]) => {
+  if (updateInFlight.value) return;
+  if (newKey instanceof KeyList) {
+    selectedComplexKey.value = findSavedKeyMatching(newKey);
+  }
+});
+
+watch(selectSavedKeyModalShown, open => {
+  if (!open) loadSavedComplexKeys();
+});
+
+/* Hooks */
+onMounted(loadSavedComplexKeys);
 </script>
 <template>
   <div class="border rounded p-4">
@@ -224,6 +299,8 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           :model-key="modelKey"
           @update:model-key="handleComplexKeyUpdate"
           :on-save-complex-key="selectedComplexKey ? undefined : handleSaveComplexKeyButtonClick"
+          :no-threshold="noThreshold"
+          :saved-complex-keys="savedComplexKeys"
         >
           <ComplexKeySaveKeyModal
             v-if="saveKeyListModalShown && modelKey instanceof KeyList && true"
@@ -270,6 +347,7 @@ watch([() => props.modelKey, publicKeyInputRef], async ([newKey, newInputRef]) =
           v-if="selectSavedKeyModalShown"
           v-model:show="selectSavedKeyModalShown"
           :on-key-list-select="handleSelectSavedComplexKey"
+          :no-threshold="noThreshold"
         />
       </template>
     </div>

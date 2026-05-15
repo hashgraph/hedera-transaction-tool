@@ -16,6 +16,21 @@ import { roomKeys } from './helpers';
 
 jest.mock('./middlewares/auth-websocket.middleware');
 jest.mock('./middlewares/frontend-version-websocket.middleware');
+jest.mock('ioredis', () => {
+  class MockRedis {
+    subscribe = jest.fn();
+    on = jest.fn();
+    disconnect = jest.fn();
+    set = jest.fn();
+    get = jest.fn();
+    del = jest.fn();
+    rpush = jest.fn();
+    lrange = jest.fn().mockResolvedValue([]);
+    pexpire = jest.fn();
+    keys = jest.fn().mockResolvedValue([]);
+  }
+  return { Redis: MockRedis };
+});
 
 describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;

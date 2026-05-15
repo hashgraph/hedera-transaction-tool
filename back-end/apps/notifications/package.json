@@ -1,6 +1,6 @@
 {
   "name": "@back-end/notifications",
-  "version": "0.28.0-SNAPSHOT",
+  "version": "0.31.0-SNAPSHOT",
   "description": "",
   "author": "",
   "main": "index.js",
@@ -16,10 +16,10 @@
   },
   "dependencies": {
     "@socket.io/redis-streams-adapter": "0.3.1",
-    "nodemailer": "8.0.4",
+    "nodemailer": "8.0.7",
     "socket.io": "4.8.3"
   },
   "devDependencies": {
-    "@types/nodemailer": "7.0.11"
+    "@types/nodemailer": "8.0.0"
   }
 }

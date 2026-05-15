@@ -18,7 +18,7 @@ import {
 } from '@main/services/localUser/transactions';
 
 import { safeStorage } from 'electron';
-import * as SDK from '@hashgraph/sdk';
+import * as SDK from '@hiero-ledger/sdk';
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { showContentInTemp } from '@main/services/localUser/files';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
@@ -36,9 +36,9 @@ vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
 vi.mock('electron', () => ({ safeStorage: { decryptString: vi.fn() } }));
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('@main/db/prisma');
-vi.mock('@hashgraph/sdk', async importOriginal => {
+vi.mock('@hiero-ledger/sdk', async importOriginal => {
   return {
-    ...(await importOriginal<typeof import('@hashgraph/sdk')>()),
+    ...(await importOriginal<typeof import('@hiero-ledger/sdk')>()),
   };
 });
 vi.mock('@main/services/localUser/keyPairs', () => ({
@@ -98,7 +98,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
 
       const client = await getClientFromNetwork(mirrorNetwork);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -121,7 +121,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(() => addressBookQueryMock as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
 
       const client = await getClientFromNetwork(mirrorNetwork, ledgerId);
       expect(forNetwork).toHaveBeenCalledWith({});

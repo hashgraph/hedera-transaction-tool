@@ -29,34 +29,35 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: 22.12.0
-          cache: 'npm'
-          cache-dependency-path: |
-            front-end/pnpm-lock.yaml
-
       - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
 
-      - name: Install front-end Dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24.15.0
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Build Linux executable
-        run: pnpm run build:linux
+        run: pnpm run build:linux:e2e
         working-directory: front-end
 
       - name: Cache Build Artifacts
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
@@ -70,40 +71,38 @@ jobs:
       matrix:
         test-suite:
           - name: Local Basic
-            tag: '@local-basic'
+            grep: '@local-basic'
             soloRequired: false
             backendRequired: false
-          - name: Local Transactions
-            tag: '@local-transactions'
-            soloRequired: true
-            backendRequired: false
-          - name: Organization Basic
-            tag: '@organization-basic'
+            sharedEnvironment: true
+            workers: 2
+          - name: Shared E2E
+            grep: '@local-transactions|@organization-basic|@organization-advanced'
             soloRequired: true
             backendRequired: true
-          - name: Organization Advanced
-            tag: '@organization-advanced'
-            soloRequired: true
-            backendRequired: true
+            sharedEnvironment: true
+            workers: 8
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: 22.12.0
-          cache: 'npm'
-          cache-dependency-path: |
-            automation/pnpm-lock.yaml
-
       - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24.15.0
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
@@ -121,9 +120,8 @@ jobs:
           sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
           docker compose version
 
-      - name: Install Automation Dependencies
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: automation
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -232,6 +230,10 @@ jobs:
           sed -i "s/^MINIMUM_SUPPORTED_FRONTEND_VERSION=.*/MINIMUM_SUPPORTED_FRONTEND_VERSION=${FE_VERSION}/" apps/notifications/.env
 
           sed -i 's/^EMAIL_API_SECURE=.*/EMAIL_API_SECURE=false/' apps/notifications/.env
+          sed -i 's/^ANONYMOUS_MINUTE_LIMIT=.*/ANONYMOUS_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
 
           export COMPOSE_PARALLEL_LIMIT=4
 
@@ -360,7 +362,7 @@ jobs:
           fi
 
       - name: Restore Build Artifacts
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           fail-on-cache-miss: true
           path: front-end/release/linux-unpacked
@@ -376,13 +378,15 @@ jobs:
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           ENVIRONMENT: LOCALNET
+          PLAYWRIGHT_SHARED_ENV: ${{ matrix.test-suite.sharedEnvironment && 'true' || 'false' }}
+          PLAYWRIGHT_WORKERS: ${{ matrix.test-suite.workers }}
           ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'https://localhost:3001' || '' }}
           POSTGRES_HOST: ${{ matrix.test-suite.backendRequired && 'localhost' || '' }}
           POSTGRES_PORT: ${{ matrix.test-suite.backendRequired && '5432' || '' }}
           POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_USERNAME: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_PASSWORD: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
-        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.tag }}"
+        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.grep }}"
         working-directory: automation
 
       - name: Upload Playwright Report
@@ -390,7 +394,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
-          path: automation/reports/playwright
+          path: |
+            automation/reports/playwright
+            automation/reports/playwright-json
           if-no-files-found: warn
           retention-days: 3
 
@@ -467,27 +473,28 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@fe104658747b27e96e4f7e80cd0a94068e53901d # v2.16.1
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
-      - name: Set up Node.js
-        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
-        with:
-          node-version: 22.12.0
-          cache: 'npm'
-          cache-dependency-path: |
-            front-end/pnpm-lock.yaml
-
       - name: Install pnpm
-        run: npm install -g pnpm@9.15.3
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
 
-      - name: Install front-end Dependencies
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24.15.0
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - name: Install Dependencies
         run: pnpm install --frozen-lockfile
-        working-directory: front-end
 
       - name: Run Unit Tests
         run: pnpm run test:${{ matrix.test-suite.command }}

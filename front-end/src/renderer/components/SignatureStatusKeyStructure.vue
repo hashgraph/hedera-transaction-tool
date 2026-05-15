@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 
-import { KeyList, PublicKey } from '@hashgraph/sdk';
+import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 

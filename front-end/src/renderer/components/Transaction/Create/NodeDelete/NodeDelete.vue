@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref } from 'vue';
-import { NodeDeleteTransaction, Transaction } from '@hashgraph/sdk';
+import { NodeDeleteTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useNodeId from '@renderer/composables/useNodeId';

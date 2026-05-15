@@ -1,5 +1,5 @@
 import { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 import { randomUUID } from 'node:crypto';
 import { CacheKey, getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '../sql';
 

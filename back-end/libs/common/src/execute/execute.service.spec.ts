@@ -12,7 +12,7 @@ import {
   Transaction as SDKTransaction,
   Status,
   TransactionResponse,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   hasValidSignatureKey,

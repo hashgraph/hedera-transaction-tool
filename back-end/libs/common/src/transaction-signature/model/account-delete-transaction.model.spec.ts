@@ -1,4 +1,4 @@
-import { AccountDeleteTransaction, AccountId } from '@hashgraph/sdk';
+import { AccountDeleteTransaction, AccountId } from '@hiero-ledger/sdk';
 import { AccountDeleteTransactionModel } from './account-delete-transaction.model';
 
 describe('AccountDeleteTransactionModel', () => {

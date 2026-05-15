@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Key } from '@hashgraph/sdk';
+import type { Key } from '@hiero-ledger/sdk';
 import type { FileUpdateData } from '@renderer/utils/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -60,6 +60,7 @@ const columnClass = 'col-4 col-xxxl-3';
         @update:model-key="$emit('update:signatureKey', $event)"
         is-required
         label="Signature Key"
+        :no-threshold="true"
       />
     </div>
   </div>

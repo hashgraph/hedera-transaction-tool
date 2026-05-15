@@ -11,7 +11,7 @@
 
 import sqlite3 from 'sqlite3';
 import crypto from 'node:crypto';
-import { getDatabasePath } from '../../utils/databaseUtil.js';
+import { getDatabasePath } from '../../utils/db/databaseUtil.js';
 import { DATA_VOLUMES } from '../../k6/src/config/constants.js';
 
 // Use DATA_VOLUMES for SSOT

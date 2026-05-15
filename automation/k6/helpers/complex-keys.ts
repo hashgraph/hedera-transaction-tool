@@ -4,15 +4,15 @@
  * Generates Hedera-style nested threshold keys for performance testing.
  * The key structure mimics account 0.0.2's complex admin key pattern.
  *
- * This runs in Node.js (not k6) because k6 cannot use @hashgraph/sdk.
+ * This runs in Node.js (not k6) because k6 cannot use @hiero-ledgers/sdk.
  *
  * Usage:
  *   import { generateHederaStyleComplexKey } from './complex-keys';
  *   const { adminKey, allPrivateKeys } = generateHederaStyleComplexKey();
  */
 
-import { KeyList, PrivateKey, PublicKey } from '@hashgraph/sdk';
-import { proto } from '@hashgraph/proto';
+import { KeyList, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
+import { proto } from '@hiero-ledger/proto';
 
 /** Result from generating a complex threshold key */
 export interface ComplexKeyResult {

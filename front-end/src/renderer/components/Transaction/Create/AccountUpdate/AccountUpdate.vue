@@ -4,7 +4,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { AccountId, Transaction } from '@hashgraph/sdk';
+import { AccountId, Transaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -108,6 +108,9 @@ watch(
   },
 );
 watch(accountData.accountInfo, accountInfo => {
+  const isBrandNewDraft =
+    route.query.group === 'true' ? !route.query.groupIndex : !route.query.draftId;
+
   if (!accountInfo) {
     data.receiverSignatureRequired = false;
     data.maxAutomaticTokenAssociations = 0;
@@ -117,7 +120,7 @@ watch(accountData.accountInfo, accountInfo => {
     data.declineStakingReward = false;
     data.accountMemo = '';
     data.ownerKey = null;
-  } else if (!route.query.draftId) {
+  } else if (isBrandNewDraft) {
     data.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     data.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
     data.stakedAccountId = accountInfo.stakedAccountId?.toString() || '';

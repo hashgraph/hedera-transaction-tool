@@ -2,7 +2,7 @@ import type { TransactionApproverDto } from '@shared/interfaces';
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { KeyList, PublicKey, Transaction } from '@hashgraph/sdk';
+import { KeyList, PublicKey, Transaction } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';

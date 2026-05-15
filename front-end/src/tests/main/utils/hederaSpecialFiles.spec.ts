@@ -1,5 +1,5 @@
 import { expect } from 'vitest';
-import { FileId } from '@hashgraph/sdk';
+import { FileId } from '@hiero-ledger/sdk';
 
 import { JSONtoUInt8Array } from '@main/utils';
 

@@ -19,6 +19,7 @@ import { session } from 'electron';
 
 import initDatabase, { deleteDatabase } from '@main/db/init';
 import { setPrismaClient, createPrismaClient } from '@main/db/prisma';
+import { getSessionPartitionName } from '@main/utils/playwrightIsolation';
 
 export const userStorageFolderName = 'User Storage';
 export const getUserStorageFolderPath = (email: string) => `User Storage/${email}`;
@@ -39,6 +40,6 @@ export const resetDatabase = async () => {
 };
 
 export const resetData = async () => {
-  await session.fromPartition('persist:main')?.clearStorageData();
+  await session.fromPartition(getSessionPartitionName())?.clearStorageData();
   await resetDatabase();
 };

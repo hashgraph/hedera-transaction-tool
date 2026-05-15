@@ -16,7 +16,7 @@ import type {
 } from '@renderer/types';
 
 import { Prisma } from '@prisma/client';
-import { Mnemonic } from '@hashgraph/sdk';
+import { Mnemonic } from '@hiero-ledger/sdk';
 
 import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 

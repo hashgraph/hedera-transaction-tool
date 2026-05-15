@@ -1,4 +1,4 @@
-import type { AccountId, FileId, Hbar, Key, ServiceEndpoint } from '@hashgraph/sdk';
+import type { AccountId, FileId, Hbar, Key, ServiceEndpoint } from '@hiero-ledger/sdk';
 import { TimestampRange } from '../schemas';
 
 export interface NodeInfoParsed {
@@ -19,4 +19,6 @@ export interface NodeInfoParsed {
   stake_rewarded: Hbar | null;
   staking_period: TimestampRange | null;
   reward_rate_start: Hbar | null;
+  decline_reward: boolean | null;
+  grpc_web_proxy_endpoint: ServiceEndpoint | null;
 }

@@ -10,15 +10,13 @@ import {
 } from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
+import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
-import { SignatureMap, Transaction } from '@hashgraph/sdk';
 import { signTransaction } from '@renderer/services/transactionService.ts';
 import TransactionBrowser from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowser.vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { createLogger } from '@renderer/utils/logger';
 
 /* Props */
@@ -37,9 +35,7 @@ const network = useNetworkStore();
 const toastManager = ToastManager.inject();
 
 /* Injected */
-const accountInfoCache = AccountByIdCache.inject();
-const nodeInfoCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 const logger = createLogger('renderer.externalSigning.signTransactionFile');
 
 /* State */
@@ -71,9 +67,7 @@ async function handleSignAll() {
           sdkTransaction,
           user.publicKeys,
           network.getMirrorNodeREST(transactionFile.value!.network),
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
         );
 
         const sigMapBefore = SignatureMap._fromTransaction(sdkTransaction);
@@ -129,9 +123,7 @@ watch(
           transactionFile.value.items,
           user.publicKeys,
           network.getMirrorNodeREST(transactionFile.value.network),
-          accountInfoCache,
-          nodeInfoCache,
-          publicKeyOwnerCache,
+          appCache,
         );
 
         itemsToBeSigned.value = status.needSigning;
@@ -180,7 +172,6 @@ watch(
             <AppButton
               :disabled="itemsToBeSigned.length === 0"
               color="primary"
-              data-testid="button-sign-transaction-file"
               type="submit"
               >Sign and Update File
             </AppButton>
@@ -226,7 +217,11 @@ watch(
         <div class="text-center">
           <AppCustomIcon :name="'error'" style="height: 80px" />
         </div>
-        <h3 class="text-center text-title text-bold mt-4">No transaction to sign.</h3>
+        <h3
+          class="text-center text-title text-bold mt-4"
+        >
+          No transaction to sign.
+        </h3>
         <div
           v-if="transactionFile && transactionFile.items.length > 0"
           class="text-center text-secondary mt-4"

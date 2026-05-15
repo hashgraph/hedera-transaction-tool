@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
 import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
@@ -13,11 +13,9 @@ import {
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetwork from '@renderer/stores/storeNetwork.ts';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import SignGroupItemButton from '@renderer/pages/TransactionGroupDetails/SignGroupItemButton.vue';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import useRevealed from '@renderer/composables/useRevealed.ts';
+import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 
 /* Props */
 const props = defineProps<{
@@ -32,9 +30,7 @@ const emit = defineEmits<{
 }>();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -126,9 +122,7 @@ const updateSigningStatus = async (): Promise<void> => {
     canSign.value = await isSignableTransaction(
       tx,
       network.mirrorNodeBaseURL,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
+      appCache,
       user.selectedOrganization,
     );
   } catch {
@@ -167,16 +161,17 @@ useRevealed(container, () => {
     <!-- Column #5 : Actions -->
     <td class="text-center">
       <div class="d-flex justify-content-center gap-4">
-        <SignGroupItemButton
+        <SignSingleButton
+          :disabled="!canSign"
+          :refresh-transaction="true"
           :transaction-id="props.groupItem.transactionId"
-          :signing-enabled="canSign"
           @transactionSigned="payload => emit('transactionSigned', payload.transaction)"
         />
         <AppButton
-          type="button"
-          color="secondary"
-          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
           :data-testid="`button-group-transaction-${props.rowIndex}`"
+          color="secondary"
+          type="button"
+          @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
           ><span>Details</span>
         </AppButton>
       </div>

@@ -3,7 +3,7 @@ import type { CreateTransactionFunc } from '@renderer/components/Transaction/Cre
 import type { SystemUndeleteData } from '@renderer/utils/sdk';
 
 import { computed, reactive } from 'vue';
-import { Transaction } from '@hashgraph/sdk';
+import { Transaction } from '@hiero-ledger/sdk';
 
 import { isContractId, isFileId } from '@renderer/utils';
 import { createSystemUndeleteTransaction, getSystemUndeleteData } from '@renderer/utils/sdk';

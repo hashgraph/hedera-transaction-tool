@@ -1,4 +1,4 @@
-import { AccountId, FileId, Hbar, HbarUnit, TransactionId } from '@hashgraph/sdk';
+import { AccountId, FileId, Hbar, HbarUnit, TransactionId } from '@hiero-ledger/sdk';
 
 export * from './transaction';
 export * from './client';

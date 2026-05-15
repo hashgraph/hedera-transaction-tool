@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 
 export function NormalizePublicKey() {
   return Transform(({ value }) => {

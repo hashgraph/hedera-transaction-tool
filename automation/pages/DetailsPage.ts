@@ -8,6 +8,10 @@ export class DetailsPage extends BasePage {
   /* Selectors */
   viewContentsButtonSelector = 'button-view-file-contents';
   seeKeyDetailsButtonSelector = 'button-file-details-key';
+  linkFileButtonSelector = 'button-file-details-link-file';
+  fileAlreadyLinkedLabelSelector = 'p-file-details-file-already-linked';
+  linkAccountButtonSelector = 'button-account-details-link-account';
+  accountAlreadyLinkedLabelSelector = 'p-account-details-account-already-linked';
   //Text
   transactionCreatedAtIndexSelector = 'td-transaction-createdAt-';
   transactionStatusIndexSelector = 'td-transaction-status-';
@@ -41,37 +45,105 @@ export class DetailsPage extends BasePage {
   fileDetailsFileIdSelector = 'p-file-details-file-id';
   transactionDescriptionSelector = 'p-description-field';
   breadCrumbItemSelector = 'breadcrumb-item-';
+  historyTableHeaderSelector = 'css=.table-custom thead th span';
+  historyDescriptionSortButtonSelector = 'css=.table-custom thead th:nth-child(3) .table-sort-link';
+  historyDescriptionSortIconSelector = 'css=.table-custom thead th:nth-child(3) .table-sort-link i';
+  firstHistoryDetailsButtonSelector = 'button-transaction-details-0';
+  transactionStatusBadgeIndexSelector =
+    'css=[data-testid="td-transaction-status-{index}"] span.badge';
+  accountAlreadyLinkedTextSelector = 'text=Account already linked';
+  historyRowsSelector = 'css=.table-custom tbody tr';
 
   constructor(window: Page) {
     super(window);
   }
 
   async clickOnFirstTransactionDetailsButton() {
-    await this.click(this.transactionDetailsButtonIndexSelector + '0');
+    await this.click(this.firstHistoryDetailsButtonSelector, null, this.LONG_TIMEOUT);
   }
 
-  async getFirstTransactionCreated() {
-    return await this.getText(this.transactionCreatedAtIndexSelector + '0');
+  async getFirstTransactionCreated(index = 0) {
+    return await this.getText(this.transactionCreatedAtIndexSelector + index.toString());
   }
 
-  async getFirstTransactionStatus() {
-    return await this.getText(this.transactionStatusIndexSelector + '0');
+  async getFirstTransactionStatus(index = 0) {
+    return await this.getText(this.transactionStatusIndexSelector + index.toString());
   }
 
-  async getFirstTransactionType() {
-    return await this.getText(this.transactionTypeIndexSelector + '0');
+  async getFirstTransactionType(index = 0) {
+    return await this.getText(this.transactionTypeIndexSelector + index.toString());
   }
 
-  async getFirstTransactionDescription() {
-    return await this.getText(this.transactionDescriptionIndexSelector + '0');
+  async getFirstTransactionDescription(index = 0) {
+    return await this.getText(this.transactionDescriptionIndexSelector + index.toString());
   }
 
-  async getFirstTransactionId() {
-    return await this.getText(this.transactionIdIndexSelector + '0');
+  async getHistoryTableHeaderTexts() {
+    const headers = await this.getText(this.historyTableHeaderSelector);
+    return (headers ?? '').split(',').map(header => header.trim());
   }
 
-  async isTransactionDetailsButtonVisible() {
-    return this.isElementVisible(this.transactionDetailsButtonIndexSelector + '0');
+  async sortHistoryByDescription() {
+    await this.click(this.historyDescriptionSortButtonSelector, null, this.LONG_TIMEOUT);
+  }
+
+  async waitForHistoryDescriptionSortDirection(direction: 'asc' | 'desc') {
+    const expectedClass = direction === 'asc' ? 'bi-arrow-up-short' : 'bi-arrow-down-short';
+    await expect
+      .poll(() =>
+        this.getAttributeValue(
+          this.historyDescriptionSortIconSelector,
+          'class',
+          null,
+          this.SHORT_TIMEOUT,
+        ),
+      )
+      .toContain(expectedClass);
+  }
+
+  async getTransactionStatusBadgeClass(index = 0) {
+    return await this.getAttributeValue(
+      this.getTransactionStatusBadgeSelector(index),
+      'class',
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async isTransactionStatusBadgeSuccess(index = 0) {
+    const className = await this.getTransactionStatusBadgeClass(index);
+    return className?.includes('bg-success') === true && !className.includes('bg-danger');
+  }
+
+  async isTransactionStatusBadgeDanger(index = 0) {
+    const className = await this.getTransactionStatusBadgeClass(index);
+    return className?.includes('bg-danger') === true;
+  }
+
+  async isTransactionStatusBadgeDangerForTransaction(transactionId: string) {
+    const rowCount = await this.getHistoryRowCount();
+
+    for (let index = 0; index < rowCount; index++) {
+      const currentTransactionId = await this.getText(
+        this.transactionIdIndexSelector + index,
+        null,
+        this.SHORT_TIMEOUT,
+      );
+
+      if (currentTransactionId && transactionId.includes(currentTransactionId)) {
+        return await this.isTransactionStatusBadgeDanger(index);
+      }
+    }
+
+    return false;
+  }
+
+  async getFirstTransactionId(index = 0) {
+    return await this.getText(this.transactionIdIndexSelector + index.toString());
+  }
+
+  async isTransactionDetailsButtonVisible(index = 0) {
+    return this.isElementVisible(this.transactionDetailsButtonIndexSelector + index.toString());
   }
 
   async getTransactionDetailsType() {
@@ -174,6 +246,42 @@ export class DetailsPage extends BasePage {
     return await this.isElementVisible(this.seeKeyDetailsButtonSelector);
   }
 
+  async isLinkFileButtonVisible() {
+    return await this.isElementVisible(this.linkFileButtonSelector);
+  }
+
+  async clickOnLinkFileButton() {
+    await this.click(this.linkFileButtonSelector);
+  }
+
+  async isFileAlreadyLinkedLabelVisible() {
+    if (await this.isElementVisible(this.fileAlreadyLinkedLabelSelector)) {
+      return true;
+    }
+
+    return await this.isElementVisible('text=File already linked', null, this.LONG_TIMEOUT);
+  }
+
+  async isLinkAccountButtonVisible() {
+    return await this.isElementVisible(this.linkAccountButtonSelector);
+  }
+
+  async clickOnLinkAccountButton() {
+    await this.click(this.linkAccountButtonSelector);
+  }
+
+  async isAccountAlreadyLinkedLabelVisible() {
+    if (await this.isElementVisible(this.accountAlreadyLinkedLabelSelector)) {
+      return true;
+    }
+
+    return await this.isElementVisible(
+      this.accountAlreadyLinkedTextSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
   async getFileDetailsExpirationTime() {
     return await this.getText(this.fileDetailsExpirationTimeSelector);
   }
@@ -186,25 +294,26 @@ export class DetailsPage extends BasePage {
     expectedId: string,
     expectedType: string,
     expectedDescription: string | null = null,
+    index = 0,
   ) {
-    const transactionId = await this.getFirstTransactionId();
+    const transactionId = await this.getFirstTransactionId(index);
     expect(expectedId.toString()).toContain(transactionId);
 
-    const transactionType = await this.getFirstTransactionType();
+    const transactionType = await this.getFirstTransactionType(index);
     expect(transactionType).toBe(expectedType);
 
     if (expectedDescription) {
-      const transactionDescription = await this.getFirstTransactionDescription();
+      const transactionDescription = await this.getFirstTransactionDescription(index);
       expect(transactionDescription).toBe(expectedDescription);
     }
 
-    const transactionStatus = await this.getFirstTransactionStatus();
+    const transactionStatus = await this.getFirstTransactionStatus(index);
     expect(transactionStatus).toBe('SUCCESS');
 
-    const transactionCreatedAt = await this.getFirstTransactionCreated();
+    const transactionCreatedAt = await this.getFirstTransactionCreated(index);
     expect(transactionCreatedAt).toBeTruthy();
 
-    const isTransactionDetailsButtonVisible = await this.isTransactionDetailsButtonVisible();
+    const isTransactionDetailsButtonVisible = await this.isTransactionDetailsButtonVisible(index);
     expect(isTransactionDetailsButtonVisible).toBe(true);
   }
 
@@ -240,7 +349,29 @@ export class DetailsPage extends BasePage {
     return await this.getText(this.transactionDescriptionSelector);
   }
 
+  async getHistoryDescriptionRowIndex(expectedDescription: string) {
+    const rowCount = await this.getHistoryRowCount();
+
+    for (let index = 0; index < rowCount; index++) {
+      const currentDescription = await this.getFirstTransactionDescription(index);
+
+      if (currentDescription?.trim() === expectedDescription) {
+        return index;
+      }
+    }
+
+    return -1;
+  }
+
   async getBreadCrumbItem(index: number) {
-    return this.window.getByTestId(`${this.breadCrumbItemSelector}${index}`);
+    return this.getElement(`${this.breadCrumbItemSelector}${index}`);
+  }
+
+  private async getHistoryRowCount() {
+    return await this.getElement(this.historyRowsSelector).count();
+  }
+
+  private getTransactionStatusBadgeSelector(index: number) {
+    return this.transactionStatusBadgeIndexSelector.replace('{index}', index.toString());
   }
 }

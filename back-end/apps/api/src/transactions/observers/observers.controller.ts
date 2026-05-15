@@ -25,7 +25,7 @@ import {
 import { ObserversService } from './observers.service';
 
 @ApiTags('Transaction Observers')
-@Controller('transactions/:transactionId?/observers')
+@Controller('transactions{/:transactionId}/observers')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {

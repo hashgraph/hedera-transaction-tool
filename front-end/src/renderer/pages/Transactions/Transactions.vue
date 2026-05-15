@@ -49,9 +49,10 @@ import ExportTransactionsModal from '@renderer/components/ExternalSigning/Export
 import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
-import { SignatureMap, Transaction } from '@hashgraph/sdk';
-import { getTransactionById, importSignatures } from '@renderer/services/organization';
+import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
+import { importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const IMPORT_FORMATS = [
   { name: 'All Tx Tool files', extensions: ['tx2', 'zip'] },
@@ -59,13 +60,16 @@ const IMPORT_FORMATS = [
   { name: 'ZIP (Tx Tool 1.0)', extensions: ['zip'] },
 ];
 
+/* Injected */
+const toastManager = ToastManager.inject();
+const transactionCache = AppCache.inject().backendTransaction;
+
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
 const router = useRouter();
 const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -212,6 +216,7 @@ async function handleTransactionFileAction(action: string) {
 /* Functions */
 async function importSignaturesFromV2File(filePath: string) {
   assertIsLoggedInOrganization(user.selectedOrganization);
+  const serverUrl = user.selectedOrganization.serverUrl;
 
   const transactionFile = await readTransactionFile(filePath);
   const importInputs: ISignatureImport[] = [];
@@ -225,10 +230,7 @@ async function importSignaturesFromV2File(filePath: string) {
 
     const transactionId = sdkTransaction.transactionId;
     try {
-      const transaction = await getTransactionById(
-        user.selectedOrganization.serverUrl,
-        transactionId!,
-      );
+      const transaction = await transactionCache.lookup(transactionId!.toString(), serverUrl);
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
@@ -264,6 +266,11 @@ async function importSignaturesFromV2File(filePath: string) {
         `Successfully imported signatures for ${successfulImportCount} transaction${successfulImportCount > 1 ? 's' : ''}`,
       );
     }
+  }
+
+  for (const i of importInputs) {
+    // We forget cached data for transaction i.id
+    transactionCache.forget(i.id, serverUrl);
   }
 }
 

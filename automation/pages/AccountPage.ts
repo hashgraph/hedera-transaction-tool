@@ -1,7 +1,7 @@
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import { TransactionPage } from './TransactionPage.js';
-import { deleteAccountById } from '../utils/databaseQueries.js';
+import { deleteAccountById } from '../utils/db/databaseQueries.js';
 
 export class AccountPage extends BasePage {
   private readonly unlikedAccounts: string[]; // Store unlinked accounts
@@ -15,12 +15,10 @@ export class AccountPage extends BasePage {
 
   // Buttons
   editButtonSelector = 'button-edit-account';
-  removeButtonSelector = 'button-remove-account-card';
   removeMultipleButtonSelector = 'button-remove-multiple-accounts';
 
   /* Selectors */
   addNewButtonSelector = 'button-add-new-account';
-  createNewLinkSelector = 'link-create-new-account';
   addExistingLinkSelector = 'link-add-existing-account';
   accountsLinkSelector = 'button-menu-accounts';
   deleteFromNetworkLinkSelector = 'button-delete-from-network';
@@ -53,20 +51,12 @@ export class AccountPage extends BasePage {
     await this.click(this.editButtonSelector);
   }
 
-  async clickOnRemoveButton() {
-    await this.click(this.removeButtonSelector);
-  }
-
   async clickOnRemoveMultipleButton() {
     await this.click(this.removeMultipleButtonSelector);
   }
 
   async clickOnAddNewButton() {
     await this.click(this.addNewButtonSelector);
-  }
-
-  async clickOnCreateNewLink() {
-    await this.click(this.createNewLinkSelector);
   }
 
   async clickOnAddExistingLink() {

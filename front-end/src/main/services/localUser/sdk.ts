@@ -1,4 +1,4 @@
-import { AddressBookQuery, Client, FileId } from '@hashgraph/sdk';
+import { AddressBookQuery, Client, FileId } from '@hiero-ledger/sdk';
 
 export const getNodeAddressBook = async (mirrorNetwork: string) => {
   const client = Client.forNetwork({}).setMirrorNetwork(mirrorNetwork);

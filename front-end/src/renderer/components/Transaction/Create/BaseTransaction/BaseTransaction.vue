@@ -23,7 +23,7 @@ import {
   KeyList,
   Timestamp,
   Transaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -32,12 +32,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useLoader from '@renderer/composables/useLoader';
 
-import {
-  assertUserLoggedIn,
-  computeSignatureKey,
-  getErrorMessage,
-  isAccountId,
-} from '@renderer/utils';
+import { assertUserLoggedIn, getErrorMessage, isAccountId } from '@renderer/utils';
 import { getPropagationButtonLabel } from '@renderer/utils/transactions';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
@@ -50,14 +45,12 @@ import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransacti
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import useNextTransactionV2, {
   type TransactionNodeId,
 } from '@renderer/stores/storeNextTransactionV2.ts';
 import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
@@ -89,9 +82,7 @@ const payerData = useAccountId();
 const withLoader = useLoader();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 
 /* State */
 const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
@@ -136,7 +127,13 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
-    } else if (hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value as Transaction, now)) {
+    } else if (
+      hasStartTimestampChanged(
+        initialTransaction.value as Transaction,
+        transaction.value as Transaction,
+        now,
+      )
+    ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart and startTimestamp
@@ -186,6 +183,7 @@ const handleCreate = async () => {
     processable.payerId = payerData.accountId.value;
     processable.baseValidStart = data.validStart;
     processable.maxTransactionFee = data.maxTransactionFee as Hbar;
+    processable.description = description.value;
   }
 
   await withLoader(
@@ -313,15 +311,16 @@ function basePreCreateAssert() {
 }
 
 async function updateTransactionKey() {
-  const computedKeys = await computeSignatureKey(
-    transaction.value,
-    network.mirrorNodeBaseURL,
-    accountByIdCache,
-    nodeByIdCache,
-    publicKeyOwnerCache,
-    user.selectedOrganization,
-  );
-  transactionKey.value = new KeyList(computedKeys.signatureKeys);
+  try {
+    const computedKeys = await appCache.computeSignatureKey(
+      transaction.value,
+      user.selectedOrganization,
+      network.mirrorNodeBaseURL,
+    );
+    transactionKey.value = new KeyList(computedKeys.signatureKeys);
+  } catch {
+    transactionKey.value = new KeyList();
+  }
 }
 
 /* Hooks */

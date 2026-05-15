@@ -1,11 +1,12 @@
-import { generateTransactionExecutedContent, emailExecutedTransactionList } from './transaction-executed';
+import {
+  generateTransactionExecutedContent,
+  isSuccessStatusCode,
+} from './transaction-executed';
 import { Notification } from '@entities';
 
 jest.mock('@app/common/templates/layout', () => ({
-  emailCardRow: jest.fn((cells, index) => `<ROW index="${index}">${cells}</ROW>`),
-  emailCardTable: jest.fn((rows) => `<TABLE>${rows}</TABLE>`),
-  escapeHtml: jest.fn((str) => str),
   renderTransactionEmailLayout: jest.fn((title, body) => `<LAYOUT title="${title}">${body}</LAYOUT>`),
+  escapeHtml: jest.requireActual('@app/common/templates/layout').escapeHtml,
 }));
 
 jest.mock('@app/common/templates/index', () => ({
@@ -15,18 +16,12 @@ jest.mock('@app/common/templates/index', () => ({
   }),
 }));
 
-import {
-  emailCardRow,
-  emailCardTable,
-  escapeHtml,
-  renderTransactionEmailLayout,
-} from '@app/common/templates/layout';
-import { getNetworkString } from '@app/common/templates/index';
+import { renderTransactionEmailLayout } from '@app/common/templates/layout';
 
 const makeNotification = (overrides?: Partial<{
   transactionId: string;
   network: string;
-  statusCode: any;
+  statusCode: unknown;
 }>) =>
   ({
     additionalData: {
@@ -37,12 +32,9 @@ const makeNotification = (overrides?: Partial<{
   } as unknown as Notification);
 
 describe('transaction-executed templates', () => {
-
   beforeEach(() => {
     jest.clearAllMocks();
   });
-
-// ─── Empty input ──────────────────────────────────────────────────────────────
 
   describe('empty input', () => {
     it('returns empty string when called with no arguments', () => {
@@ -54,33 +46,6 @@ describe('transaction-executed templates', () => {
       expect(renderTransactionEmailLayout).not.toHaveBeenCalled();
     });
   });
-
-// ─── Singular vs plural copy ──────────────────────────────────────────────────
-
-  describe('singular vs plural intro text', () => {
-    it('uses singular copy for one notification', () => {
-      const result = generateTransactionExecutedContent(makeNotification());
-      expect(result).toContain('A transaction has completed');
-      expect(result).not.toContain('Multiple transactions');
-    });
-
-    it('uses plural copy for two notifications', () => {
-      const result = generateTransactionExecutedContent(makeNotification(), makeNotification());
-      expect(result).toContain('Multiple transactions have completed');
-      expect(result).not.toContain('A transaction has completed');
-    });
-
-    it('uses plural copy for three or more notifications', () => {
-      const result = generateTransactionExecutedContent(
-        makeNotification(),
-        makeNotification(),
-        makeNotification(),
-      );
-      expect(result).toContain('Multiple transactions have completed');
-    });
-  });
-
-// ─── Layout wiring ────────────────────────────────────────────────────────────
 
   describe('layout integration', () => {
     it('calls renderTransactionEmailLayout with correct title', () => {
@@ -95,97 +60,161 @@ describe('transaction-executed templates', () => {
       const result = generateTransactionExecutedContent(makeNotification());
       expect(result).toContain('<LAYOUT title="Transaction Executed">');
     });
+
+    it('uses the unified CTA text', () => {
+      const result = generateTransactionExecutedContent(makeNotification());
+      expect(result).toContain('View details in the Hedera Transaction Tool');
+    });
   });
 
-// ─── Transaction data mapping ─────────────────────────────────────────────────
-
-  describe('transaction data mapping', () => {
-    it('passes network through getNetworkString', () => {
-      generateTransactionExecutedContent(makeNotification({ network: 'testnet' }));
-      expect(getNetworkString).toHaveBeenCalledWith('testnet');
+  describe('isSuccessStatusCode', () => {
+    it.each([0, 22, 104, '0', '22', '104'])('treats %p as success', (code) => {
+      expect(isSuccessStatusCode(code)).toBe(true);
     });
 
+    it.each([1, 999, '999', 'FAILED', '', undefined, null, NaN])('treats %p as failure', (code) => {
+      expect(isSuccessStatusCode(code)).toBe(false);
+    });
+
+    it.each([true, false, [], [0], [22], {}, () => 22])(
+      'treats non-numeric/string input %p as failure',
+      (code) => {
+        expect(isSuccessStatusCode(code as unknown)).toBe(false);
+      },
+    );
+
+    it('treats numeric strings with non-digit characters as failure', () => {
+      expect(isSuccessStatusCode(' 22')).toBe(false);
+      expect(isSuccessStatusCode('22 ')).toBe(false);
+      expect(isSuccessStatusCode('22.0')).toBe(false);
+      expect(isSuccessStatusCode('-22')).toBe(false);
+    });
+
+    it('rejects numeric strings with leading zeros', () => {
+      expect(isSuccessStatusCode('022')).toBe(false);
+      expect(isSuccessStatusCode('00022')).toBe(false);
+      expect(isSuccessStatusCode('0000000000')).toBe(false);
+      expect(isSuccessStatusCode('0')).toBe(true);
+    });
+  });
+
+  describe('all successful', () => {
+    it('uses singular noun and bolded count for one successful notification', () => {
+      const result = generateTransactionExecutedContent(makeNotification({ statusCode: 22 }));
+      expect(result).toContain('<strong>1</strong> transaction executed successfully');
+      expect(result).not.toContain('failed');
+      expect(result).not.toContain('1 transactions');
+    });
+
+    it('uses plural noun and bolded count for multiple successes', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 22 }),
+        makeNotification({ statusCode: 0 }),
+        makeNotification({ statusCode: 104 }),
+      );
+      expect(result).toContain('<strong>3</strong> transactions executed successfully');
+      expect(result).not.toContain('failed');
+    });
+  });
+
+  describe('all failed', () => {
+    it('uses singular noun and bolded count for one failed notification', () => {
+      const result = generateTransactionExecutedContent(makeNotification({ statusCode: 999 }));
+      expect(result).toContain('<strong>1</strong> transaction failed to execute');
+      expect(result).not.toContain('successfully');
+      expect(result).not.toContain('1 transactions');
+    });
+
+    it('uses plural noun and bolded count for multiple failures', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 999 }),
+        makeNotification({ statusCode: 888 }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions failed to execute');
+      expect(result).not.toContain('successfully');
+    });
+
+    it('treats missing statusCode as failure', () => {
+      const result = generateTransactionExecutedContent(
+        { additionalData: {} } as unknown as Notification,
+      );
+      expect(result).toContain('<strong>1</strong> transaction failed to execute');
+    });
+  });
+
+  describe('mixed success and failure', () => {
+    it('renders both sentences with their own bolded counts', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 22 }),
+        makeNotification({ statusCode: 22 }),
+        makeNotification({ statusCode: 22 }),
+        makeNotification({ statusCode: 999 }),
+      );
+      expect(result).toContain('<strong>3</strong> transactions executed successfully');
+      expect(result).toContain('<strong>1</strong> transaction failed to execute');
+    });
+
+    it('disambiguates the 1 success + 1 failure case', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 22 }),
+        makeNotification({ statusCode: 999 }),
+      );
+      expect(result).toContain('<strong>1</strong> transaction executed successfully');
+      expect(result).toContain('<strong>1</strong> transaction failed to execute');
+    });
+  });
+
+  describe('network breakdown', () => {
+    it('renders a separate breakdown for success and failure sections', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 22, network: 'mainnet' }),
+        makeNotification({ statusCode: 22, network: 'mainnet' }),
+        makeNotification({ statusCode: 999, network: 'testnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Mainnet');
+      expect(result).toContain('<strong>1</strong> transaction on Testnet');
+    });
+
+    it('renders a multi-network breakdown within one section', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 22, network: 'mainnet' }),
+        makeNotification({ statusCode: 22, network: 'testnet' }),
+        makeNotification({ statusCode: 22, network: 'testnet' }),
+      );
+      expect(result).toContain('<strong>2</strong> transactions on Testnet');
+      expect(result).toContain('<strong>1</strong> transaction on Mainnet');
+    });
+
+    it('omits the breakdown paragraph for the success section when no network is present', () => {
+      const notification = {
+        additionalData: { statusCode: 22 },
+      } as unknown as Notification;
+      const result = generateTransactionExecutedContent(notification);
+      expect(result).toContain('<strong>1</strong> transaction executed successfully');
+      expect(result).not.toContain('on Mainnet');
+      expect(result).not.toContain('on Testnet');
+    });
+  });
+
+  describe('privacy', () => {
+    it('does not embed transactionId', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ transactionId: '0.0.777@1234567890.000' }),
+      );
+      expect(result).not.toContain('0.0.777@1234567890.000');
+    });
+
+    it('does not embed raw statusCode digits', () => {
+      const result = generateTransactionExecutedContent(
+        makeNotification({ statusCode: 987654321 }),
+      );
+      expect(result).not.toContain('987654321');
+    });
+  });
+
+  describe('robustness', () => {
     it('handles missing additionalData gracefully', () => {
       expect(() => generateTransactionExecutedContent({} as Notification)).not.toThrow();
-    });
-  });
-
-// ─── emailExecutedTransactionList ────────────────────────────────────────────
-
-  describe('emailExecutedTransactionList', () => {
-    it('wraps output in a card table', () => {
-      const result = emailExecutedTransactionList([{ transactionId: 'tx-1', network: 'Mainnet', statusCode: '22' }]);
-      expect(emailCardTable).toHaveBeenCalledTimes(1);
-      expect(result).toContain('<TABLE>');
-    });
-
-    it('calls emailCardRow for each transaction', () => {
-      emailExecutedTransactionList([
-        { transactionId: 'tx-1', network: 'Mainnet', statusCode: '22' },
-        { transactionId: 'tx-2', network: 'Testnet', statusCode: '999' },
-      ]);
-      expect(emailCardRow).toHaveBeenCalledTimes(2);
-    });
-
-    it('passes row index to emailCardRow', () => {
-      emailExecutedTransactionList([
-        { transactionId: 'tx-1', network: 'Mainnet', statusCode: '22' },
-        { transactionId: 'tx-2', network: 'Testnet', statusCode: '22' },
-      ]);
-      expect((emailCardRow as jest.Mock).mock.calls[0][1]).toBe(0);
-      expect((emailCardRow as jest.Mock).mock.calls[1][1]).toBe(1);
-    });
-
-    it('escapes transactionId', () => {
-      emailExecutedTransactionList([{ transactionId: '<b>xss</b>', network: 'Mainnet', statusCode: '22' }]);
-      expect(escapeHtml).toHaveBeenCalledWith('<b>xss</b>');
-    });
-
-    it('escapes network', () => {
-      emailExecutedTransactionList([{ transactionId: 'tx-1', network: '<b>bad</b>', statusCode: '22' }]);
-      expect(escapeHtml).toHaveBeenCalledWith('<b>bad</b>');
-    });
-
-    it('uses "UNKNOWN" as status when statusCode is undefined', () => {
-      emailExecutedTransactionList([{ transactionId: 'tx-1', network: 'Mainnet' }]);
-      expect(escapeHtml).toHaveBeenCalledWith('UNKNOWN');
-    });
-
-    it('handles empty transaction list', () => {
-      const result = emailExecutedTransactionList([]);
-      expect(emailCardTable).toHaveBeenCalledWith('');
-      expect(result).toContain('<TABLE>');
-    });
-
-    describe('status badge styles', () => {
-      const successCodes = ['0', '22', '104'];
-      successCodes.forEach(code => {
-        it(`applies success styles for statusCode "${code}"`, () => {
-          emailExecutedTransactionList([{ transactionId: 'tx', network: 'Mainnet', statusCode: code }]);
-          const cellsArg = (emailCardRow as jest.Mock).mock.calls[0][0];
-          expect(cellsArg).toContain('#2eb85c'); // success color
-          expect(cellsArg).not.toContain('#dc3545');
-        });
-      });
-
-      it('applies failure styles for an unrecognized numeric statusCode', () => {
-        emailExecutedTransactionList([{ transactionId: 'tx', network: 'Mainnet', statusCode: '999' }]);
-        const cellsArg = (emailCardRow as jest.Mock).mock.calls[0][0];
-        expect(cellsArg).toContain('#dc3545'); // failure color
-        expect(cellsArg).not.toContain('#2eb85c');
-      });
-
-      it('applies failure styles when statusCode is a non-numeric string', () => {
-        emailExecutedTransactionList([{ transactionId: 'tx', network: 'Mainnet', statusCode: 'FAILED' }]);
-        const cellsArg = (emailCardRow as jest.Mock).mock.calls[0][0];
-        expect(cellsArg).toContain('#dc3545');
-      });
-
-      it('applies failure styles when statusCode is "UNKNOWN"', () => {
-        emailExecutedTransactionList([{ transactionId: 'tx', network: 'Mainnet' }]);
-        const cellsArg = (emailCardRow as jest.Mock).mock.calls[0][0];
-        expect(cellsArg).toContain('#dc3545');
-      });
     });
   });
 });

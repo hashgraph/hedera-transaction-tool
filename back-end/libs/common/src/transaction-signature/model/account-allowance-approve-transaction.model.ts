@@ -1,4 +1,4 @@
-import { AccountAllowanceApproveTransaction } from '@hashgraph/sdk';
+import { AccountAllowanceApproveTransaction } from '@hiero-ledger/sdk';
 
 import { TransactionBaseModel } from './transaction-base.model';
 

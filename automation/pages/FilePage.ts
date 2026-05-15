@@ -7,22 +7,27 @@ export class FilePage extends BasePage {
   removeFileCardButtonSelector = 'button-remove-file-card';
   removeMultipleButtonSelector = 'button-remove-multiple-files';
   updateFileButtonSelector = 'button-update-file';
-
   /* Selectors */
   appendFileButtonSelector = 'button-append-file';
   readFileButtonSelector = 'button-read-file';
   addNewButtonSelector = 'button-add-new-file';
-  createNewLinkSelector = 'link-create-new-file';
-  updateLinkSelector = 'link-update-file';
-  appendLinkSelector = 'link-append-file';
-  readLinkSelector = 'link-read-file';
   addExistingLinkSelector = 'link-add-existing-file';
   linkFileButtonSelector = 'button-link-file';
   confirmUnlinkFileButtonSelector = 'button-confirm-unlink-file';
   filesMenuButtonSelector = 'button-menu-files';
   selectManyFilesButtonSelector = 'button-select-many-files';
+  editNicknameButtonSelector = 'span-edit-file-nickname';
+  editDescriptionButtonSelector = 'span-edit-file-description';
+  fileNicknameInputSelector = 'input-file-nickname';
+  fileDescriptionTextareaSelector = 'textarea-file-description';
+  visibleFileLastViewedSelector = 'css=[data-testid="p-file-last-viewed"]:visible';
+  visibleViewStoredFileButtonSelector = 'css=[data-testid="button-view-stored-file"]:visible';
+  visibleDisplayedFileContentTextareaSelector = 'css=[data-testid="textarea-file-content"]:visible';
+  selectedFileNicknameSelector = 'p-file-selected-nickname';
   // Inputs
   existingFileIdInputSelector = 'input-existing-file-id';
+  existingFileNicknameInputSelector = 'input-existing-file-nickname';
+  existingFileDescriptionTextareaSelector = 'textarea-existing-file-description';
   multiSelectFileCheckboxSelector = 'checkbox-multiple-file-id-';
   // Texts
   fileIdTextSelector = 'p-file-id-info';
@@ -33,9 +38,10 @@ export class FilePage extends BasePage {
   fileLedgerTextSelector = 'p-file-ledger-id';
   fileExpirationTextSelector = 'p-file-expires-at';
   fileDescriptionTextSelector = 'p-file-description';
+  fileDeletedWarningSelector = 'p-file-is-deleted';
   fileIdListPrefixSelector = 'p-file-id-';
   toastMessageSelector = 'css=.v-toast__text';
-  private readonly unlikedFiles: string[]; // Store unlinked files
+  private readonly unlikedFiles: string[];
   private transactionPage: TransactionPage;
 
   constructor(window: Page) {
@@ -52,6 +58,58 @@ export class FilePage extends BasePage {
     await this.click(this.removeMultipleButtonSelector);
   }
 
+  async editAndSaveFileNickname(nickname: string) {
+    await this.click(this.editNicknameButtonSelector);
+    await this.fill(this.fileNicknameInputSelector, nickname);
+    await this.pressKey('Tab');
+  }
+
+  async getSelectedFileNicknameText() {
+    return await this.getText(this.selectedFileNicknameSelector);
+  }
+
+  async editAndSaveFileDescription(description: string) {
+    await this.click(this.editDescriptionButtonSelector);
+    await this.fill(this.fileDescriptionTextareaSelector, description);
+    await this.pressKey('Tab');
+  }
+
+  async getLastViewedText() {
+    return await this.getText(this.visibleFileLastViewedSelector, null, this.LONG_TIMEOUT);
+  }
+
+  async isViewStoredFileButtonVisible() {
+    return await this.isElementVisible(
+      this.visibleViewStoredFileButtonSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async isDisplayedFileContentVisible() {
+    return await this.isElementVisible(
+      this.visibleDisplayedFileContentTextareaSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async getDisplayedFileContentText() {
+    return await this.getTextFromInputField(
+      this.visibleDisplayedFileContentTextareaSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async fillInExistingFileNickname(nickname: string) {
+    await this.fill(this.existingFileNicknameInputSelector, nickname);
+  }
+
+  async fillInExistingFileDescription(description: string) {
+    await this.fill(this.existingFileDescriptionTextareaSelector, description);
+  }
+
   async clickOnUpdateFileButton() {
     await this.click(this.updateFileButtonSelector);
   }
@@ -64,26 +122,6 @@ export class FilePage extends BasePage {
     await this.click(this.readFileButtonSelector);
   }
 
-  async clickOnAddNewFileButton() {
-    await this.click(this.addNewButtonSelector);
-  }
-
-  async clickOnCreateNewFileLink() {
-    await this.click(this.createNewLinkSelector);
-  }
-
-  async clickOnUpdateFileLink() {
-    await this.click(this.updateLinkSelector);
-  }
-
-  async clickOnAppendFileLink() {
-    await this.click(this.appendLinkSelector);
-  }
-
-  async clickOnReadFileLink() {
-    await this.click(this.readLinkSelector);
-  }
-
   async clickOnAddExistingFileLink() {
     await this.click(this.addExistingLinkSelector);
   }
@@ -92,8 +130,18 @@ export class FilePage extends BasePage {
     await this.click(this.linkFileButtonSelector);
   }
 
+  async isLinkFileButtonDisabled() {
+    return await this.isDisabled(this.linkFileButtonSelector);
+  }
+
   async fillInExistingFileId(fileId: string) {
     await this.fill(this.existingFileIdInputSelector, fileId);
+  }
+
+  async linkExistingFile(fileId: string) {
+    await this.clickOnAddExistingFileLink();
+    await this.fillInExistingFileId(fileId);
+    await this.clickOnLinkFileButton();
   }
 
   async getFileIdText() {
@@ -125,7 +173,15 @@ export class FilePage extends BasePage {
   }
 
   async getFileDescriptionText() {
-    return await this.getText(this.fileDescriptionTextSelector);
+    return (await this.getText(this.fileDescriptionTextSelector))?.trim() ?? null;
+  }
+
+  async isFileDeletedWarningVisible() {
+    return await this.isElementVisible(
+      this.fileDeletedWarningSelector,
+      null,
+      this.VERY_LONG_TIMEOUT,
+    );
   }
 
   async getFirstFileFromList() {
@@ -154,6 +210,15 @@ export class FilePage extends BasePage {
 
   async clickOnAddNewButtonForFile() {
     await this.click(this.addNewButtonSelector);
+  }
+
+  async clickOnFileCardByFileId(fileId: string) {
+    await this.waitForElementToBeVisible(this.addNewButtonSelector);
+    const index = await this.findFileByIndex(fileId);
+    if (index === -1) {
+      throw new Error(`File ${fileId} was not found in the list`);
+    }
+    await this.click(this.fileIdListPrefixSelector + index);
   }
 
   async clickOnFileCheckbox(fileId: string) {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue';
 
-import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hashgraph/sdk';
+import { Transaction, AccountAllowanceApproveTransaction, Hbar } from '@hiero-ledger/sdk';
 
 import { getAccountIdWithChecksum, getAccountNicknameFromId, stringifyHbar } from '@renderer/utils';
 

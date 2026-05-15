@@ -26,7 +26,7 @@ import { NotificationReceiverService } from './notification-receiver.service';
 
 import { UpdateNotificationReceiverDto } from './dtos';
 import { TransactionsService } from '../transactions/transactions.service';
-import { AccountCreateTransaction } from '@hashgraph/sdk';
+import { AccountCreateTransaction } from '@hiero-ledger/sdk';
 
 jest.mock('@app/common/utils/transaction');
 

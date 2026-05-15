@@ -1,5 +1,5 @@
 import type { ITransaction, ITransactionFull, TransactionFile } from '@shared/interfaces';
-import { type PrivateKey, Transaction } from '@hashgraph/sdk';
+import { type PrivateKey, Transaction } from '@hiero-ledger/sdk';
 import { hexToUint8Array } from '@renderer/utils/index.ts';
 import { javaFormatArrayHashCode } from '@shared/utils/byteUtils.ts';
 import { format } from 'date-fns';

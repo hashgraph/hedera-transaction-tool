@@ -2,9 +2,10 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
-import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
+import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
   AccountUpdateTransaction,
@@ -15,10 +16,11 @@ import {
   PublicKey,
   Transaction as SDKTransaction,
   TransactionId,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   Brackets,
+  DataSource,
   EntityManager,
   FindManyOptions,
   FindOperator,
@@ -36,10 +38,12 @@ import {
   TransactionStatus,
   TransactionType,
   User,
+  UserKey,
 } from '@entities';
 
 import {
   attachKeys,
+  emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
   encodeUint8Array,
@@ -57,6 +61,7 @@ import {
   TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
+  processTransactionStatus,
   safe,
   SchedulerService,
   Sorting,
@@ -78,9 +83,12 @@ export enum CancelTransactionOutcome {
 
 @Injectable()
 export class TransactionsService {
+  private readonly logger = new Logger(TransactionsService.name);
+
   constructor(
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @InjectEntityManager() private entityManager: EntityManager,
+    @InjectDataSource() private dataSource: DataSource,
     private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
@@ -110,7 +118,7 @@ export class TransactionsService {
   async getTransactionById(id: number | TransactionId): Promise<Transaction> {
     if (!id) return null;
 
-    const transaction = await this.repo.findOne({
+    const transactions = await this.repo.find({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
       relations: [
         'creatorKey',
@@ -120,9 +128,16 @@ export class TransactionsService {
         'groupItem',
         'groupItem.group',
       ],
+      order: { id: 'DESC' },
     });
 
-    if (!transaction) return null;
+    if (!transactions.length) return null;
+
+    const inactiveStatuses = [TransactionStatus.CANCELED, TransactionStatus.REJECTED, TransactionStatus.ARCHIVED];
+
+    const transaction =
+      transactions.find(t => !inactiveStatuses.includes(t.status)) ??
+      transactions[0]; // most recent, since ordered by id DESC
 
     transaction.signers = await this.entityManager.find(TransactionSigner, {
       where: {
@@ -490,8 +505,6 @@ export class TransactionsService {
     type UpdateRecord = {
       id: number;
       transactionBytes: Buffer;
-      transactionId: string;
-      network: string;
     };
 
     const ids = dto.map(d => d.id);
@@ -509,33 +522,58 @@ export class TransactionsService {
       }));
     }
 
-    // Create a map for quick lookup
     const transactionMap = new Map(transactions.map(t => [t.id, t]));
+
+    const existingSigners = await this.entityManager.find(TransactionSigner, {
+      where: { transactionId: In(ids) },
+      select: ['transactionId', 'userKeyId'],
+    });
+    const signersByTransaction = new Map<number, Set<number>>();
+    for (const s of existingSigners) {
+      let set = signersByTransaction.get(s.transactionId);
+      if (!set) {
+        set = new Set<number>();
+        signersByTransaction.set(s.transactionId, set);
+      }
+      set.add(s.userKeyId);
+    }
 
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
+    const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const notificationDismissals: { userId: number; transactionId: number }[] = [];
+    // Dedups (userId, txId) so one user with multiple keys produces one UNNEST row.
+    const notificationDismissalKeys = new Set<string>();
+    // DTOs with persistable side-effects; drives status recompute + NATS emission.
+    const transactionsToProcess = new Map<number, Transaction>();
 
+    type DtoIntermediate = {
+      transaction: Transaction;
+      publicKeys: PublicKey[];
+      newBytes: Buffer;
+      isSameBytes: boolean;
+    };
+    const intermediate = new Map<number, DtoIntermediate>();
+    const allPubKeyStrings = new Set<string>();
+
+    // Two-pass: defer UserKey resolution to a single bulk find below (was N+1).
     for (const { id, signatureMap: map } of dto) {
       const transaction = transactionMap.get(id);
 
       try {
-        /* Verify that the transaction exists and access is verified */
         if (!(await this.verifyAccess(transaction, user))) {
           throw new BadRequestException(ErrorCodes.TNF);
         }
 
-        /* Checks if the transaction is canceled */
         if (
           transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
           transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
         )
           throw new BadRequestException(ErrorCodes.TNRS);
 
-        /* Checks if the transaction is expired */
         const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
         if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
-        /* Validates the signatures */
         const { data: publicKeys, error } = safe<PublicKey[]>(
           validateSignature.bind(this, sdkTransaction, map),
         );
@@ -545,15 +583,16 @@ export class TransactionsService {
           sdkTransaction.addSignature(publicKey, map);
         }
 
-        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
+        const originalBytes = transaction.transactionBytes;
+        const newBytes = Buffer.from(sdkTransaction.toBytes());
+        const isSameBytes = newBytes.equals(originalBytes);
 
-        results.set(id, { id });
-        updates.set(id, {
-          id,
-          transactionBytes: transaction.transactionBytes,
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        });
+        for (const pk of publicKeys) {
+          allPubKeyStrings.add(pk.toStringRaw());
+          allPubKeyStrings.add(pk.toStringDer());
+        }
+
+        intermediate.set(id, { transaction, publicKeys, newBytes, isSameBytes });
       } catch (error) {
         results.set(id, {
           id,
@@ -565,60 +604,205 @@ export class TransactionsService {
       }
     }
 
-    //Added a batch mechanism, probably should limit this on the api side of things
-    const BATCH_SIZE = 500;
+    // Soft-deleted UserKeys excluded by default — a revoked key must not regain
+    // signer access via a historical import. Buckets are arrays because
+    // UserKey.publicKey is indexed but not unique (users can share a key).
+    const userKeysByPublicKey = new Map<string, UserKey[]>();
+    if (allPubKeyStrings.size > 0) {
+      const userKeys = await this.entityManager.find(UserKey, {
+        where: { publicKey: In([...allPubKeyStrings]) },
+      });
+      for (const uk of userKeys) {
+        const bucket = userKeysByPublicKey.get(uk.publicKey);
+        if (bucket) bucket.push(uk);
+        else userKeysByPublicKey.set(uk.publicKey, [uk]);
+      }
+    }
 
-    const updateArray = Array.from(updates.values());
-
-    if (updateArray.length > 0) {
-      for (let i = 0; i < updateArray.length; i += BATCH_SIZE) {
-        const batch = updateArray.slice(i, i + BATCH_SIZE);
-
-        let caseSQL = 'CASE id ';
-        const params: any = {};
-
-        batch.forEach((update, idx) => {
-          caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
-          params[`id${idx}`] = update.id;
-          params[`bytes${idx}`] = update.transactionBytes;
-        });
-        caseSQL += 'END';
-
-        try {
-          await this.entityManager
-            .createQueryBuilder()
-            .update(Transaction)
-            .set({ transactionBytes: () => caseSQL })
-            .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
-            .setParameters(params)
-            .execute();
-
-          // mark each update in the batch as succeeded
-          batch.forEach(u => results.set(u.id, { id: u.id }));
-        } catch (err) {
-          const SAVE_ERROR_PREFIX = 'An unexpected error occurred while saving the signatures';
-          const message =
-            err instanceof Error && err.message
-              ? `${SAVE_ERROR_PREFIX}: ${err.message}`
-              : SAVE_ERROR_PREFIX;
-
-          batch.forEach(u => results.set(u.id, { id: u.id, error: message }));
+    for (const [id, { transaction, publicKeys, newBytes, isSameBytes }] of intermediate) {
+      // Without these signer rows, the signing user fails verifyAccess post-import (issue #2552).
+      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
+      if (publicKeys.length > 0) {
+        let txExistingSigners = signersByTransaction.get(id);
+        if (!txExistingSigners) {
+          txExistingSigners = new Set<number>();
+          signersByTransaction.set(id, txExistingSigners);
+        }
+        for (const pk of publicKeys) {
+          const matches = [
+            ...(userKeysByPublicKey.get(pk.toStringRaw()) ?? []),
+            ...(userKeysByPublicKey.get(pk.toStringDer()) ?? []),
+          ];
+          for (const uk of matches) {
+            if (txExistingSigners.has(uk.id)) continue;
+            txExistingSigners.add(uk.id);
+            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+          }
         }
       }
 
-      emitTransactionStatusUpdate(
-        this.notificationsPublisher,
-        updateArray.map(r => ({
-          entityId: r.id,
-          additionalData: { transactionId: r.transactionId, network: r.network },
-        })),
-      );
+      // Skip duplicate imports so we don't emit spurious status-update events.
+      if (isSameBytes && newSignersForDto.length === 0) {
+        results.set(id, { id });
+        continue;
+      }
+
+      if (!isSameBytes) {
+        transaction.transactionBytes = newBytes;
+        updates.set(id, {
+          id,
+          transactionBytes: newBytes,
+        });
+      }
+
+      for (const row of newSignersForDto) {
+        newSignerRows.push(row);
+        const dismissalKey = `${row.userId}:${id}`;
+        if (!notificationDismissalKeys.has(dismissalKey)) {
+          notificationDismissalKeys.add(dismissalKey);
+          notificationDismissals.push({ userId: row.userId, transactionId: id });
+        }
+      }
+
+      transactionsToProcess.set(id, transaction);
+    }
+
+    const BATCH_SIZE = 500;
+    const updateArray = Array.from(updates.values());
+    let dismissedRows: Array<{ id: number; userId: number }> = [];
+    let committed = false;
+
+    // Bytes + signer rows + dismissals must commit together; partial state recreates issue #2552.
+    if (updateArray.length > 0 || newSignerRows.length > 0) {
+      try {
+        await this.dataSource.transaction(async manager => {
+          if (updateArray.length > 0) {
+            for (let i = 0; i < updateArray.length; i += BATCH_SIZE) {
+              const batch = updateArray.slice(i, i + BATCH_SIZE);
+
+              let caseSQL = 'CASE id ';
+              const params: Record<string, unknown> = {};
+
+              batch.forEach((update, idx) => {
+                caseSQL += `WHEN :id${idx} THEN :bytes${idx}::bytea `;
+                params[`id${idx}`] = update.id;
+                params[`bytes${idx}`] = update.transactionBytes;
+              });
+              caseSQL += 'END';
+
+              await manager
+                .createQueryBuilder()
+                .update(Transaction)
+                .set({ transactionBytes: () => caseSQL, updatedAt: () => 'NOW()' })
+                .where('id IN (:...ids)', { ids: batch.map(u => u.id) })
+                .setParameters(params)
+                .execute();
+            }
+          }
+
+          if (newSignerRows.length > 0) {
+            await manager
+              .createQueryBuilder()
+              .insert()
+              .into(TransactionSigner)
+              .values(newSignerRows)
+              .execute();
+          }
+
+          if (notificationDismissals.length > 0) {
+            const userIds = notificationDismissals.map(n => n.userId);
+            const txIds = notificationDismissals.map(n => n.transactionId);
+            const [rows] = await manager.query(
+              `
+              WITH input(user_id, tx_id) AS (
+                SELECT * FROM UNNEST($1::int[], $2::int[])
+              )
+              UPDATE notification_receiver nr
+              SET "isRead" = true,
+                  "updatedAt" = NOW()
+              FROM notification n, input i
+              WHERE nr."notificationId" = n.id
+                AND n.type = 'TRANSACTION_INDICATOR_SIGN'
+                AND i.tx_id = n."entityId"
+                AND i.user_id = nr."userId"
+                AND nr."isRead" = false
+              RETURNING nr.id, nr."userId"
+              `,
+              [userIds, txIds],
+            );
+            if (Array.isArray(rows)) {
+              dismissedRows = rows;
+            }
+          }
+        });
+        committed = true;
+
+        for (const id of transactionsToProcess.keys()) {
+          results.set(id, { id });
+        }
+      } catch (err) {
+        this.logger.error(
+          'Failed to persist imported signatures atomically',
+          err instanceof Error ? err.stack : String(err),
+        );
+        const message = ErrorCodes.FST;
+        for (const id of transactionsToProcess.keys()) {
+          results.set(id, { id, error: message });
+        }
+        transactionsToProcess.clear();
+        dismissedRows = [];
+      }
+    }
+
+    if (dismissedRows.length > 0) {
+      emitDismissedNotifications(this.notificationsPublisher, dismissedRows);
+    }
+
+    // Status recompute runs only after commit; rollback path clears transactionsToProcess.
+    if (committed && transactionsToProcess.size > 0) {
+      let statusMap = new Map<number, TransactionStatus>();
+      try {
+        const result = await processTransactionStatus(
+          this.repo,
+          this.transactionSignatureService,
+          Array.from(transactionsToProcess.values()),
+        );
+        if (result) statusMap = result;
+      } catch (err) {
+        this.logger.error(
+          'processTransactionStatus failed on import',
+          err instanceof Error ? err.stack : String(err),
+        );
+      }
+
+      // Payload shape mirrors SignersService.updateStatusesAndNotify for NATS consumers.
+      const changed: number[] = [];
+      const unchanged: number[] = [];
+      for (const id of transactionsToProcess.keys()) {
+        if (statusMap.has(id)) {
+          changed.push(id);
+        } else {
+          unchanged.push(id);
+        }
+      }
+
+      if (changed.length > 0) {
+        emitTransactionStatusUpdate(
+          this.notificationsPublisher,
+          changed.map(id => ({ entityId: id })),
+        );
+      }
+      if (unchanged.length > 0) {
+        emitTransactionUpdate(
+          this.notificationsPublisher,
+          unchanged.map(id => ({ entityId: id })),
+        );
+      }
     }
 
     return Array.from(results.values());
   }
 
-  /* Remove the transaction for the given transaction id. */
   async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
     const transaction = await this.getTransactionForCreator(id, user);
 
@@ -908,6 +1092,11 @@ export class TransactionsService {
     // Parse SDK transaction
     const sdkTransaction = SDKTransaction.fromBytes(dto.transactionBytes);
 
+    // Check the transaction is frozen, cannot require it to be frozen, breaks backwards compatibility
+    if (!sdkTransaction.isFrozen()) {
+      sdkTransaction.freezeWith(client);
+    }
+
     // Check if expired
     if (isExpired(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TE);
@@ -923,9 +1112,6 @@ export class TransactionsService {
     if (!isTransactionValidForNodes(sdkTransaction, allowedNodes)) {
       throw new BadRequestException(ErrorCodes.TNVN);
     }
-
-    // Freeze transaction with shared client
-    sdkTransaction.freezeWith(client);
 
     const transactionHash = await sdkTransaction.getTransactionHash();
     const transactionType = getTransactionTypeEnumValue(sdkTransaction);

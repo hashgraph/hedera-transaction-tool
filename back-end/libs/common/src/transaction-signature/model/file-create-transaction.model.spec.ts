@@ -1,4 +1,4 @@
-import { FileCreateTransaction, Key } from '@hashgraph/sdk';
+import { FileCreateTransaction, Key } from '@hiero-ledger/sdk';
 import { FileCreateTransactionModel } from './file-create-transaction.model';
 
 describe('FileCreateTransactionModel', () => {

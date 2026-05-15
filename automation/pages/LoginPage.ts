@@ -2,6 +2,15 @@ import { Page } from '@playwright/test';
 import { BasePage } from './BasePage.js';
 
 export class LoginPage extends BasePage {
+  // AppModal currently reuses the same modal test id for multiple dialog types.
+  // Treat only transaction-confirm action buttons as blocking for login.
+  private readonly blockingModalActionSelectors = [
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-sign-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-cancel-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-sign-org-transaction"]',
+    '[data-testid="modal-confirm-transaction"][style*="display: block"] [data-testid="button-cancel-org-transaction"]',
+  ] as const;
+
   constructor(window: Page) {
     super(window);
   }
@@ -12,6 +21,7 @@ export class LoginPage extends BasePage {
   emailInputSelector = 'input-email';
   passwordInputSelector = 'input-password';
   confirmPasswordInputSelector = 'input-password-confirm';
+  encryptPasswordInputSelector = 'input-encrypt-password';
 
   // Buttons
   signInButtonSelector = 'button-login';
@@ -20,10 +30,12 @@ export class LoginPage extends BasePage {
   rejectMigrationButtonSelector = 'button-refuse-migration';
   resetStateButtonSelector = 'link-reset';
   confirmResetStateButtonSelector = 'button-reset';
+  cancelResetStateButtonSelector = 'button-reset-cancel';
   keepLoggedInCheckboxSelector = 'checkbox-remember';
   logoutButtonSelector = 'button-logout';
   settingsButtonSelector = 'button-menu-settings';
   profileTabButtonSelector = 'tab-4';
+  cancelEncryptPasswordButtonSelector = 'button-cancel-encrypt-password';
 
   // Labels
   emailLabelSelector = 'label-email';
@@ -31,6 +43,7 @@ export class LoginPage extends BasePage {
 
   // Messages
   toastMessageSelector = 'css=.v-toast__text';
+  visibleToastMessageSelector = 'css=.v-toast__text:visible';
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 
@@ -107,6 +120,38 @@ export class LoginPage extends BasePage {
     return checks.every(isTrue => isTrue);
   }
 
+  async isResetAccountLinkVisible() {
+    return await this.isElementVisible(this.resetStateButtonSelector);
+  }
+
+  async clickOnResetAccountLink() {
+    await this.dismissKnownBlockingModals();
+
+    if (await this.isResetDataModalVisible()) {
+      return;
+    }
+
+    try {
+      await this.click(this.resetStateButtonSelector);
+    } catch {
+      await this.dismissKnownBlockingModals();
+      await this.pressKey('Escape');
+      await this.click(this.resetStateButtonSelector);
+    }
+  }
+
+  async isResetDataModalVisible() {
+    return await this.isElementVisible(this.confirmResetStateButtonSelector);
+  }
+
+  async clickOnResetDataConfirmButton() {
+    await this.click(this.confirmResetStateButtonSelector);
+  }
+
+  async clickOnResetDataCancelButton() {
+    await this.click(this.cancelResetStateButtonSelector);
+  }
+
   async login(email: string, password: string) {
     await this.typeEmail(email);
     await this.typePassword(password);
@@ -125,7 +170,7 @@ export class LoginPage extends BasePage {
         return 'signIn';
       }
 
-      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+      await this.wait(this.SHORT_TIMEOUT);
     }
 
     throw new Error('Unable to determine auth mode from startup screen');
@@ -185,12 +230,100 @@ export class LoginPage extends BasePage {
     await this.fill(this.passwordInputSelector, password);
   }
 
+  async clickOnKeepLoggedInCheckbox() {
+    await this.click(this.keepLoggedInCheckboxSelector);
+  }
+
+  async isKeepLoggedInChecked() {
+    return await this.isChecked(this.keepLoggedInCheckboxSelector);
+  }
+
   async clickSignIn() {
+    await this.dismissKnownBlockingModals();
+
+    try {
+      await this.waitForBlockingModalToClose(this.SHORT_TIMEOUT);
+    } catch {
+      // In some flows a stale transaction confirmation modal can remain open and
+      // intercept pointer events on top of the auth screen.
+      await this.dismissKnownBlockingModals();
+      await this.pressKey('Escape');
+      await this.pressKey('Escape');
+      await this.waitForBlockingModalToClose();
+    }
     await this.click(this.signInButtonSelector, 0, this.LONG_TIMEOUT);
   }
 
+  private async dismissKnownBlockingModals() {
+    await this.closeUserPasswordModal();
+    await this.closeImportantNoteModal();
+    await this.closeMigrationModal();
+
+    if (process.platform === 'darwin') {
+      await this.closeKeyChainModal();
+    }
+  }
+
+  async closeUserPasswordModal() {
+    const isPasswordModalVisible = await this.isElementVisible(
+      this.encryptPasswordInputSelector,
+      null,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (isPasswordModalVisible) {
+      await this.click(this.cancelEncryptPasswordButtonSelector);
+      await this.waitForElementToDisappear(this.encryptPasswordInputSelector);
+    }
+  }
+
+  async waitForBlockingModalToClose(timeout: number = this.VERY_LONG_TIMEOUT) {
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      if (!(await this.hasVisibleBlockingModalAction())) {
+        return;
+      }
+
+      await this.pressKey('Escape');
+      await this.wait(this.SHORT_TIMEOUT);
+    }
+
+    throw new Error(
+      `Blocking transaction confirmation modal did not close within ${timeout} ms`,
+    );
+  }
+
+  private async hasVisibleBlockingModalAction() {
+    for (const selector of this.blockingModalActionSelectors) {
+      if (await this.isElementVisible(selector, 0, this.SHORT_TIMEOUT)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   async waitForToastToDisappear() {
-    await this.waitForElementToDisappear(this.toastMessageSelector);
+    const hasVisibleToast = await this.isElementVisible(
+      this.visibleToastMessageSelector,
+      0,
+      this.SHORT_TIMEOUT,
+    );
+
+    if (!hasVisibleToast) {
+      return;
+    }
+
+    const toastHidden = await this.isElementHidden(
+      this.visibleToastMessageSelector,
+      0,
+      this.VERY_LONG_TIMEOUT,
+    );
+
+    if (!toastHidden) {
+      console.log('Visible toast did not disappear within timeout; continuing.');
+    }
   }
 
   async isSettingsButtonVisible() {

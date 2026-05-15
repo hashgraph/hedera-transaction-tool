@@ -1,27 +1,27 @@
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import {
-  getAllPublicKeysByEmail,
   isUserDeleted,
   upgradeUserToAdmin,
   verifyUserExistsInOrganization,
-} from '../utils/databaseQueries.js';
-import { getAssociatedAccounts } from '../utils/mirrorNodeAPI.js';
+} from '../utils/db/userQueries.js';
+import { getAssociatedAccounts } from '../utils/network/mirrorNodeAPI.js';
 
 export class ContactListPage extends BasePage {
   // Buttons
   removeContactButtonSelector = 'button-remove-account-from-contact-list';
-
+  elevateContactButtonSelector = 'button-elevate-to-admin-from-contact-list';
   /* Selectors */
   addNewContactButtonSelector = 'button-add-new-contact';
   changeContactNicknameButtonSelector = 'span-change-nickname';
   registerNewUserButtonSelector = 'button-register-user';
   confirmRemovingContactButtonSelector = 'button-confirm-remove-contact';
+  confirmElevateContactButtonSelector = 'button-confirm-elevate-contact';
   // Inputs
   inputChangeNicknameSelector = 'input-change-nickname';
   newUserEmailInputSelector = 'input-new-user-email';
-  // Texts
-  contactListEmailSelector = 'p-contact-email';
+  multipleEmailsModeSwitchSelector = 'switch-multiple-emails-mode';
+  multipleEmailsTextareaSelector = 'textarea-multiple-emails';
   // Indexes
   contactEmailIndexSelector = 'p-contact-email-';
   contactListPublicKeyIndexSelector = 'p-contact-public-key-';
@@ -37,24 +37,8 @@ export class ContactListPage extends BasePage {
     await this.click(this.contactEmailIndexSelector + email);
   }
 
-  async isRemoveContactButtonVisible() {
-    return await this.isElementVisible(this.removeContactButtonSelector);
-  }
-
-  async isRemoveContactButtonHidden() {
-    return await this.isElementHidden(this.removeContactButtonSelector);
-  }
-
-  async isAddNewContactButtonHidden() {
-    return await this.isElementHidden(this.addNewContactButtonSelector);
-  }
-
-  async isAddNewContactButtonEnabled() {
-    return await this.isButtonEnabled(this.addNewContactButtonSelector);
-  }
-
-  async getContactListEmailText() {
-    return await this.getText(this.contactListEmailSelector);
+  async isContactVisible(email: string) {
+    return await this.isElementVisible(this.contactEmailIndexSelector + email);
   }
 
   async isExpandAssociatedAccountsButtonVisible(index: number) {
@@ -64,7 +48,7 @@ export class ContactListPage extends BasePage {
     );
   }
 
-  async clickOnExpandAssociatedAccountsButton(index:number) {
+  async clickOnExpandAssociatedAccountsButton(index: number) {
     await this.click(this.contactListExpandAssociatedAccountsButtonSelector + index.toString());
   }
 
@@ -76,8 +60,14 @@ export class ContactListPage extends BasePage {
     await this.fill(this.inputChangeNicknameSelector, nickname);
   }
 
-  async getContactNicknameText(nickname: string) {
-    return await this.getText(this.contactListNicknameIndexSelector + nickname);
+  async waitForContactNicknameVisible(
+    nickname: string,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+  ) {
+    await this.waitForElementToBeVisible(
+      this.contactListNicknameIndexSelector + nickname,
+      timeout,
+    );
   }
 
   async clickOnAddNewContactButton() {
@@ -92,12 +82,16 @@ export class ContactListPage extends BasePage {
     await this.click(this.registerNewUserButtonSelector);
   }
 
-  async clickOnRemoveContactButton() {
+  async removeContact() {
     await this.click(this.removeContactButtonSelector);
+    await this.waitForElementToBeVisible(this.confirmRemovingContactButtonSelector);
+    await this.click(this.confirmRemovingContactButtonSelector);
   }
 
-  async clickOnConfirmRemoveContactButton() {
-    await this.click(this.confirmRemovingContactButtonSelector);
+  async elevateContactToAdmin() {
+    await this.click(this.elevateContactButtonSelector);
+    await this.waitForElementToBeVisible(this.confirmElevateContactButtonSelector);
+    await this.click(this.confirmElevateContactButtonSelector);
   }
 
   async upgradeUserToAdmin(email: string) {
@@ -110,17 +104,19 @@ export class ContactListPage extends BasePage {
     await this.clickOnRegisterNewUserButton();
   }
 
-  // This method will compare the public keys from the contact list with the public keys from the database.
-  async comparePublicKeys(email: string) {
-    const pagePublicKeys = await this.getAllPublicKeysFromContactList();
-    const dbPublicKeys = await getAllPublicKeysByEmail(email);
-    const sortedPageKeys = pagePublicKeys.sort();
-    const sortedDbKeys = dbPublicKeys.sort();
+  async enableMultipleEmailsMode() {
+    const isChecked = await this.isChecked(this.multipleEmailsModeSwitchSelector);
+    if (!isChecked) {
+      await this.click(this.multipleEmailsModeSwitchSelector);
+    }
+  }
 
-    return (
-      sortedPageKeys.length === sortedDbKeys.length &&
-      sortedPageKeys.every((value, index) => value === sortedDbKeys[index])
-    );
+  async fillMultipleEmails(emails: string) {
+    await this.fill(this.multipleEmailsTextareaSelector, emails);
+  }
+
+  async registerUsers() {
+    await this.clickOnRegisterNewUserButton();
   }
 
   async getAllPublicKeysFromContactList() {
@@ -209,7 +205,7 @@ export class ContactListPage extends BasePage {
         }
 
         const account = await this.getText(associatedAccountSelector);
-        if(account !== null) {
+        if (account !== null) {
           associatedAccounts.push(account.trim());
         }
         index++;

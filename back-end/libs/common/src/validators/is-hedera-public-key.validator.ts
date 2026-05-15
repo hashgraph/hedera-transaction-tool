@@ -4,7 +4,7 @@ import {
   ValidatorConstraint,
   ValidatorConstraintInterface
 } from 'class-validator';
-import { PublicKey } from '@hashgraph/sdk';
+import { PublicKey } from '@hiero-ledger/sdk';
 import { ErrorCodes } from '@app/common';
 
 @ValidatorConstraint({ name: 'isHederaPublicKey', async: false })

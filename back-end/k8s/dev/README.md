@@ -21,22 +21,22 @@
    kubectl create secret tls self-signed-certificate --cert=../../cert/cert.pem --key=../../cert/key.pem
    ```
 
-2. **(On back-end change only)** Build Docker images from the root `back-end` folder
+2. **(On back-end change only)** Build Docker images from the **repository root** (the build context is the root so the workspace lockfile and shared package manifests are visible):
 
    ```bash
-   docker build -t back-end-migration:1.0.0 -f ./typeorm/Dockerfile .
+   docker build -t back-end-migration:1.0.0 -f back-end/typeorm/Dockerfile .
    ```
 
    ```bash
-   docker build -t back-end-api:1.0.0 -f ./apps/api/Dockerfile .
+   docker build -t back-end-api:1.0.0 -f back-end/apps/api/Dockerfile .
    ```
 
    ```bash
-   docker build -t back-end-chain:1.0.0 -f ./apps/chain/Dockerfile .
+   docker build -t back-end-chain:1.0.0 -f back-end/apps/chain/Dockerfile .
    ```
 
    ```bash
-   docker build -t back-end-notifications:1.0.0 -f ./apps/notifications/Dockerfile .
+   docker build -t back-end-notifications:1.0.0 -f back-end/apps/notifications/Dockerfile .
    ```
 
 3. Apply the deployments inside `k8s/dev/deployments`

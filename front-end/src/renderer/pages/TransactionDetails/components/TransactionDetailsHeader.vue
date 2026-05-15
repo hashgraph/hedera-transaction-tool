@@ -1,12 +1,13 @@
 <script lang="ts" setup>
 import type { Transaction } from '@prisma/client';
-import type { ITransactionFull, TransactionFile } from '@shared/interfaces';
+import type { ITransactionFull } from '@shared/interfaces';
+import { TransactionStatus } from '@shared/interfaces';
 
 import { computed, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -14,56 +15,35 @@ import useNetwork from '@renderer/stores/storeNetwork';
 import useContactsStore from '@renderer/stores/storeContacts';
 import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 
-import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import { getUserShouldApprove } from '@renderer/services/organization';
 
 import {
-  archiveTransaction,
-  cancelTransaction,
-  executeTransaction,
-  getUserShouldApprove,
-  remindSigners,
-  sendApproverChoice,
-} from '@renderer/services/organization';
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService';
-
-import {
-  assertIsLoggedInOrganization,
-  assertUserLoggedIn,
-  generateTransactionExportFileName,
-  generateTransactionV1ExportContent,
-  generateTransactionV2ExportContent,
   getErrorMessage,
-  getLastExportExtension,
-  getPrivateKey,
-  getTransactionBodySignatureWithoutNodeAccountId,
   hexToUint8Array,
   isLoggedInOrganization,
-  setLastExportExtension,
-  signTransactions,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
-import { TransactionStatus } from '@shared/interfaces';
-
-import { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
-import { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
-import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 import { getTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import BreadCrumb from '@renderer/components/BreadCrumb.vue';
-import { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
-import { executeTransactionActionFlow, type TransactionAction } from './transactionActionFlow.ts';
 import {
   isApprovableStatus,
   isInProgressStatus,
   isSignableStatus,
 } from '@renderer/utils/transactionStatusGuards.ts';
+import CancelTransactionController from '@renderer/pages/TransactionDetails/CancelTransactionController.vue';
+import ArchiveTransactionController from '@renderer/pages/TransactionDetails/ArchiveTransactionController.vue';
+import ScheduleTransactionController from '@renderer/pages/TransactionDetails/ScheduleTransactionController.vue';
+import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
+import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
+import ApproveTransactionController from '@renderer/pages/TransactionDetails/ApproveTransactionController.vue';
+import ExportTransactionController from '@renderer/pages/TransactionDetails/ExportTransactionController.vue';
 
 /* Types */
 type ActionButton =
@@ -82,38 +62,23 @@ const reject: ActionButton = 'Reject';
 const approve: ActionButton = 'Approve';
 const sign: ActionButton = 'Sign';
 const signAndNext: ActionButton = 'Sign & Next';
-const execute: ActionButton = 'Schedule';
+const schedule: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
 const exportName: ActionButton = 'Export';
 
-const primaryButtons: ActionButton[] = [reject, approve, sign, execute];
+const primaryButtons: ActionButton[] = [reject, approve, sign, schedule];
 const buttonsDataTestIds: { [key: string]: string } = {
   [reject]: 'button-reject-org-transaction',
   [approve]: 'button-approve-org-transaction',
   [sign]: 'button-sign-org-transaction',
-  [execute]: 'button-execute-org-transaction',
+  [schedule]: 'button-schedule-org-transaction',
   [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
   [exportName]: 'button-export-transaction',
 };
-
-const EXPORT_FORMATS = [
-  {
-    name: 'TX2 (Tx Tool 2.0)',
-    value: 'tt2',
-    extensions: ['tx2'],
-    enabled: true, // Set to false to hide/remove in the future
-  },
-  {
-    name: 'TX (Tx Tool 1.0)',
-    value: 'tt1',
-    extensions: ['tx'],
-    enabled: true, // Set to false to hide/remove
-  },
-];
 
 /* Props */
 const props = defineProps<{
@@ -131,115 +96,33 @@ const nextTransaction = useNextTransactionV2();
 
 /* Composables */
 const router = useRouter();
-const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* Injected */
-const accountByIdCache = AccountByIdCache.inject();
-const nodeByIdCache = NodeByIdCache.inject();
-const publicKeyOwnerCache = PublicKeyOwnerCache.inject();
+const appCache = AppCache.inject();
 const toastManager = ToastManager.inject();
 
 /* State */
-const isTransactionVersionMismatch = ref(false);
-const isConfirmModalShown = ref(false);
-const confirmModalTitle = ref('');
-const confirmModalText = ref('');
-const confirmModalButtonText = ref('');
-const confirmModalLoadingText = ref('');
-const confirmCallback = ref<((...args: any[]) => void) | null>(null);
-
+const visibleButtons = ref<ActionButton[]>([]);
 const isRefreshing = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
   [sign]: null,
 });
-const isConfirmModalLoadingState = ref(false);
 
-const publicKeysRequiredToSign = ref<string[] | null>(null);
-const shouldApprove = ref<boolean>(false);
+const signStarted = ref(false);
+const goNextAfterSign = ref(false);
+const approveStarted = ref(false);
+const isApproved = ref(false);
+const exportStarted = ref(false);
+const cancelStarted = ref(false);
+const archiveStarted = ref(false);
+const scheduleStarted = ref(false);
+const remindSignersStarted = ref(false);
 
 /* Computed */
 const txType = computed(() => {
   return props.sdkTransaction ? getTransactionType(props.sdkTransaction) : null;
-});
-
-const creator = computed(() => {
-  return props.organizationTransaction
-    ? contacts.contacts.find(contact =>
-        contact.userKeys.some(k => k.id === props.organizationTransaction?.creatorKeyId),
-      )
-    : null;
-});
-
-const isCreator = computed(() => {
-  if (!creator.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-
-  return creator.value.user.id === user.selectedOrganization.userId;
-});
-
-const transactionIsInProgress = computed(() =>
-  isInProgressStatus(props.organizationTransaction?.status),
-);
-
-const canCancel = computed(() => {
-  return isCreator.value && transactionIsInProgress.value;
-});
-
-const canSign = computed(() => {
-  if (!props.organizationTransaction || !publicKeysRequiredToSign.value) return false;
-  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
-  if (!isSignableStatus(props.organizationTransaction.status)) return false;
-
-  if (isTransactionVersionMismatch.value) {
-    toastManager.error('Transaction version mismatch. Cannot sign.');
-    return false;
-  }
-
-  const userShouldSign = publicKeysRequiredToSign.value.length > 0;
-
-  return userShouldSign;
-});
-
-const canApprove = computed(() => {
-  const status = props.organizationTransaction?.status;
-
-  return FEATURE_APPROVERS_ENABLED && shouldApprove.value && isApprovableStatus(status);
-});
-
-const canExecute = computed(() => {
-  const status = props.organizationTransaction?.status;
-  const isManual = props.organizationTransaction?.isManual;
-
-  return status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator.value;
-});
-
-const canRemind = computed(() => {
-  const status = props.organizationTransaction?.status;
-
-  return status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator.value;
-});
-
-const canArchive = computed(() => {
-  const isManual = props.organizationTransaction?.isManual;
-
-  return isManual && isCreator.value && transactionIsInProgress.value;
-});
-
-const visibleButtons = computed(() => {
-  const buttons: ActionButton[] = [];
-
-  /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
-  canApprove.value && buttons.push(reject, approve);
-  canSign.value && !canApprove.value && buttons.push(sign);
-  canExecute.value && buttons.push(execute);
-  canCancel.value && buttons.push(cancel);
-  canRemind.value && buttons.push(remindSignersLabel);
-  canArchive.value && buttons.push(archive);
-  buttons.push(exportName);
-
-  return buttons;
 });
 
 const dropDownItems = computed(() =>
@@ -255,349 +138,95 @@ const handleBack = async () => {
   router.back();
 };
 
-const handleSign = async (goNext = false) => {
-  if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
-    throw new Error('Transaction is not available');
-  }
-
-  assertUserLoggedIn(user.personal);
-  assertIsLoggedInOrganization(user.selectedOrganization);
-
-  const personalPassword = getPassword(handleSign.bind(null, goNext), {
-    subHeading: 'Enter your application password to access your private key',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-
-  try {
-    loadingStates[sign] = 'Signing…';
-
-    const signed = await signTransactions(
-      [props.organizationTransaction],
-      personalPassword,
-      accountByIdCache,
-      nodeByIdCache,
-      publicKeyOwnerCache,
-      toastManager,
-    );
-    await props.onAction();
-
-    if (signed) {
-      toastManager.success('Transaction signed successfully');
-      if (goNext) {
-        if (nextTransaction.hasNext) {
-          await nextTransaction.routeToNext(router);
-        } else {
-          await nextTransaction.routeUp(router);
-        }
-      }
-    } else {
-      toastManager.error('Failed to sign transaction');
-    }
-  } catch (error) {
-    toastManager.error(getErrorMessage(error, 'Failed to sign transaction'));
-  } finally {
-    loadingStates[sign] = null;
-  }
-};
-
-const handleApprove = async (approved: boolean, showModal?: boolean) => {
-  if (!approved && showModal) {
-    confirmModalTitle.value = 'Reject Transaction?';
-    confirmModalText.value = 'Are you sure you want to reject the transaction?';
-    confirmModalButtonText.value = 'Reject';
-    confirmCallback.value = () => handleApprove(false);
-    confirmModalLoadingText.value = 'Rejecting…';
-    isConfirmModalShown.value = true;
-    return;
-  }
-
-  const callback = async () => {
-    if (!(props.sdkTransaction instanceof SDKTransaction) || !props.organizationTransaction) {
-      throw new Error('Transaction is not available');
-    }
-
-    assertUserLoggedIn(user.personal);
-    assertIsLoggedInOrganization(user.selectedOrganization);
-
-    const personalPassword = getPassword(callback, {
-      subHeading: 'Enter your application password to access your private key',
-    });
-    if (passwordModalOpened(personalPassword)) return;
-
-    try {
-      if (approved) {
-        loadingStates[approve] = 'Approving…';
-      } else {
-        loadingStates[reject] = 'Rejecting…';
-        isConfirmModalLoadingState.value = true;
-      }
-
-      const orgKey = user.selectedOrganization.userKeys.filter(k => k.mnemonicHash)[0];
-      const privateKeyRaw = await decryptPrivateKey(
-        user.personal.id,
-        personalPassword,
-        orgKey.publicKey,
-      );
-
-      const privateKey = getPrivateKey(orgKey.publicKey, privateKeyRaw);
-
-      const signature = getTransactionBodySignatureWithoutNodeAccountId(
-        privateKey,
-        props.sdkTransaction,
-      );
-
-      await sendApproverChoice(
-        user.selectedOrganization.serverUrl,
-        props.organizationTransaction.id,
-        orgKey.id,
-        signature,
-        approved,
-      );
-      await props.onAction();
-      toastManager.success(`Transaction ${approved ? 'approved' : 'rejected'} successfully`);
-
-      if (!approved) {
-        router.back();
-      }
-    } catch (error) {
-      throw error;
-    } finally {
-      loadingStates[approve] = null;
-      loadingStates[reject] = null;
-      isConfirmModalLoadingState.value = false;
-      confirmModalLoadingText.value = '';
-    }
-  };
-
-  await callback();
-};
-
-const handleTransactionAction = async (action: TransactionAction, showModal?: boolean) => {
-  assertIsLoggedInOrganization(user.selectedOrganization);
-  if (!props.organizationTransaction) {
-    throw new Error('Transaction is not available');
-  }
-  const serverUrl = user.selectedOrganization.serverUrl;
-  const transactionId = props.organizationTransaction.id;
-
-  const actionDetails = {
-    cancel: {
-      title: 'Cancel Transaction?',
-      text: 'Are you sure you want to cancel the transaction?',
-      buttonText: 'Confirm',
-      loadingText: 'Canceling…',
-      successMessage: 'Transaction canceled successfully',
-      actionFunction: cancelTransaction,
-    },
-    archive: {
-      title: 'Archive Transaction?',
-      text: 'Are you sure you want to archive the transaction? The required signers will not be able to sign it anymore.',
-      buttonText: 'Confirm',
-      loadingText: 'Archiving…',
-      successMessage: 'Transaction archived successfully',
-      actionFunction: archiveTransaction,
-    },
-    execute: {
-      title: 'Schedule Transaction?',
-      text: 'The transaction will be scheduled to execute at the specified time and processed automatically.',
-      buttonText: 'Confirm',
-      loadingText: 'Scheduling…',
-      successMessage: 'Transaction scheduled for execution successfully',
-      actionFunction: executeTransaction,
-    },
-    remindSigners: {
-      title: 'Remind Signers?',
-      text: 'All signers that have not yet signed will be sent a notification.',
-      buttonText: 'Confirm',
-      loadingText: 'Sending…',
-      successMessage: 'Signers reminded successfully',
-      actionFunction: remindSigners,
-    },
-  };
-
-  const { title, text, buttonText, loadingText, successMessage, actionFunction } =
-    actionDetails[action];
-
-  if (showModal) {
-    confirmModalTitle.value = title;
-    confirmModalText.value = text;
-    confirmModalButtonText.value = buttonText;
-    confirmCallback.value = () => handleTransactionAction(action);
-    isConfirmModalShown.value = true;
-    return;
-  }
-
-  try {
-    confirmModalLoadingText.value = loadingText;
-    isConfirmModalLoadingState.value = true;
-    await executeTransactionActionFlow({
-      execute: async () => {
-        await actionFunction(serverUrl, transactionId);
-      },
-      refresh: props.onAction,
-      onSuccess: () => {
-        toastManager.success(successMessage);
-      },
-      onError: error => {
-        toastManager.error(getErrorMessage(error, `Failed to ${action} transaction`));
-      },
-      onRefreshError: refreshError => {
-        toastManager.error(getErrorMessage(refreshError, 'Failed to refresh transaction'));
-      },
-    });
-  } finally {
-    isConfirmModalLoadingState.value = false;
-    confirmModalLoadingText.value = '';
-  }
-};
-
-const handleCancel = (showModal?: boolean) => handleTransactionAction('cancel', showModal);
-const handleArchive = (showModal?: boolean) => handleTransactionAction('archive', showModal);
-const handleExecute = (showModal?: boolean) => handleTransactionAction('execute', showModal);
-const handleRemindSigners = (showModal?: boolean) =>
-  handleTransactionAction('remindSigners', showModal);
-
-const handleExport = async () => {
-  if (!props.sdkTransaction || !props.organizationTransaction) {
-    throw new Error('(BUG) Transaction is not available');
-  }
-
-  assertUserLoggedIn(user.personal);
-
-  /* Verifies the user has entered his password */
-  const personalPassword = getPassword(handleExport, {
-    subHeading: 'Enter your application password to export the transaction',
-  });
-  if (passwordModalOpened(personalPassword)) return;
-
-  // Load the last export format the user selected, if applicable
-  const enabledFormats = EXPORT_FORMATS.filter(f => f.enabled);
-  const defaultFormat =
-    getLastExportExtension() || (enabledFormats[0] || EXPORT_FORMATS[0]).extensions[0];
-
-  // Move the default format to the top
-  enabledFormats.sort((a /*, b*/) => (a.extensions[0] === defaultFormat ? -1 : 1));
-
-  // Generate the default base name for the file
-  const baseName = generateTransactionExportFileName(props.organizationTransaction);
-
-  // Show the save dialog to the user, allowing them to choose the file name and location
-  const { filePath, canceled } = await showSaveDialog(
-    `${baseName || 'transaction'}`,
-    'Export transaction',
-    'Export',
-    enabledFormats,
-    'Export transaction',
-  );
-
-  if (canceled || !filePath) {
-    return;
-  }
-
-  // Save selected format to local storage
-  const ext = filePath.split('.').pop();
-  if (!ext || !EXPORT_FORMATS.find(f => f.extensions[0] === ext)) {
-    throw new Error(`Unsupported file extension: ${ext}`);
-  }
-  setLastExportExtension(ext);
-
-  // Create file(s) based on name and selected format
-  if (ext === 'tx2') {
-    // Export TTv2 --> TTv2
-    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
-      [props.organizationTransaction],
-      network.network,
-    );
-    await writeTransactionFile(tx2Content, filePath);
-
-    toastManager.success('Transaction exported successfully');
-  } else if (ext === 'tx') {
-    // Export TTv2 --> TTv1
-    if (user.publicKeys.length === 0) {
-      throw new Error(
-        'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
-      );
-    }
-    const publicKey = user.publicKeys[0]; // get the first key pair's public key
-    const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
-    const privateKey = getPrivateKey(publicKey, privateKeyRaw);
-
-    const { transactionBytes, jsonContent } = await generateTransactionV1ExportContent(
-      props.organizationTransaction,
-      privateKey,
-    );
-
-    await saveFileToPath(transactionBytes, filePath);
-    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
-    await saveFileToPath(jsonContent, txtFilePath);
-
-    toastManager.success('Transaction exported successfully');
-  }
-};
-
 const handleAction = async (value: ActionButton) => {
-  if (value === reject) {
-    await handleApprove(false, true);
-  } else if (value === approve) {
-    await handleApprove(true, true);
-  } else if (value === sign) {
-    await handleSign();
-  } else if (value === signAndNext) {
-    await handleSign(true);
-  } else if (value === cancel) {
-    await handleCancel(true);
-  } else if (value === archive) {
-    await handleArchive(true);
-  } else if (value === execute) {
-    await handleExecute(true);
-  } else if (value === exportName) {
-    await handleExport();
-  } else if (value === remindSignersLabel) {
-    await handleRemindSigners(true);
+  switch (value) {
+    case reject:
+    case approve:
+      approveStarted.value = true;
+      isApproved.value = value === approve;
+      break;
+    case sign:
+    case signAndNext:
+      signStarted.value = true;
+      goNextAfterSign.value = value === signAndNext;
+      break;
+    case cancel:
+      cancelStarted.value = true;
+      break;
+    case archive:
+      archiveStarted.value = true;
+      break;
+    case schedule:
+      scheduleStarted.value = true;
+      break;
+    case exportName:
+      exportStarted.value = true;
+      break;
+    case remindSignersLabel:
+      remindSignersStarted.value = true;
+      break;
   }
 };
+
 const handleSubmit = async (e: Event) => {
   const buttonContent = (e as SubmitEvent).submitter?.textContent || '';
   await handleAction(buttonContent as ActionButton);
 };
 
-const handleDropDownItem = async (value: ActionButton) => handleAction(value);
+const didSign = async (signed: boolean) => {
+  if (signed) {
+    if (goNextAfterSign.value) {
+      // We route to the next transaction
+      if (nextTransaction.hasNext) {
+        await nextTransaction.routeToNext(router);
+      } else {
+        await nextTransaction.routeUp(router);
+      }
+    } else {
+      // We tell parent to refresh transaction
+      await props.onAction();
+    }
+  } else {
+    // We tell parent to refresh transaction
+    await props.onAction();
+  }
+};
 
 /* Watchers */
 watch(
   () => props.organizationTransaction,
   async transaction => {
-    assertIsLoggedInOrganization(user.selectedOrganization);
+    if (!transaction) return;
 
     isRefreshing.value = true;
 
-    if (!transaction) {
-      publicKeysRequiredToSign.value = null;
-      shouldApprove.value = false;
-      isRefreshing.value = false;
-      return;
-    }
+    const approvePromise: Promise<boolean> =
+      FEATURE_APPROVERS_ENABLED && isLoggedInOrganization(user.selectedOrganization)
+        ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
+        : Promise.resolve(false);
 
-    const approvePromise = FEATURE_APPROVERS_ENABLED
-      ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
-      : Promise.resolve(false);
-
+    const userKeys = isLoggedInOrganization(user.selectedOrganization)
+      ? user.selectedOrganization.userKeys
+      : [];
     const results = await Promise.allSettled([
       usersPublicRequiredToSign(
         SDKTransaction.fromBytes(hexToUint8Array(transaction.transactionBytes)),
-        user.selectedOrganization.userKeys,
+        userKeys,
         network.mirrorNodeBaseURL,
-        accountByIdCache,
-        nodeByIdCache,
-        publicKeyOwnerCache,
+        appCache,
         user.selectedOrganization,
       ),
       approvePromise,
     ]);
 
-    results[0].status === 'fulfilled' && (publicKeysRequiredToSign.value = results[0].value);
-    results[1].status === 'fulfilled' && (shouldApprove.value = results[1].value);
+    const publicKeysRequiredToSign = results[0].status === 'fulfilled' ? results[0].value : [];
+    const shouldApprove = results[1].status === 'fulfilled' ? results[1].value : false;
 
+    visibleButtons.value = computeVisibleButtons(
+      transaction,
+      publicKeysRequiredToSign,
+      shouldApprove,
+    );
     isRefreshing.value = false;
 
     results.forEach(
@@ -606,7 +235,48 @@ watch(
         toastManager.error(getErrorMessage(r.reason, 'Failed to load transaction details')),
     );
   },
+  { immediate: true },
 );
+
+/* Functions */
+const computeVisibleButtons = (
+  transaction: ITransactionFull,
+  publicKeysRequiredToSign: string[],
+  shouldApprove: boolean,
+) => {
+  const buttons: ActionButton[] = [];
+
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const status = transaction.status;
+    const isManual = transaction.isManual;
+    const creatorKeyId = transaction.creatorKeyId;
+    const creator = contacts.contacts.find(contact =>
+      contact.userKeys.some(k => k.id === creatorKeyId),
+    );
+    const isCreator = creator?.user.id === user.selectedOrganization.userId;
+    const transactionIsInProgress = isInProgressStatus(transaction.status);
+
+    const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
+    const canSign = isSignableStatus(status) && publicKeysRequiredToSign.length > 0;
+    const canSchedule = status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator;
+    const canCancel = isCreator && transactionIsInProgress;
+    const canRemind = status === TransactionStatus.WAITING_FOR_SIGNATURES && isCreator;
+    const canArchive = isManual && isCreator && transactionIsInProgress;
+
+    /* The order is important REJECT, APPROVE, SIGN, SUBMIT, CANCEL, ARCHIVE, EXPORT */
+    canApprove && buttons.push(reject, approve);
+    canSign && !canApprove && buttons.push(sign);
+    canSchedule && buttons.push(schedule);
+    canCancel && buttons.push(cancel);
+    canRemind && buttons.push(remindSignersLabel);
+    canArchive && buttons.push(archive);
+    buttons.push(exportName);
+  } else {
+    // leaves buttons empty
+  }
+
+  return buttons;
+};
 </script>
 <template>
   <form @submit.prevent="handleSubmit">
@@ -627,54 +297,86 @@ watch(
 
       <div class="flex-centered gap-4">
         <NextTransactionCursor />
-        <Transition mode="out-in" name="fade">
-          <template v-if="visibleButtons.length > 0">
-            <div>
-              <SplitSignButtonDropdown
-                v-if="visibleButtons[0] === sign"
-                :loading="Boolean(loadingStates[sign])"
-                :loading-text="loadingStates[sign] || ''"
-              />
-              <AppButton
-                v-else
-                :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
-                :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
-                :loading="Boolean(loadingStates[visibleButtons[0]])"
-                :loading-text="loadingStates[visibleButtons[0]] || ''"
-                type="submit"
-                >{{ visibleButtons[0] }}
-              </AppButton>
-            </div>
-          </template>
-        </Transition>
+        <div v-if="visibleButtons.length > 0">
+          <SplitSignButtonDropdown
+            v-if="visibleButtons[0] === sign"
+            :disabled="isRefreshing"
+            :loading="Boolean(loadingStates[sign])"
+            :loading-text="loadingStates[sign] || ''"
+          />
+          <AppButton
+            v-else
+            :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
+            :data-testid="buttonsDataTestIds[visibleButtons[0]]"
+            :disabled="isRefreshing || Boolean(loadingStates[visibleButtons[0]])"
+            :loading="Boolean(loadingStates[visibleButtons[0]])"
+            :loading-text="loadingStates[visibleButtons[0]] || ''"
+            class="extra-width"
+            type="submit"
+            >{{ visibleButtons[0] }}
+          </AppButton>
+        </div>
+        <div v-else>
+          <AppButton color="primary" :disabled="true" class="extra-width" type="submit"
+            >…</AppButton
+          >
+        </div>
 
-        <Transition mode="out-in" name="fade">
-          <template v-if="dropDownItems.length > 0">
-            <div>
-              <AppDropDown
-                :color="'secondary'"
-                :disabled="isRefreshing"
-                :items="dropDownItems"
-                compact
-                data-testid="button-more-dropdown-lg"
-                @select="handleDropDownItem($event as ActionButton)"
-              />
-            </div>
-          </template>
-        </Transition>
+        <div v-if="dropDownItems.length > 0">
+          <AppDropDown
+            :color="'secondary'"
+            :disabled="isRefreshing"
+            :items="dropDownItems"
+            compact
+            data-testid="button-more-dropdown-lg"
+            @select="handleAction($event as ActionButton)"
+          />
+        </div>
       </div>
     </div>
   </form>
 
-  <AppConfirmModal
-    v-model:show="isConfirmModalShown"
-    data-testid="button-group-action"
-    :callback="confirmCallback"
-    :text="confirmModalText"
-    :title="confirmModalTitle"
-    :button-text="confirmModalButtonText"
-    :loading-text="confirmModalLoadingText"
-    :loading="isConfirmModalLoadingState"
+  <SignTransactionController
+    v-model:activate="signStarted"
+    :callback="didSign"
+    :transaction="props.organizationTransaction"
+  />
+  <ApproveTransactionController
+    v-model:activate="approveStarted"
+    :approved="isApproved"
+    :callback="props.onAction"
+    :sdk-transaction="props.sdkTransaction"
+    :transaction="props.organizationTransaction"
+  />
+  <ExportTransactionController
+    v-model:activate="exportStarted"
+    :callback="props.onAction"
+    :sdk-transaction="props.sdkTransaction"
+    :transaction="props.organizationTransaction"
+  />
+  <CancelTransactionController
+    v-model:activate="cancelStarted"
+    :callback="props.onAction"
+    :transaction="props.organizationTransaction"
+  />
+  <ArchiveTransactionController
+    v-model:activate="archiveStarted"
+    :callback="props.onAction"
+    :transaction="props.organizationTransaction"
+  />
+  <ScheduleTransactionController
+    v-model:activate="scheduleStarted"
+    :callback="props.onAction"
+    :transaction="props.organizationTransaction"
+  />
+  <RemindSignersController
+    v-model:activate="remindSignersStarted"
+    :callback="props.onAction"
+    :transaction="props.organizationTransaction"
   />
 </template>
+<style lang="scss" scoped>
+.extra-width {
+  min-width: 156px;
+}
+</style>

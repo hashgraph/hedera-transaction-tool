@@ -9,8 +9,6 @@ import {
   emailCardTable,
   emailCardRow,
   renderTransactionEmailLayout,
-  buildEmailTransactionsList,
-  type TransactionNotification,
 } from './layout';
 
 describe('layout templates', () => {
@@ -250,75 +248,6 @@ describe('layout templates', () => {
     it('applies border style', () => {
       const result = emailCardTable('');
       expect(result).toContain('border:1px solid #e2d4f8');
-    });
-  });
-
-// ─── buildEmailTransactionsList ───────────────────────────────────────────────
-
-  describe('buildEmailTransactionsList', () => {
-    const txs: TransactionNotification[] = [
-      { transactionId: '0.0.1234@1234567890.000', network: 'mainnet' },
-      { transactionId: '0.0.5678@9876543210.000', network: 'testnet' },
-    ];
-
-    it('renders all transaction IDs', () => {
-      const result = buildEmailTransactionsList(txs);
-      expect(result).toContain('0.0.1234@1234567890.000');
-      expect(result).toContain('0.0.5678@9876543210.000');
-    });
-
-    it('renders all networks', () => {
-      const result = buildEmailTransactionsList(txs);
-      expect(result).toContain('mainnet');
-      expect(result).toContain('testnet');
-    });
-
-    it('escapes transaction IDs', () => {
-      const malicious: TransactionNotification[] = [
-        { transactionId: '<script>xss</script>', network: 'mainnet' },
-      ];
-      const result = buildEmailTransactionsList(malicious);
-      expect(result).not.toContain('<script>');
-      expect(result).toContain('&lt;script&gt;');
-    });
-
-    it('handles an empty array', () => {
-      const result = buildEmailTransactionsList([]);
-      expect(result).toContain('<table');
-      expect(result).not.toContain('mainnet');
-    });
-
-    it('wraps output in a card table', () => {
-      const result = buildEmailTransactionsList(txs);
-      expect(result).toContain('border:1px solid #e2d4f8');
-    });
-
-    it('renders validStart when provided', () => {
-      const txs: TransactionNotification[] = [
-        { transactionId: 'tx-1', network: 'mainnet', validStart: '2024-01-15T10:30:45Z' },
-      ];
-      const result = buildEmailTransactionsList(txs);
-      expect(result).toContain('2024-01-15T10:30:45Z');
-    });
-
-    it('omits validStart cell when not provided', () => {
-      const txs: TransactionNotification[] = [
-        { transactionId: 'tx-1', network: 'mainnet' },
-      ];
-      const result = buildEmailTransactionsList(txs);
-      expect(result).toContain('tx-1');
-      expect(result).toContain('mainnet');
-      // only 2 cells: transactionId and network
-      expect(result.match(/<td/g)?.length).toBe(2);
-    });
-
-    it('escapes validStart', () => {
-      const txs: TransactionNotification[] = [
-        { transactionId: 'tx-1', network: 'mainnet', validStart: '<b>bad</b>' },
-      ];
-      const result = buildEmailTransactionsList(txs);
-      expect(result).not.toContain('<b>');
-      expect(result).toContain('&lt;b&gt;');
     });
   });
 

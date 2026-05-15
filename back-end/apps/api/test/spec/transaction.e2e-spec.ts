@@ -8,7 +8,7 @@ import {
   KeyList,
   PrivateKey,
   TransferTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 
 import {
   TransactionStatus,

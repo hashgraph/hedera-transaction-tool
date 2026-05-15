@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { Prisma } from '@prisma/client';
-import { FileId } from '@hashgraph/sdk';
+import { FileId } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
-import useCreateTooltips from '@renderer/composables/useCreateTooltips';
 
 import { add } from '@renderer/services/filesService';
 
@@ -32,7 +31,6 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
-useCreateTooltips();
 
 /* State */
 const fileId = ref('');
@@ -98,11 +96,21 @@ function handleOnBlur() {
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Nickname</label>
-        <AppInput v-model="nickname" :filled="true" placeholder="Enter nickname" />
+        <AppInput
+          v-model="nickname"
+          :filled="true"
+          placeholder="Enter nickname"
+          data-testid="input-existing-file-nickname"
+        />
       </div>
       <div class="form-group mt-5">
         <label class="form-label">Description</label>
-        <textarea v-model="description" class="form-control is-fill" rows="8"></textarea>
+        <textarea
+          v-model="description"
+          class="form-control is-fill"
+          rows="8"
+          data-testid="textarea-existing-file-description"
+        ></textarea>
       </div>
       <AppButton
         color="primary"

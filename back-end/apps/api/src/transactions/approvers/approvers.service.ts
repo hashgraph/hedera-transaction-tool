@@ -10,7 +10,7 @@ import {
   Repository,
 } from 'typeorm';
 
-import { PublicKey, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { PublicKey, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import {
   attachKeys,

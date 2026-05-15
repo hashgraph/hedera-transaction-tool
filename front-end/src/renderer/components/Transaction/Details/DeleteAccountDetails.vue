@@ -2,7 +2,7 @@
 import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
-import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hashgraph/sdk';
+import { Transaction, AccountDeleteTransaction, Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { TransactionStatus } from '@shared/interfaces';
 
@@ -14,7 +14,7 @@ import {
   safeAwait,
   stringifyHbar,
 } from '@renderer/utils';
-import { TransactionByIdCache } from '@renderer/caches/mirrorNode/TransactionByIdCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Props */
 const props = defineProps<{
@@ -26,7 +26,7 @@ const props = defineProps<{
 const network = useNetworkStore();
 
 /* Injected */
-const transactionByIdCache = TransactionByIdCache.inject();
+const transactionByIdCache = AppCache.inject().mirrorTransactionById;
 
 /* State */
 const controller = ref<AbortController | null>(null);

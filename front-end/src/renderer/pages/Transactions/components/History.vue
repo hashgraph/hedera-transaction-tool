@@ -5,7 +5,7 @@ import type { Transaction } from '@prisma/client';
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
 import { Prisma } from '@prisma/client';
 
-import { Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { NotificationType, TransactionStatus } from '@shared/interfaces';
 import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
@@ -44,6 +44,8 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
+import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const HISTORY_SORT_URL_VALUES = [
   'created_at',
@@ -62,7 +64,9 @@ const LOCAL_TO_ORG_SORT: Record<string, keyof ITransaction> = {
   status_code: 'statusCode',
   executed_at: 'executedAt',
 };
-import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+
+/* Injected */
+const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();
@@ -75,9 +79,12 @@ const { recentlyUpdatedTxIds, highlightAndFetch } = useTransactionLiveHighlight(
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransactions(); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchTransactionsOnNotif();
+    return;
+  } // Legacy fallback
 
-  const silentFetch = () => fetchTransactions({ silent: true });
+  const silentFetch = () => fetchTransactionsOnNotif({ silent: true });
 
   // Status updates can move transactions into History — always refetch
   if (parsed.eventType === TRANSACTION_EVENT_TYPE.STATUS_UPDATE) {
@@ -101,11 +108,8 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
-  HISTORY_SORT_URL_VALUES,
-  'created_at',
-  'desc',
-);
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
+  useTableQueryState(HISTORY_SORT_URL_VALUES, 'created_at', 'desc');
 
 /* State */
 const organizationTransactions = ref<
@@ -262,6 +266,19 @@ async function fetchTransactions(options?: { silent?: boolean }) {
   }
 }
 
+async function fetchTransactionsOnNotif(options?: { silent?: boolean }) {
+  // 1) Before calling fetchTransactions(), we clear transaction cache
+  if (isLoggedInOrganization(user.selectedOrganization)) {
+    const serverUrl = user.selectedOrganization.serverUrl;
+    for (const t of organizationTransactions.value) {
+      // We clear cache with strict==false to keep young data
+      transactionCache.forget(t.transactionRaw.transactionId, serverUrl, false);
+    }
+  }
+  // 2) Now fetch group
+  await fetchTransactions(options);
+}
+
 /**
  * Gets the display transaction type for local transactions.
  * For freeze transactions, extracts the specific freeze type from the transaction body.
@@ -280,10 +297,20 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
-watch([currentPage, pageSize, () => user.selectedOrganization, orgFilters], async () => {
-  syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
-  await fetchTransactions();
-});
+watch(
+  [
+    currentPage,
+    pageSize,
+    () => user.selectedOrganization,
+    orgFilters,
+    () => localSort.field,
+    () => localSort.direction,
+  ],
+  async () => {
+    syncToUrl(currentPage.value, localSort.field, localSort.direction, pageSize.value);
+    await fetchTransactions();
+  },
+);
 
 watch(
   () => notifications.notifications,
@@ -357,6 +384,7 @@ watch(
               </th>
               <th>
                 <div
+                  data-testid="button-sort-history-description"
                   class="table-sort-link"
                   @click="
                     handleSort(
@@ -586,7 +614,11 @@ watch(
 }
 @keyframes flash-update {
   0%,
-  25% { background-color: rgba(var(--bs-info-rgb), 0.45); }
-  100% { background-color: transparent; }
+  25% {
+    background-color: rgba(var(--bs-info-rgb), 0.45);
+  }
+  100% {
+    background-color: transparent;
+  }
 }
 </style>

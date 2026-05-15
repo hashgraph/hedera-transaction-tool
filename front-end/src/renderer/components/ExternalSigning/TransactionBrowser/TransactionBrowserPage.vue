@@ -16,7 +16,7 @@ import {
   Transaction as SDKTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
-} from '@hashgraph/sdk';
+} from '@hiero-ledger/sdk';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import { hexToUint8Array } from '@renderer/utils';
 import { getTransactionType, getTransactionValidStart } from '@renderer/utils/sdk/transactions.ts';

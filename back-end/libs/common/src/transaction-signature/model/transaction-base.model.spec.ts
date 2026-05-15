@@ -1,4 +1,4 @@
-import { AccountId, TransferTransaction, Transaction as SDKTransaction } from '@hashgraph/sdk';
+import { AccountId, TransferTransaction, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 
 // Concrete implementation for testing
