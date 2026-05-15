@@ -247,8 +247,9 @@ const useUserStore = defineStore('user', () => {
   /* Watchers */
   watch(
     () => network.network,
-    () => {
-      refetchAccounts();
+    async () => {
+      await refetchAccounts();
+      await refetchPublicKeys();
     },
   );
 
