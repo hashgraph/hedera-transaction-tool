@@ -10,6 +10,7 @@ import { BackendTransactionCache } from './backend/BackendTransactionCache.ts';
 import { AccountByPublicKeyCache } from './mirrorNode/AccountByPublicKeyCache';
 import TransactionFactory from '@renderer/utils/transactionSignatureModels/transaction-factory.ts';
 import { createLogger } from '@renderer/utils';
+import { TokenByIdCache } from '@renderer/caches/mirrorNode/TokenByIdCache';
 
 export class AppCache {
   private static readonly injectKey = Symbol();
@@ -20,6 +21,7 @@ export class AppCache {
   public readonly mirrorAccountByPublicKey = new AccountByPublicKeyCache();
   public readonly mirrorNodeById = new NodeByIdCache();
   public readonly mirrorTransactionById = new TransactionByIdCache();
+  public readonly mirrorTokenById = new TokenByIdCache();
 
   // Backend
   public readonly backendTransaction = new BackendTransactionCache();
