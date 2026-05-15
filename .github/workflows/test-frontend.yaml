@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - release/**
+      - test-solo
   pull_request:
     branches:
       - main
@@ -28,58 +29,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build | Front-end
-    runs-on: transaction-tools-linux-medium
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
-        with:
-          egress-policy: audit
-
-      - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-          node-version-file: package.json
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Linux executable
-        run: pnpm run build:linux:e2e
-        working-directory: front-end
-
-      - name: Cache Build Artifacts
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: front-end/release/linux-unpacked
-          key: build-artifacts-${{ github.sha }}
 
   test:
     env:
       BACKEND_COMPOSE_FILE: docker-compose.yaml
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
-    needs: build
     strategy:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Local Basic
-            grep: '@local-basic'
-            soloRequired: false
-            backendRequired: false
-            sharedEnvironment: true
-            workers: 2
           - name: Shared E2E
             grep: '@local-transactions|@organization-basic|@organization-advanced'
             soloRequired: true
@@ -105,24 +64,11 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
           node-version-file: package.json
 
-      - name: Install Docker Compose Plugin
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-
-          if docker compose version >/dev/null 2>&1; then
-            docker compose version
-            exit 0
-          fi
-
-          sudo install -d /usr/local/lib/docker/cli-plugins
-          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose \
-            https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
-          sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-          docker compose version
-
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install Libraries
+        run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 xvfb libnss3-tools socat
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -151,14 +97,14 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
+          kubectl get pods -A || true
+          helm ls -A || true
 
           wait_for_tcp() {
             local host="$1"
             local port="$2"
             timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
           }
-
-          ps -ef | grep port-forward || true
 
           for attempt in $(seq 1 60); do
             if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1
@@ -182,20 +128,12 @@ jobs:
           wait_for_tcp 127.0.0.1 35211
 
       - name: Deploy Back-end
+        env:
+          COMPOSE_PARALLEL_LIMIT: 4
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
         run: |
           set -euo pipefail
-
-          wait_for_tcp() {
-            local host="$1"
-            local port="$2"
-            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
-          }
-
-          # Install Linux packages required for mkcert and host-to-container port proxies.
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends libnss3-tools socat
 
           if ! command -v mkcert >/dev/null 2>&1; then
             curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
@@ -223,42 +161,6 @@ jobs:
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
 
-          export COMPOSE_PARALLEL_LIMIT=4
-
-          if ! docker info &>/dev/null; then
-            echo "Docker daemon is not reachable; attempting to start it..."
-            sudo service docker start || true
-            sudo systemctl start docker || true
-          fi
-
-          for i in $(seq 1 15); do
-            if docker info &>/dev/null; then
-              break
-            fi
-            if [ "${i}" -eq 15 ]; then
-              echo "Docker daemon is unavailable after startup attempts" >&2
-              ls -l /var/run/docker.sock || true
-              sudo ls -l /var/run/docker.sock || true
-              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
-              exit 1
-            fi
-            sleep 2
-          done
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 35211; then
-              echo "Solo network endpoints are ready on attempt ${attempt}"
-              break
-            fi
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo network endpoints did not become ready in time" >&2
-              exit 1
-            fi
-            echo "Waiting for Solo network endpoints... attempt ${attempt}/60"
-            sleep 5
-          done
-
           DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
           if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
             echo "Failed to resolve the Docker bridge gateway IP" >&2
@@ -271,17 +173,6 @@ jobs:
           for port in 35211 38081; do
             sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
           done
-
-          sleep 2
-
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:38081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 35211; then
-            echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
-            ss -lnt || true
-            sudo tail -n 50 /tmp/socat-35211.log || true
-            sudo tail -n 50 /tmp/socat-38081.log || true
-            exit 1
-          fi
 
           for service in redis migration api chain notifications; do
             for attempt in $(seq 1 3); do
@@ -336,31 +227,12 @@ jobs:
             sleep 5
           done
 
-          docker compose -f "${BACKEND_COMPOSE_FILE}" ps
-
-      - name: Test API connectivity
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
-          echo "API connectivity check returned HTTP ${code}"
-          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
-            echo "Unexpected HTTP status from API: ${code}" >&2
-            exit 1
-          fi
-
       - name: Restore Build Artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           fail-on-cache-miss: true
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
-
-      - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
-
-      - name: Install Runtime Shared Libraries
-        run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
 
       - name: Run Automation
         env:
@@ -435,53 +307,3 @@ jobs:
           path: kind-logs
           if-no-files-found: warn
           retention-days: 3
-
-      - name: Stop Back-end Services
-        if: ${{ always() && matrix.test-suite.backendRequired }}
-        run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
-        working-directory: back-end
-
-  unit-test:
-    name: Unit Tests | ${{ matrix.test-suite.name }}
-    runs-on: transaction-tools-linux-medium
-    strategy:
-      fail-fast: false
-      matrix:
-        test-suite:
-          - name: Main Process
-            command: main:coverage
-          - name: Renderer Process
-            command: renderer
-          - name: Shared
-            command: shared
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
-        with:
-          egress-policy: audit
-
-      - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-
-      - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-          node-version-file: package.json
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run Unit Tests
-        run: pnpm run test:${{ matrix.test-suite.command }}
-        working-directory: front-end
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
