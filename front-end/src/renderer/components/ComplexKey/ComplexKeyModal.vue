@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import type { ComplexKey as SavedComplexKey } from '@prisma/client';
+
 import { computed, ref, watch } from 'vue';
 
 import { Key, KeyList } from '@hiero-ledger/sdk';
 
-import { isKeyListValid } from '@renderer/utils';
+import { encodeKey, isKeyListValid } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -18,9 +20,11 @@ const props = withDefaults(
     show: boolean;
     onSaveComplexKey?: () => void;
     noThreshold?: boolean;
+    savedComplexKeys?: SavedComplexKey[];
   }>(),
   {
     noThreshold: false,
+    savedComplexKeys: () => [],
   },
 );
 
@@ -38,6 +42,12 @@ const currentKeyInvalid = computed(
     currentKey.value === null ||
     (currentKey.value instanceof KeyList && !isKeyListValid(currentKey.value)),
 );
+
+const matchingSavedKey = computed<SavedComplexKey | null>(() => {
+  if (!(currentKey.value instanceof KeyList) || !isKeyListValid(currentKey.value)) return null;
+  const encoded = encodeKey(currentKey.value).toString();
+  return props.savedComplexKeys.find(k => k.protobufEncoded === encoded) ?? null;
+});
 
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
@@ -88,6 +98,16 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
         <h1 class="text-title text-semi-bold text-center">Complex Key</h1>
         <div :style="modalContentContainerStyle">
           <div class="text-end">
+            <span
+              v-if="matchingSavedKey && onSaveComplexKey"
+              class="text-warning text-small me-3"
+              data-testid="span-complex-key-already-exists"
+            >
+              <i class="bi bi-exclamation-triangle-fill me-2"></i>
+              Complex key already exists{{
+                matchingSavedKey.nickname ? ` ("${matchingSavedKey.nickname}")` : ''
+              }}
+            </span>
             <AppButton
               color="borderless"
               type="button"
@@ -96,7 +116,7 @@ const modalContentContainerStyle = { padding: '0 10%', height: '80%' };
               >{{ summaryMode ? 'Edit Mode' : 'View Summary' }}</AppButton
             >
             <AppButton
-              v-if="onSaveComplexKey && !currentKeyInvalid"
+              v-if="onSaveComplexKey && !currentKeyInvalid && !matchingSavedKey"
               type="button"
               color="primary"
               class="ms-3"
