@@ -68,7 +68,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Libraries
-        run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 xvfb libnss3-tools socat
+        run: |
+          sudo apt-get update -q && \
+          sudo apt-get install -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 xvfb libnss3-tools socat
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -99,6 +101,7 @@ jobs:
           set -euo pipefail
           kubectl get pods -A || true
           helm ls -A || true
+          kubectl get pods -A -o yaml || true
 
           wait_for_tcp() {
             local host="$1"
