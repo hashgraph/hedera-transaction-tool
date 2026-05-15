@@ -5,6 +5,15 @@ import { transactionTypeKeys } from '@renderer/components/Transaction/Create/txT
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
+/* Types */
+type MenuLinkItem = { label: string; name: string };
+type MenuSeparatorItem = { separator: true };
+type MenuItem = MenuLinkItem | MenuSeparatorItem;
+type MenuGroup = { groupTitle: string; items: MenuItem[] };
+
+/** Type guard so vue-tsc can narrow `item` inside template branches. */
+const isLinkItem = (item: MenuItem): item is MenuLinkItem => 'name' in item;
+
 /* Props */
 defineProps<{
   group?: boolean;
@@ -17,8 +26,8 @@ const show = defineModel<boolean>('show', { required: true });
 const activeGroupIndex = ref(0);
 
 /* Computed */
-const transactionGroups = computed(() => {
-  const groups = [
+const transactionGroups = computed<MenuGroup[]>(() => {
+  const groups: MenuGroup[] = [
     {
       groupTitle: 'Account',
       items: [
@@ -48,6 +57,11 @@ const transactionGroups = computed(() => {
         { label: 'Node Create', name: transactionTypeKeys.nodeCreate },
         { label: 'Node Delete', name: transactionTypeKeys.nodeDelete },
         { label: 'Node Update', name: transactionTypeKeys.nodeUpdate },
+        { separator: true },
+        {
+          label: 'Registered Node Create',
+          name: transactionTypeKeys.registeredNodeCreate,
+        },
       ],
     },
     {
@@ -91,8 +105,17 @@ const transactionGroups = computed(() => {
         </div>
         <div class="col-7">
           <div class="border-start ps-2">
-            <template v-for="item in transactionGroups[activeGroupIndex].items" :key="item.name">
+            <template
+              v-for="(item, idx) in transactionGroups[activeGroupIndex].items"
+              :key="isLinkItem(item) ? item.name : `sep-${idx}`"
+            >
+              <hr
+                v-if="!isLinkItem(item)"
+                class="separator my-2"
+                data-testid="menu-sub-separator"
+              />
               <a
+                v-else
                 :data-testid="`menu-sub-link-${item.name.toLowerCase()}`"
                 class="link-menu cursor-pointer"
                 @click="

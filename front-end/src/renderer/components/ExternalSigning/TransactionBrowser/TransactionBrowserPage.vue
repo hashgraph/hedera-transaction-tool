@@ -12,6 +12,7 @@ import {
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  RegisteredNodeCreateTransaction,
   TransferTransaction,
   Transaction as SDKTransaction,
   SystemDeleteTransaction,
@@ -35,6 +36,7 @@ import TransferDetails from '@renderer/components/Transaction/Details/TransferDe
 import FreezeDetails from '@renderer/components/Transaction/Details/FreezeDetails.vue';
 import SystemDetails from '@renderer/components/Transaction/Details/SystemDetails.vue';
 import NodeDetails from '@renderer/components/Transaction/Details/NodeDetails.vue';
+import RegisteredNodeDetails from '@renderer/components/Transaction/Details/RegisteredNodeDetails.vue';
 
 /* Props */
 const props = defineProps<{
@@ -209,6 +211,12 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
                   transaction instanceof NodeUpdateTransaction ||
                   transaction instanceof NodeDeleteTransaction
                 "
+                :organization-transaction="null"
+                :transaction="transaction"
+              />
+
+              <RegisteredNodeDetails
+                v-if="transaction instanceof RegisteredNodeCreateTransaction"
                 :organization-transaction="null"
                 :transaction="transaction"
               />
