@@ -79,13 +79,14 @@ function handleDescriptionValidation(e: Event) {
   // HIP-1137 description is ≤100 UTF-8 bytes (not characters). Validate by
   // byte length so 100 emoji don't silently slip past a char-based check
   // and only get rejected later in preCreateAssert.
+  // Toast only on the valid→invalid transition; otherwise typing N extra
+  // characters past the limit fires N stacked toasts on every keystroke.
   const target = e.target as HTMLInputElement;
-  if (exceedsUtf8ByteLimit(target.value, DESCRIPTION_MAX_BYTES)) {
+  const hasDescriptionError = exceedsUtf8ByteLimit(target.value, DESCRIPTION_MAX_BYTES);
+  if (hasDescriptionError && !descriptionError.value) {
     toastManager.error(`Description is limited to ${DESCRIPTION_MAX_BYTES} bytes (UTF-8)`);
-    descriptionError.value = true;
-  } else {
-    descriptionError.value = false;
   }
+  descriptionError.value = hasDescriptionError;
 }
 
 /** Stable row key — never `index`, since deleting/reordering with `index` keys
