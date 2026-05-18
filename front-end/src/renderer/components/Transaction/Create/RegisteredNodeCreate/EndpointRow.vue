@@ -4,7 +4,7 @@ import type {
   RegisteredEndpointType,
 } from '@renderer/utils/sdk';
 
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 
 import { BlockNodeApi } from '@hiero-ledger/sdk';
 
@@ -82,6 +82,32 @@ function handlePortInput(e: Event) {
   patch({ port: target.value.replace(/[^0-9]/g, '') });
 }
 
+/**
+ * IP / Domain are mutually exclusive per the proto `oneof address` rule. We
+ * surface that with an explicit switch + single text field rather than two
+ * inputs whose state silently clears the other on type. Initial mode is
+ * derived from whichever field has data so drafts and round-trips pick up
+ * the correct view.
+ */
+const addressMode = ref<'ipv4' | 'domain'>(
+  props.endpoint.domainName ? 'domain' : 'ipv4',
+);
+
+function handleAddressModeChange(useDomain: boolean) {
+  addressMode.value = useDomain ? 'domain' : 'ipv4';
+  // Clear the now-inactive field so we never carry stale data into the
+  // SDK builder. Not silent — the user just toggled the switch.
+  patch(useDomain ? { ipAddressV4: '' } : { domainName: '' });
+}
+
+function handleAddressInput(value: string) {
+  patch(
+    addressMode.value === 'ipv4'
+      ? { ipAddressV4: value, domainName: '' }
+      : { domainName: value, ipAddressV4: '' },
+  );
+}
+
 function toggleApi(code: number, checked: boolean) {
   const current = new Set(props.endpoint.endpointApis ?? []);
   if (checked) current.add(code);
@@ -127,30 +153,31 @@ function isApiSelected(code: number) {
       </select>
     </div>
 
-    <!-- IP / Domain / Port -->
+    <!-- Address (IPv4 or Domain) / Port -->
     <div class="row align-items-end mt-3">
-      <div class="col-4 col-xxxl-3">
-        <label class="form-label">IP Address (IPv4)</label>
+      <div class="col-8 col-xxxl-6">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <label class="form-label mb-0">
+            {{ addressMode === 'ipv4' ? 'IPv4 Address' : 'Domain Name' }}
+            <span class="text-danger">*</span>
+          </label>
+          <AppSwitch
+            :checked="addressMode === 'domain'"
+            @update:checked="handleAddressModeChange"
+            size="sm"
+            :name="`registered-endpoint-address-mode-${index}`"
+            label="Use domain name"
+            :data-testid="`switch-registered-endpoint-address-mode-${index}`"
+          />
+        </div>
         <AppInput
-          :model-value="endpoint.ipAddressV4 ?? ''"
-          @update:model-value="
-            patch({ ipAddressV4: $event, domainName: $event ? '' : endpoint.domainName })
+          :model-value="
+            addressMode === 'ipv4' ? (endpoint.ipAddressV4 ?? '') : (endpoint.domainName ?? '')
           "
+          @update:model-value="handleAddressInput"
           :filled="true"
-          placeholder="e.g. 10.0.0.1"
-          :data-testid="`input-registered-endpoint-ip-${index}`"
-        />
-      </div>
-      <div class="col-4 col-xxxl-3">
-        <label class="form-label">Domain Name</label>
-        <AppInput
-          :model-value="endpoint.domainName ?? ''"
-          @update:model-value="
-            patch({ domainName: $event, ipAddressV4: $event ? '' : endpoint.ipAddressV4 })
-          "
-          :filled="true"
-          placeholder="e.g. node.example.com"
-          :data-testid="`input-registered-endpoint-domain-${index}`"
+          :placeholder="addressMode === 'ipv4' ? 'e.g. 10.0.0.1' : 'e.g. node.example.com'"
+          :data-testid="`input-registered-endpoint-address-${index}`"
         />
       </div>
       <div class="col-4 col-xxxl-3">
