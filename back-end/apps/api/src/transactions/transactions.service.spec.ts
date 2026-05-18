@@ -409,7 +409,7 @@ describe('TransactionsService', () => {
       entityManager.find.mockReturnValue(Promise.resolve([{ id: 1 }]));
       transactionsRepo.find.mockResolvedValue([{ id: 1, name: 'Transaction 1' }] as Transaction[]);
 
-      jest.spyOn(service, 'userKeysToSign').mockImplementation(() => Promise.resolve([1]));
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
 
       const result = await service.getTransactionsToSign(userWithKeys, {
         page: 1,
@@ -429,8 +429,7 @@ describe('TransactionsService', () => {
         { id: 2, name: 'Transaction 2' },
       ] as Transaction[]);
 
-      jest
-        .spyOn(service, 'userKeysToSign')
+      (userKeysRequiredToSign as jest.Mock)
         .mockResolvedValueOnce([1])
         .mockRejectedValueOnce(new Error('Error'));
 
@@ -1986,7 +1985,7 @@ describe('TransactionsService', () => {
 
     it('should return true if user has keys to sign', async () => {
       const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([1]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
@@ -1995,7 +1994,7 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         creatorKey: { userId: user.id },
       } as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
@@ -2004,16 +2003,15 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         observers: [{ userId: user.id }],
       } as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
-    it('should return true if user is signer', async () => {
+    it('should return true if user has required keys', async () => {
       const tx = {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        signers: [{ userKey: { userId: user.id } }],
-      } as unknown as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
@@ -2022,13 +2020,13 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         approvers: [{ userId: user.id }],
       } as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
     it('should return false if user has no access', async () => {
       const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
     });
   });
@@ -2515,7 +2513,7 @@ describe('TransactionsService', () => {
     it('should throw if transaction is not found', async () => {
       transactionsRepo.find.mockResolvedValue([]);
 
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
         ErrorCodes.TNF,
       );
@@ -2535,7 +2533,7 @@ describe('TransactionsService', () => {
         observers: []
       };
 
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
@@ -2544,7 +2542,7 @@ describe('TransactionsService', () => {
       );
     });
 
-    it('should return the transaction if the user is a signer', async () => {
+    it('should return the transaction if the user has required keys', async () => {
       const transaction = {
         id: 123,
         creatorKey: {
@@ -2558,15 +2556,7 @@ describe('TransactionsService', () => {
         observers: [],
       };
 
-      entityManager.find.mockResolvedValueOnce([
-        {
-          userKey: {
-            userId: user.id,
-          },
-        },
-      ]);
-
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
@@ -2589,8 +2579,7 @@ describe('TransactionsService', () => {
         observers: [{ userId: user.id }],
       };
 
-      entityManager.find.mockResolvedValueOnce([]);
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
@@ -2615,8 +2604,7 @@ describe('TransactionsService', () => {
 
       const approvers: TransactionApprover[] = [{ userId: user.id }] as TransactionApprover[];
 
-      entityManager.find.mockResolvedValueOnce([]);
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue(approvers);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
@@ -2640,8 +2628,7 @@ describe('TransactionsService', () => {
         observers: [],
       };
 
-      entityManager.find.mockResolvedValueOnce([]);
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
@@ -2665,8 +2652,7 @@ describe('TransactionsService', () => {
         status: TransactionStatus.EXECUTED,
       };
 
-      entityManager.find.mockResolvedValueOnce([]);
-      jest.spyOn(service, 'userKeysToSign').mockResolvedValueOnce([]);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
@@ -2704,26 +2690,6 @@ describe('TransactionsService', () => {
 
     it('should throw if not transaction is passed to attachTransactionSigners', async () => {
       await expect(service.attachTransactionSigners(null)).rejects.toThrow(ErrorCodes.TNF);
-    });
-  });
-
-  describe('userKeysToSign', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should call user keys required with correct arguments', async () => {
-      const transaction = { id: 123 };
-
-      await service.userKeysToSign(transaction as Transaction, user as User);
-
-      expect(jest.mocked(userKeysRequiredToSign)).toHaveBeenCalledWith(
-        transaction,
-        user,
-        transactionSignatureService,
-        entityManager,
-        false,
-      );
     });
   });
 

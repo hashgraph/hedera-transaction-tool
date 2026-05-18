@@ -257,6 +257,7 @@ export class TransactionsService {
   }
 
   /* Get the transactions that a user needs to sign */
+  /** @deprecated use transaction-nodes' getTransactionNodes instead */
   async getTransactionsToSign(
     user: User,
     { page, limit, size, offset }: Pagination,
@@ -309,7 +310,7 @@ export class TransactionsService {
     for (const transaction of transactions) {
       /* Check if the user should sign the transaction */
       try {
-        const keysToSign = await this.userKeysToSign(transaction, user);
+        const keysToSign = await this.getUserKeysToSign(transaction, user);
         if (keysToSign.length > 0) result.push({ transaction, keysToSign });
       } catch (error) {
         console.log(error);
@@ -620,7 +621,7 @@ export class TransactionsService {
     }
 
     for (const [id, { transaction, publicKeys, newBytes, isSameBytes }] of intermediate) {
-      // Without these signer rows, the signing user fails verifyAccess post-import (issue #2552).
+      // Create TransactionSigner rows for any keys found in the imported signatures (issue #2552).
       const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
       if (publicKeys.length > 0) {
         let txExistingSigners = signersByTransaction.get(id);
@@ -672,7 +673,7 @@ export class TransactionsService {
     let dismissedRows: Array<{ id: number; userId: number }> = [];
     let committed = false;
 
-    // Bytes + signer rows + dismissals must commit together; partial state recreates issue #2552.
+    // Bytes + signer rows + dismissals must commit together atomically.
     if (updateArray.length > 0 || newSignerRows.length > 0) {
       try {
         await this.dataSource.transaction(async manager => {
@@ -974,13 +975,12 @@ export class TransactionsService {
     )
       return true;
 
-    const userKeysToSign = await this.userKeysToSign(transaction, user, true);
+    const requiredKeyIds = await this.getUserKeysToSign(transaction, user, true);
 
     return (
-      userKeysToSign.length !== 0 ||
+      requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
       !!transaction.observers?.some(o => o.userId === user.id) ||
-      !!transaction.signers?.some(s => s.userKey?.userId === user.id) ||
       !!transaction.approvers?.some(a => a.userId === user.id)
     );
   }
@@ -1049,7 +1049,7 @@ export class TransactionsService {
   }
 
   /* Get the user keys that are required for a given transaction */
-  async userKeysToSign(transaction: Transaction, user: User, showAll: boolean = false) {
+  async getUserKeysToSign(transaction: Transaction, user: User, showAll: boolean = false): Promise<number[]> {
     return userKeysRequiredToSign(transaction, user, this.transactionSignatureService, this.entityManager, showAll);
   }
 
