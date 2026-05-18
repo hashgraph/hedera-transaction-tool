@@ -17,18 +17,25 @@ import {
   TransactionStatus,
 } from '@entities';
 
+type KeysRequiredToSignOptions = {
+  showAll?: boolean;
+  userKeys?: UserKey[];
+  cache?: Map<string, UserKey>;
+  /** When true, keys whose signatures are already present in the transaction bytes are excluded.
+   *  Defaults to false — all structurally required keys are returned regardless of signing state. */
+  excludeAlreadySigned?: boolean;
+};
+
 /* Returns all UserKeys structurally required to sign the transaction, regardless of whether
-   they have already signed. Pass excludeAlreadySigned=true only when you need the remaining
+   they have already signed. Pass excludeAlreadySigned: true only when you need the remaining
    unsigned keys (e.g. signer reminders). */
 export const keysRequiredToSign = async (
   transaction: Transaction,
   transactionSignatureService: TransactionSignatureService,
   entityManager: EntityManager,
-  showAll: boolean = false,
-  userKeys?: UserKey[],
-  cache?: Map<string, UserKey>,
-  excludeAlreadySigned: boolean = false,
+  options: KeysRequiredToSignOptions = {},
 ): Promise<UserKey[]> => {
+  const { showAll = false, userKeys, cache, excludeAlreadySigned = false } = options;
   if (!transaction) return [];
 
   const signature = await transactionSignatureService.computeSignatureKey(transaction, showAll);
@@ -110,8 +117,7 @@ export const userKeysRequiredToSign = async (
     transaction,
     transactionSignatureService,
     entityManager,
-    showAll,
-    user.keys
+    { showAll, userKeys: user.keys },
   );
 
   return userKeysRequiredToSign.map(k => k.id);

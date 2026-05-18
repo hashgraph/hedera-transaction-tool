@@ -1381,10 +1381,7 @@ describe('ReceiverService', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        false,
-        null,
-        expect.any(Map),
-        true,
+        { cache: expect.any(Map), excludeAlreadySigned: true },
       );
     });
 
@@ -1443,10 +1440,7 @@ describe('ReceiverService', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        false,
-        null,
-        expect.any(Map),
-        true,
+        { cache: expect.any(Map), excludeAlreadySigned: true },
       );
 
       collectSpy.mockRestore();
@@ -1478,10 +1472,7 @@ describe('ReceiverService', () => {
         expect.anything(),
         expect.anything(),
         expect.anything(),
-        false,
-        null,
-        expect.any(Map),
-        true,
+        { cache: expect.any(Map), excludeAlreadySigned: true },
       );
       expect(reminderSpy).not.toHaveBeenCalled();
       expect(notifyTypeSpy).not.toHaveBeenCalled();

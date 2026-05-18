@@ -16,7 +16,7 @@ import { keysRequiredToSign, userKeysRequiredToSign } from '.';
  * Integration tests for keysRequiredToSign and userKeysRequiredToSign.
  *
  * These tests use a real Postgres container to verify the DB lookup path and
- * soft-delete filtering. TransactionSignatureService.computeSignatureKey is
+ * signed-bytes filtering. TransactionSignatureService.computeSignatureKey is
  * stubbed to return a controlled KeyList so we are not dependent on mirror-node
  * cache infrastructure.
  *
@@ -24,8 +24,10 @@ import { keysRequiredToSign, userKeysRequiredToSign } from '.';
  *  - All required key owners are returned regardless of signing state (default)
  *  - excludeAlreadySigned=true filters out keys whose signatures are present in
  *    the transaction bytes
- *  - Soft-deleted UserKeys are not returned
- *  - Soft-deleted Users are not returned
+ *  - Soft-deleted UserKeys are excluded by TypeORM's default soft-delete behaviour
+ *  - Soft-deleted Users: keysRequiredToSign does NOT filter these — the user
+ *    relation is loaded but active-user filtering is the caller's responsibility
+ *    (e.g. getUsersIdsRequiredToSign via filterActiveUserKeys)
  *  - Cache path correctly resolves keys and avoids extra DB hits
  */
 describe('keysRequiredToSign - Integration', () => {
@@ -133,7 +135,7 @@ describe('keysRequiredToSign - Integration', () => {
     const signedTx = await makeFrozenTx().sign(alicePk);
     const tx = makeTransaction(signedTx.toBytes());
 
-    const result = await keysRequiredToSign(tx, svc, em, false, null, undefined, true);
+    const result = await keysRequiredToSign(tx, svc, em, { excludeAlreadySigned: true });
 
     const userIds = result.map(k => k.userId);
     expect(userIds).not.toContain(alice.id);
@@ -148,7 +150,7 @@ describe('keysRequiredToSign - Integration', () => {
     const signedTx = await (await baseTx.sign(alicePk)).sign(bobPk);
     const tx = makeTransaction(signedTx.toBytes());
 
-    const result = await keysRequiredToSign(tx, svc, em, false, null, undefined, true);
+    const result = await keysRequiredToSign(tx, svc, em, { excludeAlreadySigned: true });
 
     expect(result).toEqual([]);
   });
@@ -195,12 +197,12 @@ describe('keysRequiredToSign - Integration', () => {
     const findSpy = jest.spyOn(em, 'find');
 
     // First call populates cache
-    await keysRequiredToSign(tx, svc, em, false, null, cache);
+    await keysRequiredToSign(tx, svc, em, { cache });
     const callsAfterFirst = findSpy.mock.calls.length;
 
     // Second call should hit cache entirely
     svc.computeSignatureKey = jest.fn().mockResolvedValue(keyList);
-    await keysRequiredToSign(tx, svc, em, false, null, cache);
+    await keysRequiredToSign(tx, svc, em, { cache });
 
     expect(findSpy.mock.calls.length).toBe(callsAfterFirst); // no new DB calls
 
