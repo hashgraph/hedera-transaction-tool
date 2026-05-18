@@ -59,7 +59,7 @@ describe('keysRequiredToSign', () => {
     transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
-    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager);
+    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager, false, null, undefined, true);
     expect(result).toEqual([]);
   });
 });

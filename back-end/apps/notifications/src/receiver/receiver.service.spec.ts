@@ -1377,6 +1377,15 @@ describe('ReceiverService', () => {
 
       expect((service as any).processReminderEmail).toHaveBeenCalled();
       expect((service as any).processNotificationType).toHaveBeenCalled();
+      expect(keysRequiredToSign).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        false,
+        null,
+        expect.any(Map),
+        true,
+      );
     });
 
     it('processSignerReminders manual path processes updated receivers from processNotificationType', async () => {
@@ -1430,6 +1439,15 @@ describe('ReceiverService', () => {
         expect.any(Object), // inAppNotifications
         expect.any(Array), // inAppReceiverIds
       );
+      expect(keysRequiredToSign).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        false,
+        null,
+        expect.any(Map),
+        true,
+      );
 
       collectSpy.mockRestore();
     });
@@ -1456,7 +1474,15 @@ describe('ReceiverService', () => {
       await (service as any).processSignerReminders([{ entityId: 8 } as any], false);
 
       expect(prepSpy).toHaveBeenCalled();
-      expect(keysRequiredToSign).toHaveBeenCalled();
+      expect(keysRequiredToSign).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        expect.anything(),
+        false,
+        null,
+        expect.any(Map),
+        true,
+      );
       expect(reminderSpy).not.toHaveBeenCalled();
       expect(notifyTypeSpy).not.toHaveBeenCalled();
 

@@ -17,6 +17,9 @@ import {
   TransactionStatus,
 } from '@entities';
 
+/* Returns all UserKeys structurally required to sign the transaction, regardless of whether
+   they have already signed. Pass excludeAlreadySigned=true only when you need the remaining
+   unsigned keys (e.g. signer reminders). */
 export const keysRequiredToSign = async (
   transaction: Transaction,
   transactionSignatureService: TransactionSignatureService,
@@ -24,25 +27,23 @@ export const keysRequiredToSign = async (
   showAll: boolean = false,
   userKeys?: UserKey[],
   cache?: Map<string, UserKey>,
+  excludeAlreadySigned: boolean = false,
 ): Promise<UserKey[]> => {
   if (!transaction) return [];
 
-  /* Deserialize the transaction */
-  const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-
-  // list of just public keys that have already signed the transaction
-  const signerKeys = sdkTransaction._signerPublicKeys;
-
   const signature = await transactionSignatureService.computeSignatureKey(transaction, showAll);
-  // flatten the key list to an array of public keys
-  // and filter out any keys that have already signed the transaction
-  const flatPublicKeys = flattenKeyList(signature)
-    .map(pk => pk.toStringRaw())
-    .filter(pk => !signerKeys.has(pk));
+  let flatPublicKeys = flattenKeyList(signature).map(pk => pk.toStringRaw());
+
+  if (excludeAlreadySigned) {
+    /* Deserialize the transaction */
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+    const signerKeys = sdkTransaction._signerPublicKeys;
+    flatPublicKeys = flatPublicKeys.filter(pk => !signerKeys.has(pk));
+  }
 
   if (flatPublicKeys.length === 0) return [];
 
-  let results: UserKey[] = [];
+  let results: UserKey[];
   // Now if userKeys is provided, filter out any keys that are not in the flatPublicKeys array
   // this way a user requesting required keys will only see their own keys that are required
   // Otherwise, fetch all UserKeys that are in flatPublicKeys
@@ -93,6 +94,8 @@ export const keysRequiredToSign = async (
   return results;
 };
 
+/* Returns the IDs of the given user's keys that are structurally required to sign the
+   transaction, regardless of whether they have already signed. */
 export const userKeysRequiredToSign = async (
   transaction: Transaction,
   user: User,

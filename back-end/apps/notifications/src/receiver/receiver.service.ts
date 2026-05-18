@@ -1140,6 +1140,7 @@ export class ReceiverService {
         false,
         null,
         keyCache,
+        true,
       );
 
       // Filter out keys/users that have been soft-deleted to prevent notification failures

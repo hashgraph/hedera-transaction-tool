@@ -301,7 +301,7 @@ describe('TransactionsController', () => {
     it('should return an array of key ids', async () => {
       const result = [1];
 
-      transactionService.userKeysToSign.mockResolvedValue(result);
+      transactionService.getUserKeysToSign.mockResolvedValue(result);
 
       expect(await controller.shouldSignTransaction(user, 1)).toBe(result);
     });

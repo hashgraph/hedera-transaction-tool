@@ -192,7 +192,7 @@ export class TransactionsController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<number[]> {
     const transaction = await this.transactionsService.getTransactionById(transactionId);
-    return this.transactionsService.userKeysToSign(transaction, user);
+    return this.transactionsService.getUserKeysToSign(transaction, user);
   }
 
   /* Get all transactions to be approved by the user */
