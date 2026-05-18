@@ -20,6 +20,7 @@ const logger = createLogger('renderer.component.complexKeyAddPublicKeyModal');
 /* Enums */
 enum KeyTab {
   MY = 'My keys',
+  PUBLIC_KEY = 'My public keys',
   CONTACTS = 'My contacts',
 }
 
@@ -58,6 +59,12 @@ const myKeys = computed(() => {
     nickname: kp.nickname,
   }));
 });
+const myPublicKeys = computed(() => {
+  return user.publicKeyMappings.map(m => ({
+    publicKey: m.public_key,
+    nickname: m.nickname,
+  }));
+});
 
 const myContactListKeys = computed(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) return [];
@@ -71,6 +78,9 @@ const listedKeyList = computed(() => {
   switch (currentTab.value) {
     case KeyTab.MY:
       result = myKeys.value;
+      break;
+    case KeyTab.PUBLIC_KEY:
+      result = myPublicKeys.value;
       break;
     case KeyTab.CONTACTS:
       result = myContactListKeys.value;
