@@ -35,6 +35,7 @@
     "k6:sign-all:grafana": "npm run k6:seed:all && npm run k6:build && k6 run --out influxdb=http://localhost:8086/k6 k6/dist/sign-all.js",
     "k6:baseline": "npm run k6:seed:all && npm run k6:build && k6 run k6/dist/smoke-test.js && sleep 5 && k6 run k6/dist/tab-load-times.js",
     "k6:load:all": "npm run k6:seed:all && npm run k6:build && k6 run k6/dist/ready-to-sign.js; k6 run k6/dist/ready-to-approve.js; k6 run k6/dist/in-progress.js; k6 run k6/dist/history.js; k6 run k6/dist/notifications.js; k6 run k6/dist/all-transactions.js",
+    "k6:remote:all": "npm run k6:seed:all && npm run k6:build && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/all-transactions.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/history.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/in-progress.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/notifications.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/ready-to-sign.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/smoke-test.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/tab-load-times.js && k6 run -e ENV=$ENV -e BASE_URL=$BASE_URL -e VUS=$VUS k6/dist/sign-all.js",
     "report:k6": "open reports/k6/",
     "report:playwright": "npx playwright show-report reports/playwright"
   },

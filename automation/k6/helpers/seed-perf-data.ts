@@ -29,9 +29,12 @@ import argon2 from 'argon2';
 import {
   PrivateKey,
   Mnemonic,
+  Client as HederaClient,
   FileCreateTransaction,
   AccountId,
   Transaction,
+  TransactionId,
+  Timestamp,
 } from '@hiero-ledger/sdk';
 import { DATA_VOLUMES, SEED_MARKER, TEST_USER_POOL } from '../src/config/constants.js';
 import type { SignatureMap } from '../src/types/api.types.js';
@@ -95,6 +98,32 @@ interface SignTransactionData {
 const HISTORY_STATUSES = ['EXECUTED', 'FAILED', 'EXPIRED', 'CANCELED', 'ARCHIVED'] as const;
 
 const signTransactionsData: SignTransactionData[] = [];
+
+let hederaClient: HederaClient | null = null;
+
+/**
+ * Real SDK Client object (so freezeWith has ledger context),
+ * but configured to a dummy network to avoid real network usage.
+ * freezeWith\(\) does not submit; it just builds bytes.
+ */
+function getOfflineHederaClient(): HederaClient {
+  if (hederaClient) return hederaClient;
+
+  const network: Record<string, AccountId> = {
+    "127.0.0.1:50211": new AccountId(3),
+  };
+
+  const client = HederaClient.forNetwork(network);
+
+  // Provide operator context required by SDK internals
+  client.setOperator(AccountId.fromString('0.0.2'), PrivateKey.generateED25519());
+
+  // Optional: avoid retries if something accidentally tries to execute
+  client.setMaxAttempts(1);
+
+  hederaClient = client;
+  return hederaClient;
+}
 
 /**
  * Serialize a public key to protobuf format (same as backend's serializeKey)
@@ -188,10 +217,10 @@ async function initializeKeyPair(): Promise<void> {
   console.log(`Mnemonic hash: ${testMnemonicHash.substring(0, 30)}...`);
 }
 
-function generateTransactionId(index: number): string {
-  const accountId = 1000 + index;
-  const timestamp = Math.floor(Date.now() / 1000);
-  return `0.0.${accountId}@${timestamp}.${index}`;
+function generateTransactionId(accountNum: number, date: Date = new Date()): TransactionId {
+  const accountId = AccountId.fromString(`0.0.${accountNum}`);
+  const validStart = Timestamp.fromDate(date);
+  return TransactionId.withValidStart(accountId, validStart);
 }
 
 function generateTransactionHash(): string {
@@ -297,10 +326,7 @@ function createComplexKeyTransaction(
     .setTransactionValidDuration(120)
     // Type assertion: freezeWith() expects Client but we use minimal mock object
     // with just operatorAccountId and network for transaction freezing without a real client
-    .freezeWith({
-      operatorAccountId: AccountId.fromString('0.0.2'),
-      network: { '0.0.3': 'localhost:50211' },
-    } as never);
+    .freezeWith(getOfflineHederaClient());
 
   const unsignedBytes = tx.toBytes();
   const txId = tx.transactionId?.toString() || `0.0.2@${Math.floor(now.getTime() / 1000)}.${index}`;
@@ -474,6 +500,10 @@ function createFileCreateTransaction(index: number): {
   signature: Buffer;
 } {
   const now = new Date();
+  const oneDayInTheFuture = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+  const txId = generateTransactionId(2, oneDayInTheFuture);
+
 
   // Create a FileCreateTransaction with the test public key as the file key
   // This means the transaction requires signing by our test key
@@ -482,18 +512,14 @@ function createFileCreateTransaction(index: number): {
     .setContents(`Performance test file ${index}`)
     .setNodeAccountIds([AccountId.fromString('0.0.3')])
     .setTransactionValidDuration(120)
+    .setTransactionId(txId)
     // Type assertion: freezeWith() expects Client but we use minimal mock object
     // with just operatorAccountId and network for transaction freezing without a real client
-    .freezeWith({
-      operatorAccountId: AccountId.fromString('0.0.2'),
-      network: { '0.0.3': 'localhost:50211' },
-    } as never);
+    .freezeWith(getOfflineHederaClient());
 
   // Get unsigned transaction bytes - DO NOT SIGN
   // Storing unsigned bytes ensures transactions appear in /transactions/sign
   const unsignedBytes = tx.toBytes();
-
-  const txId = tx.transactionId?.toString() || `0.0.2@${Math.floor(now.getTime() / 1000)}.${index}`;
 
   const txHash = crypto.createHash('sha256').update(unsignedBytes).digest('hex');
 
@@ -503,9 +529,9 @@ function createFileCreateTransaction(index: number): {
     // Store UNSIGNED bytes in both fields - transaction needs signing
     transactionBytes: Buffer.from(unsignedBytes),
     unsignedTransactionBytes: Buffer.from(unsignedBytes),
-    transactionId: txId,
+    transactionId: txId.toString(),
     transactionHash: txHash,
-    validStart: now,
+    validStart: txId.validStart?.toDate() ?? now,
     signature: signatureBytes,
   };
 }
@@ -564,9 +590,10 @@ async function insertTransaction(
     signature = txData.signature;
   } else {
     // Use dummy bytes for history (no signing required)
-    transactionId = generateTransactionId(index);
+    const txId = generateTransactionId(index+1000);
+    transactionId = txId.toString();
     transactionHash = generateTransactionHash();
-    validStart = new Date();
+    validStart =  txId?.validStart?.toDate() ?? new Date();
     transactionBytes = Buffer.from('dummy-tx-bytes');
     unsignedTransactionBytes = Buffer.from('dummy-unsigned-bytes');
     signature = Buffer.from('dummy-signature');
@@ -597,7 +624,7 @@ async function insertTransaction(
       status,
       creatorKeyId,
       signature,
-      validStart,
+      validStart.toISOString(),
       MIRROR_NETWORK,
       false,
       executedAt,
@@ -643,6 +670,7 @@ async function seedSignTransactions(
       index: i,
       status: 'WAITING FOR SIGNATURES',
       creatorKeyId: userKeyId,
+      name: `Sign Tx ${i + 1}`,
       useRealTx: true,
       cachedAccountId,
     });
@@ -1105,4 +1133,5 @@ async function seedData(): Promise<void> {
 const isMainModule = process.argv[1] === __filename;
 if (isMainModule) {
   await seedData();
+  setImmediate(() => process.exit(0));
 }

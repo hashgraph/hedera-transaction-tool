@@ -19,6 +19,6 @@
     "noUnusedParameters": true,
     "types": ["k6"]
   },
-  "include": ["src/**/*", "helpers/**/*"],
+  "include": ["src/**/*", "helpers/**/*", "../utils/**/*"],
   "exclude": ["node_modules", "dist"]
 }
