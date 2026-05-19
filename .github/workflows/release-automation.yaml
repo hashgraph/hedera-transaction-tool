@@ -118,6 +118,10 @@ jobs:
           pnpm install --dir front-end
           pnpm install --dir automation
 
+      - name: Generate NOTICE File
+        if: ${{ steps.version_parser.outputs.prerelease == '' }}
+        run: node notice-gen/index.js
+
       - name: Check Tag Exists
         run: |
           if git ls-remote --tags --exit-code origin refs/tags/${RELEASE_TAG}; then
@@ -130,7 +134,7 @@ jobs:
         if: ${{ steps.version_parser.outputs.prerelease == '' }}
         uses: step-security/close-milestone@b097272a7aaa0f5c40dc6bc671d45d35c5e85b51 # v2.2.1
         with:
-          milestone_name: ${{ steps.version_parser.outputs.release }}
+          milestone_name: v${{ steps.version_parser.outputs.release }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
