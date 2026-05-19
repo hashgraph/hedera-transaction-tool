@@ -137,6 +137,7 @@ export const commonRequestHandler = async <T>(
       } else if (status === 400) {
         const code: keyof typeof ErrorMessages = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKWN];
+        logger.error(`Bad request (code=${code}): ${message}`);
       } else if (status === 429) {
         message = 'Too many requests. Please try again later.';
       }
