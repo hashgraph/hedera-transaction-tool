@@ -38,7 +38,7 @@ for (const line of rawNotes.split('\n')) {
   sections[section].push(trimmed);
 }
 
-let body = '';
+let body = "# What's Changed\n\n";
 for (const [title, entries] of Object.entries(sections)) {
   if (entries.length === 0) continue;
   body += `## ${title}\n\n${entries.join('\n')}\n\n`;

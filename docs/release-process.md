@@ -3,7 +3,7 @@
 ## Pre-Release
 
 ### Planning / Release Branch
-- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>-beta.<number>`
+- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>-beta.<number>` (can be targeted at `main` or a release branch)
 - [ ] Review and merge the auto-generated SNAPSHOT bump PR to `main`
 
 ### Apply core release steps for pre-release
@@ -34,8 +34,8 @@
 - [ ] Manual testing completed and beta approved
 
 ### Final versioning
-- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>`
-- [ ] Review and merge the auto-generated final version PR
+- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>` (can be targeted at `main` or a release branch)
+- [ ] Ensure the action created by the auto-committed version bump runs successfully on the release branch
 
 ### Apply core release steps for final
 - [ ] Build frontend artifacts
@@ -43,6 +43,8 @@
 - [ ] Build and push backend images with correct tags
 
 ### Final deployment
+- [ ] Add a short description of the release in the GitHub release draft
+- [ ] Upload frontend artifacts to the GitHub release draft (all .pkg, .zip, and .zip.blockmap files and latest-mac.yml)
 - [ ] Publish the draft GitHub release for `v<major.minor.patch>`
 - [ ] Create a new branch on DevOps-GitOps:
   - [ ] Update `development` overlays to use this version

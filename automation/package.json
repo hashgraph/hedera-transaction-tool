@@ -6,7 +6,6 @@
     "build": "tsc",
     "test": "tsc && playwright test",
     "test:list": "tsc && playwright test --list",
-    "postinstall": "node ../notice-gen/index.js",
     "grafana:start": "docker-compose -f k6/docker-compose.yml up -d",
     "grafana:stop": "docker-compose -f k6/docker-compose.yml down",
     "grafana:logs": "docker-compose -f k6/docker-compose.yml logs -f",
