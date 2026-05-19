@@ -187,9 +187,7 @@ export class ReceiverService {
       transaction,
       this.transactionSignatureService,
       entityManager,
-      false,
-      null,
-      keyCache,
+      { cache: keyCache },
     );
 
     // Filter out keys/users that have been soft-deleted to prevent notification failures
@@ -1137,9 +1135,7 @@ export class ReceiverService {
         transaction,
         this.transactionSignatureService,
         this.entityManager,
-        false,
-        null,
-        keyCache,
+        { cache: keyCache, excludeAlreadySigned: true },
       );
 
       // Filter out keys/users that have been soft-deleted to prevent notification failures
