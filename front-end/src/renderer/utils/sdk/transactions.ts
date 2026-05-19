@@ -13,6 +13,7 @@ import {
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  RegisteredNodeCreateTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   Transaction,
@@ -102,6 +103,8 @@ export const getTransactionType = (
     transactionType = 'Node Update Transaction';
   } else if (transaction instanceof NodeDeleteTransaction) {
     transactionType = 'Node Delete Transaction';
+  } else if (transaction instanceof RegisteredNodeCreateTransaction) {
+    transactionType = 'Registered Node Create Transaction';
   } else if (transaction instanceof SystemDeleteTransaction) {
     transactionType = 'System Delete Transaction';
   } else if (transaction instanceof SystemUndeleteTransaction) {

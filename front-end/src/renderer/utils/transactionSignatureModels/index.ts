@@ -15,6 +15,7 @@ export * from './file-create-transaction.model';
 export * from './file-append-transaction.model';
 export * from './file-update-transaction.model';
 export * from './freeze-transaction.model';
+export * from './registered-node-create-transaction.model';
 export * from './system-delete-transaction.model';
 export * from './transaction-factory';
 export * from './transaction.model';

@@ -6,19 +6,26 @@ import {
   AccountDeleteTransaction,
   AccountId,
   AccountUpdateTransaction,
+  BlockNodeApi,
+  BlockNodeServiceEndpoint,
   FileAppendTransaction,
   FileCreateTransaction,
   FileId,
   FileUpdateTransaction,
   FreezeTransaction,
   FreezeType,
+  GeneralServiceEndpoint,
   Hbar,
   Key,
   KeyList,
   Long,
+  MirrorNodeServiceEndpoint,
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  RegisteredNodeCreateTransaction,
+  RegisteredServiceEndpoint,
+  RpcRelayServiceEndpoint,
   ServiceEndpoint,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
@@ -132,6 +139,35 @@ export type NodeUpdateData = NodeData & {
 
 export type NodeDeleteData = {
   nodeId: string;
+};
+
+/* HIP-1137 — Registered Node */
+export type RegisteredEndpointType =
+  | 'blockNode'
+  | 'mirrorNode'
+  | 'rpcRelay'
+  | 'generalService';
+
+export interface ComponentRegisteredServiceEndpoint extends ComponentServiceEndpoint {
+  type: RegisteredEndpointType;
+  requiresTls: boolean;
+  /** Block-node APIs (codes from `BlockNodeApi` static instances). Only used when `type === 'blockNode'`. */
+  endpointApis?: number[];
+  /** Free-text description for general-service endpoints. Only used when `type === 'generalService'`. */
+  endpointDescription?: string;
+  /**
+   * Client-side-only stable identity used as the Vue list `:key`. Never
+   * serialized to the proto wire. Generated once when the row is added so
+   * delete/reorder operations keep the right DOM nodes attached to the right
+   * data and don't shuffle focus between rows.
+   */
+  uiId?: string;
+}
+
+export type RegisteredNodeData = {
+  description: string;
+  adminKey: Key | null;
+  serviceEndpoints: ComponentRegisteredServiceEndpoint[];
 };
 
 export type SystemData = {
@@ -536,6 +572,163 @@ export function createNodeUpdateTransaction(
 
   if (data.nodeId) {
     transaction.setNodeId(Long.fromString(data.nodeId));
+  }
+
+  return transaction;
+}
+
+/* HIP-1137 — Registered Node */
+
+/**
+ * Set of `BlockNodeApi` numeric codes the *currently-installed* SDK knows about.
+ * Built once at module load from the SDK's enumerable static instances. Used
+ * by `buildRegisteredServiceEndpoint` to filter out any unknown codes before
+ * calling `setEndpointApis(...)` — without this guard, the SDK internally
+ * routes each numeric input through `BlockNodeApi._fromCode(n)` which THROWS
+ * `(BUG) BlockNodeApi._fromCode() does not handle code: N` for any code not
+ * baked into this SDK version. That crash is reachable from drafts saved on a
+ * future SDK release with a new enum entry.
+ */
+const KNOWN_BLOCK_NODE_API_CODES: ReadonlySet<number> = new Set(
+  Object.values(BlockNodeApi as unknown as Record<string, unknown>)
+    .filter((v): v is InstanceType<typeof BlockNodeApi> => v instanceof BlockNodeApi)
+    .map(api => Number(api)),
+);
+
+/**
+ * Strict IPv4 parser. Rejects octets that aren't pure decimal digits, so
+ * `"01"`, `"0xa"`, `"1e2"`, `"+1"`, `"  "`, `"5 "` all fail rather than
+ * being silently coerced by `Number()`. The proto contract says IPv4 = 4
+ * bytes big-endian; we never want the bytes on the wire to disagree with
+ * what the user typed.
+ */
+export const parseIpv4ToBytes = (ipAddressV4: string): Uint8Array | null => {
+  if (!ipAddressV4) return null;
+  const octets = ipAddressV4.trim().split('.');
+  if (octets.length !== 4) return null;
+  const parsed: number[] = [];
+  for (const octet of octets) {
+    if (!/^[0-9]{1,3}$/.test(octet)) return null;
+    const n = Number(octet);
+    if (n < 0 || n > 255) return null;
+    parsed.push(n);
+  }
+  return Uint8Array.from(parsed);
+};
+
+/** Strict port parser: requires pure-digit string, returns null on empty / non-digit / out-of-range. */
+export const parsePort = (port: string): number | null => {
+  const trimmed = port.trim();
+  if (!/^[0-9]+$/.test(trimmed)) return null;
+  const n = Number(trimmed);
+  if (n < 0 || n > 65535) return null;
+  return n;
+};
+
+const applyRegisteredEndpointBase = (
+  endpoint: RegisteredServiceEndpoint,
+  data: ComponentRegisteredServiceEndpoint,
+) => {
+  const ipBytes = parseIpv4ToBytes(data.ipAddressV4 ?? '');
+  if (ipBytes) {
+    endpoint.setIpAddress(ipBytes);
+  } else if (data.domainName?.trim()) {
+    endpoint.setDomainName(data.domainName.trim());
+  }
+
+  const port = parsePort(data.port ?? '');
+  if (port !== null) {
+    endpoint.setPort(port);
+  }
+
+  endpoint.setRequiresTls(Boolean(data.requiresTls));
+};
+
+export const buildRegisteredServiceEndpoint = (
+  data: ComponentRegisteredServiceEndpoint,
+): RegisteredServiceEndpoint | null => {
+  if (!data?.type) return null;
+
+  // proto `oneof address` requires exactly one of ip_address / domain_name.
+  // A non-empty `ipAddressV4` field that doesn't parse to 4 valid octets must
+  // NOT silently fall through to domain (which is empty) — otherwise we'd ship
+  // an endpoint with no address and the chain would return an opaque
+  // INVALID_REGISTERED_ENDPOINT_ADDRESS. `preCreateAssert` rejects this earlier,
+  // but this helper is also called from getData round-trip and external paths,
+  // so be defensive here too.
+  const hasIp = Boolean(data.ipAddressV4?.trim());
+  const hasDomain = Boolean(data.domainName?.trim());
+  if (!hasIp && !hasDomain) return null;
+  if (hasIp && parseIpv4ToBytes(data.ipAddressV4 ?? '') === null) return null;
+  // Symmetric port guard so non-form callers (drafts, external paths) can't
+  // produce an endpoint with the SDK's default port=0 just because the port
+  // string is empty/malformed.
+  if (parsePort(data.port ?? '') === null) return null;
+
+  switch (data.type) {
+    case 'blockNode': {
+      const endpoint = new BlockNodeServiceEndpoint();
+      applyRegisteredEndpointBase(endpoint, data);
+      // The SDK's `BlockNodeServiceEndpoint.setEndpointApis` routes each
+      // numeric input through `BlockNodeApi._fromCode(code)`, which throws on
+      // any code outside the SDK's known set. Filter unknown codes against
+      // `KNOWN_BLOCK_NODE_API_CODES` (derived from the running SDK) to avoid
+      // crashing the build for drafts saved on a future SDK release.
+      const apis = (data.endpointApis ?? []).filter(code =>
+        KNOWN_BLOCK_NODE_API_CODES.has(code),
+      );
+      if (apis.length > 0) {
+        endpoint.setEndpointApis(apis);
+      }
+      return endpoint;
+    }
+    case 'mirrorNode': {
+      const endpoint = new MirrorNodeServiceEndpoint();
+      applyRegisteredEndpointBase(endpoint, data);
+      return endpoint;
+    }
+    case 'rpcRelay': {
+      const endpoint = new RpcRelayServiceEndpoint();
+      applyRegisteredEndpointBase(endpoint, data);
+      return endpoint;
+    }
+    case 'generalService': {
+      const endpoint = new GeneralServiceEndpoint();
+      applyRegisteredEndpointBase(endpoint, data);
+      if (data.endpointDescription?.trim()) {
+        endpoint.setDescription(data.endpointDescription.trim());
+      }
+      return endpoint;
+    }
+    default:
+      return null;
+  }
+};
+
+export const getRegisteredServiceEndpoints = (
+  data: ComponentRegisteredServiceEndpoint[],
+): RegisteredServiceEndpoint[] =>
+  data
+    .map(buildRegisteredServiceEndpoint)
+    .filter((e): e is RegisteredServiceEndpoint => e !== null);
+
+export function createRegisteredNodeCreateTransaction(
+  data: TransactionCommonData & RegisteredNodeData,
+): RegisteredNodeCreateTransaction {
+  const transaction = new RegisteredNodeCreateTransaction();
+  setTransactionCommonData(transaction, data);
+
+  if (data.adminKey) {
+    transaction.setAdminKey(data.adminKey);
+  }
+
+  if (data.description && data.description.length > 0) {
+    transaction.setDescription(data.description);
+  }
+
+  const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
+  if (endpoints.length > 0) {
+    transaction.setServiceEndpoints(endpoints);
   }
 
   return transaction;

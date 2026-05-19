@@ -14,6 +14,7 @@ import FileCreateTransactionModel from './file-create-transaction.model';
 import NodeCreateTransactionModel from './node-create-transaction.model';
 import NodeUpdateTransactionModel from './node-update-transaction.model';
 import NodeDeleteTransactionModel from './node-delete-transaction.model';
+import RegisteredNodeCreateTransactionModel from './registered-node-create-transaction.model';
 import { getTransactionType } from '../sdk/transactions';
 
 export default class TransactionFactory {
@@ -38,6 +39,7 @@ export default class TransactionFactory {
       NodeCreateTransaction: NodeCreateTransactionModel,
       NodeUpdateTransaction: NodeUpdateTransactionModel,
       NodeDeleteTransaction: NodeDeleteTransactionModel,
+      RegisteredNodeCreateTransaction: RegisteredNodeCreateTransactionModel,
     };
 
     const transactionType = getTransactionType(

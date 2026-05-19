@@ -12,6 +12,7 @@ import { FreezeTransactionModel } from './freeze-transaction.model';
 import { NodeCreateTransactionModel } from './node-create-transaction.model';
 import { NodeDeleteTransactionModel } from './node-delete-transaction.model';
 import { NodeUpdateTransactionModel } from './node-update-transaction.model';
+import { RegisteredNodeCreateTransactionModel } from './registered-node-create-transaction.model';
 import { SystemDeleteTransactionModel } from './system-delete-transaction.model';
 import { SystemUndeleteTransactionModel } from './system-undelete-transaction.model';
 import { TransferTransactionModel } from './transfer-transaction.model';
@@ -30,6 +31,7 @@ const TRANSACTION_MODEL_MAP = new Map<string, TxModelCtor>([
   ['NodeCreateTransaction', NodeCreateTransactionModel],
   ['NodeDeleteTransaction', NodeDeleteTransactionModel],
   ['NodeUpdateTransaction', NodeUpdateTransactionModel],
+  ['RegisteredNodeCreateTransaction', RegisteredNodeCreateTransactionModel],
   ['SystemDeleteTransaction', SystemDeleteTransactionModel],
   ['SystemUndeleteTransaction', SystemUndeleteTransactionModel],
   ['TransferTransaction', TransferTransactionModel],

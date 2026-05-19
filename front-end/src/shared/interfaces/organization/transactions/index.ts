@@ -20,6 +20,7 @@ export enum BackEndTransactionType {
   NODE_CREATE = 'NODE CREATE',
   NODE_UPDATE = 'NODE UPDATE',
   NODE_DELETE = 'NODE DELETE',
+  REGISTERED_NODE_CREATE = 'REGISTERED NODE CREATE',
 }
 
 export const TransactionTypeName = {
@@ -38,6 +39,7 @@ export const TransactionTypeName = {
   [BackEndTransactionType.NODE_CREATE]: 'Node Create Transaction',
   [BackEndTransactionType.NODE_UPDATE]: 'Node Update Transaction',
   [BackEndTransactionType.NODE_DELETE]: 'Node Delete Transaction',
+  [BackEndTransactionType.REGISTERED_NODE_CREATE]: 'Registered Node Create Transaction',
 };
 
 export enum TransactionStatus {

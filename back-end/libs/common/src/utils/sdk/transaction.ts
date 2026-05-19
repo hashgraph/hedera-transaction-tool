@@ -16,6 +16,7 @@ import {
   FileDeleteTransaction,
   FreezeTransaction,
   NodeCreateTransaction,
+  RegisteredNodeCreateTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   FileContentsQuery,
@@ -84,6 +85,8 @@ export const getTransactionType = (
     transactionType = "Node Update Transaction";
   } else if (transaction instanceof NodeDeleteTransaction) {
     transactionType = "Node Delete Transaction";
+  } else if (transaction instanceof RegisteredNodeCreateTransaction) {
+    transactionType = "Registered Node Create Transaction";
   } else if (transaction instanceof SystemDeleteTransaction) {
     transactionType = "System Delete Transaction";
   } else if (transaction instanceof SystemUndeleteTransaction) {
@@ -176,6 +179,8 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
     return TransactionType.NODE_UPDATE;
   } else if (transaction instanceof NodeDeleteTransaction) {
     return TransactionType.NODE_DELETE;
+  } else if (transaction instanceof RegisteredNodeCreateTransaction) {
+    return TransactionType.REGISTERED_NODE_CREATE;
   } else if (transaction instanceof SystemDeleteTransaction) {
     return TransactionType.SYSTEM_DELETE;
   } else if (transaction instanceof SystemUndeleteTransaction) {

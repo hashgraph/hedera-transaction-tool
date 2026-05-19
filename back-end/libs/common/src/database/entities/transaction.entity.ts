@@ -41,6 +41,7 @@ export enum TransactionType {
   NODE_CREATE = 'NODE CREATE',
   NODE_UPDATE = 'NODE UPDATE',
   NODE_DELETE = 'NODE DELETE',
+  REGISTERED_NODE_CREATE = 'REGISTERED NODE CREATE',
 }
 
 export enum TransactionStatus {

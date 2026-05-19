@@ -4,6 +4,7 @@ import DeleteAccountDetails from './DeleteAccountDetails.vue';
 import FileDetails from './FileDetails.vue';
 import FreezeDetails from './FreezeDetails.vue';
 import NodeDetails from './NodeDetails.vue';
+import RegisteredNodeDetails from './RegisteredNodeDetails.vue';
 import SystemDetails from './SystemDetails.vue';
 import TransferDetails from './TransferDetails.vue';
 
@@ -24,6 +25,7 @@ export const transactionTypeKeys = {
   nodeCreate: 'NodeCreateTransaction',
   nodeUpdate: 'NodeUpdateTransaction',
   nodeDelete: 'NodeDeleteTransaction',
+  registeredNodeCreate: 'RegisteredNodeCreateTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -41,6 +43,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.nodeCreate]: NodeDetails,
   [transactionTypeKeys.nodeUpdate]: NodeDetails,
   [transactionTypeKeys.nodeDelete]: NodeDetails,
+  [transactionTypeKeys.registeredNodeCreate]: RegisteredNodeDetails,
 };
 
 export default txTypeComponentMapping;
