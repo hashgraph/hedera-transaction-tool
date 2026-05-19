@@ -687,7 +687,7 @@ describe('TransactionsService', () => {
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
       jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
 
-      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(/Transactions already exist/);
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TEX);
 
       client.close();
     });
