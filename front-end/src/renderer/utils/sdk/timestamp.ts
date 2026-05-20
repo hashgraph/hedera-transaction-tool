@@ -3,9 +3,10 @@ import { Timestamp } from '@hiero-ledger/sdk';
 const NANOS_PER_SECOND = 1_000_000_000;
 
 /**
- * Returns a new Timestamp equal to `base + nanoOffset` nanoseconds, rolling
- * any overflow past 1_000_000_000 nanos into the seconds component. The
- * input is not mutated.
+ * Returns a Timestamp equal to `base + nanoOffset` nanoseconds, rolling any
+ * overflow past 1_000_000_000 nanos into the seconds component. The input is
+ * not mutated. When `nanoOffset === 0` the same `base` instance is returned;
+ * otherwise a new Timestamp is allocated.
  *
  * Used by the duplicate-transactionId (TEX) retry flow: when a payer submits
  * multiple transactions at the same validStart, retries shift the nanos
