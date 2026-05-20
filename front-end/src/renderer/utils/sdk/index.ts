@@ -155,18 +155,14 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): b
   return false;
 }
 
-export function isKeyListValid(keyList: KeyList) {
+export function isKeyListValid(keyList: KeyList): boolean {
   const keys = keyList.toArray();
 
   if (keys.length === 0 || (keyList.threshold && keyList.threshold > keys.length)) {
     return false;
   }
 
-  const everyNestedKeyValid = keys.every(key => {
-    return !(key instanceof KeyList && !isKeyListValid(key));
-  });
-
-  return everyNestedKeyValid;
+  return keys.every(key => !(key instanceof KeyList && !isKeyListValid(key)));
 }
 
 export function encodeKey(keyList: Key) {

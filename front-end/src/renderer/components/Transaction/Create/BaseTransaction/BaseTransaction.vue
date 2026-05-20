@@ -168,11 +168,15 @@ const handleCreate = async () => {
   if (preCreateAssert?.() === false) return;
 
   const capturedData = { ...data } as TransactionCommonData;
+  // validStart is typed as Date, but at runtime callers occasionally pass a
+  // Timestamp directly. Widen to unknown before the instanceof checks so the
+  // Timestamp branch is reachable for the type checker.
+  const rawValidStart = capturedData.validStart as unknown;
   const baseTimestamp =
-    capturedData.validStart instanceof Date
-      ? Timestamp.fromDate(capturedData.validStart)
-      : capturedData.validStart instanceof Timestamp
-        ? capturedData.validStart
+    rawValidStart instanceof Date
+      ? Timestamp.fromDate(rawValidStart)
+      : rawValidStart instanceof Timestamp
+        ? rawValidStart
         : null;
   const bytesFactory = baseTimestamp
     ? (nanoOffset: number): Uint8Array => {
