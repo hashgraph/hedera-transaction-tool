@@ -663,6 +663,7 @@ export interface NetworkNode {
   reward_rate_start: number | null;
   decline_reward: boolean | null;
   grpc_proxy_endpoint: ServiceEndPoint | null;
+  associated_registered_node: number[] | null | undefined;
 }
 
 export interface ServiceEndPoint {

@@ -267,6 +267,7 @@ export const getNodeInfo = async (
               domainName: node.grpc_proxy_endpoint.domain_name || '',
             })
           : null,
+        associated_registered_node: node.associated_registered_node ?? [],
       };
       return nodeInfo;
     }
