@@ -18,6 +18,7 @@ import {
   uint8ToHex,
 } from '@renderer/utils';
 
+import { registeredNodeIdStrategy } from '@renderer/components/Transaction/Create/Node/registeredNodeIdStrategy';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 
 /* Props */
@@ -38,6 +39,43 @@ const grpcWebProxyEndpoint = computed(() => {
     return getComponentServiceEndpoint(props.transaction.grpcWebProxyEndpoint);
   }
   return null;
+});
+
+// HIP-1137 `associated_registered_node`. NodeCreate uses a plain repeated field
+// (the SDK getter always returns `Long[]`, possibly empty). NodeUpdate uses the
+// `AssociatedRegisteredNodeList` wrapper, so the SDK distinguishes three states:
+//   - `null`  → wrapper absent → "unchanged" → omit the row
+//   - `[]`    → wrapper present, empty → "Cleared"
+//   - `Long[]`→ wrapper present with values → render formatted list
+// We reuse `registeredNodeIdStrategy.format` to collapse consecutive ids into
+// ranges (e.g. "1, 5, 10-15") — same compact rendering the input uses.
+type AssociatedRegisteredNodesDisplay =
+  | { kind: 'omit' }
+  | { kind: 'empty' }
+  | { kind: 'list'; text: string };
+
+const associatedRegisteredNodesDisplay = computed<AssociatedRegisteredNodesDisplay>(() => {
+  if (
+    !(
+      props.transaction instanceof NodeCreateTransaction ||
+      props.transaction instanceof NodeUpdateTransaction
+    )
+  ) {
+    return { kind: 'omit' };
+  }
+  const ids = props.transaction.associatedRegisteredNodes;
+  if (ids == null) {
+    return props.transaction instanceof NodeUpdateTransaction
+      ? { kind: 'omit' }
+      : { kind: 'empty' };
+  }
+  if (ids.length === 0) {
+    return { kind: 'empty' };
+  }
+  return {
+    kind: 'list',
+    text: registeredNodeIdStrategy.format(ids.map(id => id.toString())),
+  };
 });
 
 /* Hooks */
@@ -193,6 +231,22 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <div v-if="grpcWebProxyEndpoint" class="col-12 my-3">
         <h4 :class="detailItemLabelClass">gRPC Web Proxy Endpoint</h4>
         <p>{{ grpcWebProxyEndpoint.domainName }}:{{ grpcWebProxyEndpoint.port }}</p>
+      </div>
+
+      <!-- Associated Registered Nodes -->
+      <div v-if="associatedRegisteredNodesDisplay.kind !== 'omit'" class="col-12 my-3">
+        <h4 :class="detailItemLabelClass">Associated Registered Nodes</h4>
+        <p
+          :class="detailItemValueClass"
+          class="text-break"
+          data-testid="p-node-details-associated-registered-nodes"
+        >
+          <template v-if="associatedRegisteredNodesDisplay.kind === 'empty'">
+            <template v-if="transaction instanceof NodeUpdateTransaction">Cleared</template>
+            <template v-else>None</template>
+          </template>
+          <template v-else>{{ associatedRegisteredNodesDisplay.text }}</template>
+        </p>
       </div>
 
       <!-- Gossip CA Certificate -->
