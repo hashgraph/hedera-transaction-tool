@@ -13,6 +13,7 @@ import useDraft from '@renderer/composables/useDraft';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
+import { ErrorCodes, ErrorMessages } from '@shared/constants';
 
 import {
   assertIsLoggedInOrganization,
@@ -57,6 +58,33 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
+/**
+ * On a duplicate-transactionId (TEX) rejection, the backend already has a
+ * transaction for this (payer, validStart) pair. We resubmit with the same
+ * validStart bumped by a small nano-offset to produce a unique transactionId.
+ *
+ * Each attempt draws its offset from a disjoint 333_333 ns bucket inside the
+ * original millisecond, so:
+ *   - no two attempts can pick the same offset (no wasted retries)
+ *   - all retries stay within 1 ms of the user's chosen validStart, which
+ *     preserves ordering at millisecond granularity for concurrent submissions
+ *
+ * A plain sequential +1 ns approach is too narrow: collision windows between
+ * concurrent clients are typically wider than a single nanosecond, so each
+ * +1 step has high odds of also colliding. Spreading across the millisecond
+ * resolves real contention in a single retry the vast majority of the time.
+ *
+ * Safety: even in the pathological case of 100 concurrent transactions all
+ * sharing the same payer + validStart, ~98.6% resolve in a single retry
+ * (birthday-collision odds for 99 picks across 333_333 slots is ~1.45%). The
+ * rare cases needing a 2nd or 3rd attempt almost always face an empty or
+ * near-empty retry pool, since the surviving population collapses fast. Per-
+ * round collision odds for a pool of 2 are ~1/333_333 ≈ 3e-6. Probability
+ * that any client exhausts all 3 retries is on the order of 10^-13 — about
+ * 30,000x rarer than winning Powerball, well past any practical threshold.
+ */
+const MAX_NANO_RETRIES = 3;
+
 async function handle(req: Processable) {
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
@@ -74,22 +102,47 @@ async function handle(req: Processable) {
 
   try {
     emit('loading:begin');
-    const signature = await sign(publicKey);
-    const { id, transactionBytes } = await submit(publicKey, signature);
 
-    const results = await Promise.allSettled([
-      upload('observers', id),
-      upload('approvers', id),
-      draft.deleteIfNotTemplate(),
-    ]);
-
-    results.forEach(result => {
-      if (result.status === 'rejected') {
-        toastManager.error(result.reason.message);
+    for (let attempt = 0; attempt <= MAX_NANO_RETRIES; attempt++) {
+      if (attempt > 0 && req.bytesFactory) {
+        // Bucket N spans [(N-1)*333_333 + 1, N*333_333]; randomized within
+        // the bucket so concurrent retriers don't all pick the same offset.
+        const jitterNanos = (attempt - 1) * 333_333 + 1 + Math.floor(Math.random() * 333_333);
+        request.value.transactionBytes = req.bytesFactory(jitterNanos);
       }
-    });
 
-    emit('transaction:submit:success', id, transactionBytes);
+      try {
+        const signature = await sign(publicKey);
+        const { id, transactionBytes } = await submit(publicKey, signature);
+
+        const results = await Promise.allSettled([
+          upload('observers', id),
+          upload('approvers', id),
+          draft.deleteIfNotTemplate(),
+        ]);
+
+        results.forEach(result => {
+          if (result.status === 'rejected') {
+            toastManager.error(result.reason.message);
+          }
+        });
+
+        emit('transaction:submit:success', id, transactionBytes);
+        return;
+      } catch (error) {
+        // Only TEX (duplicate transactionId) is retriable via jitter; any
+        // other failure surfaces immediately. bytesFactory is required because
+        // we need to rebuild the signed bytes with a new validStart.
+        const canRetry =
+          attempt < MAX_NANO_RETRIES &&
+          !!req.bytesFactory &&
+          error instanceof Error &&
+          error.message === ErrorMessages[ErrorCodes.TEX];
+        if (canRetry) continue;
+        emit('transaction:submit:fail', error);
+        throw error;
+      }
+    }
   } finally {
     emit('loading:end');
   }
@@ -115,28 +168,23 @@ async function sign(publicKey: string) {
 }
 
 async function submit(publicKey: string, signature: string) {
-  try {
-    assertIsLoggedInOrganization(user.selectedOrganization);
-    if (!request.value) throw new Error('Request is required to sign');
-    if (!transaction.value) throw new Error('Transaction is required to sign');
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!request.value) throw new Error('Request is required to sign');
+  if (!transaction.value) throw new Error('Transaction is required to sign');
 
-    const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
+  const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
 
-    return await submitTransaction(
-      user.selectedOrganization.serverUrl,
-      request.value?.name || '',
-      request.value?.description || '',
-      hexTransactionBytes,
-      network.network,
-      signature,
-      user.selectedOrganization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
-      request.value.submitManually,
-      request.value.reminderMillisecondsBefore,
-    );
-  } catch (error) {
-    emit('transaction:submit:fail', error);
-    throw error;
-  }
+  return await submitTransaction(
+    user.selectedOrganization.serverUrl,
+    request.value?.name || '',
+    request.value?.description || '',
+    hexTransactionBytes,
+    network.network,
+    signature,
+    user.selectedOrganization.userKeys.find(k => k.publicKey === publicKey)?.id || -1,
+    request.value.submitManually,
+    request.value.reminderMillisecondsBefore,
+  );
 }
 
 async function upload(type: 'observers' | 'approvers', id: number) {

@@ -32,6 +32,7 @@ export * from './createTransactions';
 export * from './getData';
 export * from './validation';
 export * from './privilegedPayer';
+export * from './timestamp';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -162,11 +163,7 @@ export function isKeyListValid(keyList: KeyList) {
   }
 
   const everyNestedKeyValid = keys.every(key => {
-    if (key instanceof KeyList && !isKeyListValid(key)) {
-      return false;
-    } else {
-      return true;
-    }
+    return !(key instanceof KeyList && !isKeyListValid(key));
   });
 
   return everyNestedKeyValid;

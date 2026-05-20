@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
+  applyNanoOffset,
   getTransactionCommonData,
   hasStartTimestampChanged,
   type TransactionCommonData,
@@ -166,11 +167,30 @@ const handleCreate = async () => {
   basePreCreateAssert();
   if (preCreateAssert?.() === false) return;
 
+  const capturedData = { ...data } as TransactionCommonData;
+  const baseTimestamp =
+    capturedData.validStart instanceof Date
+      ? Timestamp.fromDate(capturedData.validStart)
+      : capturedData.validStart instanceof Timestamp
+        ? capturedData.validStart
+        : null;
+  const bytesFactory = baseTimestamp
+    ? (nanoOffset: number): Uint8Array => {
+        if (nanoOffset === 0) return createTransaction(capturedData).toBytes();
+        const offsetTimestamp = applyNanoOffset(baseTimestamp, nanoOffset);
+        return createTransaction({
+          ...capturedData,
+          validStart: offsetTimestamp as unknown as Date,
+        }).toBytes();
+      }
+    : undefined;
+
   const processable =
     customRequest ||
     TransactionRequest.fromData({
       transactionKey: transactionKey.value,
-      transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
+      transactionBytes: bytesFactory ? bytesFactory(0) : createTransaction(capturedData).toBytes(),
+      bytesFactory,
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,

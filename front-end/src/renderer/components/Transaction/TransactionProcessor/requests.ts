@@ -24,6 +24,7 @@ export class TransactionRequest extends BaseRequest {
   transactionBytes: Uint8Array;
   name: string;
   description: string;
+  bytesFactory?: (nanoOffset: number) => Uint8Array;
 
   constructor(opts: {
     transactionKey: Key;
@@ -32,6 +33,7 @@ export class TransactionRequest extends BaseRequest {
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    bytesFactory?: (nanoOffset: number) => Uint8Array;
   }) {
     super(opts.submitManually, opts.reminderMillisecondsBefore);
     this.transactionKey = opts.transactionKey;
@@ -39,6 +41,7 @@ export class TransactionRequest extends BaseRequest {
     this.transactionBytes = opts.transactionBytes;
     this.name = opts.name;
     this.description = opts.description;
+    this.bytesFactory = opts.bytesFactory;
   }
 
   static fromData(data: {
@@ -48,6 +51,7 @@ export class TransactionRequest extends BaseRequest {
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
+    bytesFactory?: (nanoOffset: number) => Uint8Array;
   }) {
     return new TransactionRequest(data);
   }
