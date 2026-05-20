@@ -12,6 +12,7 @@ import NodeCreate from './NodeCreate';
 import NodeDelete from './NodeDelete';
 import NodeUpdate from './NodeUpdate';
 import RegisteredNodeCreate from './RegisteredNodeCreate';
+import RegisteredNodeDelete from './RegisteredNodeDelete';
 import SystemDelete from './SystemDelete';
 import SystemUndelete from './SystemUndelete';
 
@@ -31,6 +32,7 @@ export const transactionTypeKeys = {
   nodeDelete: 'NodeDeleteTransaction',
   nodeUpdate: 'NodeUpdateTransaction',
   registeredNodeCreate: 'RegisteredNodeCreateTransaction',
+  registeredNodeDelete: 'RegisteredNodeDeleteTransaction',
   systemDelete: 'SystemDeleteTransaction',
   systemUndelete: 'SystemUndeleteTransaction',
 };
@@ -50,6 +52,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.nodeDelete]: NodeDelete,
   [transactionTypeKeys.nodeUpdate]: NodeUpdate,
   [transactionTypeKeys.registeredNodeCreate]: RegisteredNodeCreate,
+  [transactionTypeKeys.registeredNodeDelete]: RegisteredNodeDelete,
   [transactionTypeKeys.systemDelete]: SystemDelete,
   [transactionTypeKeys.systemUndelete]: SystemUndelete,
 };

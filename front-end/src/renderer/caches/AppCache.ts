@@ -48,6 +48,7 @@ export class AppCache {
       mirrorNodeUrl,
       this.mirrorAccountById,
       this.mirrorNodeById,
+      this.mirrorRegisteredNodeById,
       this.backendPublicKeyOwner,
       organization,
     );

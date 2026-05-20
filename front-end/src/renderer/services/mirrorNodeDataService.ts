@@ -278,7 +278,7 @@ export const getNodeInfo = async (
   }
 };
 
-const parseNetworkResponseKey = (key: NetworkResponseKey | null | undefined) => {
+export const parseNetworkResponseKey = (key: NetworkResponseKey | null | undefined) => {
   try {
     switch (key?._type) {
       case 'ProtobufEncoded':
