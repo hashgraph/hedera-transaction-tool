@@ -65,8 +65,6 @@ jobs:
           key: build-artifacts-${{ github.sha }}
 
   test:
-    env:
-      BACKEND_COMPOSE_FILE: docker-compose.yaml
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
     needs: build
@@ -105,22 +103,6 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
           node-version-file: package.json
 
-      - name: Install Docker Compose Plugin
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-
-          if docker compose version >/dev/null 2>&1; then
-            docker compose version
-            exit 0
-          fi
-
-          sudo install -d /usr/local/lib/docker/cli-plugins
-          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose \
-            https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
-          sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-          docker compose version
-
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
@@ -138,9 +120,11 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: npm install -g @hashgraph/solo@0.73.0
 
+      - name: Install Runtime Shared Libraries
+        run: sudo apt-get update && sudo apt-get install -y xvfb xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 libnss3-tools socat
+
       - name: Deploy Solo
         if: ${{ matrix.test-suite.soloRequired }}
-        id: solo_deploy
         env:
           SOLO_NAMESPACE: solo
           SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
@@ -161,21 +145,6 @@ jobs:
             timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
           }
 
-          # Install Linux packages required for mkcert and host-to-container port proxies.
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends libnss3-tools socat
-
-          if ! command -v mkcert >/dev/null 2>&1; then
-            curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
-              -o /tmp/mkcert
-            sudo install -m755 /tmp/mkcert /usr/local/bin/mkcert
-          fi
-
-          mkcert -install
-
-          mkdir -p cert
-          mkcert -key-file cert/key.pem -cert-file cert/cert.pem localhost
-
           for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
             cp "${dir}/example.env" "${dir}/.env"
           done
@@ -190,42 +159,6 @@ jobs:
           sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
-
-          export COMPOSE_PARALLEL_LIMIT=4
-
-          if ! docker info &>/dev/null; then
-            echo "Docker daemon is not reachable; attempting to start it..."
-            sudo service docker start || true
-            sudo systemctl start docker || true
-          fi
-
-          for i in $(seq 1 15); do
-            if docker info &>/dev/null; then
-              break
-            fi
-            if [ "${i}" -eq 15 ]; then
-              echo "Docker daemon is unavailable after startup attempts" >&2
-              ls -l /var/run/docker.sock || true
-              sudo ls -l /var/run/docker.sock || true
-              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
-              exit 1
-            fi
-            sleep 2
-          done
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 35211; then
-              echo "Solo network endpoints are ready on attempt ${attempt}"
-              break
-            fi
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo network endpoints did not become ready in time" >&2
-              exit 1
-            fi
-            echo "Waiting for Solo network endpoints... attempt ${attempt}/60"
-            sleep 5
-          done
 
           DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
           if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
@@ -251,9 +184,9 @@ jobs:
             exit 1
           fi
 
-          for service in redis migration api chain notifications; do
+          for service in migration api chain notifications; do
             for attempt in $(seq 1 3); do
-              if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
+              if docker compose build --progress plain "${service}"; then
                 break
               fi
 
@@ -268,13 +201,13 @@ jobs:
           done
 
           for attempt in $(seq 1 5); do
-            if docker compose -f "${BACKEND_COMPOSE_FILE}" up -d --no-build api chain notifications; then
+            if docker compose up -d --no-build api chain notifications; then
               break
             fi
             if [ "${attempt}" -eq 5 ]; then
               echo "docker compose up failed after 5 attempts" >&2
-              docker compose -f "${BACKEND_COMPOSE_FILE}" ps || true
-              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=200 || true
+              docker compose ps || true
+              docker compose logs --tail=200 || true
               exit 1
             fi
             echo "Attempt ${attempt} failed; retrying in 15s..."
@@ -282,40 +215,26 @@ jobs:
           done
 
           # Wait for the API to become ready.
-          # The API serves HTTPS when NODE_ENV=development and cert files are present.
           MAX_ATTEMPTS=60
           for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
-            code="$(curl -k -s -o /dev/null -w '%{http_code}' https://localhost:3001/ 2>/dev/null || echo '000')"
+            code="$(curl -k -s -o /dev/null -w '%{http_code}' http://localhost:3000/ 2>/dev/null || echo '000')"
             if [[ "${code}" == "200" || "${code}" == "426" ]]; then
               echo "Back-end is ready (attempt ${attempt})"
               break
             fi
             if (( attempt % 10 == 0 )); then
               echo "Waiting for back-end... attempt ${attempt}/${MAX_ATTEMPTS} (HTTP ${code})"
-              docker compose -f "${BACKEND_COMPOSE_FILE}" ps
-              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=50 api || true
+              docker compose ps
+              docker compose logs --tail=50 api || true
             fi
             if [ "${attempt}" -eq "${MAX_ATTEMPTS}" ]; then
               echo "Back-end did not become ready in time" >&2
-              docker compose -f "${BACKEND_COMPOSE_FILE}" ps || true
-              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300 || true
+              docker compose ps || true
+              docker compose logs --tail=300 || true
               exit 1
             fi
             sleep 5
           done
-
-          docker compose -f "${BACKEND_COMPOSE_FILE}" ps
-
-      - name: Test API connectivity
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
-          echo "API connectivity check returned HTTP ${code}"
-          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
-            echo "Unexpected HTTP status from API: ${code}" >&2
-            exit 1
-          fi
 
       - name: Restore Build Artifacts
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
@@ -324,19 +243,13 @@ jobs:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
 
-      - name: Install xvfb
-        run: sudo apt-get update && sudo apt-get install -y xvfb
-
-      - name: Install Runtime Shared Libraries
-        run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
-
       - name: Run Automation
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           ENVIRONMENT: LOCALNET
           PLAYWRIGHT_SHARED_ENV: ${{ matrix.test-suite.sharedEnvironment && 'true' || 'false' }}
           PLAYWRIGHT_WORKERS: ${{ matrix.test-suite.workers }}
-          ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'https://localhost:3001' || '' }}
+          ORGANIZATION_URL: ${{ matrix.test-suite.backendRequired && 'http://localhost:3000' || '' }}
           POSTGRES_HOST: ${{ matrix.test-suite.backendRequired && 'localhost' || '' }}
           POSTGRES_PORT: ${{ matrix.test-suite.backendRequired && '5432' || '' }}
           POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
@@ -367,7 +280,7 @@ jobs:
 
       - name: Show Back-end Logs
         if: ${{ failure() && matrix.test-suite.backendRequired }}
-        run: docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=300
+        run: docker compose logs --tail=300
         working-directory: back-end
 
       - name: Collect Solo Diagnostics
@@ -403,11 +316,6 @@ jobs:
           path: kind-logs
           if-no-files-found: warn
           retention-days: 3
-
-      - name: Stop Back-end Services
-        if: ${{ always() && matrix.test-suite.backendRequired }}
-        run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
-        working-directory: back-end
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
