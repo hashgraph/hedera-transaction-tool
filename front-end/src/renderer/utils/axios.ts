@@ -113,6 +113,18 @@ export function throwIfNoResponse(response?: AxiosResponse): asserts response is
   }
 }
 
+export class RequestError extends Error {
+  readonly code?: ErrorCodes;
+  readonly status?: number;
+
+  constructor(message: string, code?: ErrorCodes, status?: number) {
+    super(message);
+    this.name = 'RequestError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
 export const commonRequestHandler = async <T>(
   callback: () => Promise<T>,
   defaultMessage: string = 'Failed to send request',
@@ -123,11 +135,13 @@ export const commonRequestHandler = async <T>(
     return await callback();
   } catch (error) {
     let message = defaultMessage;
+    let code: ErrorCodes | undefined;
+    let status: number | undefined;
 
     if (error instanceof AxiosError) {
       throwIfNoResponse(error.response);
 
-      const status = error.response.status;
+      status = error.response.status;
       const errorMessage = error.response.data?.message;
 
       if (statusMessages?.[status]) {
@@ -135,14 +149,14 @@ export const commonRequestHandler = async <T>(
       } else if (status === 401 && messageOn401) {
         message = messageOn401.trim() || errorMessage;
       } else if (status === 400) {
-        const code: keyof typeof ErrorMessages = error.response.data?.code || ErrorCodes.UNKWN;
-        message = ErrorMessages[code] || ErrorMessages[ErrorCodes.UNKWN];
+        code = error.response.data?.code || ErrorCodes.UNKWN;
+        message = ErrorMessages[code!] || ErrorMessages[ErrorCodes.UNKWN];
         logger.error(`Bad request (code=${code}): ${message}`);
       } else if (status === 429) {
         message = 'Too many requests. Please try again later.';
       }
     }
-    throw new Error(message);
+    throw new RequestError(message, code, status);
   }
 };
 

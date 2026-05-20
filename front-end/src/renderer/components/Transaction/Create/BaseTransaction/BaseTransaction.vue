@@ -24,6 +24,7 @@ import {
   KeyList,
   Timestamp,
   Transaction,
+  TransactionId,
 } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -168,32 +169,34 @@ const handleCreate = async () => {
   if (preCreateAssert?.() === false) return;
 
   const capturedData = { ...data } as TransactionCommonData;
-  // validStart is typed as Date, but at runtime callers occasionally pass a
-  // Timestamp directly. Widen to unknown before the instanceof checks so the
-  // Timestamp branch is reachable for the type checker.
-  const rawValidStart = capturedData.validStart as unknown;
-  const baseTimestamp =
-    rawValidStart instanceof Date
-      ? Timestamp.fromDate(rawValidStart)
-      : rawValidStart instanceof Timestamp
-        ? rawValidStart
-        : null;
-  const bytesFactory = baseTimestamp
-    ? (nanoOffset: number): Uint8Array => {
-        if (nanoOffset === 0) return createTransaction(capturedData).toBytes();
-        const offsetTimestamp = applyNanoOffset(baseTimestamp, nanoOffset);
-        return createTransaction({
-          ...capturedData,
-          validStart: offsetTimestamp as unknown as Date,
-        }).toBytes();
-      }
-    : undefined;
+  // Build the initial transaction once so the retry path can anchor on the
+  // validStart that createTransactionId actually used — including its
+  // "clamp expired validStart to now" normalization. Deriving offsets from
+  // the raw capturedData.validStart would skip that clamp and could submit
+  // retries with an already-expired validStart.
+  const initialTx = createTransaction(capturedData);
+  const initialTxId = initialTx.transactionId;
+  const baseValidStart = initialTxId?.validStart ?? null;
+  const payerAccountId = initialTxId?.accountId ?? null;
+
+  const bytesFactory =
+    baseValidStart && payerAccountId
+      ? (nanoOffset: number): Uint8Array => {
+          if (nanoOffset === 0) return initialTx.toBytes();
+          const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
+          const retryTx = createTransaction(capturedData);
+          retryTx.setTransactionId(
+            TransactionId.withValidStart(payerAccountId, offsetTimestamp),
+          );
+          return retryTx.toBytes();
+        }
+      : undefined;
 
   const processable =
     customRequest ||
     TransactionRequest.fromData({
       transactionKey: transactionKey.value,
-      transactionBytes: bytesFactory ? bytesFactory(0) : createTransaction(capturedData).toBytes(),
+      transactionBytes: bytesFactory ? bytesFactory(0) : initialTx.toBytes(),
       bytesFactory,
       name: name.value.trim(),
       description: description.value.trim(),

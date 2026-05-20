@@ -13,12 +13,13 @@ import useDraft from '@renderer/composables/useDraft';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
-import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { ErrorCodes } from '@shared/constants';
 
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getPrivateKey,
+  RequestError,
   uint8ToHex,
 } from '@renderer/utils';
 
@@ -132,12 +133,14 @@ async function handle(req: Processable) {
       } catch (error) {
         // Only TEX (duplicate transactionId) is retriable via jitter; any
         // other failure surfaces immediately. bytesFactory is required because
-        // we need to rebuild the signed bytes with a new validStart.
+        // we need to rebuild the signed bytes with a new validStart. Match on
+        // the backend error code rather than the user-facing message so copy
+        // changes to ErrorMessages[TEX] don't silently disable retries.
         const canRetry =
           attempt < MAX_NANO_RETRIES &&
           !!req.bytesFactory &&
-          error instanceof Error &&
-          error.message === ErrorMessages[ErrorCodes.TEX];
+          error instanceof RequestError &&
+          error.code === ErrorCodes.TEX;
         if (canRetry) continue;
         emit('transaction:submit:fail', error);
         throw error;

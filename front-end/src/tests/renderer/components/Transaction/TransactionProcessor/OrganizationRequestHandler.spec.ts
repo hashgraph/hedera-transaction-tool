@@ -25,12 +25,16 @@ vi.mock('@renderer/utils/ToastManager', () => ({
   },
 }));
 
-vi.mock('@renderer/utils', () => ({
-  assertIsLoggedInOrganization: vi.fn(),
-  assertUserLoggedIn: vi.fn(),
-  getPrivateKey: vi.fn(() => ({ sign: () => new Uint8Array([0xab]) })),
-  uint8ToHex: vi.fn(() => 'hex'),
-}));
+vi.mock('@renderer/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@renderer/utils')>();
+  return {
+    ...actual,
+    assertIsLoggedInOrganization: vi.fn(),
+    assertUserLoggedIn: vi.fn(),
+    getPrivateKey: vi.fn(() => ({ sign: () => new Uint8Array([0xab]) })),
+    uint8ToHex: vi.fn(() => 'hex'),
+  };
+});
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
   const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
@@ -61,6 +65,7 @@ vi.mock('@renderer/stores/storeNetwork', () => ({
 import OrganizationRequestHandler from '@renderer/components/Transaction/TransactionProcessor/components/OrganizationRequestHandler.vue';
 import { TransactionRequest } from '@renderer/components/Transaction/TransactionProcessor';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
+import { RequestError } from '@renderer/utils';
 import { submitTransaction } from '@renderer/services/organization';
 
 const submitTransactionMock = vi.mocked(submitTransaction);
@@ -83,7 +88,7 @@ function mountHandler() {
   });
 }
 
-const texError = () => new Error(ErrorMessages[ErrorCodes.TEX]);
+const texError = () => new RequestError(ErrorMessages[ErrorCodes.TEX], ErrorCodes.TEX, 400);
 
 describe('OrganizationRequestHandler.vue', () => {
   beforeEach(() => {
