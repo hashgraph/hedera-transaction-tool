@@ -43,7 +43,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.UNKWN]: 'Unknown error',
   [ErrorCodes.SNMP]: 'The signature does not match the public key',
   [ErrorCodes.TE]: 'Transaction is expired',
-  [ErrorCodes.TEX]: 'Transaction already exists',
+  [ErrorCodes.TEX]: 'A transaction with this transactionId already exists. Change the fee payer or valid start time to generate a unique transactionId.',
   [ErrorCodes.FST]: 'Failed to save transaction',
   [ErrorCodes.OTIP]: 'Only transactions in progress can be canceled',
   [ErrorCodes.OMTIP]: 'Only manual transaction in progress can be archived',

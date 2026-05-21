@@ -70,8 +70,10 @@ const handleSubmitSuccess = async (id: number, transactionBytes: string) => {
   props.onSubmitted && (await props.onSubmitted(id, transactionBytes));
 };
 
-const handleSubmitFail = () => {
+const handleSubmitFail = (error: unknown) => {
   setConfirmModalShown(true);
+  const message = error instanceof Error ? error.message : 'Failed to submit transaction';
+  toastManager.error(message);
 };
 
 const handleSignBegin = () => {

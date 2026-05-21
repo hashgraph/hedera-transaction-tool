@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
+  applyNanoOffset,
   getTransactionCommonData,
   hasStartTimestampChanged,
   type TransactionCommonData,
@@ -23,6 +24,7 @@ import {
   KeyList,
   Timestamp,
   Transaction,
+  TransactionId,
 } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -166,11 +168,36 @@ const handleCreate = async () => {
   basePreCreateAssert();
   if (preCreateAssert?.() === false) return;
 
+  const capturedData = { ...data } as TransactionCommonData;
+  // Build the initial transaction once so the retry path can anchor on the
+  // validStart that createTransactionId actually used — including its
+  // "clamp expired validStart to now" normalization. Deriving offsets from
+  // the raw capturedData.validStart would skip that clamp and could submit
+  // retries with an already-expired validStart.
+  const initialTx = createTransaction(capturedData);
+  const initialTxId = initialTx.transactionId;
+  const baseValidStart = initialTxId?.validStart ?? null;
+  const payerAccountId = initialTxId?.accountId ?? null;
+
+  const bytesFactory =
+    baseValidStart && payerAccountId
+      ? (nanoOffset: number): Uint8Array => {
+          if (nanoOffset === 0) return initialTx.toBytes();
+          const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
+          const retryTx = createTransaction(capturedData);
+          retryTx.setTransactionId(
+            TransactionId.withValidStart(payerAccountId, offsetTimestamp),
+          );
+          return retryTx.toBytes();
+        }
+      : undefined;
+
   const processable =
     customRequest ||
     TransactionRequest.fromData({
       transactionKey: transactionKey.value,
-      transactionBytes: createTransaction({ ...data } as TransactionCommonData).toBytes(),
+      transactionBytes: bytesFactory ? bytesFactory(0) : initialTx.toBytes(),
+      bytesFactory,
       name: name.value.trim(),
       description: description.value.trim(),
       submitManually: submitManually.value,

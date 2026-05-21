@@ -32,6 +32,7 @@ export * from './createTransactions';
 export * from './getData';
 export * from './validation';
 export * from './privilegedPayer';
+export * from './timestamp';
 
 export const createFileInfo = (props: {
   fileId: FileId | string;
@@ -154,22 +155,14 @@ export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): b
   return false;
 }
 
-export function isKeyListValid(keyList: KeyList) {
+export function isKeyListValid(keyList: KeyList): boolean {
   const keys = keyList.toArray();
 
   if (keys.length === 0 || (keyList.threshold && keyList.threshold > keys.length)) {
     return false;
   }
 
-  const everyNestedKeyValid = keys.every(key => {
-    if (key instanceof KeyList && !isKeyListValid(key)) {
-      return false;
-    } else {
-      return true;
-    }
-  });
-
-  return everyNestedKeyValid;
+  return keys.every(key => !(key instanceof KeyList && !isKeyListValid(key)));
 }
 
 export function encodeKey(keyList: Key) {

@@ -434,9 +434,10 @@ export class TransactionsService {
       });
 
       if (existing.length > 0) {
-        throw new BadRequestException(
-          `Transactions already exist: ${existing.map(t => t.transactionId).join(', ')}`,
+        this.logger.warn(
+          `Duplicate transaction IDs rejected: ${existing.map(t => t.transactionId).join(', ')}`,
         );
+        throw new BadRequestException(ErrorCodes.TEX);
       }
 
       // Wrap database operations in transaction
