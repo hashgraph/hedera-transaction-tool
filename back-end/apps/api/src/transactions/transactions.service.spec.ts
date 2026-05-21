@@ -26,6 +26,7 @@ import {
   ErrorCodes,
   ExecuteService,
   flattenKeyList,
+  HederaClientPool,
   NatsPublisherService,
   processTransactionStatus,
   safe,
@@ -35,7 +36,6 @@ import {
 } from '@app/common';
 import {
   attachKeys,
-  getClientFromNetwork,
   getTransactionSignReminderKey,
   getTransactionTypeEnumValue,
   isExpired,
@@ -66,7 +66,6 @@ jest.mock(`@app/common/utils`, () => {
 
     // Keep mocks for things you explicitly control in tests
     attachKeys: jest.fn(),
-    getClientFromNetwork: jest.fn(),
     getTransactionTypeEnumValue: jest.fn(),
     isExpired: jest.fn(),
     isTransactionBodyOverMaxSize: jest.fn(),
@@ -97,6 +96,15 @@ describe('TransactionsService', () => {
   const sqlBuilderService = mockDeep<SqlBuilderService>();
   const entityManager = mockDeep<EntityManager>();
   const dataSource = mockDeep<DataSource>();
+  const clientPool = mockDeep<HederaClientPool>();
+
+  // Test helper: stub the pool so withClient invokes the callback with `client`.
+  // Tests should call this after the per-test reset so they control which Client
+  // instance the service sees.
+  const stubPoolWithClient = (client: Client) => {
+    clientPool.acquire.mockResolvedValue(client);
+    clientPool.withClient.mockImplementation(async (_network, fn) => fn(client));
+  };
 
   const user: Partial<User> = {
     id: 1,
@@ -157,6 +165,10 @@ describe('TransactionsService', () => {
         {
           provide: ExecuteService,
           useValue: executeService,
+        },
+        {
+          provide: HederaClientPool,
+          useValue: clientPool,
         },
       ],
     }).compile();
@@ -589,7 +601,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       transactionsRepo.create.mockImplementationOnce(
         ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
       );
@@ -635,7 +647,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       transactionsRepo.create.mockImplementationOnce(
         ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
       );
@@ -685,7 +697,7 @@ describe('TransactionsService', () => {
       transactionsRepo.find.mockResolvedValueOnce([{ transactionId: '0.0.1@123' } as any]);
 
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.TEX);
 
@@ -723,7 +735,7 @@ describe('TransactionsService', () => {
 
       const client = Client.forTestnet();
 
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -749,7 +761,7 @@ describe('TransactionsService', () => {
 
       const client = Client.forTestnet();
 
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -783,7 +795,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       transactionsRepo.save.mockRejectedValueOnce(new Error('Failed to save'));
 
       await expect(service.createTransaction(dto, user as User)).rejects.toThrow(ErrorCodes.FST);
@@ -807,7 +819,7 @@ describe('TransactionsService', () => {
 
       const client = Client.forTestnet();
 
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -841,7 +853,7 @@ describe('TransactionsService', () => {
 
       // return a valid client so the code enters the try block
       const client = Client.forTestnet();
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
 
       // make signature & other validators pass so validation does not throw
       jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
@@ -877,7 +889,7 @@ describe('TransactionsService', () => {
       });
 
       // return a valid client so createTransactions proceeds to validation
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
 
       await expect(service.createTransaction(dto as CreateTransactionDto, user as User)).rejects.toThrow(
         `Creator key ${dto.creatorKeyId} not found`,
@@ -911,7 +923,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_UPDATE);
       jest.mocked(flattenKeyList).mockReturnValueOnce([newKey]);
 
@@ -956,7 +968,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.NODE_UPDATE);
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
@@ -1001,7 +1013,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.NODE_CREATE);
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
@@ -1045,7 +1057,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.REGISTERED_NODE_CREATE);
       jest.mocked(flattenKeyList).mockReturnValueOnce([adminKey]);
 
@@ -1087,7 +1099,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_CREATE);
 
       let capturedTransaction: any;
@@ -1127,7 +1139,7 @@ describe('TransactionsService', () => {
       jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
       transactionsRepo.find.mockResolvedValueOnce([]);
       jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(getTransactionTypeEnumValue).mockReturnValueOnce(TransactionType.ACCOUNT_UPDATE);
 
       // Mock console.error to avoid polluting test output
@@ -1169,7 +1181,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       } as any;
 
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });
@@ -1203,7 +1215,7 @@ describe('TransactionsService', () => {
         mirrorNetwork: 'testnet',
       } as any;
 
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
         usr.keys = userKeys;
       });

@@ -16,8 +16,8 @@ import {
 
 import {
   hasValidSignatureKey,
-  getClientFromNetwork,
   getStatusCodeFromMessage,
+  HederaClientPool,
   NatsPublisherService,
   emitTransactionStatusUpdate,
   TransactionSignatureService,
@@ -48,6 +48,14 @@ describe('ExecuteService', () => {
   const transactionRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mockDeep<NatsPublisherService>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
+  const clientPool = mockDeep<HederaClientPool>();
+
+  // Default pool stub: withClient invokes the callback with the configured client.
+  // Tests override `clientPool.acquire` per-call to control which client is returned.
+  const stubPoolWithClient = (client: Client) => {
+    clientPool.acquire.mockResolvedValue(client);
+    clientPool.withClient.mockImplementation(async (_network, fn) => fn(client));
+  };
 
   const getExecutableTransaction = (
     baseTransaction: Partial<Transaction>,
@@ -149,6 +157,10 @@ describe('ExecuteService', () => {
           provide: TransactionSignatureService,
           useValue: transactionSignatureService,
         },
+        {
+          provide: HederaClientPool,
+          useValue: clientPool,
+        },
       ],
     }).compile();
 
@@ -167,7 +179,7 @@ describe('ExecuteService', () => {
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
       transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       const { receipt, response } = mockSDKTransactionExecution();
 
       await service.executeTransaction(transaction);
@@ -178,7 +190,7 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: receipt.status._code,
       });
-      expect(client.close).toHaveBeenCalled();
+      expect(clientPool.withClient).toHaveBeenCalledWith('testnet', expect.any(Function));
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
@@ -189,7 +201,7 @@ describe('ExecuteService', () => {
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
       transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockImplementation(async () => {
         return {
           getReceipt: jest.fn(async () => {
@@ -210,7 +222,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: Status.Ok._code,
       });
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should update the transaction if execution fails without error status', async () => {
@@ -220,7 +231,7 @@ describe('ExecuteService', () => {
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
       transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
       });
@@ -233,7 +244,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.FAILED,
         statusCode: null,
       });
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should update the transaction if execution fails with error status', async () => {
@@ -243,7 +253,7 @@ describe('ExecuteService', () => {
       transactionRepo.findOne.mockResolvedValueOnce(transaction);
       transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      stubPoolWithClient(client);
       jest.spyOn(SDKTransaction.prototype, 'execute').mockRejectedValueOnce({
         message: 'Transaction failed',
         status: {
@@ -258,7 +268,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.FAILED,
         statusCode: null,
       });
-      expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
@@ -374,7 +383,7 @@ describe('ExecuteService', () => {
       }
       transactionSignatureService.computeSignatureKey.mockResolvedValue(new KeyList());
       jest.mocked(hasValidSignatureKey).mockReturnValue(true);
-      jest.mocked(getClientFromNetwork).mockResolvedValue(client);
+      stubPoolWithClient(client);
     });
 
     it('should execute a group of transactions sequentially', async () => {
@@ -393,7 +402,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: receipt.status._code,
       });
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should fail to execute full group of transactions sequentially if one fails', async () => {
@@ -412,7 +420,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: receipt.status._code,
       });
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should execute a group of transactions in parallel', async () => {
@@ -430,7 +437,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: receipt.status._code,
       });
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should handle errors in a group of transactions', async () => {
@@ -452,7 +458,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.FAILED,
         statusCode: null,
       });
-      expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
     });
 
@@ -488,8 +493,6 @@ describe('ExecuteService', () => {
         status: TransactionStatus.EXECUTED,
         statusCode: receipt.status._code,
       });
-
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('should not execute any transactions if all transactions are canceled', async () => {
@@ -513,7 +516,6 @@ describe('ExecuteService', () => {
   describe('ExecuteService _executeTransaction error handling', () => {
     it('uses error.status._code when present', async () => {
       const client = { close: jest.fn() };
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
 
       const sdkTransaction = {
         execute: jest.fn().mockRejectedValueOnce(
@@ -523,7 +525,11 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 1, mirrorNetwork: 'testnet' } as any;
 
-      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+      const result = await (service as any)['_executeTransaction'](
+        transaction,
+        sdkTransaction,
+        client,
+      );
 
       expect(result.status).toBe(TransactionStatus.FAILED);
       expect(result.error).toBe('boom');
@@ -534,12 +540,10 @@ describe('ExecuteService', () => {
           executedAt: expect.any(Date),
         }),
       );
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('falls back to getStatusCodeFromMessage(error.message) when status._code is missing', async () => {
       const client = { close: jest.fn() };
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
 
       jest.mocked(getStatusCodeFromMessage).mockReturnValueOnce(1234 as any);
 
@@ -549,7 +553,11 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 2, mirrorNetwork: 'testnet' } as any;
 
-      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+      const result = await (service as any)['_executeTransaction'](
+        transaction,
+        sdkTransaction,
+        client,
+      );
 
       expect(getStatusCodeFromMessage).toHaveBeenCalledWith('Transaction failed');
       expect(result.status).toBe(TransactionStatus.FAILED);
@@ -561,12 +569,10 @@ describe('ExecuteService', () => {
           executedAt: expect.any(Date),
         }),
       );
-      expect(client.close).toHaveBeenCalled();
     });
 
     it('keeps default fallback when a non-Error is thrown', async () => {
       const client = { close: jest.fn() };
-      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client as any);
 
       const sdkTransaction = {
         execute: jest.fn().mockRejectedValueOnce({ message: 'nope' }),
@@ -574,7 +580,11 @@ describe('ExecuteService', () => {
 
       const transaction = { id: 3, mirrorNetwork: 'testnet' } as any;
 
-      const result = await (service as any)['_executeTransaction'](transaction, sdkTransaction);
+      const result = await (service as any)['_executeTransaction'](
+        transaction,
+        sdkTransaction,
+        client,
+      );
 
       expect(result.status).toBe(TransactionStatus.FAILED);
       expect(result.error).toEqual('Unknown error');
@@ -585,7 +595,6 @@ describe('ExecuteService', () => {
           executedAt: expect.any(Date),
         }),
       );
-      expect(client.close).toHaveBeenCalled();
     });
   });
 });

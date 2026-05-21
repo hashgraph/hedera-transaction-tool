@@ -8,6 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(ChainModule);
 
   setupApp(app);
+  app.enableShutdownHooks();
 
   await app.startAllMicroservices();
   await app.init();

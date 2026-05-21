@@ -23,7 +23,12 @@ import {
   UserKey,
 } from '@entities';
 
-import { NatsModule, RedisMurlockModule, TransactionSignatureModule } from '@app/common';
+import {
+  HederaClientPoolModule,
+  NatsModule,
+  RedisMurlockModule,
+  TransactionSignatureModule,
+} from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
@@ -52,6 +57,7 @@ import { ExecuteService } from './execute.service';
     ]),
     TransactionSignatureModule,
     RedisMurlockModule,
+    HederaClientPoolModule,
     NatsModule.forRoot(),
   ],
   providers: [ExecuteService],

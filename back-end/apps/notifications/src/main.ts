@@ -8,6 +8,7 @@ async function bootstrap() {
   const app = await NestFactory.create(NotificationsModule);
 
   setupApp(app);
+  app.enableShutdownHooks();
 
   const configService = app.get(ConfigService);
 

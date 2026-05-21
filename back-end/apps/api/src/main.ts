@@ -14,6 +14,7 @@ async function bootstrap() {
 
   setupApp(app);
   setupSwagger(app);
+  app.enableShutdownHooks();
 
   const configService = app.get(ConfigService);
 

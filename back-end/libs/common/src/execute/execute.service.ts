@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import {
+  Client,
   Status,
   Transaction as SDKTransaction,
 } from '@hiero-ledger/sdk';
@@ -16,9 +17,9 @@ import {
 
 import {
   emitTransactionStatusUpdate,
-  getClientFromNetwork,
   getStatusCodeFromMessage,
   hasValidSignatureKey,
+  HederaClientPool,
   NatsPublisherService,
   sleep,
   TransactionExecutedDto,
@@ -34,6 +35,7 @@ export class ExecuteService {
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionSignatureService: TransactionSignatureService,
+    private readonly clientPool: HederaClientPool,
   ) {
   }
 
@@ -42,7 +44,9 @@ export class ExecuteService {
   async executeTransaction(transaction: Transaction) {
     /* Gets the SDK transaction */
     const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
-    const result = await this._executeTransaction(transaction, sdkTransaction);
+    const result = await this.clientPool.withClient(transaction.mirrorNetwork, client =>
+      this._executeTransaction(transaction, sdkTransaction, client),
+    );
     if (result) {
       emitTransactionStatusUpdate(
         this.notificationsPublisher,
@@ -74,26 +78,37 @@ export class ExecuteService {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
         transactions.push({ sdkTransaction, transaction });
       } catch (error) {
-        throw new Error(
+        const wrapped = new Error(
           `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
         );
+        (wrapped as Error & { cause?: unknown }).cause = error;
+        throw wrapped;
       }
     }
 
     // Execute all transactions, collecting raw results (may contain nulls for pods that lost the race)
     const rawResults: (TransactionExecutedDto | null)[] = [];
 
+    // Each transaction acquires its Client from the pool; the pool
+    // reference-counts and shares a single Client across all transactions in
+    // the group that target the same network.
     if (transactionGroup.sequential) {
       for (const { sdkTransaction, transaction } of transactions) {
         const delay = transaction.validStart.getTime() - Date.now();
         await sleep(delay);
-        rawResults.push(await this._executeTransaction(transaction, sdkTransaction));
+        rawResults.push(
+          await this.clientPool.withClient(transaction.mirrorNetwork, client =>
+            this._executeTransaction(transaction, sdkTransaction, client),
+          ),
+        );
       }
     } else {
       const executionPromises = transactions.map(async ({ sdkTransaction, transaction }) => {
         const delay = transaction.validStart.getTime() - Date.now();
         await sleep(delay);
-        return this._executeTransaction(transaction, sdkTransaction);
+        return this.clientPool.withClient(transaction.mirrorNetwork, client =>
+          this._executeTransaction(transaction, sdkTransaction, client),
+        );
       });
       rawResults.push(...(await Promise.all(executionPromises)));
     }
@@ -128,9 +143,8 @@ export class ExecuteService {
   private async _executeTransaction(
     transaction: Transaction,
     sdkTransaction: SDKTransaction,
+    client: Client,
   ): Promise<TransactionExecutedDto | null> {
-    const client = await getClientFromNetwork(transaction.mirrorNetwork);
-
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
     let transactionStatusCode = null;
@@ -178,8 +192,6 @@ export class ExecuteService {
           `Error executing transaction ${transaction.id} (txId=${sdkTransaction.transactionId}, statusCode=${statusCode}): ${message}`,
         );
       }
-    } finally {
-      client.close();
     }
 
     if (isDuplicate) return null;

@@ -32,7 +32,6 @@ import {
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
-  TransactionType,
   User,
   UserKey,
 } from '@entities';
@@ -46,8 +45,8 @@ import {
   ErrorCodes,
   ExecuteService,
   Filtering,
-  getClientFromNetwork,
   getOrder,
+  HederaClientPool,
   getTransactionSignReminderKey,
   getTransactionTypeEnumValue,
   getWhere,
@@ -92,6 +91,7 @@ export class TransactionsService {
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly clientPool: HederaClientPool,
   ) {
   }
 
@@ -409,83 +409,83 @@ export class TransactionsService {
 
     await attachKeys(user, this.entityManager);
 
-    const client = await getClientFromNetwork(dtos[0].mirrorNetwork);
-
     try {
-      // Validate all DTOs upfront
-      const validatedData = await Promise.all(
-        dtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
-      );
-
-      // Batch check for existing transactions
-      const transactionIds = validatedData.map(v => v.transactionId);
-      const existing = await this.repo.find({
-        where: {
-          transactionId: In(transactionIds),
-          status: Not(
-            In([
-              TransactionStatus.CANCELED,
-              TransactionStatus.REJECTED,
-              TransactionStatus.ARCHIVED,
-            ]),
-          ),
-        },
-        select: ['transactionId'],
-      });
-
-      if (existing.length > 0) {
-        this.logger.warn(
-          `Duplicate transaction IDs rejected: ${existing.map(t => t.transactionId).join(', ')}`,
-        );
-        throw new BadRequestException(ErrorCodes.TEX);
-      }
-
-      // Wrap database operations in transaction
-      const savedTransactions = await this.entityManager.transaction(async (entityManager) => {
-        const transactions = validatedData.map(data =>
-          this.repo.create({
-            name: data.name,
-            type: data.type,
-            description: data.description,
-            transactionId: data.transactionId,
-            transactionHash: data.transactionHash,
-            transactionBytes: data.transactionBytes,
-            unsignedTransactionBytes: data.unsignedTransactionBytes,
-            status: TransactionStatus.WAITING_FOR_SIGNATURES,
-            creatorKey: { id: data.creatorKeyId },
-            signature: data.signature,
-            mirrorNetwork: data.mirrorNetwork,
-            validStart: data.validStart,
-            isManual: data.isManual,
-            cutoffAt: data.cutoffAt,
-            publicKeys: data.publicKeys,
-          }),
+      return await this.clientPool.withClient(dtos[0].mirrorNetwork, async client => {
+        // Validate all DTOs upfront
+        const validatedData = await Promise.all(
+          dtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
         );
 
-        try {
-          return await entityManager.save(Transaction, transactions);
-        } catch (error) {
-          throw new BadRequestException(ErrorCodes.FST);
-        }
-      });
+        // Batch check for existing transactions
+        const transactionIds = validatedData.map(v => v.transactionId);
+        const existing = await this.repo.find({
+          where: {
+            transactionId: In(transactionIds),
+            status: Not(
+              In([
+                TransactionStatus.CANCELED,
+                TransactionStatus.REJECTED,
+                TransactionStatus.ARCHIVED,
+              ]),
+            ),
+          },
+          select: ['transactionId'],
+        });
 
-      // Batch schedule reminders
-      const reminderPromises = savedTransactions
-        .map((tx, index) => {
-          const dto = dtos[index];
-          if (!dto.reminderMillisecondsBefore) return null;
-
-          const remindAt = new Date(tx.validStart.getTime() - dto.reminderMillisecondsBefore);
-          return this.schedulerService.addReminder(
-            getTransactionSignReminderKey(tx.id),
-            remindAt,
+        if (existing.length > 0) {
+          this.logger.warn(
+            `Duplicate transaction IDs rejected: ${existing.map(t => t.transactionId).join(', ')}`,
           );
-        })
-        .filter(Boolean);
+          throw new BadRequestException(ErrorCodes.TEX);
+        }
 
-      await Promise.all(reminderPromises);
+        // Wrap database operations in transaction
+        const savedTransactions = await this.entityManager.transaction(async (entityManager) => {
+          const transactions = validatedData.map(data =>
+            this.repo.create({
+              name: data.name,
+              type: data.type,
+              description: data.description,
+              transactionId: data.transactionId,
+              transactionHash: data.transactionHash,
+              transactionBytes: data.transactionBytes,
+              unsignedTransactionBytes: data.unsignedTransactionBytes,
+              status: TransactionStatus.WAITING_FOR_SIGNATURES,
+              creatorKey: { id: data.creatorKeyId },
+              signature: data.signature,
+              mirrorNetwork: data.mirrorNetwork,
+              validStart: data.validStart,
+              isManual: data.isManual,
+              cutoffAt: data.cutoffAt,
+              publicKeys: data.publicKeys,
+            }),
+          );
 
-      return savedTransactions;
+          try {
+            return await entityManager.save(Transaction, transactions);
+          } catch (error) {
+            throw new BadRequestException(ErrorCodes.FST);
+          }
+        });
+
+        // Batch schedule reminders
+        const reminderPromises = savedTransactions
+          .map((tx, index) => {
+            const dto = dtos[index];
+            if (!dto.reminderMillisecondsBefore) return null;
+
+            const remindAt = new Date(tx.validStart.getTime() - dto.reminderMillisecondsBefore);
+            return this.schedulerService.addReminder(
+              getTransactionSignReminderKey(tx.id),
+              remindAt,
+            );
+          })
+          .filter(Boolean);
+
+        await Promise.all(reminderPromises);
+
+        return savedTransactions;
+      });
     } catch (err) {
       // Preserve explicit BadRequestException, but annotate unexpected errors
       if (err instanceof BadRequestException) throw err;
@@ -493,8 +493,6 @@ export class TransactionsService {
       const PREFIX = 'An unexpected error occurred while creating transactions';
       const message = err instanceof Error && err.message ? `${PREFIX}: ${err.message}` : PREFIX;
       throw new BadRequestException(message);
-    } finally {
-      client.close();
     }
   }
 
