@@ -68,6 +68,9 @@ jobs:
     name: Automation | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium
     needs: build
+    env:
+      GRPC_LOCAL_PORT: 50211 # Solo uses 35211 by default
+      MIRROR_NODE_PORT: 8081 # Solo uses 38081 by default
     strategy:
       fail-fast: false
       matrix:
@@ -121,17 +124,21 @@ jobs:
         run: npm install -g @hashgraph/solo@0.73.0
 
       - name: Install Runtime Shared Libraries
-        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y xvfb xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 libnss3-tools socat
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y xvfb xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0 libnss3-tools
 
       - name: Deploy Solo
         if: ${{ matrix.test-suite.soloRequired }}
         env:
-          GRPC_LOCAL_PORT: 50211 # Solo uses 35211 by default
-          MIRROR_NODE_PORT: 8081 # Solo uses 38081 by default
           SOLO_NAMESPACE: solo
           SOLO_CLUSTER_SETUP_NAMESPACE: solo-cluster
           SOLO_DEPLOYMENT: solo-deployment
         run: solo one-shot falcon deploy --deploy-explorer=false --deploy-relay=false -f .github/values.yaml | tee solo-deploy.log
+
+      - name: Check port forwarding
+        if: ${{ matrix.test-suite.soloRequired }}
+        run: |
+          curl -fsS http://127.0.0.1:${MIRROR_NODE_PORT}/api/v1/network/nodes
+          timeout 1 bash -c ">/dev/tcp/127.0.0.1/${GRPC_LOCAL_PORT}"
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
@@ -249,7 +256,6 @@ jobs:
           kubectl describe pods -A > solo-diagnostics/pod-describe.txt || true
           kubectl logs -A --all-containers --tail=500 > solo-diagnostics/all-pod-logs.txt || true
           cp solo-deploy.log solo-diagnostics/solo-deploy.log || true
-          cp /tmp/socat-*.log solo-diagnostics/ 2>/dev/null || true
 
       - name: Upload Solo Diagnostics
         if: ${{ always() && matrix.test-suite.soloRequired }}

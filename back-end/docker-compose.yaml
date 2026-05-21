@@ -17,8 +17,6 @@ services:
     command: pnpm start:dev api
     env_file:
       - ./apps/api/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "3001:3000"
     depends_on:
@@ -37,8 +35,6 @@ services:
     command: pnpm start:dev chain
     env_file:
       - ./apps/chain/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       migration:
         condition: service_completed_successfully
@@ -55,8 +51,6 @@ services:
     command: pnpm start:dev notifications
     env_file:
       - ./apps/notifications/.env
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     ports:
       - "3020:3020"
     depends_on:
