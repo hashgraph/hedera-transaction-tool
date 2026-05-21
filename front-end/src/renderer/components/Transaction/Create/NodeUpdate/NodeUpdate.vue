@@ -38,6 +38,7 @@ const data = reactive<NodeUpdateData>({
   certificateHash: Uint8Array.from([]),
   adminKey: null,
   declineReward: false,
+  associatedRegisteredNodes: [],
 });
 
 /* Computed */
@@ -92,6 +93,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = null;
     data.declineReward = false;
+    data.associatedRegisteredNodes = [];
   } else if (!route.query.draftId) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
@@ -103,6 +105,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
     data.declineReward = nodeInfo.decline_reward;
+    data.associatedRegisteredNodes = nodeInfo.associated_registered_node.map(String);
   }
 });
 watch(

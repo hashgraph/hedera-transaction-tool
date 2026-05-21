@@ -131,6 +131,7 @@ export type NodeData = {
   certificateHash: Uint8Array;
   adminKey: Key | null;
   declineReward: boolean;
+  associatedRegisteredNodes: string[];
 };
 
 export type NodeUpdateData = NodeData & {
@@ -550,6 +551,14 @@ const setNodeData = (
 
   if (oldData?.decline_reward !== data.declineReward) {
     transaction.setDeclineReward(data.declineReward);
+  }
+
+  const oldAssociated = (oldData?.associated_registered_node ?? []).map(String).sort().join(',');
+  const newAssociated = data.associatedRegisteredNodes.slice().sort().join(',');
+  if (oldAssociated !== newAssociated) {
+    transaction.setAssociatedRegisteredNodes(
+      data.associatedRegisteredNodes.map(id => Long.fromString(id)),
+    );
   }
 };
 

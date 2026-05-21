@@ -21,4 +21,5 @@ export interface INodeInfoParsed {
   reward_rate_start: Hbar | null;
   decline_reward: boolean;
   grpc_web_proxy_endpoint: ServiceEndpoint | null;
+  associated_registered_node: number[];
 }

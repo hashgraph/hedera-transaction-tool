@@ -293,6 +293,54 @@ td .btn {
   cursor: pointer;
 }
 
+/* Chip Multi Input */
+.chip-container {
+  gap: 6px;
+  min-height: 28px;
+}
+
+.chip {
+  height: 28px;
+  font-size: 13px;
+  border-color: $light-blue-800 !important;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: $dark-blue-700;
+    border-color: $dark-blue-500 !important;
+  }
+}
+
+.chip-label {
+  min-width: 32px;
+  padding: 0 2px;
+}
+
+.chip-remove {
+  // Applied to a <button>, so reset the user-agent button styling so it
+  // visually looks the same as a bare glyph inside the chip.
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: inherit;
+
+  cursor: pointer;
+  font-size: 16px;
+  opacity: 0.6;
+
+  &:hover,
+  &:focus-visible {
+    opacity: 1;
+  }
+
+  // Show a clear focus ring for keyboard users (`:focus-visible` excludes
+  // mouse-click focus, so this doesn't add visual noise on click).
+  &:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+}
+
 .container-multiple-select {
   border-radius: $border-radius;
   cursor: pointer;

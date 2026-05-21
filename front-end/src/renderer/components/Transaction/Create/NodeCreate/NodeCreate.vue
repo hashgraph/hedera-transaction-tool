@@ -35,6 +35,7 @@ const data = reactive<NodeData>({
   certificateHash: Uint8Array.from([]),
   adminKey: null,
   declineReward: false,
+  associatedRegisteredNodes: [],
 });
 
 /* Computed */

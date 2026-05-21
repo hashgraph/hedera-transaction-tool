@@ -27,6 +27,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import RegisteredNodeIdInput from '@renderer/components/Transaction/Create/Node/RegisteredNodeIdInput.vue';
 
 /* Props */
 const props = defineProps<{
@@ -495,6 +496,20 @@ watch(
         />
       </div>
     </div>
+  </div>
+
+  <hr class="separator my-5" />
+
+  <div class="mt-6 col-8 col-xxxl-6">
+    <RegisteredNodeIdInput
+      :model-value="data.associatedRegisteredNodes"
+      @update:model-value="
+        emit('update:data', {
+          ...data,
+          associatedRegisteredNodes: $event,
+        })
+      "
+    />
   </div>
 
   <hr class="separator my-5" />
