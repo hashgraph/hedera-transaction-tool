@@ -1,17 +1,11 @@
 import type { ChipMultiInputStrategy } from '@renderer/components/ui/ChipMultiInput.vue';
 
 // HIP-1137 caps `associated_registered_node` at 20 entries, which is also the
-// `maxIds` we pass to ChipMultiInput. A single range can therefore never
-// usefully contribute more than 20 entries — anything larger would fail the
-// downstream cap anyway. Bound it here too, so a typo like `0-9999999999`
-// errors immediately instead of trying to expand into a giant Set first.
-const MAX_RANGE_LENGTH = 20n;
-
-// Total unique IDs we'll let `parse` accumulate before short-circuiting.
-// Matches HIP-1137's 20-entry list cap (and the `maxIds` ChipMultiInput uses
-// downstream) — anything past 20 will be rejected anyway, so we short-circuit
-// here to bound the work of a paste like "1, 2, 3, ..." with thousands of
-// tokens instead of churning through them all first.
+// `maxIds` we pass to ChipMultiInput downstream. We short-circuit here once
+// the parse exceeds that — both per-range (so a typo like `0-9999999999`
+// errors immediately instead of trying to expand into a giant Set first) and
+// across the whole input (so a paste like "1, 2, 3, ..." with thousands of
+// tokens bails out instead of churning through them all).
 const MAX_TOTAL_IDS = 20;
 
 // Registered node IDs are non-negative integers (uint64). The input accepts
@@ -75,16 +69,13 @@ export const registeredNodeIdStrategy: ChipMultiInputStrategy<string> = {
         if (start < 0n || end < 0n || start > end) {
           return { error: `Invalid range: "${part}"` };
         }
-        // Inclusive length: `end - start + 1` is the entry count.
-        if (end - start + 1n > MAX_RANGE_LENGTH) {
-          return { error: `Range too large: "${part}" (max ${MAX_RANGE_LENGTH} per range)` };
+        // Inclusive length: `end - start + 1` is the entry count. Bounds the
+        // inner loop so a giant range can't expand into the Set before the
+        // post-loop total check fires.
+        if (end - start + 1n > BigInt(MAX_TOTAL_IDS)) {
+          return { error: `Range too large: "${part}" (max ${MAX_TOTAL_IDS} per range)` };
         }
-        for (let i = start; i <= end; i++) {
-          seen.add(i);
-          if (seen.size > MAX_TOTAL_IDS) {
-            return { error: `Too many IDs (max ${MAX_TOTAL_IDS})` };
-          }
-        }
+        for (let i = start; i <= end; i++) seen.add(i);
       } else {
         let n: bigint;
         try {
@@ -96,9 +87,9 @@ export const registeredNodeIdStrategy: ChipMultiInputStrategy<string> = {
           return { error: `Invalid value: "${part}"` };
         }
         seen.add(n);
-        if (seen.size > MAX_TOTAL_IDS) {
-          return { error: `Too many IDs (max ${MAX_TOTAL_IDS})` };
-        }
+      }
+      if (seen.size > MAX_TOTAL_IDS) {
+        return { error: `Too many IDs (max ${MAX_TOTAL_IDS})` };
       }
     }
 
