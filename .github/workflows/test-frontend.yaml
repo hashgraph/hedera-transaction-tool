@@ -141,12 +141,6 @@ jobs:
         run: |
           set -euo pipefail
 
-          wait_for_tcp() {
-            local host="$1"
-            local port="$2"
-            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
-          }
-
           if ! command -v mkcert >/dev/null 2>&1; then
             curl -fsSL https://github.com/FiloSottile/mkcert/releases/download/v1.4.4/mkcert-v1.4.4-linux-amd64 \
               -o /tmp/mkcert
@@ -173,59 +167,7 @@ jobs:
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
 
-          DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
-          if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
-            echo "Failed to resolve the Docker bridge gateway IP" >&2
-            exit 1
-          fi
-          echo "Docker bridge gateway: ${DOCKER_HOST_GATEWAY}"
-
-          # Solo binds its localnet services to localhost on the runner.
-          # Docker containers reach the host via the bridge gateway, so expose the ports there first.
-          for port in 50211 8081; do
-            sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
-          done
-
-          sleep 2
-
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 50211; then
-            echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
-            ss -lnt || true
-            sudo tail -n 50 /tmp/socat-50211.log || true
-            sudo tail -n 50 /tmp/socat-8081.log || true
-            exit 1
-          fi
-
-          for service in migration api chain notifications; do
-            for attempt in $(seq 1 3); do
-              if docker compose build --progress plain "${service}"; then
-                break
-              fi
-
-              if [ "${attempt}" -eq 3 ]; then
-                echo "docker compose build failed for ${service} after 3 attempts" >&2
-                exit 1
-              fi
-
-              echo "Build for ${service} failed on attempt ${attempt}; retrying in 15s..."
-              sleep 15
-            done
-          done
-
-          for attempt in $(seq 1 5); do
-            if docker compose up -d --no-build api chain notifications; then
-              break
-            fi
-            if [ "${attempt}" -eq 5 ]; then
-              echo "docker compose up failed after 5 attempts" >&2
-              docker compose ps || true
-              docker compose logs --tail=200 || true
-              exit 1
-            fi
-            echo "Attempt ${attempt} failed; retrying in 15s..."
-            sleep 15
-          done
+          docker compose up --build --wait --wait-timeout 1200
 
           # Wait for the API to become ready.
           # The API serves HTTPS when NODE_ENV=development and cert files are present.
