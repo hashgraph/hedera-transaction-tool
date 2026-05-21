@@ -280,8 +280,9 @@ export function getNodeData(transaction: Transaction): NodeData {
     certificateHash: transaction.certificateHash || Uint8Array.from([]),
     adminKey: transaction.adminKey,
     declineReward: transaction.declineReward || false,
-    associatedRegisteredNodes:
-      transaction.associatedRegisteredNodes?.map(id => id.toString()) ?? [],
+    associatedRegisteredNodes: [
+      ...new Set(transaction.associatedRegisteredNodes?.map(id => id.toString()) ?? []),
+    ],
   };
 }
 
