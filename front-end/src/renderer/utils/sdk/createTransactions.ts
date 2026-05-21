@@ -555,9 +555,14 @@ const setNodeData = (
 
   const oldAssociated = oldData?.associated_registered_node ?? [];
   const newAssociated = data.associatedRegisteredNodes;
+  const canonicalOldAssociated = oldAssociated
+    .map(id => String(id))
+    .slice()
+    .sort();
+  const canonicalNewAssociated = newAssociated.slice().sort();
   const sameAssociated =
-    oldAssociated.length === newAssociated.length &&
-    oldAssociated.every((id, i) => String(id) === newAssociated[i]);
+    canonicalOldAssociated.length === canonicalNewAssociated.length &&
+    canonicalOldAssociated.every((id, i) => id === canonicalNewAssociated[i]);
   if (!sameAssociated) {
     transaction.setAssociatedRegisteredNodes(
       newAssociated.map(id => Long.fromString(id)),
