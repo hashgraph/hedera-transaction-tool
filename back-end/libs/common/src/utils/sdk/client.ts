@@ -12,7 +12,7 @@ export const getLocalClientNetwork = (env: string) => {
     case 'test':
       return { '127.0.0.1:50211': '0.0.3' };
     default:
-      return { 'host.docker.internal:35211': '0.0.3' };
+      return { 'host.docker.internal:50211': '0.0.3' };
   }
 };
 
