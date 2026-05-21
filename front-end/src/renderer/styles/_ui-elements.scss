@@ -302,11 +302,6 @@ td .btn {
 .chip {
   height: 28px;
   font-size: 13px;
-  // Tag-style colored background using the project's light-blue / dark-blue
-  // tokens (mirrors the convention used by `.transaction-group-row` etc.).
-  // Avoids the `body-secondary` gray (reads as disabled) and avoids the
-  // primary purple (reads as an active button).
-  background-color: $light-blue-600;
   border-color: $light-blue-800 !important;
 
   @media (prefers-color-scheme: dark) {
