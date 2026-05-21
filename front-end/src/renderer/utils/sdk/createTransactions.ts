@@ -553,19 +553,11 @@ const setNodeData = (
     transaction.setDeclineReward(data.declineReward);
   }
 
-  const oldAssociated = oldData?.associated_registered_node ?? [];
-  const newAssociated = data.associatedRegisteredNodes;
-  const canonicalOldAssociated = oldAssociated
-    .map(id => String(id))
-    .slice()
-    .sort();
-  const canonicalNewAssociated = newAssociated.slice().sort();
-  const sameAssociated =
-    canonicalOldAssociated.length === canonicalNewAssociated.length &&
-    canonicalOldAssociated.every((id, i) => id === canonicalNewAssociated[i]);
-  if (!sameAssociated) {
+  const oldAssociated = (oldData?.associated_registered_node ?? []).map(String).sort().join(',');
+  const newAssociated = data.associatedRegisteredNodes.slice().sort().join(',');
+  if (oldAssociated !== newAssociated) {
     transaction.setAssociatedRegisteredNodes(
-      newAssociated.map(id => Long.fromString(id)),
+      data.associatedRegisteredNodes.map(id => Long.fromString(id)),
     );
   }
 };
