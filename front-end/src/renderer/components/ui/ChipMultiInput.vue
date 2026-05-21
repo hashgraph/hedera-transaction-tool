@@ -43,7 +43,7 @@ watch(
     if (isFocused.value) return;
     rawInput.value = props.strategy.format(ids);
   },
-  { immediate: true },
+  { immediate: true, deep: true },
 );
 
 function onInput(e: Event) {
