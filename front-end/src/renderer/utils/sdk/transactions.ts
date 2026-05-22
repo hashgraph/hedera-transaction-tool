@@ -203,7 +203,7 @@ export const getRawTransactionType = (
       sdkTransaction = Transaction.fromBytes(input);
     } catch (error) {
       logger.error('Failed to deserialize transaction', { error });
-      return 'Freeze Transaction';
+      return 'Unknown Transaction Type';
     }
   }
 
