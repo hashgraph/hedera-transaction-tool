@@ -193,6 +193,7 @@ describe('CreateTransactionGroup.vue', () => {
   test('shows validation toast when submitting with blank group description', async () => {
     mocks.transactionGroupStore.groupItems = [
       {
+        id: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -211,6 +212,7 @@ describe('CreateTransactionGroup.vue', () => {
     const errors: unknown[] = [];
     mocks.transactionGroupStore.groupItems = [
       {
+        id: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -248,6 +250,7 @@ describe('CreateTransactionGroup.vue', () => {
   test('clears transactions after confirming Delete All', async () => {
     mocks.transactionGroupStore.groupItems = [
       {
+        id: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -265,6 +268,7 @@ describe('CreateTransactionGroup.vue', () => {
 
   describe('group item row', () => {
     const baseItem = {
+      id: 'row-item-0',
       description: '',
       payerAccountId: '0.0.2',
       transactionBytes: new Uint8Array([1, 2, 3]),

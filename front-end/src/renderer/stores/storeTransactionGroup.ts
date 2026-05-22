@@ -17,6 +17,13 @@ import { getTransactionFromBytes } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
+  /**
+   * Stable client-only identifier. Used for v-for keys and any UI tracking
+   * that needs to follow a row across edits and reorders. Never persisted —
+   * assigned fresh by the store when items are created or hydrated, so two
+   * sessions of the same draft will see different ids.
+   */
+  id: string;
   transactionBytes: Uint8Array;
   type: string;
   seq: string;
@@ -66,6 +73,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
         groupItemsToAdd.push({
+          id: crypto.randomUUID(),
           transactionBytes: transaction.toBytes(),
           type: draft?.type,
           groupId: id,
@@ -92,27 +100,31 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     modified.value = false;
   }
 
-  function addGroupItem(groupItem: GroupItem) {
+  function addGroupItem(groupItem: Omit<GroupItem, 'id'>) {
     const uniqueValidStart = findUniqueValidStart(
       groupItem.payerAccountId,
       groupItem.validStart.getTime(),
     );
+    let withUniqueStart = groupItem;
     if (uniqueValidStart.getTime() !== groupItem.validStart.getTime()) {
       const transaction = Transaction.fromBytes(groupItem.transactionBytes);
       transaction.setTransactionId(
         createTransactionId(groupItem.payerAccountId, uniqueValidStart),
       );
-      groupItem = {
+      withUniqueStart = {
         ...groupItem,
         transactionBytes: transaction.toBytes(),
         validStart: uniqueValidStart,
       };
     }
-    groupItems.value = [...groupItems.value, groupItem];
+    groupItems.value = [
+      ...groupItems.value,
+      { ...withUniqueStart, id: crypto.randomUUID() },
+    ];
     setModified();
   }
 
-  function editGroupItem(newGroupItem: GroupItem) {
+  function editGroupItem(newGroupItem: Omit<GroupItem, 'id'>) {
     const editIndex = Number.parseInt(newGroupItem.seq);
     if (!(editIndex >= 0 && editIndex < groupItems.value.length)) return;
     const uniqueValidStart = findUniqueValidStart(
@@ -120,12 +132,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       newGroupItem.validStart.getTime(),
       editIndex,
     );
+    let updated = newGroupItem;
     if (uniqueValidStart.getTime() !== newGroupItem.validStart.getTime()) {
       const transaction = Transaction.fromBytes(newGroupItem.transactionBytes);
       transaction.setTransactionId(
         createTransactionId(newGroupItem.payerAccountId, uniqueValidStart),
       );
-      newGroupItem = {
+      updated = {
         ...newGroupItem,
         transactionBytes: transaction.toBytes(),
         validStart: uniqueValidStart,
@@ -133,7 +146,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
     groupItems.value = [
       ...groupItems.value.slice(0, editIndex),
-      newGroupItem,
+      // Preserve the slot's stable id across edits so Vue keeps the same row instance.
+      { ...updated, id: groupItems.value[editIndex].id },
       ...groupItems.value.slice(editIndex + 1),
     ];
     setModified();
@@ -159,7 +173,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     );
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
-    const newItem = {
+    const newItem: GroupItem = {
+      id: crypto.randomUUID(),
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
@@ -179,6 +194,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    * Finds a unique validStart date for a group item.
    * @param payerAccountId
    * @param validStartMillis - The milliseconds of the desired validStart date .
+   * @param excludeIndex
    * @returns A unique validStart date.
    */
   function findUniqueValidStart(

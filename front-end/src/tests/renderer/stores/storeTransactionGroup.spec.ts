@@ -47,8 +47,10 @@ import useTransactionGroupStore, {
   type GroupItem,
 } from '@renderer/stores/storeTransactionGroup';
 
+let nextTestId = 0;
 function createGroupItem(overrides: Partial<GroupItem> = {}): GroupItem {
   return {
+    id: `test-id-${nextTestId++}`,
     transactionBytes: new Uint8Array([1, 2, 3]),
     type: 'Transfer',
     seq: '0',
@@ -415,6 +417,108 @@ describe('useTransactionGroupStore', () => {
       expect(store.description).toBe('');
       expect(store.sequential).toBe(false);
       expect(store.isModified()).toBe(false);
+    });
+  });
+
+  describe('item id (stable client identity)', () => {
+    test('addGroupItem assigns an id even when the caller does not provide one', () => {
+      const { id: _ignored, ...itemWithoutId } = createGroupItem();
+      store.addGroupItem(itemWithoutId);
+
+      expect(store.groupItems[0].id).toBeTruthy();
+      expect(typeof store.groupItems[0].id).toBe('string');
+    });
+
+    test('addGroupItem overwrites any id the caller passed (store owns id assignment)', () => {
+      store.addGroupItem(createGroupItem({ id: 'caller-supplied-id' }));
+
+      expect(store.groupItems[0].id).not.toBe('caller-supplied-id');
+      expect(store.groupItems[0].id).toBeTruthy();
+    });
+
+    test('every addGroupItem call produces a unique id', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', validStart: new Date(1000) }));
+      store.addGroupItem(createGroupItem({ seq: '1', validStart: new Date(2000) }));
+      store.addGroupItem(createGroupItem({ seq: '2', validStart: new Date(3000) }));
+
+      const ids = store.groupItems.map(i => i.id);
+      expect(new Set(ids).size).toBe(3);
+    });
+
+    test('editGroupItem preserves the slot id so v-for keys stay stable across edits', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', description: 'original' }));
+      const originalId = store.groupItems[0].id;
+
+      store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
+
+      expect(store.groupItems[0].id).toBe(originalId);
+      expect(store.groupItems[0].description).toBe('edited');
+    });
+
+    test('editGroupItem ignores an id the caller passed, keeping the slot id', () => {
+      store.addGroupItem(createGroupItem({ seq: '0' }));
+      const originalId = store.groupItems[0].id;
+
+      store.editGroupItem(createGroupItem({ seq: '0', id: 'caller-supplied-id' }));
+
+      expect(store.groupItems[0].id).toBe(originalId);
+    });
+
+    test('duplicateGroupItem gives the new item a fresh id distinct from the source', () => {
+      store.addGroupItem(createGroupItem({ seq: '0' }));
+      const sourceId = store.groupItems[0].id;
+
+      store.duplicateGroupItem(0);
+
+      expect(store.groupItems).toHaveLength(2);
+      expect(store.groupItems[1].id).toBeTruthy();
+      expect(store.groupItems[1].id).not.toBe(sourceId);
+    });
+
+    test('updateTransactionValidStarts preserves item ids across per-tick rewrites', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }));
+      store.addGroupItem(createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }));
+      const idsBefore = store.groupItems.map(i => i.id);
+
+      store.updateTransactionValidStarts(new Date(5000));
+
+      const idsAfter = store.groupItems.map(i => i.id);
+      expect(idsAfter).toEqual(idsBefore);
+    });
+
+    test('fetchGroup assigns fresh ids to each hydrated item', async () => {
+      const futureStart = new Date(Date.now() + 120_000);
+      const mockTransaction = {
+        toBytes: () => new Uint8Array([1, 2, 3]),
+        transactionId: {
+          accountId: { toString: () => '0.0.1' },
+          validStart: { toDate: () => new Date(futureStart) },
+        },
+      };
+
+      vi.mocked(getGroup).mockResolvedValue({
+        id: 'group-1',
+        created_at: new Date(),
+        description: 'g',
+        atomic: false,
+        groupValidStart: futureStart,
+      });
+      vi.mocked(getGroupItems).mockResolvedValue([
+        { transaction_id: null, transaction_draft_id: 'd1', transaction_group_id: 'group-1', seq: '0' },
+        { transaction_id: null, transaction_draft_id: 'd2', transaction_group_id: 'group-1', seq: '1' },
+      ]);
+      vi.mocked(getDrafts).mockResolvedValue([
+        { id: 'd1', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x01', type: 'Transfer', description: 'a', isTemplate: null, details: null },
+        { id: 'd2', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x02', type: 'Transfer', description: 'b', isTemplate: null, details: null },
+      ]);
+      vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
+
+      await store.fetchGroup('group-1', {});
+
+      expect(store.groupItems).toHaveLength(2);
+      expect(store.groupItems[0].id).toBeTruthy();
+      expect(store.groupItems[1].id).toBeTruthy();
+      expect(store.groupItems[0].id).not.toBe(store.groupItems[1].id);
     });
   });
 });
