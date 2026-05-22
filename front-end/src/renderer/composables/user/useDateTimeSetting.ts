@@ -12,67 +12,84 @@ export enum DateTimeOptions {
   LOCAL_TIME = 'local-time',
 }
 
-export default function useDateTimeSetting() {
-  const DEFAULT_OPTION = DateTimeOptions.UTC_TIME;
+const DEFAULT_OPTION = DateTimeOptions.UTC_TIME;
 
+// Shared module-level state so every component that calls useDateTimeSetting()
+// observes the same value and the same load lifecycle. Otherwise each consumer
+// (e.g. every <DateTimeString>) would async-load independently and could render
+// with a different initial format than its siblings.
+const dateTimeSetting = ref<DateTimeOptions | null>(null);
+const timeZoneName = ref<string | null>(null);
+let loadPromise: Promise<void> | null = null;
+
+const isUtcSelected = computed(() => {
+  return dateTimeSetting.value === DateTimeOptions.UTC_TIME;
+});
+
+const isLoaded = computed(() => dateTimeSetting.value !== null);
+
+const dateTimeSettingLabel = computed(() => {
+  return isUtcSelected.value ? 'UTC Time' : 'Local Time';
+});
+
+const DATE_TIME_OPTION_LABELS = computed(() => [
+  { value: DateTimeOptions.UTC_TIME, label: 'UTC Time' },
+  {
+    value: DateTimeOptions.LOCAL_TIME,
+    label: `Local Time (${timeZoneName.value})`,
+  },
+]);
+
+export default function useDateTimeSetting() {
   /* Stores */
   const user = useUserStore();
 
-  /* States */
-  const dateTimeSetting = ref<DateTimeOptions | null>(null);
-  const timeZoneName = ref<string | null>(null);
-
-  /* Computed */
-  const isUtcSelected = computed(() => {
-    return dateTimeSetting.value === DateTimeOptions.UTC_TIME;
-  });
-
-  const dateTimeSettingLabel = computed(() => {
-    return isUtcSelected.value ? 'UTC Time' : 'Local Time';
-  });
-
-  const DATE_TIME_OPTION_LABELS = computed(() => [
-    { value: DateTimeOptions.UTC_TIME, label: 'UTC Time' },
-    {
-      value: DateTimeOptions.LOCAL_TIME,
-      label: `Local Time (${timeZoneName.value})`,
-    },
-  ]);
-
-  /* Hooks */
-  onBeforeMount(async () => {
-    dateTimeSetting.value = await getDateTimeSetting();
-    const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'long' });
-    const parts = formatter.formatToParts(new Date());
-    timeZoneName.value = parts.find(part => part.type === 'timeZoneName')?.value ?? null;
-  });
-
-  async function getDateTimeSetting(): Promise<DateTimeOptions> {
-    let result: DateTimeOptions;
-    if (dateTimeSetting.value === null) {
-      result = DEFAULT_OPTION;
+  /* Functions */
+  function ensureLoaded(): Promise<void> {
+    if (dateTimeSetting.value !== null) {
+      return Promise.resolve();
+    }
+    if (loadPromise) {
+      return loadPromise;
+    }
+    loadPromise = (async () => {
+      let setting = DEFAULT_OPTION;
       if (isUserLoggedIn(user.personal)) {
         const claimValue = await safeAwait(getStoredClaim(user.personal.id, DATE_TIME_PREFERENCE));
         if (claimValue.data) {
-          result = claimValue.data as DateTimeOptions;
+          setting = claimValue.data as DateTimeOptions;
         }
       }
-    } else {
-      result = dateTimeSetting.value;
-    }
-    return result;
+      const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'long' });
+      const parts = formatter.formatToParts(new Date());
+      timeZoneName.value = parts.find(part => part.type === 'timeZoneName')?.value ?? null;
+      dateTimeSetting.value = setting;
+    })();
+    return loadPromise;
+  }
+
+  /* Hooks */
+  onBeforeMount(() => {
+    void ensureLoaded();
+  });
+
+  async function getDateTimeSetting(): Promise<DateTimeOptions> {
+    await ensureLoaded();
+    return dateTimeSetting.value ?? DEFAULT_OPTION;
   }
 
   async function setDateTimeSetting(format: DateTimeOptions) {
     if (isUserLoggedIn(user.personal)) {
       await setStoredClaim(user.personal.id, DATE_TIME_PREFERENCE, format);
     }
-    dateTimeSetting.value = null; // force a reload of the setting at next use to make sure cache is in sync with DB
+    dateTimeSetting.value = format;
+    loadPromise = Promise.resolve();
   }
 
   return {
     DATE_TIME_OPTION_LABELS,
     isUtcSelected,
+    isLoaded,
     dateTimeSettingLabel,
     getDateTimeSetting,
     setDateTimeSetting,

@@ -22,7 +22,7 @@ import {
   isLoggedInOrganization,
   redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
-import { createTransactionId } from '@renderer/utils/sdk';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -33,6 +33,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import ImportCSVController from '@renderer/pages/CreateTransactionGroup/ImportCSVController.vue';
 import useNextTransactionV2, {
   type TransactionNodeId,
@@ -50,7 +51,7 @@ const useNextTransaction = useNextTransactionV2();
 const router = useRouter();
 const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const { dateTimeSettingLabel } = useDateTimeSetting();
+const { dateTimeSettingLabel, isLoaded: dateTimeSettingLoaded } = useDateTimeSetting();
 
 /* State */
 const groupDescription = ref('');
@@ -409,49 +410,77 @@ onBeforeRouteLeave(async to => {
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
             :key="groupItem.transactionBytes.toString()"
-            class="pb-3"
+            class="pb-2"
           >
-            <div class="d-flex justify-content-between p-4 transaction-group-row">
-              <div class="align-self-center col">
-                <div :data-testid="'span-transaction-type-' + index">{{ groupItem.type }}</div>
+            <div
+              class="d-flex align-items-center transaction-group-row text-small gap-3"
+              style="padding: 8px 16px 8px 24px; border-radius: 10px"
+            >
+              <div
+                class="text-bold flex-shrink-0"
+                style="width: 13rem"
+                :data-testid="'span-transaction-type-' + index"
+              >
+                {{ getDisplayTransactionType(groupItem.transactionBytes, false, true) }}
               </div>
               <div
-                class="align-self-center text-truncate col text-center mx-5"
+                class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
                 v-html="
                   groupItem.type == 'Transfer Transaction'
                     ? makeTransfer(index)
                     : groupItem.description != ''
                       ? groupItem.description
-                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
+                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo || ''
                 "
               ></div>
-              <div class="d-flex col justify-content-end">
+              <div
+                class="flex-shrink-0 text-start"
+                style="width: 11rem"
+                :data-testid="'span-transaction-valid-start-' + index"
+              >
+                <DateTimeString
+                  v-if="dateTimeSettingLoaded"
+                  :date="groupItem.validStart"
+                  compact
+                  wrap
+                />
+              </div>
+              <div class="d-flex flex-shrink-0 align-items-center gap-3 ms-3">
                 <AppButton
                   type="button"
-                  class="transaction-group-button-borderless"
-                  @click="handleDeleteGroupItem(index)"
-                  style="min-width: 0"
-                  :data-testid="'button-transaction-delete-' + index"
-                  >Delete
-                </AppButton>
-                <AppButton
-                  type="button"
-                  class="transaction-group-button-borderless"
+                  size="small"
+                  color="borderless"
                   @click="handleDuplicateGroupItem(index)"
-                  style="min-width: 0"
+                  class="min-w-unset"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Duplicate Transaction"
                   :data-testid="'button-transaction-duplicate-' + index"
-                  >Duplicate
+                >
+                  <span class="bi bi-copy"></span>
                 </AppButton>
                 <AppButton
                   type="button"
-                  class="transaction-group-button"
+                  color="primary"
+                  style="min-width: 6rem"
                   :data-testid="'button-transaction-edit-' + index"
                   @click="handleEditGroupItem(index, groupItem.type)"
                 >
                   Edit
+                </AppButton>
+                <AppButton
+                  type="button"
+                  size="small"
+                  color="danger"
+                  @click="handleDeleteGroupItem(index)"
+                  class="min-w-unset"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Delete Transaction"
+                  :data-testid="'button-transaction-delete-' + index"
+                >
+                  <span class="bi bi-trash"></span>
                 </AppButton>
               </div>
             </div>
