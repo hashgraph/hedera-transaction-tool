@@ -1,6 +1,5 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { computed } from 'vue';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/CreateTransactionGroup.vue';
@@ -63,7 +62,6 @@ vi.mock('@renderer/composables/useSetDynamicLayout', () => ({
 vi.mock('@renderer/composables/user/useDateTimeSetting.ts', () => ({
   default: vi.fn(() => ({
     dateTimeSettingLabel: 'UTC Time',
-    isLoaded: computed(() => true),
   })),
 }));
 

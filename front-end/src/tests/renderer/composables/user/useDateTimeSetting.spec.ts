@@ -76,15 +76,14 @@ describe('useDateTimeSetting', () => {
     vi.useRealTimers();
   });
 
-  test('loads UTC default and exposes isLoaded=true after onBeforeMount', async () => {
+  test('loads UTC default after onBeforeMount', async () => {
     mocks.getStoredClaim.mockResolvedValue(null);
     const { useDateTimeSetting } = await loadComposable();
 
     const { composable } = mountWithComposable(useDateTimeSetting);
-    expect(composable.isLoaded.value).toBe(false);
+    expect(composable.isUtcSelected.value).toBe(false);
 
     await flushPromises();
-    expect(composable.isLoaded.value).toBe(true);
     expect(composable.isUtcSelected.value).toBe(true);
     expect(composable.dateTimeSettingLabel.value).toBe('UTC Time');
   });
@@ -109,34 +108,10 @@ describe('useDateTimeSetting', () => {
 
     await flushPromises();
 
-    expect(first.composable.isLoaded.value).toBe(true);
-    expect(second.composable.isLoaded.value).toBe(true);
-    expect(first.composable.isUtcSelected.value).toBe(second.composable.isUtcSelected.value);
+    expect(first.composable.isUtcSelected.value).toBe(true);
+    expect(second.composable.isUtcSelected.value).toBe(true);
     // Same underlying ref instance — proves no per-consumer state copies
-    expect(first.composable.isLoaded).toBe(second.composable.isLoaded);
     expect(first.composable.isUtcSelected).toBe(second.composable.isUtcSelected);
-  });
-
-  test('only one claim fetch happens for concurrent mounts (shared loadPromise)', async () => {
-    let resolveFetch!: (value: string | null) => void;
-    mocks.getStoredClaim.mockImplementation(
-      () =>
-        new Promise<string | null>(resolve => {
-          resolveFetch = resolve;
-        }),
-    );
-    const { useDateTimeSetting } = await loadComposable();
-
-    mountWithComposable(useDateTimeSetting);
-    mountWithComposable(useDateTimeSetting);
-    mountWithComposable(useDateTimeSetting);
-
-    // All three composable consumers should funnel through a single in-flight load
-    await flushPromises();
-    expect(mocks.getStoredClaim).toHaveBeenCalledTimes(1);
-
-    resolveFetch(null);
-    await flushPromises();
   });
 
   test('setDateTimeSetting updates shared state reactively for all consumers without null flicker', async () => {
@@ -154,30 +129,20 @@ describe('useDateTimeSetting', () => {
     await first.composable.setDateTimeSetting(DateTimeOptions.LOCAL_TIME);
 
     expect(second.composable.isUtcSelected.value).toBe(false);
-    expect(second.composable.isLoaded.value).toBe(true);
     expect(second.composable.dateTimeSettingLabel.value).toBe('Local Time');
   });
 
-  test('getDateTimeSetting awaits the in-flight load instead of triggering a second one', async () => {
-    let resolveFetch!: (value: string | null) => void;
-    mocks.getStoredClaim.mockImplementation(
-      () =>
-        new Promise<string | null>(resolve => {
-          resolveFetch = resolve;
-        }),
-    );
+  test('getDateTimeSetting returns the cached value without re-fetching once loaded', async () => {
+    mocks.getStoredClaim.mockResolvedValue('local-time');
     const { useDateTimeSetting, DateTimeOptions } = await loadComposable();
 
     const { composable } = mountWithComposable(useDateTimeSetting);
-    // Kick off a direct getDateTimeSetting call while the mount-driven load is still pending.
-    const pending = composable.getDateTimeSetting();
-
     await flushPromises();
     expect(mocks.getStoredClaim).toHaveBeenCalledTimes(1);
 
-    resolveFetch('local-time');
-    const result = await pending;
+    const result = await composable.getDateTimeSetting();
     expect(result).toBe(DateTimeOptions.LOCAL_TIME);
+    expect(mocks.getStoredClaim).toHaveBeenCalledTimes(1);
   });
 
   test('falls back to UTC default when user is not logged in', async () => {
@@ -189,7 +154,6 @@ describe('useDateTimeSetting', () => {
 
     expect(mocks.getStoredClaim).not.toHaveBeenCalled();
     expect(composable.isUtcSelected.value).toBe(true);
-    expect(composable.isLoaded.value).toBe(true);
     expect(await composable.getDateTimeSetting()).toBe(DateTimeOptions.UTC_TIME);
   });
 });

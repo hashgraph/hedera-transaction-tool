@@ -51,7 +51,7 @@ const useNextTransaction = useNextTransactionV2();
 const router = useRouter();
 const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const { dateTimeSettingLabel, isLoaded: dateTimeSettingLoaded } = useDateTimeSetting();
+const dateTimeSettingLabel = useDateTimeSetting();
 
 /* State */
 const groupDescription = ref('');
@@ -440,7 +440,6 @@ onBeforeRouteLeave(async to => {
                 :data-testid="'span-transaction-valid-start-' + index"
               >
                 <DateTimeString
-                  v-if="dateTimeSettingLoaded"
                   :date="groupItem.validStart"
                   compact
                   wrap

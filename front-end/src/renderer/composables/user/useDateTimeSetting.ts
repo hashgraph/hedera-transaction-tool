@@ -15,18 +15,16 @@ export enum DateTimeOptions {
 const DEFAULT_OPTION = DateTimeOptions.UTC_TIME;
 
 // Shared module-level state so every component that calls useDateTimeSetting()
-// observes the same value and the same load lifecycle. Otherwise each consumer
-// (e.g. every <DateTimeString>) would async-load independently and could render
-// with a different initial format than its siblings.
+// observes the same value. Otherwise each consumer (e.g. every <DateTimeString>)
+// would async-load independently and render with a stale format on first paint,
+// and toggling the setting in Settings wouldn't propagate to other components
+// until they remounted.
 const dateTimeSetting = ref<DateTimeOptions | null>(null);
 const timeZoneName = ref<string | null>(null);
-let loadPromise: Promise<void> | null = null;
 
 const isUtcSelected = computed(() => {
   return dateTimeSetting.value === DateTimeOptions.UTC_TIME;
 });
-
-const isLoaded = computed(() => dateTimeSetting.value !== null);
 
 const dateTimeSettingLabel = computed(() => {
   return isUtcSelected.value ? 'UTC Time' : 'Local Time';
@@ -44,38 +42,25 @@ export default function useDateTimeSetting() {
   /* Stores */
   const user = useUserStore();
 
-  /* Functions */
-  function ensureLoaded(): Promise<void> {
-    if (dateTimeSetting.value !== null) {
-      return Promise.resolve();
-    }
-    if (loadPromise) {
-      return loadPromise;
-    }
-    loadPromise = (async () => {
-      let setting = DEFAULT_OPTION;
-      if (isUserLoggedIn(user.personal)) {
-        const claimValue = await safeAwait(getStoredClaim(user.personal.id, DATE_TIME_PREFERENCE));
-        if (claimValue.data) {
-          setting = claimValue.data as DateTimeOptions;
-        }
-      }
-      const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'long' });
-      const parts = formatter.formatToParts(new Date());
-      timeZoneName.value = parts.find(part => part.type === 'timeZoneName')?.value ?? null;
-      dateTimeSetting.value = setting;
-    })();
-    return loadPromise;
-  }
-
   /* Hooks */
-  onBeforeMount(() => {
-    void ensureLoaded();
+  onBeforeMount(async () => {
+    if (dateTimeSetting.value !== null) return;
+    const setting = await fetchDateTimeSetting();
+    const formatter = new Intl.DateTimeFormat(undefined, { timeZoneName: 'long' });
+    const parts = formatter.formatToParts(new Date());
+    timeZoneName.value = parts.find(part => part.type === 'timeZoneName')?.value ?? null;
+    dateTimeSetting.value = setting;
   });
 
+  async function fetchDateTimeSetting(): Promise<DateTimeOptions> {
+    if (!isUserLoggedIn(user.personal)) return DEFAULT_OPTION;
+    const claimValue = await safeAwait(getStoredClaim(user.personal.id, DATE_TIME_PREFERENCE));
+    return (claimValue.data as DateTimeOptions) ?? DEFAULT_OPTION;
+  }
+
   async function getDateTimeSetting(): Promise<DateTimeOptions> {
-    await ensureLoaded();
-    return dateTimeSetting.value ?? DEFAULT_OPTION;
+    if (dateTimeSetting.value !== null) return dateTimeSetting.value;
+    return await fetchDateTimeSetting();
   }
 
   async function setDateTimeSetting(format: DateTimeOptions) {
@@ -83,13 +68,11 @@ export default function useDateTimeSetting() {
       await setStoredClaim(user.personal.id, DATE_TIME_PREFERENCE, format);
     }
     dateTimeSetting.value = format;
-    loadPromise = Promise.resolve();
   }
 
   return {
     DATE_TIME_OPTION_LABELS,
     isUtcSelected,
-    isLoaded,
     dateTimeSettingLabel,
     getDateTimeSetting,
     setDateTimeSetting,
