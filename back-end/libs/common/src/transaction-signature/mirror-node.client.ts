@@ -10,7 +10,10 @@ import {
   NodeInfoParsed,
   parseAccountInfo,
   parseNodeInfo,
+  RegisteredNodeInfoParsed,
+  RegisteredNodesResponse,
 } from '@app/common';
+import { parseRegisteredNodeInfo } from '@app/common/utils/sdk/registered-node';
 
 const HTTP_STATUS = {
   OK: 200,
@@ -101,13 +104,42 @@ export class MirrorNodeClient {
   }
 
   /**
+   * Fetch registered node info from mirror node
+   */
+  async fetchRegisteredNodeInfo(
+    registeredNodeId: number,
+    mirrorNetwork: string,
+    etag?: string,
+  ): Promise<{ data: RegisteredNodeInfoParsed | null; etag: string | null }> {
+    const url = `${this.getMirrorNodeRESTURL(mirrorNetwork)}/network/registered-nodes?limit=1&registerednode.id=${registeredNodeId}`;
+
+    try {
+      const response = await this.fetchWithRetry<RegisteredNodesResponse>(url, etag);
+
+      if (response.status === HTTP_STATUS.NOT_MODIFIED) {
+        return { data: null, etag: etag };
+      }
+
+      const nodeResponse = response.data;
+      if (!nodeResponse.registered_nodes || nodeResponse.registered_nodes.length === 0) {
+        this.logger.warn(`No registered node found with id: ${registeredNodeId}`);
+        return { data: null, etag: null };
+      }
+
+      const nodeInfoParsed = parseRegisteredNodeInfo(nodeResponse.registered_nodes[0]);
+      const newEtag = response.etag ?? null;
+
+      return { data: nodeInfoParsed, etag: newEtag };
+    } catch (error) {
+      this.logger.error(`Failed to fetch node ${registeredNodeId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Fetch data with exponential backoff retry logic
    */
-  private async fetchWithRetry<T>(
-    url: string,
-    etag?: string,
-    attempt = 1,
-  ): Promise<HttpResult<T>> {
+  private async fetchWithRetry<T>(url: string, etag?: string, attempt = 1): Promise<HttpResult<T>> {
     try {
       return await this.getMirrorNodeData<T>(url, etag);
     } catch (error) {
