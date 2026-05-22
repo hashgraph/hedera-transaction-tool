@@ -1,4 +1,5 @@
 /// <reference types="./environment.d.ts" />
+import 'tsconfig-paths/register';
 
 import * as path from 'path';
 
