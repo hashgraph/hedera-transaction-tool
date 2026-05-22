@@ -168,14 +168,14 @@ describe('SDK Transaction Utilities - Freeze Types', () => {
       const validEmptyTransaction = new Uint8Array([]);
       // Empty bytes should trigger error handling
       const result = getDisplayTransactionType(validEmptyTransaction, false, true);
-      expect(result).toBe('Freeze');
+      expect(result).toBe('Unknown Transaction Type');
     });
 
     test('handles deserialization errors gracefully', () => {
       const invalidBytes = new Uint8Array([1, 2, 3, 4, 5]);
       // Should return fallback value for invalid bytes
       const result = getDisplayTransactionType(invalidBytes, false, true);
-      expect(result).toBe('Freeze');
+      expect(result).toBe('Unknown Transaction Type');
     });
 
     describe('with BackendTypeInput', () => {
