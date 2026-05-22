@@ -51,7 +51,7 @@ const useNextTransaction = useNextTransactionV2();
 const router = useRouter();
 const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
-const dateTimeSettingLabel = useDateTimeSetting();
+const { dateTimeSettingLabel } = useDateTimeSetting();
 
 /* State */
 const groupDescription = ref('');
