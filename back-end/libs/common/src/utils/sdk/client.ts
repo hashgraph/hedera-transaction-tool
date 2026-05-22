@@ -8,7 +8,12 @@ export const PREVIEWNET = 'previewnet';
 export const LOCAL_NODE = 'local-node';
 
 export const getLocalClientNetwork = (env: string) => {
-  return { '127.0.0.1:50211': '0.0.3' };
+  switch (env) {
+    case 'test':
+      return { '127.0.0.1:50211': '0.0.3' };
+    default:
+      return { 'host.docker.internal:50211': '0.0.3' };
+  }
 };
 
 export const getClientFromNetwork = async (

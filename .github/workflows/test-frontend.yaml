@@ -161,6 +161,7 @@ jobs:
 
           for dir in . apps/api apps/chain apps/notifications typeorm scripts; do
             cp "${dir}/example.env" "${dir}/.env"
+            sed -i "s/^NODE_ENV=.*/NODE_ENV=test/" "${dir}/.env"
           done
 
           FE_VERSION="$(node -p "require('../front-end/package.json').version")"
