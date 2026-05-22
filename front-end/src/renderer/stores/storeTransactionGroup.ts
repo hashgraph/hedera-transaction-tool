@@ -2,7 +2,7 @@ import type { TransactionApproverDto } from '@shared/interfaces';
 
 import { ref } from 'vue';
 import { defineStore } from 'pinia';
-import { KeyList, PublicKey, Transaction } from '@hiero-ledger/sdk';
+import { KeyList, PublicKey, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';
@@ -13,7 +13,7 @@ import {
   updateGroup,
 } from '@renderer/services/transactionGroupsService';
 
-import { getTransactionFromBytes } from '@renderer/utils';
+import { formatHbarTransfers, getTransactionFromBytes } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
@@ -30,24 +30,50 @@ export interface GroupItem {
 }
 
 /**
- * Variant of {@link GroupItem} with a stable client-only `rowKey` used as the
- * Vue v-for key (and for any UI tracking that needs to follow a row across
- * edits, ticks, and reorders). Named `rowKey` rather than `key` to avoid
- * confusion with the many cryptographic keys (keyList, publicKey, etc.) that
- * appear elsewhere on transaction-related types. Never persisted — assigned
- * fresh by the store when items are added or hydrated, so two sessions of the
- * same draft see different rowKeys.
+ * Variant of {@link GroupItem} as held by the Pinia store and consumed by the
+ * row renderer. Adds:
+ * - `rowKey`: stable client-only id for v-for and any tracking that needs to
+ *   follow a row across edits, ticks, and reorders. Named `rowKey` (not `key`)
+ *   to avoid confusion with the many cryptographic keys on transaction types.
+ * - `transactionMemo` / `transferSummary`: derived display values, computed
+ *   once when an item enters the store. Pre-computing them keeps the row
+ *   template free of `Transaction.fromBytes(...)` calls, which would otherwise
+ *   re-deserialize every reactive bytes update (e.g. each clock tick that
+ *   rewrites `transactionBytes` with a new valid-start).
  *
- * Code paths that only need the bare shape (e.g. building items for the
- * signing pipeline, mutator inputs) should use {@link GroupItem}.
+ * None of these fields are persisted. Code paths that only need the bare shape
+ * (e.g. mutator inputs, persistence service) should use {@link GroupItem}.
  */
-export interface KeyedGroupItem extends GroupItem {
+export interface RenderedGroupItem extends GroupItem {
   rowKey: string;
+  transactionMemo: string;
+  transferSummary: string | null;
+}
+
+/**
+ * Computes the precomputed display fields for a freshly-created or freshly-edited
+ * group item. Runs `Transaction.fromBytes` once at mutation time so the row
+ * template can render from stored strings instead of re-deserializing on every
+ * reactive bytes update (e.g. the per-second valid-start rewrite).
+ */
+function deriveDisplay(transactionBytes: Uint8Array): {
+  transactionMemo: string;
+  transferSummary: string | null;
+} {
+  const transaction = Transaction.fromBytes(transactionBytes);
+  const transferSummary =
+    transaction instanceof TransferTransaction
+      ? formatHbarTransfers(transaction.hbarTransfersList)
+      : null;
+  return {
+    transactionMemo: transaction.transactionMemo || '',
+    transferSummary,
+  };
 }
 
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
-  const groupItems = ref<KeyedGroupItem[]>([]);
+  const groupItems = ref<RenderedGroupItem[]>([]);
   const groupValidStart = ref(new Date());
   const groupInitialValidStart = ref(new Date());
   const description = ref('');
@@ -75,15 +101,16 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
-    const groupItemsToAdd: KeyedGroupItem[] = [];
+    const groupItemsToAdd: RenderedGroupItem[] = [];
 
     for (const item of items) {
       const draft = drafts.find(draft => draft.id == item.transaction_draft_id);
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
+        const transactionBytes = transaction.toBytes();
         groupItemsToAdd.push({
           rowKey: crypto.randomUUID(),
-          transactionBytes: transaction.toBytes(),
+          transactionBytes,
           type: draft?.type,
           groupId: id,
           seq: item.seq,
@@ -93,6 +120,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           payerAccountId: transaction.transactionId?.accountId?.toString() as string,
           validStart: transaction.transactionId?.validStart?.toDate() as Date,
           description: draft.description,
+          ...deriveDisplay(transactionBytes),
         });
       }
     }
@@ -128,7 +156,11 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
     groupItems.value = [
       ...groupItems.value,
-      { ...withUniqueStart, rowKey: crypto.randomUUID() },
+      {
+        ...withUniqueStart,
+        rowKey: crypto.randomUUID(),
+        ...deriveDisplay(withUniqueStart.transactionBytes),
+      },
     ];
     setModified();
   }
@@ -156,7 +188,12 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     groupItems.value = [
       ...groupItems.value.slice(0, editIndex),
       // Preserve the slot's stable row key across edits so Vue keeps the same row instance.
-      { ...updated, rowKey: groupItems.value[editIndex].rowKey },
+      // Recompute display fields since the bytes may have changed.
+      {
+        ...updated,
+        rowKey: groupItems.value[editIndex].rowKey,
+        ...deriveDisplay(updated.transactionBytes),
+      },
       ...groupItems.value.slice(editIndex + 1),
     ];
     setModified();
@@ -182,9 +219,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     );
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
-    const newItem: KeyedGroupItem = {
+    const transactionBytes = transaction.toBytes();
+    const newItem: RenderedGroupItem = {
       rowKey: crypto.randomUUID(),
-      transactionBytes: transaction.toBytes(),
+      transactionBytes,
       type: baseItem.type,
       description: baseItem.description,
       seq: (Number.parseInt(lastItem.seq) + 1).toString(),
@@ -193,6 +231,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       approvers: baseItem.approvers,
       payerAccountId: baseItem.payerAccountId,
       validStart: newDate,
+      ...deriveDisplay(transactionBytes),
     };
 
     groupItems.value = [...groupItems.value, newItem];

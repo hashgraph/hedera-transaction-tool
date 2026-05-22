@@ -44,11 +44,11 @@ import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsSer
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
 import useTransactionGroupStore, {
-  type KeyedGroupItem,
+  type RenderedGroupItem,
 } from '@renderer/stores/storeTransactionGroup';
 
 let nextTestRowKey = 0;
-function createGroupItem(overrides: Partial<KeyedGroupItem> = {}): KeyedGroupItem {
+function createGroupItem(overrides: Partial<RenderedGroupItem> = {}): RenderedGroupItem {
   return {
     rowKey: `test-row-key-${nextTestRowKey++}`,
     transactionBytes: new Uint8Array([1, 2, 3]),
@@ -60,6 +60,8 @@ function createGroupItem(overrides: Partial<KeyedGroupItem> = {}): KeyedGroupIte
     payerAccountId: '0.0.1',
     validStart: new Date(1000),
     description: 'test',
+    transactionMemo: '',
+    transferSummary: null,
     ...overrides,
   };
 }
@@ -519,6 +521,34 @@ describe('useTransactionGroupStore', () => {
       expect(store.groupItems[0].rowKey).toBeTruthy();
       expect(store.groupItems[1].rowKey).toBeTruthy();
       expect(store.groupItems[0].rowKey).not.toBe(store.groupItems[1].rowKey);
+    });
+  });
+
+  describe('derived display fields (transactionMemo, transferSummary)', () => {
+    test('addGroupItem populates transactionMemo and transferSummary on the stored item', () => {
+      const { rowKey: _, ...input } = createGroupItem();
+      store.addGroupItem(input);
+
+      // SDK mock returns a transaction without memo and not instanceof TransferTransaction,
+      // so the derived fields land at their non-transfer defaults.
+      expect(store.groupItems[0].transactionMemo).toBe('');
+      expect(store.groupItems[0].transferSummary).toBeNull();
+    });
+
+    test('updateTransactionValidStarts preserves derived display fields across per-tick rewrites', () => {
+      store.addGroupItem(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+      // Simulate a render-time precomputed memo + summary on the stored item
+      // (would normally come from deriveDisplay during addGroupItem; we set it
+      // directly here to verify the per-tick rewrite path doesn't clobber them).
+      store.groupItems[0].transactionMemo = 'precomputed-memo';
+      store.groupItems[0].transferSummary = '<b>precomputed</b>';
+
+      store.updateTransactionValidStarts(new Date(5000));
+
+      expect(store.groupItems[0].transactionMemo).toBe('precomputed-memo');
+      expect(store.groupItems[0].transferSummary).toBe('<b>precomputed</b>');
     });
   });
 });

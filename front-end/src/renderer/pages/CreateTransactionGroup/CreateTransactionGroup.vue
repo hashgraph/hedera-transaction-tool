@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { KeyList, PublicKey, TransferTransaction, Transaction } from '@hiero-ledger/sdk';
+import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -16,7 +16,6 @@ import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import {
   assertUserLoggedIn,
-  formatHbarTransfers,
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
@@ -243,17 +242,6 @@ function updateGroupValidStart(newDate: Date) {
   }
 }
 
-/* Functions */
-function makeTransfer(index: number) {
-  const transfers = (
-    Transaction.fromBytes(
-      transactionGroup.groupItems[index].transactionBytes,
-    ) as TransferTransaction
-  ).hbarTransfersList;
-
-  return formatHbarTransfers(transfers);
-}
-
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
@@ -428,13 +416,13 @@ onBeforeRouteLeave(async to => {
                 :data-testid="'span-transaction-timestamp-' + index"
               >
                 <span
-                  v-if="groupItem.type === 'Transfer Transaction'"
-                  v-html="makeTransfer(index)"
+                  v-if="groupItem.transferSummary"
+                  v-html="groupItem.transferSummary"
                 />
                 <template v-else>{{
                   groupItem.description !== ''
                     ? groupItem.description
-                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo || ''
+                    : groupItem.transactionMemo
                 }}</template>
               </div>
               <div

@@ -7,7 +7,6 @@ import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/Creat
 const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
   getDisplayTransactionType: vi.fn(),
-  transactionMemo: '',
   transactionGroupStore: {
     description: '',
     groupItems: [] as any[],
@@ -101,7 +100,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
       fromString: vi.fn(),
     },
     Transaction: {
-      fromBytes: vi.fn(() => ({ transactionMemo: mocks.transactionMemo })),
+      fromBytes: vi.fn(),
     },
     TransferTransaction: class TransferTransaction {},
   };
@@ -117,7 +116,6 @@ describe('CreateTransactionGroup.vue', () => {
     mocks.transactionGroupStore.updateTransactionValidStarts.mockReset();
     mocks.getDisplayTransactionType.mockReset();
     mocks.getDisplayTransactionType.mockImplementation(() => 'Account Create');
-    mocks.transactionMemo = '';
   });
 
   function mountCreateTransactionGroup(errorHandler?: (error: unknown) => void) {
@@ -287,17 +285,19 @@ describe('CreateTransactionGroup.vue', () => {
     });
 
     test('renders empty description area when no description and no memo', () => {
-      mocks.transactionGroupStore.groupItems = [{ ...baseItem, description: '' }];
-      mocks.transactionMemo = '';
+      mocks.transactionGroupStore.groupItems = [
+        { ...baseItem, description: '', transactionMemo: '' },
+      ];
 
       const wrapper = mountCreateTransactionGroup();
 
       expect(wrapper.find('[data-testid="span-transaction-timestamp-0"]').text()).toBe('');
     });
 
-    test('falls back to transaction memo when description is empty', () => {
-      mocks.transactionGroupStore.groupItems = [{ ...baseItem, description: '' }];
-      mocks.transactionMemo = 'memo-from-bytes';
+    test('falls back to precomputed transactionMemo when description is empty', () => {
+      mocks.transactionGroupStore.groupItems = [
+        { ...baseItem, description: '', transactionMemo: 'memo-from-bytes' },
+      ];
 
       const wrapper = mountCreateTransactionGroup();
 
