@@ -409,7 +409,7 @@ onBeforeRouteLeave(async to => {
           </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
-            :key="groupItem.id"
+            :key="groupItem.rowKey"
             class="pb-2"
           >
             <div

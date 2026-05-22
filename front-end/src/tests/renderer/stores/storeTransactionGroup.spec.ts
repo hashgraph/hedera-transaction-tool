@@ -44,13 +44,13 @@ import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsSer
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
 import useTransactionGroupStore, {
-  type GroupItem,
+  type KeyedGroupItem,
 } from '@renderer/stores/storeTransactionGroup';
 
-let nextTestId = 0;
-function createGroupItem(overrides: Partial<GroupItem> = {}): GroupItem {
+let nextTestRowKey = 0;
+function createGroupItem(overrides: Partial<KeyedGroupItem> = {}): KeyedGroupItem {
   return {
-    id: `test-id-${nextTestId++}`,
+    rowKey: `test-row-key-${nextTestRowKey++}`,
     transactionBytes: new Uint8Array([1, 2, 3]),
     type: 'Transfer',
     seq: '0',
@@ -420,73 +420,73 @@ describe('useTransactionGroupStore', () => {
     });
   });
 
-  describe('item id (stable client identity)', () => {
-    test('addGroupItem assigns an id even when the caller does not provide one', () => {
-      const { id: _ignored, ...itemWithoutId } = createGroupItem();
-      store.addGroupItem(itemWithoutId);
+  describe('item rowKey (stable client identity)', () => {
+    test('addGroupItem assigns a rowKey even when the caller does not provide one', () => {
+      const { rowKey: _ignored, ...itemWithoutRowKey } = createGroupItem();
+      store.addGroupItem(itemWithoutRowKey);
 
-      expect(store.groupItems[0].id).toBeTruthy();
-      expect(typeof store.groupItems[0].id).toBe('string');
+      expect(store.groupItems[0].rowKey).toBeTruthy();
+      expect(typeof store.groupItems[0].rowKey).toBe('string');
     });
 
-    test('addGroupItem overwrites any id the caller passed (store owns id assignment)', () => {
-      store.addGroupItem(createGroupItem({ id: 'caller-supplied-id' }));
+    test('addGroupItem overwrites any rowKey the caller passed (store owns rowKey assignment)', () => {
+      store.addGroupItem(createGroupItem({ rowKey: 'caller-supplied-row-key' }));
 
-      expect(store.groupItems[0].id).not.toBe('caller-supplied-id');
-      expect(store.groupItems[0].id).toBeTruthy();
+      expect(store.groupItems[0].rowKey).not.toBe('caller-supplied-row-key');
+      expect(store.groupItems[0].rowKey).toBeTruthy();
     });
 
-    test('every addGroupItem call produces a unique id', () => {
+    test('every addGroupItem call produces a unique rowKey', () => {
       store.addGroupItem(createGroupItem({ seq: '0', validStart: new Date(1000) }));
       store.addGroupItem(createGroupItem({ seq: '1', validStart: new Date(2000) }));
       store.addGroupItem(createGroupItem({ seq: '2', validStart: new Date(3000) }));
 
-      const ids = store.groupItems.map(i => i.id);
-      expect(new Set(ids).size).toBe(3);
+      const rowKeys = store.groupItems.map(i => i.rowKey);
+      expect(new Set(rowKeys).size).toBe(3);
     });
 
-    test('editGroupItem preserves the slot id so v-for keys stay stable across edits', () => {
+    test('editGroupItem preserves the slot rowKey so v-for keys stay stable across edits', () => {
       store.addGroupItem(createGroupItem({ seq: '0', description: 'original' }));
-      const originalId = store.groupItems[0].id;
+      const originalRowKey = store.groupItems[0].rowKey;
 
       store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
 
-      expect(store.groupItems[0].id).toBe(originalId);
+      expect(store.groupItems[0].rowKey).toBe(originalRowKey);
       expect(store.groupItems[0].description).toBe('edited');
     });
 
-    test('editGroupItem ignores an id the caller passed, keeping the slot id', () => {
+    test('editGroupItem ignores a rowKey the caller passed, keeping the slot rowKey', () => {
       store.addGroupItem(createGroupItem({ seq: '0' }));
-      const originalId = store.groupItems[0].id;
+      const originalRowKey = store.groupItems[0].rowKey;
 
-      store.editGroupItem(createGroupItem({ seq: '0', id: 'caller-supplied-id' }));
+      store.editGroupItem(createGroupItem({ seq: '0', rowKey: 'caller-supplied-row-key' }));
 
-      expect(store.groupItems[0].id).toBe(originalId);
+      expect(store.groupItems[0].rowKey).toBe(originalRowKey);
     });
 
-    test('duplicateGroupItem gives the new item a fresh id distinct from the source', () => {
+    test('duplicateGroupItem gives the new item a fresh rowKey distinct from the source', () => {
       store.addGroupItem(createGroupItem({ seq: '0' }));
-      const sourceId = store.groupItems[0].id;
+      const sourceRowKey = store.groupItems[0].rowKey;
 
       store.duplicateGroupItem(0);
 
       expect(store.groupItems).toHaveLength(2);
-      expect(store.groupItems[1].id).toBeTruthy();
-      expect(store.groupItems[1].id).not.toBe(sourceId);
+      expect(store.groupItems[1].rowKey).toBeTruthy();
+      expect(store.groupItems[1].rowKey).not.toBe(sourceRowKey);
     });
 
-    test('updateTransactionValidStarts preserves item ids across per-tick rewrites', () => {
+    test('updateTransactionValidStarts preserves item rowKeys across per-tick rewrites', () => {
       store.addGroupItem(createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }));
       store.addGroupItem(createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }));
-      const idsBefore = store.groupItems.map(i => i.id);
+      const rowKeysBefore = store.groupItems.map(i => i.rowKey);
 
       store.updateTransactionValidStarts(new Date(5000));
 
-      const idsAfter = store.groupItems.map(i => i.id);
-      expect(idsAfter).toEqual(idsBefore);
+      const rowKeysAfter = store.groupItems.map(i => i.rowKey);
+      expect(rowKeysAfter).toEqual(rowKeysBefore);
     });
 
-    test('fetchGroup assigns fresh ids to each hydrated item', async () => {
+    test('fetchGroup assigns fresh rowKeys to each hydrated item', async () => {
       const futureStart = new Date(Date.now() + 120_000);
       const mockTransaction = {
         toBytes: () => new Uint8Array([1, 2, 3]),
@@ -516,9 +516,9 @@ describe('useTransactionGroupStore', () => {
       await store.fetchGroup('group-1', {});
 
       expect(store.groupItems).toHaveLength(2);
-      expect(store.groupItems[0].id).toBeTruthy();
-      expect(store.groupItems[1].id).toBeTruthy();
-      expect(store.groupItems[0].id).not.toBe(store.groupItems[1].id);
+      expect(store.groupItems[0].rowKey).toBeTruthy();
+      expect(store.groupItems[1].rowKey).toBeTruthy();
+      expect(store.groupItems[0].rowKey).not.toBe(store.groupItems[1].rowKey);
     });
   });
 });

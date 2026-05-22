@@ -17,13 +17,6 @@ import { getTransactionFromBytes } from '@renderer/utils';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
-  /**
-   * Stable client-only identifier. Used for v-for keys and any UI tracking
-   * that needs to follow a row across edits and reorders. Never persisted —
-   * assigned fresh by the store when items are created or hydrated, so two
-   * sessions of the same draft will see different ids.
-   */
-  id: string;
   transactionBytes: Uint8Array;
   type: string;
   seq: string;
@@ -36,9 +29,25 @@ export interface GroupItem {
   description: string;
 }
 
+/**
+ * Variant of {@link GroupItem} with a stable client-only `rowKey` used as the
+ * Vue v-for key (and for any UI tracking that needs to follow a row across
+ * edits, ticks, and reorders). Named `rowKey` rather than `key` to avoid
+ * confusion with the many cryptographic keys (keyList, publicKey, etc.) that
+ * appear elsewhere on transaction-related types. Never persisted — assigned
+ * fresh by the store when items are added or hydrated, so two sessions of the
+ * same draft see different rowKeys.
+ *
+ * Code paths that only need the bare shape (e.g. building items for the
+ * signing pipeline, mutator inputs) should use {@link GroupItem}.
+ */
+export interface KeyedGroupItem extends GroupItem {
+  rowKey: string;
+}
+
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
-  const groupItems = ref<GroupItem[]>([]);
+  const groupItems = ref<KeyedGroupItem[]>([]);
   const groupValidStart = ref(new Date());
   const groupInitialValidStart = ref(new Date());
   const description = ref('');
@@ -66,14 +75,14 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
     const items = await getGroupItems(id);
     const drafts = await getDrafts(findArgs);
-    const groupItemsToAdd: GroupItem[] = [];
+    const groupItemsToAdd: KeyedGroupItem[] = [];
 
     for (const item of items) {
       const draft = drafts.find(draft => draft.id == item.transaction_draft_id);
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
         groupItemsToAdd.push({
-          id: crypto.randomUUID(),
+          rowKey: crypto.randomUUID(),
           transactionBytes: transaction.toBytes(),
           type: draft?.type,
           groupId: id,
@@ -100,7 +109,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     modified.value = false;
   }
 
-  function addGroupItem(groupItem: Omit<GroupItem, 'id'>) {
+  function addGroupItem(groupItem: GroupItem) {
     const uniqueValidStart = findUniqueValidStart(
       groupItem.payerAccountId,
       groupItem.validStart.getTime(),
@@ -119,12 +128,12 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
     groupItems.value = [
       ...groupItems.value,
-      { ...withUniqueStart, id: crypto.randomUUID() },
+      { ...withUniqueStart, rowKey: crypto.randomUUID() },
     ];
     setModified();
   }
 
-  function editGroupItem(newGroupItem: Omit<GroupItem, 'id'>) {
+  function editGroupItem(newGroupItem: GroupItem) {
     const editIndex = Number.parseInt(newGroupItem.seq);
     if (!(editIndex >= 0 && editIndex < groupItems.value.length)) return;
     const uniqueValidStart = findUniqueValidStart(
@@ -146,8 +155,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
     groupItems.value = [
       ...groupItems.value.slice(0, editIndex),
-      // Preserve the slot's stable id across edits so Vue keeps the same row instance.
-      { ...updated, id: groupItems.value[editIndex].id },
+      // Preserve the slot's stable row key across edits so Vue keeps the same row instance.
+      { ...updated, rowKey: groupItems.value[editIndex].rowKey },
       ...groupItems.value.slice(editIndex + 1),
     ];
     setModified();
@@ -173,8 +182,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     );
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
-    const newItem: GroupItem = {
-      id: crypto.randomUUID(),
+    const newItem: KeyedGroupItem = {
+      rowKey: crypto.randomUUID(),
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
