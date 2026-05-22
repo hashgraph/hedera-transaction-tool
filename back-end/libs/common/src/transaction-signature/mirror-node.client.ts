@@ -14,6 +14,7 @@ import {
   RegisteredNodeInfoParsed,
   RegisteredNodesResponse,
 } from '@app/common';
+import { parseRegisteredNodeInfo } from '@app/common/utils/sdk/registered-node';
 
 const HTTP_STATUS = {
   OK: 200,
