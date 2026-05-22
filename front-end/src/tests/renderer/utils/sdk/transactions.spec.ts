@@ -4,6 +4,7 @@ import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from 
 import {
   getFreezeTypeString,
   getDisplayTransactionType,
+  getRawTransactionType,
   formatTransactionType,
   getTransactionType,
 } from '@renderer/utils/sdk/transactions';
@@ -307,6 +308,55 @@ describe('SDK Transaction Utilities - Freeze Types', () => {
         expect(result).toBe('Freeze');
         fromBytesSpy.mockRestore();
       });
+    });
+
+    describe('with string input', () => {
+      test('passes raw string through formatTransactionType', () => {
+        expect(getDisplayTransactionType('Account Create Transaction')).toBe(
+          'Account Create Transaction',
+        );
+      });
+
+      test('removes " Transaction" suffix when removeTransaction is true', () => {
+        expect(getDisplayTransactionType('Account Create Transaction', false, true)).toBe(
+          'Account Create',
+        );
+      });
+
+      test('removes whitespace when short is true', () => {
+        expect(getDisplayTransactionType('Account Create Transaction', true)).toBe(
+          'AccountCreateTransaction',
+        );
+      });
+
+      test('returns string unchanged when it has no " Transaction" suffix and removeTransaction is true', () => {
+        expect(getDisplayTransactionType('Freeze Only', false, true)).toBe('Freeze Only');
+      });
+    });
+  });
+
+  describe('getRawTransactionType', () => {
+    test('returns raw freeze subtype name for FREEZE backend type with freezeType', () => {
+      expect(
+        getRawTransactionType({ backendType: 'FREEZE', freezeType: FreezeType.FreezeOnly }),
+      ).toBe('Freeze Only');
+    });
+
+    test('returns "Unknown Transaction Type" for unrecognized backend type', () => {
+      expect(getRawTransactionType({ backendType: 'NOT_A_REAL_TYPE' })).toBe(
+        'Unknown Transaction Type',
+      );
+    });
+
+    test('returns localType unchanged for non-freeze local input', () => {
+      expect(getRawTransactionType({ localType: 'Account Create Transaction' })).toBe(
+        'Account Create Transaction',
+      );
+    });
+
+    test('returns raw transaction type for SDK Transaction', () => {
+      const transferTx = new TransferTransaction();
+      expect(getRawTransactionType(transferTx)).toBe('Transfer Transaction');
     });
   });
 });

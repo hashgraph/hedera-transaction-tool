@@ -147,6 +147,7 @@ export interface LocalTypeInput {
 export type TransactionTypeInput =
   | Transaction
   | Uint8Array
+  | string
   | BackendTypeInput
   | LocalTypeInput;
 
@@ -161,13 +162,67 @@ function isLocalTypeInput(input: TransactionTypeInput): input is LocalTypeInput 
 }
 
 /**
- * Gets the display transaction type, including specific freeze types.
+ * Extracts the raw, unformatted display name for a transaction type
+ * (e.g. "Account Create Transaction", "Freeze Only"). Apply `short` /
+ * `removeTransaction` flags via {@link formatTransactionType}.
+ */
+export const getRawTransactionType = (
+  input: Exclude<TransactionTypeInput, string>,
+): string => {
+  // Backend type input (e.g., from ITransactionNode)
+  if (isBackendTypeInput(input)) {
+    if (input.backendType === 'FREEZE' && input.freezeType) {
+      return getFreezeTypeString(input.freezeType);
+    }
+    return getTransactionTypeFromBackendType(input.backendType);
+  }
+
+  // Local/draft type input — may include bytes for freeze subtype resolution
+  if (isLocalTypeInput(input)) {
+    const isFreezeType = ['Freeze Transaction', 'FreezeTransaction', 'Freeze', 'FREEZE'].includes(
+      input.localType,
+    );
+    if (isFreezeType && input.transactionBytes) {
+      try {
+        const bytesArray = input.transactionBytes.split(',').map(n => Number(n));
+        const sdkTx = Transaction.fromBytes(new Uint8Array(bytesArray));
+        if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
+          return getFreezeTypeString(sdkTx.freezeType);
+        }
+      } catch {
+        // Fall through to local type
+      }
+    }
+    return input.localType;
+  }
+
+  // SDK Transaction or Uint8Array
+  let sdkTransaction = input;
+  if (input instanceof Uint8Array) {
+    try {
+      sdkTransaction = Transaction.fromBytes(input);
+    } catch (error) {
+      logger.error('Failed to deserialize transaction', { error });
+      return 'Freeze Transaction';
+    }
+  }
+
+  if (sdkTransaction instanceof FreezeTransaction && sdkTransaction.freezeType) {
+    return getFreezeTypeString(sdkTransaction.freezeType);
+  }
+
+  return getTransactionType(sdkTransaction);
+};
+
+/**
+ * Gets the formatted display transaction type, including specific freeze types.
  * Accepts multiple input formats:
+ * - string: Raw display name passed through directly to formatting
  * - SDK Transaction or Uint8Array: Extracts type from transaction, including freeze subtype
  * - { backendType, freezeType? }: Converts backend type (e.g., 'FREEZE') to display format
  * - { localType, transactionBytes? }: Formats local type, extracts freeze subtype if bytes provided
  *
- * @param input - Transaction, Uint8Array, BackendTypeInput, or LocalTypeInput
+ * @param input - Raw type string, Transaction, Uint8Array, BackendTypeInput, or LocalTypeInput
  * @param short - Whether to use short format (no spaces)
  * @param removeTransaction - Whether to remove " Transaction" suffix
  * @returns Display string for transaction type
@@ -177,61 +232,10 @@ export const getDisplayTransactionType = (
   short = false,
   removeTransaction = false,
 ): string => {
-  // Handle backend type input (e.g., from ITransactionNode)
-  if (isBackendTypeInput(input)) {
-    // If freeze type is provided, use it directly
-    if (input.backendType === 'FREEZE' && input.freezeType) {
-      return formatTransactionType(getFreezeTypeString(input.freezeType), short, removeTransaction);
-    }
-    // Otherwise convert backend type to display format
-    return getTransactionTypeFromBackendType(input.backendType, short, removeTransaction);
+  if (typeof input === 'string') {
+    return formatTransactionType(input, short, removeTransaction);
   }
-
-  // Handle local/draft type input
-  if (isLocalTypeInput(input)) {
-    // For freeze transactions with bytes, try to extract specific freeze type
-    const isFreezeType = ['Freeze Transaction', 'FreezeTransaction', 'Freeze', 'FREEZE'].includes(
-      input.localType,
-    );
-    if (isFreezeType && input.transactionBytes) {
-      try {
-        const bytesArray = input.transactionBytes.split(',').map(n => Number(n));
-        const sdkTx = Transaction.fromBytes(new Uint8Array(bytesArray));
-        if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
-          return formatTransactionType(
-            getFreezeTypeString(sdkTx.freezeType),
-            short,
-            removeTransaction,
-          );
-        }
-      } catch {
-        // Fall through to default formatting
-      }
-    }
-    return formatTransactionType(input.localType, short, removeTransaction);
-  }
-
-  // Handle SDK Transaction or Uint8Array
-  let sdkTransaction = input;
-  if (input instanceof Uint8Array) {
-    try {
-      sdkTransaction = Transaction.fromBytes(input);
-    } catch (error) {
-      logger.error('Failed to deserialize transaction', { error });
-      return formatTransactionType('Freeze Transaction', short, removeTransaction);
-    }
-  }
-
-  // Check if this is a freeze transaction
-  if (sdkTransaction instanceof FreezeTransaction) {
-    const freezeType = sdkTransaction.freezeType;
-    if (freezeType) {
-      return formatTransactionType(getFreezeTypeString(freezeType), short, removeTransaction);
-    }
-  }
-
-  // Fall back to standard transaction type
-  return getTransactionType(sdkTransaction, short, removeTransaction);
+  return formatTransactionType(getRawTransactionType(input), short, removeTransaction);
 };
 
 /**
@@ -240,6 +244,7 @@ export const getDisplayTransactionType = (
  *
  * @param serverUrl - The organization server URL
  * @param transactionId - The transaction ID
+ * @param transactionCache
  * @returns The FreezeType enum value or null if not a freeze transaction or on error
  */
 export const getFreezeTypeForTransaction = async (
