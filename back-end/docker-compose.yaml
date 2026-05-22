@@ -8,6 +8,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    network_mode: ${NETWORK_MODE:-bridge}
     restart: "no"  # Run once and exit
   api:
     build:
@@ -19,6 +20,7 @@ services:
       - ./apps/api/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - "3001:3000"
     depends_on:
@@ -46,6 +48,7 @@ services:
         condition: service_started
       redis:
         condition: service_started
+    network_mode: ${NETWORK_MODE:-bridge}
     restart: always
   notifications:
     build:
@@ -57,6 +60,7 @@ services:
       - ./apps/notifications/.env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - "3020:3020"
     depends_on:
@@ -75,6 +79,7 @@ services:
     command:
       - "-js"                       # Enable JetStream
       - "-sd=/data/jetstream"       # JetStream storeDir
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - "4222:4222"                 # Client connections
     volumes:
@@ -84,6 +89,7 @@ services:
     image: natsio/nats-box
     container_name: nats-box
     stdin_open: true
+    network_mode: ${NETWORK_MODE:-bridge}
     tty: true
     depends_on:
       - nats
@@ -93,6 +99,7 @@ services:
     environment:
       - POSTGRES_PASSWORD
     container_name: postgres
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - "5432:5432"
     healthcheck:
@@ -107,6 +114,7 @@ services:
     environment:
       - PGADMIN_DEFAULT_EMAIL
       - PGADMIN_DEFAULT_PASSWORD
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - '5050:80'
     depends_on:
@@ -115,6 +123,7 @@ services:
     image: redis
     container_name: cache
     command: redis-server --notify-keyspace-events Ex
+    network_mode: ${NETWORK_MODE:-bridge}
     ports:
       - "6380:6379"
     volumes:

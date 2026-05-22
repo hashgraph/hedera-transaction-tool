@@ -145,6 +145,7 @@ jobs:
         working-directory: back-end
         env:
           COMPOSE_PARALLEL_LIMIT: 4
+          NETWORK_MODE: host
         run: |
           set -euo pipefail
 
