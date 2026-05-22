@@ -455,12 +455,13 @@ onBeforeRouteLeave(async to => {
                   color="borderless"
                   @click="handleDuplicateGroupItem(index)"
                   class="min-w-unset"
+                  aria-label="Duplicate Transaction"
                   data-bs-toggle="tooltip"
                   data-bs-placement="top"
                   data-bs-title="Duplicate Transaction"
                   :data-testid="'button-transaction-duplicate-' + index"
                 >
-                  <span class="bi bi-copy"></span>
+                  <span class="bi bi-copy" aria-hidden="true"></span>
                 </AppButton>
                 <AppButton
                   type="button"
@@ -477,12 +478,13 @@ onBeforeRouteLeave(async to => {
                   color="danger"
                   @click="handleDeleteGroupItem(index)"
                   class="min-w-unset"
+                  aria-label="Delete Transaction"
                   data-bs-toggle="tooltip"
                   data-bs-placement="top"
                   data-bs-title="Delete Transaction"
                   :data-testid="'button-transaction-delete-' + index"
                 >
-                  <span class="bi bi-trash"></span>
+                  <span class="bi bi-trash" aria-hidden="true"></span>
                 </AppButton>
               </div>
             </div>
