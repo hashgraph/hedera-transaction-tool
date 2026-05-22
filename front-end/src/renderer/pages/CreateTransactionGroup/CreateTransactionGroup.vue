@@ -421,7 +421,7 @@ onBeforeRouteLeave(async to => {
                 style="width: 13rem"
                 :data-testid="'span-transaction-type-' + index"
               >
-                {{ getDisplayTransactionType(groupItem.transactionBytes, false, true) }}
+                {{ getDisplayTransactionType(groupItem.type, false, true) }}
               </div>
               <div
                 class="text-truncate flex-grow-1 text-center"
