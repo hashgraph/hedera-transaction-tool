@@ -426,14 +426,17 @@ onBeforeRouteLeave(async to => {
               <div
                 class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
-                v-html="
-                  groupItem.type == 'Transfer Transaction'
-                    ? makeTransfer(index)
-                    : groupItem.description != ''
-                      ? groupItem.description
-                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo || ''
-                "
-              ></div>
+              >
+                <span
+                  v-if="groupItem.type === 'Transfer Transaction'"
+                  v-html="makeTransfer(index)"
+                />
+                <template v-else>{{
+                  groupItem.description !== ''
+                    ? groupItem.description
+                    : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo || ''
+                }}</template>
+              </div>
               <div
                 class="flex-shrink-0 text-start"
                 style="width: 11rem"

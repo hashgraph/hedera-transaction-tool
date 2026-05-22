@@ -278,11 +278,7 @@ describe('CreateTransactionGroup.vue', () => {
 
       const wrapper = mountCreateTransactionGroup();
 
-      expect(mocks.getDisplayTransactionType).toHaveBeenCalledWith(
-        baseItem.transactionBytes,
-        false,
-        true,
-      );
+      expect(mocks.getDisplayTransactionType).toHaveBeenCalledWith(baseItem.type, false, true);
       expect(wrapper.find('[data-testid="span-transaction-type-0"]').text()).toBe('Account Create');
     });
 
