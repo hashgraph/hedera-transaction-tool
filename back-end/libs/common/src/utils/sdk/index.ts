@@ -5,6 +5,7 @@ export * from './client';
 export * from './key';
 export * from './account';
 export * from './node';
+export * from './registered-node';
 
 export const parseHbar = (hbar: number | null, unit: HbarUnit): Hbar | null => {
   hbar = parseInt(hbar?.toString());

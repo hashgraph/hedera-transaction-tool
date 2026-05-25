@@ -184,6 +184,8 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
     return TransactionType.NODE_DELETE;
   } else if (transaction instanceof RegisteredNodeCreateTransaction) {
     return TransactionType.REGISTERED_NODE_CREATE;
+  } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
+    return TransactionType.REGISTERED_NODE_DELETE;
   } else if (transaction instanceof SystemDeleteTransaction) {
     return TransactionType.SYSTEM_DELETE;
   } else if (transaction instanceof SystemUndeleteTransaction) {

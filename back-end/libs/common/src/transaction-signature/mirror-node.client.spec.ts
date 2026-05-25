@@ -8,12 +8,14 @@ import { MirrorNodeClient } from './mirror-node.client';
 import {
   parseAccountInfo,
   parseNodeInfo,
+  parseRegisteredNodeInfo,
   MirrorNodeREST,
 } from '@app/common';
 
 jest.mock('@app/common', () => ({
   parseAccountInfo: jest.fn(),
   parseNodeInfo: jest.fn(),
+  parseRegisteredNodeInfo: jest.fn(),
   MirrorNodeREST: {
     fromBaseURL: jest.fn(),
   },
@@ -201,6 +203,96 @@ describe('MirrorNodeClient', () => {
       const promise = client.fetchNodeInfo(1, 'testnet');
 
       await expect(promise).rejects.toThrow('Mirror node request failed: node error');
+    });
+  });
+
+  /* ------------------------------------------------------------------
+   * fetchRegisteredNodeInfo
+   * ------------------------------------------------------------------ */
+
+  describe('fetchRegisteredNodeInfo', () => {
+    it('should return parsed registered node info on 200', async () => {
+      (parseRegisteredNodeInfo as jest.Mock).mockReturnValue({ parsedRegisteredNode: true });
+
+      axiosGet.mockResolvedValue({
+        status: 200,
+        data: { registered_nodes: [{ id: 1 }] },
+        headers: { etag: 'etag2' },
+      });
+
+      const result = await client.fetchRegisteredNodeInfo(1, 'testnet');
+
+      expect(result).toEqual({
+        data: { parsedRegisteredNode: true },
+        etag: 'etag2',
+      });
+    });
+
+    it('should return null on 304', async () => {
+      axiosGet.mockResolvedValue({
+        status: 304,
+        data: null,
+        headers: {},
+      });
+
+      const result = await client.fetchRegisteredNodeInfo(1, 'testnet', 'etag');
+
+      expect(result).toEqual({
+        data: null,
+        etag: 'etag',
+      });
+    });
+
+    it('should return null when registered node list is empty', async () => {
+      axiosGet.mockResolvedValue({
+        status: 200,
+        data: { registered_nodes: [] },
+        headers: {},
+      });
+
+      const result = await client.fetchRegisteredNodeInfo(1, 'testnet');
+
+      expect(result).toEqual({
+        data: null,
+        etag: null,
+      });
+    });
+
+    it('should return null when registered_nodes is undefined', async () => {
+      axiosGet.mockResolvedValue({
+        status: 200,
+        data: {},
+        headers: {},
+      });
+
+      const result = await client.fetchRegisteredNodeInfo(1, 'testnet');
+
+      expect(result).toEqual({
+        data: null,
+        etag: null,
+      });
+    });
+
+    it('should return null etag when not present in response', async () => {
+      (parseNodeInfo as jest.Mock).mockReturnValue({ parsedNode: true });
+
+      axiosGet.mockResolvedValue({
+        status: 200,
+        data: { registered_nodes: [{ id: 1 }] },
+        headers: {},
+      });
+
+      const result = await client.fetchRegisteredNodeInfo(1, 'testnet');
+
+      expect(result.etag).toBeNull();
+    });
+
+    it('should rethrow error after max retries', async () => {
+      axiosGet.mockRejectedValue(new Error('registered node error'));
+
+      const promise = client.fetchRegisteredNodeInfo(1, 'testnet');
+
+      await expect(promise).rejects.toThrow('Mirror node request failed: registered node error');
     });
   });
 

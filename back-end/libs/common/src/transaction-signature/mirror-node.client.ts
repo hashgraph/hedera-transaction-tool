@@ -10,10 +10,10 @@ import {
   NodeInfoParsed,
   parseAccountInfo,
   parseNodeInfo,
+  parseRegisteredNodeInfo,
   RegisteredNodeInfoParsed,
   RegisteredNodesResponse,
 } from '@app/common';
-import { parseRegisteredNodeInfo } from '@app/common/utils/sdk/registered-node';
 
 const HTTP_STATUS = {
   OK: 200,
@@ -111,7 +111,7 @@ export class MirrorNodeClient {
     mirrorNetwork: string,
     etag?: string,
   ): Promise<{ data: RegisteredNodeInfoParsed | null; etag: string | null }> {
-    const url = `${this.getMirrorNodeRESTURL(mirrorNetwork)}/network/registered-nodes?limit=1&registerednode.id=${registeredNodeId}`;
+    const url = `${this.getMirrorNodeRESTURL(mirrorNetwork)}/network/registered-nodes?registerednode.id=${registeredNodeId}`;
 
     try {
       const response = await this.fetchWithRetry<RegisteredNodesResponse>(url, etag);
