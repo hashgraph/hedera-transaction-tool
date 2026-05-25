@@ -14,7 +14,7 @@ export class RegisteredNodeByIdCache extends EntityCache<number, IRegisteredNode
     let result: IRegisteredNode | null = null;
 
     let nextURL: string | null =
-      mirrorNodeURL + '/api/v1/network/registered-nodes?limit=100&registerednode.id=' + nodeId;
+      mirrorNodeURL + '/api/v1/network/registered-nodes?registerednode.id=' + nodeId;
     while (result === null && nextURL !== null) {
       const response: AxiosResponse<IRegisteredNodesResponse> =
         await axios.get<IRegisteredNodesResponse>(nextURL);
