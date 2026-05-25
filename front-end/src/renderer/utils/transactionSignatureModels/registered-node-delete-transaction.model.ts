@@ -3,7 +3,7 @@ import { Key, RegisteredNodeDeleteTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction.model';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache';
 import type { RegisteredNodeByIdCache } from '@renderer/caches/mirrorNode/RegisteredNodeByIdCache';
-import { createLogger } from '@renderer/utils';
+import { createLogger } from '@renderer/utils/logger';
 import { parseNetworkResponseKey } from '@renderer/services/mirrorNodeDataService';
 
 const logger = createLogger('renderer.transaction.signatureModel.registerNodeDelete');
