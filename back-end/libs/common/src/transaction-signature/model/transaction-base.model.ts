@@ -26,4 +26,8 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
   getNodeId(): number | null {
     return null;
   }
+
+  getRegisteredNodeId(): number | null {
+    return null;
+  }
 }

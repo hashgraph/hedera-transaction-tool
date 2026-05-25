@@ -5,6 +5,8 @@ import {
   KeyList,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   Transaction as SDKTransaction,
 } from '@hiero-ledger/sdk';
 import { Transaction } from '@entities';
@@ -12,6 +14,7 @@ import TransactionFactory from '@app/common/transaction-signature/model/transact
 import { TransactionBaseModel } from '@app/common/transaction-signature/model/transaction-base.model';
 import { AccountCacheService } from '@app/common/transaction-signature/account-cache.service';
 import { NodeCacheService } from '@app/common/transaction-signature/node-cache.service';
+import { MirrorNodeClient } from '@app/common/transaction-signature/mirror-node.client';
 import { COUNCIL_ACCOUNTS } from '@app/common/constants';
 
 export interface SignatureRequirements {
@@ -20,6 +23,7 @@ export interface SignatureRequirements {
   receiverAccounts: Set<string>;
   newKeys: Key[];
   nodeId: number | null;
+  registeredNodeId: number | null;
 }
 
 @Injectable()
@@ -29,6 +33,7 @@ export class TransactionSignatureService {
   constructor(
     private readonly accountCacheService: AccountCacheService,
     private readonly nodeCacheService: NodeCacheService,
+    private readonly mirrorNodeClient: MirrorNodeClient,
   ) {}
 
   /**
@@ -56,6 +61,10 @@ export class TransactionSignatureService {
       await this.addNodeKeys(signatureKey, transaction, requirements.nodeId);
     }
 
+    if (requirements.registeredNodeId !== null) {
+      await this.addRegisteredNodeKeys(signatureKey, transaction, requirements.registeredNodeId);
+    }
+
     signatureKey.push(...requirements.newKeys);
 
     return signatureKey;
@@ -73,6 +82,7 @@ export class TransactionSignatureService {
       receiverAccounts: transactionModel.getReceiverAccounts(),
       newKeys: transactionModel.getNewKeys() ?? [],
       nodeId: transactionModel.getNodeId(),
+      registeredNodeId: transactionModel.getRegisteredNodeId(),
     };
   }
 
@@ -283,5 +293,53 @@ export class TransactionSignatureService {
       tx.declineReward !== null;
 
     return !hasOtherChanges;
+  }
+
+  private async addRegisteredNodeKeys(
+    signatureKey: KeyList,
+    transaction: Transaction,
+    registeredNodeId: number,
+  ): Promise<void> {
+    try {
+      const { data } = await this.mirrorNodeClient.fetchRegisteredNodeInfo(
+        registeredNodeId,
+        transaction.mirrorNetwork,
+      );
+
+      if (!data) {
+        this.logger.warn(`No registered node info found for node ${registeredNodeId}`);
+        return;
+      }
+
+      if (!data.admin_key) {
+        this.logger.warn(`No admin key found for registered node ${registeredNodeId}`);
+        return;
+      }
+
+      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+
+      if (sdkTransaction instanceof RegisteredNodeDeleteTransaction) {
+        signatureKey.push(data.admin_key);
+        return;
+      }
+
+      const nodeUpdateTx = sdkTransaction as RegisteredNodeUpdateTransaction;
+
+      const isAdminKeyChanging =
+        nodeUpdateTx.adminKey !== null &&
+        data.admin_key !== null &&
+        nodeUpdateTx.adminKey.toString() !== data.admin_key.toString();
+
+      if (!isAdminKeyChanging) {
+        // Case 1: admin key is not changing — new admin key alone is sufficient
+        signatureKey.push(data.admin_key);
+      } else {
+        // Case 2: admin key is changing => new and old admin keys are needed
+        signatureKey.push(data.admin_key);
+        signatureKey.push(nodeUpdateTx.adminKey);
+      }
+    } catch (error) {
+      this.logger.error(`Failed to get registered node keys for registered node ${registeredNodeId}: ${error.message}`);
+    }
   }
 }
