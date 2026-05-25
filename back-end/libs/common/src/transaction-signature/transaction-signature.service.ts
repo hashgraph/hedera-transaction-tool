@@ -5,7 +5,6 @@ import {
   KeyList,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
-  RegisteredNodeCreateTransaction,
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
   Transaction as SDKTransaction,
@@ -319,10 +318,7 @@ export class TransactionSignatureService {
 
       const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-      if (
-        sdkTransaction instanceof RegisteredNodeCreateTransaction ||
-        sdkTransaction instanceof RegisteredNodeDeleteTransaction
-      ) {
+      if (sdkTransaction instanceof RegisteredNodeDeleteTransaction) {
         signatureKey.push(data.admin_key);
         return;
       }
