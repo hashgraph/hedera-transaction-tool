@@ -92,6 +92,7 @@ function buildTransactionModel(overrides: any = {}) {
     getReceiverAccounts: jest.fn().mockReturnValue(new Set<string>()),
     getNewKeys: jest.fn().mockReturnValue([]),
     getNodeId: jest.fn().mockReturnValue(null),
+    getRegisteredNodeId: jest.fn().mockReturnValue(null),
     ...overrides,
   };
 }
