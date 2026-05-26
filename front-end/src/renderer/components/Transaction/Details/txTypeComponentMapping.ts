@@ -26,6 +26,7 @@ export const transactionTypeKeys = {
   nodeUpdate: 'NodeUpdateTransaction',
   nodeDelete: 'NodeDeleteTransaction',
   registeredNodeCreate: 'RegisteredNodeCreateTransaction',
+  registeredNodeDelete: 'RegisteredNodeDeleteTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -44,6 +45,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.nodeUpdate]: NodeDetails,
   [transactionTypeKeys.nodeDelete]: NodeDetails,
   [transactionTypeKeys.registeredNodeCreate]: RegisteredNodeDetails,
+  [transactionTypeKeys.registeredNodeDelete]: RegisteredNodeDetails,
 };
 
 export default txTypeComponentMapping;

@@ -24,6 +24,7 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeDeleteTransaction,
   type RegisteredServiceEndpoint,
   RpcRelayServiceEndpoint,
   TransferTransaction,
@@ -47,6 +48,7 @@ import type {
   NodeUpdateData,
   RegisteredEndpointType,
   RegisteredNodeData,
+  RegisteredNodeDeleteData,
   SystemData,
   SystemDeleteData,
   SystemUndeleteData,
@@ -360,6 +362,13 @@ export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeD
   };
 }
 
+export function getRegisteredNodeDeleteData(transaction: Transaction): RegisteredNodeDeleteData {
+  assertTransactionType(transaction, RegisteredNodeDeleteTransaction);
+  return {
+    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
+  };
+}
+
 export function getSystemData(
   transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
 ): SystemData {
@@ -491,6 +500,14 @@ const transactionHandlers = new Map<
     tx => ({
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeData(tx),
+    }),
+  ],
+
+  [
+    RegisteredNodeDeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getRegisteredNodeDeleteData(tx),
     }),
   ],
 
