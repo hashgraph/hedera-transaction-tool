@@ -10,6 +10,7 @@ export * from './node-create-transaction.model';
 export * from './node-update-transaction.model';
 export * from './node-delete-transaction.model';
 export * from './registered-node-create-transaction.model';
+export * from './registered-node-update-transaction.model';
 export * from './registered-node-delete-transaction.model';
 export * from './system-delete-transaction.model';
 export * from './system-undelete-transaction.model';
