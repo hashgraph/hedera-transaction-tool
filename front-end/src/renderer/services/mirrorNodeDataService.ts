@@ -1,15 +1,27 @@
-import type {
-  AccountInfo,
-  IAccountInfoParsed,
-  CryptoAllowance,
-  NetworkExchangeRateSetResponse,
-  TransactionByIdResponse,
-  AccountsResponse,
-  NetworkNode,
-  NetworkNodesResponse,
-  INodeInfoParsed,
-  Key as NetworkResponseKey,
+import {
+  type AccountInfo,
+  type IAccountInfoParsed,
+  type CryptoAllowance,
+  type NetworkExchangeRateSetResponse,
+  type TransactionByIdResponse,
+  type AccountsResponse,
+  type NetworkNode,
+  type NetworkNodesResponse,
+  type INodeInfoParsed,
+  type Key as NetworkResponseKey,
+  type RegisteredNode,
+  type RegisteredServiceEndPoint,
+  type RegisteredBlockNodeEndpoint,
+  RegisteredNodeType,
 } from '@shared/interfaces';
+
+import {
+  RegisteredServiceEndpoint as SDKRegisteredServiceEndpoint,
+  BlockNodeServiceEndpoint as SDKBlockNodeServiceEndpoint,
+  MirrorNodeServiceEndpoint as SDKMirrorNodeServiceEndpoint,
+  RpcRelayServiceEndpoint as SDKRpcRelayServiceEndpoint,
+  GeneralServiceEndpoint as SDKGeneralServiceEndpoint,
+} from '@hiero-ledger/sdk';
 
 import axios from 'axios';
 import { createLogger } from '@renderer/utils/logger';
@@ -35,6 +47,7 @@ import {
   parseHbar,
   getServiceEndpoint,
 } from '@renderer/utils';
+import type { IRegisteredNodeInfoParsed } from '@shared/interfaces/IRegisteredNodeInfoParsed';
 
 /* Mirror node data service */
 const withAPIPrefix = (url: string) => `${url}/api/v1`;
@@ -295,3 +308,107 @@ export const parseNetworkResponseKey = (key: NetworkResponseKey | null | undefin
     return null;
   }
 };
+
+export const parseRegisteredNode = (registeredNode: RegisteredNode): IRegisteredNodeInfoParsed|null => {
+  let result: IRegisteredNodeInfoParsed|null;
+
+  const endpoints = parseRegisteredServiceEndpoints(registeredNode.service_endpoints);
+  if (endpoints !== null) {
+    result = {
+      admin_key: parseNetworkResponseKey(registeredNode.admin_key),
+      created_timestamp: registeredNode.created_timestamp,
+      description: registeredNode.description,
+      registered_node_id: registeredNode.registered_node_id,
+      service_endpoints: endpoints,
+      timestamp: registeredNode.timestamp,
+    }
+  } else {
+    result = null;
+  }
+
+  return result;
+};
+
+export function parseRegisteredServiceEndpoints(
+  endpoints: RegisteredServiceEndPoint[],
+): SDKRegisteredServiceEndpoint[] | null {
+  const result: SDKRegisteredServiceEndpoint[] = [];
+  let errorCount = 0;
+  for (const endpoint of endpoints) {
+    const r = parseRegisteredServiceEndpoint(endpoint);
+    if (r !== null) {
+      result.push(r);
+    } else {
+      errorCount += 1;
+    }
+  }
+  return errorCount == 0 ? result : null;
+};
+
+export function parseRegisteredServiceEndpoint(
+  endpoint: RegisteredServiceEndPoint,
+): SDKRegisteredServiceEndpoint | null{
+  let result: SDKRegisteredServiceEndpoint | null;
+
+  switch (endpoint.type) {
+    case RegisteredNodeType.BLOCK_NODE: {
+      const r = new SDKBlockNodeServiceEndpoint();
+      const apis = endpoint.block_node !== null ? parseBlockNodeApis(endpoint.block_node) : null;
+      if (apis !== null) {
+        r.setEndpointApis(parseBlockNodeApis(endpoint.block_node));
+        result = r;
+      } else {
+        result = null
+      }
+      break;
+    }
+    case RegisteredNodeType.MIRROR_NODE: {
+      result = new SDKMirrorNodeServiceEndpoint();
+      break;
+    }
+    case RegisteredNodeType.RPC_RELAY: {
+      result = new SDKRpcRelayServiceEndpoint();
+      break;
+    }
+    case RegisteredNodeType.GENERAL_SERVICE: {
+      const r = new SDKGeneralServiceEndpoint();
+      if (endpoint.general_service?.description) {
+        r.setDescription(endpoint.general_service.description);
+      }
+      result = r;
+      break;
+    }
+    default: {
+      result = null;
+    }
+  }
+
+  if (result !== null) {
+    const ipAddress = endpoint.ip_address !== null ? parseIpAddressV4(endpoint.ip_address) : null;
+    if (ipAddress !== null) {
+      result.setIpAddress(ipAddress);
+    }
+    if (endpoint.domain_name !== null) {
+      result.setDomainName(endpoint.domain_name);
+    }
+    result.setPort(endpoint.port);
+    result.setRequiresTls(endpoint.requires_tls);
+  }
+
+  return result;
+}
+
+export function parseIpAddressV4(address: string): Uint8Array | null {
+  const bytes = address.split('.').map(v => parseInt(v));
+  return bytes.length == 4 ? Uint8Array.from(bytes) : null;
+}
+
+export function parseBlockNodeApis(blockNode: RegisteredBlockNodeEndpoint | null): number[] {
+  const result: number[] = [];
+
+  if (blockNode !== null) {
+
+  }
+
+  return result;
+}
