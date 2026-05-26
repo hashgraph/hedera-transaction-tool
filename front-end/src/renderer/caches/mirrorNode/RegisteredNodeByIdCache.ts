@@ -1,8 +1,13 @@
 import axios, { type AxiosResponse } from 'axios';
 import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
-import type { RegisteredNode, RegisteredNodesResponse } from '@shared/interfaces';
+import type {
+  IRegisteredNodeInfoParsed,
+  RegisteredNode,
+  RegisteredNodesResponse,
+} from '@shared/interfaces';
+import { parseRegisteredNode } from '@renderer/services/mirrorNodeDataService';
 
-export class RegisteredNodeByIdCache extends EntityCache<number, RegisteredNode | null> {
+export class RegisteredNodeByIdCache extends EntityCache<number, IRegisteredNodeInfoParsed | null> {
   //
   // EntityCache
   //
@@ -10,7 +15,7 @@ export class RegisteredNodeByIdCache extends EntityCache<number, RegisteredNode 
   protected override async load(
     nodeId: number,
     mirrorNodeURL: string,
-  ): Promise<RegisteredNode | null> {
+  ): Promise<IRegisteredNodeInfoParsed | null> {
     let result: RegisteredNode | null = null;
 
     let nextURL: string | null =
@@ -22,6 +27,7 @@ export class RegisteredNodeByIdCache extends EntityCache<number, RegisteredNode 
       result = registeredNodes.length > 0 ? registeredNodes[0] : null;
       nextURL = response.data.links.next ?? null;
     }
-    return result;
+
+    return result !== null ? parseRegisteredNode(result) : null;
   }
 }

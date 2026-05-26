@@ -1,5 +1,6 @@
 export * from './IAccountInfoParsed';
 export * from './INodeInfoParsed';
+export * from './IRegisteredNodeInfoParsed';
 export * from './HederaSchema';
 export * from './Theme';
 export * from './organization';

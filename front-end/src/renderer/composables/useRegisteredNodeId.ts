@@ -1,4 +1,4 @@
-import type { RegisteredNode } from '@shared/interfaces';
+import type { IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 
@@ -8,7 +8,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 
 import useAccountId from './useAccountId';
 
-export default function useNodeId() {
+export default function useRegisteredNodeId() {
   /* Stores */
   const networkStore = useNetworkStore();
 
@@ -20,7 +20,7 @@ export default function useNodeId() {
 
   /* State */
   const registeredNodeId = ref<number | null>(null);
-  const registeredNodeInfo = ref<RegisteredNode | null>(null);
+  const registeredNodeInfo = ref<IRegisteredNodeInfoParsed | null>(null);
 
   /* Computed */
   const isValid = computed(() => registeredNodeInfo.value !== null);
