@@ -676,24 +676,24 @@ export interface ServiceEndPoint {
 //                                                      Registered Node
 // ---------------------------------------------------------------------------------------------------------------------
 
-export interface IRegisteredNodesResponse {
-  registered_nodes: IRegisteredNode[] | undefined;
+export interface RegisteredNodesResponse {
+  registered_nodes: RegisteredNode[] | undefined;
   links: Links;
 }
 
-export interface IRegisteredNode {
+export interface RegisteredNode {
   admin_key: Key | null;
   created_timestamp: string | null;
   description: string | null;
   registered_node_id: number;
-  service_endpoints: IRegisteredServiceEndPoint[];
+  service_endpoints: RegisteredServiceEndPoint[];
   timestamp: TimestampRange;
 }
 
-export interface IRegisteredServiceEndPoint {
-  block_node: IRegisteredBlockNodeEndpoint | null;
+export interface RegisteredServiceEndPoint {
+  block_node: RegisteredBlockNodeEndpoint | null;
   domain_name: string | null; // The DNS domain name of the service
-  general_service: IRegisteredGeneralServiceEndpoint | null;
+  general_service: RegisteredGeneralServiceEndpoint | null;
   ip_address: string | null; // The IP address of the service
   mirror_node: unknown; // SHOULD BE: RegisteredMirrorNodeEndpoint | null
   port: number;
@@ -702,7 +702,7 @@ export interface IRegisteredServiceEndPoint {
   type: RegisteredNodeType; // Registered node type
 }
 
-export interface IRegisteredBlockNodeEndpoint {
+export interface RegisteredBlockNodeEndpoint {
   endpoint_apis: RegisteredBlockNodeApi[];
 }
 
@@ -715,17 +715,17 @@ export enum RegisteredBlockNodeApi {
   UNRECOGNIZED = 'UNRECOGNIZED',
 }
 
-export interface IRegisteredGeneralServiceEndpoint {
+export interface RegisteredGeneralServiceEndpoint {
   description: string;
 }
 
 //
 // These are currently empty in MN OpenAPI definition
 //
-// export interface IRegisteredMirrorNodeEndpoint {
+// export interface RegisteredMirrorNodeEndpoint {
 // }
 //
-// export interface IRegisteredRpcRelayEndpoint {
+// export interface RegisteredRpcRelayEndpoint {
 // }
 
 export enum RegisteredNodeType {

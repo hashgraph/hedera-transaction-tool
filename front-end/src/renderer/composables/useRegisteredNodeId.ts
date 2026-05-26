@@ -1,4 +1,4 @@
-import type { IRegisteredNode } from '@shared/interfaces';
+import type { RegisteredNode } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 
@@ -20,7 +20,7 @@ export default function useNodeId() {
 
   /* State */
   const registeredNodeId = ref<number | null>(null);
-  const registeredNodeInfo = ref<IRegisteredNode | null>(null);
+  const registeredNodeInfo = ref<RegisteredNode | null>(null);
 
   /* Computed */
   const isValid = computed(() => registeredNodeInfo.value !== null);
