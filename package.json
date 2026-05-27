@@ -1,6 +1,10 @@
 {
   "name": "hedera-transaction-tool-root",
   "private": true,
+  "scripts": {
+    "clean:deps": "rm -rf node_modules **/node_modules",
+    "clean:all": "pnpm run clean:deps && rm -rf **/dist front-end/release/ front-end/src/generated/ back-end/pgdata"
+  },
   "devDependencies": {
     "prettier": "catalog:"
   },
