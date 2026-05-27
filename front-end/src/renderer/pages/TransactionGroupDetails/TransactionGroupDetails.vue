@@ -50,7 +50,12 @@ import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportA
 import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
 
 /* Types */
-type ActionButton = 'Reject All' | 'Approve All' | 'Sign All' | 'Cancel All' | 'Export All';
+type ActionButton =
+  | 'Reject All'
+  | 'Approve All'
+  | 'Sign All'
+  | 'Cancel All'
+  | 'Export All (Transaction Tool 1.0)';
 
 const logger = createLogger('renderer.page.transactionGroupDetails');
 
@@ -59,7 +64,7 @@ const reject: ActionButton = 'Reject All';
 const approve: ActionButton = 'Approve All';
 const sign: ActionButton = 'Sign All';
 const cancel: ActionButton = 'Cancel All';
-const exportName: ActionButton = 'Export All';
+const exportName: ActionButton = 'Export All (Transaction Tool 1.0)';
 
 const primaryButtons: ActionButton[] = [reject, approve, sign];
 const buttonsDataTestIds: { [key: string]: string } = {
