@@ -13,6 +13,7 @@
     "build:common": "nest build common",
     "build:migrations": "pnpm -F typeorm build",
     "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build",
+    "docker:dev:down": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml down",
     "docker:prod": "docker-compose -f docker-compose.prod.yaml up --build",
     "docker:prod:down": "docker-compose -f docker-compose.prod.yaml down",
     "format": "prettier --write \"apps/**/*.ts\" \"libs/**/*.ts\"",
