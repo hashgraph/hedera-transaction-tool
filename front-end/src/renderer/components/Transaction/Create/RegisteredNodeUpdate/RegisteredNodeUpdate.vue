@@ -126,7 +126,8 @@ const handleDraftLoaded = (transaction: Transaction) => {
 };
 
 const handleUpdateData = (newData: RegisteredNodeUpdateData) => {
-  nodeData.registeredNodeId.value = parseInt(newData.registeredNodeId);
+  const n = parseInt(newData.registeredNodeId);
+  nodeData.registeredNodeId.value = isNaN(n) ? null : n;
   Object.assign(data, {
     ...newData,
     serviceEndpoints: decorateEndpointsWithUiIds(newData.serviceEndpoints),
