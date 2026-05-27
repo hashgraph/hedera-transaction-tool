@@ -13,6 +13,7 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeUpdateTransaction,
   RegisteredNodeDeleteTransaction,
   TransferTransaction,
   Transaction as SDKTransaction,
@@ -219,6 +220,7 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
               <RegisteredNodeDetails
                 v-if="
                   transaction instanceof RegisteredNodeCreateTransaction ||
+                  transaction instanceof RegisteredNodeUpdateTransaction ||
                   transaction instanceof RegisteredNodeDeleteTransaction
                 "
                 :organization-transaction="null"

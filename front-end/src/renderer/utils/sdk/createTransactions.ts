@@ -24,6 +24,7 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeUpdateTransaction,
   RegisteredNodeDeleteTransaction,
   RegisteredServiceEndpoint,
   RpcRelayServiceEndpoint,
@@ -167,6 +168,13 @@ export interface ComponentRegisteredServiceEndpoint extends ComponentServiceEndp
 }
 
 export type RegisteredNodeData = {
+  description: string;
+  adminKey: Key | null;
+  serviceEndpoints: ComponentRegisteredServiceEndpoint[];
+};
+
+export type RegisteredNodeUpdateData = {
+  registeredNodeId: string;
   description: string;
   adminKey: Key | null;
   serviceEndpoints: ComponentRegisteredServiceEndpoint[];
@@ -731,6 +739,32 @@ export function createRegisteredNodeCreateTransaction(
 ): RegisteredNodeCreateTransaction {
   const transaction = new RegisteredNodeCreateTransaction();
   setTransactionCommonData(transaction, data);
+
+  if (data.adminKey) {
+    transaction.setAdminKey(data.adminKey);
+  }
+
+  if (data.description && data.description.length > 0) {
+    transaction.setDescription(data.description);
+  }
+
+  const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
+  if (endpoints.length > 0) {
+    transaction.setServiceEndpoints(endpoints);
+  }
+
+  return transaction;
+}
+
+export function createRegisteredNodeUpdateTransaction(
+  data: TransactionCommonData & RegisteredNodeUpdateData,
+): RegisteredNodeUpdateTransaction {
+  const transaction = new RegisteredNodeUpdateTransaction();
+  setTransactionCommonData(transaction, data);
+
+  if (data.registeredNodeId) {
+    transaction.setRegisteredNodeId(Long.fromString(data.registeredNodeId));
+  }
 
   if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);

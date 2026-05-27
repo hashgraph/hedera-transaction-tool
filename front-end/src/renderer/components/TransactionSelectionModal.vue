@@ -63,6 +63,10 @@ const transactionGroups = computed<MenuGroup[]>(() => {
           name: transactionTypeKeys.registeredNodeCreate,
         },
         {
+          label: 'Registered Node Update',
+          name: transactionTypeKeys.registeredNodeUpdate,
+        },
+        {
           label: 'Registered Node Delete',
           name: transactionTypeKeys.registeredNodeDelete,
         },

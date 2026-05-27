@@ -9,6 +9,7 @@ import {
   KeyList,
   PublicKey,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeUpdateTransaction,
   RegisteredNodeDeleteTransaction,
   Transaction,
 } from '@hiero-ledger/sdk';
@@ -36,6 +37,7 @@ onBeforeMount(() => {
   if (
     !(
       props.transaction instanceof RegisteredNodeCreateTransaction ||
+      props.transaction instanceof RegisteredNodeUpdateTransaction ||
       props.transaction instanceof RegisteredNodeDeleteTransaction
     )
   ) {
@@ -51,17 +53,26 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
 <template>
   <div class="mt-5 row flex-wrap">
-
     <!-- Registered Node ID -->
-    <div v-if="transaction instanceof RegisteredNodeDeleteTransaction" :class="commonColClass">
+    <div
+      v-if="
+        transaction instanceof RegisteredNodeUpdateTransaction ||
+        transaction instanceof RegisteredNodeDeleteTransaction
+      "
+      :class="commonColClass"
+    >
       <h4 :class="detailItemLabelClass">Registered Node ID</h4>
       <p :class="detailItemValueClass" data-testid="p-node-details-node-id">
         {{ transaction.registeredNodeId?.toString() ?? '' }}
       </p>
     </div>
 
-    <template v-if="transaction instanceof RegisteredNodeCreateTransaction">
-
+    <template
+      v-if="
+        transaction instanceof RegisteredNodeCreateTransaction ||
+        transaction instanceof RegisteredNodeUpdateTransaction
+      "
+    >
       <!-- Description -->
       <div v-if="transaction.description" :class="commonColClass">
         <h4 :class="detailItemLabelClass">Description</h4>
@@ -92,7 +103,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       </div>
 
       <!-- Service Endpoints -->
-      <div v-if="transaction.serviceEndpoints.length > 0" class="col-12 my-3">
+      <div
+        v-if="transaction.serviceEndpoints !== null && transaction.serviceEndpoints.length > 0"
+        class="col-12 my-3"
+      >
         <h4 :class="detailItemLabelClass">Service Endpoints</h4>
         <table class="table-custom">
           <thead class="thin">
