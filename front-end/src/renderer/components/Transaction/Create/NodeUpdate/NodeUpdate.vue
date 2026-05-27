@@ -71,7 +71,8 @@ const handleDraftLoaded = (transaction: Transaction) => {
 };
 
 const handleUpdateData = (newData: NodeUpdateData) => {
-  nodeData.nodeId.value = parseInt(newData.nodeId);
+  const n = parseInt(newData.nodeId);
+  nodeData.nodeId.value = isNaN(n) ? null : n;
   newNodeAccountData.accountId.value = newData.nodeAccountId;
   Object.assign(data, newData);
 };
