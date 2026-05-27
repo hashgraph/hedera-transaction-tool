@@ -4,7 +4,6 @@ import { TransactionBaseModel } from './transaction.model';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache';
 import type { RegisteredNodeByIdCache } from '@renderer/caches/mirrorNode/RegisteredNodeByIdCache';
 import { createLogger } from '@renderer/utils/logger';
-import { parseNetworkResponseKey } from '@renderer/services/mirrorNodeDataService';
 
 const logger = createLogger('renderer.transaction.signatureModel.registerNodeDelete');
 
@@ -36,13 +35,7 @@ export default class RegisteredNodeDeleteTransactionModel extends TransactionBas
         return null;
       }
 
-      const adminKey = parseNetworkResponseKey(registeredNodeInfo.admin_key);
-      if (adminKey === null) {
-        logger.warn(`Malformed admin key found for node ${registeredNodeId}`);
-        return null;
-      }
-
-      return { registeredNodeId, key: adminKey };
+      return { registeredNodeId, key: registeredNodeInfo.admin_key };
     } catch (error) {
       logger.warn('Failed to resolve node admin signing key', {
         error,
