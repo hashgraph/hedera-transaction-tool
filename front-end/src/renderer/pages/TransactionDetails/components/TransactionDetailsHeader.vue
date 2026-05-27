@@ -43,7 +43,8 @@ import ScheduleTransactionController from '@renderer/pages/TransactionDetails/Sc
 import RemindSignersController from '@renderer/pages/TransactionDetails/RemindSignersController.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 import ApproveTransactionController from '@renderer/pages/TransactionDetails/ApproveTransactionController.vue';
-import ExportTransactionController from '@renderer/pages/TransactionDetails/ExportTransactionController.vue';
+import ExportTransactionToV2Controller from '@renderer/pages/TransactionDetails/ExportTransactionToV2Controller.vue';
+import ExportTransactionToV1Controller from '@renderer/pages/TransactionDetails/ExportTransactionToV1Controller.vue';
 
 /* Types */
 type ActionButton =
@@ -53,6 +54,7 @@ type ActionButton =
   | 'Sign & Next'
   | 'Cancel'
   | 'Export'
+  | 'Export (Transaction Tool 1.0)'
   | 'Schedule'
   | 'Remind Signers'
   | 'Archive';
@@ -66,7 +68,8 @@ const schedule: ActionButton = 'Schedule';
 const cancel: ActionButton = 'Cancel';
 const remindSignersLabel: ActionButton = 'Remind Signers';
 const archive: ActionButton = 'Archive';
-const exportName: ActionButton = 'Export';
+const exportToV2: ActionButton = 'Export';
+const exportToV1: ActionButton = 'Export (Transaction Tool 1.0)';
 
 const primaryButtons: ActionButton[] = [reject, approve, sign, schedule];
 const buttonsDataTestIds: { [key: string]: string } = {
@@ -77,7 +80,8 @@ const buttonsDataTestIds: { [key: string]: string } = {
   [cancel]: 'button-cancel-org-transaction',
   [remindSignersLabel]: 'button-remind-signers-org-transaction',
   [archive]: 'button-archive-org-transaction',
-  [exportName]: 'button-export-transaction',
+  [exportToV2]: 'button-export-transaction-to-v2',
+  [exportToV1]: 'button-export-transaction-to-v1',
 };
 
 /* Props */
@@ -114,7 +118,8 @@ const signStarted = ref(false);
 const goNextAfterSign = ref(false);
 const approveStarted = ref(false);
 const isApproved = ref(false);
-const exportStarted = ref(false);
+const exportToV2Started = ref(false);
+const exportToV1Started = ref(false);
 const cancelStarted = ref(false);
 const archiveStarted = ref(false);
 const scheduleStarted = ref(false);
@@ -159,8 +164,11 @@ const handleAction = async (value: ActionButton) => {
     case schedule:
       scheduleStarted.value = true;
       break;
-    case exportName:
-      exportStarted.value = true;
+    case exportToV2:
+      exportToV2Started.value = true;
+      break;
+    case exportToV1:
+      exportToV1Started.value = true;
       break;
     case remindSignersLabel:
       remindSignersStarted.value = true;
@@ -270,7 +278,7 @@ const computeVisibleButtons = (
     canCancel && buttons.push(cancel);
     canRemind && buttons.push(remindSignersLabel);
     canArchive && buttons.push(archive);
-    buttons.push(exportName);
+    buttons.push(exportToV2, exportToV1);
   } else {
     // leaves buttons empty
   }
@@ -348,8 +356,14 @@ const computeVisibleButtons = (
     :sdk-transaction="props.sdkTransaction"
     :transaction="props.organizationTransaction"
   />
-  <ExportTransactionController
-    v-model:activate="exportStarted"
+  <ExportTransactionToV2Controller
+    v-model:activate="exportToV2Started"
+    :callback="props.onAction"
+    :sdk-transaction="props.sdkTransaction"
+    :transaction="props.organizationTransaction"
+  />
+  <ExportTransactionToV1Controller
+    v-model:activate="exportToV1Started"
     :callback="props.onAction"
     :sdk-transaction="props.sdkTransaction"
     :transaction="props.organizationTransaction"
