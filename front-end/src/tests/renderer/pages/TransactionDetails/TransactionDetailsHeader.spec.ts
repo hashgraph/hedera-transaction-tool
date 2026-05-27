@@ -203,7 +203,7 @@ describe('TransactionDetailsHeader.vue', () => {
     const wrapper = mountHeader({ status: TransactionStatus.CANCELED });
     await flushPromises();
 
-    expect(wrapper.find('[data-testid="button-export-transaction"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-export-transaction-to-v2"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="button-cancel-org-transaction"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="button-sign-org-transaction"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="button-approve-org-transaction"]').exists()).toBe(false);
@@ -324,12 +324,12 @@ describe('TransactionDetailsHeader.vue', () => {
     expect(toastError).toHaveBeenCalled();
   });
 
-  test.skip('shows error toast when export is triggered without an SDK transaction', async () => {
+  test('shows error toast when export is triggered without an SDK transaction', async () => {
     const wrapper = mountHeader({ status: TransactionStatus.CANCELED });
     await flushPromises();
 
     const form = wrapper.find('form');
-    const exportButton = wrapper.get('[data-testid="button-export-transaction"]');
+    const exportButton = wrapper.get('[data-testid="button-export-transaction-to-v2"]');
     const submitEvent = new Event('submit', { cancelable: true });
     Object.defineProperty(submitEvent, 'submitter', { value: exportButton.element });
     form.element.dispatchEvent(submitEvent);
@@ -355,7 +355,7 @@ describe('TransactionDetailsHeader.vue', () => {
     await flushPromises();
 
     const form = wrapper.find('form');
-    const exportButton = wrapper.get('[data-testid="button-export-transaction"]');
+    const exportButton = wrapper.get('[data-testid="button-export-transaction-to-v2"]');
     const submitEvent = new Event('submit', { cancelable: true });
     Object.defineProperty(submitEvent, 'submitter', { value: exportButton.element });
     form.element.dispatchEvent(submitEvent);
