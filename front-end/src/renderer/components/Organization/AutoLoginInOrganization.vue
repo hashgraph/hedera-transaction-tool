@@ -4,6 +4,7 @@ import type { Organization } from '@prisma/client';
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
@@ -17,6 +18,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const orgConnection = useOrganizationConnection();
 
 /* Composables */
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -74,7 +76,10 @@ watch(
       // Run a single consolidated version check across every org now that
       // org-level auto-signin (if any) has finished. Drives the upgrade
       // modals via the pending flag — they wait until every org reports in.
-      void performInitialVersionCheck(user.organizations.map(o => o.serverUrl));
+      const eligibleServerUrls = user.organizations
+        .filter(o => orgConnection.getConnectionStatus(o.serverUrl) !== 'disconnected')
+        .map(o => o.serverUrl);
+      void performInitialVersionCheck(eligibleServerUrls);
     }
   },
 );

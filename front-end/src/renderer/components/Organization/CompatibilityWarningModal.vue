@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed, useSlots } from 'vue';
+
 import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -9,7 +11,7 @@ const props = withDefaults(
   defineProps<{
     show: boolean;
     title: string;
-    summaryText: string;
+    summaryText?: string;
     warningText?: string;
     conflicts: CompatibilityConflict[];
     conflictsTitle?: string;
@@ -18,6 +20,7 @@ const props = withDefaults(
   }>(),
   {
     show: false,
+    summaryText: '',
     warningText: '',
     conflictsTitle: 'Affected Organizations',
     proceedLabel: 'Proceed',
@@ -31,6 +34,17 @@ const emit = defineEmits<{
   (event: 'proceed'): void;
   (event: 'cancel'): void;
 }>();
+
+defineSlots<{
+  summary?: () => unknown;
+  warning?: () => unknown;
+}>();
+
+const slots = useSlots();
+
+const hasWarningSection = computed(
+  () => props.conflicts.length > 0 || Boolean(props.warningText) || Boolean(slots.warning),
+);
 
 /* Handlers */
 const handleProceed = () => {
@@ -61,11 +75,15 @@ const handleCancel = () => {
 
       <h2 class="text-title text-semi-bold mt-4 text-center">{{ props.title }}</h2>
 
-      <p class="text-small text-secondary mt-3 text-center">{{ props.summaryText }}</p>
+      <p class="text-small text-secondary mt-3 text-center">
+        <slot name="summary">{{ props.summaryText }}</slot>
+      </p>
 
-      <div v-if="props.conflicts.length > 0 || Boolean(props.warningText)" class="mt-4">
+      <div v-if="hasWarningSection" class="mt-4">
         <div class="alert alert-warning" role="alert">
-          <p class="text-small mb-0">{{ props.warningText }}</p>
+          <p class="text-small mb-0">
+            <slot name="warning">{{ props.warningText }}</slot>
+          </p>
         </div>
 
         <div v-if="props.conflicts.length > 0" class="mt-3">

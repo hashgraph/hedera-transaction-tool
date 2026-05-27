@@ -7,6 +7,7 @@ const logger = createLogger('renderer.mandatoryUpgrade');
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
+import { FRONTEND_VERSION } from '@renderer/utils/version';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
 import { disconnectOrganization } from '@renderer/services/organization/disconnect';
@@ -92,13 +93,11 @@ const organizationsRequiringUpdate = computed(() => {
   return user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum');
 });
 
-const compatibilityDisconnectMessage = computed(() => {
-  const conflictCount = compatibilityResult.value?.conflicts.length ?? 0;
-  if (conflictCount === 0) return '';
+const conflictCount = computed(() => compatibilityResult.value?.conflicts.length ?? 0);
 
-  const backendLabel = conflictCount === 1 ? 'backend' : 'backends';
-  return `If you proceed, all incompatible ${backendLabel} listed below will be disconnected before the update download starts. If you cancel, only this triggering backend will be disconnected.`;
-});
+const affectedOrgName = computed(
+  () => affectedOrg.value?.nickname || affectedOrg.value?.serverUrl || '',
+);
 
 const mandatoryUpdateMessage = computed(() => {
   const count = organizationsRequiringUpdate.value.length;
@@ -111,27 +110,13 @@ const mandatoryUpdateMessage = computed(() => {
 
 const mandatoryCompatibilityTitle = computed(() => 'Update Required - Compatibility Warning');
 
-const mandatoryCompatibilitySummaryText = computed(() => {
-  const orgName = affectedOrg.value?.nickname || affectedOrg.value?.serverUrl;
-  const suggestedVersion = compatibilityResult.value?.suggestedVersion;
+const suggestedVersionLabel = computed(() => compatibilityResult.value?.suggestedVersion || '');
 
-  if (orgName && suggestedVersion) {
-    return `The organization ${orgName} requires an update to version ${suggestedVersion}.`;
-  }
-  if (orgName) {
-    return `The organization ${orgName} requires an update.`;
-  }
-  if (suggestedVersion) {
-    return `An update to version ${suggestedVersion} is required.`;
-  }
-  return 'An update is required.';
-});
+const currentClientVersion = FRONTEND_VERSION;
 
-const mandatoryCompatibilityProceedLabel = computed(
-  () => 'Disconnect Incompatible Backends and Continue',
-);
+const mandatoryCompatibilityProceedLabel = computed(() => 'Proceed with Update');
 
-const mandatoryCompatibilityCancelLabel = computed(() => 'Disconnect This Backend');
+const mandatoryCompatibilityCancelLabel = computed(() => 'Disconnect');
 
 watch(
   [shown, compatibilityResult],
@@ -296,8 +281,6 @@ const handleCompatibilityCancel = () => {
     <CompatibilityWarningModal
       :show="showCompatibilityWarning"
       :title="mandatoryCompatibilityTitle"
-      :summary-text="mandatoryCompatibilitySummaryText"
-      :warning-text="compatibilityDisconnectMessage"
       :conflicts="compatibilityResult?.conflicts || []"
       :conflicts-title="'Incompatible Organizations'"
       :cancel-label="mandatoryCompatibilityCancelLabel"
@@ -305,7 +288,39 @@ const handleCompatibilityCancel = () => {
       @proceed="handleCompatibilityProceed"
       @cancel="handleCompatibilityCancel"
       @update:show="showCompatibilityWarning = $event"
-    />
+    >
+      <template #summary>
+        <template v-if="affectedOrgName && suggestedVersionLabel">
+          <strong>{{ affectedOrgName }}</strong> is incompatible with version
+          <strong>{{ currentClientVersion }}</strong>. Please update to
+          <strong>{{ suggestedVersionLabel }}</strong>.
+        </template>
+        <template v-else-if="affectedOrgName">
+          <strong>{{ affectedOrgName }}</strong> is incompatible with version
+          <strong>{{ currentClientVersion }}</strong>. Please update.
+        </template>
+        <template v-else-if="suggestedVersionLabel">
+          Your current version (<strong>{{ currentClientVersion }}</strong>) is incompatible.
+          Please update to <strong>{{ suggestedVersionLabel }}</strong>.
+        </template>
+        <template v-else>An update is required.</template>
+      </template>
+
+      <template v-if="conflictCount > 0" #warning>
+        <span class="text-primary text-bold">Proceed with Update</span>
+        <template v-if="conflictCount === 1">
+          will disconnect the incompatible backend listed below, then download the update.
+        </template>
+        <template v-else>
+          will disconnect all incompatible backends listed below, then download the update.
+        </template>
+        Otherwise,
+        <span class="text-secondary text-bold">Disconnect</span>
+        will disconnect
+        <template v-if="affectedOrgName"><strong>{{ affectedOrgName }}</strong></template>
+        <template v-else>this backend</template>.
+      </template>
+    </CompatibilityWarningModal>
   </AppModal>
 </template>
 

@@ -11,7 +11,6 @@ import {
   triggeringOrganizationServerUrl,
   initialVersionCheckState,
 } from '@renderer/stores/versionState';
-import useUserStore from '@renderer/stores/storeUser';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
@@ -32,7 +31,6 @@ const {
   installUpdate,
   cancelUpdate
 } = useElectronUpdater();
-const user = useUserStore();
 const route = useRoute();
 
 const compatibilityResult = computed(() => {
@@ -43,33 +41,13 @@ const compatibilityResult = computed(() => {
 
 const showCompatibilityWarning = ref(false);
 
-const affectedOrg = computed(() => {
-  const serverUrl = triggeringOrganizationServerUrl.value;
-  if (!serverUrl) return null;
-  return user.organizations.find(org => org.serverUrl === serverUrl) || null;
-});
-
 const optionalCompatibilityTitle = computed(() => 'Update Compatibility Warning');
 
-const optionalCompatibilitySummaryText = computed(() => {
-  const suggestedVersion = compatibilityResult.value?.suggestedVersion || latestVersion.value;
-  const orgName = affectedOrg.value?.nickname || affectedOrg.value?.serverUrl;
+const suggestedVersionLabel = computed(
+  () => compatibilityResult.value?.suggestedVersion || latestVersion.value || '',
+);
 
-  if (orgName && suggestedVersion) {
-    return `The organization ${orgName} has an update available: version ${suggestedVersion}.`;
-  }
-  if (suggestedVersion) {
-    return `An update to version ${suggestedVersion} is available.`;
-  }
-  return 'An update is available.';
-});
-
-const optionalCompatibilityWarningText = computed(() => {
-  if (!compatibilityResult.value?.hasConflict) {
-    return 'You can continue using your current version safely.';
-  }
-  return 'This update may affect other configured organizations. You can cancel now and continue on your current version.';
-});
+const conflictCount = computed(() => compatibilityResult.value?.conflicts.length ?? 0);
 
 const shown = computed(
   () =>
@@ -172,15 +150,34 @@ watch(
       v-if="compatibilityResult"
       v-model:show="showCompatibilityWarning"
       :title="optionalCompatibilityTitle"
-      :summary-text="optionalCompatibilitySummaryText"
-      :warning-text="optionalCompatibilityWarningText"
       :conflicts="compatibilityResult.conflicts || []"
       :conflicts-title="'Conflicting Organizations'"
       :cancel-label="'Not Now'"
-      :proceed-label="'Proceed with Update'"
+      :proceed-label="'Update Now'"
       @proceed="handleUpdate"
       @cancel="handleCancel"
-    />
+    >
+      <template #summary>
+        <template v-if="suggestedVersionLabel">
+          A new version (<strong>{{ suggestedVersionLabel }}</strong>) is available. Updating is
+          optional &mdash; your current version is still fully supported.
+        </template>
+        <template v-else>
+          A new version is available. Updating is optional &mdash; your current version is still
+          fully supported.
+        </template>
+      </template>
+
+      <template v-if="conflictCount > 0" #warning>
+        <span class="text-primary text-bold">Update Now</span>
+        will install the update, but
+        <template v-if="conflictCount === 1">the backend listed below</template>
+        <template v-else>the backends listed below</template>
+        will become incompatible.
+        <span class="text-secondary text-bold">Not Now</span>
+        keeps you on your current version.
+      </template>
+    </CompatibilityWarningModal>
   </AppModal>
 </template>
 

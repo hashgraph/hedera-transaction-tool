@@ -114,9 +114,9 @@ vi.mock('@renderer/components/Organization/CompatibilityWarningModal.vue', () =>
     template: `
       <div v-if="show" data-testid="compatibility-warning-modal">
         <div data-testid="compatibility-warning-title">{{ title }}</div>
-        <div data-testid="compatibility-warning-text">
-          {{ summaryText }} | {{ warningText }} | {{ conflictsTitle }} | {{ conflicts.length }}
-        </div>
+        <div data-testid="compatibility-warning-summary"><slot name="summary">{{ summaryText }}</slot></div>
+        <div data-testid="compatibility-warning-warning"><slot name="warning">{{ warningText }}</slot></div>
+        <div data-testid="compatibility-warning-meta">{{ conflictsTitle }} | {{ conflicts.length }}</div>
         <button data-testid="compatibility-warning-proceed" @click="$emit('proceed')">{{ proceedLabel }}</button>
         <button data-testid="compatibility-warning-cancel" @click="$emit('cancel')">{{ cancelLabel }}</button>
       </div>
@@ -191,24 +191,33 @@ describe('MandatoryUpgrade', () => {
     expect(wrapper.text()).toContain(
       '3 backends currently require this mandatory upgrade. If you continue without updating, all of them will need to be disconnected.',
     );
-    expect(wrapper.text()).toContain(
-      'If you proceed, all incompatible backends listed below will be disconnected before the update download starts. If you cancel, only this triggering backend will be disconnected.',
+    expect(wrapper.find('[data-testid="compatibility-warning-warning"]').text()).toContain(
+      'Proceed with Update will disconnect all incompatible backends listed below, then download the update.',
+    );
+    expect(wrapper.find('[data-testid="compatibility-warning-warning"]').text()).toContain(
+      'Otherwise, Disconnect will disconnect Triggering Org',
     );
     expect(wrapper.find('[data-testid="compatibility-warning-modal"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="compatibility-warning-title"]').text()).toBe(
       'Update Required - Compatibility Warning',
     );
-    expect(wrapper.find('[data-testid="compatibility-warning-text"]').text()).toContain(
-      'The organization Triggering Org requires an update to version 2.0.0.',
+    expect(wrapper.find('[data-testid="compatibility-warning-summary"]').text()).toContain(
+      'Triggering Org is incompatible with version',
     );
-    expect(wrapper.find('[data-testid="compatibility-warning-text"]').text()).toContain(
+    expect(wrapper.find('[data-testid="compatibility-warning-summary"]').text()).toContain(
+      'Please update to 2.0.0.',
+    );
+    expect(
+      wrapper.find('[data-testid="compatibility-warning-summary"] strong').exists(),
+    ).toBe(true);
+    expect(wrapper.find('[data-testid="compatibility-warning-meta"]').text()).toContain(
       'Incompatible Organizations | 2',
     );
     expect(wrapper.find('[data-testid="compatibility-warning-proceed"]').text()).toBe(
-      'Disconnect Incompatible Backends and Continue',
+      'Proceed with Update',
     );
     expect(wrapper.find('[data-testid="compatibility-warning-cancel"]').text()).toBe(
-      'Disconnect This Backend',
+      'Disconnect',
     );
   });
 
