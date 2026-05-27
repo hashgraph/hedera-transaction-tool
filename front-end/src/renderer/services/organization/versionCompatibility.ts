@@ -20,32 +20,35 @@ export type CompatibilityCheckResult = {
 
 /**
  * Pure comparison primitive. Reports any organizations whose latest supported
- * version is below `suggestedVersion`. Takes its inputs explicitly so it has
+ * version is below the triggering org's minimum supported version. The
+ * returned/resulting suggestedVersion remains the triggering org's latest
+ * supported version for modal display. Takes its inputs explicitly so it has
  * no dependency on the version store and can be composed into a `computed`
  * without creating an import cycle. No logging — this runs on every reactive
  * recompute; any signal worth logging belongs at the event boundary where
  * fresh data lands.
  */
 export function checkCompatibilityAcrossOrganizations(
-  suggestedVersion: string,
+  triggeringServerUrl: string,
+  triggeringVersionData: IVersionCheckResponse,
   organizations: Array<{ serverUrl: string; nickname?: string }>,
   latestVersionByServer: { [serverUrl: string]: string | null },
-  excludingServerUrl?: string,
 ): CompatibilityCheckResult {
   const conflicts: CompatibilityConflict[] = [];
 
-  const cleanSuggestedVersion = semver.clean(suggestedVersion);
-  if (!cleanSuggestedVersion) {
+  const cleanSuggestedVersion = semver.clean(triggeringVersionData.latestSupportedVersion);
+  const cleanMinimumVersion = semver.clean(triggeringVersionData.minimumSupportedVersion);
+  if (!cleanSuggestedVersion || !cleanMinimumVersion) {
     return {
       hasConflict: false,
       conflicts: [],
-      suggestedVersion: null,
+      suggestedVersion: cleanSuggestedVersion,
       isOptional: true,
     };
   }
 
   for (const org of organizations) {
-    if (excludingServerUrl && org.serverUrl === excludingServerUrl) {
+    if (org.serverUrl === triggeringServerUrl) {
       continue;
     }
 
@@ -55,7 +58,7 @@ export function checkCompatibilityAcrossOrganizations(
     const cleanOrgLatestVersion = semver.clean(orgLatestVersion);
     if (!cleanOrgLatestVersion) continue;
 
-    if (semver.gt(cleanSuggestedVersion, cleanOrgLatestVersion)) {
+    if (semver.gt(cleanMinimumVersion, cleanOrgLatestVersion)) {
       conflicts.push({
         serverUrl: org.serverUrl,
         organizationName: org.nickname || org.serverUrl,

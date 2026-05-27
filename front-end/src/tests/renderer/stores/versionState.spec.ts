@@ -282,25 +282,48 @@ describe('versionState', () => {
     expect(Object.keys(mod.getAllOrganizationVersions())).toEqual(['https://a']);
   });
 
-  test('organizationCompatibilityResults derives a conflict between two orgs', async () => {
+  test('organizationCompatibilityResults compares triggering minimum against other latest while preserving suggested latest', async () => {
     mockOrgs.push({ serverUrl: 'https://leader', nickname: 'Leader' });
     mockOrgs.push({ serverUrl: 'https://laggard', nickname: 'Laggard' });
 
     const mod = await import('@renderer/stores/versionState');
     mod.setVersionDataForOrg('https://leader', {
       latestSupportedVersion: '2.0.0',
-      minimumSupportedVersion: '0.9.0',
+      minimumSupportedVersion: '1.5.0',
       updateUrl: 'https://download/v2',
     });
     mod.setVersionDataForOrg('https://laggard', {
-      latestSupportedVersion: '1.5.0',
+      latestSupportedVersion: '1.0.0',
       minimumSupportedVersion: '0.9.0',
       updateUrl: null,
     });
 
     const leaderResult = mod.organizationCompatibilityResults.value['https://leader'];
     expect(leaderResult?.hasConflict).toBe(true);
+    expect(leaderResult?.suggestedVersion).toBe('2.0.0');
     expect(leaderResult?.conflicts.map(c => c.serverUrl)).toEqual(['https://laggard']);
+  });
+
+  test('organizationCompatibilityResults does not conflict when other latest equals triggering minimum', async () => {
+    mockOrgs.push({ serverUrl: 'https://leader', nickname: 'Leader' });
+    mockOrgs.push({ serverUrl: 'https://peer', nickname: 'Peer' });
+
+    const mod = await import('@renderer/stores/versionState');
+    mod.setVersionDataForOrg('https://leader', {
+      latestSupportedVersion: '2.0.0',
+      minimumSupportedVersion: '1.0.0',
+      updateUrl: 'https://download/v2',
+    });
+    mod.setVersionDataForOrg('https://peer', {
+      latestSupportedVersion: '1.0.0',
+      minimumSupportedVersion: '0.9.0',
+      updateUrl: null,
+    });
+
+    const leaderResult = mod.organizationCompatibilityResults.value['https://leader'];
+    expect(leaderResult?.hasConflict).toBe(false);
+    expect(leaderResult?.conflicts).toEqual([]);
+    expect(leaderResult?.suggestedVersion).toBe('2.0.0');
   });
 
   test('initialVersionCheckState starts idle', async () => {

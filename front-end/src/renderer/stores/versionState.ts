@@ -139,10 +139,10 @@ export const organizationCompatibilityResults = computed<{
       continue;
     }
     result[serverUrl] = checkCompatibilityAcrossOrganizations(
-      data.latestSupportedVersion,
+      serverUrl,
+      data,
       orgs,
       latestMap,
-      serverUrl,
     );
   }
   return result;
