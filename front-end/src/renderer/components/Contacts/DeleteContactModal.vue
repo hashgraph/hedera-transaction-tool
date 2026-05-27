@@ -1,33 +1,18 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
 /* Props */
-const props = defineProps<{
-  show: boolean;
-}>();
+const show = defineModel<boolean>('show', { required: true });
 
 /* Emits */
-const emit = defineEmits(['update:show', 'update:delete']);
-
-/* State */
-const show = ref(props.show);
-
-/* Watchers */
-watch(
-  () => props.show,
-  value => {
-    show.value = value;
-  },
-);
+const emit = defineEmits(['update:delete']);
 
 /* Handlers */
 function handleDeleteAccount() {
   emit('update:delete');
-  emit('update:show', false);
+  show.value = false;
 }
 </script>
 <template>
@@ -43,7 +28,7 @@ function handleDeleteAccount() {
       <hr class="separator my-5" />
       <div class="row mt-4">
         <div class="col-6">
-          <AppButton color="borderless" class="w-100" @click="emit('update:show', false)"
+          <AppButton color="borderless" class="w-100" @click="show=false"
             >Cancel</AppButton
           >
         </div>
