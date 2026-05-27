@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-
 import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -9,15 +7,21 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 /* Props */
 const props = withDefaults(
   defineProps<{
-    show?: boolean;
+    show: boolean;
+    title: string;
+    summaryText: string;
+    warningText?: string;
     conflicts: CompatibilityConflict[];
-    suggestedVersion: string;
-    isOptional: boolean; // true if current version still supported, false if mandatory
-    triggeringOrgName?: string | null;
+    conflictsTitle?: string;
+    proceedLabel?: string;
+    cancelLabel?: string;
   }>(),
   {
     show: false,
-    isOptional: true,
+    warningText: '',
+    conflictsTitle: 'Affected Organizations',
+    proceedLabel: 'Proceed',
+    cancelLabel: 'Cancel',
   },
 );
 
@@ -38,37 +42,10 @@ const handleCancel = () => {
   emit('cancel');
   emit('update:show', false);
 };
-
-/* Computed */
-const updateMessage = computed(() => {
-  return props.isOptional
-    ? `has an update available. Version`
-    : `requires an update to version`;
-});
-
-const conflictMessage = computed(() => {
-  if (props.conflicts.length === 0) return '';
-
-  if (props.isOptional) {
-    return `You can continue using your current version safely.`;
-  } else {
-    return `If you choose not to upgrade, you will be disconnected from that organization.`;
-  }
-});
-
-const modalTitle = computed(() => {
-  return props.isOptional
-    ? 'Update Compatibility Warning'
-    : 'Update Required - Compatibility Warning';
-});
-
-const cancelButtonText = computed(() => {
-  return props.isOptional ? 'Cancel' : 'Disconnect Organization';
-});
 </script>
 <template>
   <AppModal
-    :show="show"
+    :show="props.show"
     :close-on-click-outside="false"
     :close-on-escape="false"
     class="modal-fit-content"
@@ -82,37 +59,26 @@ const cancelButtonText = computed(() => {
         <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem"></i>
       </div>
 
-      <h2 class="text-title text-semi-bold mt-4 text-center">{{ modalTitle }}</h2>
+      <h2 class="text-title text-semi-bold mt-4 text-center">{{ props.title }}</h2>
 
-      <p class="text-small text-secondary mt-3 text-center">
-        <span v-if="triggeringOrgName">
-          The organization <strong>{{ triggeringOrgName }}</strong> {{ updateMessage }}
-          <strong>{{ suggestedVersion }}</strong
-          >.
-        </span>
-        <span v-else>
-          An update to version <strong>{{ suggestedVersion }}</strong> is required.
-        </span>
-      </p>
+      <p class="text-small text-secondary mt-3 text-center">{{ props.summaryText }}</p>
 
-      <div v-if="conflicts.length > 0" class="mt-4">
+      <div v-if="props.conflicts.length > 0 || Boolean(props.warningText)" class="mt-4">
         <div class="alert alert-warning" role="alert">
-          <p class="text-small mb-0">
-            This update may cause issues with other configured organizations. {{ conflictMessage }}
-          </p>
+          <p class="text-small mb-0">{{ props.warningText }}</p>
         </div>
 
-        <div class="mt-3">
-          <p class="text-small text-secondary mb-2"><strong>Conflicting Organizations:</strong></p>
+        <div v-if="props.conflicts.length > 0" class="mt-3">
+          <p class="text-small text-secondary mb-2"><strong>{{ props.conflictsTitle }}:</strong></p>
           <ul class="list-unstyled">
             <li
-              v-for="conflict in conflicts"
+              v-for="conflict in props.conflicts"
               :key="conflict.serverUrl"
               class="text-small text-secondary mb-2"
             >
               <i class="bi bi-exclamation-circle me-2"></i>
               <strong>{{ conflict.organizationName }}</strong>
-              <span v-if="conflict.latestSupportedVersion">
+              <span v-if="Boolean(conflict.latestSupportedVersion)">
                 - Latest supported version: {{ conflict.latestSupportedVersion }}
               </span>
             </li>
@@ -124,10 +90,10 @@ const cancelButtonText = computed(() => {
 
       <div class="d-flex gap-4 justify-content-center">
         <AppButton type="button" color="secondary" @click="handleCancel">
-          {{ cancelButtonText }}
+          {{ props.cancelLabel }}
         </AppButton>
         <AppButton type="button" color="primary" @click="handleProceed">
-          <i class="bi bi-download me-2"></i>Proceed with Update
+          <i class="bi bi-download me-2"></i>{{ props.proceedLabel }}
         </AppButton>
       </div>
     </div>

@@ -49,6 +49,28 @@ const affectedOrg = computed(() => {
   return user.organizations.find(org => org.serverUrl === serverUrl) || null;
 });
 
+const optionalCompatibilityTitle = computed(() => 'Update Compatibility Warning');
+
+const optionalCompatibilitySummaryText = computed(() => {
+  const suggestedVersion = compatibilityResult.value?.suggestedVersion || latestVersion.value;
+  const orgName = affectedOrg.value?.nickname || affectedOrg.value?.serverUrl;
+
+  if (orgName && suggestedVersion) {
+    return `The organization ${orgName} has an update available: version ${suggestedVersion}.`;
+  }
+  if (suggestedVersion) {
+    return `An update to version ${suggestedVersion} is available.`;
+  }
+  return 'An update is available.';
+});
+
+const optionalCompatibilityWarningText = computed(() => {
+  if (!compatibilityResult.value?.hasConflict) {
+    return 'You can continue using your current version safely.';
+  }
+  return 'This update may affect other configured organizations. You can cancel now and continue on your current version.';
+});
+
 const shown = computed(
   () =>
     route.name !== 'migrate' &&
@@ -149,10 +171,13 @@ watch(
     <CompatibilityWarningModal
       v-if="compatibilityResult"
       v-model:show="showCompatibilityWarning"
+      :title="optionalCompatibilityTitle"
+      :summary-text="optionalCompatibilitySummaryText"
+      :warning-text="optionalCompatibilityWarningText"
       :conflicts="compatibilityResult.conflicts || []"
-      :suggested-version="compatibilityResult.suggestedVersion || latestVersion || ''"
-      :is-optional="true"
-      :triggering-org-name="affectedOrg ? affectedOrg.nickname || affectedOrg.serverUrl : ''"
+      :conflicts-title="'Conflicting Organizations'"
+      :cancel-label="'Not Now'"
+      :proceed-label="'Proceed with Update'"
       @proceed="handleUpdate"
       @cancel="handleCancel"
     />

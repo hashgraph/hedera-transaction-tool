@@ -92,6 +92,47 @@ const organizationsRequiringUpdate = computed(() => {
   return user.organizations.filter(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum');
 });
 
+const compatibilityDisconnectMessage = computed(() => {
+  const conflictCount = compatibilityResult.value?.conflicts.length ?? 0;
+  if (conflictCount === 0) return '';
+
+  const backendLabel = conflictCount === 1 ? 'backend' : 'backends';
+  return `If you proceed, all incompatible ${backendLabel} listed below will be disconnected before the update download starts. If you cancel, only this triggering backend will be disconnected.`;
+});
+
+const mandatoryUpdateMessage = computed(() => {
+  const count = organizationsRequiringUpdate.value.length;
+  if (organizationsRequiringUpdate.value.length > 1) {
+    return `${count} backends currently require this mandatory upgrade. If you continue without updating, all of them will need to be disconnected.`;
+  }
+
+  return 'This backend requires a mandatory upgrade to continue.';
+});
+
+const mandatoryCompatibilityTitle = computed(() => 'Update Required - Compatibility Warning');
+
+const mandatoryCompatibilitySummaryText = computed(() => {
+  const orgName = affectedOrg.value?.nickname || affectedOrg.value?.serverUrl;
+  const suggestedVersion = compatibilityResult.value?.suggestedVersion;
+
+  if (orgName && suggestedVersion) {
+    return `The organization ${orgName} requires an update to version ${suggestedVersion}.`;
+  }
+  if (orgName) {
+    return `The organization ${orgName} requires an update.`;
+  }
+  if (suggestedVersion) {
+    return `An update to version ${suggestedVersion} is required.`;
+  }
+  return 'An update is required.';
+});
+
+const mandatoryCompatibilityProceedLabel = computed(
+  () => 'Disconnect Incompatible Backends and Continue',
+);
+
+const mandatoryCompatibilityCancelLabel = computed(() => 'Disconnect This Backend');
+
 watch(
   [shown, compatibilityResult],
   ([isShown, compatResult]) => {
@@ -159,9 +200,21 @@ const handleRetry = () => {
   }
 };
 
-const handleCompatibilityProceed = () => {
+const handleCompatibilityProceed = async () => {
   showCompatibilityWarning.value = false;
-  handleDownload();
+  const conflictTargets = compatibilityResult.value?.conflicts ?? [];
+
+  try {
+    await Promise.all(
+      conflictTargets.map(conflict =>
+        disconnectOrganization(conflict.serverUrl, 'compatibilityConflict'),
+      ),
+    );
+    handleDownload();
+  } catch (error) {
+      logger.error('Failed to disconnect incompatible backends before update', { error });
+      toastManager.error('Failed to disconnect incompatible backends');
+  }
 };
 
 const handleCompatibilityCancel = () => {
@@ -218,10 +271,9 @@ const handleCompatibilityCancel = () => {
           <strong>{{ affectedOrg.nickname || affectedOrg.serverUrl }}</strong> requires an update to
           continue.<br />
           Your current version is no longer supported by this organization.
-          <span v-if="organizationsRequiringUpdate.length > 1" class="d-block mt-2 text-warning">
+          <span class="d-block mt-2 text-warning">
             <i class="bi bi-info-circle me-1"></i>
-            {{ organizationsRequiringUpdate.length - 1 }}
-            other organization(s) also require updates.
+            {{ mandatoryUpdateMessage }}
           </span>
         </span>
         <span v-else>
@@ -229,24 +281,6 @@ const handleCompatibilityCancel = () => {
           Please update to continue using the application.
         </span>
       </p>
-
-      <div v-if="compatibilityResult?.hasConflict" class="mt-4">
-        <div class="alert alert-warning text-start" role="alert">
-          <p class="text-small mb-2"><strong>Compatibility Warning:</strong></p>
-          <p class="text-small mb-2">This update may cause issues with other organizations:</p>
-          <ul class="list-unstyled mb-0">
-            <li
-              v-for="conflict in compatibilityResult.conflicts"
-              :key="conflict.serverUrl"
-              class="text-small"
-            >
-              <i class="bi bi-exclamation-circle me-2"></i>
-              <strong>{{ conflict.organizationName }}</strong> - Latest supported version:
-              {{ conflict.latestSupportedVersion }}
-            </li>
-          </ul>
-        </div>
-      </div>
 
       <hr class="separator my-4" />
       <div class="d-flex gap-4 justify-content-center">
@@ -261,10 +295,13 @@ const handleCompatibilityCancel = () => {
 
     <CompatibilityWarningModal
       :show="showCompatibilityWarning"
+      :title="mandatoryCompatibilityTitle"
+      :summary-text="mandatoryCompatibilitySummaryText"
+      :warning-text="compatibilityDisconnectMessage"
       :conflicts="compatibilityResult?.conflicts || []"
-      :suggested-version="compatibilityResult?.suggestedVersion || ''"
-      :is-optional="false"
-      :triggering-org-name="affectedOrg?.nickname || affectedOrg?.serverUrl"
+      :conflicts-title="'Incompatible Organizations'"
+      :cancel-label="mandatoryCompatibilityCancelLabel"
+      :proceed-label="mandatoryCompatibilityProceedLabel"
       @proceed="handleCompatibilityProceed"
       @cancel="handleCompatibilityCancel"
       @update:show="showCompatibilityWarning = $event"
