@@ -8,12 +8,11 @@ describe('RegisteredNodeDeleteTransactionModel', () => {
     );
   });
 
-  it('should return an empty key list', () => {
-    const tx = new RegisteredNodeDeleteTransaction();
+  it('should return registered node id and empty key list', () => {
+    const tx = new RegisteredNodeDeleteTransaction().setRegisteredNodeId(42);
 
     const model = new RegisteredNodeDeleteTransactionModel(tx);
-    const keys = model.getNewKeys();
-
-    expect(keys).toHaveLength(0);
+    expect(model.getRegisteredNodeId()).toBe(42);
+    expect(model.getNewKeys()).toHaveLength(0);
   });
 });

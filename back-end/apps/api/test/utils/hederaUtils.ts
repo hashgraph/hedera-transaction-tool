@@ -21,6 +21,7 @@ import {
   PublicKey,
   RegisteredNodeCreateTransaction,
   RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   SignatureMap,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
@@ -109,6 +110,8 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
     return TransactionType.NODE_DELETE;
   } else if (transaction instanceof RegisteredNodeCreateTransaction) {
     return TransactionType.REGISTERED_NODE_CREATE;
+  } else if (transaction instanceof RegisteredNodeUpdateTransaction) {
+    return TransactionType.REGISTERED_NODE_UPDATE;
   } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
     return TransactionType.REGISTERED_NODE_DELETE;
   } else if (transaction instanceof SystemDeleteTransaction) {
