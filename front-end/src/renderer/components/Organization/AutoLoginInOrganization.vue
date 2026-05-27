@@ -20,7 +20,7 @@ const user = useUserStore();
 
 /* Composables */
 const { getPassword, passwordModalOpened } = usePersonalPassword();
-const { performVersionCheck } = useVersionCheck();
+const { performInitialVersionCheck } = useVersionCheck();
 
 /* State */
 const checked = ref(false);
@@ -41,13 +41,6 @@ const handleAutoLogin = async (password: string | null) => {
     .map(org => ({ id: org.id, nickname: org.nickname, serverUrl: org.serverUrl, key: org.key }));
 
   await user.refetchOrganizations();
-
-  const successfulOrg = loginTriedForOrganizations.value.find(
-    org => !loginFailedForOrganizations.value.some(failed => failed.id === org.id),
-  );
-  if (successfulOrg) {
-    await performVersionCheck(successfulOrg.serverUrl);
-  }
 };
 
 const handleClose = () => (loginsSummaryModalShow.value = false);
@@ -78,6 +71,10 @@ watch(
     if (!checked.value && allLoaded) {
       checked.value = true;
       await openPasswordModalIfRequired();
+      // Run a single consolidated version check across every org now that
+      // org-level auto-signin (if any) has finished. Drives the upgrade
+      // modals via the pending flag — they wait until every org reports in.
+      void performInitialVersionCheck(user.organizations.map(o => o.serverUrl));
     }
   },
 );

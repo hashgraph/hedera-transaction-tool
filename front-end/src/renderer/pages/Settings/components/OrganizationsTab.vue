@@ -10,6 +10,7 @@ import {
   getVersionStatusForOrg,
   getLatestVersionForOrg,
   organizationCompatibilityResults,
+  resetVersionStatusForOrg,
 } from '@renderer/stores/versionState';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -52,6 +53,7 @@ const handleDeleteConnection = async (organizationId: string) => {
   const serverUrl = user.organizations.find(org => org.id === organizationId)?.serverUrl || '';
   ws.disconnect(serverUrl);
   toggleAuthTokenInSessionStorage(serverUrl, '', true);
+  resetVersionStatusForOrg(serverUrl);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
   await setLast(null);

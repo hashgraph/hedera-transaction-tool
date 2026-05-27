@@ -1,8 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue';
-import { createLogger } from '@renderer/utils/logger';
-
-const logger = createLogger('renderer.globalAppProcesses');
 
 import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
@@ -13,17 +10,11 @@ import useLoader from '@renderer/composables/useLoader';
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
-import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useAppVisibility from '@renderer/composables/useAppVisibility';
 
 import { getUseKeychain } from '@renderer/services/safeStorageService';
 import { getUsersCount, resetDataLocal } from '@renderer/services/userService';
 import { getStoredClaim } from '@renderer/services/claimService';
-import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import {
-  getVersionStatusForOrg,
-  organizationCompatibilityResults,
-} from '@renderer/stores/versionState';
 
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import ImportantNote from './components/ImportantNote.vue';
@@ -40,7 +31,6 @@ const tryAutoLogin = useAutoLogin();
 const setupStores = useSetupStores();
 const { select: selectDefaultOrganization } = useDefaultOrganization();
 const { redirectIfRequiredKeysToMigrate } = useRecoveryPhraseHashMigrate();
-const { performVersionCheck, getAllOrganizationVersionData } = useVersionCheck();
 
 /* State */
 const importantNoteRef = ref<InstanceType<typeof ImportantNote> | null>(null);
@@ -74,9 +64,9 @@ const handleBeginMigrationReadyState = async () => {
 
   await user.refetchOrganizations();
 
-  if (user.personal?.isLoggedIn && user.organizations.length > 0) {
-    await checkAllOrganizationVersions();
-  }
+  // Version checks across all orgs are kicked off from AutoLoginInOrganization
+  // (mounted whenever user.personal.isLoggedIn is true), so the same batch
+  // runs for both the auto-login and manual-login paths.
 
   const redirect = await redirectIfRequiredKeysToMigrate();
   if (!redirect) {
@@ -85,72 +75,6 @@ const handleBeginMigrationReadyState = async () => {
 
   await setupStores();
 };
-
-async function checkAllOrganizationVersions(): Promise<void> {
-  try {
-    const versionChecks = user.organizations.map(org => performVersionCheck(org.serverUrl));
-    await Promise.allSettled(versionChecks);
-
-    const orgsRequiringUpdate = user.organizations.filter(org => {
-      const status = getVersionStatusForOrg(org.serverUrl);
-      return status === 'updateAvailable' || status === 'belowMinimum';
-    });
-
-    if (orgsRequiringUpdate.length > 0) {
-      await checkCompatibilityForUpgrades(orgsRequiringUpdate);
-    }
-  } catch (error) {
-    logger.error('Failed to check organization versions on launch', { error });
-  }
-}
-
-async function checkCompatibilityForUpgrades(
-  orgsRequiringUpdate: typeof user.organizations,
-): Promise<void> {
-  const allVersionData = getAllOrganizationVersionData();
-
-  for (const org of orgsRequiringUpdate) {
-    const versionData = allVersionData[org.serverUrl];
-    if (!versionData || !versionData.latestSupportedVersion) {
-      continue;
-    }
-
-    try {
-      const compatibilityResult = await checkCompatibilityAcrossOrganizations(
-        versionData.latestSupportedVersion,
-        org.serverUrl, // Exclude the current org from conflict check
-      );
-
-      organizationCompatibilityResults.value[org.serverUrl] = compatibilityResult;
-
-      if (compatibilityResult.hasConflict) {
-        logger.warn('Compatibility check found conflicts on launch', {
-          serverUrl: org.serverUrl,
-          conflicts: compatibilityResult.conflicts.map(conflict => ({
-            organizationName: conflict.organizationName,
-            serverUrl: conflict.serverUrl,
-            latestSupportedVersion: conflict.latestSupportedVersion,
-          })),
-        });
-      } else {
-        logger.info('Compatibility check passed on launch', { serverUrl: org.serverUrl });
-      }
-    } catch (error) {
-      logger.error('Failed to check compatibility for organization', { serverUrl: org.serverUrl, error });
-      organizationCompatibilityResults.value[org.serverUrl] = null;
-    }
-  }
-
-  if (orgsRequiringUpdate.length > 1) {
-    logger.info('Multiple organizations require updates', {
-      count: orgsRequiringUpdate.length,
-      organizations: orgsRequiringUpdate.map(org => ({
-        name: org.nickname || org.serverUrl,
-        status: getVersionStatusForOrg(org.serverUrl),
-      })),
-    });
-  }
-}
 
 /* Hooks */
 onMounted(async () => {

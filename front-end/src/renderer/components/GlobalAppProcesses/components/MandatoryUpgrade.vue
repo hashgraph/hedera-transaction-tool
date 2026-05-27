@@ -21,6 +21,7 @@ import {
   getVersionStatusForOrg,
   resetVersionStatusForOrg,
   getMostRecentOrganizationRequiringUpdate,
+  initialVersionCheckState,
 } from '@renderer/stores/versionState';
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -57,9 +58,8 @@ const compatibilityResult = computed(() => {
 const showCompatibilityWarning = ref(false);
 
 const shown = computed(() => {
-  if (versionStatus.value === 'belowMinimum') return true;
-
-  return user.organizations.some(org => getVersionStatusForOrg(org.serverUrl) === 'belowMinimum');
+  if (initialVersionCheckState.value !== 'done') return false;
+  return versionStatus.value === 'belowMinimum';
 });
 
 const orgUpdateUrl = computed(() => {

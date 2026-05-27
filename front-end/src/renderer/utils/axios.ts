@@ -10,14 +10,19 @@ import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
 import { FRONTEND_VERSION } from './version';
 import {
-  setOrgVersionBelowMinimum,
   setVersionDataForOrg,
-  organizationCompatibilityResults,
 } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
 
-import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import { ToastManager } from '@renderer/utils/ToastManager';
+const isValidVersionPayload = (
+  data?: Partial<IVersionCheckResponse>,
+): data is IVersionCheckResponse => {
+  return (
+    typeof data?.latestSupportedVersion === 'string' &&
+    typeof data?.minimumSupportedVersion === 'string' &&
+    (typeof data?.updateUrl === 'string' || data?.updateUrl === null)
+  );
+};
 
 function extractServerUrlFromRequest(url: string): string | null {
   if (!url) return null;
@@ -50,59 +55,37 @@ axios.interceptors.request.use(config => {
   return config;
 });
 
+/**
+ * Handles the version-related side effects of an axios error response.
+ * Currently only HTTP 426 (Upgrade Required) is meaningful — the backend
+ * rejected the client as below its minimum supported version and includes
+ * version metadata in the body. Exported for direct testing.
+ */
+export async function handleAxiosResponseError(error: {
+  response?: { status?: number; data?: Partial<IVersionCheckResponse> };
+  config?: { url?: string; baseURL?: string };
+}): Promise<void> {
+  if (error.response?.status !== 426) return;
+
+  try {
+    const requestUrl = error.config?.url || error.config?.baseURL || '';
+    const serverUrl = extractServerUrlFromRequest(requestUrl);
+    if (!serverUrl) return;
+    if (!isValidVersionPayload(error.response.data)) {
+      logger.warn('Ignoring 426 response without valid version payload', { serverUrl });
+      return;
+    }
+    setVersionDataForOrg(serverUrl, error.response.data);
+  } catch (err) {
+    logger.error('Failed handling version response error', err);
+  }
+
+}
+
 axios.interceptors.response.use(
   response => response,
   async error => {
-    if (error.response?.status === 426) {
-      const errorUpdateUrl = error.response.data?.updateUrl || null;
-      const errorLatestVersion = error.response.data?.latestSupportedVersion || null;
-      const errorMinimumVersion = error.response.data?.minimumSupportedVersion || null;
-
-      const requestUrl = error.config?.url || error.config?.baseURL || '';
-      const serverUrl = extractServerUrlFromRequest(requestUrl);
-
-      if (serverUrl) {
-        const versionData: IVersionCheckResponse = {
-          latestSupportedVersion: errorLatestVersion || '',
-          minimumSupportedVersion: errorMinimumVersion || '',
-          updateUrl: errorUpdateUrl,
-        };
-        setVersionDataForOrg(serverUrl, versionData);
-
-        if (errorLatestVersion) {
-          try {
-            const compatibilityResult = await checkCompatibilityAcrossOrganizations(
-              errorLatestVersion,
-              serverUrl,
-            );
-
-            organizationCompatibilityResults.value[serverUrl] = compatibilityResult;
-
-            if (compatibilityResult.hasConflict) {
-              const conflictOrgNames = compatibilityResult.conflicts
-                .map(c => c.organizationName)
-                .join(', ');
-
-              // Show toast notification for compatibility conflicts
-              const toastManager = ToastManager.inject();
-              toastManager.warning(
-                `Update may cause issues with ${conflictOrgNames}. Please review compatibility warnings.`,
-              );
-
-              logger.warn('Version guard compatibility conflict', {
-                serverUrl,
-                conflictCount: compatibilityResult.conflicts.length,
-              });
-            }
-          } catch (compatError) {
-            logger.error('Compatibility check failed', { error: compatError });
-            organizationCompatibilityResults.value[serverUrl] = null;
-          }
-        }
-
-        setOrgVersionBelowMinimum(serverUrl, errorUpdateUrl);
-      }
-    }
+    await handleAxiosResponseError(error);
     return Promise.reject(error);
   },
 );
