@@ -72,7 +72,10 @@ export async function handleAxiosResponseError(error: {
     const serverUrl = extractServerUrlFromRequest(requestUrl);
     if (!serverUrl) return;
     if (!isValidVersionPayload(error.response.data)) {
-      logger.warn('Ignoring 426 response without valid version payload', { serverUrl });
+      logger.warn('Received malformed 426 response; treating as unreachable', {
+        serverUrl,
+        responseData: error.response.data,
+      });
       return;
     }
     setVersionDataForOrg(serverUrl, error.response.data);
