@@ -22,7 +22,7 @@ test.describe('Group transaction item tests @local-transactions', () => {
   test('Verify user can add transaction to the group', async () => {
     await suite.groupPage.addSingleTransactionToGroup();
 
-    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create Transaction');
+    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create');
   });
 
   test('Verify user can edit transaction in the group', async () => {
@@ -51,7 +51,7 @@ test.describe('Group transaction item tests @local-transactions', () => {
     await suite.groupPage.clickTransactionDuplicateButton(0);
 
     //verifying that the transaction is duplicated
-    expect(await suite.groupPage.getTransactionType(1)).toBe('Account Create Transaction');
+    expect(await suite.groupPage.getTransactionType(1)).toBe('Account Create');
 
     await suite.groupPage.clickTransactionEditButton(1);
     await groupAssertions.assertAccountCreateTransactionValues(values);
@@ -75,8 +75,8 @@ test.describe('Group transaction item tests @local-transactions', () => {
     await suite.groupPage.clickOnCancelDeleteAllButton();
 
     expect(await suite.groupPage.isEmptyTransactionTextVisible()).toBe(false);
-    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create Transaction');
-    expect(await suite.groupPage.getTransactionType(1)).toBe('Account Create Transaction');
+    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create');
+    expect(await suite.groupPage.getTransactionType(1)).toBe('Account Create');
   });
 
   test('Verify user can save a transaction group', async () => {
@@ -86,7 +86,7 @@ test.describe('Group transaction item tests @local-transactions', () => {
     await suite.transactionPage.clickOnDraftsMenuButton();
     await suite.transactionPage.clickOnFirstDraftContinueButton();
 
-    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create Transaction');
+    expect(await suite.groupPage.getTransactionType(0)).toBe('Account Create');
 
     await suite.transactionPage.navigateToDrafts();
     await suite.transactionPage.deleteFirstDraft();
