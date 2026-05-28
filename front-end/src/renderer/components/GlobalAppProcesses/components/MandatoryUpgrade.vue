@@ -101,11 +101,8 @@ const affectedOrgName = computed(
 
 const mandatoryUpdateMessage = computed(() => {
   const count = organizationsRequiringUpdate.value.length;
-  if (organizationsRequiringUpdate.value.length > 1) {
-    return `${count} backends currently require this mandatory upgrade. If you continue without updating, all of them will need to be disconnected.`;
-  }
-
-  return 'This backend requires a mandatory upgrade to continue.';
+  if (count <= 1) return '';
+  return `${count} backends currently require this mandatory upgrade. If you continue without updating, all of them will need to be disconnected.`;
 });
 
 const mandatoryCompatibilityTitle = computed(() => 'Update Required - Compatibility Warning');
@@ -197,8 +194,8 @@ const handleCompatibilityProceed = async () => {
     );
     handleDownload();
   } catch (error) {
-      logger.error('Failed to disconnect incompatible backends before update', { error });
-      toastManager.error('Failed to disconnect incompatible backends');
+    logger.error('Failed to disconnect incompatible backends before update', { error });
+    toastManager.error('Failed to disconnect incompatible backends');
   }
 };
 
@@ -256,7 +253,7 @@ const handleCompatibilityCancel = () => {
           <strong>{{ affectedOrg.nickname || affectedOrg.serverUrl }}</strong> requires an update to
           continue.<br />
           Your current version is no longer supported by this organization.
-          <span class="d-block mt-2 text-warning">
+          <span v-if="mandatoryUpdateMessage" class="d-block mt-2 text-warning">
             <i class="bi bi-info-circle me-1"></i>
             {{ mandatoryUpdateMessage }}
           </span>
