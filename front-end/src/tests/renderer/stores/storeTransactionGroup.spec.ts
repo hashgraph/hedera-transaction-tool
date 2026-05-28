@@ -182,6 +182,19 @@ describe('useTransactionGroupStore', () => {
       store.addGroupItem(createGroupItem());
       expect(store.isModified()).toBe(true);
     });
+
+    test('parses transactionBytes only once even when dedup rewrites the validStart', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+      vi.mocked(Transaction.fromBytes).mockClear();
+
+      store.addGroupItem(
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('editGroupItem', () => {
@@ -257,6 +270,20 @@ describe('useTransactionGroupStore', () => {
 
       store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
       expect(store.isModified()).toBe(true);
+    });
+
+    test('parses transactionBytes only once even when dedup rewrites the validStart', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }),
+      );
+      vi.mocked(Transaction.fromBytes).mockClear();
+
+      store.editGroupItem(
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(1);
     });
 
     test('should no-op when seq is a non-numeric string (NaN)', () => {
