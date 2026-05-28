@@ -4,7 +4,6 @@ import { ref } from 'vue';
 import { defineStore } from 'pinia';
 import { KeyList, PublicKey, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
-import { randomUUID } from 'crypto';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import {
@@ -107,7 +106,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
         groupItemsToAdd.push({
-          rowKey: randomUUID(),
+          rowKey: crypto.randomUUID(),
           transactionBytes: transaction.toBytes(),
           type: draft?.type,
           groupId: id,
@@ -155,7 +154,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       ...groupItems.value,
       {
         ...groupItem,
-        rowKey: randomUUID(),
+        rowKey: crypto.randomUUID(),
         ...deriveDisplay(transaction),
       },
     ];
@@ -216,7 +215,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
     const newItem: RenderedGroupItem = {
-      rowKey: randomUUID(),
+      rowKey: crypto.randomUUID(),
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
