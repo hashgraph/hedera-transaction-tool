@@ -51,16 +51,18 @@ export interface RenderedGroupItem extends GroupItem {
 }
 
 /**
- * Computes the precomputed display fields for a freshly-created or freshly-edited
- * group item. Runs `Transaction.fromBytes` once at mutation time so the row
- * template can render from stored strings instead of re-deserializing on every
- * reactive bytes update (e.g. the per-second valid-start rewrite).
+ * Computes precomputed display fields for a group item from either a transaction
+ * instance or its bytes. Accepting a transaction lets hydration paths reuse an
+ * already-deserialized object and avoid redundant parsing.
  */
-function deriveDisplay(transactionBytes: Uint8Array): {
+function deriveDisplay(transactionOrBytes: Transaction | Uint8Array): {
   transactionMemo: string;
   transferSummary: string | null;
 } {
-  const transaction = Transaction.fromBytes(transactionBytes);
+  const transaction =
+    transactionOrBytes instanceof Uint8Array
+      ? Transaction.fromBytes(transactionOrBytes)
+      : transactionOrBytes;
   const transferSummary =
     transaction instanceof TransferTransaction
       ? formatHbarTransfers(transaction.hbarTransfersList)
@@ -120,7 +122,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
           payerAccountId: transaction.transactionId?.accountId?.toString() as string,
           validStart: transaction.transactionId?.validStart?.toDate() as Date,
           description: draft.description,
-          ...deriveDisplay(transactionBytes),
+          ...deriveDisplay(transaction),
         });
       }
     }

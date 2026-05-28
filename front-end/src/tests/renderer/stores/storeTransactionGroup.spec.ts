@@ -43,6 +43,7 @@ vi.mock('@prisma/client', () => ({
 import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsService';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
+import { Transaction } from '@hiero-ledger/sdk';
 import useTransactionGroupStore, {
   type RenderedGroupItem,
 } from '@renderer/stores/storeTransactionGroup';
@@ -116,6 +117,7 @@ describe('useTransactionGroupStore', () => {
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
       const uniqueTimestamps = new Set(timestamps);
       expect(uniqueTimestamps.size).toBe(3);
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(3);
     });
 
   });
@@ -521,6 +523,7 @@ describe('useTransactionGroupStore', () => {
       expect(store.groupItems[0].rowKey).toBeTruthy();
       expect(store.groupItems[1].rowKey).toBeTruthy();
       expect(store.groupItems[0].rowKey).not.toBe(store.groupItems[1].rowKey);
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(2);
     });
   });
 
