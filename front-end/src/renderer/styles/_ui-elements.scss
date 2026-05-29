@@ -1242,22 +1242,3 @@ td .btn {
     background-color: $dark-blue-800;
   }
 }
-
-.transaction-group-button-borderless {
-  color: $black;
-
-  @media (prefers-color-scheme: dark) {
-    color: $white;
-  }
-}
-
-.transaction-group-button {
-  color: $black;
-  min-width: 0;
-  background-color: $light-blue-50;
-
-  @media (prefers-color-scheme: dark) {
-    color: $white;
-    background-color: $dark-blue-600;
-  }
-}
