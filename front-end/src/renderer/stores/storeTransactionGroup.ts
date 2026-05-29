@@ -89,12 +89,10 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     const group = await getGroup(id);
     description.value = group.description;
     if (group.groupValidStart) {
-      if (group.groupValidStart > groupValidStart.value) {
-        groupValidStart.value = group.groupValidStart;
-      } else {
-        groupValidStart.value = new Date();
-      }
-      groupInitialValidStart.value = group.groupValidStart
+      // Baseline for the modified-flag guard in updateTransactionValidStarts.
+      // The picker's actual value is derived from the items below (via the
+      // target/shift), not from this stored field, so we only record it here.
+      groupInitialValidStart.value = group.groupValidStart;
     }
 
     const items = await getGroupItems(id);
@@ -122,13 +120,28 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       }
     }
 
-    groupItems.value = groupItemsToAdd;
-    updateTransactionValidStarts(groupValidStart.value);
+    groupItemsToAdd.sort((a, b) => a.validStart.getTime() - b.validStart.getTime());
+    // seq mirrors the array index (the order shift preserves below).
+    groupItems.value = groupItemsToAdd.map((item, index) => ({
+      ...item,
+      seq: index.toString(),
+    }));
+
+    // Never load items into the past: shift the whole group forward to "now" if
+    // the earliest item is stale, otherwise anchor on the earliest item. This
+    // call also establishes the post-load invariants (sorted order, seq === index,
+    // groupValidStart === first item). When target === earliest the delta is 0,
+    // so updateTransactionValidStarts re-serializes nothing and just runs those
+    // syncs — cheap enough that guarding the call buys nothing.
+    const earliestItem = earliestItemTime();
+    const target = Math.max(earliestItem ?? Date.now(), Date.now());
+    updateTransactionValidStarts(new Date(target));
   }
 
   function clearGroup() {
     groupItems.value = [];
     groupValidStart.value = new Date();
+    groupInitialValidStart.value = new Date();
     description.value = '';
     sequential.value = false;
     modified.value = false;
@@ -158,6 +171,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
         ...deriveDisplay(transaction),
       },
     ];
+    sortAndSyncGroupItems();
     setModified();
   }
 
@@ -191,11 +205,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       },
       ...groupItems.value.slice(editIndex + 1),
     ];
+    sortAndSyncGroupItems();
     setModified();
   }
 
   function removeGroupItem(index: number) {
     groupItems.value = [...groupItems.value.slice(0, index), ...groupItems.value.slice(index + 1)];
+    sortAndSyncGroupItems();
     setModified();
   }
 
@@ -206,7 +222,6 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
    * @param index
    */
   function duplicateGroupItem(index: number) {
-    const lastItem = groupItems.value[groupItems.value.length - 1];
     const baseItem = groupItems.value[index];
     const newDate = findUniqueValidStart(
       baseItem.payerAccountId,
@@ -219,7 +234,8 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       transactionBytes: transaction.toBytes(),
       type: baseItem.type,
       description: baseItem.description,
-      seq: (Number.parseInt(lastItem.seq) + 1).toString(),
+      // seq is assigned authoritatively by sortAndSyncGroupItems below.
+      seq: '',
       keyList: baseItem.keyList,
       observers: baseItem.observers,
       approvers: baseItem.approvers,
@@ -229,7 +245,43 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     };
 
     groupItems.value = [...groupItems.value, newItem];
+    sortAndSyncGroupItems();
     setModified();
+  }
+
+  function earliestItemTime(): number | null {
+    if (groupItems.value.length === 0) return null;
+    return groupItems.value.reduce(
+      (min, item) => Math.min(min, item.validStart.getTime()),
+      Infinity,
+    );
+  }
+
+  // Keep groupItems ordered by validStart (ascending), renumber each item's
+  // seq to its new array index, and mirror groupValidStart to the earliest
+  // (now first) item. Sorting the array itself — not just the rendered view —
+  // means the on-screen order, the v-for index, the seq, and the persisted
+  // order all agree, and editing an item's time reorders the row.
+  //
+  // seq is purely the array index: the persistence layer always writes
+  // `seq: index.toString()` (see transactionGroupsService) and editGroupItem
+  // consumes seq as an index, so keeping it in sync here makes it truthful
+  // rather than a value that goes stale after a reorder.
+  //
+  // rowKey travels with each item, so Vue moves the existing DOM rows instead
+  // of rebuilding them.
+  function sortAndSyncGroupItems() {
+    groupItems.value = [...groupItems.value]
+      .sort((a, b) => a.validStart.getTime() - b.validStart.getTime())
+      .map((item, index) => {
+        const seq = index.toString();
+        // Preserve object identity when nothing changed to avoid needless churn.
+        return item.seq === seq ? item : { ...item, seq };
+      });
+    const earliest = earliestItemTime();
+    if (earliest !== null) {
+      groupValidStart.value = new Date(earliest);
+    }
   }
 
   /**
@@ -321,38 +373,66 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function updateTransactionValidStarts(newGroupValidStart: Date) {
-    // This method ensures that the group satisfies the following two invariants:
-    //  - The valid start time of each group item is unique within the group (for a given payer)
-    //  - The valid start time of each group item is >= to the group's valid start time
+    // Shift every item by (newGroupValidStart - earliestItem) so the relative
+    // offsets between transactions are preserved and the earliest item ends up
+    // at newGroupValidStart.
 
-    // Items are updated in-place so that findUniqueValidStart sees
-    // already-assigned timestamps from earlier items in the same pass
-    groupItems.value.forEach((groupItem, index) => {
-      const targetValidStart =
-        newGroupValidStart.getTime() > groupItem.validStart.getTime()
-          ? newGroupValidStart
-          : groupItem.validStart;
-      const updatedValidStart = findUniqueValidStart(
-        groupItem.payerAccountId,
-        targetValidStart.getTime(),
-        index,
-      );
-      const transaction = Transaction.fromBytes(groupItem.transactionBytes);
+    if (groupItems.value.length === 0) {
+      groupValidStart.value = newGroupValidStart;
+      return;
+    }
+
+    const earliest = earliestItemTime() as number;
+    const delta = newGroupValidStart.getTime() - earliest;
+
+    // Compute shifted timestamps in a separate buffer so transient duplicates
+    // with not-yet-shifted neighbors don't trip the dedupe pass.
+    const shifted = groupItems.value.map(item => ({
+      ...item,
+      validStart: new Date(item.validStart.getTime() + delta),
+    }));
+
+    // Pure shift preserves per-payer uniqueness, but stay defensive against
+    // any duplicates that may have slipped in (e.g. malformed loaded data).
+    for (let i = 0; i < shifted.length; i++) {
+      let candidate = shifted[i].validStart.getTime();
+      let collides = true;
+      while (collides) {
+        collides = false;
+        for (let j = 0; j < shifted.length; j++) {
+          if (i === j) continue;
+          if (
+            shifted[j].payerAccountId === shifted[i].payerAccountId &&
+            shifted[j].validStart.getTime() === candidate
+          ) {
+            collides = true;
+            candidate += 1;
+            break;
+          }
+        }
+      }
+      shifted[i] = { ...shifted[i], validStart: new Date(candidate) };
+    }
+
+    groupItems.value = shifted.map((item, index) => {
+      if (item.validStart.getTime() === groupItems.value[index].validStart.getTime()) {
+        return item;
+      }
+      const transaction = Transaction.fromBytes(item.transactionBytes);
       transaction.setTransactionId(
-        createTransactionId(groupItem.payerAccountId, updatedValidStart),
+        createTransactionId(item.payerAccountId, item.validStart),
       );
 
-      groupItems.value[index] = {
-        ...groupItem,
-        transactionBytes: transaction.toBytes(),
-        validStart: updatedValidStart,
-      };
+      return { ...item, transactionBytes: transaction.toBytes() };
     });
-    groupItems.value = [...groupItems.value];
+    // A pure shift preserves order, but the defensive dedupe above can nudge
+    // items past one another; re-sort + renumber seq + sync groupValidStart so
+    // the invariant (sorted, seq === index, groupValidStart === first item) holds.
+    sortAndSyncGroupItems();
 
     const now = new Date();
     if (
-      newGroupValidStart !== groupInitialValidStart.value &&
+      newGroupValidStart.getTime() !== groupInitialValidStart.value.getTime() &&
       (newGroupValidStart > now || groupInitialValidStart.value > now)
     ) {
       setModified();
