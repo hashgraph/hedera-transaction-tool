@@ -1,14 +1,8 @@
 import * as semver from 'semver';
-import { createLogger } from '@renderer/utils/logger';
-
-const logger = createLogger('renderer.versionCompatibility');
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 
 import { FRONTEND_VERSION } from '@renderer/utils/version';
-
-import useUserStore from '@renderer/stores/storeUser';
-import { getLatestVersionForOrg } from '@renderer/stores/versionState';
 
 export type CompatibilityConflict = {
   serverUrl: string;
@@ -24,63 +18,54 @@ export type CompatibilityCheckResult = {
   isOptional: boolean;
 };
 
-export async function checkCompatibilityAcrossOrganizations(
-  suggestedVersion: string,
-  excludingServerUrl?: string,
-): Promise<CompatibilityCheckResult> {
-  const userStore = useUserStore();
+/**
+ * Pure comparison primitive. Reports any organizations whose latest supported
+ * version is below the triggering org's minimum supported version. The
+ * returned/resulting suggestedVersion remains the triggering org's latest
+ * supported version for modal display. Takes its inputs explicitly so it has
+ * no dependency on the version store and can be composed into a `computed`
+ * without creating an import cycle. No logging — this runs on every reactive
+ * recompute; any signal worth logging belongs at the event boundary where
+ * fresh data lands.
+ */
+export function checkCompatibilityAcrossOrganizations(
+  triggeringServerUrl: string,
+  triggeringVersionData: IVersionCheckResponse,
+  organizations: Array<{ serverUrl: string; nickname?: string }>,
+  latestVersionByServer: { [serverUrl: string]: string | null },
+): CompatibilityCheckResult {
   const conflicts: CompatibilityConflict[] = [];
 
-  const cleanSuggestedVersion = semver.clean(suggestedVersion);
-  if (!cleanSuggestedVersion) {
-    logger.warn('Invalid suggested version format', { suggestedVersion });
+  const cleanSuggestedVersion = semver.clean(triggeringVersionData.latestSupportedVersion);
+  const cleanMinimumVersion = semver.clean(triggeringVersionData.minimumSupportedVersion);
+  if (!cleanSuggestedVersion || !cleanMinimumVersion) {
     return {
       hasConflict: false,
       conflicts: [],
-      suggestedVersion: null,
+      suggestedVersion: cleanSuggestedVersion,
       isOptional: true,
     };
   }
 
-  for (const org of userStore.organizations) {
-    if (excludingServerUrl && org.serverUrl === excludingServerUrl) {
+  for (const org of organizations) {
+    if (org.serverUrl === triggeringServerUrl) {
       continue;
     }
 
-    const orgLatestVersion = getLatestVersionForOrg(org.serverUrl);
-    const conflictVersion = {
-      serverUrl: org.serverUrl,
-      organizationName: org.nickname || org.serverUrl,
-      latestSupportedVersion: orgLatestVersion,
-      suggestedVersion: cleanSuggestedVersion,
-    };
-
-    if (!orgLatestVersion) {
-      logger.warn('No version supplied for organization', { serverUrl: org.serverUrl });
-      conflicts.push(conflictVersion);
-      continue;
-    }
+    const orgLatestVersion = latestVersionByServer[org.serverUrl] ?? null;
+    if (!orgLatestVersion) continue;
 
     const cleanOrgLatestVersion = semver.clean(orgLatestVersion);
-    if (!cleanOrgLatestVersion) {
-      logger.warn('Invalid version format for organization', { serverUrl: org.serverUrl, orgLatestVersion });
-      conflicts.push(conflictVersion);
-      continue;
-    }
+    if (!cleanOrgLatestVersion) continue;
 
-    if (semver.gt(cleanSuggestedVersion, cleanOrgLatestVersion)) {
-      conflicts.push(conflictVersion);
+    if (semver.gt(cleanMinimumVersion, cleanOrgLatestVersion)) {
+      conflicts.push({
+        serverUrl: org.serverUrl,
+        organizationName: org.nickname || org.serverUrl,
+        latestSupportedVersion: orgLatestVersion,
+        suggestedVersion: cleanSuggestedVersion,
+      });
     }
-  }
-
-  if (conflicts.length > 0) {
-    logger.warn('Compatibility check found conflicts', {
-      suggestedVersion: cleanSuggestedVersion,
-      conflicts: conflicts.map(c => ({
-        organizationName: c.organizationName,
-        latestSupportedVersion: c.latestSupportedVersion,
-      })),
-    });
   }
 
   return {
@@ -88,39 +73,6 @@ export async function checkCompatibilityAcrossOrganizations(
     conflicts,
     suggestedVersion: cleanSuggestedVersion,
     isOptional: true,
-  };
-}
-
-export async function checkCompatibilityForNewOrg(
-  newOrgServerUrl: string,
-  newOrgVersionData: IVersionCheckResponse,
-): Promise<CompatibilityCheckResult> {
-  if (!newOrgVersionData.updateUrl) {
-    return {
-      hasConflict: false,
-      conflicts: [],
-      suggestedVersion: null,
-      isOptional: true,
-    };
-  }
-
-  const cleanCurrentVersion = semver.clean(FRONTEND_VERSION);
-  const cleanMinimumVersion = newOrgVersionData.minimumSupportedVersion
-    ? semver.clean(newOrgVersionData.minimumSupportedVersion)
-    : null;
-
-  const isOptional =
-    !cleanCurrentVersion || !cleanMinimumVersion
-      ? true
-      : semver.gte(cleanCurrentVersion, cleanMinimumVersion);
-
-  const suggestedVersion = newOrgVersionData.latestSupportedVersion;
-
-  const result = await checkCompatibilityAcrossOrganizations(suggestedVersion, newOrgServerUrl);
-
-  return {
-    ...result,
-    isOptional,
   };
 }
 

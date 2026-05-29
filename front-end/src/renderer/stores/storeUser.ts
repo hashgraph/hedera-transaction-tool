@@ -23,7 +23,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import { safeAwait } from '@renderer/utils';
 import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
-import { getVersionStatusForOrg } from './versionState';
+import { getVersionStatusForOrg, resetVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
@@ -231,9 +231,12 @@ const useUserStore = defineStore('user', () => {
   };
 
   const deleteOrganization = async (organizationId: string) => {
+    const removed = organizations.value.find(org => org.id === organizationId);
     organizations.value = organizations.value.filter(org => org.id !== organizationId);
+    if (removed) resetVersionStatusForOrg(removed.serverUrl);
     await ush.deleteOrganizationConnection(organizationId, personal.value);
   };
+
 
   const getJwtToken = (organizationId?: string): string | null => {
     return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;

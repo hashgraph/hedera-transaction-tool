@@ -21,7 +21,7 @@ export const login = async (
 
       return { id: data.user.id, jwtToken: data.accessToken };
     },
-    'Failed to Sign in Organization',
+    'Failed to Sign In to Organization',
     'Invalid email or password',
   );
 
