@@ -48,12 +48,14 @@ import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllCo
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
 import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
+import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
 
 /* Types */
 type ActionButton =
   | 'Reject All'
   | 'Approve All'
   | 'Sign All'
+  | 'Sign All & Next'
   | 'Cancel All'
   | 'Export All (Transaction Tool 1.0)';
 
@@ -63,6 +65,7 @@ const logger = createLogger('renderer.page.transactionGroupDetails');
 const reject: ActionButton = 'Reject All';
 const approve: ActionButton = 'Approve All';
 const sign: ActionButton = 'Sign All';
+const signAndNext: ActionButton = 'Sign All & Next';
 const cancel: ActionButton = 'Cancel All';
 const exportName: ActionButton = 'Export All (Transaction Tool 1.0)';
 
@@ -127,6 +130,7 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 });
 
 const signAllStarted = ref(false);
+const goNextAfterSignAll = ref(false);
 const cancelAllStarted = ref(false);
 const exportAllStarted = ref(false);
 const approveAllStarted = ref(false);
@@ -235,7 +239,14 @@ const handleDetails = async (id: number) => {
 };
 
 const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
-  if (groupId !== null) {
+  if (goNextAfterSignAll.value) {
+    // We route to the next transaction
+    if (nextTransaction.hasNext) {
+      await nextTransaction.routeToNext(router);
+    } else {
+      await nextTransaction.routeUp(router);
+    }
+  } else if (groupId !== null) {
     await fetchGroup(groupId);
   }
 };
@@ -248,7 +259,9 @@ const handleAction = async (value: ActionButton) => {
       isApproved.value = value === approve;
       break;
     case sign:
+    case signAndNext:
       signAllStarted.value = true;
+      goNextAfterSignAll.value = value === signAndNext;
       break;
     case cancel:
       cancelAllStarted.value = true;
@@ -366,7 +379,6 @@ async function fetchGroup(id: string | number) {
       }
 
       await updateFirstSignableGroupItemAfterFetch();
-
     } catch (error) {
       router.back();
       throw error;
@@ -411,7 +423,16 @@ async function fetchGroupOnNotif(groupId: string | number) {
             <NextTransactionCursor />
             <template v-if="visibleButtons.length > 0">
               <div>
+                <SplitSignButtonDropdown
+                  :action-text="sign"
+                  :action-next-text="signAndNext"
+                  v-if="visibleButtons[0] === sign"
+                  :disabled="Boolean(loadingStates[visibleButtons[0]])"
+                  :loading="Boolean(loadingStates[sign])"
+                  :loading-text="loadingStates[sign] || ''"
+                />
                 <AppButton
+                  v-else
                   :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
                   :data-testid="buttonsDataTestIds[visibleButtons[0]]"
                   :disabled="Boolean(loadingStates[visibleButtons[0]])"
