@@ -16,7 +16,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
-import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 /* Props */
 const props = defineProps<{
@@ -34,8 +33,6 @@ const user = useUserStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
-const { isDismissed } =
-  useVersionCheck();
 
 /* State */
 const nickname = ref('');
@@ -57,8 +54,6 @@ const handleAdd = async () => {
       throw new Error('Organization does not exist. Please check the server URL');
     }
 
-    // Suppress the version check warning for adding organizations
-    isDismissed.value = true;
 
     const organization = await addOrganization({
       nickname: nickname.value.trim() || `Organization ${user.organizations.length + 1}`,
