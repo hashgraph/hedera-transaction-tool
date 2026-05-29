@@ -1,22 +1,16 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useElectronUpdater from '@renderer/composables/useElectronUpdater';
 import { UPDATE_ERROR_MESSAGES } from '@shared/constants';
 
-import { checkCompatibilityAcrossOrganizations } from '@renderer/services/organization/versionCompatibility';
-import type { CompatibilityConflict } from '@renderer/services/organization/versionCompatibility';
-
 import {
-  getAllOrganizationVersions,
-  getVersionStatusForOrg,
+  organizationCompatibilityResults,
   triggeringOrganizationServerUrl,
+  initialVersionCheckState,
 } from '@renderer/stores/versionState';
-import useUserStore from '@renderer/stores/storeUser';
-import { createLogger } from '@renderer/utils/logger';
-
-const logger = createLogger('renderer.component.optionalUpgrade');
 
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import CompatibilityWarningModal from '@renderer/components/Organization/CompatibilityWarningModal.vue';
@@ -37,26 +31,28 @@ const {
   installUpdate,
   cancelUpdate
 } = useElectronUpdater();
-const user = useUserStore();
+const route = useRoute();
 
-const compatibilityResult = ref<{
-  hasConflict: boolean;
-  conflicts: CompatibilityConflict[];
-  suggestedVersion: string | null;
-  isOptional: boolean;
-} | null>(null);
-const showCompatibilityWarning = ref(false);
-const isCheckingCompatibility = ref(false);
-
-const affectedOrg = computed(() => {
-  const serverUrl =
-    triggeringOrganizationServerUrl.value;
+const compatibilityResult = computed(() => {
+  const serverUrl = triggeringOrganizationServerUrl.value;
   if (!serverUrl) return null;
-  return user.organizations.find(org => org.serverUrl === serverUrl) || null;
+  return organizationCompatibilityResults.value[serverUrl] || null;
 });
+
+const showCompatibilityWarning = ref(false);
+
+const optionalCompatibilityTitle = computed(() => 'Update Compatibility Warning');
+
+const suggestedVersionLabel = computed(
+  () => compatibilityResult.value?.suggestedVersion || latestVersion.value || '',
+);
+
+const conflictCount = computed(() => compatibilityResult.value?.conflicts.length ?? 0);
 
 const shown = computed(
   () =>
+    route.name !== 'migrate' &&
+    initialVersionCheckState.value === 'done' &&
     versionStatus.value === 'updateAvailable' &&
     !isDismissed.value,
 );
@@ -100,58 +96,13 @@ const handleRetry = () => {
   }
 };
 
-const runCompatibilityCheck = async () => {
-  if (
-    versionStatus.value !== 'updateAvailable' ||
-    !latestVersion.value ||
-    isDismissed.value ||
-    isCheckingCompatibility.value
-  ) {
-    return;
-  }
-
-  isCheckingCompatibility.value = true;
-
-  try {
-    const orgsWithOptionalUpdates = user.organizations.filter(
-      org => getVersionStatusForOrg(org.serverUrl) === 'updateAvailable',
-    );
-
-    if (orgsWithOptionalUpdates.length === 0) {
-      return;
-    }
-
-    const triggeringOrg = orgsWithOptionalUpdates[0];
-    const allVersions = getAllOrganizationVersions();
-    const versionData = allVersions[triggeringOrg.serverUrl];
-
-    if (versionData?.latestSupportedVersion) {
-      const result = await checkCompatibilityAcrossOrganizations(
-        versionData.latestSupportedVersion,
-        triggeringOrg.serverUrl,
-      );
-
-      if (result.hasConflict) {
-        compatibilityResult.value = result;
-        showCompatibilityWarning.value = true;
-      }
-    }
-  } catch (error) {
-    logger.error('Compatibility check failed', { error });
-  } finally {
-    isCheckingCompatibility.value = false;
-  }
-};
-
 watch(
-  () => shown.value,
-  newVal => {
-    compatibilityResult.value = null;
-    showCompatibilityWarning.value = false;
-    if (newVal) {
-      void runCompatibilityCheck();
-    }
+  [shown, compatibilityResult],
+  ([isShown, compatResult]) => {
+    showCompatibilityWarning.value =
+      isShown && compatResult?.hasConflict === true;
   },
+  { immediate: true },
 );
 </script>
 <template>
@@ -198,13 +149,35 @@ watch(
     <CompatibilityWarningModal
       v-if="compatibilityResult"
       v-model:show="showCompatibilityWarning"
+      :title="optionalCompatibilityTitle"
       :conflicts="compatibilityResult.conflicts || []"
-      :suggested-version="compatibilityResult.suggestedVersion || latestVersion || ''"
-      :is-optional="true"
-      :triggering-org-name="affectedOrg ? affectedOrg.nickname || affectedOrg.serverUrl : ''"
+      :conflicts-title="'Conflicting Organizations'"
+      :cancel-label="'Not Now'"
+      :proceed-label="'Update Now'"
       @proceed="handleUpdate"
       @cancel="handleCancel"
-    />
+    >
+      <template #summary>
+        <template v-if="suggestedVersionLabel">
+          A new version (<strong>{{ suggestedVersionLabel }}</strong>) is available. Updating is
+          optional &mdash; your current version is still fully supported.
+        </template>
+        <template v-else>
+          A new version is available. Updating is optional &mdash; your current version is still
+          fully supported.
+        </template>
+      </template>
+
+      <template v-if="conflictCount > 0" #warning>
+        <span class="text-primary text-bold">Update Now</span>
+        will install the update, but
+        <template v-if="conflictCount === 1">the backend listed below</template>
+        <template v-else>the backends listed below</template>
+        will become incompatible.
+        <span class="text-secondary text-bold">Not Now</span>
+        keeps you on your current version.
+      </template>
+    </CompatibilityWarningModal>
   </AppModal>
 </template>
 

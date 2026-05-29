@@ -21,6 +21,7 @@ import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
 
 import useUserStore from './storeUser';
 import useWebsocketConnection from './storeWebsocketConnection';
+import useOrganizationConnection from './storeOrganizationConnection';
 import useNetworkStore from './storeNetwork';
 import type { ConnectedOrganization } from '@renderer/types';
 
@@ -29,6 +30,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   const network = useNetworkStore();
   const user = useUserStore();
   const ws = useWebsocketConnection();
+  const orgConnection = useOrganizationConnection();
 
   /* State */
   const notificationsPreferences = ref({
@@ -77,11 +79,15 @@ const useNotificationsStore = defineStore('notifications', () => {
     return null;
   });
 
+  const connectedOrganizations = computed(() => {
+    if (!isUserLoggedIn(user.personal)) return [];
+    return user.organizations.filter(
+      org => orgConnection.getConnectionStatus(org.serverUrl) !== 'disconnected',
+    );
+  });
+
   const organizationServerUrls = computed(() => {
-    if (isUserLoggedIn(user.personal)) {
-      return user.organizations.map(o => o.serverUrl);
-    }
-    return [];
+    return connectedOrganizations.value.map(o => o.serverUrl);
   });
 
   const currentNotificationsKey = computed(() => {
@@ -142,7 +148,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     notificationsQueue = notificationsQueue.then(async () => {
       const severUrls = organizationServerUrls.value;
       const results = await Promise.allSettled(
-        user.organizations.map(o => getAllInAppNotifications(o.serverUrl, true)),
+        connectedOrganizations.value.map(o => getAllInAppNotifications(o.serverUrl, true)),
       );
 
       for (let i = 0; i < results.length; i++) {
@@ -156,7 +162,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function listenForUpdates() {
-    const serverUrls = user.organizations.map(o => o.serverUrl);
+    const serverUrls = organizationServerUrls.value;
     for (const serverUrl of serverUrls) {
       ws.on(serverUrl, NOTIFICATIONS_NEW, e => {
         const newNotifications: INotificationReceiver[] = e;

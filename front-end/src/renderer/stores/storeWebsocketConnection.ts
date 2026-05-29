@@ -44,7 +44,7 @@ const useWebsocketConnection = defineStore(
         const connectionStatus = orgConnection.getConnectionStatus(serverUrl);
         const disconnectReason = orgConnection.getDisconnectReason(serverUrl);
 
-        if (connectionStatus === 'disconnected' && disconnectReason === 'upgradeRequired') {
+        if (connectionStatus === 'disconnected') {
           logger.info('Skipping websocket setup for disconnected organization', {
             disconnectReason,
             serverUrl,

@@ -46,7 +46,11 @@ export const historyTitle = 'History';
 /* Local Storage */
 export const LOCAL_STORAGE_IMPORTANT_NOTE_ACCEPTED = 'important-note-accepted';
 export const HTX_USER = 'htx_user';
+export const LOCAL_STORAGE_ORG_VERSION_DATA = 'org-version-data';
 
 /* Session Storage */
 export const SESSION_STORAGE_AUTH_TOKEN_PREFIX = 'auth-token-';
 export const SESSION_STORAGE_DISMISSED_UPDATE_PROMPT = 'dismissed-update-prompt';
+
+/* Version check */
+export const VERSION_CHECK_TIMEOUT_MS = 10_000;
