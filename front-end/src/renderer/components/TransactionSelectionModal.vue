@@ -62,6 +62,14 @@ const transactionGroups = computed<MenuGroup[]>(() => {
           label: 'Registered Node Create',
           name: transactionTypeKeys.registeredNodeCreate,
         },
+        {
+          label: 'Registered Node Update',
+          name: transactionTypeKeys.registeredNodeUpdate,
+        },
+        {
+          label: 'Registered Node Delete',
+          name: transactionTypeKeys.registeredNodeDelete,
+        },
       ],
     },
     {
@@ -81,7 +89,7 @@ const transactionGroups = computed<MenuGroup[]>(() => {
 </script>
 <template>
   <AppModal v-model:show="show" class="large-modal">
-    <div class="p-5" style="height: 330px">
+    <div class="p-5">
       <div class="d-flex align-items-center">
         <i
           class="bi bi-x-lg cursor-pointer me-5"
@@ -104,7 +112,7 @@ const transactionGroups = computed<MenuGroup[]>(() => {
           </template>
         </div>
         <div class="col-7">
-          <div class="border-start ps-2">
+          <div class="border-start ps-2" style="height: 330px">
             <template
               v-for="(item, idx) in transactionGroups[activeGroupIndex].items"
               :key="isLinkItem(item) ? item.name : `sep-${idx}`"

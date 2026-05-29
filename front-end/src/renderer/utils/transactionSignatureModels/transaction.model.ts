@@ -3,6 +3,7 @@ import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hiero
 import { compareKeys } from '../sdk';
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 import type { NodeByIdCache } from '@renderer/caches/mirrorNode/NodeByIdCache.ts';
+import type { RegisteredNodeByIdCache } from '@renderer/caches/mirrorNode/RegisteredNodeByIdCache';
 import type { ConnectedOrganization } from '@renderer/types';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
@@ -48,14 +49,22 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     _mirrorNodeLink: string,
     _accountInfoCache: AccountByIdCache,
     _nodeInfoCache: NodeByIdCache,
-  ): Promise<{nodeId: number, key: Key} | null> {
+  ): Promise<{ nodeId: number; key: Key } | null> {
+    return null;
+  }
+
+  async getRegisteredNodeKeys(
+    _mirrorNodeLink: string,
+    _accountInfoCache: AccountByIdCache,
+    _registeredNodeInfoCache: RegisteredNodeByIdCache,
+  ): Promise<{ registeredNodeId: number; key: Key } | null> {
     return null;
   }
 
   async getNewNodeAccountKeys(
     _mirrorNodeLink: string,
     _accountInfoCache: AccountByIdCache,
-  ): Promise<{accountId: string, key: Key} | null> {
+  ): Promise<{ accountId: string; key: Key } | null> {
     return null;
   }
 
@@ -63,6 +72,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     mirrorNodeLink: string,
     accountInfoCache: AccountByIdCache,
     nodeInfoCache: NodeByIdCache,
+    registeredNodeInfoCache: RegisteredNodeByIdCache,
     publicKeyOwnerCache: PublicKeyOwnerCache,
     organization: ConnectedOrganization | null,
   ): Promise<SignatureAudit> {
@@ -71,6 +81,11 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const receiverAccounts = this.getReceiverAccounts();
     const newKeys = this.getNewKeys() ?? [];
     const nodeKeys = await this.getNodeKeys(mirrorNodeLink, accountInfoCache, nodeInfoCache);
+    const registeredNodeKeys = await this.getRegisteredNodeKeys(
+      mirrorNodeLink,
+      accountInfoCache,
+      registeredNodeInfoCache,
+    );
     const newNodeKeys = await this.getNewNodeAccountKeys(mirrorNodeLink, accountInfoCache);
 
     /* Create result objects */
@@ -155,6 +170,13 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       const { accountId, key } = newNodeKeys;
       signatureKeys.push(key);
       newNodeAccountKeys[accountId] = key;
+      currentKeyList.push(key);
+    }
+
+    if (registeredNodeKeys) {
+      const { registeredNodeId, key } = registeredNodeKeys;
+      signatureKeys.push(key);
+      nodeAdminKeys[registeredNodeId] = key;
       currentKeyList.push(key);
     }
 

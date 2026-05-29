@@ -19,6 +19,7 @@ import { COUNCIL_ACCOUNTS } from '@app/common/constants';
 import { Transaction } from '@entities';
 import { AccountInfoParsed, NodeInfoParsed } from '@app/common/types';
 import { TimestampRange } from '@app/common/schemas';
+import { MirrorNodeClient } from '@app/common/transaction-signature/mirror-node.client';
 
 // ---------------------------------------------------------------------------
 // Helpers / shared mocks
@@ -80,6 +81,7 @@ const makeNodeInfo = (
 const makeTransaction = (overrides: Partial<Transaction> = {}): Transaction =>
   ({
     transactionBytes: Buffer.from('fake-bytes'),
+    mirrorNetwork: "previewnet",
     ...overrides,
   } as unknown as Transaction);
 
@@ -90,6 +92,7 @@ function buildTransactionModel(overrides: any = {}) {
     getReceiverAccounts: jest.fn().mockReturnValue(new Set<string>()),
     getNewKeys: jest.fn().mockReturnValue([]),
     getNodeId: jest.fn().mockReturnValue(null),
+    getRegisteredNodeId: jest.fn().mockReturnValue(null),
     ...overrides,
   };
 }
@@ -111,11 +114,16 @@ async function createService() {
     getNodeInfoForTransaction: jest.fn(),
   } as jest.Mocked<Pick<NodeCacheService, 'getNodeInfoForTransaction'>>;
 
+  const mirrorNodeClientMock = {
+    fetchRegisteredNodeInfo: jest.fn(),
+  } as jest.Mocked<Pick<MirrorNodeClient, 'fetchRegisteredNodeInfo'>>;
+
   const module: TestingModule = await Test.createTestingModule({
     providers: [
       TransactionSignatureService,
       { provide: AccountCacheService, useValue: accountCacheMock },
       { provide: NodeCacheService, useValue: nodeCacheMock },
+      { provide: MirrorNodeClient, useValue: mirrorNodeClientMock },
     ],
   }).compile();
 
@@ -123,6 +131,7 @@ async function createService() {
     service: module.get<TransactionSignatureService>(TransactionSignatureService),
     accountCacheMock,
     nodeCacheMock,
+    mirrorNodeClientMock,
   };
 }
 
@@ -194,6 +203,7 @@ describe('TransactionSignatureService', () => {
   let service: TransactionSignatureService;
   let accountCacheMock: jest.Mocked<AccountCacheService>;
   let nodeCacheMock: jest.Mocked<NodeCacheService>;
+  let mirrorNodeClientMock: jest.Mocked<MirrorNodeClient>;
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -201,6 +211,7 @@ describe('TransactionSignatureService', () => {
     service = setup.service;
     accountCacheMock = setup.accountCacheMock as jest.Mocked<AccountCacheService>;
     nodeCacheMock = setup.nodeCacheMock as jest.Mocked<NodeCacheService>;
+    mirrorNodeClientMock = setup.mirrorNodeClientMock as jest.Mocked<MirrorNodeClient>;
   });
 
   // -------------------------------------------------------------------------
@@ -355,6 +366,50 @@ describe('TransactionSignatureService', () => {
       expect(nodeCacheMock.getNodeInfoForTransaction).toHaveBeenCalledWith(expect.anything(), 0);
       expect((result as unknown as AsMockKeyList).getItems()).toContainEqual(mockKey('admin-key'));
     });
+
+    it('does NOT call addRegisteredNodeKeys when registeredNodeId is null', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({ getRegisteredNodeId: jest.fn().mockReturnValue(null) }),
+      );
+      accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
+        makeAccountInfo('fee-payer-key'),
+      );
+
+      await service.computeSignatureKey(makeTransaction());
+
+      expect(mirrorNodeClientMock.fetchRegisteredNodeInfo).not.toHaveBeenCalled();
+    });
+
+    it('calls addRegisteredNodeKeys when registeredNodeId is provided', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({ getRegisteredNodeId: jest.fn().mockReturnValue(5) }),
+      );
+      accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
+        makeAccountInfo('fee-payer-key'),
+      );
+
+      await service.computeSignatureKey(makeTransaction());
+
+      expect(mirrorNodeClientMock.fetchRegisteredNodeInfo).toHaveBeenCalledWith(5, 'previewnet');
+    });
+
+    it('calls addRegisteredNodeKeys when registeredNodeId is provided (registered node ID zero must not be skipped)', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({ getRegisteredNodeId: jest.fn().mockReturnValue(0) }),
+      );
+      accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
+        makeAccountInfo('fee-payer-key'),
+      );
+
+      await service.computeSignatureKey(makeTransaction());
+
+      expect(mirrorNodeClientMock.fetchRegisteredNodeInfo).toHaveBeenCalledWith(0, 'previewnet');
+    });
+
+
   });
 
   // -------------------------------------------------------------------------

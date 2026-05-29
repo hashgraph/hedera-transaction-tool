@@ -1,12 +1,4 @@
 import {
-  ServiceEndpoint,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
-  Timestamp,
-  type Transaction,
-} from '@hiero-ledger/sdk';
-
-import {
   AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
   AccountDeleteTransaction,
@@ -24,8 +16,15 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   type RegisteredServiceEndpoint,
   RpcRelayServiceEndpoint,
+  ServiceEndpoint,
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
+  Timestamp,
+  type Transaction,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
 
@@ -47,6 +46,8 @@ import type {
   NodeUpdateData,
   RegisteredEndpointType,
   RegisteredNodeData,
+  RegisteredNodeDeleteData,
+  RegisteredNodeUpdateData,
   SystemData,
   SystemDeleteData,
   SystemUndeleteData,
@@ -321,7 +322,7 @@ const getRegisteredEndpointType = (
  * `transactionsDataMatch` produce mismatched JSON (uiIds are freshly generated
  * per call), spuriously marking every loaded draft as "unsaved".
  */
-const getComponentRegisteredEndpoint = (
+export const getComponentRegisteredEndpoint = (
   endpoint: RegisteredServiceEndpoint,
 ): ComponentRegisteredServiceEndpoint => {
   const ipBytes = endpoint.ipAddress;
@@ -346,6 +347,11 @@ const getComponentRegisteredEndpoint = (
   return base;
 };
 
+export const getComponentRegisteredEndpoints = (endpoints: RegisteredServiceEndpoint[]):
+  ComponentRegisteredServiceEndpoint[] => {
+  return endpoints.map(endpoint => getComponentRegisteredEndpoint(endpoint));
+};
+
 export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeData {
   assertTransactionType(transaction, RegisteredNodeCreateTransaction);
 
@@ -357,6 +363,26 @@ export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeD
     description: transaction.description ?? '',
     adminKey: transaction.adminKey ?? null,
     serviceEndpoints: endpoints,
+  };
+}
+
+export function getRegisteredNodeUpdateData(transaction: Transaction): RegisteredNodeUpdateData {
+  assertTransactionType(transaction, RegisteredNodeUpdateTransaction);
+
+  const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
+
+  return {
+    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
+    description: transaction.description ?? '',
+    adminKey: transaction.adminKey ?? null,
+    serviceEndpoints: endpoints,
+  };
+}
+
+export function getRegisteredNodeDeleteData(transaction: Transaction): RegisteredNodeDeleteData {
+  assertTransactionType(transaction, RegisteredNodeDeleteTransaction);
+  return {
+    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
   };
 }
 
@@ -491,6 +517,22 @@ const transactionHandlers = new Map<
     tx => ({
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeData(tx),
+    }),
+  ],
+
+  [
+    RegisteredNodeUpdateTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getRegisteredNodeUpdateData(tx),
+    }),
+  ],
+
+  [
+    RegisteredNodeDeleteTransaction,
+    tx => ({
+      ...getTransactionCommonData(tx),
+      ...getRegisteredNodeDeleteData(tx),
     }),
   ],
 

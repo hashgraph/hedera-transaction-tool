@@ -143,7 +143,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       await transactionPage.clickOnTransactionsMenuButton();
       const { txId, validStart } = await organizationPage.createAccountWithFeePayerId(newAccountId);
 
-      await transactionPage.clickOnExportTransactionButton('Export');
+      await transactionPage.clickOnExportTransactionButton('Export (Transaction Tool 1.0)');
 
       const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
@@ -175,7 +175,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
       const { txId, validStart } =
         await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
-      await transactionPage.clickOnExportTransactionButton('Export');
+      await transactionPage.clickOnExportTransactionButton('Export (Transaction Tool 1.0)');
 
       const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
@@ -204,7 +204,7 @@ test.describe('Organization Transaction compatibility tests @organization-advanc
 
       await organizationPage.createAccountWithFeePayerId(complexKeyAccountId);
 
-      await transactionPage.clickOnExportTransactionButton('Export');
+      await transactionPage.clickOnExportTransactionButton('Export (Transaction Tool 1.0)');
 
       const txBytes = await waitAndReadFile(transactionPath, getFileReadTimeout());
       const tx = Transaction.fromBytes(txBytes);
