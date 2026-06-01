@@ -354,17 +354,25 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     // group as new and create a duplicate.
     // Alter this when we know what 'atomic' does.
     if (group.value === null) {
-      const newGroupId = await addGroupWithDrafts(
+      const newGroup = await addGroupWithDrafts(
         userId,
         description,
         false,
         groupItems.value,
         groupValidStart,
       );
-      const items = await getGroupItems(newGroupId!);
+      const items = await getGroupItems(newGroup.id);
       for (const [index, groupItem] of groupItems.value.entries()) {
-        groupItem.groupId = newGroupId;
+        groupItem.groupId = newGroup.id;
         groupItem.seq = items[index].seq;
+      }
+      // Bind the session to the freshly persisted group so subsequent saves
+      // take the update path instead of creating a duplicate group, and refresh
+      // the valid-start baseline the modified-flag guard (in
+      // updateTransactionValidStarts) compares against.
+      group.value = newGroup;
+      if (newGroup.groupValidStart) {
+        groupInitialValidStart.value = newGroup.groupValidStart;
       }
     } else {
       await updateGroup(

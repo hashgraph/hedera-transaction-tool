@@ -75,7 +75,7 @@ export const addGroupWithDrafts = async (
       };
       await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
     }
-    return group.id;
+    return group;
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
   }

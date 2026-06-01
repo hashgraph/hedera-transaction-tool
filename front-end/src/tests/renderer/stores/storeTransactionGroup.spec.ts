@@ -530,7 +530,7 @@ describe('useTransactionGroupStore', () => {
     });
 
     test('creates a new group when the session is not bound to a persisted group', async () => {
-      vi.mocked(addGroupWithDrafts).mockResolvedValue('new-group');
+      vi.mocked(addGroupWithDrafts).mockResolvedValue({ id: 'new-group' } as never);
       vi.mocked(getGroupItems).mockResolvedValue([{ seq: '0' }, { seq: '1' }] as never);
       expect(store.group).toBeNull();
       store.groupItems.push(
@@ -544,6 +544,32 @@ describe('useTransactionGroupStore', () => {
       expect(addGroupWithDrafts).toHaveBeenCalled();
       // Newly created items get tagged with the returned group id.
       expect(store.groupItems.every(i => i.groupId === 'new-group')).toBe(true);
+    });
+
+    test('binds the session to the new group so a second save updates instead of duplicating', async () => {
+      vi.mocked(addGroupWithDrafts).mockResolvedValue({
+        id: 'new-group',
+        groupValidStart: new Date(1000),
+      } as never);
+      vi.mocked(getGroupItems).mockResolvedValue([{ seq: '0' }] as never);
+      store.groupItems.push(createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(1000) }));
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      // The first save persisted the group and bound the session to it.
+      expect(store.group?.id).toBe('new-group');
+      expect(addGroupWithDrafts).toHaveBeenCalledTimes(1);
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      // The second save must take the update path, not create a duplicate group.
+      expect(addGroupWithDrafts).toHaveBeenCalledTimes(1);
+      expect(updateGroup).toHaveBeenCalledWith(
+        'new-group',
+        'user-1',
+        expect.objectContaining({ description: 'desc' }),
+        store.groupItems,
+      );
     });
   });
 
