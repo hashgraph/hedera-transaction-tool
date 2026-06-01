@@ -105,14 +105,22 @@ export async function updateGroupWithItems(
       },
     });
 
-    for (const [index, draft] of drafts.entries()) {
-      if (
-        (await tx.transactionDraft.count({ where: { transactionBytes: draft.transactionBytes } })) >
-        0
-      ) {
-        throw new Error('Transaction draft already exists');
-      }
+    // Reject duplicates in one pass instead of counting per draft (N+1). The old
+    // group items were just deleted above, so this only catches drafts that still
+    // exist elsewhere — plus duplicates within the incoming set, which a single DB
+    // count can't see since none of them are persisted yet.
+    const allBytes = drafts.map(draft => draft.transactionBytes);
+    const uniqueBytes = [...new Set(allBytes)];
+    if (uniqueBytes.length !== allBytes.length) {
+      throw new Error('Transaction draft already exists');
+    }
+    if (
+      (await tx.transactionDraft.count({ where: { transactionBytes: { in: uniqueBytes } } })) > 0
+    ) {
+      throw new Error('Transaction draft already exists');
+    }
 
+    for (const [index, draft] of drafts.entries()) {
       const created = await tx.transactionDraft.create({ data: draft });
 
       await tx.groupItem.create({

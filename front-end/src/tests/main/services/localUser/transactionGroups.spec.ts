@@ -222,6 +222,12 @@ describe('Transaction Groups Service', () => {
         where: { transaction_group_id: id },
       });
 
+      // Duplicates are checked once for the whole set, not per draft (no N+1).
+      expect(prisma.transactionDraft.count).toHaveBeenCalledTimes(1);
+      expect(prisma.transactionDraft.count).toHaveBeenCalledWith({
+        where: { transactionBytes: { in: ['a', 'b'] } },
+      });
+
       // Each draft is recreated and linked with contiguous seq === index.
       expect(prisma.transactionDraft.create).toHaveBeenCalledTimes(2);
       expect(prisma.groupItem.create).toHaveBeenNthCalledWith(1, {
@@ -237,6 +243,21 @@ describe('Transaction Groups Service', () => {
 
       await expect(
         updateGroupWithItems('group1', { description: 'd' }, [
+          { user_id: 'u', transactionBytes: 'a', type: 'Transfer' },
+        ] as any),
+      ).rejects.toThrow('Transaction draft already exists');
+
+      expect(prisma.transactionDraft.create).not.toHaveBeenCalled();
+      expect(prisma.groupItem.create).not.toHaveBeenCalled();
+    });
+
+    test('Should abort if the incoming set contains duplicate drafts', async () => {
+      // None of these exist yet, so the DB count can't catch the collision.
+      prisma.transactionDraft.count.mockResolvedValue(0);
+
+      await expect(
+        updateGroupWithItems('group1', { description: 'd' }, [
+          { user_id: 'u', transactionBytes: 'a', type: 'Transfer' },
           { user_id: 'u', transactionBytes: 'a', type: 'Transfer' },
         ] as any),
       ).rejects.toThrow('Transaction draft already exists');
