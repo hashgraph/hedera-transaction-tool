@@ -20,12 +20,14 @@ export default function useAccountId() {
   const accountId = ref<string>('');
   const accountInfo = ref<IAccountInfoParsed | null>(null);
   const allowances = ref<CryptoAllowance[]>([]);
+  const loading = ref<boolean>(false);
 
   const accountInfoController = ref<AbortController | null>(null);
   const allowancesController = ref<AbortController | null>(null);
 
   /* Computed */
-  const isValid = computed(() => Boolean(accountInfo.value));
+  const isValid = computed(() => accountInfo.value);
+  const isLoading = computed(() => loading.value);
 
   /* Injected */
   const accountByIdCache = AppCache.inject().mirrorAccountById;
@@ -75,6 +77,7 @@ export default function useAccountId() {
 
     if (!newAccountId) return resetData();
 
+    loading.value = true;
     try {
       const baseId = newAccountId.split('-')[0];
       AccountId.fromString(baseId);
@@ -97,6 +100,8 @@ export default function useAccountId() {
       allowances.value = accountAllowancesRes;
     } catch {
       resetData();
+    } finally {
+      loading.value = false;
     }
   });
 
@@ -155,6 +160,7 @@ export default function useAccountId() {
     keysFlattened,
     allowances,
     isValid,
+    isLoading,
     getSpenderAllowance,
     getStakedToString,
     getFormattedPendingRewards,
