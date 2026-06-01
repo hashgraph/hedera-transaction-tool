@@ -1,4 +1,4 @@
-import { FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
+import { AccountId, FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
 
 const TREASURY = '0.0.2';
 const SYSTEM_ADMIN = '0.0.50';
@@ -58,4 +58,15 @@ export function utf8ByteLength(str: string): number {
 /** Returns true if the string's UTF-8 byte length is strictly greater than the limit. */
 export function exceedsUtf8ByteLimit(str: string, byteLimit: number): boolean {
   return utf8ByteLength(str) > byteLimit;
+}
+
+export function isValidAccountForNodeCreation(accountId: string): boolean {
+  let result: boolean;
+  try {
+    const aid = AccountId.fromString(accountId);
+    result = aid.shard.isZero() && aid.realm.isZero() && aid.num.gte(2) && aid.num.lte(55);
+  } catch {
+    result = false;
+  }
+  return result;
 }

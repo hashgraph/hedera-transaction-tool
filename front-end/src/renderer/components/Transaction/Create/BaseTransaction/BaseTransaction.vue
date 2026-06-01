@@ -22,6 +22,8 @@ import {
   FileUpdateTransaction,
   Hbar,
   KeyList,
+  NodeCreateTransaction,
+  RegisteredNodeCreateTransaction,
   Timestamp,
   Transaction,
   TransactionId,
@@ -166,6 +168,13 @@ const hasDescriptionChanged = computed(() => {
 
 const hasDataChanged = computed(() => hasTransactionChanged.value || hasDescriptionChanged.value);
 
+const isNodeCreationPrivRequired = computed(() => {
+  return (
+    initialTransaction.value instanceof NodeCreateTransaction ||
+    initialTransaction.value instanceof RegisteredNodeCreateTransaction
+  );
+});
+
 /* Handlers */
 const handleDraftLoaded = async (transaction: Transaction) => {
   initialTransaction.value = transaction;
@@ -198,9 +207,7 @@ const handleCreate = async () => {
           if (nanoOffset === 0) return initialTx.toBytes();
           const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
           const retryTx = createTransaction(capturedData);
-          retryTx.setTransactionId(
-            TransactionId.withValidStart(payerAccountId, offsetTimestamp),
-          );
+          retryTx.setTransactionId(TransactionId.withValidStart(payerAccountId, offsetTimestamp));
           return retryTx.toBytes();
         }
       : undefined;
@@ -420,6 +427,7 @@ defineExpose({
           @update:payer-id="handlePayerIdUpdate"
           v-model:valid-start="data.validStart"
           v-model:max-transaction-fee="data.maxTransactionFee as Hbar"
+          :is-node-creation-priv-required="isNodeCreationPrivRequired"
         />
 
         <div class="row mt-6">

@@ -13,7 +13,7 @@ import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts
 
 import * as claim from '@renderer/services/claimService';
 
-import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
+import { isUserLoggedIn, isValidAccountForNodeCreation, stringifyHbar } from '@renderer/utils';
 
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
@@ -24,6 +24,7 @@ const props = defineProps<{
   payerId: string;
   validStart: Date;
   maxTransactionFee: Hbar;
+  isNodeCreationPrivRequired: boolean;
 }>();
 
 /* Emits */
@@ -98,7 +99,7 @@ const columnClass = 'col-4 col-xxxl-3';
         data-testid="input-payer-account"
       />
       <div class="text-micro mt-2">
-        <span v-if="account.isLoading.value" class="invisible">Loading…</span>
+        <span v-if="payerId == '' || account.isLoading.value" class="invisible">plcrhldr</span>
         <span
           v-else-if="account.accountInfo.value === null"
           class="text-warning bi bi-exclamation-triangle-fill me-1"
@@ -106,10 +107,18 @@ const columnClass = 'col-4 col-xxxl-3';
           Account does not exist
         </span>
         <span
-          v-else-if="account.accountInfo.value?.deleted"
+          v-else-if="account.accountInfo.value.deleted"
           class="text-warning bi bi-exclamation-triangle-fill me-1"
         >
           Account is deleted
+        </span>
+        <span
+          v-else-if="
+            props.isNodeCreationPrivRequired && !isValidAccountForNodeCreation(props.payerId)
+          "
+          class="text-warning bi bi-exclamation-triangle-fill me-1"
+        >
+          Account ID should be belong to 0.0.2 and 0.0.55 range
         </span>
         <span v-else class="text-muted">
           Balance:
