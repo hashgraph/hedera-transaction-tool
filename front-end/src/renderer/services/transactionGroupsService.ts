@@ -143,7 +143,7 @@ export async function updateGroup(
 
     await window.electronAPI.local.transactionGroups.updateGroupWithItems(id, group, drafts);
   } catch (error) {
-    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction group with id: ${id}`));
+    throw Error(getMessageFromIPCError(error, `Failed to update transaction group with id: ${id}`));
   }
 }
 

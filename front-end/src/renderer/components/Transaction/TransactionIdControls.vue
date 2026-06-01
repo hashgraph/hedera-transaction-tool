@@ -44,7 +44,7 @@ const handlePayerChange = (payerId: string) => {
 };
 
 function handleUpdateValidStart(v: Date) {
-    emit('update:validStart', v);
+  emit('update:validStart', v);
 }
 
 /* Hooks */
