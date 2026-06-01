@@ -14,6 +14,7 @@ import {
   editGroupItem,
   getGroupItem,
   updateGroup,
+  updateGroupWithItems,
   deleteGroupItem,
 } from '@main/services/localUser';
 import { Prisma, GroupItem } from '@prisma/client';
@@ -37,6 +38,7 @@ describe('IPC handlers transaction groups', () => {
       'getGroupItem',
       'addGroup',
       'updateGroup',
+      'updateGroupWithItems',
       'addGroupItem',
       'getGroupItems',
       'getGroupsCount',
@@ -83,6 +85,19 @@ describe('IPC handlers transaction groups', () => {
 
     await invokeIPCHandler('transactionGroups:updateGroup', groupId, group);
     expect(updateGroup).toHaveBeenCalledWith(groupId, group);
+  });
+
+  test('Should set up updateGroupWithItems handler', async () => {
+    const group: Prisma.TransactionGroupUncheckedUpdateInput = {
+      description: 'new description',
+      atomic: true,
+    };
+    const drafts: Prisma.TransactionDraftUncheckedCreateInput[] = [
+      { user_id: userId, transactionBytes: 'a', type: 'Transfer' },
+    ];
+
+    await invokeIPCHandler('transactionGroups:updateGroupWithItems', groupId, group, drafts);
+    expect(updateGroupWithItems).toHaveBeenCalledWith(groupId, group, drafts);
   });
 
   test('Should set up addGroupItem handler', async () => {

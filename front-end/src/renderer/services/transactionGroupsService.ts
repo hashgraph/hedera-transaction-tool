@@ -5,7 +5,6 @@ import { Prisma } from '@prisma/client';
 
 import { getMessageFromIPCError } from '@renderer/utils';
 
-import { deleteDraft } from './transactionDraftsService';
 import { getTransactionType } from '../utils/sdk/transactions';
 
 /* Transaction Groups Service */
@@ -75,7 +74,7 @@ export const addGroupWithDrafts = async (
       };
       await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
     }
-    return group.id;
+    return group;
   } catch (error) {
     throw Error(getMessageFromIPCError(error, 'Failed to add transaction draft'));
   }
@@ -120,61 +119,31 @@ export async function updateGroup(
   groupItems: StoreGroupItem[],
 ) {
   try {
-    await window.electronAPI.local.transactionGroups.updateGroup(id, group);
-    const fetchedItems = await window.electronAPI.local.transactionGroups.getGroupItems(id);
-    if (fetchedItems.length > groupItems.length) {
-      for (const [index, item] of fetchedItems.entries()) {
-        if (index < groupItems.length) {
-          continue;
-        }
-        if (item.transaction_draft_id) {
-          await deleteDraft(item.transaction_draft_id);
-        }
-        await window.electronAPI.local.transactionGroups.deleteGroupItem(id, index.toString());
-      }
-    }
-    for (const [index, item] of groupItems.entries()) {
-      const transactionDraft: Prisma.TransactionDraftUncheckedUpdateInput = {
-        created_at: new Date(),
-        updated_at: new Date(),
-        user_id: userId,
-        description: item.description,
-        transactionBytes: item.transactionBytes.toString(),
-        type: getTransactionType(item.transactionBytes),
-      };
-      if (item.groupId) {
-        const savedItem = await getGroupItem(id, index.toString());
-        await window.electronAPI.local.transactionDrafts.updateDraft(
-          savedItem.transaction_draft_id!,
-          transactionDraft,
-        );
-      } else {
-        const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
-          created_at: new Date(),
-          updated_at: new Date(),
-          user_id: userId,
-          description: item.description,
-          transactionBytes: item.transactionBytes.toString(),
-          type: getTransactionType(item.transactionBytes),
-        };
-        const draft = await window.electronAPI.local.transactionDrafts.addDraft(transactionDraft);
-        const groupItem: Prisma.GroupItemUncheckedCreateInput = {
-          transaction_draft_id: draft.id,
-          transaction_group_id: id,
-          seq: index.toString(),
-        };
-        if (fetchedItems[index]) {
-          if (fetchedItems[index].transaction_draft_id) {
-            // @ts-ignore We check for null above
-            await deleteDraft(fetchedItems[index].transaction_draft_id);
-          }
-          await window.electronAPI.local.transactionGroups.deleteGroupItem(id, index.toString());
-        }
-        await window.electronAPI.local.transactionGroups.addGroupItem(groupItem);
-      }
-    }
+    // The in-memory list is sorted by validStart with seq === array index, so
+    // its positions no longer line up with the persisted rows once an item has
+    // been inserted in the middle, reordered, or removed. Matching the two by
+    // index deletes/updates the wrong draft (and then fails to find later ones),
+    // so reconcile by replacing the whole set: drop every existing item and its
+    // draft, then recreate from the current order with seq === index. A single
+    // insert in the middle can shift the validStart of many following items at
+    // once, so even matching by transaction_draft_id and updating in place would
+    // mean rewriting most of the rows anyway — a full delete and recreate is
+    // simpler and avoids the bookkeeping. Group items are small, so a full
+    // rewrite is cheap and keeps the persisted order authoritative regardless of
+    // how the items were edited. The rewrite runs in a single main-process
+    // transaction so a partial failure can never leave the group half-empty.
+    const drafts: Prisma.TransactionDraftUncheckedCreateInput[] = groupItems.map(item => ({
+      created_at: new Date(),
+      updated_at: new Date(),
+      user_id: userId,
+      description: item.description,
+      transactionBytes: item.transactionBytes.toString(),
+      type: getTransactionType(item.transactionBytes),
+    }));
+
+    await window.electronAPI.local.transactionGroups.updateGroupWithItems(id, group, drafts);
   } catch (error) {
-    throw Error(getMessageFromIPCError(error, `Failed to fetch transaction group with id: ${id}`));
+    throw Error(getMessageFromIPCError(error, `Failed to update transaction group with id: ${id}`));
   }
 }
 
