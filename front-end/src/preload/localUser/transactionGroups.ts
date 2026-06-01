@@ -18,6 +18,12 @@ export default {
       ipcRenderer.invoke('transactionGroups:addGroupItem', groupItem),
     updateGroup: (id: string, group: Prisma.TransactionGroupUncheckedUpdateInput): Promise<void> =>
       ipcRenderer.invoke('transactionGroups:updateGroup', id, group),
+    updateGroupWithItems: (
+      id: string,
+      group: Prisma.TransactionGroupUncheckedUpdateInput,
+      drafts: Prisma.TransactionDraftUncheckedCreateInput[],
+    ): Promise<void> =>
+      ipcRenderer.invoke('transactionGroups:updateGroupWithItems', id, group, drafts),
     getGroupItems: (id: string): Promise<GroupItem[]> =>
       ipcRenderer.invoke('transactionGroups:getGroupItems', id),
     deleteGroup: (id: string): Promise<void> =>

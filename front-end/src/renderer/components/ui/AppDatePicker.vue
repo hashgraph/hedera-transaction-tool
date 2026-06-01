@@ -19,7 +19,7 @@ const props = defineProps<
 const emit = defineEmits<{
   (event: 'update:modelValue', value: Date): void;
   (event: 'open'): void;
-  (event: 'close'): void;
+  (event: 'closed'): void;
 }>();
 
 /* Composables */
@@ -78,7 +78,7 @@ function handleUpdate(value: string | Date) {
     class="is-fill"
     enable-seconds
     @open="$emit('open')"
-    @close="$emit('close')"
+    @closed="$emit('closed')"
     @update:model-value="handleUpdate"
   >
     <template #action-row>

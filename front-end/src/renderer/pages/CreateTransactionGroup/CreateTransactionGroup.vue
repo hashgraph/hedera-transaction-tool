@@ -377,7 +377,7 @@ onBeforeRouteLeave(async to => {
           <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
               <label class="form-label"
-                >Group Valid Start<span class="text-muted text-italic">{{
+                >First Transaction Valid Start<span class="text-muted text-italic">{{
                   ` - ${dateTimeSettingLabel}`
                 }}</span></label
               >
@@ -386,6 +386,9 @@ onBeforeRouteLeave(async to => {
                 @update:modelValue="updateGroupValidStart"
                 :nowButtonVisible="true"
               />
+              <div class="text-small text-secondary mb-2">
+                Editing this shifts all transactions by the same amount.
+              </div>
             </div>
             <div>
               {{
@@ -489,6 +492,7 @@ onBeforeRouteLeave(async to => {
         v-if="isTransactionSelectionModalShown"
         v-model:show="isTransactionSelectionModalShown"
         group
+        :initial-valid-start="transactionGroup.nextValidStart"
       />
       <TransactionGroupProcessor
         ref="transactionGroupProcessor"

@@ -66,4 +66,37 @@ describe('TransactionSelectionModal.vue', () => {
       query: { group: 'true' },
     });
   });
+
+  test('forwards initialValidStart as epoch milliseconds in the route query', async () => {
+    const router = {
+      push: vi.fn(),
+    };
+    const initialValidStart = new Date(1700000000000);
+    const wrapper = mount(TransactionSelectionModal, {
+      props: {
+        group: true,
+        initialValidStart,
+        show: true,
+        'onUpdate:show': vi.fn(),
+      },
+      global: {
+        mocks: {
+          $router: router,
+        },
+        stubs: {
+          AppModal: {
+            template: '<div><slot /></div>',
+          },
+        },
+      },
+    });
+
+    await wrapper.find('[data-testid="menu-sub-link-accountcreatetransaction"]').trigger('click');
+
+    expect(router.push).toHaveBeenCalledWith({
+      name: 'createTransaction',
+      params: { type: 'AccountCreateTransaction' },
+      query: { group: 'true', initialValidStart: '1700000000000' },
+    });
+  });
 });

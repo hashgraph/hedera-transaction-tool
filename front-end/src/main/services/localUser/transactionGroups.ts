@@ -69,6 +69,71 @@ export async function updateGroup(id: string, data: Prisma.TransactionGroupUnche
   });
 }
 
+/* Updates the group and replaces all of its items (and their drafts) in a single
+ * transaction so the rewrite is all-or-nothing — a partial failure can never leave
+ * the group with a half-deleted or half-recreated set of items. */
+export async function updateGroupWithItems(
+  id: string,
+  data: Prisma.TransactionGroupUncheckedUpdateInput,
+  drafts: Prisma.TransactionDraftUncheckedCreateInput[],
+) {
+  const prisma = getPrismaClient();
+
+  delete data.GroupItem;
+  delete data.created_at;
+  delete data.id;
+
+  return await prisma.$transaction(async tx => {
+    await tx.transactionGroup.update({
+      where: { id },
+      data,
+    });
+
+    await tx.transactionDraft.deleteMany({
+      where: {
+        GroupItem: {
+          some: {
+            transaction_group_id: id,
+          },
+        },
+      },
+    });
+
+    await tx.groupItem.deleteMany({
+      where: {
+        transaction_group_id: id,
+      },
+    });
+
+    // Reject duplicates in one pass instead of counting per draft (N+1). The old
+    // group items were just deleted above, so this only catches drafts that still
+    // exist elsewhere — plus duplicates within the incoming set, which a single DB
+    // count can't see since none of them are persisted yet.
+    const allBytes = drafts.map(draft => draft.transactionBytes);
+    const uniqueBytes = [...new Set(allBytes)];
+    if (uniqueBytes.length !== allBytes.length) {
+      throw new Error('Transaction draft already exists');
+    }
+    if (
+      (await tx.transactionDraft.count({ where: { transactionBytes: { in: uniqueBytes } } })) > 0
+    ) {
+      throw new Error('Transaction draft already exists');
+    }
+
+    for (const [index, draft] of drafts.entries()) {
+      const created = await tx.transactionDraft.create({ data: draft });
+
+      await tx.groupItem.create({
+        data: {
+          transaction_draft_id: created.id,
+          transaction_group_id: id,
+          seq: index.toString(),
+        },
+      });
+    }
+  });
+}
+
 export const addGroupItem = async (groupItem: Prisma.GroupItemUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 
