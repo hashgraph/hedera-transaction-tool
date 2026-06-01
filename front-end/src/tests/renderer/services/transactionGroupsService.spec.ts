@@ -68,7 +68,7 @@ describe('transactionGroupsService.updateGroup', () => {
     api.transactionGroups.updateGroupWithItems.mockRejectedValue(new Error('boom'));
 
     await expect(updateGroup('g-1', 'user-1', { description: 'd' }, [storeItem()])).rejects.toThrow(
-      'Failed to fetch transaction group with id: g-1',
+      'Failed to update transaction group with id: g-1',
     );
   });
 });
