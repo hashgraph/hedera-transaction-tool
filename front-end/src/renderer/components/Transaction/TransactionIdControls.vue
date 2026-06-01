@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeMount, watch } from 'vue';
 import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { useRoute } from 'vue-router';
 
@@ -19,7 +18,6 @@ import { isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
-import { ToastManager } from '@renderer/utils/ToastManager.ts';
 
 /* Props */
 const props = defineProps<{
@@ -33,21 +31,11 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const user = useUserStore();
-const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
 const route = useRoute();
 const account = useAccountId();
 const { dateTimeSettingLabel } = useDateTimeSetting();
-const toastManager = ToastManager.inject();
-
-/* State */
-const localValidStart = ref<Date>(props.validStart);
-
-/* Computed */
-const isGroupItem = computed(
-  () => route.query.group === 'true' || route.query.groupIndex != null,
-);
 
 /* Handlers */
 const handlePayerChange = (payerId: string) => {
@@ -56,11 +44,7 @@ const handlePayerChange = (payerId: string) => {
 };
 
 function handleUpdateValidStart(v: Date) {
-  if (!isGroupItem.value || v.getTime() >= transactionGroup.groupValidStart.getTime()) {
     emit('update:validStart', v);
-  } else {
-    toastManager.warning('Valid Start date of transaction cannot be before Group Valid Start date');
-  }
 }
 
 /* Hooks */
@@ -84,14 +68,6 @@ onBeforeMount(async () => {
     emit('update:payerId', allAccounts[0].account || '');
   }
 });
-
-/* Watchers */
-watch(
-  () => props.validStart,
-  newValidStart => {
-    localValidStart.value = newValidStart;
-  },
-);
 
 watch(
   () => props.payerId,

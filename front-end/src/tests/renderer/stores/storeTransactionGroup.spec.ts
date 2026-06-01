@@ -40,7 +40,12 @@ vi.mock('@prisma/client', () => ({
   Prisma: {},
 }));
 
-import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsService';
+import {
+  getGroup,
+  getGroupItems,
+  updateGroup,
+  addGroupWithDrafts,
+} from '@renderer/services/transactionGroupsService';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
 import { Transaction } from '@hiero-ledger/sdk';
@@ -496,6 +501,67 @@ describe('useTransactionGroupStore', () => {
       expect(store.groupItems).toHaveLength(2);
       expect(store.groupItems[0].description).toBe('a');
       expect(store.groupItems[1].description).toBe('c');
+    });
+  });
+
+  describe('saveGroup', () => {
+    test('updates the bound group regardless of item order, even if a new item sorts to index 0', async () => {
+      // Session bound to a persisted group, plus a brand-new untagged item whose
+      // earlier validStart sorts it ahead of the loaded one. The create-vs-update
+      // decision keys off the bound group, not groupItems[0].
+      store.group = { id: 'g-1' } as never;
+      store.groupItems.push(
+        createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(5000), groupId: 'g-1' }),
+        createGroupItem({ payerAccountId: '0.0.2', validStart: new Date(1000) }),
+      );
+      // sortAndSyncGroupItems runs on mutation; mimic the sorted state directly.
+      store.groupItems.sort((a, b) => a.validStart.getTime() - b.validStart.getTime());
+      expect(store.groupItems[0].groupId).toBeUndefined();
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      expect(addGroupWithDrafts).not.toHaveBeenCalled();
+      expect(updateGroup).toHaveBeenCalledWith(
+        'g-1',
+        'user-1',
+        expect.objectContaining({ description: 'desc' }),
+        store.groupItems,
+      );
+    });
+
+    test('creates a new group when the session is not bound to a persisted group', async () => {
+      vi.mocked(addGroupWithDrafts).mockResolvedValue('new-group');
+      vi.mocked(getGroupItems).mockResolvedValue([{ seq: '0' }, { seq: '1' }] as never);
+      expect(store.group).toBeNull();
+      store.groupItems.push(
+        createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(1000) }),
+        createGroupItem({ payerAccountId: '0.0.2', validStart: new Date(2000) }),
+      );
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      expect(updateGroup).not.toHaveBeenCalled();
+      expect(addGroupWithDrafts).toHaveBeenCalled();
+      // Newly created items get tagged with the returned group id.
+      expect(store.groupItems.every(i => i.groupId === 'new-group')).toBe(true);
+    });
+  });
+
+  describe('nextValidStart', () => {
+    test('falls back to groupValidStart when there are no items', () => {
+      store.groupValidStart = new Date(7000);
+
+      expect(store.nextValidStart.getTime()).toBe(7000);
+    });
+
+    test('returns one millisecond past the latest item so the new item sorts last with a unique timestamp', () => {
+      store.groupItems.push(
+        createGroupItem({ validStart: new Date(1000) }),
+        createGroupItem({ validStart: new Date(5000) }),
+        createGroupItem({ validStart: new Date(3000) }),
+      );
+
+      expect(store.nextValidStart.getTime()).toBe(5001);
     });
   });
 

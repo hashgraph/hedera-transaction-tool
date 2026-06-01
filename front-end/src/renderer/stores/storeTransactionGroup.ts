@@ -1,6 +1,8 @@
 import type { TransactionApproverDto } from '@shared/interfaces';
 
-import { ref } from 'vue';
+import type { TransactionGroup } from '@prisma/client';
+
+import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { KeyList, PublicKey, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
@@ -71,6 +73,12 @@ function deriveDisplay(transaction: Transaction): {
 
 const useTransactionGroupStore = defineStore('transactionGroup', () => {
   /* State */
+  // The persisted group this editing session is bound to, or null for a group
+  // that hasn't been saved yet. Carries the stable identity (`id`) that saveGroup
+  // uses to decide create-vs-update — independent of item order or which items
+  // are tagged. The description/groupValidStart refs below are the live editable
+  // working copy; this snapshot is identity/baseline only.
+  const group = ref<TransactionGroup | null>(null);
   const groupItems = ref<RenderedGroupItem[]>([]);
   const groupValidStart = ref(new Date());
   const groupInitialValidStart = ref(new Date());
@@ -86,13 +94,14 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     }
 
     groupItems.value = [];
-    const group = await getGroup(id);
-    description.value = group.description;
-    if (group.groupValidStart) {
+    const fetchedGroup = await getGroup(id);
+    group.value = fetchedGroup;
+    description.value = fetchedGroup.description;
+    if (fetchedGroup.groupValidStart) {
       // Baseline for the modified-flag guard in updateTransactionValidStarts.
       // The picker's actual value is derived from the items below (via the
       // target/shift), not from this stored field, so we only record it here.
-      groupInitialValidStart.value = group.groupValidStart;
+      groupInitialValidStart.value = fetchedGroup.groupValidStart;
     }
 
     const items = await getGroupItems(id);
@@ -139,6 +148,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   function clearGroup() {
+    group.value = null;
     groupItems.value = [];
     groupValidStart.value = new Date();
     groupInitialValidStart.value = new Date();
@@ -249,6 +259,19 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     setModified();
   }
 
+  // The valid start to seed a brand-new group item with: one millisecond past
+  // the latest existing item so it lands after the current items with a unique
+  // timestamp (Date is millisecond-resolution, so 1ms is the smallest bump).
+  // Falls back to groupValidStart when the group is still empty.
+  const nextValidStart = computed(() => {
+    if (groupItems.value.length === 0) return groupValidStart.value;
+    const latest = groupItems.value.reduce(
+      (max, item) => Math.max(max, item.validStart.getTime()),
+      -Infinity,
+    );
+    return new Date(latest + 1);
+  });
+
   function earliestItemTime(): number | null {
     if (groupItems.value.length === 0) return null;
     return groupItems.value.reduce(
@@ -286,6 +309,13 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
 
   /**
    * Finds a unique validStart date for a group item.
+   *
+   * Unlike {@link nextValidStart}, this is not about appending after the latest
+   * item: it takes a specific desired validStart and nudges it forward only as
+   * far as needed to differentiate it from another item (same payer) that
+   * already holds that exact timestamp. The passed-in time is the anchor; we
+   * return the next free slot at or after it.
+   *
    * @param payerAccountId
    * @param validStartMillis - The milliseconds of the desired validStart date .
    * @param excludeIndex
@@ -318,8 +348,12 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
   }
 
   async function saveGroup(userId: string, description: string, groupValidStart: Date) {
-    // Alter this when we know what 'atomic' does
-    if (groupItems.value[0].groupId === undefined) {
+    // Create-vs-update is decided by whether this session is bound to a persisted
+    // group, not by inspecting items: sorting by validStart can move a brand-new
+    // (untagged) item to index 0, so an item-based check would misread an edited
+    // group as new and create a duplicate.
+    // Alter this when we know what 'atomic' does.
+    if (group.value === null) {
       const newGroupId = await addGroupWithDrafts(
         userId,
         description,
@@ -334,7 +368,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       }
     } else {
       await updateGroup(
-        groupItems.value[0].groupId,
+        group.value.id,
         userId,
         { description, atomic: false, groupValidStart: groupValidStart },
         groupItems.value,
@@ -460,9 +494,11 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     duplicateGroupItem,
     saveGroup,
     clearGroup,
+    group,
     groupItems,
     description,
     groupValidStart,
+    nextValidStart,
     sequential,
     getRequiredKeys,
     editGroupItem,

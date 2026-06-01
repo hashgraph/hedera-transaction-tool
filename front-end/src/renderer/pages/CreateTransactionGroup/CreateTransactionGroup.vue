@@ -492,6 +492,7 @@ onBeforeRouteLeave(async to => {
         v-if="isTransactionSelectionModalShown"
         v-model:show="isTransactionSelectionModalShown"
         group
+        :initial-valid-start="transactionGroup.nextValidStart"
       />
       <TransactionGroupProcessor
         ref="transactionGroupProcessor"
