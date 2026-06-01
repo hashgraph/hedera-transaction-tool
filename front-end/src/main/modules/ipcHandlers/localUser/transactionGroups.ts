@@ -9,6 +9,7 @@ import {
   editGroupItem,
   getGroupItem,
   updateGroup,
+  updateGroupWithItems,
   deleteGroupItem,
 } from '@main/services/localUser';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
@@ -24,6 +25,7 @@ export default () => {
     renameFunc(getGroupItems, 'getGroupItems'),
     renameFunc(getGroupsCount, 'getGroupsCount'),
     renameFunc(updateGroup, 'updateGroup'),
+    renameFunc(updateGroupWithItems, 'updateGroupWithItems'),
     renameFunc(editGroupItem, 'editGroupItem'),
     renameFunc(deleteGroup, 'deleteGroup'),
     renameFunc(deleteGroupItem, 'deleteGroupItem'),

@@ -17,6 +17,7 @@ const isLinkItem = (item: MenuItem): item is MenuLinkItem => 'name' in item;
 /* Props */
 defineProps<{
   group?: boolean;
+  initialValidStart?: Date;
 }>();
 
 /* Models */
@@ -130,7 +131,10 @@ const transactionGroups = computed<MenuGroup[]>(() => {
                   $router.push({
                     name: 'createTransaction',
                     params: { type: item.name },
-                    query: { group: `${group}` },
+                    query: {
+                      group: `${group}`,
+                      initialValidStart: initialValidStart?.getTime().toString(),
+                    },
                   })
                 "
               >

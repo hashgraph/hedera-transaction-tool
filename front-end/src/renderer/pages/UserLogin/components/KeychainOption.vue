@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useSafeStorage, { SafeStorageStatus } from '@renderer/stores/storeSafeStorage.js';
 
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
 import {
-  encrypt,
   getStaticUser,
   initializeUseKeychain,
   isKeychainAvailable,
@@ -16,6 +16,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Stores */
 const user = useUserStore();
+const safeStorage = useSafeStorage();
 
 /* Composables */
 const setupStores = useSetupStores();
@@ -23,16 +24,25 @@ const setupStores = useSetupStores();
 /* State */
 const show = ref(false);
 
+/* Computed */
+const safeStorageDenied = computed(() => safeStorage.status === SafeStorageStatus.denied);
+
 /* Handlers */
 const handleUseKeychain = async () => {
-  await initializeUseKeychain(true);
+  if ((await safeStorage.encryptString('gain_access')) !== null) {
+    // We have access to safe storage (ie keychain)
+    try {
+      await initializeUseKeychain(true);
+    } catch {
+      // Must be ignored
+    }
 
-  await encrypt('gain_access');
-  const staticUser = await getStaticUser();
-  user.setAccountSetupStarted(true);
-  await user.login(staticUser.id, staticUser.email, true);
-  await user.refetchOrganizations();
-  await setupStores();
+    const staticUser = await getStaticUser();
+    user.setAccountSetupStarted(true);
+    await user.login(staticUser.id, staticUser.email, true);
+    await user.refetchOrganizations();
+    await setupStores();
+  }
 };
 
 /* Hooks */
@@ -45,11 +55,21 @@ onMounted(async () => {
 });
 </script>
 <template>
-  <div v-if="show" class="d-grid">
+  <div v-if="show" class="d-flex flex-column align-content-center align-items-stretch">
     <AppButton
       color="secondary"
       data-testid="button-keychain-login"
       @click="handleUseKeychain"
-    >Sign in with Keychain</AppButton>
+      :disabled="safeStorageDenied"
+      >Sign in with Keychain</AppButton
+    >
+    <p
+      v-if="safeStorageDenied"
+      class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
+      style="max-width: 300px"
+    >
+      Sign In with Keychain is disabled.<br />
+      You need to restart the application, sign with Keychain again and authorize Keychain access.
+    </p>
   </div>
 </template>

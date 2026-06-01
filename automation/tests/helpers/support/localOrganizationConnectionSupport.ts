@@ -147,20 +147,34 @@ export async function setOrganizationVersionStateForTesting(
 
       type TestHooks = {
         setVersionDataForOrg: (serverUrl: string, data: VersionData) => void;
-        setVersionStatusForOrg: (serverUrl: string, status: string) => void;
       };
 
       const hooks = (window as unknown as { __testHooks__?: TestHooks }).__testHooks__;
-      if (!hooks?.setVersionDataForOrg || !hooks?.setVersionStatusForOrg) {
+      if (!hooks?.setVersionDataForOrg) {
         throw new Error('Test hooks for version state are not available on window');
       }
 
-      hooks.setVersionDataForOrg(serverUrl, {
-        latestSupportedVersion: latestVersion,
-        minimumSupportedVersion: '0.0.1',
-        updateUrl: null,
-      });
-      hooks.setVersionStatusForOrg(serverUrl, status);
+      // Derive each status from the shape of the data so it flows through
+      // the real computed pipeline.
+      const dataByStatus: Record<typeof status, VersionData> = {
+        current: {
+          latestSupportedVersion: latestVersion,
+          minimumSupportedVersion: '0.0.1',
+          updateUrl: null,
+        },
+        updateAvailable: {
+          latestSupportedVersion: latestVersion,
+          minimumSupportedVersion: '0.0.1',
+          updateUrl: 'https://example.com/download',
+        },
+        belowMinimum: {
+          latestSupportedVersion: latestVersion,
+          minimumSupportedVersion: '999.0.0',
+          updateUrl: 'https://example.com/download',
+        },
+      };
+
+      hooks.setVersionDataForOrg(serverUrl, dataByStatus[status]);
     },
     { serverUrl, status, latestVersion },
   );

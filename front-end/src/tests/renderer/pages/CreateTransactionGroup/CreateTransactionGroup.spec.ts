@@ -6,6 +6,7 @@ import CreateTransactionGroup from '@renderer/pages/CreateTransactionGroup/Creat
 
 const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
+  getDisplayTransactionType: vi.fn(),
   transactionGroupStore: {
     description: '',
     groupItems: [] as any[],
@@ -86,8 +87,8 @@ vi.mock('@renderer/utils', () => ({
   redirectToPreviousTransactionsTab: vi.fn(),
 }));
 
-vi.mock('@renderer/utils/sdk', () => ({
-  createTransactionId: vi.fn(() => '0.0.1@1.1'),
+vi.mock('@renderer/utils/sdk/transactions', () => ({
+  getDisplayTransactionType: (...args: unknown[]) => mocks.getDisplayTransactionType(...args),
 }));
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
@@ -99,7 +100,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
       fromString: vi.fn(),
     },
     Transaction: {
-      fromBytes: vi.fn(() => ({ transactionMemo: '' })),
+      fromBytes: vi.fn(),
     },
     TransferTransaction: class TransferTransaction {},
   };
@@ -113,6 +114,8 @@ describe('CreateTransactionGroup.vue', () => {
     mocks.transactionGroupStore.clearGroup.mockReset();
     mocks.transactionGroupStore.setModified.mockReset();
     mocks.transactionGroupStore.updateTransactionValidStarts.mockReset();
+    mocks.getDisplayTransactionType.mockReset();
+    mocks.getDisplayTransactionType.mockImplementation(() => 'Account Create');
   });
 
   function mountCreateTransactionGroup(errorHandler?: (error: unknown) => void) {
@@ -145,6 +148,12 @@ describe('CreateTransactionGroup.vue', () => {
             inheritAttrs: false,
             props: ['show'],
             template: '<div v-if="show" v-bind="$attrs"><slot /></div>',
+          },
+          DateTimeString: {
+            inheritAttrs: false,
+            props: ['date', 'compact', 'wrap'],
+            template:
+              '<span class="date-time-string-stub" :data-date="date ? new Date(date).toISOString() : \'\'"></span>',
           },
           EmptyTransactions: {
             template:
@@ -182,6 +191,7 @@ describe('CreateTransactionGroup.vue', () => {
   test('shows validation toast when submitting with blank group description', async () => {
     mocks.transactionGroupStore.groupItems = [
       {
+        rowKey: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -200,6 +210,7 @@ describe('CreateTransactionGroup.vue', () => {
     const errors: unknown[] = [];
     mocks.transactionGroupStore.groupItems = [
       {
+        rowKey: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -237,6 +248,7 @@ describe('CreateTransactionGroup.vue', () => {
   test('clears transactions after confirming Delete All', async () => {
     mocks.transactionGroupStore.groupItems = [
       {
+        rowKey: 'test-item-1',
         description: 'transaction',
         payerAccountId: '0.0.2',
         transactionBytes: new Uint8Array([1]),
@@ -250,5 +262,87 @@ describe('CreateTransactionGroup.vue', () => {
     await wrapper.find('[data-testid="button-confirm-delete-all"]').trigger('click');
 
     expect(mocks.transactionGroupStore.clearGroup).toHaveBeenCalled();
+  });
+
+  describe('group item row', () => {
+    const baseItem = {
+      rowKey: 'row-item-0',
+      description: '',
+      payerAccountId: '0.0.2',
+      transactionBytes: new Uint8Array([1, 2, 3]),
+      type: 'Account Create Transaction',
+      validStart: new Date('2026-05-22T15:30:45.000Z'),
+    };
+
+    test('renders type via getDisplayTransactionType (not the raw groupItem.type)', () => {
+      mocks.transactionGroupStore.groupItems = [baseItem];
+      mocks.getDisplayTransactionType.mockReturnValue('Account Create');
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(mocks.getDisplayTransactionType).toHaveBeenCalledWith(baseItem.type, false, true);
+      expect(wrapper.find('[data-testid="span-transaction-type-0"]').text()).toBe('Account Create');
+    });
+
+    test('renders empty description area when no description and no memo', () => {
+      mocks.transactionGroupStore.groupItems = [
+        { ...baseItem, description: '', transactionMemo: '' },
+      ];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(wrapper.find('[data-testid="span-transaction-timestamp-0"]').text()).toBe('');
+    });
+
+    test('falls back to precomputed transactionMemo when description is empty', () => {
+      mocks.transactionGroupStore.groupItems = [
+        { ...baseItem, description: '', transactionMemo: 'memo-from-bytes' },
+      ];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(wrapper.find('[data-testid="span-transaction-timestamp-0"]').text()).toBe(
+        'memo-from-bytes',
+      );
+    });
+
+    test('renders the valid start cell with a DateTimeString bound to groupItem.validStart', () => {
+      mocks.transactionGroupStore.groupItems = [baseItem];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      const validStartCell = wrapper.find('[data-testid="span-transaction-valid-start-0"]');
+      expect(validStartCell.exists()).toBe(true);
+      const dateStub = validStartCell.find('.date-time-string-stub');
+      expect(dateStub.exists()).toBe(true);
+      expect(dateStub.attributes('data-date')).toBe(baseItem.validStart.toISOString());
+    });
+
+    test('renders action buttons in order Duplicate, Edit, Delete with tooltips on icon buttons', () => {
+      mocks.transactionGroupStore.groupItems = [baseItem];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      const duplicate = wrapper.find('[data-testid="button-transaction-duplicate-0"]');
+      const edit = wrapper.find('[data-testid="button-transaction-edit-0"]');
+      const del = wrapper.find('[data-testid="button-transaction-delete-0"]');
+
+      expect(duplicate.exists()).toBe(true);
+      expect(edit.exists()).toBe(true);
+      expect(del.exists()).toBe(true);
+
+      const buttonsContainer = duplicate.element.parentElement as HTMLElement;
+      const orderedTestIds = Array.from(buttonsContainer.children).map(child =>
+        child.getAttribute('data-testid'),
+      );
+      expect(orderedTestIds).toEqual([
+        'button-transaction-duplicate-0',
+        'button-transaction-edit-0',
+        'button-transaction-delete-0',
+      ]);
+
+      expect(duplicate.attributes('data-bs-title')).toBe('Duplicate Transaction');
+      expect(del.attributes('data-bs-title')).toBe('Delete Transaction');
+    });
   });
 });

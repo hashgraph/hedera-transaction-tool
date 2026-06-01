@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 
-import { KeyList, PublicKey, TransferTransaction, Transaction } from '@hiero-ledger/sdk';
+import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
@@ -16,13 +16,12 @@ import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
 import {
   assertUserLoggedIn,
-  formatHbarTransfers,
   getErrorMessage,
   getPropagationButtonLabel,
   isLoggedInOrganization,
   redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
-import { createTransactionId } from '@renderer/utils/sdk';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -33,6 +32,7 @@ import TransactionSelectionModal from '@renderer/components/TransactionSelection
 import TransactionGroupProcessor from '@renderer/components/Transaction/TransactionGroupProcessor.vue';
 import SaveTransactionGroupModal from '@renderer/components/modals/SaveTransactionGroupModal.vue';
 import RunningClockDatePicker from '@renderer/components/RunningClockDatePicker.vue';
+import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import ImportCSVController from '@renderer/pages/CreateTransactionGroup/ImportCSVController.vue';
 import useNextTransactionV2, {
   type TransactionNodeId,
@@ -242,17 +242,6 @@ function updateGroupValidStart(newDate: Date) {
   }
 }
 
-/* Functions */
-function makeTransfer(index: number) {
-  const transfers = (
-    Transaction.fromBytes(
-      transactionGroup.groupItems[index].transactionBytes,
-    ) as TransferTransaction
-  ).hbarTransfersList;
-
-  return formatHbarTransfers(transfers);
-}
-
 /* Hooks */
 onMounted(async () => {
   await handleLoadGroup();
@@ -388,7 +377,7 @@ onBeforeRouteLeave(async to => {
           <div class="d-flex justify-content-between align-items-center mb-5">
             <div>
               <label class="form-label"
-                >Group Valid Start<span class="text-muted text-italic">{{
+                >First Transaction Valid Start<span class="text-muted text-italic">{{
                   ` - ${dateTimeSettingLabel}`
                 }}</span></label
               >
@@ -397,6 +386,9 @@ onBeforeRouteLeave(async to => {
                 @update:modelValue="updateGroupValidStart"
                 :nowButtonVisible="true"
               />
+              <div class="text-small text-secondary mb-2">
+                Editing this shifts all transactions by the same amount.
+              </div>
             </div>
             <div>
               {{
@@ -408,50 +400,82 @@ onBeforeRouteLeave(async to => {
           </div>
           <div
             v-for="(groupItem, index) in transactionGroup.groupItems"
-            :key="groupItem.transactionBytes.toString()"
-            class="pb-3"
+            :key="groupItem.rowKey"
+            class="pb-2"
           >
-            <div class="d-flex justify-content-between p-4 transaction-group-row">
-              <div class="align-self-center col">
-                <div :data-testid="'span-transaction-type-' + index">{{ groupItem.type }}</div>
+            <div
+              class="d-flex align-items-center transaction-group-row text-small gap-3"
+              style="padding: 8px 16px 8px 24px; border-radius: 10px"
+            >
+              <div
+                class="text-bold flex-shrink-0"
+                style="width: 13rem"
+                :data-testid="'span-transaction-type-' + index"
+              >
+                {{ getDisplayTransactionType(groupItem.type, false, true) }}
               </div>
               <div
-                class="align-self-center text-truncate col text-center mx-5"
+                class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
-                v-html="
-                  groupItem.type == 'Transfer Transaction'
-                    ? makeTransfer(index)
-                    : groupItem.description != ''
-                      ? groupItem.description
-                      : Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        ? Transaction.fromBytes(groupItem.transactionBytes).transactionMemo
-                        : createTransactionId(groupItem.payerAccountId, groupItem.validStart)
-                "
-              ></div>
-              <div class="d-flex col justify-content-end">
+              >
+                <span
+                  v-if="groupItem.transferSummary"
+                  v-html="groupItem.transferSummary"
+                />
+                <template v-else>{{
+                  groupItem.description !== ''
+                    ? groupItem.description
+                    : groupItem.transactionMemo
+                }}</template>
+              </div>
+              <div
+                class="flex-shrink-0 text-start"
+                style="width: 11rem"
+                :data-testid="'span-transaction-valid-start-' + index"
+              >
+                <DateTimeString
+                  :date="groupItem.validStart"
+                  compact
+                  wrap
+                />
+              </div>
+              <div class="d-flex flex-shrink-0 align-items-center gap-3 ms-3">
                 <AppButton
                   type="button"
-                  class="transaction-group-button-borderless"
-                  @click="handleDeleteGroupItem(index)"
-                  style="min-width: 0"
-                  :data-testid="'button-transaction-delete-' + index"
-                  >Delete
-                </AppButton>
-                <AppButton
-                  type="button"
-                  class="transaction-group-button-borderless"
+                  size="small"
+                  color="borderless"
                   @click="handleDuplicateGroupItem(index)"
-                  style="min-width: 0"
+                  class="min-w-unset"
+                  aria-label="Duplicate Transaction"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Duplicate Transaction"
                   :data-testid="'button-transaction-duplicate-' + index"
-                  >Duplicate
+                >
+                  <span class="bi bi-copy" aria-hidden="true"></span>
                 </AppButton>
                 <AppButton
                   type="button"
-                  class="transaction-group-button"
+                  color="primary"
+                  style="min-width: 6rem"
                   :data-testid="'button-transaction-edit-' + index"
                   @click="handleEditGroupItem(index, groupItem.type)"
                 >
                   Edit
+                </AppButton>
+                <AppButton
+                  type="button"
+                  size="small"
+                  color="danger"
+                  @click="handleDeleteGroupItem(index)"
+                  class="min-w-unset"
+                  aria-label="Delete Transaction"
+                  data-bs-toggle="tooltip"
+                  data-bs-placement="top"
+                  data-bs-title="Delete Transaction"
+                  :data-testid="'button-transaction-delete-' + index"
+                >
+                  <span class="bi bi-trash" aria-hidden="true"></span>
                 </AppButton>
               </div>
             </div>
@@ -468,6 +492,7 @@ onBeforeRouteLeave(async to => {
         v-if="isTransactionSelectionModalShown"
         v-model:show="isTransactionSelectionModalShown"
         group
+        :initial-valid-start="transactionGroup.nextValidStart"
       />
       <TransactionGroupProcessor
         ref="transactionGroupProcessor"
