@@ -87,27 +87,39 @@ watch(
 const columnClass = 'col-4 col-xxxl-3';
 </script>
 <template>
-  <div class="row flex-wrap align-items-end">
+  <div class="row flex-wrap align-items-start">
     <div class="form-group" :class="[columnClass]">
       <label class="form-label">Payer ID <span class="text-danger">*</span></label>
-      <label v-if="account.accountInfo.value?.deleted" class="d-block form-label text-danger me-3"
-        ><span class="bi bi-exclamation-triangle-fill me-1"></span> Account is deleted</label
-      >
-      <label class="d-block form-label text-secondary"
-        >Balance:
-        {{
-          account.isValid.value
-            ? stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0))
-            : '-'
-        }}</label
-      >
-        <AccountIdInput
-          :modelValue="payerId"
-          @update:modelValue="handlePayerChange"
-          :filled="true"
-          placeholder="Enter Payer ID"
-          data-testid="input-payer-account"
-        />
+      <AccountIdInput
+        :modelValue="payerId"
+        @update:modelValue="handlePayerChange"
+        :filled="true"
+        placeholder="Enter Payer ID"
+        data-testid="input-payer-account"
+      />
+      <div class="text-micro mt-2">
+        <span v-if="account.isLoading.value" class="invisible">Loading…</span>
+        <span
+          v-else-if="account.accountInfo.value === null"
+          class="text-warning bi bi-exclamation-triangle-fill me-1"
+        >
+          Account does not exist
+        </span>
+        <span
+          v-else-if="account.accountInfo.value?.deleted"
+          class="text-warning bi bi-exclamation-triangle-fill me-1"
+        >
+          Account is deleted
+        </span>
+        <span v-else class="text-muted">
+          Balance:
+          {{
+            account.isValid.value
+              ? stringifyHbar((account.accountInfo.value?.balance as Hbar) || new Hbar(0))
+              : '-'
+          }}
+        </span>
+      </div>
     </div>
     <div class="form-group" :class="[columnClass]">
       <label class="form-label"
