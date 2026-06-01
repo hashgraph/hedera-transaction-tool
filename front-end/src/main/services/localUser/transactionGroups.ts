@@ -69,6 +69,63 @@ export async function updateGroup(id: string, data: Prisma.TransactionGroupUnche
   });
 }
 
+/* Updates the group and replaces all of its items (and their drafts) in a single
+ * transaction so the rewrite is all-or-nothing — a partial failure can never leave
+ * the group with a half-deleted or half-recreated set of items. */
+export async function updateGroupWithItems(
+  id: string,
+  data: Prisma.TransactionGroupUncheckedUpdateInput,
+  drafts: Prisma.TransactionDraftUncheckedCreateInput[],
+) {
+  const prisma = getPrismaClient();
+
+  delete data.GroupItem;
+  delete data.created_at;
+  delete data.id;
+
+  return await prisma.$transaction(async tx => {
+    await tx.transactionGroup.update({
+      where: { id },
+      data,
+    });
+
+    await tx.transactionDraft.deleteMany({
+      where: {
+        GroupItem: {
+          some: {
+            transaction_group_id: id,
+          },
+        },
+      },
+    });
+
+    await tx.groupItem.deleteMany({
+      where: {
+        transaction_group_id: id,
+      },
+    });
+
+    for (const [index, draft] of drafts.entries()) {
+      if (
+        (await tx.transactionDraft.count({ where: { transactionBytes: draft.transactionBytes } })) >
+        0
+      ) {
+        throw new Error('Transaction draft already exists');
+      }
+
+      const created = await tx.transactionDraft.create({ data: draft });
+
+      await tx.groupItem.create({
+        data: {
+          transaction_draft_id: created.id,
+          transaction_group_id: id,
+          seq: index.toString(),
+        },
+      });
+    }
+  });
+}
+
 export const addGroupItem = async (groupItem: Prisma.GroupItemUncheckedCreateInput) => {
   const prisma = getPrismaClient();
 

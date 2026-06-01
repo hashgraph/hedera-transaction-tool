@@ -7,6 +7,7 @@ import {
   getGroup,
   addGroup,
   updateGroup,
+  updateGroupWithItems,
   deleteGroup,
   getGroupItems,
   addGroupItem,
@@ -176,6 +177,72 @@ describe('Transaction Groups Service', () => {
         where: { id },
         data: updateData,
       });
+    });
+  });
+
+  describe('updateGroupWithItems', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+      // The deep mock doesn't run the interactive callback on its own; run it
+      // against the same mock client so the inner tx.* calls are observable.
+      prisma.$transaction.mockImplementation((cb: any) => cb(prisma));
+    });
+
+    test('Should update the group and replace all items/drafts in one transaction', async () => {
+      const id = 'group1';
+      const data = {
+        description: 'new description',
+        GroupItem: [],
+        created_at: new Date(),
+        id: 'should-be-stripped',
+      } as any;
+      const drafts = [
+        { user_id: 'u', transactionBytes: 'a', type: 'Transfer', description: 'A' },
+        { user_id: 'u', transactionBytes: 'b', type: 'Transfer', description: 'B' },
+      ] as any;
+
+      prisma.transactionDraft.count.mockResolvedValue(0);
+      prisma.transactionDraft.create
+        .mockResolvedValueOnce({ id: 'draft-0' } as any)
+        .mockResolvedValueOnce({ id: 'draft-1' } as any);
+
+      await updateGroupWithItems(id, data, drafts);
+
+      // Group metadata is updated with the non-writable fields stripped.
+      expect(prisma.transactionGroup.update).toHaveBeenCalledWith({
+        where: { id },
+        data: { description: 'new description' },
+      });
+
+      // Existing drafts and items are cleared before recreating.
+      expect(prisma.transactionDraft.deleteMany).toHaveBeenCalledWith({
+        where: { GroupItem: { some: { transaction_group_id: id } } },
+      });
+      expect(prisma.groupItem.deleteMany).toHaveBeenCalledWith({
+        where: { transaction_group_id: id },
+      });
+
+      // Each draft is recreated and linked with contiguous seq === index.
+      expect(prisma.transactionDraft.create).toHaveBeenCalledTimes(2);
+      expect(prisma.groupItem.create).toHaveBeenNthCalledWith(1, {
+        data: { transaction_draft_id: 'draft-0', transaction_group_id: id, seq: '0' },
+      });
+      expect(prisma.groupItem.create).toHaveBeenNthCalledWith(2, {
+        data: { transaction_draft_id: 'draft-1', transaction_group_id: id, seq: '1' },
+      });
+    });
+
+    test('Should abort the rewrite if a draft already exists', async () => {
+      prisma.transactionDraft.count.mockResolvedValue(1);
+
+      await expect(
+        updateGroupWithItems('group1', { description: 'd' }, [
+          { user_id: 'u', transactionBytes: 'a', type: 'Transfer' },
+        ] as any),
+      ).rejects.toThrow('Transaction draft already exists');
+
+      expect(prisma.transactionDraft.create).not.toHaveBeenCalled();
+      expect(prisma.groupItem.create).not.toHaveBeenCalled();
     });
   });
 
