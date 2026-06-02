@@ -182,14 +182,36 @@ jobs:
 
   # ----------------------------
   # 🔥 Docker Auth + Buildx + Cache
-  # Runs in both modes. For a full release it builds from the release branch
-  # (which now carries the bumped versions); for images_only it builds from main.
+  # Runs in both modes, always building from the release tag for the supplied
+  # version. For a full release, release_branch creates that tag just before this
+  # job; for images_only the tag must already exist (rebuilding a prior release).
   # ----------------------------
   build_and_push_images:
     name: Build and Push Docker Images
     runs-on: transaction-tools-linux-medium
+    timeout-minutes: 30
     needs: [prepare, release_branch]
     if: ${{ always() && needs.prepare.result == 'success' && (needs.release_branch.result == 'success' || needs.release_branch.result == 'skipped') }}
+    # Override the workflow-level permissions: the attestation step needs to mint
+    # an OIDC token and write the provenance attestation, and the push needs
+    # packages: write. contents: read is enough for the checkout.
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: api
+            dockerfile: back-end/apps/api/Dockerfile
+          - image: chain
+            dockerfile: back-end/apps/chain/Dockerfile
+          - image: notifications
+            dockerfile: back-end/apps/notifications/Dockerfile
+          - image: migration
+            dockerfile: back-end/typeorm/Dockerfile
     env:
       REGISTRY: ghcr.io/hashgraph/hedera-transaction-tool
       VERSION: ${{ needs.prepare.outputs.version }}
@@ -203,68 +225,57 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          # Full release: build from the immutable release tag so the image is
-          # pinned to the exact commit that was just bumped + tagged (the api
-          # embeds package.json `version` at build time). images_only builds
-          # from main as-is. release_branch (needed above) creates the tag, so
-          # it is guaranteed to exist by the time this job runs.
-          ref: ${{ inputs.images_only && 'main' || needs.prepare.outputs.release_tag }}
+          # Always build from the immutable release tag for the supplied version
+          # so the image is pinned to the exact tagged commit (the api embeds
+          # package.json `version` at build time). For a full release,
+          # release_branch (needed above) creates this tag just before this job;
+          # for images_only the tag must already exist.
+          ref: ${{ needs.prepare.outputs.release_tag }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
-      - name: Log in to GHCR (bot)
-        run: |
-          echo "${{ secrets.HEDERA_BOT_TOKEN }}" | docker login ghcr.io \
-            -u hedera-bot \
-            --password-stdin
+      - name: Log in to GHCR
+        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        with:
+          registry: ghcr.io
+          username: hedera-bot
+          password: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Set up Docker Buildx
-        run: |
-          docker buildx rm builder >/dev/null 2>&1 || true
-          docker buildx create --use --name builder
-          docker buildx inspect --bootstrap
+        # Required so build-push-action gets a docker-container (buildkit) builder;
+        # the default docker driver cannot export the gha cache.
+        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
 
-      - name: Build and Push Docker Images (buildx + cache)
-        run: |
-          set -euo pipefail
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # 6.0.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ matrix.image }}
+          tags: type=raw,value=${{ env.VERSION }}
 
-          echo "📦 Building Docker images for version: $VERSION"
+      - name: Build and Push Docker Image
+        id: push
+        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # 7.1.0
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          # build-push-action emits its own SLSA provenance by default (the
+          # source of the "unknown/unknown" entries on the GHCR package page).
+          # Disable it so the dedicated attest-build-provenance step below is the
+          # single source of provenance, wired into GitHub's attestation UI.
+          provenance: false
 
-          APPS=("api" "chain" "notifications")
-
-          for APP in "${APPS[@]}"; do
-            DOCKERFILE="back-end/apps/$APP/Dockerfile"
-            IMAGE="$REGISTRY/$APP:$VERSION"
-
-            if [[ ! -f "$DOCKERFILE" ]]; then
-              echo "⚠️ Missing Dockerfile: $DOCKERFILE (skipping)"
-              continue
-            fi
-
-            echo "🚀 Buildx build + push: $IMAGE"
-
-            docker buildx build \
-              --platform linux/amd64 \
-              -f "$DOCKERFILE" \
-              -t "$IMAGE" \
-              --push \
-              --cache-from "type=gha,scope=$APP" \
-              --cache-to "type=gha,mode=max,scope=$APP" \
-              .
-
-          done
-
-          echo "🔧 Building migration image"
-
-          MIGRATION_IMAGE="$REGISTRY/migration:$VERSION"
-
-          docker buildx build \
-            --platform linux/amd64 \
-            -f back-end/typeorm/Dockerfile \
-            -t "$MIGRATION_IMAGE" \
-            --push \
-            --cache-from type=gha,scope=migration \
-            --cache-to type=gha,mode=max,scope=migration \
-            .
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        with:
+          subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
   # ----------------------------
   # Close the milestone and publish the GitHub release (after images are pushed).
