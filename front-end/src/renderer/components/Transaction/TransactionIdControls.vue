@@ -13,7 +13,11 @@ import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts
 
 import * as claim from '@renderer/services/claimService';
 
-import { isUserLoggedIn, isValidAccountForNodeCreation, stringifyHbar } from '@renderer/utils';
+import {
+  isNodeCreationAuthorizedFeePayer,
+  isUserLoggedIn,
+  stringifyHbar,
+} from '@renderer/utils';
 
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
@@ -114,7 +118,7 @@ const columnClass = 'col-4 col-xxxl-3';
         </span>
         <span
           v-else-if="
-            props.isNodeCreationPrivRequired && !isValidAccountForNodeCreation(props.payerId)
+            props.isNodeCreationPrivRequired && !isNodeCreationAuthorizedFeePayer(props.payerId)
           "
           class="text-warning bi bi-exclamation-triangle-fill me-1"
         >

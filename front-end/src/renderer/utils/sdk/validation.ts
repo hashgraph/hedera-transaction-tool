@@ -60,11 +60,15 @@ export function exceedsUtf8ByteLimit(str: string, byteLimit: number): boolean {
   return utf8ByteLength(str) > byteLimit;
 }
 
-export function isValidAccountForNodeCreation(accountId: string): boolean {
+/**
+ * Only accounts between 0.0.2 and 0.0.55 are authorized to create nodes or registered nodes.
+ */
+
+export function isNodeCreationAuthorizedFeePayer(accountId: AccountId | string): boolean {
   let result: boolean;
   try {
-    const aid = AccountId.fromString(accountId);
-    result = aid.shard.isZero() && aid.realm.isZero() && aid.num.gte(2) && aid.num.lte(55);
+    const id = typeof accountId === 'string' ? AccountId.fromString(accountId) : accountId;
+    result = id.shard.isZero() && id.realm.isZero() && id.num.gte(2) && id.num.lte(55);
   } catch {
     result = false;
   }
