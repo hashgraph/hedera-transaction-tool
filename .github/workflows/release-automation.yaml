@@ -8,10 +8,17 @@ on:
       version:
         description: "Version (semver)"
         required: true
-      images_only:
-        description: "Only build and push Docker images; skip branch, tag, release, milestone, and snapshot PR"
-        type: boolean
-        default: false
+      mode:
+        description: |
+          Choose workflow behavior:
+          - full_release: branch + tag + images + GitHub release + snapshot PR
+          - images_only: only build and push Docker images
+          - create_pr_only: only create snapshot bump PR
+        type: choice
+        options:
+          - full_release
+          - images_only
+          - create_pr_only
 
 permissions:
   contents: write
@@ -76,21 +83,21 @@ jobs:
   # then commit + tag. This MUST run before the images are built so the images
   # are built from source that already contains the release version (the api
   # embeds package.json `version` into its Swagger docs at build time).
-  # Skipped entirely when images_only is set.
+  # Skipped entirely when mode is not full_release.
   # ----------------------------
-  release_branch:
+  cut_release:
     name: Branch, Bump and Tag
     runs-on: transaction-tools-linux-medium
     needs: prepare
-    if: ${{ !inputs.images_only }}
+    if: ${{ inputs.mode == 'full_release' }}
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
       RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
       NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
     outputs:
-      create_pr: ${{ steps.release_branch.outputs.create_pr }}
-      pr_title: ${{ steps.release_branch.outputs.pr_title }}
+      create_pr: ${{ steps.branch_or_create_release.outputs.create_pr }}
+      pr_title: ${{ steps.branch_or_create_release.outputs.pr_title }}
 
     steps:
       - name: Harden Runner
@@ -128,7 +135,7 @@ jobs:
           node-version: 24.15.0
 
       - name: Create and Switch to Release Branch
-        id: release_branch
+        id: branch_or_create_release
         run: |
           if ! git ls-remote --exit-code --heads --quiet origin refs/heads/${RELEASE_BRANCH}; then
             git checkout -b ${RELEASE_BRANCH}
@@ -181,17 +188,22 @@ jobs:
           tagging_message: ${{ env.RELEASE_TAG }}
 
   # ----------------------------
-  # 🔥 Docker Auth + Buildx + Cache
+  # Docker Auth + Buildx + Cache
   # Runs in both modes, always building from the release tag for the supplied
-  # version. For a full release, release_branch creates that tag just before this
-  # job; for images_only the tag must already exist (rebuilding a prior release).
+  # version. For a full release, cut_release creates that tag just before this
+  # job; for images_only mode the tag must already exist (rebuilding a prior release).
   # ----------------------------
   build_and_push_images:
     name: Build and Push Docker Images
     runs-on: transaction-tools-linux-medium
     timeout-minutes: 30
-    needs: [prepare, release_branch]
-    if: ${{ always() && needs.prepare.result == 'success' && (needs.release_branch.result == 'success' || needs.release_branch.result == 'skipped') }}
+    needs: [prepare, cut_release]
+    if:  >-
+      ${{ always() && 
+        (inputs.mode == 'images_only' || inputs.mode == 'full_release') &&
+        needs.prepare.result == 'success' && 
+        (needs.cut_release.result == 'success' || needs.cut_release.result == 'skipped')
+      }}
     # Override the workflow-level permissions: the attestation step needs to mint
     # an OIDC token and write the provenance attestation, and the push needs
     # packages: write. contents: read is enough for the checkout.
@@ -228,8 +240,8 @@ jobs:
           # Always build from the immutable release tag for the supplied version
           # so the image is pinned to the exact tagged commit (the api embeds
           # package.json `version` at build time). For a full release,
-          # release_branch (needed above) creates this tag just before this job;
-          # for images_only the tag must already exist.
+          # cut_release (needed above) creates this tag just before this job;
+          # for images_only mode the tag must already exist.
           ref: ${{ needs.prepare.outputs.release_tag }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
@@ -279,13 +291,13 @@ jobs:
 
   # ----------------------------
   # Close the milestone and publish the GitHub release (after images are pushed).
-  # Skipped entirely when images_only is set.
+  # Skipped entirely when images_only mode is set.
   # ----------------------------
   github_release:
     name: Publish GitHub Release
     runs-on: transaction-tools-linux-medium
-    needs: [prepare, release_branch, build_and_push_images]
-    if: ${{ !inputs.images_only }}
+    needs: [prepare, cut_release, build_and_push_images]
+    if: ${{ inputs.mode == 'full_release' }}
     env:
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
       RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
@@ -346,11 +358,11 @@ jobs:
           tag: ${{ env.RELEASE_TAG }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  create_pr:
+  create_snapshot_pr:
     name: Create Snapshot Bump PR
     runs-on: transaction-tools-linux-medium
-    needs: [prepare, release_branch, github_release]
-    if: ${{ !inputs.images_only && needs.release_branch.outputs.create_pr == 'true' }}
+    needs: [prepare, cut_release, github_release]
+    if: ${{ inputs.mode == 'full_release' && needs.cut_release.outputs.create_pr == 'true' }}
     env:
       NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
@@ -420,5 +432,5 @@ jobs:
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true
-          title: ${{ needs.release_branch.outputs.pr_title }}
+          title: ${{ needs.cut_release.outputs.pr_title }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
