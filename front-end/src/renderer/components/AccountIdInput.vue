@@ -17,6 +17,7 @@ import {
 
 import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
+import { compareAccountIds } from '@renderer/utils/sortAccounts';
 
 /* Props */
 const props = defineProps<{
@@ -45,10 +46,11 @@ const formattedAccountIds = computed(() => {
     result = props.items;
   } else {
     const linkedAccounts = accountIds.value.map(a => a.account_id);
-    const ownedAccounts = user.publicKeysToAccountsFlattened
-    result = linkedAccounts.sort()
+    const ownedAccounts = user.publicKeysToAccountsFlattened;
+    result = linkedAccounts
       .concat(linkedAccounts.length > 0 && ownedAccounts.length > 0 ? [ITEM_SEPARATOR] : [])
-      .concat(ownedAccounts.sort());
+      .concat(ownedAccounts);
+    result.sort(compareAccountIds);
   }
   if (props.isNodeCreationPrivRequired) {
     // We keep privileged accounts only
