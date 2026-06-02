@@ -43,12 +43,15 @@ vi.mock('@prisma/client', () => ({
 import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsService';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
+import { Transaction } from '@hiero-ledger/sdk';
 import useTransactionGroupStore, {
-  type GroupItem,
+  type RenderedGroupItem,
 } from '@renderer/stores/storeTransactionGroup';
 
-function createGroupItem(overrides: Partial<GroupItem> = {}): GroupItem {
+let nextTestRowKey = 0;
+function createGroupItem(overrides: Partial<RenderedGroupItem> = {}): RenderedGroupItem {
   return {
+    rowKey: `test-row-key-${nextTestRowKey++}`,
     transactionBytes: new Uint8Array([1, 2, 3]),
     type: 'Transfer',
     seq: '0',
@@ -58,6 +61,8 @@ function createGroupItem(overrides: Partial<GroupItem> = {}): GroupItem {
     payerAccountId: '0.0.1',
     validStart: new Date(1000),
     description: 'test',
+    transactionMemo: '',
+    transferSummary: null,
     ...overrides,
   };
 }
@@ -112,6 +117,7 @@ describe('useTransactionGroupStore', () => {
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
       const uniqueTimestamps = new Set(timestamps);
       expect(uniqueTimestamps.size).toBe(3);
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(3);
     });
 
   });
@@ -175,6 +181,19 @@ describe('useTransactionGroupStore', () => {
       expect(store.isModified()).toBe(false);
       store.addGroupItem(createGroupItem());
       expect(store.isModified()).toBe(true);
+    });
+
+    test('parses transactionBytes only once even when dedup rewrites the validStart', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+      vi.mocked(Transaction.fromBytes).mockClear();
+
+      store.addGroupItem(
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -251,6 +270,20 @@ describe('useTransactionGroupStore', () => {
 
       store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
       expect(store.isModified()).toBe(true);
+    });
+
+    test('parses transactionBytes only once even when dedup rewrites the validStart', () => {
+      store.groupItems.push(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }),
+      );
+      vi.mocked(Transaction.fromBytes).mockClear();
+
+      store.editGroupItem(
+        createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(1);
     });
 
     test('should no-op when seq is a non-numeric string (NaN)', () => {
@@ -415,6 +448,137 @@ describe('useTransactionGroupStore', () => {
       expect(store.description).toBe('');
       expect(store.sequential).toBe(false);
       expect(store.isModified()).toBe(false);
+    });
+  });
+
+  describe('item rowKey (stable client identity)', () => {
+    test('addGroupItem assigns a rowKey even when the caller does not provide one', () => {
+      const { rowKey: _ignored, ...itemWithoutRowKey } = createGroupItem();
+      store.addGroupItem(itemWithoutRowKey);
+
+      expect(store.groupItems[0].rowKey).toBeTruthy();
+      expect(typeof store.groupItems[0].rowKey).toBe('string');
+    });
+
+    test('addGroupItem overwrites any rowKey the caller passed (store owns rowKey assignment)', () => {
+      store.addGroupItem(createGroupItem({ rowKey: 'caller-supplied-row-key' }));
+
+      expect(store.groupItems[0].rowKey).not.toBe('caller-supplied-row-key');
+      expect(store.groupItems[0].rowKey).toBeTruthy();
+    });
+
+    test('every addGroupItem call produces a unique rowKey', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', validStart: new Date(1000) }));
+      store.addGroupItem(createGroupItem({ seq: '1', validStart: new Date(2000) }));
+      store.addGroupItem(createGroupItem({ seq: '2', validStart: new Date(3000) }));
+
+      const rowKeys = store.groupItems.map(i => i.rowKey);
+      expect(new Set(rowKeys).size).toBe(3);
+    });
+
+    test('editGroupItem preserves the slot rowKey so v-for keys stay stable across edits', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', description: 'original' }));
+      const originalRowKey = store.groupItems[0].rowKey;
+
+      store.editGroupItem(createGroupItem({ seq: '0', description: 'edited' }));
+
+      expect(store.groupItems[0].rowKey).toBe(originalRowKey);
+      expect(store.groupItems[0].description).toBe('edited');
+    });
+
+    test('editGroupItem ignores a rowKey the caller passed, keeping the slot rowKey', () => {
+      store.addGroupItem(createGroupItem({ seq: '0' }));
+      const originalRowKey = store.groupItems[0].rowKey;
+
+      store.editGroupItem(createGroupItem({ seq: '0', rowKey: 'caller-supplied-row-key' }));
+
+      expect(store.groupItems[0].rowKey).toBe(originalRowKey);
+    });
+
+    test('duplicateGroupItem gives the new item a fresh rowKey distinct from the source', () => {
+      store.addGroupItem(createGroupItem({ seq: '0' }));
+      const sourceRowKey = store.groupItems[0].rowKey;
+
+      store.duplicateGroupItem(0);
+
+      expect(store.groupItems).toHaveLength(2);
+      expect(store.groupItems[1].rowKey).toBeTruthy();
+      expect(store.groupItems[1].rowKey).not.toBe(sourceRowKey);
+    });
+
+    test('updateTransactionValidStarts preserves item rowKeys across per-tick rewrites', () => {
+      store.addGroupItem(createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }));
+      store.addGroupItem(createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }));
+      const rowKeysBefore = store.groupItems.map(i => i.rowKey);
+
+      store.updateTransactionValidStarts(new Date(5000));
+
+      const rowKeysAfter = store.groupItems.map(i => i.rowKey);
+      expect(rowKeysAfter).toEqual(rowKeysBefore);
+    });
+
+    test('fetchGroup assigns fresh rowKeys to each hydrated item', async () => {
+      const futureStart = new Date(Date.now() + 120_000);
+      const mockTransaction = {
+        toBytes: () => new Uint8Array([1, 2, 3]),
+        transactionId: {
+          accountId: { toString: () => '0.0.1' },
+          validStart: { toDate: () => new Date(futureStart) },
+        },
+      };
+
+      vi.mocked(getGroup).mockResolvedValue({
+        id: 'group-1',
+        created_at: new Date(),
+        description: 'g',
+        atomic: false,
+        groupValidStart: futureStart,
+      });
+      vi.mocked(getGroupItems).mockResolvedValue([
+        { transaction_id: null, transaction_draft_id: 'd1', transaction_group_id: 'group-1', seq: '0' },
+        { transaction_id: null, transaction_draft_id: 'd2', transaction_group_id: 'group-1', seq: '1' },
+      ]);
+      vi.mocked(getDrafts).mockResolvedValue([
+        { id: 'd1', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x01', type: 'Transfer', description: 'a', isTemplate: null, details: null },
+        { id: 'd2', created_at: new Date(), updated_at: new Date(), user_id: 'u', transactionBytes: '0x02', type: 'Transfer', description: 'b', isTemplate: null, details: null },
+      ]);
+      vi.mocked(getTransactionFromBytes).mockReturnValue(mockTransaction as any);
+
+      await store.fetchGroup('group-1', {});
+
+      expect(store.groupItems).toHaveLength(2);
+      expect(store.groupItems[0].rowKey).toBeTruthy();
+      expect(store.groupItems[1].rowKey).toBeTruthy();
+      expect(store.groupItems[0].rowKey).not.toBe(store.groupItems[1].rowKey);
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe('derived display fields (transactionMemo, transferSummary)', () => {
+    test('addGroupItem populates transactionMemo and transferSummary on the stored item', () => {
+      const { rowKey: _, ...input } = createGroupItem();
+      store.addGroupItem(input);
+
+      // SDK mock returns a transaction without memo and not instanceof TransferTransaction,
+      // so the derived fields land at their non-transfer defaults.
+      expect(store.groupItems[0].transactionMemo).toBe('');
+      expect(store.groupItems[0].transferSummary).toBeNull();
+    });
+
+    test('updateTransactionValidStarts preserves derived display fields across per-tick rewrites', () => {
+      store.addGroupItem(
+        createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
+      );
+      // Simulate a render-time precomputed memo + summary on the stored item
+      // (would normally come from deriveDisplay during addGroupItem; we set it
+      // directly here to verify the per-tick rewrite path doesn't clobber them).
+      store.groupItems[0].transactionMemo = 'precomputed-memo';
+      store.groupItems[0].transferSummary = '<b>precomputed</b>';
+
+      store.updateTransactionValidStarts(new Date(5000));
+
+      expect(store.groupItems[0].transactionMemo).toBe('precomputed-memo');
+      expect(store.groupItems[0].transferSummary).toBe('<b>precomputed</b>');
     });
   });
 });
