@@ -96,9 +96,22 @@ const submitManually = ref(false);
 const reminder = ref<number | null>(null);
 const isDraftSaved = ref(false);
 
+// Seed the valid start from the `initialValidStart` query param (epoch ms),
+// passed when creating a transaction from the group page so the new item
+// defaults to just after the group's latest item (a unique next timestamp).
+// Draft/group-edit loads overwrite this later via getTransactionCommonData.
+function getInitialValidStart(): Date {
+  const param = route.query.initialValidStart?.toString();
+  if (param) {
+    const ms = Number(param);
+    if (!Number.isNaN(ms)) return new Date(ms);
+  }
+  return new Date();
+}
+
 const data = reactive<TransactionCommonData>({
   payerId: '',
-  validStart: new Date(),
+  validStart: getInitialValidStart(),
   maxTransactionFee: new Hbar(2),
   transactionMemo: '',
 });

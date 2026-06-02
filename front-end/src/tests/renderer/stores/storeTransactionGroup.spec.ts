@@ -40,7 +40,12 @@ vi.mock('@prisma/client', () => ({
   Prisma: {},
 }));
 
-import { getGroup, getGroupItems } from '@renderer/services/transactionGroupsService';
+import {
+  getGroup,
+  getGroupItems,
+  updateGroup,
+  addGroupWithDrafts,
+} from '@renderer/services/transactionGroupsService';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
 import { Transaction } from '@hiero-ledger/sdk';
@@ -117,7 +122,9 @@ describe('useTransactionGroupStore', () => {
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
       const uniqueTimestamps = new Set(timestamps);
       expect(uniqueTimestamps.size).toBe(3);
-      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(3);
+      // Only the two items the defensive dedupe nudged forward get re-serialized;
+      // the one left at its original validStart is reused as-is.
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(2);
     });
 
   });
@@ -302,6 +309,66 @@ describe('useTransactionGroupStore', () => {
     });
   });
 
+  describe('ordering and seq invariant', () => {
+    // Use distinct payers so validStarts stay unique without dedupe bumping them.
+    function items(times: number[]): RenderedGroupItem[] {
+      return times.map((t, i) =>
+        createGroupItem({
+          seq: i.toString(),
+          payerAccountId: `0.0.${i + 1}`,
+          description: `t-${t}`,
+          validStart: new Date(t),
+        }),
+      );
+    }
+
+    test('addGroupItem keeps groupItems sorted by validStart', () => {
+      store.addGroupItem(items([3000])[0]);
+      store.addGroupItem(items([1000])[0]);
+      store.addGroupItem(items([2000])[0]);
+
+      expect(store.groupItems.map(i => i.validStart.getTime())).toEqual([1000, 2000, 3000]);
+    });
+
+    test('seq always mirrors the array index after a mutation', () => {
+      store.groupItems.push(...items([0, 5, 10, 15, 20]));
+      // Force a renumber through a no-op-ish edit at the last slot.
+      store.editGroupItem(
+        createGroupItem({ seq: '4', payerAccountId: '0.0.5', validStart: new Date(20) }),
+      );
+
+      expect(store.groupItems.map(i => i.seq)).toEqual(['0', '1', '2', '3', '4']);
+    });
+
+    test('editing an item\'s validStart reorders the list and the row follows', () => {
+      // 5 items at 0,5,10,15,20 (ms); edit the last (seq 4, t=20) down to t=11.
+      const seeded = items([0, 5, 10, 15, 20]);
+      store.groupItems.push(...seeded);
+      const movedRowKey = store.groupItems[4].rowKey;
+
+      store.editGroupItem(
+        createGroupItem({ seq: '4', payerAccountId: '0.0.5', validStart: new Date(11) }),
+      );
+
+      // Reordered by validStart: 0,5,10,11,15 — the edited item lands at index 3.
+      expect(store.groupItems.map(i => i.validStart.getTime())).toEqual([0, 5, 10, 11, 15]);
+      expect(store.groupItems[3].rowKey).toBe(movedRowKey);
+      // seq is renumbered to the new positions.
+      expect(store.groupItems.map(i => i.seq)).toEqual(['0', '1', '2', '3', '4']);
+      // groupValidStart still mirrors the first (earliest) item.
+      expect(store.groupValidStart.getTime()).toBe(0);
+    });
+
+    test('removeGroupItem renumbers seq to stay contiguous', () => {
+      store.groupItems.push(...items([0, 5, 10]));
+
+      store.removeGroupItem(1);
+
+      expect(store.groupItems.map(i => i.validStart.getTime())).toEqual([0, 10]);
+      expect(store.groupItems.map(i => i.seq)).toEqual(['0', '1']);
+    });
+  });
+
   describe('updateTransactionValidStarts', () => {
     test('should assign unique timestamps to all items with same payer', () => {
       store.groupItems.push(
@@ -343,17 +410,18 @@ describe('useTransactionGroupStore', () => {
       expect(uniqueTimestamps.size).toBe(10);
     });
 
-    test('should not update items when validStart is past', () => {
+    test('shifts the whole group earlier when the new start is before the current earliest', () => {
       store.groupItems.push(
         createGroupItem({ seq: '0', validStart: new Date(3000) }),
         createGroupItem({ seq: '1', validStart: new Date(3001) }),
       );
 
-      const newValidStart = new Date(2000);
-      store.updateTransactionValidStarts(newValidStart);
+      // earliest is 3000; targeting 2000 shifts everything back by 1000ms,
+      // preserving the 1ms offset between the two items.
+      store.updateTransactionValidStarts(new Date(2000));
 
-      expect(store.groupItems[0].validStart.getTime()).toBe(3000);
-      expect(store.groupItems[1].validStart.getTime()).toBe(3001);
+      expect(store.groupItems[0].validStart.getTime()).toBe(2000);
+      expect(store.groupItems[1].validStart.getTime()).toBe(2001);
     });
 
     test('should mark as modified when called with a future validStart different from initial', () => {
@@ -373,17 +441,18 @@ describe('useTransactionGroupStore', () => {
       expect(store.isModified()).toBe(false);
     });
 
-    test('should still produce unique timestamps when old validStarts overlap with new range', () => {
+    test('shifts items by a fixed delta, preserving their relative offsets', () => {
       store.groupItems.push(
         createGroupItem({ seq: '0', payerAccountId: '0.0.1', validStart: new Date(1000) }),
         createGroupItem({ seq: '1', payerAccountId: '0.0.1', validStart: new Date(2000) }),
         createGroupItem({ seq: '2', payerAccountId: '0.0.1', validStart: new Date(3000) }),
       );
 
+      // earliest is 1000; targeting 2000 shifts the group forward by 1000ms.
       store.updateTransactionValidStarts(new Date(2000));
 
       const timestamps = store.groupItems.map(item => item.validStart.getTime());
-      expect(timestamps).toEqual([2001, 2000, 3000]);
+      expect(timestamps).toEqual([2000, 3000, 4000]);
     });
   });
 
@@ -432,6 +501,93 @@ describe('useTransactionGroupStore', () => {
       expect(store.groupItems).toHaveLength(2);
       expect(store.groupItems[0].description).toBe('a');
       expect(store.groupItems[1].description).toBe('c');
+    });
+  });
+
+  describe('saveGroup', () => {
+    test('updates the bound group regardless of item order, even if a new item sorts to index 0', async () => {
+      // Session bound to a persisted group, plus a brand-new untagged item whose
+      // earlier validStart sorts it ahead of the loaded one. The create-vs-update
+      // decision keys off the bound group, not groupItems[0].
+      store.group = { id: 'g-1' } as never;
+      store.groupItems.push(
+        createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(5000), groupId: 'g-1' }),
+        createGroupItem({ payerAccountId: '0.0.2', validStart: new Date(1000) }),
+      );
+      // sortAndSyncGroupItems runs on mutation; mimic the sorted state directly.
+      store.groupItems.sort((a, b) => a.validStart.getTime() - b.validStart.getTime());
+      expect(store.groupItems[0].groupId).toBeUndefined();
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      expect(addGroupWithDrafts).not.toHaveBeenCalled();
+      expect(updateGroup).toHaveBeenCalledWith(
+        'g-1',
+        'user-1',
+        expect.objectContaining({ description: 'desc' }),
+        store.groupItems,
+      );
+    });
+
+    test('creates a new group when the session is not bound to a persisted group', async () => {
+      vi.mocked(addGroupWithDrafts).mockResolvedValue({ id: 'new-group' } as never);
+      vi.mocked(getGroupItems).mockResolvedValue([{ seq: '0' }, { seq: '1' }] as never);
+      expect(store.group).toBeNull();
+      store.groupItems.push(
+        createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(1000) }),
+        createGroupItem({ payerAccountId: '0.0.2', validStart: new Date(2000) }),
+      );
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      expect(updateGroup).not.toHaveBeenCalled();
+      expect(addGroupWithDrafts).toHaveBeenCalled();
+      // Newly created items get tagged with the returned group id.
+      expect(store.groupItems.every(i => i.groupId === 'new-group')).toBe(true);
+    });
+
+    test('binds the session to the new group so a second save updates instead of duplicating', async () => {
+      vi.mocked(addGroupWithDrafts).mockResolvedValue({
+        id: 'new-group',
+        groupValidStart: new Date(1000),
+      } as never);
+      vi.mocked(getGroupItems).mockResolvedValue([{ seq: '0' }] as never);
+      store.groupItems.push(createGroupItem({ payerAccountId: '0.0.1', validStart: new Date(1000) }));
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      // The first save persisted the group and bound the session to it.
+      expect(store.group?.id).toBe('new-group');
+      expect(addGroupWithDrafts).toHaveBeenCalledTimes(1);
+
+      await store.saveGroup('user-1', 'desc', new Date(1000));
+
+      // The second save must take the update path, not create a duplicate group.
+      expect(addGroupWithDrafts).toHaveBeenCalledTimes(1);
+      expect(updateGroup).toHaveBeenCalledWith(
+        'new-group',
+        'user-1',
+        expect.objectContaining({ description: 'desc' }),
+        store.groupItems,
+      );
+    });
+  });
+
+  describe('nextValidStart', () => {
+    test('falls back to groupValidStart when there are no items', () => {
+      store.groupValidStart = new Date(7000);
+
+      expect(store.nextValidStart.getTime()).toBe(7000);
+    });
+
+    test('returns one millisecond past the latest item so the new item sorts last with a unique timestamp', () => {
+      store.groupItems.push(
+        createGroupItem({ validStart: new Date(1000) }),
+        createGroupItem({ validStart: new Date(5000) }),
+        createGroupItem({ validStart: new Date(3000) }),
+      );
+
+      expect(store.nextValidStart.getTime()).toBe(5001);
     });
   });
 
@@ -550,7 +706,9 @@ describe('useTransactionGroupStore', () => {
       expect(store.groupItems[0].rowKey).toBeTruthy();
       expect(store.groupItems[1].rowKey).toBeTruthy();
       expect(store.groupItems[0].rowKey).not.toBe(store.groupItems[1].rowKey);
-      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(2);
+      // The two items collide on load; the defensive dedupe nudges one forward
+      // (1 re-serialization) and leaves the other at its original validStart.
+      expect(vi.mocked(Transaction.fromBytes)).toHaveBeenCalledTimes(1);
     });
   });
 
