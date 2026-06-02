@@ -1,6 +1,5 @@
-import { computed, ref } from 'vue';
+import { ref } from 'vue';
 
-import type { IVersionCheckResponse } from '@shared/interfaces';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.composable.versionCheck');
@@ -16,9 +15,7 @@ import {
   latestVersion,
   resetVersionState,
   setVersionDataForOrg,
-  setVersionStatusForOrg,
-  getVersionStatusForOrg,
-  getAllOrganizationVersions,
+  initialVersionCheckState,
   type VersionStatus,
 } from '@renderer/stores/versionState';
 
@@ -30,11 +27,6 @@ const isDismissed = ref(
 
 // per org checking flags
 const orgChecks = ref<Record<string, boolean>>({});
-
-// optional: global "any check running"
-const isAnyChecking = computed(() =>
-  Object.values(orgChecks.value).some((v) => v),
-);
 
 export default function useVersionCheck() {
   const performVersionCheck = async (serverUrl: string): Promise<void> => {
@@ -52,32 +44,32 @@ export default function useVersionCheck() {
         minimumSupportedVersion: response.minimumSupportedVersion,
         updateUrl: response.updateUrl,
       });
-
-      if (response.updateUrl) {
-        setVersionStatusForOrg(serverUrl, 'updateAvailable');
-      } else {
-        setVersionStatusForOrg(serverUrl, 'current');
-      }
     } catch (error) {
+      // Failed checks leave the per-org status undefined. The global
+      // versionStatus computed treats "no entries" as null, which the
+      // modals already gate on — no UI difference vs. the prior "force
+      // current" fallback. A prior belowMinimum (from a forced override
+      // or earlier successful check) is preserved automatically.
       logger.error('Version check failed', { error });
-      const orgStatus = getVersionStatusForOrg(serverUrl);
-      if (orgStatus !== 'belowMinimum') {
-        setVersionStatusForOrg(serverUrl, 'current');
-      }
     } finally {
       orgChecks.value[serverUrl] = false;
     }
   };
 
-  const storeVersionDataForOrganization = (
-    serverUrl: string,
-    data: IVersionCheckResponse,
-  ): void => {
-    setVersionDataForOrg(serverUrl, data);
-  };
+  // Runs the per-org check across every supplied serverUrl, then flips
+  // initialVersionCheckState to 'done' so the upgrade modals (which gate
+  // on 'done') start rendering. Single entry point for both auto-login
+  // and manual-login startup paths. Concurrent re-entry is dropped: the
+  // 'running' state bars a second batch from racing the first into 'done'.
+  const performInitialVersionCheck = async (serverUrls: string[]): Promise<void> => {
+    if (initialVersionCheckState.value !== 'idle') return;
 
-  const getAllOrganizationVersionData = (): { [serverUrl: string]: IVersionCheckResponse } => {
-    return getAllOrganizationVersions();
+    initialVersionCheckState.value = 'running';
+    try {
+      await Promise.allSettled(serverUrls.map(url => performVersionCheck(url)));
+    } finally {
+      initialVersionCheckState.value = 'done';
+    }
   };
 
   const dismissOptionalUpdate = (): void => {
@@ -97,13 +89,11 @@ export default function useVersionCheck() {
     updateUrl,
     latestVersion,
     performVersionCheck,
+    performInitialVersionCheck,
     isDismissed,
     orgChecks,
-    isAnyChecking,
     dismissOptionalUpdate,
     reset,
-    storeVersionDataForOrganization,
-    getAllOrganizationVersionData,
   };
 }
 
