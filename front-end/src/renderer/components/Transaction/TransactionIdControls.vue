@@ -100,6 +100,7 @@ const columnClass = 'col-4 col-xxxl-3';
         @update:modelValue="handlePayerChange"
         :filled="true"
         placeholder="Enter Payer ID"
+        :is-node-creation-priv-required="props.isNodeCreationPrivRequired"
         data-testid="input-payer-account"
       />
       <div class="text-micro mt-2">

@@ -8,7 +8,12 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
+import {
+  formatAccountId,
+  getAccountIdWithChecksum,
+  isNodeCreationAuthorizedFeePayer,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
@@ -18,6 +23,7 @@ const props = defineProps<{
   modelValue: string;
   items?: string[];
   dataTestid?: string;
+  isNodeCreationPrivRequired?: boolean;
 }>();
 
 /* Emits */
@@ -43,6 +49,10 @@ const formattedAccountIds = computed(() => {
     result = linkedAccounts.sort()
       .concat(linkedAccounts.length > 0 && ownedAccounts.length > 0 ? [ITEM_SEPARATOR] : [])
       .concat(ownedAccounts.sort());
+  }
+  if (props.isNodeCreationPrivRequired) {
+    // We keep privileged accounts only
+    result = result.filter(accountId => isNodeCreationAuthorizedFeePayer(accountId));
   }
   return result.map(id => getAccountIdWithChecksum(id));
 });
