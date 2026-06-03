@@ -13,7 +13,7 @@ const emit = defineEmits<{
 const inputText = ref<string>('');
 
 /* Computed */
-const inputValue = computed<string | null>(() => {
+const inputValue = computed<string | Uint8Array | null>(() => {
   let result: string | Uint8Array | null;
 
   const trimmed = inputText.value.trim();
