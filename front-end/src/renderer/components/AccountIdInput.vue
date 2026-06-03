@@ -47,10 +47,17 @@ const formattedAccountIds = computed(() => {
   } else {
     const linkedAccounts = accountIds.value.map(a => a.account_id);
     const ownedAccounts = user.publicKeysToAccountsFlattened;
-    result = linkedAccounts
-      .concat(linkedAccounts.length > 0 && ownedAccounts.length > 0 ? [ITEM_SEPARATOR] : [])
-      .concat(ownedAccounts);
-    result.sort(compareAccountIds);
+    linkedAccounts.sort(compareAccountIds);
+    ownedAccounts.sort(compareAccountIds);
+    if (linkedAccounts.length > 0 && ownedAccounts.length > 0) {
+      result = linkedAccounts.concat([ITEM_SEPARATOR]).concat(ownedAccounts);
+    } else if (linkedAccounts.length > 0) {
+      result = linkedAccounts;
+    } else if (ownedAccounts.length > 0) {
+      result = ownedAccounts;
+    } else {
+      result = [];
+    }
   }
   if (props.isNodeCreationPrivRequired) {
     // We keep privileged accounts only
