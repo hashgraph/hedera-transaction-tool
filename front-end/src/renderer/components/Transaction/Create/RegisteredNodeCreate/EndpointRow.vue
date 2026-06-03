@@ -138,26 +138,24 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
       </AppButton>
     </div>
 
-    <!-- Type selector -->
-    <div class="form-group">
-      <label class="form-label">Type <span class="text-danger">*</span></label>
-      <select
-        class="form-control is-fill"
-        :value="endpoint.type"
-        :data-testid="`select-registered-endpoint-type-${index}`"
-        @change="
-          handleTypeChange(($event.target as HTMLSelectElement).value as RegisteredEndpointType)
-        "
-      >
-        <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-          {{ opt.label }}
-        </option>
-      </select>
-    </div>
-
-    <!-- Address (IPv4 or Domain) / Port -->
+    <!-- Type selector / Address (IPv4 or Domain) / Port -->
     <div class="row align-items-end mt-3">
-      <div class="col-8 col-xxxl-6">
+      <div class="col-3 col-xxxl-6">
+        <label class="form-label">Type <span class="text-danger">*</span></label>
+        <select
+          class="form-control is-fill"
+          :value="endpoint.type"
+          :data-testid="`select-registered-endpoint-type-${index}`"
+          @change="
+            handleTypeChange(($event.target as HTMLSelectElement).value as RegisteredEndpointType)
+          "
+        >
+          <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+      </div>
+      <div class="col-6 col-xxxl-6">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <label class="form-label mb-0">
             IP/Domain
@@ -170,7 +168,7 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
           :data-testid="`input-registered-endpoint-address-${index}`"
         />
       </div>
-      <div class="col-4 col-xxxl-3">
+      <div class="col-2 col-xxxl-3">
         <label class="form-label">Port <span class="text-danger">*</span></label>
         <input
           :value="endpoint.port ?? ''"
@@ -180,18 +178,16 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
           :data-testid="`input-registered-endpoint-port-${index}`"
         />
       </div>
-    </div>
-
-    <!-- TLS switch -->
-    <div class="form-group mt-4">
-      <AppSwitch
-        :checked="endpoint.requiresTls"
-        @update:checked="patch({ requiresTls: $event })"
-        size="md"
-        :name="`registered-endpoint-tls-${index}`"
-        label="Requires TLS"
-        :data-testid="`switch-registered-endpoint-tls-${index}`"
-      />
+      <div class="col-md-auto">
+        <label class="form-label">TLS</label>
+        <AppSwitch
+          :checked="endpoint.requiresTls"
+          @update:checked="patch({ requiresTls: $event })"
+          size="md"
+          :name="`registered-endpoint-tls-${index}`"
+          :data-testid="`switch-registered-endpoint-tls-${index}`"
+        />
+      </div>
     </div>
 
     <!-- Block Node — endpoint APIs -->
@@ -230,3 +226,10 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
     </div>
   </div>
 </template>
+
+<style scoped>
+.form-switch.form-switch-md {
+  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
+}
+</style>
