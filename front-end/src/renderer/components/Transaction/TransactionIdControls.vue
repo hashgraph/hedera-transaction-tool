@@ -13,11 +13,7 @@ import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts
 
 import * as claim from '@renderer/services/claimService';
 
-import {
-  isNodeCreationAuthorizedFeePayer,
-  isUserLoggedIn,
-  stringifyHbar,
-} from '@renderer/utils';
+import { isNodeCreationAuthorizedFeePayer, isUserLoggedIn, stringifyHbar } from '@renderer/utils';
 
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
@@ -104,7 +100,7 @@ const columnClass = 'col-4 col-xxxl-3';
         data-testid="input-payer-account"
       />
       <div class="text-micro mt-2">
-        <span v-if="payerId == '' || account.isLoading.value" class="invisible">plcrhldr</span>
+        <span v-if="payerId == '' || account.isLoading.value" class="invisible">&nbsp;</span>
         <span
           v-else-if="account.accountInfo.value === null"
           class="text-warning bi bi-exclamation-triangle-fill me-1"
