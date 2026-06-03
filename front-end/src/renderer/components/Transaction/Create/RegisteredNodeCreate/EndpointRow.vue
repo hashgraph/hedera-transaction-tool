@@ -4,14 +4,15 @@ import type {
   RegisteredEndpointType,
 } from '@renderer/utils/sdk';
 
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { BlockNodeApi } from '@hiero-ledger/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
-import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
+import IpDomainInput from '@renderer/components/IpDomainInput.vue';
+import { IpDomainInputStatus } from '@renderer/components/IpDomainInputStatus';
 
 /* Props */
 const props = defineProps<{
@@ -25,6 +26,10 @@ const emit = defineEmits<{
   (event: 'update:endpoint', endpoint: ComponentRegisteredServiceEndpoint): void;
   (event: 'delete'): void;
 }>();
+
+/* State */
+const ipOrDomain = ref<string | Uint8Array | null>(null);
+const ipOrDomainStatus = ref<IpDomainInputStatus>(IpDomainInputStatus.empty);
 
 /**
  * Block-node API options shown to the user.
@@ -61,6 +66,7 @@ if (BLOCK_NODE_API_OPTIONS.length === 0) {
   );
 }
 
+/* Computed */
 const blockNodeApiOptions = computed(() => BLOCK_NODE_API_OPTIONS);
 
 /* Helpers */
@@ -82,32 +88,6 @@ function handlePortInput(e: Event) {
   patch({ port: target.value.replace(/[^0-9]/g, '') });
 }
 
-/**
- * IP / Domain are mutually exclusive per the proto `oneof address` rule. We
- * surface that with an explicit switch + single text field rather than two
- * inputs whose state silently clears the other on type. Initial mode is
- * derived from whichever field has data so drafts and round-trips pick up
- * the correct view.
- */
-const addressMode = ref<'ipv4' | 'domain'>(
-  props.endpoint.domainName ? 'domain' : 'ipv4',
-);
-
-function handleAddressModeChange(useDomain: boolean) {
-  addressMode.value = useDomain ? 'domain' : 'ipv4';
-  // Clear the now-inactive field so we never carry stale data into the
-  // SDK builder. Not silent — the user just toggled the switch.
-  patch(useDomain ? { ipAddressV4: '' } : { domainName: '' });
-}
-
-function handleAddressInput(value: string) {
-  patch(
-    addressMode.value === 'ipv4'
-      ? { ipAddressV4: value, domainName: '' }
-      : { domainName: value, ipAddressV4: '' },
-  );
-}
-
 function toggleApi(code: number, checked: boolean) {
   const current = new Set(props.endpoint.endpointApis ?? []);
   if (checked) current.add(code);
@@ -118,6 +98,30 @@ function toggleApi(code: number, checked: boolean) {
 function isApiSelected(code: number) {
   return (props.endpoint.endpointApis ?? []).includes(code);
 }
+
+/* Watchers */
+watch(
+  [() => props.endpoint.ipAddressV4, () => props.endpoint.domainName],
+  () => {
+    if (props.endpoint.ipAddressV4 !== '') {
+      ipOrDomain.value = props.endpoint.ipAddressV4;
+    } else if (props.endpoint.domainName !== '') {
+      ipOrDomain.value = props.endpoint.domainName;
+    } else {
+      ipOrDomain.value = '';
+    }
+  },
+  { immediate: true },
+);
+watch([ipOrDomain, ipOrDomainStatus], () => {
+  if (ipOrDomain.value instanceof Uint8Array) {
+    patch({ ipAddressV4: ipOrDomain.value.join('.'), domainName: '' });
+  } else if (typeof ipOrDomain.value === 'string') {
+    patch({ ipAddressV4: '', domainName: ipOrDomain.value ?? '' });
+  } else {
+    patch({ ipAddressV4: '', domainName: '' });
+  }
+});
 </script>
 
 <template>
@@ -142,9 +146,7 @@ function isApiSelected(code: number) {
         :value="endpoint.type"
         :data-testid="`select-registered-endpoint-type-${index}`"
         @change="
-          handleTypeChange(
-            ($event.target as HTMLSelectElement).value as RegisteredEndpointType,
-          )
+          handleTypeChange(($event.target as HTMLSelectElement).value as RegisteredEndpointType)
         "
       >
         <option v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
@@ -158,25 +160,13 @@ function isApiSelected(code: number) {
       <div class="col-8 col-xxxl-6">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <label class="form-label mb-0">
-            {{ addressMode === 'ipv4' ? 'IPv4 Address' : 'Domain Name' }}
+            IP/Domain
             <span class="text-danger">*</span>
           </label>
-          <AppSwitch
-            :checked="addressMode === 'domain'"
-            @update:checked="handleAddressModeChange"
-            size="sm"
-            :name="`registered-endpoint-address-mode-${index}`"
-            label="Use domain name"
-            :data-testid="`switch-registered-endpoint-address-mode-${index}`"
-          />
         </div>
-        <AppInput
-          :model-value="
-            addressMode === 'ipv4' ? (endpoint.ipAddressV4 ?? '') : (endpoint.domainName ?? '')
-          "
-          @update:model-value="handleAddressInput"
-          :filled="true"
-          :placeholder="addressMode === 'ipv4' ? 'e.g. 10.0.0.1' : 'e.g. node.example.com'"
+        <IpDomainInput
+          v-model="ipOrDomain"
+          @status="ipOrDomainStatus = $event"
           :data-testid="`input-registered-endpoint-address-${index}`"
         />
       </div>
