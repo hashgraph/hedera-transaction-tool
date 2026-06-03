@@ -59,22 +59,3 @@ export function utf8ByteLength(str: string): number {
 export function exceedsUtf8ByteLimit(str: string, byteLimit: number): boolean {
   return utf8ByteLength(str) > byteLimit;
 }
-
-/**
- * Byte-aware analogue of `validate100CharInput`. The HIP for registered nodes
- * (and several other proto contracts) specifies `100 bytes UTF-8`, not 100
- * characters — `.length` counts UTF-16 code units, which under-counts emoji
- * and over-counts surrogate pairs.
- */
-export function validate100ByteInput(str: string, inputDescription: string) {
-  if (exceedsUtf8ByteLimit(str, 100)) {
-    throw new Error(`${inputDescription} is limited to 100 bytes (UTF-8)`);
-  }
-}
-
-export const transactionIs = <T extends Transaction>(
-  type: new (...args: any[]) => T,
-  transaction: Transaction,
-): transaction is T => {
-  return transaction instanceof type;
-};
