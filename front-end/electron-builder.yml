@@ -33,6 +33,8 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  # Build + sign only. Notarizing + stapling is a separate step
+  # (scripts/notarize-mac-installers.sh, via `pnpm notarize:mac`).
   notarize: false
   target:
     - target: 'default'

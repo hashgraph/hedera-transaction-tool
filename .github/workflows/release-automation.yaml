@@ -13,12 +13,12 @@ on:
           Choose workflow behavior:
           - full_release: branch + tag + images + GitHub release + snapshot PR
           - images_only: only build and push Docker images
-          - create_pr_only: only create snapshot bump PR
+          - build_mac_only: only build and sign mac artificats
         type: choice
         options:
           - full_release
           - images_only
-          - create_pr_only
+          - build_mac_only
 
 permissions:
   contents: write
@@ -290,13 +290,122 @@ jobs:
           push-to-registry: true
 
   # ----------------------------
+  # Build the macOS desktop artifacts (dmg, pkg, zip, latest-mac.yml and the
+  # accompanying blockmaps) with electron-builder on a macOS runner. Mirrors
+  # build_and_push_images: it builds from the immutable release tag for the
+  # supplied version (so the version electron-builder bundles matches the
+  # tagged commit), runs in both full_release and build_mac_only modes, and
+  # only requires cut_release to have succeeded or been skipped — in
+  # build_mac_only mode cut_release is skipped and the tag must already exist.
+  # It does not depend on the image build, so the two run in parallel.
+  # The artifacts are signed (Developer ID Application for the app/dmg/zip,
+  # Developer ID Installer for the pkg), then the dmg/pkg installers are
+  # notarized + stapled by the same script used for local releases. The build
+  # itself does not notarize.
+  # ----------------------------
+  build_mac:
+    name: Build macOS Artifacts
+    runs-on: macos-latest
+    # Generous: three arches (x64/arm64/universal) are built, then six
+    # installers (dmg + pkg per arch) are notarized via the notary service.
+    timeout-minutes: 90
+    needs: [prepare, cut_release]
+    if:  >-
+      ${{ always() &&
+        (inputs.mode == 'build_mac_only' || inputs.mode == 'full_release') &&
+        needs.prepare.result == 'success' &&
+        (needs.cut_release.result == 'success' || needs.cut_release.result == 'skipped')
+      }}
+    env:
+      VERSION: ${{ needs.prepare.outputs.version }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Build from the immutable release tag for the supplied version so the
+          # version electron-builder bundles matches the tagged commit (same
+          # rationale as build_and_push_images).
+          ref: ${{ needs.prepare.outputs.release_tag }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+      - name: Install pnpm
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+        with:
+          version: 9.15.3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24.15.0
+          cache: 'pnpm'
+          cache-dependency-path: |
+            pnpm-lock.yaml
+
+      - name: Install Dependencies
+        # Root install runs front-end's postinstall (electron-builder
+        # install-app-deps), rebuilding the native modules for the macOS
+        # electron runtime.
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and Sign macOS Artifacts
+        working-directory: front-end
+        # build:mac only builds + signs — it does not notarize (that is the
+        # explicit step below).
+        env:
+          # Developer ID Application cert (signs the .app, .dmg and .zip).
+          # CSC_LINK accepts the base64-encoded .p12 directly.
+          CSC_LINK: ${{ secrets.MACOS_CERT_APP_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_CERT_APP_PASSWORD }}
+          # Developer ID Installer cert (signs the .pkg).
+          CSC_INSTALLER_LINK: ${{ secrets.MACOS_CERT_INSTALLER_BASE64 }}
+          CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.MACOS_CERT_INSTALLER_PASSWORD }}
+        run: pnpm run build:mac
+
+      - name: Prepare App Store Connect API Key
+        # notarytool needs the App Store Connect API key as a .p8 file on disk;
+        # the secret holds it base64-encoded. Write it to the runner temp dir
+        # and export its path for the notarization step.
+        run: |
+          API_KEY_PATH="${RUNNER_TEMP}/apple_api_key.p8"
+          echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 --decode > "${API_KEY_PATH}"
+          echo "APPLE_API_KEY=${API_KEY_PATH}" >> "$GITHUB_ENV"
+
+      - name: Notarize and Staple Installers
+        working-directory: front-end
+        # Same script used for local releases. APPLE_API_KEY (the .p8 path) is
+        # exported into $GITHUB_ENV by the previous step.
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: pnpm run notarize:mac
+
+      - name: Upload macOS Artifacts
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: macos-artifacts-${{ env.VERSION }}
+          path: |
+            front-end/release/*.dmg
+            front-end/release/*.pkg
+            front-end/release/*.zip
+            front-end/release/*.blockmap
+            front-end/release/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 5
+
+  # ----------------------------
   # Close the milestone and publish the GitHub release (after images are pushed).
   # Skipped entirely when images_only mode is set.
   # ----------------------------
   github_release:
     name: Publish GitHub Release
     runs-on: transaction-tools-linux-medium
-    needs: [prepare, cut_release, build_and_push_images]
+    needs: [prepare, cut_release, build_and_push_images, build_mac]
     if: ${{ inputs.mode == 'full_release' }}
     env:
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
