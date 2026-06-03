@@ -5,11 +5,9 @@ import type {
   RegisteredNodeData,
 } from '@renderer/utils/sdk';
 
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 
-import { ToastManager } from '@renderer/utils/ToastManager';
-
-import { exceedsUtf8ByteLimit, utf8ByteLength } from '@renderer/utils';
+import { utf8ByteLength } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -27,17 +25,12 @@ const emit = defineEmits<{
   (event: 'update:data', data: RegisteredNodeData): void;
 }>();
 
-/* Composables */
-const toastManager = ToastManager.inject();
-
 /* Constants */
 const DESCRIPTION_MAX_BYTES = 100;
 
-/* State */
-const descriptionError = ref(false);
-
 /* Computed */
 const descriptionByteLength = computed(() => utf8ByteLength(props.data.description ?? ''));
+const isDescriptionTooLong = computed(() => descriptionByteLength.value > DESCRIPTION_MAX_BYTES);
 
 /* Handlers */
 function handleAddEndpoint() {
@@ -60,10 +53,7 @@ function handleAddEndpoint() {
   });
 }
 
-function handleUpdateEndpoint(
-  index: number,
-  endpoint: ComponentRegisteredServiceEndpoint,
-) {
+function handleUpdateEndpoint(index: number, endpoint: ComponentRegisteredServiceEndpoint) {
   const next = [...props.data.serviceEndpoints];
   next[index] = endpoint;
   emit('update:data', { ...props.data, serviceEndpoints: next });
@@ -74,20 +64,20 @@ function handleDeleteEndpoint(index: number) {
   next.splice(index, 1);
   emit('update:data', { ...props.data, serviceEndpoints: next });
 }
-
-function handleDescriptionValidation(e: Event) {
-  // HIP-1137 description is ≤100 UTF-8 bytes (not characters). Validate by
-  // byte length so 100 emoji don't silently slip past a char-based check
-  // and only get rejected later in preCreateAssert.
-  // Toast only on the valid→invalid transition; otherwise typing N extra
-  // characters past the limit fires N stacked toasts on every keystroke.
-  const target = e.target as HTMLInputElement;
-  const hasDescriptionError = exceedsUtf8ByteLimit(target.value, DESCRIPTION_MAX_BYTES);
-  if (hasDescriptionError && !descriptionError.value) {
-    toastManager.error(`Description is limited to ${DESCRIPTION_MAX_BYTES} bytes (UTF-8)`);
-  }
-  descriptionError.value = hasDescriptionError;
-}
+//
+// function handleDescriptionValidation(e: Event) {
+//   // HIP-1137 description is ≤100 UTF-8 bytes (not characters). Validate by
+//   // byte length so 100 emoji don't silently slip past a char-based check
+//   // and only get rejected later in preCreateAssert.
+//   // Toast only on the valid→invalid transition; otherwise typing N extra
+//   // characters past the limit fires N stacked toasts on every keystroke.
+//   const target = e.target as HTMLInputElement;
+//   const hasDescriptionError = exceedsUtf8ByteLimit(target.value, DESCRIPTION_MAX_BYTES);
+//   if (hasDescriptionError && !descriptionError.value) {
+//     toastManager.error(`Description is limited to ${DESCRIPTION_MAX_BYTES} bytes (UTF-8)`);
+//   }
+//   descriptionError.value = hasDescriptionError;
+// }
 
 /** Stable row key — never `index`, since deleting/reordering with `index` keys
  * causes Vue to re-use DOM nodes from the wrong row (focus jumps, stale state).
@@ -95,7 +85,6 @@ function handleDescriptionValidation(e: Event) {
 function rowKey(endpoint: ComponentRegisteredServiceEndpoint, index: number): string {
   return endpoint.uiId ?? `legacy-${index}`;
 }
-
 
 /* Type helper for template */
 const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = [
@@ -124,9 +113,8 @@ const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = 
 
   <!-- Description -->
   <div class="form-group mt-6 col-8 col-xxxl-6">
-    <label class="form-label">Description</label>
+    <label class="form-label">Registered Node Description</label>
     <AppInput
-      @input="handleDescriptionValidation"
       :model-value="data.description"
       @update:model-value="
         emit('update:data', {
@@ -135,15 +123,15 @@ const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = 
         })
       "
       :filled="true"
-      placeholder="Enter Description (optional, ≤ 100 UTF-8 bytes)"
-      :class="[descriptionError ? 'is-invalid' : '']"
+      placeholder="Enter Description"
+      :class="[isDescriptionTooLong ? 'is-invalid' : '']"
     />
     <div
       class="text-micro mt-1"
-      :class="descriptionError ? 'text-danger' : 'text-muted'"
+      :class="isDescriptionTooLong ? 'text-warning' : 'text-muted'"
       data-testid="text-registered-description-byte-counter"
     >
-      {{ descriptionByteLength }} / {{ DESCRIPTION_MAX_BYTES }} bytes
+      {{ descriptionByteLength }} / {{ DESCRIPTION_MAX_BYTES }}{{ isDescriptionTooLong ? " - too long" : "" }}
     </div>
   </div>
 
