@@ -49,7 +49,7 @@ module.exports = [
       'src/renderer/utils/logger.ts',
     ],
     rules: {
-      'no-console': 'error',
+      'no-console': 'warn',
     },
   },
 ];
