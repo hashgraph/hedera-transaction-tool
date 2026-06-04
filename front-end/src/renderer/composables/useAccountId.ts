@@ -26,7 +26,7 @@ export default function useAccountId() {
   const allowancesController = ref<AbortController | null>(null);
 
   /* Computed */
-  const isValid = computed(() => accountInfo.value);
+  const isValid = computed(() => accountInfo.value !== null);
   const isLoading = computed(() => loading.value);
 
   /* Injected */
