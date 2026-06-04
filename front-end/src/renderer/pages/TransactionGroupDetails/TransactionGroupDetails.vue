@@ -424,10 +424,11 @@ async function fetchGroupOnNotif(groupId: string | number) {
             <template v-if="visibleButtons.length > 0">
               <div>
                 <SplitSignButtonDropdown
-                  :action-text="sign"
-                  :action-next-text="signAndNext"
                   v-if="visibleButtons[0] === sign"
-                  :disabled="Boolean(loadingStates[visibleButtons[0]])"
+                  :action-next-text="signAndNext"
+                  :action-text="sign"
+                  :data-testid="buttonsDataTestIds[sign]"
+                  :disabled="Boolean(loadingStates[sign])"
                   :loading="Boolean(loadingStates[sign])"
                   :loading-text="loadingStates[sign] || ''"
                 />
