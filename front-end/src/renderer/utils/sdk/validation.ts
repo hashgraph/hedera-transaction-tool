@@ -1,4 +1,4 @@
-import { FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
+import { AccountId, FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
 
 const TREASURY = '0.0.2';
 const SYSTEM_ADMIN = '0.0.50';
@@ -58,4 +58,19 @@ export function utf8ByteLength(str: string): number {
 /** Returns true if the string's UTF-8 byte length is strictly greater than the limit. */
 export function exceedsUtf8ByteLimit(str: string, byteLimit: number): boolean {
   return utf8ByteLength(str) > byteLimit;
+}
+
+/**
+ * Only accounts between 0.0.2 and 0.0.55 are authorized to create nodes or registered nodes.
+ */
+
+export function isNodeCreationAuthorizedFeePayer(accountId: AccountId | string): boolean {
+  let result: boolean;
+  try {
+    const id = typeof accountId === 'string' ? AccountId.fromString(accountId) : accountId;
+    result = id.shard.isZero() && id.realm.isZero() && id.num.gte(2) && id.num.lte(55);
+  } catch {
+    result = false;
+  }
+  return result;
 }

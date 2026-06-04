@@ -8,16 +8,23 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
 
-import { formatAccountId, getAccountIdWithChecksum, isUserLoggedIn } from '@renderer/utils';
+import {
+  formatAccountId,
+  getAccountIdWithChecksum,
+  isNodeCreationAuthorizedFeePayer,
+  isUserLoggedIn,
+} from '@renderer/utils';
 
 import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
+import { compareAccountIds } from '@renderer/utils/sortAccounts';
 
 /* Props */
 const props = defineProps<{
   modelValue: string;
   items?: string[];
   dataTestid?: string;
+  isNodeCreationPrivRequired?: boolean;
 }>();
 
 /* Emits */
@@ -39,10 +46,22 @@ const formattedAccountIds = computed(() => {
     result = props.items;
   } else {
     const linkedAccounts = accountIds.value.map(a => a.account_id);
-    const ownedAccounts = user.publicKeysToAccountsFlattened
-    result = linkedAccounts.sort()
-      .concat(linkedAccounts.length > 0 && ownedAccounts.length > 0 ? [ITEM_SEPARATOR] : [])
-      .concat(ownedAccounts.sort());
+    const ownedAccounts = user.publicKeysToAccountsFlattened;
+    linkedAccounts.sort(compareAccountIds);
+    ownedAccounts.sort(compareAccountIds);
+    if (linkedAccounts.length > 0 && ownedAccounts.length > 0) {
+      result = linkedAccounts.concat([ITEM_SEPARATOR]).concat(ownedAccounts);
+    } else if (linkedAccounts.length > 0) {
+      result = linkedAccounts;
+    } else if (ownedAccounts.length > 0) {
+      result = ownedAccounts;
+    } else {
+      result = [];
+    }
+  }
+  if (props.isNodeCreationPrivRequired) {
+    // We keep privileged accounts only
+    result = result.filter(accountId => isNodeCreationAuthorizedFeePayer(accountId));
   }
   return result.map(id => getAccountIdWithChecksum(id));
 });
