@@ -139,8 +139,8 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
     </div>
 
     <!-- Type selector / Address (IPv4 or Domain) / Port -->
-    <div class="row align-items-end mt-3">
-      <div class="col-3 col-xxxl-6">
+    <div class="row flex-nowrap align-items-end mt-3">
+      <div class="col-3">
         <label class="form-label">Type <span class="text-danger">*</span></label>
         <select
           class="form-control is-fill"
@@ -155,7 +155,7 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
           </option>
         </select>
       </div>
-      <div class="col-6 col-xxxl-6">
+      <div class="col-6">
         <div class="d-flex align-items-center justify-content-between mb-2">
           <label class="form-label mb-0">
             IP/Domain
@@ -168,7 +168,7 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
           :data-testid="`input-registered-endpoint-address-${index}`"
         />
       </div>
-      <div class="col-2 col-xxxl-3">
+      <div class="col-2">
         <label class="form-label">Port <span class="text-danger">*</span></label>
         <input
           :value="endpoint.port ?? ''"
@@ -178,7 +178,7 @@ watch([ipOrDomain, ipOrDomainStatus], () => {
           :data-testid="`input-registered-endpoint-port-${index}`"
         />
       </div>
-      <div class="col-md-auto">
+      <div class="col-auto">
         <label class="form-label">TLS</label>
         <AppSwitch
           :checked="endpoint.requiresTls"
