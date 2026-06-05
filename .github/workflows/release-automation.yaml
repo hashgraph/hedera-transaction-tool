@@ -185,9 +185,9 @@ jobs:
 
   # ----------------------------
   # Docker Auth + Buildx + Cache
-  # Runs in both modes, always building from the release tag for the supplied
-  # version. For a full release, cut_release creates that tag just before this
-  # job; for publish_docker_images_only mode the tag must already exist (rebuilding a prior release).
+  # Runs in full_release and publish_docker_images_only modes, always building
+  # from the release tag. For full_release, cut_release creates that tag just
+  # before this job; for publish_docker_images_only the tag must already exist.
   # ----------------------------
   build_and_push_images:
     name: Build and Push Docker Images
@@ -348,7 +348,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('front-end/pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -365,9 +365,9 @@ jobs:
 
       - name: Build and Sign macOS Artifacts
         working-directory: front-end
-        # build:mac only builds + signs — it does not notarize (that is the
-        # explicit step below). --publish=never prevents electron-builder from
-        # auto-publishing in CI; artifacts are uploaded via upload-artifact.
+        # Builds and signs only — notarization is the explicit step below.
+        # --publish=never prevents electron-builder from auto-publishing in CI;
+        # artifacts are uploaded via upload-artifact.
         env:
           # Developer ID Application cert (signs the .app, .dmg and .zip).
           # CSC_LINK accepts the base64-encoded .p12 directly.
