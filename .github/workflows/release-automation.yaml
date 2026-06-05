@@ -177,7 +177,7 @@ jobs:
         uses: step-security/git-auto-commit-action@749bc1cc775376092cc4227ba537137f445ca7c3 # v7.1.1
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          commit_message: "Bump versions for ${{ env.RELEASE_TAG }} [skip ci]"
+          commit_message: "chore: bump versions for ${{ env.RELEASE_TAG }} [skip ci]"
           commit_options: "--no-verify --signoff"
           commit_user_name: ${{ steps.gpg_importer.outputs.name }}
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
@@ -296,8 +296,8 @@ jobs:
   # It does not depend on the image build, so the two run in parallel.
   # The artifacts are signed (Developer ID Application for the app/dmg/zip,
   # Developer ID Installer for the pkg), then the dmg/pkg installers are
-  # notarized + stapled by the same script used for local releases. The build
-  # itself does not notarize.
+  # notarized + stapled inline. Artifacts are uploaded to GitHub Actions storage;
+  # in full_release mode the github_release job attaches them to the GitHub Release.
   # ----------------------------
   build_mac:
     name: Build macOS Artifacts
@@ -348,7 +348,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('front-end/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
@@ -421,8 +421,8 @@ jobs:
           retention-days: 5
 
   # ----------------------------
-  # Close the milestone and publish the GitHub release (after images are pushed).
-  # Skipped entirely when publish_docker_images_only mode is set.
+  # Close the milestone, publish the GitHub release, and attach macOS artifacts.
+  # Runs only in full_release mode.
   # ----------------------------
   github_release:
     name: Publish GitHub Release
