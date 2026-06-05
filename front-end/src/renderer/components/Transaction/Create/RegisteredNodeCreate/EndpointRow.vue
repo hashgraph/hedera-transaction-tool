@@ -12,7 +12,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import IpDomainInput from '@renderer/components/IpDomainInput.vue';
-import { IpDomainInputStatus } from '@renderer/components/IpDomainInputStatus';
+import { InputStatus } from '@renderer/components/InputStatus';
 
 /* Props */
 const props = defineProps<{
@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 /* State */
 const ipOrDomain = ref<string | Uint8Array | null>(null);
-const ipOrDomainStatus = ref<IpDomainInputStatus>(IpDomainInputStatus.empty);
+const ipOrDomainStatus = ref<InputStatus>(InputStatus.empty);
 
 /**
  * Block-node API options shown to the user.
