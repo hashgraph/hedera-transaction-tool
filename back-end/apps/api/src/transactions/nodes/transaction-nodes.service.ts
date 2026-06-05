@@ -29,9 +29,6 @@ export class TransactionNodesService {
 
     //this should already be done, imo, in the validation stuff
     await attachKeys(user, this.entityManager);
-    if (user.keys.length === 0) {
-      return [];
-    }
 
     switch (collection) {
       case TransactionNodeCollection.READY_FOR_REVIEW: {
@@ -109,6 +106,13 @@ export class TransactionNodesService {
             statuses: statusFilter,
             types: transactionTypeFilter,
             mirrorNetwork: network,
+          },
+          user,
+          {
+            signer: true,
+            creator: true,
+            observer: true,
+            approver: true,
           }
         );
 

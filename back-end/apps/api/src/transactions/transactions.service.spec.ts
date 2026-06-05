@@ -2,7 +2,16 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { BadRequestException, ConflictException } from '@nestjs/common';
-import { Brackets, DataSource, DeepPartial, EntityManager, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
+import {
+  Brackets,
+  DataSource,
+  DeepPartial,
+  EntityManager,
+  FindOptionsWhere,
+  In,
+  Repository,
+  SelectQueryBuilder,
+} from 'typeorm';
 import {
   AccountCreateTransaction,
   AccountId,
@@ -343,19 +352,11 @@ describe('TransactionsService', () => {
       const transactions = [];
       const count = 0;
 
-      const queryBuilder = {
-        setFindOptions: jest.fn().mockReturnThis(),
-        orWhere: jest.fn().mockImplementation(() => queryBuilder),
-        getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
-      };
-      transactionsRepo.createQueryBuilder.mockReturnValue(
-        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
-      );
+      transactionsRepo.findAndCount.mockResolvedValue([transactions, count]);
 
-      const result = await service.getHistoryTransactions(defaultPagination);
+      const result = await service.getHistoryTransactions(user as User, defaultPagination);
 
-      expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
+      expect(transactionsRepo.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
           relations: ['groupItem', 'groupItem.group'],
           skip: defaultPagination.offset,
@@ -1860,6 +1861,7 @@ describe('TransactionsService', () => {
       await sdkTransaction.sign(privateKey);
 
       entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
 
       const result = await service.importSignatures(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -2023,8 +2025,40 @@ describe('TransactionsService', () => {
       await expect(service.verifyAccess(null, user as User)).rejects.toThrow(ErrorCodes.TNF);
     });
 
-    it('should return true for history/executed statuses', async () => {
+    it('should return true for EXECUTED status without user association check', async () => {
       const tx = { status: TransactionStatus.EXECUTED } as Transaction;
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should return true for FAILED status without user association check', async () => {
+      const tx = { status: TransactionStatus.FAILED } as Transaction;
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+    });
+
+    it('should require user association for EXPIRED transactions', async () => {
+      const tx = { status: TransactionStatus.EXPIRED } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+    });
+
+    it('should require user association for CANCELED transactions', async () => {
+      const tx = { status: TransactionStatus.CANCELED } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+    });
+
+    it('should require user association for ARCHIVED transactions', async () => {
+      const tx = { status: TransactionStatus.ARCHIVED } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+    });
+
+    it('should return true for EXPIRED if user is creator', async () => {
+      const tx = {
+        status: TransactionStatus.EXPIRED,
+        creatorKey: { userId: user.id },
+      } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
 
@@ -2808,214 +2842,156 @@ describe('TransactionsService', () => {
     });
   });
 
-  describe('getHistoryWhere', () => {
+  describe('getHistoryStatusBuckets (via getHistoryTransactions)', () => {
     beforeEach(() => {
       jest.resetAllMocks();
+      transactionsRepo.findAndCount.mockResolvedValue([[], 0]);
     });
 
-    const allowedStatuses = [
-      TransactionStatus.EXECUTED,
-      TransactionStatus.FAILED,
-      TransactionStatus.EXPIRED,
-      TransactionStatus.CANCELED,
-      TransactionStatus.ARCHIVED,
-    ];
-    const forbiddenStatuses = Object.values(TransactionStatus).filter(
-      s => !allowedStatuses.includes(s),
-    );
+    const bypassStatuses = [TransactionStatus.EXECUTED, TransactionStatus.FAILED];
+    const nonBypassStatuses = [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.ARCHIVED];
 
-    const mockQueryBuilder = () => {
-      const queryBuilder = {
-        setFindOptions: jest.fn().mockReturnThis(),
-        orWhere: jest.fn().mockImplementation(() => queryBuilder),
-        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
-      };
-      transactionsRepo.createQueryBuilder.mockReturnValue(
-        queryBuilder as unknown as SelectQueryBuilder<Transaction>,
+    const expectBypassBranch = (where: FindOptionsWhere<Transaction>[]) =>
+      expect(where).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: In(bypassStatuses) }),
+        ]),
       );
 
-      return queryBuilder;
-    };
-
-    it('should return where only with allowed statuses if not filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(In(forbiddenStatuses)),
-          }),
-        }),
+    const expectNonBypassBranches = (where: FindOptionsWhere<Transaction>[]) =>
+      expect(where).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: In(nonBypassStatuses), creatorKey: { userId: user.id } }),
+          expect.objectContaining({ status: In(nonBypassStatuses), observers: { userId: user.id } }),
+          expect.objectContaining({ status: In(nonBypassStatuses), signers: { userId: user.id } }),
+        ]),
       );
+
+    it('should include all history statuses if no filter provided', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
+      expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
     });
 
-    it('should return where only with with allowed status if EQ filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'eq',
-          value: 'EXECUTED',
-        },
+    it('should only include bypass branch for EQ=EXECUTED filter', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'eq', value: 'EXECUTED' },
       ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const whereArr = where as FindOptionsWhere<Transaction>[];
+      expect(whereArr).toEqual(
+        expect.arrayContaining([expect.objectContaining({ status: In([TransactionStatus.EXECUTED]) })]),
+      );
+      expect(whereArr.every(w => !(w as any).creatorKey)).toBe(true);
+    });
 
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: 'EXECUTED',
-          }),
-        }),
+    it('should fall back to all history statuses for invalid EQ filter', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'eq', value: 'WAITING FOR EXECUTION' },
+      ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
+      expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
+    });
+
+    it('should include only valid statuses for IN filter', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'in', value: 'EXECUTED, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, FAILED' },
+      ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      expect(where as FindOptionsWhere<Transaction>[]).toEqual(
+        expect.arrayContaining([expect.objectContaining({ status: In([TransactionStatus.EXECUTED, TransactionStatus.FAILED]) })]),
       );
     });
 
-    it('should return where with allowed statuses if malicious EQ filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'eq',
-          value: 'WAITING FOR EXECUTION',
-        },
+    it('should return empty result for malicious IN filter with no valid statuses', async () => {
+      const result = await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'in', value: 'NEW, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, REJECTED' },
       ]);
+      expect(result).toEqual({ totalItems: 0, items: [], page: defaultPagination.page, size: defaultPagination.size });
+      expect(transactionsRepo.findAndCount).not.toHaveBeenCalled();
+    });
 
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(In(forbiddenStatuses)),
-          }),
-        }),
+    it('should exclude the NEQ status from both buckets', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'neq', value: 'EXECUTED' },
+      ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const whereArr = where as FindOptionsWhere<Transaction>[];
+      // FAILED is still in bypass, EXPIRED/CANCELED/ARCHIVED in non-bypass
+      expect(whereArr).toEqual(
+        expect.arrayContaining([expect.objectContaining({ status: In([TransactionStatus.FAILED]) })]),
+      );
+      expect(whereArr).toEqual(
+        expect.arrayContaining([expect.objectContaining({ status: In(nonBypassStatuses), creatorKey: { userId: user.id } })]),
       );
     });
 
-    it('should return where only with with allowed statuses if IN filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'in',
-          value: 'EXECUTED, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, FAILED',
-        },
+    it('should exclude NIN statuses from both buckets', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'nin', value: 'EXECUTED, FAILED, EXPIRED' },
       ]);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: In([TransactionStatus.EXECUTED, TransactionStatus.FAILED]),
-          }),
-        }),
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const whereArr = where as FindOptionsWhere<Transaction>[];
+      // Only CANCELED and ARCHIVED remain — no bypass, non-bypass is reduced
+      const remaining = [TransactionStatus.CANCELED, TransactionStatus.ARCHIVED];
+      expect(whereArr.some(w => !('creatorKey' in w) && (w as any).status?.value?.includes(TransactionStatus.EXECUTED))).toBe(false);
+      expect(whereArr).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ status: In(remaining), creatorKey: { userId: user.id } }),
+        ]),
       );
     });
 
-    it('should return where only with with allowed statuses if malicious IN filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'in',
-          value: 'NEW, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, REJECTED',
-        },
+    it('should include all history statuses for unsupported filter rule', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'status', rule: 'geteverythingpossiblerule', value: 'EXECUTED,FAILED,EXPIRED' },
       ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
+      expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
+    });
 
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: In([]),
+    it('should include all history statuses when filter has no status property', async () => {
+      await service.getHistoryTransactions(user as User, defaultPagination, [
+        { property: 'name', rule: 'eq', value: 'some transaction name' },
+      ]);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
+      expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
+    });
+
+    it('should include cached account and node branches when user has keys', async () => {
+      jest.mocked(attachKeys).mockImplementationOnce(async (u: User) => {
+        u.keys = [{ id: 1, publicKey: 'pub-key-1' }] as any;
+      });
+
+      await service.getHistoryTransactions(user as User, defaultPagination);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const whereArr = where as FindOptionsWhere<Transaction>[];
+      expect(whereArr).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            status: In(nonBypassStatuses),
+            transactionCachedAccounts: { cachedAccount: { keys: { publicKey: In(['pub-key-1']) } } },
           }),
-        }),
+          expect.objectContaining({
+            status: In(nonBypassStatuses),
+            transactionCachedNodes: { cachedNode: { keys: { publicKey: In(['pub-key-1']) } } },
+          }),
+        ]),
       );
     });
 
-    it('should return where only with with allowed status if NEQ filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'neq',
-          value: 'EXECUTED',
-        },
-      ]);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(In([...forbiddenStatuses, TransactionStatus.EXECUTED])),
-          }),
-        }),
-      );
-    });
-
-    it('should return where only with with allowed statuses if NIN filter provided', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'nin',
-          value: 'EXECUTED, FAILED,EXPIRED',
-        },
-      ]);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(
-              In([
-                ...forbiddenStatuses,
-                TransactionStatus.EXECUTED,
-                TransactionStatus.FAILED,
-                TransactionStatus.EXPIRED,
-              ]),
-            ),
-          }),
-        }),
-      );
-    });
-
-    it('should return where only with with allowed statuses if unsupported filter', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'status',
-          rule: 'geteverythingpossiblerule',
-          value: 'EXECUTED,FAILED,EXPIRED',
-        },
-      ]);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(In([...forbiddenStatuses])),
-          }),
-        }),
-      );
-    });
-
-    it('should return default where if filtering has no status filter', async () => {
-      const queryBuilder = mockQueryBuilder();
-
-      await service.getHistoryTransactions(defaultPagination, [
-        {
-          property: 'name',  // any property that isn't 'status'
-          rule: 'eq',
-          value: 'some transaction name',
-        },
-      ]);
-
-      expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            status: Not(In(forbiddenStatuses)),
-          }),
-        }),
-      );
+    it('should omit cached branches when user has no keys', async () => {
+      jest.mocked(attachKeys).mockImplementationOnce(async (u: User) => {
+        u.keys = [];
+      });
+      await service.getHistoryTransactions(user as User, defaultPagination);
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const whereArr = where as FindOptionsWhere<Transaction>[];
+      expect(whereArr.some(w => 'transactionCachedAccounts' in w || 'transactionCachedNodes' in w)).toBe(false);
     });
   });
 
