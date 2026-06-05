@@ -21,6 +21,7 @@ describe('Post-Migration Database Validation', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
+      ssl: false,
     });
 
     await AppDataSource.initialize();
