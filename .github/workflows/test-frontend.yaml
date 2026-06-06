@@ -475,9 +475,10 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh api --method DELETE \
-            "/repos/${{ github.repository }}/actions/caches?key=build-artifacts-${{ github.sha }}" \
-            || true
+          if ! gh api --method DELETE \
+            "/repos/${{ github.repository }}/actions/caches?key=build-artifacts-${{ github.sha }}&ref=${{ github.ref }}"; then
+            echo "::warning::Failed to delete Actions cache build-artifacts-${{ github.sha }}"
+          fi
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
