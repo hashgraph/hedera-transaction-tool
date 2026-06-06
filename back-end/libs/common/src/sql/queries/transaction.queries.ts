@@ -201,8 +201,7 @@ function buildEligibilityConditions(
  * The resulting clause is structured as:
  * `(filter conditions) AND ((eligibility conditions) OR (bypass status check))`
  *
- * EXECUTED and FAILED bypass the eligibility check and are always visible.
- * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, or signer).
+ * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, signer, or approver).
  *
  * @param sql - The SQL builder service used to resolve table and column names.
  * @param filters - Optional filters to apply, such as status, type, and mirror network.
