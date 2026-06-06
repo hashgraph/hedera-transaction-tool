@@ -400,6 +400,10 @@ jobs:
             release/*-"${{ env.VERSION }}"-mac-*.dmg
             release/*-"${{ env.VERSION }}"-mac-*.pkg
           )
+          if [[ ${#INSTALLERS[@]} -eq 0 ]]; then
+            echo "No .dmg or .pkg installers found — electron-builder did not produce expected artifacts" >&2
+            exit 1
+          fi
           for FILE in "${INSTALLERS[@]}"; do
             xcrun notarytool submit "${FILE}" "${NOTARY_ARGS[@]}" --wait
           done

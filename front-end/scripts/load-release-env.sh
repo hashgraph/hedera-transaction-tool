@@ -26,6 +26,7 @@ if [[ -f "${_release_env_file}" ]]; then
     key="${line%%=*}"
     val="${line#*=}"
     key="${key//[[:space:]]/}"                 # env names have no spaces
+    [[ -z "${key}" ]] && continue              # skip lines with no key (e.g. =value)
     val="${val%\"}"; val="${val#\"}"           # strip one pair of surrounding quotes
     val="${val%\'}"; val="${val#\'}"
     [[ -n "${!key:-}" ]] && continue           # don't clobber the existing env (CI/shell wins)
