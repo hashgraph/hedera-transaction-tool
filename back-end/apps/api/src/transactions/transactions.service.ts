@@ -15,6 +15,7 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  ArrayOverlap,
   Brackets,
   DataSource,
   EntityManager,
@@ -265,6 +266,12 @@ export class TransactionsService {
             ...baseWhere,
             status: statusClause,
             transactionCachedNodes: { cachedNode: { keys: { publicKey: In(userPublicKeys) } } },
+          },
+          // Branch 3: user's key is directly listed in the transaction's publicKeys array
+          {
+            ...baseWhere,
+            status: statusClause,
+            publicKeys: ArrayOverlap(userPublicKeys),
           },
         );
       }
