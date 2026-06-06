@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
   username: process.env.POSTGRES_USERNAME || 'postgres',
   password: process.env.POSTGRES_PASSWORD || 'postgres',
   database: process.env.POSTGRES_DATABASE || 'postgres',
-  ssl: { rejectUnauthorized: false },
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
 
   // Entities: .ts in dev, .js in production/Docker
   entities: [

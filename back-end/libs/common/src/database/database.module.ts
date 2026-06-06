@@ -18,7 +18,7 @@ import { ConfigService } from '@nestjs/config';
           synchronize: configService.getOrThrow<boolean>('POSTGRES_SYNCHRONIZE', { infer: true }),
           autoLoadEntities: true,
           poolSize: configService.getOrThrow<number>('POSTGRES_MAX_POOL_SIZE', { infer: true }),
-          ssl: { rejectUnauthorized: false },
+          ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
@@ -41,7 +41,7 @@ import { ConfigService } from '@nestjs/config';
           extra: {
             statement_timeout: 15000, // Slightly longer for cache operations
           },
-          ssl: { rejectUnauthorized: false },
+          ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
