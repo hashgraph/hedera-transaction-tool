@@ -39,8 +39,7 @@ interface WhereClauseResult {
 }
 
 // Only EXECUTED and FAILED are world-readable. EXPIRED, CANCELED, and ARCHIVED
-// still require a user association check (creator / observer / signer).
-const BYPASS_STATUSES = [
+// still require a user association check (creator / observer / signer / approver).
   TransactionStatus.EXECUTED,
   TransactionStatus.FAILED,
 ];
