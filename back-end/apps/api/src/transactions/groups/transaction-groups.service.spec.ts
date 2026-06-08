@@ -86,6 +86,22 @@ describe('TransactionGroupsService', () => {
       mockTransaction();
     });
 
+    it('should rethrow if the transaction block fails', async () => {
+      const error = new Error('DB error');
+      dataSource.transaction.mockRejectedValue(error);
+      transactionsService.createTransactions.mockResolvedValue([]);
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+
+      const dto: CreateTransactionGroupDto = {
+        description: 'description',
+        atomic: true,
+        sequential: false,
+        groupItems: [],
+      };
+
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(error);
+    });
+
     it('should create a transaction group', async () => {
       const dto: CreateTransactionGroupDto = {
         description: 'description',

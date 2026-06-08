@@ -59,6 +59,18 @@ describe('CommentsService', () => {
       expect(repo.save).toHaveBeenCalledWith(expectedComment);
       expect(result).toEqual(expectedComment);
     });
+
+    it('should rethrow if repo.save fails', async () => {
+      const transactionId = 123;
+      const dto: CreateCommentDto = { message: 'This is a test comment' };
+      const comment = { ...dto, transaction: { id: transactionId }, user } as unknown as TransactionComment;
+      const error = new Error('DB error');
+
+      repo.create.mockReturnValue(comment);
+      repo.save.mockRejectedValue(error);
+
+      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(error);
+    });
   });
 
   describe('getTransactionCommentById', () => {

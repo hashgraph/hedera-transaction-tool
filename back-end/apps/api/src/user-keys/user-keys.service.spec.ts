@@ -171,6 +171,17 @@ describe('UserKeysService', () => {
       expect(repo.recover).toHaveBeenCalled();
       expect(repo.save).toHaveBeenCalled();
     });
+
+    it('should rethrow if repo.save fails', async () => {
+      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+        user.keys = [];
+      });
+      repo.findOne.mockResolvedValue(undefined);
+      repo.create.mockReturnValue({ ...dto, user } as UserKey);
+      repo.save.mockRejectedValue(new Error('DB error'));
+
+      await expect(service.uploadKey(user, dto)).rejects.toThrow('DB error');
+    });
   });
 
   describe('getUserKeysRestricted', () => {
