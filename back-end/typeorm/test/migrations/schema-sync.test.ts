@@ -25,6 +25,7 @@ describe('Schema Synchronization', () => {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
+      ssl: false,
     });
 
     // Recreate instance (important if AppDataSource was already initialized)

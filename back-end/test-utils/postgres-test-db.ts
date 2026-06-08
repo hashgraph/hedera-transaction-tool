@@ -51,6 +51,7 @@ export async function createTestPostgresDataSource() {
       username: container.getUsername(),
       password: container.getPassword(),
       database: container.getDatabase(),
+      ssl: false,
     });
 
     const initStart = Date.now();
