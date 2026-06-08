@@ -130,7 +130,7 @@ jobs:
 
             # Create a PR to bump main branch to the next snapshot version
             echo "create_pr=true" >> "$GITHUB_OUTPUT"
-            echo "pr_title=chore: bump versions for v$NEXT_VERSION_SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "pr_title=chore: update package versions to v$NEXT_VERSION_SNAPSHOT" >> "$GITHUB_OUTPUT"
           else
             git checkout ${RELEASE_BRANCH}
           fi
