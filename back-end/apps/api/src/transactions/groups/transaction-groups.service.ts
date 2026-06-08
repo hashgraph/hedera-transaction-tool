@@ -77,7 +77,7 @@ export class TransactionGroupsService {
         );
       });
     } catch (error) {
-      this.logger.error('Failed to save transaction group', error instanceof Error ? error.stack : String(error));
+      this.logger.error('Failed to save transaction group', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw error;
     }
 

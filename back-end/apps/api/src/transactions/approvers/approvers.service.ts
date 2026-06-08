@@ -350,7 +350,7 @@ export class ApproversService {
 
       emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
-      this.logger.error('Failed to save transaction approvers', error instanceof Error ? error.stack : String(error));
+      this.logger.error('Failed to save transaction approvers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw new BadRequestException(error.message);
     }
 
@@ -520,7 +520,7 @@ export class ApproversService {
 
       return approver;
     } catch (error) {
-      this.logger.error('Failed to update transaction approver', error instanceof Error ? error.stack : String(error));
+      this.logger.error('Failed to update transaction approver', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw new BadRequestException(error.message);
     }
   }

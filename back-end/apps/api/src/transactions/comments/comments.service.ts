@@ -25,7 +25,7 @@ export class CommentsService {
     try {
       return await this.repo.save(comment);
     } catch (error) {
-      this.logger.error('Failed to save transaction comment', error instanceof Error ? error.stack : String(error));
+      this.logger.error('Failed to save transaction comment', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw error;
     }
   }
