@@ -8,13 +8,6 @@ on:
       version:
         description: "Version (semver)"
         required: true
-      mode:
-        description: "Pipeline scope"
-        type: choice
-        options:
-          - full_release
-          - publish_docker_images_only
-          - test_mac_build_only
 
 permissions:
   contents: write
@@ -45,7 +38,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
@@ -79,13 +72,11 @@ jobs:
   # then commit + tag. This MUST run before the images are built so the images
   # are built from source that already contains the release version (the api
   # embeds package.json `version` into its Swagger docs at build time).
-  # Skipped entirely when mode is not full_release.
   # ----------------------------
   cut_release:
     name: Branch, Bump and Tag
     runs-on: transaction-tools-linux-medium
     needs: prepare
-    if: ${{ inputs.mode == 'full_release' }}
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
@@ -97,12 +88,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           ref: main
@@ -185,21 +176,13 @@ jobs:
 
   # ----------------------------
   # Docker Auth + Buildx + Cache
-  # Runs in full_release and publish_docker_images_only modes, always building
-  # from the release tag. For full_release, cut_release creates that tag just
-  # before this job; for publish_docker_images_only the tag must already exist.
+  # Always builds from the release tag created by cut_release.
   # ----------------------------
   build_and_push_images:
     name: Build and Push Docker Images
     runs-on: transaction-tools-linux-medium
     timeout-minutes: 30
     needs: [prepare, cut_release]
-    if:  >-
-      ${{ always() && 
-        (inputs.mode == 'publish_docker_images_only' || inputs.mode == 'full_release') &&
-        needs.prepare.result == 'success' && 
-        (needs.cut_release.result == 'success' || needs.cut_release.result == 'skipped')
-      }}
     # Override the workflow-level permissions: the attestation step needs to mint
     # an OIDC token and write the provenance attestation, and the push needs
     # packages: write. contents: read is enough for the checkout.
@@ -226,23 +209,22 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Always build from the immutable release tag for the supplied version
           # so the image is pinned to the exact tagged commit (the api embeds
-          # package.json `version` at build time). For a full release,
-          # cut_release (needed above) creates this tag just before this job;
-          # for publish_docker_images_only mode the tag must already exist.
+          # package.json `version` at build time). cut_release creates this tag
+          # just before this job runs.
           ref: ${{ needs.prepare.outputs.release_tag }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Log in to GHCR
-        uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # 4.1.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -255,14 +237,14 @@ jobs:
 
       - name: Extract metadata (tags, labels)
         id: meta
-        uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # 6.0.0
+        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
         with:
           images: ${{ env.REGISTRY }}/${{ matrix.image }}
           tags: type=raw,value=${{ env.VERSION }}
 
       - name: Build and Push Docker Image
         id: push
-        uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # 7.1.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         with:
           context: .
           file: ${{ matrix.dockerfile }}
@@ -287,17 +269,14 @@ jobs:
 
   # ----------------------------
   # Build the macOS desktop artifacts (dmg, pkg, zip, latest-mac.yml and the
-  # accompanying blockmaps) with electron-builder on a macOS runner. Mirrors
-  # build_and_push_images: it builds from the immutable release tag for the
-  # supplied version (so the version electron-builder bundles matches the
-  # tagged commit), runs in both full_release and test_mac_build_only modes, and
-  # only requires cut_release to have succeeded or been skipped — in
-  # test_mac_build_only mode cut_release is skipped and the tag must already exist.
-  # It does not depend on the image build, so the two run in parallel.
-  # The artifacts are signed (Developer ID Application for the app/dmg/zip,
-  # Developer ID Installer for the pkg), then the dmg/pkg installers are
-  # notarized + stapled inline. Artifacts are uploaded to GitHub Actions storage;
-  # in full_release mode the github_release job attaches them to the GitHub Release.
+  # accompanying blockmaps) with electron-builder on a macOS runner. Always
+  # builds from the immutable release tag created by cut_release. Runs in
+  # parallel with build_and_push_images. The artifacts are signed (Developer ID
+  # Application for the app/dmg/zip, Developer ID Installer for the pkg), then
+  # the dmg/pkg installers are notarized + stapled inline. Artifacts are
+  # uploaded to GitHub Actions storage; the github_release job attaches them to
+  # the GitHub Release. Use the smoke-test-mac workflow to validate the
+  # signing/notarization pipeline outside of a full release.
   # ----------------------------
   build_mac:
     name: Build macOS Artifacts
@@ -306,23 +285,17 @@ jobs:
     # installers (dmg + pkg per arch) are notarized via the notary service.
     timeout-minutes: 90
     needs: [prepare, cut_release]
-    if:  >-
-      ${{ always() &&
-        (inputs.mode == 'test_mac_build_only' || inputs.mode == 'full_release') &&
-        needs.prepare.result == 'success' &&
-        (needs.cut_release.result == 'success' || needs.cut_release.result == 'skipped')
-      }}
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           # Build from the immutable release tag for the supplied version so the
           # version electron-builder bundles matches the tagged commit (same
@@ -353,7 +326,7 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Set up Python
-        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: "3.11"
 
@@ -412,7 +385,7 @@ jobs:
           done
 
       - name: Upload macOS Artifacts
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: macos-artifacts-${{ env.VERSION }}
           path: |
@@ -426,25 +399,23 @@ jobs:
 
   # ----------------------------
   # Close the milestone, publish the GitHub release, and attach macOS artifacts.
-  # Runs only in full_release mode.
   # ----------------------------
   github_release:
     name: Publish GitHub Release
     runs-on: transaction-tools-linux-medium
     needs: [prepare, cut_release, build_and_push_images, build_mac]
-    if: ${{ inputs.mode == 'full_release' }}
     env:
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
       RELEASE_TAG: ${{ needs.prepare.outputs.release_tag }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
           ref: ${{ needs.prepare.outputs.release_branch }}
@@ -457,7 +428,7 @@ jobs:
 
       - name: Close the Milestone
         if: ${{ needs.prepare.outputs.prerelease == '' }}
-        uses: step-security/close-milestone@b097272a7aaa0f5c40dc6bc671d45d35c5e85b51 # v2.2.1
+        uses: step-security/close-milestone@d6e3b63e31f1f869bd3d0403f8cdc1a68f59ab4a # v2.2.2
         with:
           milestone_name: v${{ needs.prepare.outputs.release }}
         env:
@@ -510,19 +481,19 @@ jobs:
     name: Create Snapshot Bump PR
     runs-on: transaction-tools-linux-medium
     needs: [prepare, cut_release, github_release]
-    if: ${{ inputs.mode == 'full_release' && needs.cut_release.outputs.create_pr == 'true' }}
+    if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
     env:
       NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           ref: main
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
