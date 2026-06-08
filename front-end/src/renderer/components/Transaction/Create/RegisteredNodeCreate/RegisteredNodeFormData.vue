@@ -34,6 +34,7 @@ const emit = defineEmits<{
 
 /* Constants */
 const DESCRIPTION_MAX_BYTES = 100;
+const MAX_SERVICE_ENDPOINTS = 50;
 
 /* State */
 const endpointType = ref<RegisteredEndpointType>('blockNode');
@@ -49,7 +50,11 @@ const endpointDescription = ref<string>('');
 const descriptionByteLength = computed(() => utf8ByteLength(props.data.description ?? ''));
 const isDescriptionTooLong = computed(() => descriptionByteLength.value > DESCRIPTION_MAX_BYTES);
 const addEndPointEnabled = computed(() => {
-  return ipOrDomain.value !== null && port.value !== null;
+  return (
+    ipOrDomain.value !== null &&
+    port.value !== null &&
+    props.data.serviceEndpoints.length < MAX_SERVICE_ENDPOINTS
+  );
 });
 
 /* Handlers */
@@ -245,5 +250,4 @@ function handleDeleteEndpoint(index: number) {
   </div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
