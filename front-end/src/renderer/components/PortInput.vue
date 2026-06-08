@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import { isValidFqdn, VALID_IPV4_REGEX } from '@renderer/utils/endpointUtils';
 import { computed, ref, watch } from 'vue';
 import { InputStatus } from './InputStatus';
 
 /* Props */
-const value = defineModel<string | Uint8Array | null>({ required: true });
+const value = defineModel<number | null>({ required: true });
 const emit = defineEmits<{
   (e: 'status', value: InputStatus): void;
 }>();
@@ -13,18 +12,13 @@ const emit = defineEmits<{
 const inputText = ref<string>('');
 
 /* Computed */
-const inputValue = computed<string | Uint8Array | null>(() => {
-  let result: string | Uint8Array | null;
-
+const inputValue = computed<number | null>(() => {
   const trimmed = inputText.value.trim();
-  if (isValidFqdn(trimmed)) {
-    result = trimmed;
-  } else if (trimmed.match(VALID_IPV4_REGEX)) {
-    result = Uint8Array.from(trimmed.split('.').map(Number));
-  } else {
-    result = null;
-  }
-  return result;
+  if (trimmed.length === 0) return null;
+  // Number() rejects partial strings like "12abc" (unlike parseInt).
+  const n = Number(trimmed);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) return null;
+  return n;
 });
 const inputStatus = computed<InputStatus>(() => {
   let result: InputStatus;
@@ -43,10 +37,8 @@ const inputStatus = computed<InputStatus>(() => {
 watch(
   value,
   () => {
-    if (value.value instanceof Uint8Array) {
-      inputText.value = value.value.join('.');
-    } else if (typeof value.value === 'string') {
-      inputText.value = value.value;
+    if (value.value !== null) {
+      inputText.value = value.value.toString();
     } else {
       inputText.value = '';
     }
@@ -66,11 +58,7 @@ watch(
 </script>
 
 <template>
-  <input
-    v-model="inputText"
-    placeholder="Enter Domain Name or IP Address"
-    class="form-control is-fill"
-  />
+  <input v-model="inputText" placeholder="0-65535" class="form-control is-fill" />
 </template>
 
 <style scoped></style>
