@@ -246,8 +246,4 @@ function handleDeleteEndpoint(index: number) {
 </template>
 
 <style scoped>
-.form-switch.form-switch-md {
-  margin-bottom: 0.5rem;
-  margin-top: 0.5rem;
-}
 </style>
