@@ -74,7 +74,7 @@ export class Transaction {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ length: 50 })
+  @Column({ length: 100 })
   name: string;
 
   @Column()

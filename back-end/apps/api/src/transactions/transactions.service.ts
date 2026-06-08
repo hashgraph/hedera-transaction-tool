@@ -508,6 +508,7 @@ export class TransactionsService {
         try {
           return await entityManager.save(Transaction, transactions);
         } catch (error) {
+          this.logger.error('Failed to save transactions', error instanceof Error ? error.stack : String(error));
           throw new BadRequestException(ErrorCodes.FST);
         }
       });

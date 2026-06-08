@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
 import {
@@ -38,6 +38,7 @@ import {
 
 @Injectable()
 export class ApproversService {
+  private readonly logger = new Logger(ApproversService.name);
   private readonly CANNOT_CREATE_EMPTY_APPROVER = 'Cannot create empty approver';
   private readonly PARENT_APPROVER_NOT_FOUND = 'Parent approver not found';
   private readonly THRESHOLD_REQUIRED = 'Threshold must be set for the parent approver';
@@ -349,6 +350,7 @@ export class ApproversService {
 
       emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
+      this.logger.error('Failed to save transaction approvers', error instanceof Error ? error.stack : String(error));
       throw new BadRequestException(error.message);
     }
 
@@ -518,6 +520,7 @@ export class ApproversService {
 
       return approver;
     } catch (error) {
+      this.logger.error('Failed to update transaction approver', error instanceof Error ? error.stack : String(error));
       throw new BadRequestException(error.message);
     }
   }
