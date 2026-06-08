@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import type { ComponentRegisteredServiceEndpoint } from '@renderer/utils/sdk';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { RegisteredNodeTypeLabel } from './RegisteredNodeTypeLabel';
-import { labelForBlockNodeApi } from "./BlockNodeApiLabel";
+import { labelForBlockNodeApi } from './BlockNodeApiLabel';
 
 /* Props */
 const props = defineProps<{
@@ -53,7 +53,7 @@ const endpointInfo = computed(() => {
 const blockNodeAPIs = computed(() => {
   let result: string;
   const apis = props.endpoint.endpointApis;
-  if (apis) {
+  if (apis && apis.length > 0) {
     result = apis.map(api => labelForBlockNodeApi(api)).join(',');
   } else {
     result = 'No API';
@@ -73,9 +73,9 @@ const blockNodeAPIs = computed(() => {
     <td class="col text-start">{{ endpointInfo }}</td>
     <td class="col text-end">
       <AppButton
-        type="button"
-        color="danger"
         :data-testid="`button-delete-registered-endpoint-${index}`"
+        color="danger"
+        type="button"
         @click="emit('delete')"
         >Delete</AppButton
       >

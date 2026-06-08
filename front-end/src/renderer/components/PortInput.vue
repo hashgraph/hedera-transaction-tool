@@ -14,8 +14,11 @@ const inputText = ref<string>('');
 /* Computed */
 const inputValue = computed<number | null>(() => {
   const trimmed = inputText.value.trim();
-  const n = parseInt(trimmed);
-  return isNaN(n) ? null : n;
+  if (trimmed.length === 0) return null;
+  // Number() rejects partial strings like "12abc" (unlike parseInt).
+  const n = Number(trimmed);
+  if (!Number.isInteger(n) || n < 0 || n > 65535) return null;
+  return n;
 });
 const inputStatus = computed<InputStatus>(() => {
   let result: InputStatus;

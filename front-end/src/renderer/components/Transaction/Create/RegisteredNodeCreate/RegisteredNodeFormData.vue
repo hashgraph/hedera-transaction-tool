@@ -64,8 +64,9 @@ function handleAddEndpoint() {
     domainName: typeof ipOrDomain.value === 'string' ? ipOrDomain.value : null,
     port: port.value !== null ? port.value.toString() : '',
     requiresTls: requiresTls.value,
-    endpointApis: blockNodeApiOptions.value,
-    endpointDescription: endpointDescription.value,
+    endpointApis: endpointType.value === 'blockNode' ? blockNodeApiOptions.value : undefined,
+    endpointDescription:
+      endpointType.value === 'generalService' ? endpointDescription.value : undefined,
   };
 
   emit('update:data', {
@@ -78,6 +79,7 @@ function handleAddEndpoint() {
   port.value = null;
   requiresTls.value = false;
   blockNodeApiOptions.value = [];
+  endpointDescription.value = '';
 }
 
 function handleDeleteEndpoint(index: number) {

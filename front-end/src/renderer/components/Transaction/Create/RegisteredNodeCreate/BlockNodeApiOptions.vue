@@ -23,7 +23,9 @@ function toggleApi(api: BlockNodeApi, checked: boolean) {
   const current = new Set(value.value);
   if (checked) current.add(Number(api));
   else current.delete(Number(api));
-  value.value = Array.from(current);
+
+  // Keep a canonical order so equivalent selections produce identical payloads.
+  value.value = Array.from(current).sort((a, b) => a - b);
 }
 </script>
 
