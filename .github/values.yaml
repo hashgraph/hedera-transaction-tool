@@ -1,0 +1,6 @@
+grpc:
+  enabled: false
+mirrorNode:
+  --values-file: .github/values.yaml
+web3:
+  enabled: false

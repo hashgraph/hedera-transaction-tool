@@ -1,18 +1,25 @@
-name: Create and publish Transaction Tool Docker images
+# SPDX-License-Identifier: Apache-2.0
+
+name: Publish Images
 
 on:
-    push:
-        tags:
-          - 'v*'
-    workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
 
 permissions:
-    contents: read
-    packages: write
-    attestations: write
-    id-token: write
+  contents: read
+  packages: write
+  attestations: write
+  id-token: write
+
+defaults:
+  run:
+    shell: bash
 
 env:
+  LC_ALL: C.UTF-8
   REGISTRY: ghcr.io
 
 jobs:

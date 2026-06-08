@@ -30,7 +30,9 @@ export const getClientFromNetwork = async (
   }
 
   if (mirrorNetwork[0] === LOCAL_NODE) {
-    return Client.forNetwork(getLocalClientNetwork(process.env.NODE_ENV)).setMirrorNetwork(
+    const network = getLocalClientNetwork(process.env.NODE_ENV);
+    console.log(`network: ${network}, mirror: ${MirrorNetworkGRPC.LOCAL_NODE}`);
+    return Client.forNetwork(network).setMirrorNetwork(
       MirrorNetworkGRPC.LOCAL_NODE,
     );
   }
