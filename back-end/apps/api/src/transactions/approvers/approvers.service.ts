@@ -128,15 +128,7 @@ export class ApproversService {
       this.dataSource.manager,
     );
 
-    if (
-      [
-        TransactionStatus.EXECUTED,
-        TransactionStatus.EXPIRED,
-        TransactionStatus.FAILED,
-        TransactionStatus.CANCELED,
-        TransactionStatus.ARCHIVED,
-      ].includes(transaction.status)
-    )
+    if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
       return approvers;
 
     if (

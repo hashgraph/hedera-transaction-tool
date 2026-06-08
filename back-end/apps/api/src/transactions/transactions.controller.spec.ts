@@ -247,7 +247,7 @@ describe('TransactionsController', () => {
 
       transactionService.getHistoryTransactions.mockResolvedValue(result);
 
-      expect(await controller.getHistoryTransactions(pagination)).toBe(result);
+      expect(await controller.getHistoryTransactions(user, pagination)).toBe(result);
     });
 
     it('should return an empty array if no transactions exist', async () => {
@@ -260,7 +260,7 @@ describe('TransactionsController', () => {
 
       transactionService.getHistoryTransactions.mockResolvedValue(result);
 
-      expect(await controller.getHistoryTransactions(pagination)).toEqual(result);
+      expect(await controller.getHistoryTransactions(user, pagination)).toEqual(result);
     });
   });
 

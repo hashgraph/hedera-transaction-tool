@@ -142,6 +142,7 @@ export class TransactionsController {
   @Get('/history')
   @Serialize(withPaginatedResponse(TransactionDto))
   getHistoryTransactions(
+    @GetUser() user: User,
     @PaginationParams() paginationParams: Pagination,
     @SortingParams(transactionProperties) sort?: Sorting[],
     @FilteringParams({
@@ -150,7 +151,7 @@ export class TransactionsController {
     })
     filter?: Filtering[],
   ): Promise<PaginatedResourceDto<Transaction>> {
-    return this.transactionsService.getHistoryTransactions(paginationParams, filter, sort);
+    return this.transactionsService.getHistoryTransactions(user, paginationParams, filter, sort);
   }
 
   /* Get all transactions to be signed by the user */
