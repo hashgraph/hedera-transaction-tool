@@ -9,6 +9,7 @@ import { version } from '../package.json';
 
 import { ErrorCodes, LoggerMiddleware } from '@app/common';
 
+import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 import { BadRequestExceptionFilter } from './filters/bad-request-exception.filter';
 
@@ -33,7 +34,7 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
     }),
   );
 
-  app.useGlobalFilters(new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
+  app.useGlobalFilters(new AllExceptionsFilter(), new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
   if (addLogger) {
     const loggerMiddleware = app.get(LoggerMiddleware);
