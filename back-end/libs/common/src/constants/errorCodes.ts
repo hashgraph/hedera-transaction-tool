@@ -40,6 +40,9 @@ export enum ErrorCodes {
   TOS = 'TOS',
   IO = 'IO',
   TNVN = 'TNVN',
+  FSTC = 'FSTC',
+  FSUK = 'FSUK',
+  FSTG = 'FSTG',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -83,4 +86,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
   [ErrorCodes.IO]: 'Invalid operation',
   [ErrorCodes.TNVN]: 'Transaction is not valid on the configured network (contains node account IDs that are not present on the network)',
+  [ErrorCodes.FSTC]: 'Failed to save transaction comment',
+  [ErrorCodes.FSUK]: 'Failed to save user key',
+  [ErrorCodes.FSTG]: 'Failed to save transaction group',
 };
