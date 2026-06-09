@@ -90,23 +90,7 @@ jobs:
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
-        run: |
-          NOTARY_ARGS=(--key "${APPLE_API_KEY}" --key-id "${APPLE_API_KEY_ID}" --issuer "${APPLE_API_ISSUER}")
-          shopt -s nullglob
-          INSTALLERS=(
-            release/*.dmg
-            release/*.pkg
-          )
-          if [[ ${#INSTALLERS[@]} -eq 0 ]]; then
-            echo "No .dmg or .pkg installers found — electron-builder did not produce expected artifacts" >&2
-            exit 1
-          fi
-          for FILE in "${INSTALLERS[@]}"; do
-            xcrun notarytool submit "${FILE}" "${NOTARY_ARGS[@]}" --wait
-          done
-          for FILE in "${INSTALLERS[@]}"; do
-            xcrun stapler staple "${FILE}"
-          done
+        run: bash scripts/notarize-mac-installers.sh
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
