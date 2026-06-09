@@ -86,7 +86,7 @@ pnpm -F hedera-transaction-tool dev
 ## 5. Build for distribution
 
 ```bash
-pnpm build:mac # uses mac as build target
+pnpm build:mac
 ```
 
 ## 6. Run the unit tests
