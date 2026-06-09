@@ -230,6 +230,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set up QEMU
+        # Required for cross-platform builds (linux/arm64 on an amd64 runner).
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff9e4f00d3bf4b79635 # v3.6.0
+
       - name: Set up Docker Buildx
         # Required so build-push-action gets a docker-container (buildkit) builder;
         # the default docker driver cannot export the gha cache.
@@ -248,7 +252,7 @@ jobs:
         with:
           context: .
           file: ${{ matrix.dockerfile }}
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
