@@ -9,7 +9,6 @@ import {
 } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { TransactionStatus } from '@shared/interfaces';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import {
@@ -69,18 +68,15 @@ const performSignAll = async (
       group = props.groupOrId;
     }
 
-    // 2) filters group items waiting for signatures
-    let itemsToSign = group.groupItems.map(item => item.transaction) ?? [];
-    itemsToSign = itemsToSign.filter(
-      item => item.status === TransactionStatus.WAITING_FOR_SIGNATURES,
-    );
-
-    // 3) checks if user has all the required private keys
+    // 2) collects required keys for all group items
+    const allTransactions = group.groupItems.map(item => item.transaction);
     progressText.value = 'Collecting required keys…';
-    const signatureItems = await collectRequiredKeys(
-      itemsToSign,
-      appCache,
-    );
+    const allSignatureItems = await collectRequiredKeys(allTransactions, appCache);
+
+    // Only process transactions the current user hasn't signed yet
+    const signatureItems = allSignatureItems.filter(item => item.publicKeys.length > 0);
+    const remainingCount = signatureItems.length;
+
     const missingKeys = collectMissingKeys(signatureItems);
     const missingKeyCount = missingKeys.length;
     if (missingKeyCount > 0) {
@@ -96,12 +92,12 @@ const performSignAll = async (
       };
     } else {
       // 4) performs required signing
-      progressText.value = `Signing ${itemsToSign.length} transactions…`;
+      progressText.value = `Signing ${remainingCount} transactions…`;
       const rejectedItems = await signItems(signatureItems, userPersonalPassword);
       const rejectedItemCount = rejectedItems.length;
       if (rejectedItemCount > 0) {
         // Some signatures have not been done
-        const signedItemCount = signatureItems.length - rejectedItemCount;
+        const signedItemCount = remainingCount - rejectedItemCount;
         if (signedItemCount > 0) {
           // Operation is partial
           result = {
@@ -120,8 +116,12 @@ const performSignAll = async (
           };
         }
       } else {
-        // All signatures have been done successfully
-        toastManager.success('Transactions signed successfully');
+        // All remaining unsigned transactions were signed
+        const msg =
+          remainingCount === 1
+            ? 'Remaining 1 transaction was signed'
+            : `Remaining ${remainingCount} transactions were signed`;
+        toastManager.success(msg);
         result = null;
       }
     }
