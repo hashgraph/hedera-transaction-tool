@@ -3,6 +3,7 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
+import { ErrorCodes } from '@app/common';
 import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
@@ -86,9 +87,8 @@ describe('TransactionGroupsService', () => {
       mockTransaction();
     });
 
-    it('should rethrow if the transaction block fails', async () => {
-      const error = new Error('DB error');
-      dataSource.transaction.mockRejectedValue(error);
+    it('should throw BadRequestException if the transaction block fails', async () => {
+      dataSource.transaction.mockRejectedValue(new Error('DB error'));
       transactionsService.createTransactions.mockResolvedValue([]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
 
@@ -99,7 +99,8 @@ describe('TransactionGroupsService', () => {
         groupItems: [],
       };
 
-      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(error);
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(ErrorCodes.FSTG);
     });
 
     it('should create a transaction group', async () => {

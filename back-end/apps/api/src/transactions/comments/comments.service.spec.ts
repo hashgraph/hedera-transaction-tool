@@ -1,8 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
+import { ErrorCodes } from '@app/common';
 import { TransactionComment, User, UserStatus } from '@entities';
 
 import { CreateCommentDto } from '../dto';
@@ -60,16 +62,16 @@ describe('CommentsService', () => {
       expect(result).toEqual(expectedComment);
     });
 
-    it('should rethrow if repo.save fails', async () => {
+    it('should throw BadRequestException if repo.save fails', async () => {
       const transactionId = 123;
       const dto: CreateCommentDto = { message: 'This is a test comment' };
       const comment = { ...dto, transaction: { id: transactionId }, user } as unknown as TransactionComment;
-      const error = new Error('DB error');
 
       repo.create.mockReturnValue(comment);
-      repo.save.mockRejectedValue(error);
+      repo.save.mockRejectedValue(new Error('DB error'));
 
-      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(error);
+      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(ErrorCodes.FSTC);
     });
   });
 

@@ -172,7 +172,7 @@ describe('UserKeysService', () => {
       expect(repo.save).toHaveBeenCalled();
     });
 
-    it('should rethrow if repo.save fails', async () => {
+    it('should throw BadRequestException if repo.save fails', async () => {
       jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
         user.keys = [];
       });
@@ -180,7 +180,8 @@ describe('UserKeysService', () => {
       repo.create.mockReturnValue({ ...dto, user } as UserKey);
       repo.save.mockRejectedValue(new Error('DB error'));
 
-      await expect(service.uploadKey(user, dto)).rejects.toThrow('DB error');
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.FSUK);
     });
   });
 
