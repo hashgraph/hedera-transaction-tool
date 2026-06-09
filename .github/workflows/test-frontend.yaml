@@ -295,6 +295,10 @@ jobs:
             exit 1
           fi
 
+          echo "=== Disk space before build ==="
+          df -h
+          docker system df
+
           for service in redis migration api chain notifications; do
             for attempt in $(seq 1 3); do
               if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
