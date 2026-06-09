@@ -6,11 +6,8 @@ import { transports, format } from 'winston';
   imports: [
     WinstonModule.forRootAsync({
       useFactory() {
-        const consoleInstance = new transports.Console();
-        const fileInstance = new transports.File({ filename: 'combined.log' });
-
         return {
-          level: 'info',
+          level: process.env.LOG_LEVEL || 'info',
           format: format.combine(
             format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
             format.printf(({ timestamp, level, message, stack }) => {
@@ -19,7 +16,7 @@ import { transports, format } from 'winston';
                 : `${timestamp} [${level.toUpperCase()}]: ${message}`;
             }),
           ),
-          transports: [consoleInstance, fileInstance],
+          transports: [new transports.Console({ stderrLevels: ['error'] })],
         };
       },
     }),
