@@ -66,12 +66,17 @@ describe('CommentsService', () => {
       const transactionId = 123;
       const dto: CreateCommentDto = { message: 'This is a test comment' };
       const comment = { ...dto, transaction: { id: transactionId }, user } as unknown as TransactionComment;
-
       repo.create.mockReturnValue(comment);
-      repo.save.mockRejectedValue(new Error('DB error'));
 
+      repo.save.mockRejectedValue(new Error('DB error'));
       await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(BadRequestException);
       await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(ErrorCodes.FSTC);
+
+      repo.save.mockRejectedValue({ message: 'no stack' });
+      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(BadRequestException);
+
+      repo.save.mockRejectedValue(null);
+      await expect(service.createComment(user as User, transactionId, dto)).rejects.toThrow(BadRequestException);
     });
   });
 

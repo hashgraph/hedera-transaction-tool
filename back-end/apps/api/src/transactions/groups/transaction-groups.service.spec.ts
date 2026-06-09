@@ -88,7 +88,6 @@ describe('TransactionGroupsService', () => {
     });
 
     it('should throw BadRequestException if the transaction block fails', async () => {
-      dataSource.transaction.mockRejectedValue(new Error('DB error'));
       transactionsService.createTransactions.mockResolvedValue([]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
 
@@ -99,8 +98,15 @@ describe('TransactionGroupsService', () => {
         groupItems: [],
       };
 
+      dataSource.transaction.mockRejectedValue(new Error('DB error'));
       await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
       await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(ErrorCodes.FSTG);
+
+      dataSource.transaction.mockRejectedValue({ message: 'no stack' });
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
+
+      dataSource.transaction.mockRejectedValue(null);
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should create a transaction group', async () => {

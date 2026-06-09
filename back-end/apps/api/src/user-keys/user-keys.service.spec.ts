@@ -173,15 +173,21 @@ describe('UserKeysService', () => {
     });
 
     it('should throw BadRequestException if repo.save fails', async () => {
-      jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
+      jest.mocked(attachKeys).mockImplementation(async (user: User) => {
         user.keys = [];
       });
       repo.findOne.mockResolvedValue(undefined);
       repo.create.mockReturnValue({ ...dto, user } as UserKey);
-      repo.save.mockRejectedValue(new Error('DB error'));
 
+      repo.save.mockRejectedValue(new Error('DB error'));
       await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
       await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.FSUK);
+
+      repo.save.mockRejectedValue({ message: 'no stack' });
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
+
+      repo.save.mockRejectedValue(null);
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(BadRequestException);
     });
   });
 
