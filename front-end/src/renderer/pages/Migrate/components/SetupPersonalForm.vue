@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 
-import { encrypt, isKeychainAvailable } from '@renderer/services/safeStorageService';
+import { initializeUseKeychain, isKeychainAvailable } from '@renderer/services/safeStorageService';
 
 import { isEmail, isPasswordStrong } from '@renderer/utils';
 
@@ -9,6 +9,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import AppSeparator from '@renderer/components/ui/AppSeparator.vue';
+import useSafeStorage, { SafeStorageStatus } from '@renderer/stores/storeSafeStorage.ts';
 
 /* Types */
 export type ModelValue =
@@ -33,6 +34,9 @@ const emit = defineEmits<{
   (event: 'submit', value: ModelValue): void;
   (event: 'migration:cancel'): void;
 }>();
+
+/* Stores */
+const safeStorage = useSafeStorage();
 
 /* State */
 const keychainSelected = ref(false);
@@ -60,6 +64,7 @@ const tooltipContent = computed(
     </div>
   `,
 );
+const safeStorageDenied = computed(() => safeStorage.status === SafeStorageStatus.denied);
 
 /* Handlers */
 const handleOnFormSubmit = async () => {
@@ -84,20 +89,21 @@ const handleOnFormSubmit = async () => {
 const handleCancel = () => emit('migration:cancel');
 
 const handleUseKeychain = async () => {
-  const keychainAvailable = await isKeychainAvailable();
+  if ((await safeStorage.encryptString('gain_access')) !== null) {
+    // We have access to safe storage (ie keychain)
+    try {
+      await initializeUseKeychain(true);
+    } catch {
+      // Must be ignored
+    }
 
-  if (!keychainAvailable) {
-    throw Error('Keychain not available');
+    keychainSelected.value = true;
+    emit('submit', {
+      useKeychain: true,
+      email: null,
+      password: null,
+    });
   }
-
-  await encrypt('gain_access');
-
-  keychainSelected.value = true;
-  emit('submit', {
-    useKeychain: true,
-    email: null,
-    password: null,
-  });
 };
 
 /* Functions */
@@ -185,7 +191,7 @@ watch(inputPassword, pass => {
     <template v-if="keychainAvailable">
       <AppSeparator class="my-5" text="or" />
 
-      <div class="d-grid">
+      <div class="d-flex flex-column align-content-center align-items-stretch">
         <AppButton
           color="secondary"
           type="button"
@@ -193,8 +199,18 @@ watch(inputPassword, pass => {
           loading-text="Migrating..."
           :loading="loading && keychainSelected"
           data-testid="button-setup-personal-keychain"
+          :disabled="safeStorageDenied"
           >Continue with Keychain</AppButton
         >
+        <p
+          v-if="safeStorageDenied"
+          class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
+          style="max-width: 300px"
+        >
+          Continue with Keychain is disabled.<br />
+          You need to restart the application, start data migration again and authorize Keychain
+          access.
+        </p>
       </div>
     </template>
 

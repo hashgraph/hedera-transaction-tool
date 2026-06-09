@@ -278,22 +278,6 @@ describe('TransactionNodesService', () => {
       (attachKeys as jest.Mock).mockImplementation((user) => user.keys.push(userKey));
     });
 
-    it('returns empty array when user has no keys', async () => {
-      // attachKeys leaves user.keys empty
-      (attachKeys as jest.Mock).mockImplementationOnce(() => { /* no-op */ });
-
-      const result = await service.getTransactionNodes(
-        user,
-        TransactionNodeCollection.READY_FOR_REVIEW,
-        TEST_NETWORK,
-        [],
-        [],
-      );
-
-      expect(result).toEqual([]);
-      expect(entityManager.query).not.toHaveBeenCalled();
-    });
-
     it('TransactionNodeCollection.READY_FOR_REVIEW => getTransactionsToApprove()', async () => {
       const mockQuery = makeMockQuery('SELECT * FROM transactions_ready_for_review');
 
@@ -471,7 +455,9 @@ describe('TransactionNodesService', () => {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
           types: null,
           mirrorNetwork: TEST_NETWORK,
-        }
+        },
+        user,
+        { signer: true, creator: true, observer: true, approver: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -499,7 +485,9 @@ describe('TransactionNodesService', () => {
           statuses: [TransactionStatus.EXPIRED],
           types: null,
           mirrorNetwork: TEST_NETWORK,
-        }
+        },
+        user,
+        { signer: true, creator: true, observer: true, approver: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -527,7 +515,9 @@ describe('TransactionNodesService', () => {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
           types: [TransactionType.FILE_APPEND],
           mirrorNetwork: TEST_NETWORK,
-        }
+        },
+        user,
+        { signer: true, creator: true, observer: true, approver: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);

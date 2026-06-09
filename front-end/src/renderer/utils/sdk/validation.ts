@@ -1,4 +1,4 @@
-import { FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
+import { AccountId, FileUpdateTransaction, type Transaction } from '@hiero-ledger/sdk';
 
 const TREASURY = '0.0.2';
 const SYSTEM_ADMIN = '0.0.50';
@@ -61,20 +61,16 @@ export function exceedsUtf8ByteLimit(str: string, byteLimit: number): boolean {
 }
 
 /**
- * Byte-aware analogue of `validate100CharInput`. The HIP for registered nodes
- * (and several other proto contracts) specifies `100 bytes UTF-8`, not 100
- * characters — `.length` counts UTF-16 code units, which under-counts emoji
- * and over-counts surrogate pairs.
+ * Only accounts between 0.0.2 and 0.0.55 are authorized to create nodes or registered nodes.
  */
-export function validate100ByteInput(str: string, inputDescription: string) {
-  if (exceedsUtf8ByteLimit(str, 100)) {
-    throw new Error(`${inputDescription} is limited to 100 bytes (UTF-8)`);
-  }
-}
 
-export const transactionIs = <T extends Transaction>(
-  type: new (...args: any[]) => T,
-  transaction: Transaction,
-): transaction is T => {
-  return transaction instanceof type;
-};
+export function isNodeCreationAuthorizedFeePayer(accountId: AccountId | string): boolean {
+  let result: boolean;
+  try {
+    const id = typeof accountId === 'string' ? AccountId.fromString(accountId) : accountId;
+    result = id.shard.isZero() && id.realm.isZero() && id.num.gte(2) && id.num.lte(55);
+  } catch {
+    result = false;
+  }
+  return result;
+}

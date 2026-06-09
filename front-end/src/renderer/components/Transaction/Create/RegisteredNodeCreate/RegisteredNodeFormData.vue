@@ -7,14 +7,19 @@ import type {
 
 import { computed, ref } from 'vue';
 
-import { ToastManager } from '@renderer/utils/ToastManager';
-
-import { exceedsUtf8ByteLimit, utf8ByteLength } from '@renderer/utils';
+import { utf8ByteLength } from '@renderer/utils';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import KeyField from '@renderer/components/KeyField.vue';
 import EndpointRow from './EndpointRow.vue';
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
+import IpDomainInput from '@renderer/components/IpDomainInput.vue';
+import { InputStatus } from '@renderer/components/InputStatus';
+import { RegisteredNodeTypeLabel } from '@renderer/components/Transaction/Create/RegisteredNodeCreate/RegisteredNodeTypeLabel';
+import PortInput from '@renderer/components/PortInput.vue';
+import BlockNodeApiOptions from '@renderer/components/Transaction/Create/RegisteredNodeCreate/BlockNodeApiOptions.vue';
 
 /* Props */
 const props = defineProps<{
@@ -27,17 +32,30 @@ const emit = defineEmits<{
   (event: 'update:data', data: RegisteredNodeData): void;
 }>();
 
-/* Composables */
-const toastManager = ToastManager.inject();
-
 /* Constants */
 const DESCRIPTION_MAX_BYTES = 100;
+const MAX_SERVICE_ENDPOINTS = 50;
 
 /* State */
-const descriptionError = ref(false);
+const endpointType = ref<RegisteredEndpointType>('blockNode');
+const ipOrDomain = ref<string | Uint8Array | null>(null);
+const ipOrDomainStatus = ref<InputStatus>(InputStatus.empty);
+const port = ref<number | null>(null);
+const portStatus = ref<InputStatus>(InputStatus.empty);
+const requiresTls = ref<boolean>(false);
+const blockNodeApiOptions = ref<number[]>([]);
+const endpointDescription = ref<string>('');
 
 /* Computed */
 const descriptionByteLength = computed(() => utf8ByteLength(props.data.description ?? ''));
+const isDescriptionTooLong = computed(() => descriptionByteLength.value > DESCRIPTION_MAX_BYTES);
+const addEndPointEnabled = computed(() => {
+  return (
+    ipOrDomain.value !== null &&
+    port.value !== null &&
+    props.data.serviceEndpoints.length < MAX_SERVICE_ENDPOINTS
+  );
+});
 
 /* Handlers */
 function handleAddEndpoint() {
@@ -45,28 +63,28 @@ function handleAddEndpoint() {
   // RegisteredNodeCreate.vue) is the single owner of uiId generation. That
   // keeps uiId out of `getRegisteredNodeData`'s output, which keeps
   // `transactionsDataMatch` deterministic across reloads.
-  const blank: ComponentRegisteredServiceEndpoint = {
-    type: 'blockNode',
-    ipAddressV4: '',
-    domainName: '',
-    port: '',
-    requiresTls: false,
-    endpointApis: [],
+  const newItem: ComponentRegisteredServiceEndpoint = {
+    type: endpointType.value,
+    ipAddressV4: ipOrDomain.value instanceof Uint8Array ? ipOrDomain.value.join('.') : null,
+    domainName: typeof ipOrDomain.value === 'string' ? ipOrDomain.value : null,
+    port: port.value !== null ? port.value.toString() : '',
+    requiresTls: requiresTls.value,
+    endpointApis: endpointType.value === 'blockNode' ? blockNodeApiOptions.value : undefined,
+    endpointDescription:
+      endpointType.value === 'generalService' ? endpointDescription.value : undefined,
   };
 
   emit('update:data', {
     ...props.data,
-    serviceEndpoints: [...props.data.serviceEndpoints, blank],
+    serviceEndpoints: [...props.data.serviceEndpoints, newItem],
   });
-}
 
-function handleUpdateEndpoint(
-  index: number,
-  endpoint: ComponentRegisteredServiceEndpoint,
-) {
-  const next = [...props.data.serviceEndpoints];
-  next[index] = endpoint;
-  emit('update:data', { ...props.data, serviceEndpoints: next });
+  // Keeps endPointType unchanged
+  ipOrDomain.value = null;
+  port.value = null;
+  requiresTls.value = false;
+  blockNodeApiOptions.value = [];
+  endpointDescription.value = '';
 }
 
 function handleDeleteEndpoint(index: number) {
@@ -74,36 +92,6 @@ function handleDeleteEndpoint(index: number) {
   next.splice(index, 1);
   emit('update:data', { ...props.data, serviceEndpoints: next });
 }
-
-function handleDescriptionValidation(e: Event) {
-  // HIP-1137 description is ≤100 UTF-8 bytes (not characters). Validate by
-  // byte length so 100 emoji don't silently slip past a char-based check
-  // and only get rejected later in preCreateAssert.
-  // Toast only on the valid→invalid transition; otherwise typing N extra
-  // characters past the limit fires N stacked toasts on every keystroke.
-  const target = e.target as HTMLInputElement;
-  const hasDescriptionError = exceedsUtf8ByteLimit(target.value, DESCRIPTION_MAX_BYTES);
-  if (hasDescriptionError && !descriptionError.value) {
-    toastManager.error(`Description is limited to ${DESCRIPTION_MAX_BYTES} bytes (UTF-8)`);
-  }
-  descriptionError.value = hasDescriptionError;
-}
-
-/** Stable row key — never `index`, since deleting/reordering with `index` keys
- * causes Vue to re-use DOM nodes from the wrong row (focus jumps, stale state).
- * Falls back gracefully if `uiId` is somehow missing (legacy drafts). */
-function rowKey(endpoint: ComponentRegisteredServiceEndpoint, index: number): string {
-  return endpoint.uiId ?? `legacy-${index}`;
-}
-
-
-/* Type helper for template */
-const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = [
-  { value: 'blockNode', label: 'Block Node' },
-  { value: 'mirrorNode', label: 'Mirror Node' },
-  { value: 'rpcRelay', label: 'RPC Relay' },
-  { value: 'generalService', label: 'General Service' },
-];
 </script>
 
 <template>
@@ -124,9 +112,8 @@ const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = 
 
   <!-- Description -->
   <div class="form-group mt-6 col-8 col-xxxl-6">
-    <label class="form-label">Description</label>
+    <label class="form-label">Registered Node Description</label>
     <AppInput
-      @input="handleDescriptionValidation"
       :model-value="data.description"
       @update:model-value="
         emit('update:data', {
@@ -135,51 +122,132 @@ const endpointTypeOptions: { value: RegisteredEndpointType; label: string }[] = 
         })
       "
       :filled="true"
-      placeholder="Enter Description (optional, ≤ 100 UTF-8 bytes)"
-      :class="[descriptionError ? 'is-invalid' : '']"
+      placeholder="Enter Description"
+      :class="[isDescriptionTooLong ? 'is-invalid' : '']"
     />
     <div
       class="text-micro mt-1"
-      :class="descriptionError ? 'text-danger' : 'text-muted'"
+      :class="isDescriptionTooLong ? 'text-warning' : 'text-muted'"
       data-testid="text-registered-description-byte-counter"
     >
-      {{ descriptionByteLength }} / {{ DESCRIPTION_MAX_BYTES }} bytes
+      {{ descriptionByteLength }} / {{ DESCRIPTION_MAX_BYTES
+      }}{{ isDescriptionTooLong ? ' - too long' : '' }}
     </div>
   </div>
 
-  <hr class="separator my-5" />
-
   <!-- Service Endpoints -->
-  <div class="d-flex align-items-center justify-content-between">
-    <label class="form-label mb-0">
+  <div class="form-group mt-6 col-12 col-xxxl-6">
+    <label class="form-label">
       Service Endpoints
       <span v-if="required" class="text-danger">*</span>
     </label>
-    <AppButton
-      color="primary"
-      type="button"
-      data-testid="button-add-registered-endpoint"
-      :disabled="data.serviceEndpoints.length >= 50"
-      @click="handleAddEndpoint"
-    >
-      Add Endpoint
-    </AppButton>
+    <div class="border rounded mt-1 p-4">
+      <div class="row align-items-end flex-nowrap">
+        <!-- Type -->
+        <div class="col-2">
+          <label class="form-label">Type</label>
+          <select
+            class="form-control is-fill"
+            v-model="endpointType"
+            data-testid="select-registered-endpoint-type"
+          >
+            <option v-for="opt in Object.keys(RegisteredNodeTypeLabel)" :key="opt" :value="opt">
+              {{ RegisteredNodeTypeLabel[opt as RegisteredEndpointType] }}
+            </option>
+          </select>
+        </div>
+        <!-- IP/Domain -->
+        <div class="col-5">
+          <label class="form-label">IP/Domain <span class="text-danger">*</span></label>
+          <IpDomainInput
+            v-model="ipOrDomain"
+            @status="ipOrDomainStatus = $event"
+            data-testid="input-registered-endpoint-address"
+          />
+        </div>
+        <!-- Port -->
+        <div class="col-2">
+          <label class="form-label">Port <span class="text-danger">*</span></label>
+          <PortInput
+            v-model="port"
+            @status="portStatus = $event"
+            data-testid="input-registered-endpoint-port"
+          />
+        </div>
+        <!-- TLS -->
+        <div class="col-auto">
+          <label class="form-label">TLS</label>
+          <AppSwitch
+            v-model:checked="requiresTls"
+            size="md"
+            name="registered-endpoint-tls"
+            data-testid="switch-registered-endpoint-tls"
+          />
+        </div>
+        <!-- Add Endpoint -->
+        <div class="col-auto">
+          <AppButton
+            color="primary"
+            type="button"
+            :disabled="!addEndPointEnabled"
+            @click="handleAddEndpoint"
+            data-testid="button-add-registered-endpoint"
+          >
+            Add Endpoint
+          </AppButton>
+        </div>
+      </div>
+      <div class="row align-items-end flex-nowrap">
+        <!-- Block Node API options -->
+        <div v-if="endpointType === 'blockNode'" class="form-group mt-4">
+          <label class="form-label">Block Node APIs</label>
+          <BlockNodeApiOptions v-model="blockNodeApiOptions" />
+        </div>
+        <!-- General service description -->
+        <div v-else-if="endpointType === 'generalService'" class="form-group mt-4">
+          <label class="form-label">Description</label>
+          <AppTextArea
+            v-model="endpointDescription"
+            :filled="true"
+            placeholder="Describe what this general-service endpoint provides"
+            data-testid="textarea-registered-endpoint-general-desc"
+          />
+        </div>
+      </div>
+      <table class="table-custom mt-5">
+        <thead class="thin">
+          <tr>
+            <th class="text-start">Type</th>
+            <th class="text-start">IP/Domain</th>
+            <th class="text-start">Port</th>
+            <th class="text-start">TLS</th>
+            <th class="text-start">APIs/Description</th>
+            <th class="text-end">Action</th>
+          </tr>
+        </thead>
+        <tbody class="thin">
+          <template v-if="data.serviceEndpoints.length == 0">
+            <tr>
+              <td class="col text-center" colspan="6">
+                <span class="text-secondary">
+                  No service endpoint.<br />At least one item must be added.
+                </span>
+              </td>
+            </tr>
+          </template>
+          <template v-else>
+            <template v-for="(endpoint, index) in data.serviceEndpoints" :key="endpoint.uiId">
+              <EndpointRow
+                :endpoint="endpoint"
+                :index="index"
+                @delete="handleDeleteEndpoint(index)"
+              />
+            </template>
+          </template>
+        </tbody>
+      </table>
+    </div>
   </div>
-  <div class="text-micro text-muted mt-1 mb-3">
-    At least one endpoint is required. A registered node may have up to 50 endpoints.
-  </div>
-
-  <div v-if="data.serviceEndpoints.length === 0" class="text-muted text-small">
-    No endpoints added yet — click "Add Endpoint" to create one.
-  </div>
-
-  <EndpointRow
-    v-for="(endpoint, index) in data.serviceEndpoints"
-    :key="rowKey(endpoint, index)"
-    :endpoint="endpoint"
-    :index="index"
-    :type-options="endpointTypeOptions"
-    @update:endpoint="handleUpdateEndpoint(index, $event)"
-    @delete="handleDeleteEndpoint(index)"
-  />
 </template>
+
+<style scoped></style>

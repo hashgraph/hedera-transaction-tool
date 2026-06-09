@@ -3,6 +3,7 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
+import { ErrorCodes } from '@app/common';
 import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
@@ -84,6 +85,28 @@ describe('TransactionGroupsService', () => {
       jest.resetAllMocks();
 
       mockTransaction();
+    });
+
+    it('should throw BadRequestException if the transaction block fails', async () => {
+      transactionsService.createTransactions.mockResolvedValue([]);
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+
+      const dto: CreateTransactionGroupDto = {
+        description: 'description',
+        atomic: true,
+        sequential: false,
+        groupItems: [],
+      };
+
+      dataSource.transaction.mockRejectedValue(new Error('DB error'));
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(ErrorCodes.FSTG);
+
+      dataSource.transaction.mockRejectedValue({ message: 'no stack' });
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
+
+      dataSource.transaction.mockRejectedValue(null);
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(BadRequestException);
     });
 
     it('should create a transaction group', async () => {

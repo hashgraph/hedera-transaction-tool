@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
 
@@ -9,12 +9,15 @@ import {
   PaginatedResourceDto,
   Pagination,
 } from '@app/common';
+
 import { User, UserKey } from '@entities';
 
 import { UpdateUserKeyMnemonicHashDto, UploadUserKeyDto } from './dtos';
 
 @Injectable()
 export class UserKeysService {
+  private readonly logger = new Logger(UserKeysService.name);
+
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
 
   // Get the user key for the provided where clause.
@@ -62,7 +65,12 @@ export class UserKeysService {
     if (userKey.deletedAt) {
       await this.repo.recover(userKey);
     }
-    return this.repo.save(userKey);
+    try {
+      return await this.repo.save(userKey);
+    } catch (error) {
+      this.logger.error('Failed to save user key', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+      throw new BadRequestException(ErrorCodes.FSUK);
+    }
   }
 
   // Get the list of user keys for the provided userId

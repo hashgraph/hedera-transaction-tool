@@ -15,11 +15,11 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  ArrayOverlap,
   Brackets,
   DataSource,
   EntityManager,
   FindManyOptions,
-  FindOperator,
   FindOptionsWhere,
   In,
   Not,
@@ -32,7 +32,6 @@ import {
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
-  TransactionType,
   User,
   UserKey,
 } from '@entities';
@@ -224,27 +223,71 @@ export class TransactionsService {
 
   /* Get the transactions visible by the user */
   async getHistoryTransactions(
+    user: User,
     { page, limit, size, offset }: Pagination,
     filter: Filtering[] = [],
     sort: Sorting[] = [],
   ): Promise<PaginatedResourceDto<Transaction>> {
     const order = getOrder(sort);
 
-    const findOptions: FindManyOptions<Transaction> = {
-      where: {
-        ...getWhere<Transaction>(filter),
-        status: this.getHistoryStatusWhere(filter),
-      },
+    await attachKeys(user, this.entityManager);
+
+    const { bypassStatuses, nonBypassStatuses } = this.getHistoryStatusBuckets(filter);
+
+    // Strip status from baseWhere — each branch sets its own status condition.
+    const baseWhere = getWhere<Transaction>(filter.filter(f => f.property !== 'status'));
+
+    const whereArray: FindOptionsWhere<Transaction>[] = [];
+
+    // EXECUTED and FAILED: submitted to the network, visible to everyone.
+    if (bypassStatuses.length > 0) {
+      whereArray.push({ ...baseWhere, status: In(bypassStatuses) });
+    }
+
+    // EXPIRED, CANCELED, ARCHIVED: require user association.
+    if (nonBypassStatuses.length > 0) {
+      const statusClause = In(nonBypassStatuses);
+      const userPublicKeys = user.keys?.map(k => k.publicKey) ?? [];
+
+      whereArray.push(
+        { ...baseWhere, status: statusClause, creatorKey: { userId: user.id } },
+        { ...baseWhere, status: statusClause, observers: { userId: user.id } },
+        { ...baseWhere, status: statusClause, signers: { userId: user.id } },
+      );
+
+      if (userPublicKeys.length > 0) {
+        whereArray.push(
+          {
+            ...baseWhere,
+            status: statusClause,
+            transactionCachedAccounts: { cachedAccount: { keys: { publicKey: In(userPublicKeys) } } },
+          },
+          {
+            ...baseWhere,
+            status: statusClause,
+            transactionCachedNodes: { cachedNode: { keys: { publicKey: In(userPublicKeys) } } },
+          },
+          // Branch 3: user's key is directly listed in the transaction's publicKeys array
+          {
+            ...baseWhere,
+            status: statusClause,
+            publicKeys: ArrayOverlap(userPublicKeys),
+          },
+        );
+      }
+    }
+
+    if (whereArray.length === 0) {
+      return { totalItems: 0, items: [], page, size };
+    }
+
+    const [transactions, total] = await this.repo.findAndCount({
+      where: whereArray,
       order,
       relations: ['groupItem', 'groupItem.group'],
       skip: offset,
       take: limit,
-    };
-
-    const [transactions, total] = await this.repo
-      .createQueryBuilder()
-      .setFindOptions(findOptions)
-      .getManyAndCount();
+    });
 
     return {
       totalItems: total,
@@ -465,6 +508,7 @@ export class TransactionsService {
         try {
           return await entityManager.save(Transaction, transactions);
         } catch (error) {
+          this.logger.error('Failed to save transactions', (error as any)?.stack ?? (error as any)?.message ?? String(error));
           throw new BadRequestException(ErrorCodes.FST);
         }
       });
@@ -966,10 +1010,7 @@ export class TransactionsService {
     if (
       [
         TransactionStatus.EXECUTED,
-        TransactionStatus.EXPIRED,
         TransactionStatus.FAILED,
-        TransactionStatus.CANCELED,
-        TransactionStatus.ARCHIVED,
       ].includes(transaction.status)
     )
       return true;
@@ -1150,46 +1191,44 @@ export class TransactionsService {
     };
   }
 
-  /* Get the status where clause for the history transactions */
-  private getHistoryStatusWhere(
-    filtering: Filtering[],
-  ): TransactionStatus | FindOperator<TransactionStatus> {
-    const allowedStatuses = [
-      TransactionStatus.EXECUTED,
-      TransactionStatus.FAILED,
-      TransactionStatus.EXPIRED,
-      TransactionStatus.CANCELED,
-      TransactionStatus.ARCHIVED,
-    ];
-    const forbiddenStatuses = Object.values(TransactionStatus).filter(
-      s => !allowedStatuses.includes(s),
-    );
+  /* Splits the status filter into bypass (EXECUTED/FAILED) and non-bypass buckets. */
+  private getHistoryStatusBuckets(filtering: Filtering[]): {
+    bypassStatuses: TransactionStatus[];
+    nonBypassStatuses: TransactionStatus[];
+  } {
+    const bypassGroup = [TransactionStatus.EXECUTED, TransactionStatus.FAILED];
+    const nonBypassGroup = [TransactionStatus.EXPIRED, TransactionStatus.CANCELED, TransactionStatus.ARCHIVED];
+    const allHistoryStatuses = [...bypassGroup, ...nonBypassGroup];
 
-    if (!filtering || filtering.length === 0) return Not(In([...forbiddenStatuses]));
+    const statusFilter = filtering?.find(f => f.property === 'status');
 
-    const statusFilter = filtering.find(f => f.property === 'status');
+    let allowed = allHistoryStatuses;
 
-    if (!statusFilter) return Not(In([...forbiddenStatuses]));
+    if (statusFilter) {
+      const values = statusFilter.value.split(',').map(v => v.trim()) as TransactionStatus[];
+      const validValues = values.filter(s => allHistoryStatuses.includes(s));
 
-    const statusFilterValue = statusFilter.value
-      .split(',')
-      .map(v => v.trim()) as TransactionStatus[];
-
-    switch (statusFilter.rule) {
-      case 'eq':
-        return allowedStatuses.includes(statusFilterValue[0])
-          ? statusFilterValue[0]
-          : Not(In([...forbiddenStatuses]));
-      case 'in':
-        return In(statusFilterValue.filter(s => allowedStatuses.includes(s)));
-      case 'neq':
-        return Not(In([...forbiddenStatuses, ...statusFilterValue]));
-      case 'nin':
-        return Not(
-          In([...forbiddenStatuses, ...statusFilterValue.filter(s => allowedStatuses.includes(s))]),
-        );
-      default:
-        return Not(In([...forbiddenStatuses]));
+      switch (statusFilter.rule) {
+        case 'eq':
+          allowed = allHistoryStatuses.includes(values[0]) ? [values[0]] : allHistoryStatuses;
+          break;
+        case 'in':
+          allowed = validValues;
+          break;
+        case 'neq':
+          allowed = allHistoryStatuses.filter(s => !values.includes(s));
+          break;
+        case 'nin':
+          allowed = allHistoryStatuses.filter(s => !validValues.includes(s));
+          break;
+        default:
+          // keep all
+      }
     }
+
+    return {
+      bypassStatuses: allowed.filter(s => bypassGroup.includes(s)),
+      nonBypassStatuses: allowed.filter(s => nonBypassGroup.includes(s)),
+    };
   }
 }

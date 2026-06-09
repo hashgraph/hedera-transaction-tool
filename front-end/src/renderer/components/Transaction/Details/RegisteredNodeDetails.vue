@@ -15,6 +15,7 @@ import {
 } from '@hiero-ledger/sdk';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import { labelForBlockNodeApi } from '@renderer/components/Transaction/Create/RegisteredNodeCreate/BlockNodeApiLabel.ts';
 
 /* Props */
 const props = defineProps<{
@@ -30,6 +31,11 @@ const typeLabel: Record<string, string> = {
   mirrorNode: 'Mirror Node',
   rpcRelay: 'RPC Relay',
   generalService: 'General Service',
+};
+
+/* Helpers */
+const blockNodeAPIs = (endpoint: BlockNodeServiceEndpoint) => {
+  return endpoint.endpointApis.map(api => labelForBlockNodeApi(api)).join(',');
 };
 
 /* Hooks */
@@ -112,11 +118,10 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           <thead class="thin">
             <tr>
               <th class="text-start">Type</th>
-              <th class="text-start">IP Address</th>
-              <th class="text-start">Domain Name</th>
+              <th class="text-start">IP/Domain</th>
               <th class="text-start">Port</th>
               <th class="text-start">TLS</th>
-              <th class="text-start">Extra</th>
+              <th class="text-start">APIs/Description</th>
             </tr>
           </thead>
           <tbody class="thin">
@@ -130,16 +135,15 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         -->
             <tr v-for="(endpoint, index) of transaction.serviceEndpoints" :key="index">
               <td class="col text-start">{{ typeLabel[endpoint.type] ?? endpoint.type }}</td>
-              <td class="col text-start">{{ endpoint.ipAddress }}</td>
-              <td class="col text-start">{{ endpoint.domainName }}</td>
+              <td class="col text-start">{{ endpoint.ipAddress ?? endpoint.domainName ?? '' }}</td>
               <td class="col text-start">{{ endpoint.port }}</td>
               <td class="col text-start">{{ endpoint.requiresTls ? 'Yes' : 'No' }}</td>
               <td class="col text-start">
                 <template v-if="endpoint instanceof BlockNodeServiceEndpoint">
-                  {{ (endpoint.endpointApis ?? []).length }} API(s)
+                  {{ blockNodeAPIs(endpoint) }}
                 </template>
                 <template v-else-if="endpoint instanceof GeneralServiceEndpoint">
-                  {{ endpoint.description || '' }}
+                  {{ endpoint.description ?? '' }}
                 </template>
               </td>
             </tr>

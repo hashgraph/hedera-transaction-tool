@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
@@ -19,6 +19,7 @@ import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../
 
 @Injectable()
 export class ObserversService {
+  private readonly logger = new Logger(ObserversService.name);
   constructor(
     @InjectRepository(TransactionObserver)
     private repo: Repository<TransactionObserver>,
@@ -64,6 +65,7 @@ export class ObserversService {
 
       return result;
     } catch (error) {
+      this.logger.error('Failed to save transaction observers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw new BadRequestException(error.message);
     }
   }
@@ -89,15 +91,7 @@ export class ObserversService {
 
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
-    if (
-      [
-        TransactionStatus.EXECUTED,
-        TransactionStatus.EXPIRED,
-        TransactionStatus.FAILED,
-        TransactionStatus.CANCELED,
-        TransactionStatus.ARCHIVED,
-      ].includes(transaction.status)
-    )
+    if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
       return transaction.observers;
 
     if (

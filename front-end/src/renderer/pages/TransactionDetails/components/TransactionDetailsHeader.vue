@@ -307,6 +307,8 @@ const computeVisibleButtons = (
         <NextTransactionCursor />
         <div v-if="visibleButtons.length > 0">
           <SplitSignButtonDropdown
+            :action-text="sign"
+            :action-next-text="signAndNext"
             v-if="visibleButtons[0] === sign"
             :disabled="isRefreshing"
             :loading="Boolean(loadingStates[sign])"

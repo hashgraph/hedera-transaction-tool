@@ -38,13 +38,11 @@ interface WhereClauseResult {
   addParam: (value: any) => string;
 }
 
-const TERMINAL_STATUSES = [
-  TransactionStatus.CANCELED,
-  TransactionStatus.REJECTED,
+// Only EXECUTED and FAILED are world-readable. EXPIRED, CANCELED, and ARCHIVED
+// still require a user association check (creator / observer / signer / approver).
+const BYPASS_STATUSES = [
   TransactionStatus.EXECUTED,
   TransactionStatus.FAILED,
-  TransactionStatus.EXPIRED,
-  TransactionStatus.ARCHIVED,
 ];
 
 function buildFilterConditions(
@@ -202,10 +200,9 @@ function buildEligibilityConditions(
  * Builds a parameterized SQL WHERE clause for filtering and authorizing transaction queries.
  *
  * The resulting clause is structured as:
- * `(filter conditions) AND ((eligibility conditions) OR (terminal status override))`
+ * `(filter conditions) AND ((eligibility conditions) OR (bypass status check))`
  *
- * Terminal statuses (CANCELED, REJECTED, EXECUTED, FAILED, EXPIRED, ARCHIVED) always
- * pass the eligibility check regardless of user or role conditions.
+ * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, signer, or approver).
  *
  * @param sql - The SQL builder service used to resolve table and column names.
  * @param filters - Optional filters to apply, such as status, type, and mirror network.
@@ -237,7 +234,7 @@ function buildWhereClause(
     eligibilityConditions.push(...buildEligibilityConditions(sql, user, roles, addParam));
   }
 
-  const statusParam = addParam(TERMINAL_STATUSES);
+  const statusParam = addParam(BYPASS_STATUSES);
   eligibilityConditions.push(`t.${sql.col(Transaction, 'status')} = ANY(${statusParam})`);
 
   conditions.push(`(${eligibilityConditions.join(' OR ')})`);

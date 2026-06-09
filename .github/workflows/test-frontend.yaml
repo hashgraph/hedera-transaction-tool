@@ -457,6 +457,29 @@ jobs:
         run: docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans || true
         working-directory: back-end
 
+  cleanup:
+    name: Cleanup | Build Cache
+    runs-on: transaction-tools-linux-medium
+    needs: [test]
+    if: always()
+    permissions:
+      actions: write
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@a5ad31d6a139d249332a2605b85202e8c0b78450 # v2.19.1
+        with:
+          egress-policy: audit
+
+      - name: Delete Build Artifacts Cache
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if ! gh api --method DELETE \
+            "/repos/${{ github.repository }}/actions/caches?key=build-artifacts-${{ github.sha }}&ref=${{ github.ref }}"; then
+            echo "::warning::Failed to delete Actions cache build-artifacts-${{ github.sha }}"
+          fi
+
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
     runs-on: transaction-tools-linux-medium

@@ -8,6 +8,8 @@ import { GO_NEXT_AFTER_SIGN } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
+  actionText: string;
+  actionNextText: string;
   loading?: boolean;
   loadingText?: string;
   disabled?: boolean;
@@ -46,7 +48,7 @@ onBeforeMount(async () => {
       color="primary"
       type="submit"
     >
-      {{ goToNext ? 'Sign & Next' : 'Sign' }}
+      {{ goToNext ? props.actionNextText : props.actionText }}
     </AppButton>
     <AppButton
       :disabled="props.disabled || props.loading"
@@ -111,7 +113,7 @@ onBeforeMount(async () => {
 
 .main-button {
   border-right: 1px solid rgba(255, 255, 255, 0.3);
-  min-width: 120px;
+  min-width: 136.5px;
 }
 
 .option-label {

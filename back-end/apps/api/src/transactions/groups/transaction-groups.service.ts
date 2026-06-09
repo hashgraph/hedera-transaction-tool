@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
@@ -26,6 +27,8 @@ import {
 
 @Injectable()
 export class TransactionGroupsService {
+  private readonly logger = new Logger(TransactionGroupsService.name);
+
   constructor(
     private readonly transactionsService: TransactionsService,
     @InjectDataSource() private dataSource: DataSource,
@@ -52,27 +55,32 @@ export class TransactionGroupsService {
       user,
     );
 
-    await this.dataSource.transaction(async manager => {
-      // Create group items with corresponding transactions
-      const groupItems = transactions.map((transaction, index) => {
-        const groupItemDto = dto.groupItems[index];
-        const groupItem = manager.create(TransactionGroupItem, groupItemDto);
-        groupItem.transaction = transaction;
-        groupItem.group = group;
-        return groupItem;
+    try {
+      await this.dataSource.transaction(async manager => {
+        // Create group items with corresponding transactions
+        const groupItems = transactions.map((transaction, index) => {
+          const groupItemDto = dto.groupItems[index];
+          const groupItem = manager.create(TransactionGroupItem, groupItemDto);
+          groupItem.transaction = transaction;
+          groupItem.group = group;
+          return groupItem;
+        });
+
+        // Save everything
+        await manager.save(TransactionGroup, group);
+        await manager.save(TransactionGroupItem, groupItems);
+
+        emitTransactionStatusUpdate(
+          this.notificationsPublisher,
+          transactions.map(tx => ({
+            entityId: tx.id,
+          })),
+        );
       });
-
-      // Save everything
-      await manager.save(TransactionGroup, group);
-      await manager.save(TransactionGroupItem, groupItems);
-
-      emitTransactionStatusUpdate(
-        this.notificationsPublisher,
-        transactions.map(tx => ({
-          entityId: tx.id,
-        })),
-      );
-    });
+    } catch (error) {
+      this.logger.error('Failed to save transaction group', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+      throw new BadRequestException(ErrorCodes.FSTG);
+    }
 
     return group;
   }
