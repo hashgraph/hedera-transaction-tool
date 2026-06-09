@@ -285,7 +285,10 @@ export class ReceiverService {
         p => p.type === notificationType
       );
 
-      if (preference ? preference.inApp : true) {
+      const channel = NOTIFICATION_CHANNELS[notificationType];
+      const emailAllowed = !channel.email || !preference || preference.email !== false;
+      const inAppAllowed = !channel.inApp || !preference || preference.inApp !== false;
+      if (emailAllowed && inAppAllowed) {
         result.push(id);
       }
     }
