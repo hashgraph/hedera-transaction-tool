@@ -299,6 +299,14 @@ jobs:
           df -h
           docker system df
 
+          echo "=== Cleaning up stale Docker resources ==="
+          docker compose -f "${BACKEND_COMPOSE_FILE}" down --volumes --remove-orphans 2>/dev/null || true
+          docker volume prune -f
+
+          echo "=== Pre-pulling base images ==="
+          docker pull postgres
+          docker pull redis
+
           for service in redis migration api chain notifications; do
             for attempt in $(seq 1 3); do
               if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
