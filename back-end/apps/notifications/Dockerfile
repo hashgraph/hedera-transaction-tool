@@ -2,6 +2,8 @@ FROM node:24.15.0-alpine AS base
 
 WORKDIR /usr/src/app
 
+RUN apk add --no-cache python3 make g++
+
 RUN npm install -g pnpm@9.15.3
 
 FROM base AS development
