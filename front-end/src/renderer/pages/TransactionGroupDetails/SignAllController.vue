@@ -10,6 +10,7 @@ import {
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
+import { isSignableStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import {
   type ActionReport,
@@ -68,14 +69,21 @@ const performSignAll = async (
       group = props.groupOrId;
     }
 
-    // 2) collects required keys for all group items
-    const allTransactions = group.groupItems.map(item => item.transaction);
+    // 2) collects required keys for signable transactions only
+    const signableTransactions = group.groupItems
+      .map(item => item.transaction)
+      .filter(tx => isSignableStatus(tx.status));
     progressText.value = 'Collecting required keys…';
-    const allSignatureItems = await collectRequiredKeys(allTransactions, appCache);
+    const allSignatureItems = await collectRequiredKeys(signableTransactions, appCache);
 
     // Only process transactions the current user hasn't signed yet
     const signatureItems = allSignatureItems.filter(item => item.publicKeys.length > 0);
     const remainingCount = signatureItems.length;
+
+    if (remainingCount === 0) {
+      toastManager.info('All transactions are already signed');
+      return null;
+    }
 
     const missingKeys = collectMissingKeys(signatureItems);
     const missingKeyCount = missingKeys.length;
