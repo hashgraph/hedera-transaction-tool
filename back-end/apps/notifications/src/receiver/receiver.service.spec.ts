@@ -432,10 +432,11 @@ describe('ReceiverService', () => {
   describe('filterReceiversByPreferenceForType', () => {
     beforeEach(() => { jest.clearAllMocks(); });
 
-    it('filterReceiversByPreferenceForType loads cache and filters', async () => {
+    it('excludes user with email:false for an email-only notification type and uses cache on second call', async () => {
+      // TRANSACTION_EXECUTED is email-only (email:true, inApp:false)
       em.find.mockResolvedValue([
-        { id: 1, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, inApp: false }] },
-        { id: 2, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, inApp: true }] },
+        { id: 1, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, email: false, inApp: true }] },
+        { id: 2, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, email: true, inApp: false }] },
       ]);
 
       const cache = new Map<number, User>();
@@ -460,8 +461,60 @@ describe('ReceiverService', () => {
       expect(res2).toEqual([2]);
     });
 
-    it('filterReceiversByPreferenceForType continues when user not found after load', async () => {
-      // em.find returns no users -> cache stays empty -> user is undefined -> continue branch
+    it('excludes user with email:false for TRANSACTION_READY_FOR_EXECUTION', async () => {
+      // Regression test for the original bug: email:false was ignored because code checked inApp
+      em.find.mockResolvedValueOnce([
+        { id: 1, notificationPreferences: [{ type: NotificationType.TRANSACTION_READY_FOR_EXECUTION, email: false, inApp: true }] },
+        { id: 2, notificationPreferences: [{ type: NotificationType.TRANSACTION_READY_FOR_EXECUTION, email: true, inApp: false }] },
+      ]);
+
+      const cache = new Map<number, User>();
+      const res = await (service as any).filterReceiversByPreferenceForType(
+        em as any,
+        NotificationType.TRANSACTION_READY_FOR_EXECUTION,
+        new Set([1, 2]),
+        cache,
+      );
+
+      expect(res).toEqual([2]);
+    });
+
+    it('excludes user with inApp:false for an inApp-only notification type', async () => {
+      // USER_REGISTERED is inApp-only (email:false, inApp:true)
+      em.find.mockResolvedValueOnce([
+        { id: 1, notificationPreferences: [{ type: NotificationType.USER_REGISTERED, email: true, inApp: false }] },
+        { id: 2, notificationPreferences: [{ type: NotificationType.USER_REGISTERED, email: false, inApp: true }] },
+      ]);
+
+      const cache = new Map<number, User>();
+      const res = await (service as any).filterReceiversByPreferenceForType(
+        em as any,
+        NotificationType.USER_REGISTERED,
+        new Set([1, 2]),
+        cache,
+      );
+
+      expect(res).toEqual([2]);
+    });
+
+    it('includes user with inApp:false when notification type is email-only', async () => {
+      // inApp preference is irrelevant for email-only notifications
+      em.find.mockResolvedValueOnce([
+        { id: 1, notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, email: true, inApp: false }] },
+      ]);
+
+      const cache = new Map<number, User>();
+      const res = await (service as any).filterReceiversByPreferenceForType(
+        em as any,
+        NotificationType.TRANSACTION_EXECUTED,
+        new Set([1]),
+        cache,
+      );
+
+      expect(res).toEqual([1]);
+    });
+
+    it('continues when user not found after load', async () => {
       em.find.mockResolvedValueOnce([]);
 
       const cache = new Map<number, User>();
@@ -475,9 +528,9 @@ describe('ReceiverService', () => {
       expect(res).toEqual([]);
     });
 
-    it('filterReceiversByPreferenceForType treats missing preferences as allowed (default true)', async () => {
-      // user returned without notificationPreferences -> preference is undefined -> default true
-      em.find.mockResolvedValueOnce([{ id: 4 }]);
+    it('treats missing preference record as allowed (default true)', async () => {
+      // user has no preference for this type -> allowed by default
+      em.find.mockResolvedValueOnce([{ id: 4, notificationPreferences: [] }]);
 
       const cache = new Map<number, User>();
       const res = await (service as any).filterReceiversByPreferenceForType(
@@ -488,6 +541,21 @@ describe('ReceiverService', () => {
       );
 
       expect(res).toEqual([4]);
+    });
+
+    it('treats missing notificationPreferences relation as allowed (default true)', async () => {
+      // user returned without notificationPreferences relation
+      em.find.mockResolvedValueOnce([{ id: 5 }]);
+
+      const cache = new Map<number, User>();
+      const res = await (service as any).filterReceiversByPreferenceForType(
+        em as any,
+        NotificationType.TRANSACTION_EXECUTED,
+        new Set([5]),
+        cache,
+      );
+
+      expect(res).toEqual([5]);
     });
   });
 
