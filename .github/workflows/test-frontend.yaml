@@ -311,8 +311,6 @@ jobs:
             done
           done
 
-          docker builder prune -f
-
           for attempt in $(seq 1 5); do
             if docker compose -f "${BACKEND_COMPOSE_FILE}" up -d --no-build api chain notifications; then
               break
