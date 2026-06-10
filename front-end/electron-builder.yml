@@ -33,6 +33,7 @@ nsis:
   uninstallDisplayName: ${productName}
   createDesktopShortcut: always
 mac:
+  # Build + sign only. Notarizing + stapling is a separate step.
   notarize: false
   target:
     - target: 'default'
