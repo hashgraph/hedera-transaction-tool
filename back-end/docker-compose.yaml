@@ -88,7 +88,7 @@ services:
     depends_on:
       - nats
   database:
-    image: postgres
+    image: postgres:16
     restart: always
     environment:
       - POSTGRES_PASSWORD
@@ -112,7 +112,7 @@ services:
     depends_on:
       - database
   redis:
-    image: redis
+    image: redis:7
     container_name: cache
     command: redis-server --notify-keyspace-events Ex
     ports:

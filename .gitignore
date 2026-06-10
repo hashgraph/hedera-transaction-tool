@@ -90,6 +90,10 @@ out
 .env.production.local
 .env.local
 
+# macOS signing / notarization credentials (local only — never commit)
+*.p8
+*.p12
+
 # parcel-bundler cache (https://parceljs.org/)
 .parcel-cache
 

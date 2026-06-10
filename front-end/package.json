@@ -21,7 +21,7 @@
     "postinstall": "electron-builder install-app-deps && prisma generate",
     "build:win": "pnpm run build && electron-builder --win --config",
     "build:mac": "pnpm run build && electron-builder --mac",
-    "build:mac:arm64": "pnpm run build && electron-builder --mac default --arm64",
+    "build:mac:arm64": "pnpm run build && electron-builder --mac --arm64",
     "build:linux": "pnpm run build && electron-builder --linux --config",
     "build:linux:e2e": "VITE_EXPOSE_TEST_HOOKS=true pnpm run build && electron-builder --linux --config",
     "publish": "pnpm run build && electron-builder -m -p 'onTagOrDraft'",
