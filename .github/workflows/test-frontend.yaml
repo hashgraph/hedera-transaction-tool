@@ -110,7 +110,7 @@ jobs:
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: /tmp/docker-images
-          key: docker-images-node-24.15.0-alpine-postgres-16-redis-7-v1
+          key: docker-images-node-24.15.0-alpine-v1
 
       - name: Load Cached Docker Images
         if: ${{ matrix.test-suite.backendRequired && steps.docker-cache.outputs.cache-hit == 'true' }}
@@ -120,15 +120,13 @@ jobs:
         if: ${{ matrix.test-suite.backendRequired && steps.docker-cache.outputs.cache-hit != 'true' }}
         run: |
           set -euo pipefail
-          for image in node:24.15.0-alpine postgres:16 redis:7; do
-            for attempt in $(seq 1 3); do
-              if docker pull "$image"; then break; fi
-              if [ "${attempt}" -eq 3 ]; then echo "Failed to pull $image" >&2; exit 1; fi
-              sleep 10
-            done
+          for attempt in $(seq 1 3); do
+            if docker pull node:24.15.0-alpine; then break; fi
+            if [ "${attempt}" -eq 3 ]; then echo "Failed to pull node:24.15.0-alpine" >&2; exit 1; fi
+            sleep 10
           done
           mkdir -p /tmp/docker-images
-          docker save node:24.15.0-alpine postgres:16 redis:7 -o /tmp/docker-images/cache.tar
+          docker save node:24.15.0-alpine -o /tmp/docker-images/cache.tar
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
