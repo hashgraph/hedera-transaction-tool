@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool-tests-v2",
-  "version": "0.32.0-SNAPSHOT",
+  "version": "0.33.0-SNAPSHOT",
   "type": "module",
   "scripts": {
     "build": "tsc",
