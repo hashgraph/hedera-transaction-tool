@@ -233,7 +233,7 @@ jobs:
       - name: Set up Docker Buildx
         # Required so build-push-action gets a docker-container (buildkit) builder;
         # the default docker driver cannot export the gha cache.
-        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Extract metadata (tags, labels)
         id: meta
