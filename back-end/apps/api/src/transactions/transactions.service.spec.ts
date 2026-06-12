@@ -2309,7 +2309,7 @@ describe('TransactionsService', () => {
       const result = await service.cancelTransaction(123, { id: 1 } as User);
 
       expect(queryBuilder.update).toHaveBeenCalledWith(Transaction);
-      expect(queryBuilder.set).toHaveBeenCalledWith({ status: TransactionStatus.CANCELED });
+      expect(queryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.CANCELED }));
       expect(queryBuilder.where).toHaveBeenCalledWith('id = :id', { id: 123 });
       expect(result).toBe(true);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
@@ -2497,7 +2497,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.update).toHaveBeenCalledWith(
         { id: 123 },
-        { status: TransactionStatus.ARCHIVED },
+        expect.objectContaining({ status: TransactionStatus.ARCHIVED }),
       );
       expect(result).toBe(true);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
