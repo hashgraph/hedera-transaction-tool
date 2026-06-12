@@ -44,7 +44,7 @@ jobs:
 
       - name: Parse Version
         id: version_parser
-        uses: step-security/semver-utils@4ae9c1fd6d1c5f8f152fe7e2efe8069a952c2ace # v4.3.2
+        uses: step-security/semver-utils@5bb182a08240146b23b61cc002cb74004377da4b # v5.0.0
         with:
           lenient: false
           version: ${{ github.event.inputs.version }}
@@ -233,7 +233,7 @@ jobs:
       - name: Set up Docker Buildx
         # Required so build-push-action gets a docker-container (buildkit) builder;
         # the default docker driver cannot export the gha cache.
-        uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349 # v3.7.1
+        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
 
       - name: Extract metadata (tags, labels)
         id: meta
