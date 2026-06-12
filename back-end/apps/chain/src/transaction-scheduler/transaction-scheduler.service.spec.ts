@@ -276,7 +276,7 @@ describe('TransactionStatusService', () => {
 
     expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
     expect(mockQueryBuilder.update).toHaveBeenCalled();
-    expect(mockQueryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.EXPIRED }));
+    expect(mockQueryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.EXPIRED, executedAt: expect.any(Date) }));
     expect(mockQueryBuilder.returning).toHaveBeenCalled();
     expect(mockQueryBuilder.execute).toHaveBeenCalled();
 

@@ -8,7 +8,7 @@ export class ExecutedAtBackfillForTerminalStates1781285892089 implements Migrati
             UPDATE "transaction"
             SET "executedAt" = "updatedAt"
             WHERE "executedAt" IS NULL
-              AND status IN ('CANCELED', 'REJECTED', 'FAILED', 'EXPIRED', 'ARCHIVED')
+              AND "status" IN ('CANCELED', 'REJECTED', 'FAILED', 'EXPIRED', 'ARCHIVED')
         `);
     }
 
@@ -19,7 +19,7 @@ export class ExecutedAtBackfillForTerminalStates1781285892089 implements Migrati
         await queryRunner.query(`
             UPDATE "transaction"
             SET "executedAt" = NULL
-            WHERE status IN ('CANCELED', 'REJECTED', 'EXPIRED', 'ARCHIVED')
+            WHERE "status" IN ('CANCELED', 'REJECTED', 'EXPIRED', 'ARCHIVED')
         `);
     }
 }

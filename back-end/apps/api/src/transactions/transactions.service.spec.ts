@@ -2247,6 +2247,10 @@ describe('TransactionsService', () => {
 
     it('should soft remove the transaction', async () => {
       await service.removeTransaction(123, user as User, true);
+      expect(transactionsRepo.update).toHaveBeenCalledWith(
+        transaction.id,
+        expect.objectContaining({ status: TransactionStatus.CANCELED, executedAt: expect.any(Date) }),
+      );
       expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
     });
 
@@ -2309,7 +2313,7 @@ describe('TransactionsService', () => {
       const result = await service.cancelTransaction(123, { id: 1 } as User);
 
       expect(queryBuilder.update).toHaveBeenCalledWith(Transaction);
-      expect(queryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.CANCELED }));
+      expect(queryBuilder.set).toHaveBeenCalledWith(expect.objectContaining({ status: TransactionStatus.CANCELED, executedAt: expect.any(Date) }));
       expect(queryBuilder.where).toHaveBeenCalledWith('id = :id', { id: 123 });
       expect(result).toBe(true);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
@@ -2497,7 +2501,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.update).toHaveBeenCalledWith(
         { id: 123 },
-        expect.objectContaining({ status: TransactionStatus.ARCHIVED }),
+        expect.objectContaining({ status: TransactionStatus.ARCHIVED, executedAt: expect.any(Date) }),
       );
       expect(result).toBe(true);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
