@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { getRepositoryToken } from '@nestjs/typeorm';
@@ -19,6 +20,7 @@ import {
   NatsPublisherService,
   processTransactionStatus,
   TransactionSignatureService,
+  validateSignature,
 } from '@app/common';
 import { isExpired } from '@app/common/utils';
 
@@ -30,6 +32,7 @@ jest.mock('@app/common', () => ({
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
+  validateSignature: jest.fn(),
 }));
 
 describe('SignersService', () => {
@@ -56,6 +59,7 @@ describe('SignersService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    jest.mocked(validateSignature).mockReturnValue([]);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -284,6 +288,7 @@ describe('SignersService', () => {
 
       await sdkTransaction.sign(privateKey);
       const signatureMap = sdkTransaction.getSignatures();
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       const result = await service['processTransactionSignatures'](
         transaction,
@@ -314,6 +319,7 @@ describe('SignersService', () => {
 
       await sdkTransaction.sign(privateKey);
       const signatureMap = sdkTransaction.getSignatures();
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       await expect(
         service['processTransactionSignatures'](
@@ -342,6 +348,7 @@ describe('SignersService', () => {
 
       await sdkTransaction.sign(privateKey);
       const signatureMap = sdkTransaction.getSignatures();
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       const existingSignerIds = new Set([3]); // Already signed
 
@@ -382,6 +389,64 @@ describe('SignersService', () => {
       );
 
       expect(result.isSameBytes).toBe(true);
+    });
+
+    it('should throw when validateSignature reports an invalid signature', async () => {
+      jest.mocked(validateSignature).mockImplementation(() => { throw new Error('Invalid signature'); });
+
+      const privateKey = PrivateKey.generateECDSA();
+      const userKeyMap = new Map<string, any>();
+      userKeyMap.set(privateKey.publicKey.toStringRaw(), { id: 3, publicKey: privateKey.publicKey.toStringRaw() });
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      await sdkTransaction.sign(privateKey);
+      const signatureMap = sdkTransaction.getSignatures();
+
+      const transaction = {
+        id: 1,
+        transactionBytes: sdkTransaction.toBytes(),
+      } as Transaction;
+
+      await expect(
+        service['processTransactionSignatures'](transaction, signatureMap, userKeyMap, new Set())
+      ).rejects.toThrow('Invalid signature');
+    });
+  });
+
+  describe('validateAndProcessSignatures', () => {
+    it('should capture invalid signature errors as a result entry without throwing', async () => {
+      jest.mocked(validateSignature).mockImplementation(() => { throw new Error('Invalid signature'); });
+
+      const privateKey = PrivateKey.generateECDSA();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      await sdkTransaction.sign(privateKey);
+      const signatureMap = sdkTransaction.getSignatures();
+
+      const transaction = {
+        id: 1,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      } as Transaction;
+
+      const dto = [{ id: 1, signatureMap }];
+      const transactionMap = new Map([[1, transaction]]);
+      const signersByTransaction = new Map<number, Set<number>>();
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const results = await service['validateAndProcessSignatures'](dto, user, transactionMap, signersByTransaction);
+
+      expect(results).toHaveLength(1);
+      expect(results[0]).toEqual({ id: 1, error: 'Invalid signature' });
     });
   });
 
@@ -628,6 +693,7 @@ describe('SignersService', () => {
       const statusMap = new Map<number, TransactionStatus>();
       statusMap.set(transactionId, TransactionStatus.WAITING_FOR_EXECUTION);
       jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
@@ -698,6 +764,7 @@ describe('SignersService', () => {
       statusMap.set(transactionId1, TransactionStatus.WAITING_FOR_EXECUTION);
       statusMap.set(transactionId2, TransactionStatus.WAITING_FOR_EXECUTION);
       jest.mocked(processTransactionStatus).mockResolvedValue(statusMap);
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       const result = await service.uploadSignatureMaps(
         [
@@ -814,6 +881,7 @@ describe('SignersService', () => {
       });
 
       jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+      jest.mocked(validateSignature).mockReturnValue([privateKey.publicKey]);
 
       const result = await service.uploadSignatureMaps(
         [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
