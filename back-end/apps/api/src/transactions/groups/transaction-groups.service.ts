@@ -251,7 +251,7 @@ export class TransactionGroupsService {
       const updateResult = await this.dataSource.getRepository(Transaction)
         .createQueryBuilder()
         .update(Transaction)
-        .set({ status: TransactionStatus.CANCELED })
+        .set({ status: TransactionStatus.CANCELED, executedAt: new Date() })
         .where('id IN (:...ids)', { ids: cancelableIds })
         .andWhere('status IN (:...statuses)', { statuses: cancelableStatuses })
         .execute();

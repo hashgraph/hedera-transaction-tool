@@ -851,7 +851,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (softRemove) {
-      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED });
+      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt: new Date() });
       await this.repo.softRemove(transaction);
     } else {
       await this.repo.remove(transaction);
@@ -894,7 +894,7 @@ export class TransactionsService {
     const updateResult = await this.repo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: TransactionStatus.CANCELED })
+      .set({ status: TransactionStatus.CANCELED, executedAt: new Date() })
       .where('id = :id', { id })
       .andWhere('status IN (:...statuses)', { statuses: this.cancelableStatuses })
       .execute();
@@ -938,7 +938,7 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.OMTIP);
     }
 
-    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED });
+    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED, executedAt: new Date() });
     emitTransactionStatusUpdate(
       this.notificationsPublisher,
       [{

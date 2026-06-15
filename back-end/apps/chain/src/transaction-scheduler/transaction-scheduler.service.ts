@@ -104,7 +104,7 @@ export class TransactionSchedulerService {
     const result = await this.transactionRepo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: TransactionStatus.EXPIRED })
+      .set({ status: TransactionStatus.EXPIRED, executedAt: new Date() })
       .where('status IN (:...statuses) AND validStart < :before', {
         statuses: [
           TransactionStatus.NEW,

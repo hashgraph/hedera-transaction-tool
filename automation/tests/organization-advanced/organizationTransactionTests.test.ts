@@ -317,7 +317,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
       const historyDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
       expect(historyDetails?.transactionId).toBe(txId);
       expect(historyDetails?.transactionType).toBe('Account Update');
-      expect(historyDetails?.validStart).toBe('N/A');
+      expect(historyDetails?.validStart).toMatch(/^\d{2}\/\d{2}\/\d{4}/);
       expect(historyDetails?.status).toBe('CANCELED');
       expect(historyDetails?.detailsButton).toBe(true);
       await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
