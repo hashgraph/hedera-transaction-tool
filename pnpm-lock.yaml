@@ -7,11 +7,11 @@ settings:
 catalogs:
   default:
     '@hiero-ledger/proto':
-      specifier: 2.30.0
-      version: 2.30.0
+      specifier: 2.31.0
+      version: 2.31.0
     '@hiero-ledger/sdk':
-      specifier: 2.84.0
-      version: 2.84.0
+      specifier: 2.85.0
+      version: 2.85.0
     '@types/bcrypt':
       specifier: 6.0.0
       version: 6.0.0
@@ -157,10 +157,10 @@ importers:
     dependencies:
       '@hiero-ledger/proto':
         specifier: 'catalog:'
-        version: 2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
+        version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
+        version: 2.85.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
       '@playwright/test':
         specifier: 1.60.0
         version: 1.60.0
@@ -257,10 +257,10 @@ importers:
     dependencies:
       '@hiero-ledger/proto':
         specifier: 'catalog:'
-        version: 2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
+        version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
+        version: 2.85.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
       '@keyv/redis':
         specifier: 5.1.6
         version: 5.1.6(keyv@5.6.0)
@@ -556,14 +556,14 @@ importers:
         specifier: 4.0.0
         version: 4.0.0(electron@41.5.1)
       '@hiero-ledger/cryptography':
-        specifier: 1.18.0
-        version: 1.18.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
+        specifier: 1.19.0
+        version: 1.19.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
       '@hiero-ledger/proto':
         specifier: 'catalog:'
-        version: 2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
+        version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.84.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
+        version: 2.85.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
       '@prisma/adapter-better-sqlite3':
         specifier: 7.8.0
         version: 7.8.0
@@ -1687,8 +1687,8 @@ packages:
     peerDependencies:
       bn.js: ^5.2.1
 
-  '@hiero-ledger/cryptography@1.18.0':
-    resolution: {integrity: sha512-fLLAcpssJkPjCtTJRge6NmWIRAG3GcZ3IaOA006e/m/aMvwNkdFyWyeFbDuqNe1hG/sY28/9mc3IHL/suyVi2A==}
+  '@hiero-ledger/cryptography@1.19.0':
+    resolution: {integrity: sha512-6CN34QzPGpegFpQGw1dI77N+75ICdLPSSpcBQ35tyKiNruh6KjE9L0R0th5kcn5sdFw8CwHOPwDQ4+HaSyW0Yw==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
       expo-crypto: '*'
@@ -1696,8 +1696,8 @@ packages:
       expo-crypto:
         optional: true
 
-  '@hiero-ledger/proto@2.30.0':
-    resolution: {integrity: sha512-6n91VQ3smh5HHChz1sO8X8nj4D6IwoQ+9BTpqzNkGv+1At2PwIR8W3FPZVU6QGckHXp8WkB95E0ny18PeuQJvw==}
+  '@hiero-ledger/proto@2.31.0':
+    resolution: {integrity: sha512-6Uq9cSK1lqhMsP/Zwz3liKIzn5QtN2dvt/7EET00/LdubYxYqVxREs8SCtYbgOlzMy34n1Hl6eNeEDDFpkQhMg==}
     engines: {node: '>=10.0.0'}
     peerDependencies:
       ansi-regex: 6.2.2
@@ -1706,8 +1706,8 @@ packages:
       protobufjs: 8.2.0
       strip-ansi: 7.1.2
 
-  '@hiero-ledger/sdk@2.84.0':
-    resolution: {integrity: sha512-FR8MTeHTuH+87XU2jP9PhU77yjA3q0oDx8C+KdnvJ75SW0rYMmo5g1WV3eWx4/s2gc7rKBr5grRFDmuSNyJxZw==}
+  '@hiero-ledger/sdk@2.85.0':
+    resolution: {integrity: sha512-o9xmNHeIt7D2ZuetLTSJlrUI9S7dsEzaut61lOxIbne+9fDxGyYfkNrZaf65rOp2e/SltdwQMOseXyFXUdFqVg==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       bn.js: 5.2.3
@@ -4151,11 +4151,11 @@ packages:
     resolution: {integrity: sha512-wqUv4Gm3toFpHDQmaKD4QhZm3g1DjUBI0yzS4UBl6lElUmXFYdTQmmEDpAFa5o8FiFiymURypEnfVHzILKaxqQ==}
     engines: {node: 20.x || 22.x || 23.x || 24.x || 25.x}
 
-  bignumber.js@10.0.2:
-    resolution: {integrity: sha512-E8Wp9O06QA6lneJ4aRUXKYf/1GIomqUEmUMwtIOMtDxf1U52ffJY+y7JBk/8wRafA8qOIqLnXQGqonYXZdBnFQ==}
-
   bignumber.js@11.1.1:
     resolution: {integrity: sha512-LNkCYMieJqAts/Sj5094B92c5q+yRPlXWpABJnHMbUjB/F8AUjELmSmYX5mxbNiY/QnGnJvJIrnRuW5gUqbW5Q==}
+
+  bignumber.js@11.1.2:
+    resolution: {integrity: sha512-9idDyC15Vpk+53w4OfxEu2PqHSKFQUffrH1oTvnkJ9fduTJ032tpuI2sxS04oCzocklokWUZmWVEkTEQdLmUOQ==}
 
   bignumber.js@9.3.1:
     resolution: {integrity: sha512-Ko0uX15oIUS7wJ3Rb30Fs6SkVbLmPBAKdlm7q9+ak9bbIeFf0MwuBsQV6z7+X768/cHsfg+WlysDWJcmthjsjQ==}
@@ -7701,11 +7701,6 @@ packages:
     deprecated: Rimraf versions prior to v4 are no longer supported
     hasBin: true
 
-  rimraf@6.1.2:
-    resolution: {integrity: sha512-cFCkPslJv7BAXJsYlK1dZsbP8/ZNLkCAQ0bi1hf5EKX2QHegmDFEFA6QhuYJlk7UDdc+02JjO80YSOrWPpw06g==}
-    engines: {node: 20 || >=22}
-    hasBin: true
-
   rimraf@6.1.3:
     resolution: {integrity: sha512-LKg+Cr2ZF61fkcaK1UdkH2yEBBKnYjTyWzTJT6KNPcSPaiT7HSdhtMXQuN5wkTX0Xu72KQ1l8S42rlmexS2hSA==}
     engines: {node: 20 || >=22}
@@ -8270,9 +8265,6 @@ packages:
   thirty-two@1.0.2:
     resolution: {integrity: sha512-OEI0IWCe+Dw46019YLl6V10Us5bi574EvlJEOcAkB29IzQ/mYD1A6RyNHLjZPiHCmuodxvgF6U+vZO1L15lxVA==}
     engines: {node: '>=0.2.6'}
-
-  thread-stream@3.1.0:
-    resolution: {integrity: sha512-OqyPZ9u96VohAyMfJykzmivOrY2wfMSf3C5TtFJVgN+Hm6aj+voFhlK+kZEIv2FBh1X6Xp3DlnCOfEQ3B2J86A==}
 
   thread-stream@3.2.0:
     resolution: {integrity: sha512-zLBvqpwr4Esa0kRjcrzGU6zL25lePWaCLMx0RQFrmteozIfeNdaMLpG5U7PeHzvlFkAWaRKA9/KVW4F60iB+qw==}
@@ -10330,13 +10322,13 @@ snapshots:
       - expo-crypto
       - react-native
 
-  '@hiero-ledger/cryptography@1.18.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))':
+  '@hiero-ledger/cryptography@1.19.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))':
     dependencies:
       '@noble/curves': 1.8.1
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
       asn1js: 3.0.6
-      bignumber.js: 10.0.2
+      bignumber.js: 11.1.2
       bn.js: 5.2.3
       buffer: 6.0.3
       crypto-js: 4.2.0
@@ -10352,34 +10344,32 @@ snapshots:
       - react-native
       - supports-color
 
-  '@hiero-ledger/proto@2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.2.0)(strip-ansi@7.1.2)':
+  '@hiero-ledger/proto@2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.2.0)(strip-ansi@7.1.2)':
     dependencies:
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
       debug: 4.4.1
       long: 5.3.1
       protobufjs: 8.2.0
-      rimraf: 6.1.2
       strip-ansi: 7.1.2
 
-  '@hiero-ledger/proto@2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)':
+  '@hiero-ledger/proto@2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.3)(protobufjs@8.2.0)(strip-ansi@7.2.0)':
     dependencies:
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
       debug: 4.4.3(supports-color@8.1.1)
       long: 5.3.1
       protobufjs: 8.2.0
-      rimraf: 6.1.2
       strip-ansi: 7.2.0
 
-  '@hiero-ledger/sdk@2.84.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))':
+  '@hiero-ledger/sdk@2.85.0(bn.js@5.2.3)(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))':
     dependencies:
       '@grpc/grpc-js': 1.12.6
-      '@hiero-ledger/cryptography': 1.18.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
-      '@hiero-ledger/proto': 2.30.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.2.0)(strip-ansi@7.1.2)
+      '@hiero-ledger/cryptography': 1.19.0(react-native@0.85.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.5))
+      '@hiero-ledger/proto': 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1)(protobufjs@8.2.0)(strip-ansi@7.1.2)
       ansi-regex: 6.2.2
       ansi-styles: 6.2.3
-      bignumber.js: 10.0.2
+      bignumber.js: 11.1.2
       bn.js: 5.2.3
       crypto-js: 4.2.0
       debug: 4.4.1
@@ -13337,9 +13327,9 @@ snapshots:
       bindings: 1.5.0
       prebuild-install: 7.1.3
 
-  bignumber.js@10.0.2: {}
-
   bignumber.js@11.1.1: {}
+
+  bignumber.js@11.1.2: {}
 
   bignumber.js@9.3.1: {}
 
@@ -17210,7 +17200,7 @@ snapshots:
       real-require: 0.2.0
       safe-stable-stringify: 2.5.0
       sonic-boom: 4.2.1
-      thread-stream: 3.1.0
+      thread-stream: 3.2.0
 
   pino@9.14.0:
     dependencies:
@@ -17411,7 +17401,7 @@ snapshots:
 
   protobufjs@8.2.0:
     dependencies:
-      '@types/node': 25.5.0
+      '@types/node': 25.9.3
       long: 5.3.2
 
   proxy-addr@2.0.7:
@@ -17708,11 +17698,6 @@ snapshots:
   rimraf@3.0.2:
     dependencies:
       glob: 7.2.3
-
-  rimraf@6.1.2:
-    dependencies:
-      glob: 13.0.6
-      package-json-from-dist: 1.0.1
 
   rimraf@6.1.3:
     dependencies:
@@ -18439,10 +18424,6 @@ snapshots:
   text-hex@1.0.0: {}
 
   thirty-two@1.0.2: {}
-
-  thread-stream@3.1.0:
-    dependencies:
-      real-require: 0.2.0
 
   thread-stream@3.2.0:
     dependencies:
