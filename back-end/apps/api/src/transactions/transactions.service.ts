@@ -620,9 +620,10 @@ export class TransactionsService {
 
         // Verify ALL signatures (including already-signed keys); returns only (deduped) keys
         // not already on the transaction. Throws if any signature is invalid.
-        const { data: validNewKeys, error } = safe<PublicKey[]>(
+        const { data: validResult, error } = safe<ReturnType<typeof validateSignature>>(
           validateSignature.bind(this, sdkTransaction, map),
         );
+        const validNewKeys = validResult?.newPublicKeys ?? [];
         if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
         for (const publicKey of validNewKeys) {
