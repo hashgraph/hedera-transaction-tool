@@ -638,7 +638,7 @@ export class TransactionsService {
           allPubKeyStrings.add(pk.toStringDer());
         }
 
-        intermediate.set(id, { transaction, publicKeys:validNewKeys, newBytes, isSameBytes });
+        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes });
       } catch (error) {
         results.set(id, {
           id,
