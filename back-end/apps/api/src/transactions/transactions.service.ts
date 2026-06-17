@@ -65,6 +65,7 @@ import {
   flattenKeyList,
   getNodeAccountIdsFromClientNetwork,
   isTransactionValidForNodes,
+  TransactionSnapshotService,
 } from '@app/common';
 
 import TransactionFactory from '@app/common/transaction-signature/model/transaction-factory';
@@ -91,6 +92,7 @@ export class TransactionsService {
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {
   }
 
@@ -852,6 +854,7 @@ export class TransactionsService {
 
     if (softRemove) {
       await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt: new Date() });
+      await this.transactionSnapshotService.captureForTransaction(transaction.id);
       await this.repo.softRemove(transaction);
     } else {
       await this.repo.remove(transaction);
@@ -910,6 +913,7 @@ export class TransactionsService {
           },
         }],
       );
+      await this.transactionSnapshotService.captureForTransaction(id);
 
       return CancelTransactionOutcome.CANCELED;
     }
@@ -939,6 +943,7 @@ export class TransactionsService {
     }
 
     await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED, executedAt: new Date() });
+    await this.transactionSnapshotService.captureForTransaction(id);
     emitTransactionStatusUpdate(
       this.notificationsPublisher,
       [{

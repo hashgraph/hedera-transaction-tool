@@ -24,6 +24,7 @@ import {
   TransactionExecutedDto,
   TransactionGroupExecutedDto,
   TransactionSignatureService,
+  TransactionSnapshotService,
 } from '@app/common';
 
 @Injectable()
@@ -34,6 +35,7 @@ export class ExecuteService {
     @InjectRepository(Transaction) private transactionsRepo: Repository<Transaction>,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionSignatureService: TransactionSignatureService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {
   }
 
@@ -196,6 +198,8 @@ export class ExecuteService {
       .execute();
 
     if (updateResult.raw.length === 0) return null;
+
+    await this.transactionSnapshotService.captureForTransaction(transaction.id);
 
     result.status = transactionStatus;
     return result;

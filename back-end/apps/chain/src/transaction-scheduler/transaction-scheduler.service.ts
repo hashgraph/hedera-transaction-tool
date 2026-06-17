@@ -12,6 +12,7 @@ import {
   emitTransactionStatusUpdate,
   processTransactionStatus,
   NatsPublisherService,
+  TransactionSnapshotService,
 } from '@app/common';
 import {
   Transaction,
@@ -28,6 +29,7 @@ export class TransactionSchedulerService {
     private schedulerRegistry: SchedulerRegistry,
     private readonly executeService: ExecuteService,
     private readonly transactionSignatureService: TransactionSignatureService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {}
 
   /* UPDATES THE TRANSACTIONS STATUSES */
@@ -123,6 +125,9 @@ export class TransactionSchedulerService {
         result.raw.map(t => ({
           entityId: t.id,
         })),
+      );
+      await Promise.all(
+        result.raw.map(t => this.transactionSnapshotService.captureForTransaction(t.id)),
       );
     }
   }
@@ -252,6 +257,9 @@ export class TransactionSchedulerService {
               this.notificationsPublisher,
               result.raw.map(row => ({ entityId: row.id })),
             );
+            await Promise.all(
+              result.raw.map(row => this.transactionSnapshotService.captureForTransaction(row.id)),
+            );
           }
           return;
         }
@@ -305,6 +313,7 @@ export class TransactionSchedulerService {
               this.notificationsPublisher,
               result.raw.map(row => ({ entityId: row.id })),
             );
+            await this.transactionSnapshotService.captureForTransaction(result.raw[0].id);
           }
           return;
         }

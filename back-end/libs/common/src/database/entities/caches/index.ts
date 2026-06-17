@@ -4,3 +4,7 @@ export * from './cached-node.entity';
 export * from './cached-node-admin-key.entity';
 export * from './transaction-cached-account.entity';
 export * from './transaction-cached-node.entity';
+export * from './account-snapshot.entity';
+export * from './node-snapshot.entity';
+export * from './transaction-account-snapshot.entity';
+export * from './transaction-node-snapshot.entity';

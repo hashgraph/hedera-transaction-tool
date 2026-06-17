@@ -11,6 +11,7 @@ import {
   emitTransactionStatusUpdate,
   processTransactionStatus,
   TransactionSignatureService,
+  TransactionSnapshotService,
 } from '@app/common';
 import {
   Transaction,
@@ -57,6 +58,7 @@ describe('TransactionStatusService', () => {
   const notificationsPublisher = mockDeep<NatsPublisherService>();
   const schedulerRegistry = mockDeep<SchedulerRegistry>();
   const executeService = mockDeep<ExecuteService>();
+  const transactionSnapshotService = mockDeep<TransactionSnapshotService>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
   let mockQueryBuilder: any;
@@ -101,6 +103,10 @@ describe('TransactionStatusService', () => {
         {
           provide: TransactionSignatureService,
           useValue: transactionSignatureService,
+        },
+        {
+          provide: TransactionSnapshotService,
+          useValue: transactionSnapshotService,
         },
       ],
     }).compile();

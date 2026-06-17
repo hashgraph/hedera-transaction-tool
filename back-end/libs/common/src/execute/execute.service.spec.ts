@@ -21,6 +21,7 @@ import {
   NatsPublisherService,
   emitTransactionStatusUpdate,
   TransactionSignatureService,
+  TransactionSnapshotService,
 } from '@app/common';
 import {
   Transaction,
@@ -48,6 +49,7 @@ describe('ExecuteService', () => {
   const transactionRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mockDeep<NatsPublisherService>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
+  const transactionSnapshotService = mockDeep<TransactionSnapshotService>();
 
   const getExecutableTransaction = (
     baseTransaction: Partial<Transaction>,
@@ -149,6 +151,10 @@ describe('ExecuteService', () => {
           provide: TransactionSignatureService,
           useValue: transactionSignatureService,
         },
+        {
+          provide: TransactionSnapshotService,
+          useValue: transactionSnapshotService,
+        },
       ],
     }).compile();
 
@@ -180,6 +186,24 @@ describe('ExecuteService', () => {
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id);
+    });
+
+    it('should not capture snapshot when another pod wins the update race', async () => {
+      const client = mockDeep<Client>();
+      const transaction = getTransaction('executable') as Transaction;
+
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+      transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(new KeyList());
+      jest.mocked(hasValidSignatureKey).mockReturnValueOnce(true);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      mockSDKTransactionExecution();
+      mockQueryBuilder.execute.mockResolvedValueOnce({ raw: [] });
+
+      const result = await service.executeTransaction(transaction);
+
+      expect(result).toBeNull();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should execute a transaction and save default code', async () => {

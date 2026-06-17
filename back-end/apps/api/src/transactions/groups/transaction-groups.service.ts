@@ -14,6 +14,7 @@ import {
   getTransactionGroupItemsQuery,
   NatsPublisherService,
   SqlBuilderService,
+  TransactionSnapshotService,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
 
@@ -34,6 +35,7 @@ export class TransactionGroupsService {
     @InjectDataSource() private dataSource: DataSource,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly sqlBuilder: SqlBuilderService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {}
 
   getTransactionGroups(): Promise<TransactionGroup[]> {
@@ -294,6 +296,9 @@ export class TransactionGroupsService {
         emitTransactionStatusUpdate(
           this.notificationsPublisher,
           canceled.map(id => ({ entityId: id })),
+        );
+        await Promise.all(
+          canceled.map(id => this.transactionSnapshotService.captureForTransaction(id)),
         );
       }
     }
