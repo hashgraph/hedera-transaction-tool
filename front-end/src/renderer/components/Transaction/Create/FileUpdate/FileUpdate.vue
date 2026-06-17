@@ -11,6 +11,7 @@ import { useRoute } from 'vue-router';
 
 import { isLoggedInOrganization, isFileId } from '@renderer/utils';
 import { createFileUpdateTransaction, getFileUpdateTransactionData } from '@renderer/utils/sdk';
+import { useFileTransactionAssert } from '@renderer/composables/useFileTransactionAssert';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileUpdateFormData from './FileUpdateFormData.vue';
@@ -56,15 +57,7 @@ const handleUpdateData = (newData: FileUpdateData) => {
 };
 
 /* Functions */
-const preCreateAssert = () => {
-  if (!isFileId(data.fileId)) {
-    throw Error('Invalid File ID');
-  }
-
-  if (!signatureKey.value && !isLoggedInOrganization(user.selectedOrganization)) {
-    throw Error('Signature key is required');
-  }
-};
+const preCreateAssert = useFileTransactionAssert(data, signatureKey);
 
 /* Hooks */
 onMounted(() => {
