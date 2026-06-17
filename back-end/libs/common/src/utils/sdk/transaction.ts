@@ -244,6 +244,10 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
 
         const row = nodeAccountIdRow[nodeAccountId];
         const col = transactionIdCol[transactionId];
+        if (row === undefined || col === undefined) {
+          throw new Error('Invalid signature');
+        }
+
         const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
         const signatureValid = publicKey.verify(bodyBytes, signature);
 
