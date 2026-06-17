@@ -223,17 +223,14 @@ export class SignersService {
   ) {
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    // Verify all signatures; returns only keys not already on the transaction.
-    // Throws if any signature is invalid.
-    const validPublicKeys = validateSignature(sdkTransaction, map);
-
-    if (validPublicKeys.length === 0) {
-      return { sdkTransaction, userKeys: [], isSameBytes: true };
-    }
+    // Verify ALL signatures (including already-signed keys); returns only (deduped) keys
+    // not already on the transaction. Throws if any signature is invalid.
+    const validNewKeys = validateSignature(sdkTransaction, map);
 
     const userKeys: UserKey[] = [];
 
-    for (const publicKey of validPublicKeys) {
+    // For new keys: add to transaction bytes + record as signer
+    for (const publicKey of validNewKeys) {
       const raw = publicKey.toStringRaw();
 
       let userKey = userKeyMap.get(raw);
