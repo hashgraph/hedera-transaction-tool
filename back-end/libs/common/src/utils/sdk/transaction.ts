@@ -227,6 +227,7 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 
 export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
   const signerPublicKeys: PublicKey[] = [];
+  const seenPublicKeys = new Set<string>();
 
   const { rowLength, nodeAccountIdRow, transactionIdCol } =
     getSignedTransactionsDimensions(transaction);
@@ -241,19 +242,18 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
           transaction._signerPublicKeys.has(publicKeyHex) ||
           transaction._signerPublicKeys.has(publicKeyDer);
 
-        if (!alreadySigned) {
-          const row = nodeAccountIdRow[nodeAccountId];
-          const col = transactionIdCol[transactionId];
+        const row = nodeAccountIdRow[nodeAccountId];
+        const col = transactionIdCol[transactionId];
+        const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+        const signatureValid = publicKey.verify(bodyBytes, signature);
 
-          const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+        if (!signatureValid) {
+          throw new Error('Invalid signature');
+        }
 
-          const signatureValid = publicKey.verify(bodyBytes, signature);
-
-          if (signatureValid) {
-            signerPublicKeys.push(publicKey);
-          } else {
-            throw new Error('Invalid signature');
-          }
+        if (!alreadySigned && !seenPublicKeys.has(publicKeyHex)) {
+          seenPublicKeys.add(publicKeyHex);
+          signerPublicKeys.push(publicKey);
         }
       }
     }
