@@ -1,4 +1,3 @@
-import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mock, mockDeep } from 'jest-mock-extended';
 import { getRepositoryToken } from '@nestjs/typeorm';
