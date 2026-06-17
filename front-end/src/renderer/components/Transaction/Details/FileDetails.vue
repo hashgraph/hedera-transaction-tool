@@ -64,7 +64,16 @@ const contentsFileId = computed(() => {
 const CONTENTS_DISPLAY_LIMIT = 100 * 1024;
 
 const handleViewContents = () => {
-  const contents = props.transaction.contents;
+  const tx = props.transaction;
+  if (
+    !(
+      tx instanceof FileCreateTransaction ||
+      tx instanceof FileUpdateTransaction ||
+      tx instanceof FileAppendTransaction
+    )
+  )
+    return;
+  const contents = tx.contents;
   if (!contents) return;
   if (contents.length > CONTENTS_DISPLAY_LIMIT) {
     toastManager.warning(
