@@ -618,12 +618,14 @@ export class TransactionsService {
         const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
         if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 
-        const { data: publicKeys, error } = safe<PublicKey[]>(
+        // Verify ALL signatures (including already-signed keys); returns only (deduped) keys
+        // not already on the transaction. Throws if any signature is invalid.
+        const { data: validNewKeys, error } = safe<PublicKey[]>(
           validateSignature.bind(this, sdkTransaction, map),
         );
         if (error) throw new BadRequestException(ErrorCodes.ISNMPN);
 
-        for (const publicKey of publicKeys) {
+        for (const publicKey of validNewKeys) {
           sdkTransaction.addSignature(publicKey, map);
         }
 
@@ -631,12 +633,12 @@ export class TransactionsService {
         const newBytes = Buffer.from(sdkTransaction.toBytes());
         const isSameBytes = newBytes.equals(originalBytes);
 
-        for (const pk of publicKeys) {
+        for (const pk of validNewKeys) {
           allPubKeyStrings.add(pk.toStringRaw());
           allPubKeyStrings.add(pk.toStringDer());
         }
 
-        intermediate.set(id, { transaction, publicKeys, newBytes, isSameBytes });
+        intermediate.set(id, { transaction, publicKeys:validNewKeys, newBytes, isSameBytes });
       } catch (error) {
         results.set(id, {
           id,
