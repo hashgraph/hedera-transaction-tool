@@ -223,14 +223,17 @@ export class SignersService {
   ) {
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    // Verify ALL signatures (including already-signed keys); returns only (deduped) keys
-    // not already on the transaction. Throws if any signature is invalid.
-    const validNewKeys = validateSignature(sdkTransaction, map);
+    // Verify ALL signatures (including already-signed keys)
+    // Returns the list of new keys (those not already in the transaction) and the list of all keys.
+    // Throws if any signature is invalid.
+    const { newPublicKeys: validNewKeys, allPublicKeys: validKeys } = validateSignature(
+      sdkTransaction,
+      map,
+    );
 
     const userKeys: UserKey[] = [];
 
-    // For new keys: add to transaction bytes + record as signer
-    for (const publicKey of validNewKeys) {
+    for (const publicKey of validKeys) {
       const raw = publicKey.toStringRaw();
 
       let userKey = userKeyMap.get(raw);
@@ -239,8 +242,12 @@ export class SignersService {
       }
       if (!userKey) throw new Error(ErrorCodes.PNY);
 
-      sdkTransaction = sdkTransaction.addSignature(publicKey, map);
+      // Add new key to transaction bytes
+      if (validNewKeys.includes(publicKey)) {
+        sdkTransaction = sdkTransaction.addSignature(publicKey, map);
+      }
 
+      // Record "new" signer (not already persisted)
       if (!existingSignerIds.has(userKey.id)) {
         userKeys.push(userKey);
       }

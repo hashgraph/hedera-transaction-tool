@@ -226,7 +226,8 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 };
 
 export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
-  const signerPublicKeys: PublicKey[] = [];
+  const allPublicKeys: PublicKey[] = [];
+  const newPublicKeys: PublicKey[] = [];
   const seenPublicKeys = new Set<string>();
 
   const { rowLength, nodeAccountIdRow, transactionIdCol } =
@@ -255,15 +256,18 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
           throw new Error('Invalid signature');
         }
 
-        if (!alreadySigned && !seenPublicKeys.has(publicKeyHex)) {
+        if ( !seenPublicKeys.has(publicKeyHex)) {
           seenPublicKeys.add(publicKeyHex);
-          signerPublicKeys.push(publicKey);
+          allPublicKeys.push(publicKey);
+          if (!alreadySigned) {
+            newPublicKeys.push(publicKey);
+          }
         }
       }
     }
   }
 
-  return signerPublicKeys;
+  return { newPublicKeys, allPublicKeys };
 };
 
 export const getStatusCodeFromMessage = (message: string) => {
