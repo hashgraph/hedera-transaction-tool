@@ -37,7 +37,7 @@ const displayContent = computed<string | null>(() => {
 </script>
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="medium-modal">
-    <div class="p-5">
+    <div v-if="show" class="p-5">
       <h3 class="text-center text-title text-bold mb-4">File Contents</h3>
       <pre
         v-if="displayContent !== null"
