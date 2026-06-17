@@ -56,7 +56,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(decodeProtoMock).toHaveBeenCalledWith('0.0.101', BIN_BYTES);
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         DECODED_PROTO_JSON,
       );
     });
@@ -71,7 +71,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(decodeProtoMock).not.toHaveBeenCalled();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         new TextDecoder().decode(TXT_BYTES),
       );
     });
@@ -96,7 +96,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(decodeProtoMock).toHaveBeenCalledWith('0.0.101', BIN_BYTES);
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         DECODED_PROTO_JSON,
       );
     });
@@ -114,7 +114,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(decodeProtoMock).not.toHaveBeenCalled();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         new TextDecoder().decode(TXT_BYTES),
       );
     });
@@ -129,7 +129,7 @@ describe('FileContentFormData', () => {
       const appUpload1 = wrapper1.findComponent({ name: 'AppUploadFile' });
       await appUpload1.vm.$emit('update:file', makeFile('addressBook.bin', BIN_BYTES));
       await flushPromises();
-      const output1 = wrapper1.find('[data-testid="textarea-file-read-content"]').element.value;
+      const output1 = wrapper1.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value;
 
       // Order 2: upload file first
       const wrapper2 = mount(FileContentFormData, {
@@ -140,7 +140,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
       await wrapper2.setProps({ fileId: '0.0.101' });
       await flushPromises();
-      const output2 = wrapper2.find('[data-testid="textarea-file-read-content"]').element.value;
+      const output2 = wrapper2.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value;
 
       expect(output1).toBe(DECODED_PROTO_JSON);
       expect(output2).toBe(DECODED_PROTO_JSON);
@@ -156,7 +156,7 @@ describe('FileContentFormData', () => {
       const appUpload1 = wrapper1.findComponent({ name: 'AppUploadFile' });
       await appUpload1.vm.$emit('update:file', makeFile('test.txt', TXT_BYTES));
       await flushPromises();
-      const output1 = wrapper1.find('[data-testid="textarea-file-read-content"]').element.value;
+      const output1 = wrapper1.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value;
 
       const wrapper2 = mount(FileContentFormData, {
         props: { fileId: '', contents: null },
@@ -166,7 +166,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
       await wrapper2.setProps({ fileId: '0.0.12345' });
       await flushPromises();
-      const output2 = wrapper2.find('[data-testid="textarea-file-read-content"]').element.value;
+      const output2 = wrapper2.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value;
 
       expect(output1).toBe(expectedText);
       expect(output2).toBe(expectedText);
@@ -187,7 +187,7 @@ describe('FileContentFormData', () => {
       await wrapper.setProps({ fileId: '0.0.12345' });
       await flushPromises();
 
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         new TextDecoder().decode(BIN_BYTES),
       );
     });
@@ -235,7 +235,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       // Should show the result of the second (latest) call, not the stale first one
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').element.value).toBe(
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(
         '{"second":true}',
       );
     });
