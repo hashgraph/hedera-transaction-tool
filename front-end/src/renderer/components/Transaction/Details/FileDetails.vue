@@ -302,7 +302,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     <FileContentsModal
       v-if="isFileContentsModalShown"
       v-model:show="isFileContentsModalShown"
-      :contents="transaction.contents"
+      :contents="transaction.contents!"
       :file-id="contentsFileId"
     />
   </div>
