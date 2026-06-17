@@ -2,7 +2,7 @@
 import type { HederaFile } from '@prisma/client';
 import type { ITransactionFull } from '@shared/interfaces';
 
-import { onBeforeMount, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue';
 
 import {
   FileCreateTransaction,
@@ -19,12 +19,12 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { saveFile } from '@renderer/services/electronUtilsService';
 import { add, getAll } from '@renderer/services/filesService';
 
 import { isUserLoggedIn, getFormattedDateFromTimestamp, safeAwait } from '@renderer/utils';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import FileContentsModal from '@renderer/components/FileContentsModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { AppCache } from '@renderer/caches/AppCache';
 
@@ -46,11 +46,35 @@ const transactionByIdCache = AppCache.inject().mirrorTransactionById;
 
 /* State */
 const isKeyStructureModalShown = ref(false);
+const isFileContentsModalShown = ref(false);
 const controller = ref<AbortController | null>(null);
 const entityId = ref<string | null>(null);
 const files = ref<HederaFile[]>([]);
 
+/* Computed */
+const contentsFileId = computed(() => {
+  const tx = props.transaction;
+  if (tx instanceof FileUpdateTransaction || tx instanceof FileAppendTransaction) {
+    return tx.fileId?.toString() ?? null;
+  }
+  return null;
+});
+
 /* Handlers */
+const CONTENTS_DISPLAY_LIMIT = 100 * 1024;
+
+const handleViewContents = () => {
+  const contents = props.transaction.contents;
+  if (!contents) return;
+  if (contents.length > CONTENTS_DISPLAY_LIMIT) {
+    toastManager.warning(
+      `File is ${Math.round(contents.length / 1024)} KB — too large to display`,
+    );
+    return;
+  }
+  isFileContentsModalShown.value = true;
+};
+
 const handleLinkEntity = async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User not logged in');
   if (!entityId.value) throw new Error('Entity ID not available');
@@ -252,7 +276,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         <span
           class="link-primary cursor-pointer"
           data-testid="button-view-file-contents"
-          @click="saveFile(transaction.contents)"
+          @click="handleViewContents"
           >View</span
         >
       </p>
@@ -264,6 +288,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       "
       v-model:show="isKeyStructureModalShown"
       :account-key="new KeyList(transaction.keys)"
+    />
+
+    <FileContentsModal
+      v-if="transaction.contents !== null"
+      v-model:show="isFileContentsModalShown"
+      :contents="transaction.contents"
+      :file-id="contentsFileId"
     />
   </div>
 </template>
