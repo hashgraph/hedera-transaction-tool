@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { computedAsync } from '@vueuse/core';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
@@ -23,7 +24,6 @@ const emit = defineEmits<{
 }>();
 
 /* State */
-const displayedFileText = ref<string | null>(null);
 const manualContent = ref('');
 const file = ref<{
   meta: File;
@@ -32,41 +32,19 @@ const file = ref<{
 } | null>(null);
 const removeContent = ref(false);
 
-/* Handlers */
-const handleFileLoadStart = () => {
-  displayedFileText.value = null;
-};
-
-const handleFileLoadEnd = async () => {
-  await syncDisplayedContent();
-};
-
-/* Functions */
-async function syncDisplayedContent() {
-  if (file.value === null) {
-    displayedFileText.value = null;
-    return;
-  }
-
-  if (file.value && file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) {
-    displayedFileText.value = '';
-    return;
-  }
-
+/* Computed */
+const displayedFileText = computedAsync(async () => {
+  if (file.value === null || file.value.content.length === 0) return null;
+  if (file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) return '';
   if (isHederaSpecialFileId(props.fileId)) {
     const { data, error } = await safeAwait(
       window.electronAPI.local.files.decodeProto(props.fileId, file.value.content),
     );
-    if (error) {
-      displayedFileText.value = '';
-      throw new Error('Failed to decode file');
-    } else if (data) {
-      displayedFileText.value = data;
-    }
-  } else {
-    displayedFileText.value = new TextDecoder().decode(file.value.content);
+    if (error) return '';
+    return data ?? null;
   }
-}
+  return new TextDecoder().decode(file.value.content);
+}, null);
 
 /* Watchers */
 watch(manualContent, () => {
@@ -78,12 +56,11 @@ watch(file, () => {
 });
 watch(
   () => props.fileId,
-  async id => {
+  id => {
     if (isHederaSpecialFileId(id) && !file.value?.meta.name.endsWith('.bin')) {
       file.value = null;
       manualContent.value = '';
     }
-    await syncDisplayedContent();
   },
 );
 watch([file, manualContent], () => {
@@ -104,8 +81,6 @@ watch([file, manualContent], () => {
       :accept="accept"
       :disabled="manualContent.length > 0"
       :max-size-kb="512"
-      @load:start="handleFileLoadStart"
-      @load:end="handleFileLoadEnd"
     />
   </div>
 

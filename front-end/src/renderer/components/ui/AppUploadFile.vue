@@ -22,8 +22,6 @@ const emit = defineEmits<{
     event: 'update:file',
     file: { meta: File; content: Uint8Array; loadPercentage: number } | null,
   ): void;
-  (event: 'load:start'): void;
-  (event: 'load:end'): void;
 }>();
 
 /* Composables */
@@ -44,7 +42,6 @@ const handleFileImport = async (e: Event) => {
     }
 
     emit('update:file', { meta: file, content: new Uint8Array(), loadPercentage: 0 });
-    emit('load:start');
 
     fileReader.value = new FileReader();
     fileReader.value.readAsArrayBuffer(file);
@@ -54,7 +51,6 @@ const handleFileImport = async (e: Event) => {
       if (data && data instanceof ArrayBuffer) {
         emit('update:file', { meta: file, content: new Uint8Array(data), loadPercentage: 100 });
       }
-      emit('load:end');
     });
 
     fileReader.value.addEventListener('progress', e =>
