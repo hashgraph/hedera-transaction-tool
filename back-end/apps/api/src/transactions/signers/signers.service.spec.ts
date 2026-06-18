@@ -19,6 +19,7 @@ import {
   NatsPublisherService,
   processTransactionStatus,
   TransactionSignatureService,
+  validateSignature,
 } from '@app/common';
 import { isExpired } from '@app/common/utils';
 
@@ -30,6 +31,7 @@ jest.mock('@app/common', () => ({
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
+  validateSignature: jest.fn(),
 }));
 
 describe('SignersService', () => {
@@ -53,6 +55,32 @@ describe('SignersService', () => {
       { id: 3, publicKey: '61f37fc1bbf3ff4453712ee6a305c5c7255955f7889ec3bf30426f1863158ef4' },
     ],
   } as User;
+
+  const buildValidationResult = (sdkTransaction: any, signatureMap: SignatureMap) => {
+    const allPublicKeys = [];
+    const newPublicKeys = [];
+    const seen = new Set<string>();
+
+    for (const nodeMap of signatureMap.values()) {
+      for (const txMap of nodeMap.values()) {
+        for (const publicKey of txMap.keys()) {
+          const raw = publicKey.toStringRaw();
+          if (seen.has(raw)) continue;
+          seen.add(raw);
+          allPublicKeys.push(publicKey);
+
+          if (
+            !sdkTransaction._signerPublicKeys.has(raw) &&
+            !sdkTransaction._signerPublicKeys.has(publicKey.toStringDer())
+          ) {
+            newPublicKeys.push(publicKey);
+          }
+        }
+      }
+    }
+
+    return { newPublicKeys, allPublicKeys };
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -84,6 +112,11 @@ describe('SignersService', () => {
     }).compile();
 
     service = module.get<SignersService>(SignersService);
+    jest
+      .mocked(validateSignature)
+      .mockImplementation((sdkTransaction, signatureMap) =>
+        buildValidationResult(sdkTransaction as any, signatureMap as SignatureMap),
+      );
   });
 
   it('should be defined', () => {

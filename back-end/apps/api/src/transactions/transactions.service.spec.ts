@@ -1303,6 +1303,12 @@ describe('TransactionsService', () => {
       jest.resetAllMocks();
     });
 
+    const mockValidatedKeys = (newPublicKeys: PublicKey[], allPublicKeys: PublicKey[] = newPublicKeys) => {
+      jest.mocked(safe).mockReturnValue({
+        data: { newPublicKeys, allPublicKeys },
+      });
+    };
+
     it('should import signatures atomically and persist new signers', async () => {
       const transaction = {
         id: transactionId,
@@ -1328,7 +1334,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
       /* Simulate threshold met: status flips to WAITING_FOR_EXECUTION. */
       jest
@@ -1408,7 +1414,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1441,7 +1447,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       const result = await service.importSignatures(
@@ -1481,9 +1487,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({
-        data: [privateKey.publicKey, secondKey.publicKey],
-      });
+      mockValidatedKeys([privateKey.publicKey, secondKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1523,7 +1527,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1581,9 +1585,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({
-        data: [privateKey.publicKey, secondKey.publicKey],
-      });
+      mockValidatedKeys([privateKey.publicKey, secondKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1633,7 +1635,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1675,7 +1677,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       await service.importSignatures(
@@ -1700,7 +1702,7 @@ describe('TransactionsService', () => {
       entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
       stubTransactionReject(new Error('deadlock'));
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       const result = await service.importSignatures(
@@ -1741,7 +1743,7 @@ describe('TransactionsService', () => {
         .mockReturnValueOnce(insertQb);
       stubTransaction(manager);
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
       jest.mocked(processTransactionStatus).mockRejectedValueOnce(new Error('status boom'));
 
@@ -1774,7 +1776,7 @@ describe('TransactionsService', () => {
       entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       /* validateSignature short-circuits keys already present on the transaction. */
-      jest.mocked(safe).mockReturnValue({ data: [] });
+      mockValidatedKeys([], [privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       const result = await service.importSignatures(
@@ -1823,7 +1825,7 @@ describe('TransactionsService', () => {
         },
       );
 
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
 
       const result = await service.importSignatures(
@@ -1934,7 +1936,7 @@ describe('TransactionsService', () => {
       entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
 
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
-      jest.mocked(safe).mockReturnValue({ data: [privateKey.publicKey] });
+      mockValidatedKeys([privateKey.publicKey]);
 
       const updateQb = makeUpdateQb(jest.fn().mockRejectedValue(new Error('Fail')));
       const insertQb = makeInsertQb();
