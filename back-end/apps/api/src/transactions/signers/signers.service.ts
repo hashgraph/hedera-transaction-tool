@@ -230,6 +230,7 @@ export class SignersService {
       sdkTransaction,
       map,
     );
+    const validNewKeyRawSet = new Set(validNewKeys.map((key) => key.toStringRaw()));
 
     const userKeys: UserKey[] = [];
 
@@ -243,7 +244,7 @@ export class SignersService {
       if (!userKey) throw new Error(ErrorCodes.PNY);
 
       // Add new key to transaction bytes
-      if (validNewKeys.includes(publicKey)) {
+      if (validNewKeyRawSet.has(raw)) {
         sdkTransaction = sdkTransaction.addSignature(publicKey, map);
       }
 
