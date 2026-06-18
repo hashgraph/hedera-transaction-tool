@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { computedAsync } from '@vueuse/core';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 import { safeAwait } from '@renderer/utils';
 
-import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 
 /* Props */
@@ -14,7 +14,6 @@ const props = defineProps<{
   fileId?: string;
   contents: Uint8Array | string | null;
   accept?: string;
-  removeable?: boolean;
 }>();
 
 /* Emits */
@@ -23,67 +22,38 @@ const emit = defineEmits<{
 }>();
 
 /* State */
-const displayedFileText = ref<string | null>(null);
 const manualContent = ref('');
 const file = ref<{
   meta: File;
   content: Uint8Array;
   loadPercentage: number;
 } | null>(null);
-const removeContent = ref(false);
 
-/* Handlers */
-const handleFileLoadStart = () => {
-  displayedFileText.value = null;
-};
-
-const handleFileLoadEnd = async () => {
-  await syncDisplayedContent();
-};
-
-/* Functions */
-async function syncDisplayedContent() {
-  if (file.value === null) {
-    displayedFileText.value = null;
-    return;
-  }
-
-  if (file.value && file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) {
-    displayedFileText.value = '';
-    return;
-  }
-
+/* Computed */
+const displayedFileText = computedAsync(async () => {
+  if (file.value === null || file.value.content.length === 0) return null;
+  if (file.value.meta.size > DISPLAY_FILE_SIZE_LIMIT) return '';
   if (isHederaSpecialFileId(props.fileId)) {
     const { data, error } = await safeAwait(
       window.electronAPI.local.files.decodeProto(props.fileId, file.value.content),
     );
-    if (error) {
-      displayedFileText.value = '';
-      throw new Error('Failed to decode file');
-    } else if (data) {
-      displayedFileText.value = data;
-    }
-  } else {
-    displayedFileText.value = new TextDecoder().decode(file.value.content);
+    if (error) return '';
+    return data ?? null;
   }
-}
+  return new TextDecoder().decode(file.value.content);
+}, null);
 
 /* Watchers */
-watch(manualContent, () => {
-  removeContent.value = false;
-});
 watch(file, () => {
   manualContent.value = '';
-  removeContent.value = false;
 });
 watch(
   () => props.fileId,
-  async id => {
+  id => {
     if (isHederaSpecialFileId(id) && !file.value?.meta.name.endsWith('.bin')) {
       file.value = null;
       manualContent.value = '';
     }
-    await syncDisplayedContent();
   },
 );
 watch([file, manualContent], () => {
@@ -104,8 +74,6 @@ watch([file, manualContent], () => {
       :accept="accept"
       :disabled="manualContent.length > 0"
       :max-size-kb="512"
-      @load:start="handleFileLoadStart"
-      @load:end="handleFileLoadEnd"
     />
   </div>
 
@@ -117,15 +85,6 @@ watch([file, manualContent], () => {
           - the content is too big to be displayed</span
         ></label
       >
-
-      <Transition v-if="removeable" name="fade" mode="out-in">
-        <AppCheckBox
-          v-if="manualContent.length === 0 && !file"
-          v-model:checked="removeContent"
-          label="Remove File Contents"
-          name="remove-file-contents"
-        />
-      </Transition>
 
       <textarea
         v-if="Boolean(file)"

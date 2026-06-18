@@ -98,6 +98,5 @@ const { dateTimeSettingLabel } = useDateTimeSetting();
       })
     "
     :accept="isHederaSpecialFileId(fileId) ? '.bin' : '*'"
-    removeable
   />
 </template>
