@@ -30,19 +30,33 @@ export function useFileTransactionAssert(
           window.electronAPI.local.files.decodeProto(data.fileId, data.contents),
         );
 
-        if (!decodeError && decoded) {
-          const { error: reEncodeError } = await safeAwait(
-            encodeSpecialFileContent(new TextEncoder().encode(decoded), data.fileId),
-          );
-          if (!reEncodeError) {
-            // Round-trip succeeded — already valid protobuf, pass through unchanged
+        if (!decodeError) {
+          if (decoded !== undefined) {
+            const normalized =
+              decoded.startsWith('"') && decoded.endsWith('"')
+                ? decoded
+                : JSON.stringify(decoded);
+            const { error: reEncodeError } = await safeAwait(
+              encodeSpecialFileContent(new TextEncoder().encode(normalized), data.fileId),
+            );
+            if (!reEncodeError) {
+              // Round-trip succeeded — already valid protobuf, pass through unchanged
+              return;
+            }
+          } else {
+            // decodeProto succeeded but returned undefined (e.g. empty ServicesConfigurationList);
+            // treat as already-encoded protobuf to avoid corrupting valid bytes.
             return;
           }
         }
 
         bytes = data.contents;
       } else {
-        bytes = new TextEncoder().encode(data.contents);
+        const normalized =
+          data.contents.startsWith('"') && data.contents.endsWith('"')
+            ? data.contents
+            : JSON.stringify(data.contents);
+        bytes = new TextEncoder().encode(normalized);
       }
 
       // Content is not already protobuf — attempt to encode it
