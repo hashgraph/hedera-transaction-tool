@@ -35,6 +35,7 @@ onBeforeMount(async () => {
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="modal-fit-content">
     <div class="p-5">
+      <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
       <KeyStructure v-if="accountKey instanceof KeyList && true" :key-list="accountKey" />
       <div v-else-if="accountKey instanceof PublicKey && true && formattedKey">
         {{ formattedKey }}
