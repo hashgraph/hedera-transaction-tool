@@ -250,7 +250,16 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
         }
 
         const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
-        const signatureValid = publicKey.verify(bodyBytes, signature);
+        if (!bodyBytes) {
+          throw new Error('Invalid signature');
+        }
+
+        let signatureValid: boolean;
+        try {
+          signatureValid = publicKey.verify(bodyBytes, signature);
+        } catch (err) {
+          throw Object.assign(new Error('Invalid signature'), { cause: err });
+        }
 
         if (!signatureValid) {
           throw new Error('Invalid signature');
