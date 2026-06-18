@@ -26,8 +26,12 @@ describe('validateSignature', () => {
       unsigned.getSignatures(),
     );
 
-    expect(result.allPublicKeys).toEqual([privateKey.publicKey]);
-    expect(result.newPublicKeys).toEqual([privateKey.publicKey]);
+    expect(result.allPublicKeys.map(k => k.toStringRaw())).toEqual([
+      privateKey.publicKey.toStringRaw(),
+    ]);
+    expect(result.newPublicKeys.map(k => k.toStringRaw())).toEqual([
+      privateKey.publicKey.toStringRaw(),
+    ]);
   });
 
   it('returns empty newPublicKeys when the key already signed the transaction', async () => {
@@ -40,7 +44,9 @@ describe('validateSignature', () => {
       signed.getSignatures(),
     );
 
-    expect(result.allPublicKeys).toEqual([privateKey.publicKey]);
+    expect(result.allPublicKeys.map(k => k.toStringRaw())).toEqual([
+      privateKey.publicKey.toStringRaw(),
+    ]);
     expect(result.newPublicKeys).toEqual([]);
   });
 

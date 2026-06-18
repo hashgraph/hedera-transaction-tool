@@ -256,7 +256,7 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
           throw new Error('Invalid signature');
         }
 
-        if ( !seenPublicKeys.has(publicKeyHex)) {
+        if (!seenPublicKeys.has(publicKeyHex)) {
           seenPublicKeys.add(publicKeyHex);
           allPublicKeys.push(publicKey);
           if (!alreadySigned) {
