@@ -60,6 +60,10 @@ const contentsFileId = computed(() => {
   return null;
 });
 
+const contentsModalTitle = computed(() =>
+  props.transaction instanceof FileAppendTransaction ? 'Append Contents' : 'File Contents',
+);
+
 /* Handlers */
 const CONTENTS_DISPLAY_LIMIT = 100 * 1024;
 
@@ -304,6 +308,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       v-model:show="isFileContentsModalShown"
       :contents="transaction.contents!"
       :file-id="contentsFileId"
+      :title="contentsModalTitle"
     />
   </div>
 </template>
