@@ -7,7 +7,6 @@ import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 import { safeAwait } from '@renderer/utils';
 
-import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 
 /* Props */
@@ -15,7 +14,6 @@ const props = defineProps<{
   fileId?: string;
   contents: Uint8Array | string | null;
   accept?: string;
-  removeable?: boolean;
 }>();
 
 /* Emits */
@@ -30,7 +28,6 @@ const file = ref<{
   content: Uint8Array;
   loadPercentage: number;
 } | null>(null);
-const removeContent = ref(false);
 
 /* Computed */
 const displayedFileText = computedAsync(async () => {
@@ -47,12 +44,8 @@ const displayedFileText = computedAsync(async () => {
 }, null);
 
 /* Watchers */
-watch(manualContent, () => {
-  removeContent.value = false;
-});
 watch(file, () => {
   manualContent.value = '';
-  removeContent.value = false;
 });
 watch(
   () => props.fileId,
@@ -92,15 +85,6 @@ watch([file, manualContent], () => {
           - the content is too big to be displayed</span
         ></label
       >
-
-      <Transition v-if="removeable" name="fade" mode="out-in">
-        <AppCheckBox
-          v-if="manualContent.length === 0 && !file"
-          v-model:checked="removeContent"
-          label="Remove File Contents"
-          name="remove-file-contents"
-        />
-      </Transition>
 
       <textarea
         v-if="Boolean(file)"

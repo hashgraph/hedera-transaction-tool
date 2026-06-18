@@ -6,10 +6,6 @@ import FileContentFormData from '@renderer/components/Transaction/Create/FileDat
 
 const DECODED_PROTO_JSON = '{"nodeAddress":[]}';
 
-vi.mock('@renderer/components/ui/AppCheckBox.vue', () => ({
-  default: { name: 'AppCheckBox', props: ['checked', 'label', 'name'], template: '<div />' },
-}));
-
 vi.mock('@renderer/components/ui/AppUploadFile.vue', () => ({
   default: {
     name: 'AppUploadFile',
