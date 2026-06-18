@@ -15,6 +15,7 @@ import {
   Pagination,
   processTransactionStatus,
   TransactionSignatureService,
+  validateSignature,
 } from '@app/common';
 import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
@@ -222,43 +223,37 @@ export class SignersService {
   ) {
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
+    // Verify ALL signatures (including already-signed keys)
+    // Returns the list of new keys (those not already in the transaction) and the list of all keys.
+    // Throws if any signature is invalid.
+    const { newPublicKeys: validNewKeys, allPublicKeys: validKeys } = validateSignature(
+      sdkTransaction,
+      map,
+    );
+    const validNewKeyRawSet = new Set(validNewKeys.map((key) => key.toStringRaw()));
+
     const userKeys: UserKey[] = [];
-    const processedRawKeys = new Set<string>();
 
-    // To explain what is going on here, we need to understand how sdkTransaction.addSignature works.
-    // The addSignature method will go through each inner transaction, then go through the map
-    // and pull the signatures for the supplied public key belonging to that inner transaction
-    // (denoted by the node and transaction id), add the signatures to the inner transactions.
-    // So we need to go through the map and get each unique publicKey and call addSignature one time
-    // per key.
-    for (const nodeMap of map.values()) {
-      for (const txMap of nodeMap.values()) {
-        for (const publicKey of txMap.keys()) {
-          const raw = publicKey.toStringRaw();
+    for (const publicKey of validKeys) {
+      const raw = publicKey.toStringRaw();
 
-          // Skip duplicates across node/tx maps, and already-processed keys
-          if (processedRawKeys.has(raw)) continue;
-          processedRawKeys.add(raw);
+      let userKey = userKeyMap.get(raw);
+      if (!userKey) {
+        userKey = userKeyMap.get(publicKey.toStringDer());
+      }
+      if (!userKey) throw new Error(ErrorCodes.PNY);
 
-          // Look up key (raw first, then DER)
-          let userKey = userKeyMap.get(raw);
-          if (!userKey) {
-            userKey = userKeyMap.get(publicKey.toStringDer());
-          }
-          if (!userKey) throw new Error(ErrorCodes.PNY);
+      // Add new key to transaction bytes
+      if (validNewKeyRawSet.has(raw)) {
+        sdkTransaction = sdkTransaction.addSignature(publicKey, map);
+      }
 
-          // Only add the signature once per unique key
-          sdkTransaction = sdkTransaction.addSignature(publicKey, map);
-
-          // Only return "new" signers (not already persisted)
-          if (!existingSignerIds.has(userKey.id)) {
-            userKeys.push(userKey);
-          }
-        }
+      // Record "new" signer (not already persisted)
+      if (!existingSignerIds.has(userKey.id)) {
+        userKeys.push(userKey);
       }
     }
 
-    // Finally, compare the resulting transaction bytes to see if any signatures were actually added
     const isSameBytes = Buffer.from(sdkTransaction.toBytes()).equals(
       transaction.transactionBytes
     );

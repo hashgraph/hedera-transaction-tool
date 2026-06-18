@@ -19,6 +19,7 @@ import {
   NatsPublisherService,
   processTransactionStatus,
   TransactionSignatureService,
+  validateSignature,
 } from '@app/common';
 import { isExpired } from '@app/common/utils';
 
@@ -30,6 +31,7 @@ jest.mock('@app/common', () => ({
   emitTransactionStatusUpdate: jest.fn(),
   emitTransactionUpdate: jest.fn(),
   processTransactionStatus: jest.fn(),
+  validateSignature: jest.fn(),
 }));
 
 describe('SignersService', () => {
@@ -53,6 +55,32 @@ describe('SignersService', () => {
       { id: 3, publicKey: '61f37fc1bbf3ff4453712ee6a305c5c7255955f7889ec3bf30426f1863158ef4' },
     ],
   } as User;
+
+  const buildValidationResult = (sdkTransaction: any, signatureMap: SignatureMap) => {
+    const allPublicKeys = [];
+    const newPublicKeys = [];
+    const seen = new Set<string>();
+
+    for (const nodeMap of signatureMap.values()) {
+      for (const txMap of nodeMap.values()) {
+        for (const publicKey of txMap.keys()) {
+          const raw = publicKey.toStringRaw();
+          if (seen.has(raw)) continue;
+          seen.add(raw);
+          allPublicKeys.push(publicKey);
+
+          if (
+            !sdkTransaction._signerPublicKeys.has(raw) &&
+            !sdkTransaction._signerPublicKeys.has(publicKey.toStringDer())
+          ) {
+            newPublicKeys.push(publicKey);
+          }
+        }
+      }
+    }
+
+    return { newPublicKeys, allPublicKeys };
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -84,6 +112,11 @@ describe('SignersService', () => {
     }).compile();
 
     service = module.get<SignersService>(SignersService);
+    jest
+      .mocked(validateSignature)
+      .mockImplementation((sdkTransaction, signatureMap) =>
+        buildValidationResult(sdkTransaction as any, signatureMap as SignatureMap),
+      );
   });
 
   it('should be defined', () => {
@@ -990,6 +1023,62 @@ describe('SignersService', () => {
       expect(consoleError).toHaveBeenCalledWith(
         `[TX ${transactionId}] Validation failed: ${ErrorCodes.TNRS}`,
       );
+      expect(result.signers).toHaveLength(0);
+      expect(result.notificationReceiverIds).toEqual([]);
+
+      consoleError.mockRestore();
+    });
+
+    it('rejects and records nothing when validateSignature rejects invalid signature bytes', async () => {
+      const transactionId = 99;
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        mirrorNetwork: 'testnet',
+      } as Transaction;
+
+      const signatureMap = new SignatureMap();
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      // Mock validateSignature to throw (simulating invalid signature bytes)
+      jest.mocked(validateSignature).mockImplementationOnce(() => {
+        throw new Error('Invalid signature');
+      });
+
+      const mockManager = mockDeep<any>();
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const result = await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap }],
+        user,
+      );
+
+      // Should log validation error (signature verification failed)
+      const errorCalls = consoleError.mock.calls.filter((call) =>
+        String(call[0]).includes(`[TX ${transactionId}]`),
+      );
+      expect(errorCalls.length).toBeGreaterThan(0);
+      expect(errorCalls.some((call) => String(call[0]).includes('Error'))).toBe(true);
+
+      // No database writes should occur
+      expect(mockManager.query).not.toHaveBeenCalled();
+      expect(mockManager.createQueryBuilder).not.toHaveBeenCalled();
+
+      // Result should have no signers, no notifications
       expect(result.signers).toHaveLength(0);
       expect(result.notificationReceiverIds).toEqual([]);
 

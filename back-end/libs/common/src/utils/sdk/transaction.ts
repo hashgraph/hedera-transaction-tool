@@ -226,7 +226,9 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 };
 
 export const validateSignature = (transaction: SDKTransaction, signatureMap: SignatureMap) => {
-  const signerPublicKeys: PublicKey[] = [];
+  const allPublicKeys: PublicKey[] = [];
+  const newPublicKeys: PublicKey[] = [];
+  const seenPublicKeys = new Set<string>();
 
   const { rowLength, nodeAccountIdRow, transactionIdCol } =
     getSignedTransactionsDimensions(transaction);
@@ -241,25 +243,40 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
           transaction._signerPublicKeys.has(publicKeyHex) ||
           transaction._signerPublicKeys.has(publicKeyDer);
 
-        if (!alreadySigned) {
-          const row = nodeAccountIdRow[nodeAccountId];
-          const col = transactionIdCol[transactionId];
+        const row = nodeAccountIdRow[nodeAccountId];
+        const col = transactionIdCol[transactionId];
+        if (row === undefined || col === undefined) {
+          throw new Error('Invalid signature');
+        }
 
-          const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+        const bodyBytes = transaction._signedTransactions.get(col * rowLength + row).bodyBytes;
+        if (!bodyBytes) {
+          throw new Error('Invalid signature');
+        }
 
-          const signatureValid = publicKey.verify(bodyBytes, signature);
+        let signatureValid: boolean;
+        try {
+          signatureValid = publicKey.verify(bodyBytes, signature);
+        } catch (err) {
+          throw Object.assign(new Error('Invalid signature'), { cause: err });
+        }
 
-          if (signatureValid) {
-            signerPublicKeys.push(publicKey);
-          } else {
-            throw new Error('Invalid signature');
+        if (!signatureValid) {
+          throw new Error('Invalid signature');
+        }
+
+        if (!seenPublicKeys.has(publicKeyHex)) {
+          seenPublicKeys.add(publicKeyHex);
+          allPublicKeys.push(publicKey);
+          if (!alreadySigned) {
+            newPublicKeys.push(publicKey);
           }
         }
       }
     }
   }
 
-  return signerPublicKeys;
+  return { newPublicKeys, allPublicKeys };
 };
 
 export const getStatusCodeFromMessage = (message: string) => {
