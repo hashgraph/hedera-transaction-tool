@@ -172,6 +172,12 @@ watch(newPassword, pass => {
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
   >
+    <div class="w-50 p-4 border rounded mb-4">
+      <div class="d-flex align-items-center gap-3">
+        <span class="form-label mb-0">Email</span>
+        <span>{{ user.selectedOrganization?.email ?? user.personal?.email }}</span>
+      </div>
+    </div>
     <form class="w-50 p-4 border rounded" @submit.prevent="isConfirmModalShown = true">
       <h3 class="text-main">Password</h3>
       <div class="form-group mt-4">
