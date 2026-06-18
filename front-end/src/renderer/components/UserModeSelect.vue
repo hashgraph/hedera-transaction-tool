@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { Organization } from '@prisma/client';
+import type { ConnectedOrganization } from '@renderer/types/userStore';
 
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -9,7 +10,7 @@ import useLoader from '@renderer/composables/useLoader';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
 
-import { isOrganizationActive } from '@renderer/utils';
+import { isOrganizationActive, isUserLoggedIn } from '@renderer/utils';
 
 import AddOrganizationModal from '@renderer/components/Organization/AddOrganizationModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -28,24 +29,34 @@ const { setLast } = useDefaultOrganization();
 /* State */
 const selectedMode = ref<string>('personal');
 const addOrganizationModalShown = ref(false);
-const dropDownValue = ref<string>(personalModeText);
+
+/* Computed */
+const dropDownValue = computed(() => {
+  if (user.selectedOrganization) {
+    return (
+      user.organizations.find(o => o.id === user.selectedOrganization!.id)?.nickname ??
+      user.selectedOrganization.nickname
+    );
+  }
+  return personalModeText;
+});
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
   const selectEl = e.currentTarget as HTMLSelectElement;
   const newValue = selectEl.getAttribute('data-value');
+
+  if (newValue === selectedMode.value) return;
+
   const org = user.organizations.find(org => org.id === newValue);
 
   if (newValue === 'personal') {
     selectedMode.value = 'personal';
-    dropDownValue.value = personalModeText;
     await user.selectOrganization(null);
     await redirectIfRequiredKeysToMigrate();
     await setLast(null);
   } else {
     selectedMode.value = org ? org.id : 'personal';
-    const organizationNickname =
-      user.organizations.find(org => org.id === newValue)?.nickname || '';
 
     await user.selectOrganization(
       org
@@ -59,7 +70,6 @@ const handleUserModeChange = async (e: Event) => {
     );
 
     if (isOrganizationActive(user.selectedOrganization)) {
-      dropDownValue.value = organizationNickname;
       await setLast(user.selectedOrganization?.id || null);
     }
 
@@ -77,23 +87,20 @@ const handleAddOrganization = async (organization: Organization) => {
 
   if (isOrganizationActive(user.selectedOrganization)) {
     selectedMode.value = organization.id;
-
-    dropDownValue.value =
-      user.organizations.find(org => org.id === organization.id)?.nickname || '';
-
     await setLast(organization.id);
   }
 };
 
 /* Functions */
 const initialize = () => {
-  if (user.selectedOrganization) {
-    selectedMode.value = user.selectedOrganization.id;
-    dropDownValue.value = user.selectedOrganization.nickname;
-  } else {
-    selectedMode.value = 'personal';
-    dropDownValue.value = personalModeText;
+  selectedMode.value = user.selectedOrganization?.id ?? 'personal';
+};
+
+const getOrgEmail = (org: ConnectedOrganization): string | undefined => {
+  if (!org.isLoading && org.isServerActive && !org.loginRequired) {
+    return org.email;
   }
+  return undefined;
 };
 
 /* Hooks */
@@ -102,22 +109,8 @@ onMounted(initialize);
 watch(
   () => user.organizations,
   (current, prev) => {
-    const lastAddedOrganization = user.organizations[user.organizations.length - 1];
-
-    if (isOrganizationActive(user.selectedOrganization)) {
-      // Check if organization was added or removed
-      if (current.length > prev.length) {
-        selectedMode.value = lastAddedOrganization.id;
-
-        dropDownValue.value =
-          user.organizations.find(org => org.id === lastAddedOrganization.id)?.nickname || '';
-      } else {
-        selectedMode.value = user.selectedOrganization.id;
-
-        dropDownValue.value = user.selectedOrganization.nickname;
-      }
-    } else {
-      dropDownValue.value = personalModeText;
+    if (isOrganizationActive(user.selectedOrganization) && current.length > prev.length) {
+      selectedMode.value = user.organizations[user.organizations.length - 1].id;
     }
   },
 );
@@ -142,33 +135,49 @@ watch(() => user.selectedOrganization, initialize);
         </div>
         <i class="bi bi-chevron-down ms-3"></i>
       </AppButton>
-      <ul class="dropdown-menu w-100 mt-3">
-        <li class="dropdown-header text-muted pe-none bg-light border-bottom">Organizations</li>
+      <ul class="dropdown-menu dropdown-menu-sectioned mt-3" style="min-width: 280px">
+        <li class="dropdown-header text-muted pe-none">Local</li>
         <li
           data-testid="dropdown-item-0"
           data-value="personal"
-          class="dropdown-item"
+          class="dropdown-item py-2"
+          :class="{ active: selectedMode === 'personal' }"
           @click="withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')"
         >
-          <span class="text-small">{{ personalModeText }}</span>
+          <div class="text-truncate">
+            {{
+              isUserLoggedIn(user.personal) && !user.personal.useKeychain
+                ? user.personal.email
+                : personalModeText
+            }}
+          </div>
         </li>
-        <template v-for="(organization, index) in user.organizations" :key="organization.id">
-          <li
-            :data-testid="'dropdown-item-' + (index + 1)"
-            class="dropdown-item flex-between-centered gap-3 mt-3"
-            @click="
-              withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')
-            "
-            :data-value="organization.id"
-          >
-            <div class="position-relative flex-1 col-10">
-              <div class="text-small text-truncate">{{ organization.nickname }}</div>
-            </div>
-
-            <div v-if="organization.isLoading" class="flex-centered col-2">
-              <span class="text-primary spinner-border spinner-border-sm"></span>
-            </div>
-          </li>
+        <template v-if="user.organizations.length">
+          <li><hr class="dropdown-divider" /></li>
+          <li class="dropdown-header text-muted pe-none">Organizations</li>
+          <template v-for="(organization, index) in user.organizations" :key="organization.id">
+            <li
+              :data-testid="'dropdown-item-' + (index + 1)"
+              class="dropdown-item py-2"
+              :class="{ active: selectedMode === organization.id }"
+              @click="
+                withLoader(handleUserModeChange.bind(null, $event), 'Failed to select user mode')
+              "
+              :data-value="organization.id"
+            >
+              <div class="d-flex align-items-center gap-2">
+                <div class="flex-grow-1" style="min-width: 0">
+                  <div class="text-truncate">{{ organization.nickname }}</div>
+                  <div v-if="getOrgEmail(organization)" class="text-muted small text-truncate ps-2">
+                    {{ getOrgEmail(organization) }}
+                  </div>
+                </div>
+                <div v-if="organization.isLoading" class="flex-centered">
+                  <span class="text-primary spinner-border spinner-border-sm"></span>
+                </div>
+              </div>
+            </li>
+          </template>
         </template>
       </ul>
     </div>
