@@ -79,8 +79,6 @@ const handleLogin = async () => {
       inputPassword.value,
     );
 
-    toggleAuthTokenInSessionStorage(user.selectedOrganization.serverUrl, jwtToken);
-
     await addOrganizationCredentials(
       inputEmail.value.toLocaleLowerCase().trim(),
       inputPassword.value,
@@ -90,6 +88,8 @@ const handleLogin = async () => {
       personalPassword,
       true,
     );
+
+    toggleAuthTokenInSessionStorage(user.selectedOrganization.serverUrl, jwtToken);
     await user.refetchOrganizations();
 
     toastManager.success('Successfully signed in');

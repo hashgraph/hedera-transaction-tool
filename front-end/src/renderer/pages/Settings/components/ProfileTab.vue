@@ -57,6 +57,12 @@ const isChangingPassword = ref(false);
 const isResetDataModalShown = ref(false);
 
 /* Computed */
+const displayEmail = computed(() => {
+  if (isLoggedInOrganization(user.selectedOrganization)) return user.selectedOrganization.email;
+  if (isUserLoggedIn(user.personal)) return user.personal.email;
+  return '';
+});
+
 const isPrimaryButtonDisabled = computed(() => {
   return (
     currentPassword.value.length === 0 ||
@@ -175,7 +181,7 @@ watch(newPassword, pass => {
     <div class="w-50 p-4 border rounded mb-4">
       <div class="d-flex align-items-center gap-3">
         <span class="form-label mb-0">Email</span>
-        <span>{{ user.selectedOrganization?.email ?? user.personal?.email }}</span>
+        <span>{{ displayEmail }}</span>
       </div>
     </div>
     <form class="w-50 p-4 border rounded" @submit.prevent="isConfirmModalShown = true">

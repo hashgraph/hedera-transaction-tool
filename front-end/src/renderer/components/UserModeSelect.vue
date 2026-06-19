@@ -43,10 +43,10 @@ const dropDownValue = computed(() => {
 
 /* Handlers */
 const handleUserModeChange = async (e: Event) => {
-  const selectEl = e.currentTarget as HTMLSelectElement;
-  const newValue = selectEl.getAttribute('data-value');
+  const el = e.currentTarget as HTMLElement;
+  const newValue = el.getAttribute('data-value');
 
-  if (newValue === selectedMode.value) return;
+  if (newValue === null || newValue === selectedMode.value) return;
 
   const org = user.organizations.find(org => org.id === newValue);
 
