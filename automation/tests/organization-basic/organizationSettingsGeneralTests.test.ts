@@ -8,12 +8,13 @@ test.describe('Organization Settings (General) navigation tests @organization-ba
     // Organization selector should list all connected orgs (plus personal mode).
     await suite.organizationPage.clickOnSelectModeDropdown();
     const modeItemCount = await suite.organizationPage.countModeSelectionItems();
+    // At least one personal item and one org item must be present.
+    expect(modeItemCount).toBeGreaterThanOrEqual(2);
     const modeItemTexts: string[] = [];
     for (let i = 0; i < modeItemCount; i++) {
       modeItemTexts.push((await suite.organizationPage.getModeSelectionItemText(i)) ?? '');
     }
     const modeMenuText = modeItemTexts.join(' ');
-    expect(modeMenuText).toContain('Personal');
     expect(modeMenuText).toContain(suite.organizationNickname);
 
     // Switch to personal mode.

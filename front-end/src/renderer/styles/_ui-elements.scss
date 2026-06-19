@@ -812,6 +812,41 @@ td .btn {
     &:not(:first-child) {
       margin-top: $spacer * 0.25;
     }
+
+    &.active {
+      &:hover,
+      &:focus {
+        background-color: var(--bs-dropdown-link-active-bg) !important;
+        color: var(--bs-dropdown-link-active-color) !important;
+      }
+
+      .text-muted {
+        color: rgba(255, 255, 255, 0.7) !important;
+      }
+    }
+
+    &:not(.active):active {
+      color: var(--bs-dropdown-link-hover-color) !important;
+      background-color: var(--bs-dropdown-link-hover-bg) !important;
+    }
+  }
+
+  &.dropdown-menu-sectioned {
+    padding-top: 0.75rem;
+
+    .dropdown-header {
+      padding-left: 0.5rem;
+      padding-top: 0.25rem;
+      padding-bottom: 0.25rem;
+    }
+
+    li:has(.dropdown-divider) + li {
+      padding-top: 0.5rem;
+    }
+
+    .dropdown-item {
+      padding-left: 1rem;
+    }
   }
 }
 

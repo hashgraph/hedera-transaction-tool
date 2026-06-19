@@ -21,6 +21,7 @@ import {
   isLoggedOutOrganization,
   isOrganizationActive,
   redirectToPrevious,
+  toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -87,7 +88,9 @@ const handleLogin = async () => {
       personalPassword,
       true,
     );
-    await user.refetchOrganizationTokens();
+
+    toggleAuthTokenInSessionStorage(user.selectedOrganization.serverUrl, jwtToken);
+    await user.refetchOrganizations();
 
     toastManager.success('Successfully signed in');
 
