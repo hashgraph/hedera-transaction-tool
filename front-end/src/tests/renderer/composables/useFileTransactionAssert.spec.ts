@@ -128,4 +128,53 @@ describe('useFileTransactionAssert', () => {
     expect(mocks.encodeSpecialFileContent).not.toHaveBeenCalled();
     expect(data.contents).toBe(contents);
   });
+
+  test('throws when file ID is invalid', async () => {
+    mocks.isFileId.mockReturnValue(false);
+    const data = { fileId: 'not-a-file-id', contents: null };
+
+    await expect(useFileTransactionAssert(data, ref({} as Key))()).rejects.toThrow(
+      'Invalid File ID',
+    );
+  });
+
+  test('throws when signature key is missing and user is not in an organization', async () => {
+    mocks.isLoggedInOrganization.mockReturnValue(false);
+    const data = { fileId: '0.0.111', contents: null };
+
+    await expect(useFileTransactionAssert(data, ref(null))()).rejects.toThrow(
+      'Signature key is required',
+    );
+  });
+
+  test('passes through Uint8Array unchanged when decode returns undefined', async () => {
+    const contents = Uint8Array.from([1, 2, 3]);
+    const data = { fileId: '0.0.121', contents };
+
+    mocks.isHederaSpecialFileId.mockReturnValue(true);
+    mocks.decodeProto.mockResolvedValue(undefined);
+
+    await useFileTransactionAssert(data, ref({} as Key))();
+
+    expect(mocks.encodeSpecialFileContent).not.toHaveBeenCalled();
+    expect(data.contents).toBe(contents);
+  });
+
+  test('encodes Uint8Array content when round-trip re-encode fails', async () => {
+    const contents = Uint8Array.from([7, 8, 9]);
+    const encoded = Uint8Array.from([4, 5, 6]);
+    const data = { fileId: '0.0.112', contents };
+
+    mocks.isHederaSpecialFileId.mockReturnValue(true);
+    mocks.decodeProto.mockResolvedValue('garbage decoded from json bytes');
+    mocks.encodeSpecialFileContent
+      .mockRejectedValueOnce(new Error('re-encode failed'))
+      .mockResolvedValueOnce(encoded);
+
+    await useFileTransactionAssert(data, ref({} as Key))();
+
+    expect(mocks.encodeSpecialFileContent).toHaveBeenCalledTimes(2);
+    expect(mocks.encodeSpecialFileContent).toHaveBeenLastCalledWith(contents, '0.0.112');
+    expect(data.contents).toEqual(encoded);
+  });
 });
