@@ -171,7 +171,7 @@ describe('OrganizationLogin.vue', () => {
     expect(wrapper.find('[data-testid="forgot-password-modal"]').exists()).toBe(true);
   });
 
-  test('successful login: writes token to session storage immediately, stores credentials, then refreshes organizations', async () => {
+  test('successful login: stores credentials, writes token to session storage, then refreshes organizations', async () => {
     mocks.login.mockResolvedValueOnce({ jwtToken: 'test-jwt-token' });
     mocks.addOrganizationCredentials.mockResolvedValueOnce(undefined);
     mocks.userStore.refetchOrganizations.mockResolvedValueOnce(undefined);
@@ -203,7 +203,7 @@ describe('OrganizationLogin.vue', () => {
     expect(mocks.userStore.refetchOrganizations).toHaveBeenCalled();
   });
 
-  test('token is written to session storage before credentials are stored', async () => {
+  test('credentials are stored before token is written to session storage', async () => {
     const callOrder: string[] = [];
     mocks.login.mockResolvedValueOnce({ jwtToken: 'test-jwt-token' });
     mocks.toggleAuthTokenInSessionStorage.mockImplementationOnce(() => {
@@ -225,7 +225,7 @@ describe('OrganizationLogin.vue', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    expect(callOrder).toEqual(['toggleAuthToken', 'addCredentials']);
+    expect(callOrder).toEqual(['addCredentials', 'toggleAuthToken']);
   });
 
   test('login failure: shows error toast and marks fields invalid without calling refetchOrganizations', async () => {

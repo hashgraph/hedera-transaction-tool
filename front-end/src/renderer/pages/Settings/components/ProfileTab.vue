@@ -58,7 +58,10 @@ const isResetDataModalShown = ref(false);
 
 /* Computed */
 const displayEmail = computed(() => {
-  if (isLoggedInOrganization(user.selectedOrganization)) return user.selectedOrganization.email;
+  const orgEmail = isLoggedInOrganization(user.selectedOrganization)
+    ? user.selectedOrganization.email
+    : null;
+  if (orgEmail) return orgEmail;
   if (isUserLoggedIn(user.personal)) return user.personal.email;
   return '';
 });
