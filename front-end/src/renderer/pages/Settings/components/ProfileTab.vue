@@ -181,36 +181,50 @@ watch(newPassword, pass => {
       (isUserLoggedIn(user.personal) && !user.personal.useKeychain) || user.selectedOrganization
     "
   >
-    <div class="w-50 p-4 border rounded mb-4">
-      <div class="d-flex align-items-center gap-3">
-        <span class="form-label mb-0">Email</span>
-        <span>{{ displayEmail }}</span>
+    <div class="p-4 border border-2 rounded-3">
+      <p>User Info</p>
+      <div class="mt-4">
+        <h4 class="text-micro text-semi-bold text-dark-blue">Email</h4>
+        <p class="text-small overflow-hidden mt-1 mb-0">{{ displayEmail }}</p>
       </div>
+      <AppButton
+        v-if="
+          (isUserLoggedIn(user.personal) && !user.personal.useKeychain && !user.selectedOrganization) ||
+          isLoggedInOrganization(user.selectedOrganization)
+        "
+        color="primary"
+        data-testid="button-logout"
+        class="mt-4"
+        @click="withLoader(handleLogout)"
+        >Log Out</AppButton
+      >
     </div>
-    <form class="w-50 p-4 border rounded" @submit.prevent="isConfirmModalShown = true">
+    <form class="p-4 border border-2 rounded-3 mt-5" @submit.prevent="isConfirmModalShown = true">
       <h3 class="text-main">Password</h3>
-      <div class="form-group mt-4">
-        <label class="form-label">Current Password <span class="text-danger">*</span></label>
-        <AppPasswordInput
-          v-model="currentPassword"
-          data-testid="input-current-password"
-          placeholder="Enter Current Password"
-          :filled="true"
-        />
+      <div class="col-sm-5 col-lg-4">
+        <div class="form-group mt-4">
+          <label class="form-label">Current Password <span class="text-danger">*</span></label>
+          <AppPasswordInput
+            v-model="currentPassword"
+            data-testid="input-current-password"
+            placeholder="Enter Current Password"
+            :filled="true"
+          />
+        </div>
+        <div class="mt-4 form-group">
+          <label class="form-label">New Password <span class="text-danger">*</span></label>
+          <AppPasswordInput
+            v-model="newPassword"
+            :filled="true"
+            :class="{ 'is-invalid': newPasswordInvalid }"
+            data-testid="input-new-password"
+            placeholder="Enter New Password"
+            @blur="handleBlur('newPassword', $event.target.value)"
+          />
+          <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password</div>
+        </div>
       </div>
-      <div class="mt-4 form-group">
-        <label class="form-label">New Password <span class="text-danger">*</span></label>
-        <AppPasswordInput
-          v-model="newPassword"
-          :filled="true"
-          :class="{ 'is-invalid': newPasswordInvalid }"
-          data-testid="input-new-password"
-          placeholder="Enter New Password"
-          @blur="handleBlur('newPassword', $event.target.value)"
-        />
-        <div v-if="newPasswordInvalid" class="invalid-feedback">Invalid password</div>
-      </div>
-      <div class="d-grid mt-4">
+      <div class="mt-4">
         <AppButton
           color="primary"
           data-testid="button-change-password"
@@ -281,15 +295,4 @@ watch(newPassword, pass => {
     <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
   </div>
 
-  <div
-    v-if="
-      (isUserLoggedIn(user.personal) && !user.personal.useKeychain && !user.selectedOrganization) ||
-      isLoggedInOrganization(user.selectedOrganization)
-    "
-    class="mt-6"
-  >
-    <AppButton color="primary" data-testid="button-logout" @click="withLoader(handleLogout)">
-      Log Out
-    </AppButton>
-  </div>
 </template>
