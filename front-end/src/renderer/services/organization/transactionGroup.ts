@@ -50,17 +50,6 @@ export const submitTransactionGroup = async (
   }, 'Failed submit transaction');
 };
 
-/* Get transaction groups */
-export const getTransactionGroups = async (serverUrl: string) => {
-  return commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/transaction-groups/`, {
-      withCredentials: true,
-    });
-
-    return data;
-  }, 'Failed to get transaction groups');
-};
-
 /* Cancel all transactions in a group */
 export enum CancelFailureCode {
   NOT_CANCELABLE = 'NOT_CANCELABLE',
