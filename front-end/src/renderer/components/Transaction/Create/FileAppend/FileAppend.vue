@@ -9,9 +9,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isLoggedInOrganization } from '@renderer/utils';
+import { isFileId, isLoggedInOrganization } from '@renderer/utils';
 import { createFileAppendTransaction, getFileAppendTransactionData } from '@renderer/utils/sdk';
-import { useFileTransactionAssert } from '@renderer/composables/useFileTransactionAssert';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileAppendFormData from './FileAppendFormData.vue';
@@ -63,7 +62,15 @@ const handleUpdateData = (newData: FileAppendData) => {
 };
 
 /* Functions */
-const preCreateAssert = useFileTransactionAssert(data, signatureKey);
+const preCreateAssert = () => {
+  if (!isFileId(data.fileId)) {
+    throw Error('Invalid File ID');
+  }
+
+  if (!signatureKey.value && !isLoggedInOrganization(user.selectedOrganization)) {
+    throw Error('Signature key is required');
+  }
+};
 
 /* Hooks */
 onMounted(() => {
