@@ -135,7 +135,7 @@ describe('FileContentsModal.vue', () => {
   });
 
   it('does not save when save dialog is cancelled', async () => {
-    vi.mocked(showSaveDialog).mockResolvedValueOnce({ canceled: true, filePath: undefined });
+    vi.mocked(showSaveDialog).mockResolvedValueOnce({ canceled: true, filePath: '' });
     const contents = new TextEncoder().encode('Hello');
     const wrapper = mountModal(contents);
     await wrapper.find('button').trigger('click');
