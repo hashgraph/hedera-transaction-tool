@@ -59,7 +59,7 @@ import { addDraft, updateDraft } from '@renderer/services/transactionDraftsServi
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
   createTransaction: CreateTransactionFunc;
-  preCreateAssert?: () => boolean | void;
+  preCreateAssert?: () => boolean | void | Promise<boolean | void>;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
 }>();
@@ -188,7 +188,7 @@ const handleDraftLoaded = async (transaction: Transaction) => {
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  if (preCreateAssert?.() === false) return;
+  if ((await Promise.resolve(preCreateAssert?.())) === false) return;
 
   const capturedData = { ...data } as TransactionCommonData;
   // Build the initial transaction once so the retry path can anchor on the
