@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { mount, flushPromises } from '@vue/test-utils';
 
 import OrganizationLogin from '@renderer/pages/OrganizationLogin/OrganizationLogin.vue';
 
@@ -13,7 +13,13 @@ const mocks = vi.hoisted(() => ({
       serverUrl: 'https://org.example.com',
       loginRequired: true,
     },
+    refetchOrganizations: vi.fn(),
+    selectOrganization: vi.fn(),
   },
+  login: vi.fn(),
+  addOrganizationCredentials: vi.fn(),
+  toggleAuthTokenInSessionStorage: vi.fn(),
+  setLast: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -51,16 +57,16 @@ vi.mock('@renderer/composables/useRecoveryPhraseHashMigrate', () => ({
 
 vi.mock('@renderer/composables/user/useDefaultOrganization', () => ({
   default: vi.fn(() => ({
-    setLast: vi.fn(),
+    setLast: mocks.setLast,
   })),
 }));
 
 vi.mock('@renderer/services/organization', () => ({
-  login: vi.fn(),
+  login: mocks.login,
 }));
 
 vi.mock('@renderer/services/organizationCredentials', () => ({
-  addOrganizationCredentials: vi.fn(),
+  addOrganizationCredentials: mocks.addOrganizationCredentials,
 }));
 
 vi.mock('@renderer/utils/ToastManager', () => ({
@@ -81,10 +87,12 @@ vi.mock('@renderer/utils', () => ({
   isLoggedOutOrganization: vi.fn(() => true),
   isOrganizationActive: vi.fn(() => false),
   redirectToPrevious: vi.fn(),
+  toggleAuthTokenInSessionStorage: mocks.toggleAuthTokenInSessionStorage,
 }));
 
 describe('OrganizationLogin.vue', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mocks.userStore.selectedOrganization.nickname = 'Test Organization A';
   });
 
@@ -161,5 +169,84 @@ describe('OrganizationLogin.vue', () => {
     await wrapper.find('.link-primary').trigger('click');
 
     expect(wrapper.find('[data-testid="forgot-password-modal"]').exists()).toBe(true);
+  });
+
+  test('successful login: writes token to session storage immediately, stores credentials, then refreshes organizations', async () => {
+    mocks.login.mockResolvedValueOnce({ jwtToken: 'test-jwt-token' });
+    mocks.addOrganizationCredentials.mockResolvedValueOnce(undefined);
+    mocks.userStore.refetchOrganizations.mockResolvedValueOnce(undefined);
+    mocks.userStore.selectOrganization.mockResolvedValueOnce(undefined);
+
+    const wrapper = mountOrganizationLogin();
+    await wrapper
+      .find('[data-testid="input-login-email-for-organization"]')
+      .setValue('user@example.com');
+    await wrapper
+      .find('[data-testid="input-login-password-for-organization"]')
+      .setValue('password123');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.toggleAuthTokenInSessionStorage).toHaveBeenCalledWith(
+      'https://org.example.com',
+      'test-jwt-token',
+    );
+    expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
+      'user@example.com',
+      'password123',
+      'org-id',
+      'local-user-id',
+      'test-jwt-token',
+      'personal-password',
+      true,
+    );
+    expect(mocks.userStore.refetchOrganizations).toHaveBeenCalled();
+  });
+
+  test('token is written to session storage before credentials are stored', async () => {
+    const callOrder: string[] = [];
+    mocks.login.mockResolvedValueOnce({ jwtToken: 'test-jwt-token' });
+    mocks.toggleAuthTokenInSessionStorage.mockImplementationOnce(() => {
+      callOrder.push('toggleAuthToken');
+    });
+    mocks.addOrganizationCredentials.mockImplementationOnce(async () => {
+      callOrder.push('addCredentials');
+    });
+    mocks.userStore.refetchOrganizations.mockResolvedValueOnce(undefined);
+    mocks.userStore.selectOrganization.mockResolvedValueOnce(undefined);
+
+    const wrapper = mountOrganizationLogin();
+    await wrapper
+      .find('[data-testid="input-login-email-for-organization"]')
+      .setValue('user@example.com');
+    await wrapper
+      .find('[data-testid="input-login-password-for-organization"]')
+      .setValue('password123');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(callOrder).toEqual(['toggleAuthToken', 'addCredentials']);
+  });
+
+  test('login failure: shows error toast and marks fields invalid without calling refetchOrganizations', async () => {
+    const toastError = vi.fn();
+    vi.mocked(
+      (await import('@renderer/utils/ToastManager')).ToastManager.inject,
+    ).mockReturnValueOnce({ error: toastError, success: vi.fn() } as any);
+
+    mocks.login.mockRejectedValueOnce(new Error('Invalid credentials'));
+
+    const wrapper = mountOrganizationLogin();
+    await wrapper
+      .find('[data-testid="input-login-email-for-organization"]')
+      .setValue('user@example.com');
+    await wrapper
+      .find('[data-testid="input-login-password-for-organization"]')
+      .setValue('wrongpassword');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.userStore.refetchOrganizations).not.toHaveBeenCalled();
+    expect(mocks.toggleAuthTokenInSessionStorage).not.toHaveBeenCalled();
   });
 });
