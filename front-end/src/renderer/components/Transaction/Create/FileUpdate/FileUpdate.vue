@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
+import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { FileUpdateData } from '@renderer/utils/sdk';
+import { createFileUpdateTransaction, getFileUpdateTransactionData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Key, Transaction } from '@hiero-ledger/sdk';
@@ -9,10 +11,8 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isLoggedInOrganization, isFileId } from '@renderer/utils';
-import { createFileUpdateTransaction, getFileUpdateTransactionData } from '@renderer/utils/sdk';
-
-import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
+import { isLoggedInOrganization } from '@renderer/utils';
+import { useFileTransactionAssert } from '@renderer/composables/useFileTransactionAssert';
 import FileUpdateFormData from './FileUpdateFormData.vue';
 
 /* Stores */
@@ -56,15 +56,7 @@ const handleUpdateData = (newData: FileUpdateData) => {
 };
 
 /* Functions */
-const preCreateAssert = () => {
-  if (!isFileId(data.fileId)) {
-    throw Error('Invalid File ID');
-  }
-
-  if (!signatureKey.value && !isLoggedInOrganization(user.selectedOrganization)) {
-    throw Error('Signature key is required');
-  }
-};
+const preCreateAssert = useFileTransactionAssert(data, signatureKey);
 
 /* Hooks */
 onMounted(() => {
