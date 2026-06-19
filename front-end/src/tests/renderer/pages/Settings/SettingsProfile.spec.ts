@@ -7,15 +7,17 @@ import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   userStore: {
-    personal: { id: 'local-user-id', useKeychain: false } as {
+    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as {
       id: string;
       useKeychain: boolean;
+      email?: string;
     } | null,
     selectedOrganization: null as null | {
       id: string;
       nickname: string;
       serverUrl: string;
       key: string;
+      email?: string;
     },
     logout: vi.fn(),
     refetchAccounts: vi.fn(),
@@ -118,6 +120,7 @@ const ORG = {
   nickname: 'Acme',
   serverUrl: 'https://acme.example',
   key: 'org-key',
+  email: 'org@acme.example',
 };
 
 const STRONG_OLD = 'old-password';
@@ -142,7 +145,7 @@ const clickConfirm = async (wrapper: ReturnType<typeof mountProfile>) => {
 describe('settings profile coverage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.userStore.personal = { id: 'local-user-id', useKeychain: false };
+    mocks.userStore.personal = { id: 'local-user-id', useKeychain: false, email: 'local@example.com' };
     mocks.userStore.selectedOrganization = null;
   });
 
@@ -580,6 +583,45 @@ describe('settings profile coverage', () => {
       expect(wrapper.text()).toContain('Reset Application');
       expect(wrapper.find('[data-testid="input-current-password"]').exists()).toBe(false);
       expect(wrapper.find('[data-testid="input-new-password"]').exists()).toBe(false);
+    });
+  });
+
+  describe('email display', () => {
+    test('shows personal email for non-keychain user', () => {
+      mocks.userStore.personal = { id: 'local-user-id', useKeychain: false, email: 'local@example.com' };
+      mocks.userStore.selectedOrganization = null;
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).toContain('Email');
+      expect(wrapper.text()).toContain('local@example.com');
+    });
+
+    test('shows organization email when an org is selected', () => {
+      mocks.userStore.selectedOrganization = { ...ORG };
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).toContain('Email');
+      expect(wrapper.text()).toContain('org@acme.example');
+    });
+
+    test('falls back to personal email when org has no email', () => {
+      mocks.userStore.selectedOrganization = { ...ORG, email: undefined };
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).toContain('Email');
+      expect(wrapper.text()).toContain('local@example.com');
+    });
+
+    test('does not render email section for keychain-only user with no org', () => {
+      mocks.userStore.personal = { id: 'local-user-id', useKeychain: true };
+      mocks.userStore.selectedOrganization = null;
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).not.toContain('Email');
     });
   });
 });
