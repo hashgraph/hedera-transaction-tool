@@ -64,6 +64,8 @@ const contentsModalTitle = computed(() =>
   props.transaction instanceof FileAppendTransaction ? 'Append Contents' : 'File Contents',
 );
 
+const contentsTransactionId = computed(() => props.transaction.transactionId?.toString() ?? null);
+
 /* Handlers */
 const CONTENTS_DISPLAY_LIMIT = 100 * 1024;
 
@@ -309,6 +311,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       :contents="transaction.contents!"
       :file-id="contentsFileId"
       :title="contentsModalTitle"
+      :transaction-id="contentsTransactionId"
     />
   </div>
 </template>

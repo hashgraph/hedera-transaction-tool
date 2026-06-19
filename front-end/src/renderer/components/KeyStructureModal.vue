@@ -34,8 +34,12 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppModal :show="show" @update:show="handleShowUpdate" class="modal-fit-content">
-    <div class="p-5">
-      <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
+    <div class="p-4">
+      <div class="d-flex align-items-center mb-4">
+        <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
+        <h5 class="text-title text-bold text-center flex-grow-1 m-0">Key Structure</h5>
+        <span style="width: 1em"></span>
+      </div>
       <KeyStructure v-if="accountKey instanceof KeyList && true" :key-list="accountKey" />
       <div v-else-if="accountKey instanceof PublicKey && true && formattedKey">
         {{ formattedKey }}
