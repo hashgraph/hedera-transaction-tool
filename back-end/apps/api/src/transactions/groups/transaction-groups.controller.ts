@@ -49,13 +49,6 @@ export class TransactionGroupsController {
     return this.transactionGroupsService.createTransactionGroup(user, dto);
   }
 
-  /* TESTING ONLY: Get all transactions groups */
-  @Get()
-  @Serialize(TransactionGroupDto)
-  getTransactionGroups(): Promise<TransactionGroup[]> {
-    return this.transactionGroupsService.getTransactionGroups();
-  }
-
   @ApiOperation({
     summary: 'Get a transaction group',
     description: 'Get a transaction group and its transactions by its id.',
