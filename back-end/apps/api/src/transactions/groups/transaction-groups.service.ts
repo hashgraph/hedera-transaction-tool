@@ -36,10 +36,6 @@ export class TransactionGroupsService {
     private readonly sqlBuilder: SqlBuilderService,
   ) {}
 
-  getTransactionGroups(): Promise<TransactionGroup[]> {
-    return this.dataSource.manager.find(TransactionGroup);
-  }
-
   async createTransactionGroup(
     user: User,
     dto: CreateTransactionGroupDto,

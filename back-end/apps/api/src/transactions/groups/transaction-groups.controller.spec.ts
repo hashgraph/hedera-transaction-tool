@@ -82,16 +82,6 @@ describe('TransactionGroupsController', () => {
     });
   });
 
-  describe('getTransactionGroups', () => {
-    it('should return an array of transaction groups', async () => {
-      const result = [transactionGroup];
-
-      transactionGroupsService.getTransactionGroups.mockResolvedValue(result);
-
-      expect(await controller.getTransactionGroups()).toEqual(result);
-    });
-  });
-
   describe('getTransactionGroup', () => {
     it('should return a transaction group', async () => {
       const result = transactionGroup;

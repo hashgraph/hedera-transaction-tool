@@ -73,13 +73,6 @@ describe('TransactionGroupsService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getTransactionGroups', () => {
-    it('should call repo to find all groups', async () => {
-      await service.getTransactionGroups();
-      expect(dataSource.manager.find).toHaveBeenCalled();
-    });
-  });
-
   describe('createTransactionGroup', () => {
     beforeEach(() => {
       jest.resetAllMocks();
