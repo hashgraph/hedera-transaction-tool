@@ -68,7 +68,11 @@ const setupPersonal = async ({
   password,
 }: ModelValue): Promise<PersonalUser> => {
   /* Initialize the use of the keychain */
-  await initializeUseKeychain(useKeychain);
+  try {
+    await initializeUseKeychain(useKeychain);
+  } catch {
+    // Must be ignored in this context
+  }
 
   /* Register the user */
   const personalId = useKeychain
