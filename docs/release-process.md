@@ -12,7 +12,7 @@ To start a release, trigger the **Release Automation** workflow (`Actions → Re
 
 ## Pre-Release
 
-- [ ] If a SNAPSHOT bump PR was opened, review and merge it to `main`
+<!-- snapshot-bump-pr-line -->
 
 ### Pre-release deployment
 - [ ] Create a new branch on DevOps-GitOps:

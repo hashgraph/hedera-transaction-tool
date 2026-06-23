@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 defaults:
   run:
@@ -476,6 +477,8 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
           RELEASE_VERSION: ${{ needs.prepare.outputs.release }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
+          CREATE_PR: ${{ needs.cut_release.outputs.create_pr }}
         run: |
           ISSUE_TITLE="v${RELEASE_VERSION} Release Task"
           MILESTONE="v${RELEASE_VERSION}"
@@ -514,6 +517,14 @@ jobs:
               ISSUE_BODY=$(awk '/^# Release workflow/{found=1} found{print}' docs/release-process.md \
                 | sed \
                   -e "s|<major\.minor\.patch>|${VERSION}|g")
+            fi
+
+            # Substitute or remove the SNAPSHOT bump PR line.
+            if [ "$CREATE_PR" = "true" ]; then
+              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed \
+                "s|<!-- snapshot-bump-pr-line -->|- [ ] Review and merge the \`v${NEXT_VERSION_SNAPSHOT}\` bump PR to \`main\`|g")
+            else
+              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed "/<!-- snapshot-bump-pr-line -->/d")
             fi
             ISSUE_URL=$(gh issue create \
               --title "$ISSUE_TITLE" \
