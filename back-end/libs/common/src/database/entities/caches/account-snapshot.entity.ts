@@ -2,18 +2,23 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
   Index,
-  OneToMany,
 } from 'typeorm';
-import { TransactionAccountSnapshot } from './';
 
-// Append-only history log of an account's key structure. A new row is written
-// each time the key or receiverSignatureRequired changes at transaction terminal
-// state; if the state is unchanged from the previous snapshot, the existing row
-// is reused. This produces a readable changelog of key rotations over time.
-// The GIN index on publicKeys enables fast containment lookups ("find all
-// snapshots that include public key X") with a one-time write cost per row.
+// Append-only changelog of an account's key structure. A new row is written
+// only when the key or receiverSignatureRequired changes at transaction terminal
+// state; if the state is unchanged from the previous snapshot the existing row
+// is reused. This produces a readable timeline of key rotations over time.
+//
+// createdAt is set explicitly to the transaction's executedAt timestamp (not
+// the DB server clock) so that the standard lookup query is correct:
+//   SELECT ... WHERE account = ? AND mirrorNetwork = ?
+//     AND createdAt <= :executedAt ORDER BY createdAt DESC LIMIT 1
+// This returns the exact key structure that was active when any given
+// transaction executed, without needing a separate join table.
+//
+// The GIN index on publicKeys enables fast "find all snapshots that include
+// public key X" containment lookups for the signer-reporting queries.
 // See CachedAccountKey for the B-tree equivalent used on live cache data.
 @Entity()
 @Index(['account', 'mirrorNetwork', 'createdAt'])
@@ -39,9 +44,8 @@ export class AccountSnapshot {
   @Column({ default: false })
   receiverSignatureRequired: boolean;
 
-  @CreateDateColumn()
+  // Set to the triggering transaction's executedAt — not DEFAULT now() — so
+  // that timestamp-range lookups land on the correct snapshot row.
+  @Column({ type: 'timestamptz' })
   createdAt: Date;
-
-  @OneToMany(() => TransactionAccountSnapshot, (link) => link.keySnapshot)
-  transactionLinks: TransactionAccountSnapshot[];
 }

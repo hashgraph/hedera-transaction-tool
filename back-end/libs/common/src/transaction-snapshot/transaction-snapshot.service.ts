@@ -6,10 +6,8 @@ import { createHash } from 'crypto';
 import {
   AccountSnapshot,
   NodeSnapshot,
-  TransactionAccountSnapshot,
   TransactionCachedAccount,
   TransactionCachedNode,
-  TransactionNodeSnapshot,
 } from '@entities';
 
 import { deserializeKey, flattenKeyList } from '../utils/sdk/key';
@@ -23,31 +21,34 @@ export class TransactionSnapshotService {
     private readonly accountSnapshotRepo: Repository<AccountSnapshot>,
     @InjectRepository(NodeSnapshot)
     private readonly nodeSnapshotRepo: Repository<NodeSnapshot>,
-    @InjectRepository(TransactionAccountSnapshot)
-    private readonly transactionAccountSnapshotRepo: Repository<TransactionAccountSnapshot>,
-    @InjectRepository(TransactionNodeSnapshot)
-    private readonly transactionNodeSnapshotRepo: Repository<TransactionNodeSnapshot>,
     @InjectRepository(TransactionCachedAccount)
     private readonly transactionCachedAccountRepo: Repository<TransactionCachedAccount>,
     @InjectRepository(TransactionCachedNode)
     private readonly transactionCachedNodeRepo: Repository<TransactionCachedNode>,
   ) {}
 
-  async captureForTransaction(transactionId: number): Promise<void> {
-    try {
-      await Promise.all([
-        this.captureAccountSnapshots(transactionId),
-        this.captureNodeSnapshots(transactionId),
-      ]);
-    } catch (err) {
-      this.logger.error(
-        `Failed to capture snapshots for transaction ${transactionId}: ${err.message}`,
-        err.stack,
-      );
+  // Called at every terminal state transition (EXECUTED, FAILED, EXPIRED,
+  // CANCELED, ARCHIVED). Writes account and node snapshots so that signer-
+  // reporting queries can reconstruct the exact key structure that was active
+  // when each transaction ran, without hitting the mirror node at query time.
+  async captureForTransaction(transactionId: number, executedAt: Date): Promise<void> {
+    const results = await Promise.allSettled([
+      this.captureAccountSnapshots(transactionId, executedAt),
+      this.captureNodeSnapshots(transactionId, executedAt),
+    ]);
+
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        const err = result.reason;
+        this.logger.error(
+          `Failed to capture snapshots for transaction ${transactionId}: ${err instanceof Error ? err.message : String(err)}`,
+          err instanceof Error ? err.stack : undefined,
+        );
+      }
     }
   }
 
-  private async captureAccountSnapshots(transactionId: number): Promise<void> {
+  private async captureAccountSnapshots(transactionId: number, executedAt: Date): Promise<void> {
     const links = await this.transactionCachedAccountRepo.find({
       where: { transactionId },
       relations: { cachedAccount: true },
@@ -57,23 +58,17 @@ export class TransactionSnapshotService {
       const { account, mirrorNetwork, encodedKey, receiverSignatureRequired } = link.cachedAccount;
       if (!encodedKey) continue;
 
-      const snapshotId = await this.resolveAccountSnapshot(
+      await this.resolveAccountSnapshot(
         account,
         mirrorNetwork,
         encodedKey,
         receiverSignatureRequired ?? false,
+        executedAt,
       );
-      await this.transactionAccountSnapshotRepo
-        .createQueryBuilder()
-        .insert()
-        .into(TransactionAccountSnapshot)
-        .values({ transactionId, keySnapshotId: snapshotId, isReceiver: link.isReceiver })
-        .orIgnore()
-        .execute();
     }
   }
 
-  private async captureNodeSnapshots(transactionId: number): Promise<void> {
+  private async captureNodeSnapshots(transactionId: number, executedAt: Date): Promise<void> {
     const links = await this.transactionCachedNodeRepo.find({
       where: { transactionId },
       relations: { cachedNode: true },
@@ -83,28 +78,23 @@ export class TransactionSnapshotService {
       const { nodeId, mirrorNetwork, encodedKey } = link.cachedNode;
       if (!encodedKey) continue;
 
-      const snapshotId = await this.resolveNodeSnapshot(nodeId, mirrorNetwork, encodedKey);
-      await this.transactionNodeSnapshotRepo
-        .createQueryBuilder()
-        .insert()
-        .into(TransactionNodeSnapshot)
-        .values({ transactionId, keySnapshotId: snapshotId })
-        .orIgnore()
-        .execute();
+      await this.resolveNodeSnapshot(nodeId, mirrorNetwork, encodedKey, executedAt);
     }
   }
 
-  // Returns the ID of the latest snapshot for this account if its key and
-  // receiverSignatureRequired are unchanged, otherwise inserts a new row.
-  // Concurrent captures for the same account may rarely produce an adjacent
-  // duplicate row — this is benign since TransactionAccountSnapshot still
-  // binds each transaction to its own row.
+  // Changelog model: compare the latest snapshot for this account against the
+  // current key. If unchanged, do nothing (reuse the existing row). If changed,
+  // insert a new row stamped with executedAt so the timeline stays accurate.
+  // A→B→A produces three rows with distinct createdAt values, which lets the
+  // standard lookup query (WHERE createdAt <= executedAt ORDER BY createdAt DESC)
+  // return the correct snapshot for any transaction in history.
   private async resolveAccountSnapshot(
     account: string,
     mirrorNetwork: string,
     encodedKey: Buffer,
     receiverSignatureRequired: boolean,
-  ): Promise<number> {
+    executedAt: Date,
+  ): Promise<void> {
     const keyHash = createHash('sha256').update(encodedKey).digest('hex');
 
     const latest = await this.accountSnapshotRepo.findOne({
@@ -113,24 +103,24 @@ export class TransactionSnapshotService {
       select: { id: true, keyHash: true, receiverSignatureRequired: true },
     });
 
-    if (latest?.keyHash === keyHash && latest?.receiverSignatureRequired === receiverSignatureRequired) {
-      return latest.id;
+    if (latest?.keyHash === keyHash && latest.receiverSignatureRequired === receiverSignatureRequired) {
+      return;
     }
 
     const publicKeys = this.extractPublicKeys(encodedKey);
-    const saved = await this.accountSnapshotRepo.save({
+    await this.accountSnapshotRepo.save({
       account, mirrorNetwork, encodedKey, keyHash, publicKeys, receiverSignatureRequired,
+      createdAt: executedAt,
     });
-    return saved.id;
   }
 
-  // Same model as resolveAccountSnapshot — reuses the latest node snapshot if
-  // the key is unchanged, otherwise appends a new row.
+  // Same changelog model as resolveAccountSnapshot.
   private async resolveNodeSnapshot(
     nodeId: number,
     mirrorNetwork: string,
     encodedKey: Buffer,
-  ): Promise<number> {
+    executedAt: Date,
+  ): Promise<void> {
     const keyHash = createHash('sha256').update(encodedKey).digest('hex');
 
     const latest = await this.nodeSnapshotRepo.findOne({
@@ -140,14 +130,14 @@ export class TransactionSnapshotService {
     });
 
     if (latest?.keyHash === keyHash) {
-      return latest.id;
+      return;
     }
 
     const publicKeys = this.extractPublicKeys(encodedKey);
-    const saved = await this.nodeSnapshotRepo.save({
+    await this.nodeSnapshotRepo.save({
       nodeId, mirrorNetwork, encodedKey, keyHash, publicKeys,
+      createdAt: executedAt,
     });
-    return saved.id;
   }
 
   private extractPublicKeys(encodedKey: Buffer): string[] {

@@ -103,10 +103,11 @@ export class TransactionSchedulerService {
     name: 'status_update_expired_transactions',
   })
   async handleExpiredTransactions() {
+    const executedAt = new Date();
     const result = await this.transactionRepo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: TransactionStatus.EXPIRED, executedAt: new Date() })
+      .set({ status: TransactionStatus.EXPIRED, executedAt })
       .where('status IN (:...statuses) AND validStart < :before', {
         statuses: [
           TransactionStatus.NEW,
@@ -127,7 +128,7 @@ export class TransactionSchedulerService {
         })),
       );
       await Promise.all(
-        result.raw.map(t => this.transactionSnapshotService.captureForTransaction(t.id)),
+        result.raw.map(t => this.transactionSnapshotService.captureForTransaction(t.id, executedAt)),
       );
     }
   }
@@ -237,12 +238,13 @@ export class TransactionSchedulerService {
         }
 
         if (smartCollateFailed) {
+          const executedAt = new Date();
           const result = await this.transactionRepo
             .createQueryBuilder()
             .update(Transaction)
             .set({
               status: TransactionStatus.FAILED,
-              executedAt: new Date(),
+              executedAt,
               statusCode: Status.TransactionOversize._code,
             })
             .where('id IN (:...ids) AND status = :currentStatus', {
@@ -258,7 +260,7 @@ export class TransactionSchedulerService {
               result.raw.map(row => ({ entityId: row.id })),
             );
             await Promise.all(
-              result.raw.map(row => this.transactionSnapshotService.captureForTransaction(row.id)),
+              result.raw.map(row => this.transactionSnapshotService.captureForTransaction(row.id, executedAt)),
             );
           }
           return;
@@ -293,12 +295,13 @@ export class TransactionSchedulerService {
         // set it to failed with the TRANSACTION_OVERSIZE status code
         // update the transaction, emit the event, and delete the timeout
         if (sdkTransaction === null) {
+          const executedAt = new Date();
           const result = await this.transactionRepo
             .createQueryBuilder()
             .update(Transaction)
             .set({
               status: TransactionStatus.FAILED,
-              executedAt: new Date(),
+              executedAt,
               statusCode: Status.TransactionOversize._code,
             })
             .where('id = :id AND status = :currentStatus', {
@@ -313,7 +316,7 @@ export class TransactionSchedulerService {
               this.notificationsPublisher,
               result.raw.map(row => ({ entityId: row.id })),
             );
-            await this.transactionSnapshotService.captureForTransaction(result.raw[0].id);
+            await this.transactionSnapshotService.captureForTransaction(result.raw[0].id, executedAt);
           }
           return;
         }

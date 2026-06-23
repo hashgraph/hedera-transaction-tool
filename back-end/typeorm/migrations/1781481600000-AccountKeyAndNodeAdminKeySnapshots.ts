@@ -47,47 +47,9 @@ export class AccountKeyAndNodeAdminKeySnapshots1781481600000 implements Migratio
             ON "node_snapshot" USING GIN ("publicKeys")
         `);
 
-        await queryRunner.query(`
-            CREATE TABLE "transaction_account_snapshot" (
-                "id" SERIAL NOT NULL,
-                "transactionId" integer NOT NULL,
-                "keySnapshotId" integer NOT NULL,
-                "isReceiver" boolean NOT NULL DEFAULT false,
-                CONSTRAINT "PK_transaction_account_snapshot" PRIMARY KEY ("id"),
-                CONSTRAINT "FK_transaction_account_snapshot_transaction"
-                    FOREIGN KEY ("transactionId") REFERENCES "transaction"("id") ON DELETE CASCADE,
-                CONSTRAINT "FK_transaction_account_snapshot_key_snapshot"
-                    FOREIGN KEY ("keySnapshotId") REFERENCES "account_snapshot"("id") ON DELETE CASCADE
-            )
-        `);
-        await queryRunner.query(`
-            CREATE UNIQUE INDEX "IDX_transaction_account_snapshot_unique"
-            ON "transaction_account_snapshot" ("transactionId", "keySnapshotId")
-        `);
-
-        await queryRunner.query(`
-            CREATE TABLE "transaction_node_snapshot" (
-                "id" SERIAL NOT NULL,
-                "transactionId" integer NOT NULL,
-                "keySnapshotId" integer NOT NULL,
-                CONSTRAINT "PK_transaction_node_snapshot" PRIMARY KEY ("id"),
-                CONSTRAINT "FK_transaction_node_snapshot_transaction"
-                    FOREIGN KEY ("transactionId") REFERENCES "transaction"("id") ON DELETE CASCADE,
-                CONSTRAINT "FK_transaction_node_snapshot_key_snapshot"
-                    FOREIGN KEY ("keySnapshotId") REFERENCES "node_snapshot"("id") ON DELETE CASCADE
-            )
-        `);
-        await queryRunner.query(`
-            CREATE UNIQUE INDEX "IDX_transaction_node_snapshot_unique"
-            ON "transaction_node_snapshot" ("transactionId", "keySnapshotId")
-        `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`DROP INDEX "public"."IDX_transaction_node_snapshot_unique"`);
-        await queryRunner.query(`DROP TABLE "transaction_node_snapshot"`);
-        await queryRunner.query(`DROP INDEX "public"."IDX_transaction_account_snapshot_unique"`);
-        await queryRunner.query(`DROP TABLE "transaction_account_snapshot"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_node_snapshot_public_keys_gin"`);
         await queryRunner.query(`DROP INDEX "public"."IDX_node_snapshot_lookup"`);
         await queryRunner.query(`DROP TABLE "node_snapshot"`);

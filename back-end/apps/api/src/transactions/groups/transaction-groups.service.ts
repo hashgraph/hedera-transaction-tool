@@ -250,10 +250,11 @@ export class TransactionGroupsService {
 
     // Bulk UPDATE in a single query
     if (cancelableIds.length > 0) {
+      const executedAt = new Date();
       const updateResult = await this.dataSource.getRepository(Transaction)
         .createQueryBuilder()
         .update(Transaction)
-        .set({ status: TransactionStatus.CANCELED, executedAt: new Date() })
+        .set({ status: TransactionStatus.CANCELED, executedAt })
         .where('id IN (:...ids)', { ids: cancelableIds })
         .andWhere('status IN (:...statuses)', { statuses: cancelableStatuses })
         .execute();
@@ -298,7 +299,7 @@ export class TransactionGroupsService {
           canceled.map(id => ({ entityId: id })),
         );
         await Promise.all(
-          canceled.map(id => this.transactionSnapshotService.captureForTransaction(id)),
+          canceled.map(id => this.transactionSnapshotService.captureForTransaction(id, executedAt)),
         );
       }
     }

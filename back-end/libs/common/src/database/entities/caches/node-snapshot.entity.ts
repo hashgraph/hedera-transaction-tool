@@ -2,16 +2,22 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
   Index,
-  OneToMany,
 } from 'typeorm';
-import { TransactionNodeSnapshot } from './';
 
-// Same model as AccountSnapshot — append-only history log of a node's admin
-// key. A new row is written only when the key changes from the previous
-// snapshot; unchanged state reuses the existing row.
-// See CachedNodeAdminKey for the B-tree equivalent on live cache data.
+// Same model as AccountSnapshot — append-only changelog of a node's admin key.
+// A new row is written only when the key changes from the previous snapshot;
+// unchanged state reuses the existing row.
+//
+// createdAt is set to the triggering transaction's executedAt so that the
+// standard lookup query works correctly:
+//   SELECT ... WHERE nodeId = ? AND mirrorNetwork = ?
+//     AND createdAt <= :executedAt ORDER BY createdAt DESC LIMIT 1
+//
+// Note: the Hedera mirror node does not expose timestamp-based node key
+// history, so this snapshot table is the only reliable historical record
+// of node admin key changes for signer-reporting queries.
+// See CachedNodeAdminKey for the B-tree equivalent used on live cache data.
 @Entity()
 @Index(['nodeId', 'mirrorNetwork', 'createdAt'])
 export class NodeSnapshot {
@@ -33,9 +39,8 @@ export class NodeSnapshot {
   @Column({ type: 'text', array: true })
   publicKeys: string[];
 
-  @CreateDateColumn()
+  // Set to the triggering transaction's executedAt — not DEFAULT now() — so
+  // that timestamp-range lookups land on the correct snapshot row.
+  @Column({ type: 'timestamptz' })
   createdAt: Date;
-
-  @OneToMany(() => TransactionNodeSnapshot, (link) => link.keySnapshot)
-  transactionLinks: TransactionNodeSnapshot[];
 }

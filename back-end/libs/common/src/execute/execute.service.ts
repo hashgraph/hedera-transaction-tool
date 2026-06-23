@@ -199,7 +199,7 @@ export class ExecuteService {
 
     if (updateResult.raw.length === 0) return null;
 
-    await this.transactionSnapshotService.captureForTransaction(transaction.id);
+    await this.transactionSnapshotService.captureForTransaction(transaction.id, executedAt);
 
     result.status = transactionStatus;
     return result;

@@ -7,10 +7,8 @@ import { Repository } from 'typeorm';
 import {
   AccountSnapshot,
   NodeSnapshot,
-  TransactionAccountSnapshot,
   TransactionCachedAccount,
   TransactionCachedNode,
-  TransactionNodeSnapshot,
 } from '@entities';
 
 import { TransactionSnapshotService } from './transaction-snapshot.service';
@@ -20,36 +18,19 @@ describe('TransactionSnapshotService', () => {
 
   const accountSnapshotRepo = mockDeep<Repository<AccountSnapshot>>();
   const nodeSnapshotRepo = mockDeep<Repository<NodeSnapshot>>();
-  const transactionAccountSnapshotRepo = mockDeep<Repository<TransactionAccountSnapshot>>();
-  const transactionNodeSnapshotRepo = mockDeep<Repository<TransactionNodeSnapshot>>();
   const transactionCachedAccountRepo = mockDeep<Repository<TransactionCachedAccount>>();
   const transactionCachedNodeRepo = mockDeep<Repository<TransactionCachedNode>>();
 
-  const setupInsertQb = (repo: { createQueryBuilder: jest.Mock }) => {
-    const qb = {
-      insert: jest.fn().mockReturnThis(),
-      into: jest.fn().mockReturnThis(),
-      values: jest.fn().mockReturnThis(),
-      orIgnore: jest.fn().mockReturnThis(),
-      execute: jest.fn().mockResolvedValue({ raw: [] }),
-    };
-    repo.createQueryBuilder.mockReturnValue(qb as any);
-    return qb;
-  };
+  const executedAt = new Date('2024-01-01T00:00:00Z');
 
   beforeEach(async () => {
     jest.resetAllMocks();
-
-    setupInsertQb(transactionAccountSnapshotRepo);
-    setupInsertQb(transactionNodeSnapshotRepo);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         TransactionSnapshotService,
         { provide: getRepositoryToken(AccountSnapshot), useValue: accountSnapshotRepo as any },
         { provide: getRepositoryToken(NodeSnapshot), useValue: nodeSnapshotRepo as any },
-        { provide: getRepositoryToken(TransactionAccountSnapshot), useValue: transactionAccountSnapshotRepo as any },
-        { provide: getRepositoryToken(TransactionNodeSnapshot), useValue: transactionNodeSnapshotRepo as any },
         { provide: getRepositoryToken(TransactionCachedAccount), useValue: transactionCachedAccountRepo as any },
         { provide: getRepositoryToken(TransactionCachedNode), useValue: transactionCachedNodeRepo as any },
       ],
@@ -96,7 +77,7 @@ describe('TransactionSnapshotService', () => {
       transactionCachedAccountRepo.find.mockResolvedValue([]);
       transactionCachedNodeRepo.find.mockResolvedValue([]);
 
-      await service.captureForTransaction(42);
+      await service.captureForTransaction(42, executedAt);
 
       expect(transactionCachedAccountRepo.find).toHaveBeenCalledWith({
         where: { transactionId: 42 },
@@ -112,7 +93,7 @@ describe('TransactionSnapshotService', () => {
       transactionCachedAccountRepo.find.mockRejectedValue(new Error('DB unavailable'));
       transactionCachedNodeRepo.find.mockResolvedValue([]);
 
-      await expect(service.captureForTransaction(1)).resolves.toBeUndefined();
+      await expect(service.captureForTransaction(1, executedAt)).resolves.toBeUndefined();
     });
   });
 
@@ -124,7 +105,7 @@ describe('TransactionSnapshotService', () => {
     it('should skip accounts with null encodedKey', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink({ encodedKey: null })] as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.findOne).not.toHaveBeenCalled();
       expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
@@ -135,7 +116,7 @@ describe('TransactionSnapshotService', () => {
       accountSnapshotRepo.findOne.mockResolvedValue(null);
       accountSnapshotRepo.save.mockResolvedValue({ id: 10 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -143,11 +124,8 @@ describe('TransactionSnapshotService', () => {
           mirrorNetwork: 'testnet',
           keyHash: accountKeyHash,
           receiverSignatureRequired: false,
+          createdAt: executedAt,
         }),
-      );
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ transactionId: 1, keySnapshotId: 10, isReceiver: false }),
       );
     });
 
@@ -157,13 +135,9 @@ describe('TransactionSnapshotService', () => {
         id: 99, keyHash: accountKeyHash, receiverSignatureRequired: false,
       } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ keySnapshotId: 99 }),
-      );
     });
 
     it('should query the latest snapshot by account and mirrorNetwork ordered by createdAt DESC', async () => {
@@ -171,7 +145,7 @@ describe('TransactionSnapshotService', () => {
       accountSnapshotRepo.findOne.mockResolvedValue(null);
       accountSnapshotRepo.save.mockResolvedValue({ id: 1 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.findOne).toHaveBeenCalledWith({
         where: { account: '0.0.1', mirrorNetwork: 'testnet' },
@@ -186,13 +160,9 @@ describe('TransactionSnapshotService', () => {
         id: 88, keyHash: accountKeyHash, receiverSignatureRequired: false,
       } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ keySnapshotId: 88 }),
-      );
     });
 
     it('should process all accounts in the transaction, not just the first', async () => {
@@ -208,14 +178,11 @@ describe('TransactionSnapshotService', () => {
         .mockResolvedValueOnce({ id: 20 } as any)
         .mockResolvedValueOnce({ id: 21 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).toHaveBeenCalledTimes(2);
       expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.1', keyHash: accountKeyHash }));
       expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.2', keyHash: keyHash2 }));
-
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledTimes(2);
     });
 
     it('should insert a new snapshot when the key changes', async () => {
@@ -225,7 +192,7 @@ describe('TransactionSnapshotService', () => {
       } as any);
       accountSnapshotRepo.save.mockResolvedValue({ id: 11 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).toHaveBeenCalled();
     });
@@ -237,7 +204,7 @@ describe('TransactionSnapshotService', () => {
       } as any);
       accountSnapshotRepo.save.mockResolvedValue({ id: 12 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).toHaveBeenCalled();
     });
@@ -250,29 +217,22 @@ describe('TransactionSnapshotService', () => {
         id: 77, keyHash: accountKeyHash, receiverSignatureRequired: false,
       } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       // null coerced to false matches existing false row — should reuse, not insert
       expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ keySnapshotId: 77 }),
-      );
     });
 
-    it('should pass isReceiver correctly to the join row', async () => {
-      transactionCachedAccountRepo.find.mockResolvedValue(
-        [makeAccountLink({ isReceiver: true })] as any,
-      );
-      accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 5, keyHash: accountKeyHash, receiverSignatureRequired: false,
-      } as any);
+    it('should stamp createdAt with executedAt on new snapshots', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink()] as any);
+      accountSnapshotRepo.findOne.mockResolvedValue(null);
+      accountSnapshotRepo.save.mockResolvedValue({ id: 10 } as any);
 
-      await service.captureForTransaction(1);
+      const specificDate = new Date('2025-06-15T12:34:56Z');
+      await service.captureForTransaction(1, specificDate);
 
-      const qb = transactionAccountSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ isReceiver: true }),
+      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ createdAt: specificDate }),
       );
     });
   });
@@ -285,7 +245,7 @@ describe('TransactionSnapshotService', () => {
     it('should skip nodes with null encodedKey', async () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink({ encodedKey: null })] as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.findOne).not.toHaveBeenCalled();
       expect(nodeSnapshotRepo.save).not.toHaveBeenCalled();
@@ -296,14 +256,10 @@ describe('TransactionSnapshotService', () => {
       nodeSnapshotRepo.findOne.mockResolvedValue(null);
       nodeSnapshotRepo.save.mockResolvedValue({ id: 200 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ nodeId: 5, mirrorNetwork: 'testnet', keyHash: nodeKeyHash }),
-      );
-      const qb = transactionNodeSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ transactionId: 1, keySnapshotId: 200 }),
+        expect.objectContaining({ nodeId: 5, mirrorNetwork: 'testnet', keyHash: nodeKeyHash, createdAt: executedAt }),
       );
     });
 
@@ -311,13 +267,9 @@ describe('TransactionSnapshotService', () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
       nodeSnapshotRepo.findOne.mockResolvedValue({ id: 55, keyHash: nodeKeyHash } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).not.toHaveBeenCalled();
-      const qb = transactionNodeSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ keySnapshotId: 55 }),
-      );
     });
 
     it('should query the latest snapshot by nodeId and mirrorNetwork ordered by createdAt DESC', async () => {
@@ -325,7 +277,7 @@ describe('TransactionSnapshotService', () => {
       nodeSnapshotRepo.findOne.mockResolvedValue(null);
       nodeSnapshotRepo.save.mockResolvedValue({ id: 1 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.findOne).toHaveBeenCalledWith({
         where: { nodeId: 5, mirrorNetwork: 'testnet' },
@@ -338,13 +290,9 @@ describe('TransactionSnapshotService', () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
       nodeSnapshotRepo.findOne.mockResolvedValue({ id: 66, keyHash: nodeKeyHash } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).not.toHaveBeenCalled();
-      const qb = transactionNodeSnapshotRepo.createQueryBuilder();
-      expect((qb as any).values).toHaveBeenCalledWith(
-        expect.objectContaining({ keySnapshotId: 66 }),
-      );
     });
 
     it('should process all nodes in the transaction, not just the first', async () => {
@@ -360,7 +308,7 @@ describe('TransactionSnapshotService', () => {
         .mockResolvedValueOnce({ id: 300 } as any)
         .mockResolvedValueOnce({ id: 301 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalledTimes(2);
       expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ nodeId: 5, keyHash: nodeKeyHash }));
@@ -372,7 +320,7 @@ describe('TransactionSnapshotService', () => {
       nodeSnapshotRepo.findOne.mockResolvedValue({ id: 1, keyHash: 'b'.repeat(64) } as any);
       nodeSnapshotRepo.save.mockResolvedValue({ id: 201 } as any);
 
-      await service.captureForTransaction(1);
+      await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalled();
     });
