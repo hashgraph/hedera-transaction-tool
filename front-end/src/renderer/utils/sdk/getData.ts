@@ -314,6 +314,10 @@ const getRegisteredEndpointType = (
   return endpoint.type;
 };
 
+export function stringifyIpAddressBytes(ipBytes: Uint8Array | null | undefined): string {
+  return ipBytes && ipBytes.length === 4 ? Array.from(ipBytes).join('.') : '';
+}
+
 /**
  * Extract an endpoint from a decoded SDK transaction back into the FE-facing
  * shape. Deliberately does NOT populate `uiId` — that field is a render-side
@@ -325,9 +329,7 @@ const getRegisteredEndpointType = (
 export const getComponentRegisteredEndpoint = (
   endpoint: RegisteredServiceEndpoint,
 ): ComponentRegisteredServiceEndpoint => {
-  const ipBytes = endpoint.ipAddress;
-  const ipAddressV4 =
-    ipBytes && ipBytes.length === 4 ? Array.from(ipBytes).join('.') : '';
+  const ipAddressV4 = stringifyIpAddressBytes(endpoint.ipAddress);
   const base: ComponentRegisteredServiceEndpoint = {
     ipAddressV4,
     port: endpoint.port != null ? endpoint.port.toString() : '',
