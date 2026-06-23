@@ -899,6 +899,13 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 15.1.2 | User is blocked from org features when below minimum version | Yes       | Verify org requiring upgrade is blocked from selection              |
 | 15.1.3 | Version check badge shows correct status per org             | Yes       | Verify version info badge text for each version state               |
 
+### 15.2 Installation and Upgrade from Previous Version
+
+| #      | Scenario                                                         | Automated | Covered By |
+| ------ | ---------------------------------------------------------------- | --------- | ---------- |
+| 15.2.1 | User can install the app from a signed .pkg artifact             | No        |            |
+| 15.2.2 | User can upgrade from a previous version using in-app update     | No        |            |
+
 ---
 
 ## Summary
@@ -921,23 +928,32 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
-| 15. Upgrade                     | 3               | 3             | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| **Total**                       | **470**         | **365**       | **70**                   | **3**   | **5**   | **25**   | **2**   | **93%**    | **94%**                 |
+| 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
+| **Total**                       | **472**         | **365**       | **70**                   | **3**   | **5**   | **27**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 470 = 93.19%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 472 = 92.79%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 470 = 94.26%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 472 = 93.85%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
 ### Release Testing Guide
 
 The following sections list every scenario that is **not yet automated** (marked `No`), organized by priority tier. All other scenarios are covered by E2E, component, or backend tests and do not require manual verification on every release.
+
+#### Installation
+
+These scenarios must be verified for every release and cannot be automated in CI.
+
+| Area             | Scenario # | Description                                           | Why Critical                                                        |
+| ---------------- | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
+| **Installation** | 15.2.1     | Install app from signed .pkg artifact                 | Validates the installer and code signing are functional             |
+| **Installation** | 15.2.2     | Upgrade from previous version using in-app update     | Validates the auto-updater and zip-based update flow end-to-end     |
 
 #### Tier 1 - Release Blockers (Must Pass)
 
@@ -990,7 +1006,7 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 
 ### Priority Areas for Additional Automation
 
-1. **Error Handling / Edge Cases (65%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
-2. **Transactions List (88%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
+1. **Error Handling / Edge Cases (76%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+2. **Transactions List (94%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
 3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
 4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)

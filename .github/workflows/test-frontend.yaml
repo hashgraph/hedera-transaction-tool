@@ -461,7 +461,6 @@ jobs:
     name: Cleanup | Build Cache
     runs-on: transaction-tools-linux-medium
     needs: [test]
-    if: always()
     permissions:
       actions: write
 
