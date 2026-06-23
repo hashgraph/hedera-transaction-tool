@@ -2258,7 +2258,7 @@ describe('TransactionsService', () => {
         expect.objectContaining({ status: TransactionStatus.CANCELED, executedAt: expect.any(Date) }),
       );
       expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id, expect.any(Date));
     });
 
     it('should hard remove the transaction', async () => {
@@ -2334,7 +2334,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
 
     it('should emit notification to the notification service', async () => {
@@ -2365,7 +2365,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
 
     it('should return true without updating when transaction is already CANCELED', async () => {
@@ -2527,7 +2527,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
   });
 

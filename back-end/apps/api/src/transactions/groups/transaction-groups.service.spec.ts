@@ -444,8 +444,8 @@ describe('TransactionGroupsService', () => {
       });
       expect(dataSource.getRepository).toHaveBeenCalledWith(Transaction);
       expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(2);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
     });
 
     it('should categorize mixed transaction states correctly', async () => {
@@ -474,7 +474,7 @@ describe('TransactionGroupsService', () => {
         failed: 1,
       });
       expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(1);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
     });
 
     it('should handle race condition when affected < expected', async () => {
@@ -515,7 +515,7 @@ describe('TransactionGroupsService', () => {
       });
       // Only the transaction that actually ended up canceled gets a snapshot
       expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(1);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
     });
 
     it('should return all in alreadyCanceled when all are CANCELED and not issue UPDATE', async () => {
@@ -560,9 +560,9 @@ describe('TransactionGroupsService', () => {
         ],
       );
       expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(3);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(3);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(3, expect.any(Date));
     });
 
     it('should not emit notification when no transactions are canceled', async () => {

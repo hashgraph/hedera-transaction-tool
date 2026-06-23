@@ -186,7 +186,7 @@ describe('ExecuteService', () => {
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id, expect.any(Date));
     });
 
     it('should not capture snapshot when another pod wins the update race', async () => {

@@ -27,7 +27,7 @@ import {
 // public key X" containment lookups for the signer-reporting queries.
 // See CachedAccountKey for the B-tree equivalent used on live cache data.
 @Entity()
-@Index(['account', 'mirrorNetwork', 'createdAt'])
+@Index('IDX_account_snapshot_lookup', ['account', 'mirrorNetwork', 'createdAt'])
 export class AccountSnapshot {
   @PrimaryGeneratedColumn()
   id: number;

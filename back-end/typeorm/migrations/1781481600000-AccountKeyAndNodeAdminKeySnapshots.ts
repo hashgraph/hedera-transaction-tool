@@ -13,7 +13,7 @@ export class AccountKeyAndNodeAdminKeySnapshots1781481600000 implements Migratio
                 "keyHash" character varying(64) NOT NULL,
                 "publicKeys" text array NOT NULL,
                 "receiverSignatureRequired" boolean NOT NULL DEFAULT false,
-                "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL,
                 CONSTRAINT "PK_account_snapshot" PRIMARY KEY ("id")
             )
         `);
@@ -34,7 +34,7 @@ export class AccountKeyAndNodeAdminKeySnapshots1781481600000 implements Migratio
                 "encodedKey" bytea NOT NULL,
                 "keyHash" character varying(64) NOT NULL,
                 "publicKeys" text array NOT NULL,
-                "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+                "createdAt" TIMESTAMP WITH TIME ZONE NOT NULL,
                 CONSTRAINT "PK_node_snapshot" PRIMARY KEY ("id")
             )
         `);

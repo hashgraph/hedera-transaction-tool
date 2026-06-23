@@ -23,7 +23,7 @@ import {
 // of node admin key changes for signer-reporting queries.
 // See CachedNodeAdminKey for the B-tree equivalent used on live cache data.
 @Entity()
-@Index(['nodeId', 'mirrorNetwork', 'createdAt'])
+@Index('IDX_node_snapshot_lookup', ['nodeId', 'mirrorNetwork', 'createdAt'])
 export class NodeSnapshot {
   @PrimaryGeneratedColumn()
   id: number;
