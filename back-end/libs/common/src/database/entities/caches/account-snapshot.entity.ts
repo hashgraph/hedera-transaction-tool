@@ -28,6 +28,7 @@ import {
 // See CachedAccountKey for the B-tree equivalent used on live cache data.
 @Entity()
 @Index('IDX_account_snapshot_lookup', ['account', 'mirrorNetwork', 'createdAt'])
+@Index('IDX_account_snapshot_public_keys_gin', { synchronize: false })
 export class AccountSnapshot {
   @PrimaryGeneratedColumn()
   id: number;

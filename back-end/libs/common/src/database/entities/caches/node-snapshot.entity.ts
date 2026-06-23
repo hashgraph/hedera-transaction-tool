@@ -24,6 +24,7 @@ import {
 // See CachedNodeAdminKey for the B-tree equivalent used on live cache data.
 @Entity()
 @Index('IDX_node_snapshot_lookup', ['nodeId', 'mirrorNetwork', 'createdAt'])
+@Index('IDX_node_snapshot_public_keys_gin', { synchronize: false })
 export class NodeSnapshot {
   @PrimaryGeneratedColumn()
   id: number;
