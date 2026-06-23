@@ -3,7 +3,7 @@ import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
-import { ErrorCodes } from '@app/common';
+import { ErrorCodes, TransactionSnapshotService } from '@app/common';
 import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
@@ -22,6 +22,7 @@ describe('TransactionGroupsService', () => {
   const dataSource = mockDeep<DataSource>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const sqlBuilderService = mock<SqlBuilderService>();
+  const transactionSnapshotService = mock<TransactionSnapshotService>();
 
   const user: Partial<User> = {
     id: 1,
@@ -62,7 +63,11 @@ describe('TransactionGroupsService', () => {
         {
           provide: SqlBuilderService,
           useValue: sqlBuilderService,
-        }
+        },
+        {
+          provide: TransactionSnapshotService,
+          useValue: transactionSnapshotService,
+        },
       ],
     }).compile();
 
@@ -431,6 +436,9 @@ describe('TransactionGroupsService', () => {
         failed: 0,
       });
       expect(dataSource.getRepository).toHaveBeenCalledWith(Transaction);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(2);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
     });
 
     it('should categorize mixed transaction states correctly', async () => {
@@ -458,6 +466,8 @@ describe('TransactionGroupsService', () => {
         alreadyCanceled: 1,
         failed: 1,
       });
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(1);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
     });
 
     it('should handle race condition when affected < expected', async () => {
@@ -496,6 +506,9 @@ describe('TransactionGroupsService', () => {
         alreadyCanceled: 0,
         failed: 2,
       });
+      // Only the transaction that actually ended up canceled gets a snapshot
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(1);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
     });
 
     it('should return all in alreadyCanceled when all are CANCELED and not issue UPDATE', async () => {
@@ -515,8 +528,9 @@ describe('TransactionGroupsService', () => {
         alreadyCanceled: 2,
         failed: 0,
       });
-      // No bulk update should be issued when there are no cancelable transactions
+      // No bulk update or snapshot capture when there are no cancelable transactions
       expect(dataSource.getRepository).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should emit batch notification once for all canceled transactions', async () => {
@@ -538,6 +552,10 @@ describe('TransactionGroupsService', () => {
           { entityId: 3 },
         ],
       );
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(3);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(3, expect.any(Date));
     });
 
     it('should not emit notification when no transactions are canceled', async () => {
@@ -549,6 +567,7 @@ describe('TransactionGroupsService', () => {
       await service.cancelTransactionGroup(user as User, 1);
 
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should classify terminal statuses as NOT_CANCELABLE', async () => {

@@ -65,6 +65,7 @@ import {
   flattenKeyList,
   getNodeAccountIdsFromClientNetwork,
   isTransactionValidForNodes,
+  TransactionSnapshotService,
 } from '@app/common';
 
 import TransactionFactory from '@app/common/transaction-signature/model/transaction-factory';
@@ -91,6 +92,7 @@ export class TransactionsService {
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {
   }
 
@@ -854,7 +856,9 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (softRemove) {
-      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt: new Date() });
+      const executedAt = new Date();
+      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt });
+      await this.transactionSnapshotService.captureForTransaction(transaction.id, executedAt);
       await this.repo.softRemove(transaction);
     } else {
       await this.repo.remove(transaction);
@@ -894,10 +898,11 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.OTIP);
     }
 
+    const executedAt = new Date();
     const updateResult = await this.repo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: TransactionStatus.CANCELED, executedAt: new Date() })
+      .set({ status: TransactionStatus.CANCELED, executedAt })
       .where('id = :id', { id })
       .andWhere('status IN (:...statuses)', { statuses: this.cancelableStatuses })
       .execute();
@@ -913,6 +918,7 @@ export class TransactionsService {
           },
         }],
       );
+      await this.transactionSnapshotService.captureForTransaction(id, executedAt);
 
       return CancelTransactionOutcome.CANCELED;
     }
@@ -941,7 +947,9 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.OMTIP);
     }
 
-    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED, executedAt: new Date() });
+    const executedAt = new Date();
+    await this.repo.update({ id }, { status: TransactionStatus.ARCHIVED, executedAt });
+    await this.transactionSnapshotService.captureForTransaction(id, executedAt);
     emitTransactionStatusUpdate(
       this.notificationsPublisher,
       [{

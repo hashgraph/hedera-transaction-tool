@@ -23,7 +23,7 @@ import {
   UserKey,
 } from '@entities';
 
-import { NatsModule, RedisMurlockModule, TransactionSignatureModule } from '@app/common';
+import { NatsModule, RedisMurlockModule, TransactionSignatureModule, TransactionSnapshotModule } from '@app/common';
 
 import { ExecuteService } from './execute.service';
 
@@ -53,8 +53,9 @@ import { ExecuteService } from './execute.service';
     TransactionSignatureModule,
     RedisMurlockModule,
     NatsModule.forRoot(),
+    TransactionSnapshotModule,
   ],
   providers: [ExecuteService],
-  exports: [ExecuteService],
+  exports: [ExecuteService, TransactionSnapshotModule],
 })
 export class ExecuteModule {}

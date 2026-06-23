@@ -11,6 +11,7 @@ import {
   emitTransactionStatusUpdate,
   processTransactionStatus,
   TransactionSignatureService,
+  TransactionSnapshotService,
 } from '@app/common';
 import {
   Transaction,
@@ -57,6 +58,7 @@ describe('TransactionStatusService', () => {
   const notificationsPublisher = mockDeep<NatsPublisherService>();
   const schedulerRegistry = mockDeep<SchedulerRegistry>();
   const executeService = mockDeep<ExecuteService>();
+  const transactionSnapshotService = mockDeep<TransactionSnapshotService>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
   let mockQueryBuilder: any;
@@ -101,6 +103,10 @@ describe('TransactionStatusService', () => {
         {
           provide: TransactionSignatureService,
           useValue: transactionSignatureService,
+        },
+        {
+          provide: TransactionSnapshotService,
+          useValue: transactionSnapshotService,
         },
       ],
     }).compile();
@@ -284,6 +290,11 @@ describe('TransactionStatusService', () => {
       notificationsPublisher,
       rawResult.map(t => expect.objectContaining({ entityId: t.id })),
     );
+
+    expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(3);
+    expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(1, expect.any(Date));
+    expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(2, expect.any(Date));
+    expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(3, expect.any(Date));
   });
 
   it('should not emit notification for expired transactions when no rows updated', async () => {
@@ -293,6 +304,8 @@ describe('TransactionStatusService', () => {
 
     expect(transactionRepo.createQueryBuilder).toHaveBeenCalled();
     expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+
+    expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
   });
 
   describe('updateTransactions', () => {
@@ -712,6 +725,7 @@ describe('TransactionStatusService', () => {
         }),
       );
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(mockIds.length);
     });
 
     it('should fail to prepare a group of signed transactions, due to some transactions not signed', async () => {
@@ -743,6 +757,7 @@ describe('TransactionStatusService', () => {
           statusCode: Status.TransactionOversize._code,
         }),
       );
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(0, expect.any(Date));
     });
 
     it('should fail to prepare a group of signed transactions, due to some transactions not able to pass smart collating', async () => {
@@ -794,6 +809,7 @@ describe('TransactionStatusService', () => {
         }),
       );
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledTimes(mockIds.length);
     });
 
     it('should handle error in callback', async () => {
@@ -804,6 +820,7 @@ describe('TransactionStatusService', () => {
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
   });
 
@@ -938,6 +955,7 @@ describe('TransactionStatusService', () => {
         }),
       );
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(mockTransaction.id, expect.any(Date));
     });
 
     it('should handle error in callback', async () => {
@@ -948,6 +966,7 @@ describe('TransactionStatusService', () => {
       await jest.advanceTimersToNextTimerAsync();
 
       expect(service.addExecutionTimeout).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
   });
 

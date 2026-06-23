@@ -41,6 +41,7 @@ import {
   SchedulerService,
   SqlBuilderService,
   TransactionSignatureService,
+  TransactionSnapshotService,
 } from '@app/common';
 import {
   attachKeys,
@@ -97,6 +98,7 @@ jest.mock(`@app/common/utils`, () => {
 describe('TransactionsService', () => {
   let service: TransactionsService;
 
+  const transactionSnapshotService = mock<TransactionSnapshotService>();
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
@@ -166,6 +168,10 @@ describe('TransactionsService', () => {
         {
           provide: ExecuteService,
           useValue: executeService,
+        },
+        {
+          provide: TransactionSnapshotService,
+          useValue: transactionSnapshotService,
         },
       ],
     }).compile();
@@ -2254,11 +2260,13 @@ describe('TransactionsService', () => {
         expect.objectContaining({ status: TransactionStatus.CANCELED, executedAt: expect.any(Date) }),
       );
       expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id, expect.any(Date));
     });
 
     it('should hard remove the transaction', async () => {
       await service.removeTransaction(123, user as User, false);
       expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
   });
 
@@ -2328,6 +2336,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
 
     it('should emit notification to the notification service', async () => {
@@ -2358,6 +2367,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
 
     it('should return true without updating when transaction is already CANCELED', async () => {
@@ -2376,6 +2386,7 @@ describe('TransactionsService', () => {
       expect(result).toBe(true);
       expect(transactionsRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should return ALREADY_CANCELED outcome for already canceled transaction', async () => {
@@ -2394,6 +2405,7 @@ describe('TransactionsService', () => {
       expect(outcome).toBe(CancelTransactionOutcome.ALREADY_CANCELED);
       expect(transactionsRepo.createQueryBuilder).not.toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should return ALREADY_CANCELED when update affects zero rows and transaction is now canceled', async () => {
@@ -2417,6 +2429,7 @@ describe('TransactionsService', () => {
 
       expect(outcome).toBe(CancelTransactionOutcome.ALREADY_CANCELED);
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
+      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
 
     it('should throw conflict when update affects zero rows and transaction is still cancelable', async () => {
@@ -2516,6 +2529,7 @@ describe('TransactionsService', () => {
           },
         }],
       );
+      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(123, expect.any(Date));
     });
   });
 

@@ -14,6 +14,7 @@ import {
   getTransactionGroupItemsQuery,
   NatsPublisherService,
   SqlBuilderService,
+  TransactionSnapshotService,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
 
@@ -34,6 +35,7 @@ export class TransactionGroupsService {
     @InjectDataSource() private dataSource: DataSource,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly sqlBuilder: SqlBuilderService,
+    private readonly transactionSnapshotService: TransactionSnapshotService,
   ) {}
 
   async createTransactionGroup(
@@ -244,10 +246,11 @@ export class TransactionGroupsService {
 
     // Bulk UPDATE in a single query
     if (cancelableIds.length > 0) {
+      const executedAt = new Date();
       const updateResult = await this.dataSource.getRepository(Transaction)
         .createQueryBuilder()
         .update(Transaction)
-        .set({ status: TransactionStatus.CANCELED, executedAt: new Date() })
+        .set({ status: TransactionStatus.CANCELED, executedAt })
         .where('id IN (:...ids)', { ids: cancelableIds })
         .andWhere('status IN (:...statuses)', { statuses: cancelableStatuses })
         .execute();
@@ -290,6 +293,9 @@ export class TransactionGroupsService {
         emitTransactionStatusUpdate(
           this.notificationsPublisher,
           canceled.map(id => ({ entityId: id })),
+        );
+        await Promise.all(
+          canceled.map(id => this.transactionSnapshotService.captureForTransaction(id, executedAt)),
         );
       }
     }
