@@ -17,6 +17,12 @@ import {
 // This returns the exact key structure that was active when any given
 // transaction executed, without needing a separate join table.
 //
+// There is intentionally NO unique constraint on keyHash. This is a changelog,
+// not a dedup table — a key rotation A→B→A legitimately produces three rows
+// with distinct createdAt values. Dedup-by-hash would collapse the timeline
+// and cause the timestamp lookup to return the wrong row for transactions that
+// executed while key B was active.
+//
 // The GIN index on publicKeys enables fast "find all snapshots that include
 // public key X" containment lookups for the signer-reporting queries.
 // See CachedAccountKey for the B-tree equivalent used on live cache data.

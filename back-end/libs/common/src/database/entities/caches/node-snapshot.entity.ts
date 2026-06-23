@@ -5,14 +5,18 @@ import {
   Index,
 } from 'typeorm';
 
-// Same model as AccountSnapshot — append-only changelog of a node's admin key.
-// A new row is written only when the key changes from the previous snapshot;
-// unchanged state reuses the existing row.
+// Same changelog model as AccountSnapshot — append-only history of a node's
+// admin key. A new row is written only when the key changes from the previous
+// snapshot; unchanged state reuses the existing row.
 //
 // createdAt is set to the triggering transaction's executedAt so that the
 // standard lookup query works correctly:
 //   SELECT ... WHERE nodeId = ? AND mirrorNetwork = ?
 //     AND createdAt <= :executedAt ORDER BY createdAt DESC LIMIT 1
+//
+// There is intentionally NO unique constraint on keyHash — same reasoning as
+// AccountSnapshot: a key rotation A→B→A produces three rows with distinct
+// createdAt values, and dedup-by-hash would break the timestamp lookup.
 //
 // Note: the Hedera mirror node does not expose timestamp-based node key
 // history, so this snapshot table is the only reliable historical record
