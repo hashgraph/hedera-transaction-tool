@@ -532,16 +532,15 @@ jobs:
                 --repo ${{ github.repository }}
             fi
           else
-            # Extract from "# Release workflow" onwards, skipping the doc overview.
             if [ -n "$PRERELEASE" ]; then
-              ISSUE_BODY=$(awk '/^# Release workflow/{found=1} found{print}' docs/release-process.md \
-                | sed \
+              ISSUE_BODY=$(sed \
                   -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
-                  -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g")
+                  -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                  docs/release-process.md)
             else
-              ISSUE_BODY=$(awk '/^# Release workflow/{found=1} found{print}' docs/release-process.md \
-                | sed \
-                  -e "s|<major\.minor\.patch>|${VERSION}|g")
+              ISSUE_BODY=$(sed \
+                  -e "s|<major\.minor\.patch>|${VERSION}|g" \
+                  docs/release-process.md)
             fi
 
             # Substitute or remove the SNAPSHOT bump PR line.

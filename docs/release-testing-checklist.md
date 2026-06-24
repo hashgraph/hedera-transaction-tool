@@ -1,11 +1,11 @@
-## Release Testing Checklist
+# Release Testing Checklist
 
-### Installation
+## Installation
 
 - [ ] Install app from asset (`.pkg`) found in the release
 - [ ] Upgrade app from a previous version using the in-app upgrade process
 
-### Tier 1 — Release Blockers (Must Pass)
+## Tier 1 — Release Blockers (Must Pass)
 
 Failures in any of these should block the release.
 
@@ -13,7 +13,7 @@ Failures in any of these should block the release.
 - [ ] 3.2.15 User can import encrypted private key
 - [ ] 3.2.18 User can import external private key for missing key
 
-### Tier 2 — High Priority (Should Pass)
+## Tier 2 — High Priority (Should Pass)
 
 **1. Registration**
 - [ ] 1.3.1 "Sign in with Keychain" button is visible when OS keychain available
@@ -28,7 +28,7 @@ Failures in any of these should block the release.
 **6. Transaction Details**
 - [ ] 6.3.4 Signature status panel shows required vs completed signatures
 
-### Tier 3 — Medium Priority (Verify When Changed)
+## Tier 3 — Medium Priority (Verify When Changed)
 
 **5. Transaction Creation**
 - [ ] 5.11.3 System Delete transaction
@@ -46,7 +46,7 @@ Failures in any of these should block the release.
 - [ ] 7.6.2 User can navigate between transactions in the group
 - [ ] 7.6.4 Approval decision state is displayed (org admin)
 
-### Tier 4 — Lower Priority (Periodic Verification)
+## Tier 4 — Lower Priority (Periodic Verification)
 
 **13. Navigation and Layout**
 - [ ] 13.3.3 Account setup in progress forces user to /account-setup

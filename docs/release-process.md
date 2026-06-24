@@ -1,13 +1,3 @@
-## Overview
-
-To start a release, trigger the **Release Automation** workflow (`Actions → Release Automation → Run workflow`) with the target version. The workflow creates a pre-filled tracking issue — use that issue to work through the manual steps.
-
-**Pre-release** (version: `<major.minor.patch>-beta.<number>`): creates the `release/<major.minor>` branch (if it doesn't exist), bumps versions, tags, builds and pushes Docker images, builds and notarizes macOS artifacts, and publishes the GitHub pre-release with all artifacts attached. On the first pre-release of a new minor version it also opens a SNAPSHOT bump PR to `main`.
-
-**Final release** (version: `<major.minor.patch>`): bumps versions on the release branch, generates the NOTICE file, tags, builds and pushes Docker images, builds and notarizes macOS artifacts, and creates the GitHub release draft with all artifacts attached.
-
----
-
 # Release workflow
 
 ## Pre-Release
