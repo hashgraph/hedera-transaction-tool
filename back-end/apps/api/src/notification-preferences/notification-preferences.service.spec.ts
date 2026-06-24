@@ -286,7 +286,7 @@ describe('NotificationPreferencesService', () => {
       expect(repo.create).toHaveBeenCalledWith({
         userId: user.id,
         type: NotificationType.TRANSACTION_CREATED,
-        email: true,
+        email: false,
         inApp: true,
       });
       expect(repo.insert).toHaveBeenCalledWith(newPreferences);
@@ -322,7 +322,7 @@ describe('NotificationPreferencesService', () => {
       repo.find.mockResolvedValue([]);
       const newPreferences = {
         userId: user.id,
-        email: true,
+        email: false,
         inApp: true,
       };
       repo.create.mockImplementation(((data: NotificationPreferences) => data) as any);
@@ -339,7 +339,7 @@ describe('NotificationPreferencesService', () => {
         expect(repo.create).toHaveBeenCalledWith({
           userId: user.id,
           type,
-          email: true,
+          email: false,
           inApp: true,
         });
         expect(repo.insert).toHaveBeenCalledWith({ ...newPreferences, type });
