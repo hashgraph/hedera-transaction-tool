@@ -137,11 +137,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
             <tr v-for="(endpoint, index) of transaction.serviceEndpoints" :key="index">
               <td class="col text-start">{{ typeLabel[endpoint.type] ?? endpoint.type }}</td>
               <td class="col text-start">
-                {{
-                  endpoint.ipAddress
-                    ? stringifyIpAddressBytes(endpoint.ipAddress)
-                    : (endpoint.domainName ?? '')
-                }}
+                {{ stringifyIpAddressBytes(endpoint.ipAddress) || (endpoint.domainName ?? '') }}
               </td>
               <td class="col text-start">{{ endpoint.port }}</td>
               <td class="col text-start">{{ endpoint.requiresTls ? 'Yes' : 'No' }}</td>
