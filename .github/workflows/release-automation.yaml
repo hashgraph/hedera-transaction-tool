@@ -499,13 +499,38 @@ jobs:
 
           if [ -n "$EXISTING" ]; then
             if [ -n "$PRERELEASE" ]; then
-              COMMENT="Release Automation completed for **v${VERSION}**. Update the Pre-Release checklist to this beta."
+              # Update the beta version reference in the pre-requisites.
+              gh issue view "$EXISTING" \
+                --repo ${{ github.repository }} \
+                --json body --jq '.body' \
+                | sed "s|Beta \`v${RELEASE_VERSION}-beta\.[0-9][0-9]*\`|Beta \`v${VERSION}\`|g" \
+                | jq -Rs '{body: .}' \
+                | gh api repos/${{ github.repository }}/issues/${EXISTING} \
+                    -X PATCH --input -
+
+              # Mark the existing checklist comment as superseded and post a fresh one.
+              CHECKLIST_COMMENT_ID=$(gh api \
+                repos/${{ github.repository }}/issues/${EXISTING}/comments \
+                --jq '[.[] | select(.body | startswith("## Release Testing Checklist"))] | last | .id // empty')
+              if [ -n "$CHECKLIST_COMMENT_ID" ]; then
+                SUPERSEDED_BODY=$(gh api \
+                  repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
+                  --jq '.body')
+                (printf '> [!NOTE]\n> Superseded by **v%s** — see updated checklist below.\n\n' "${VERSION}"; \
+                 printf '%s' "${SUPERSEDED_BODY}") \
+                  | jq -Rs '{body: .}' \
+                  | gh api repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
+                      -X PATCH --input -
+              fi
+
+              gh issue comment "$EXISTING" \
+                --body "$(cat docs/release-testing-checklist.md)" \
+                --repo ${{ github.repository }}
             else
-              COMMENT="Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists."
+              gh issue comment "$EXISTING" \
+                --body "Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists." \
+                --repo ${{ github.repository }}
             fi
-            gh issue comment "$EXISTING" \
-              --body "$COMMENT" \
-              --repo ${{ github.repository }}
           else
             # Extract from "# Release workflow" onwards, skipping the doc overview.
             if [ -n "$PRERELEASE" ]; then
