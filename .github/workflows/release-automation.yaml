@@ -12,6 +12,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  issues: write
 
 defaults:
   run:
@@ -375,7 +376,7 @@ jobs:
             front-end/release/*.dmg
             front-end/release/*.pkg
             front-end/release/*.zip
-            front-end/release/*.blockmap
+            front-end/release/*.zip.blockmap
             front-end/release/latest-mac.yml
           if-no-files-found: error
           retention-days: 5
@@ -459,6 +460,109 @@ jobs:
         run: |
           gh release upload ${{ env.RELEASE_TAG }} macos-artifacts/* \
             --repo ${{ github.repository }} --clobber
+
+      - name: Publish Pre-Release
+        if: ${{ needs.prepare.outputs.prerelease != '' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit ${{ env.RELEASE_TAG }} \
+            --draft=false \
+            --prerelease \
+            --repo ${{ github.repository }}
+
+      - name: Create or Update Release Tracking Issue
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.prepare.outputs.version }}
+          RELEASE_VERSION: ${{ needs.prepare.outputs.release }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
+          CREATE_PR: ${{ needs.cut_release.outputs.create_pr }}
+        run: |
+          ISSUE_TITLE="v${RELEASE_VERSION} Release Task"
+          MILESTONE="v${RELEASE_VERSION}"
+
+          # Use the milestone only if it already exists in the repo.
+          MILESTONE_NUMBER=$(gh api repos/${{ github.repository }}/milestones \
+            --jq ".[] | select(.title == \"${MILESTONE}\") | .number" 2>/dev/null | head -1)
+          MILESTONE_ARGS=()
+          [ -n "$MILESTONE_NUMBER" ] && MILESTONE_ARGS=(--milestone "$MILESTONE")
+
+          EXISTING=$(gh issue list \
+            --repo ${{ github.repository }} \
+            --state open \
+            --search "\"${ISSUE_TITLE}\" in:title" \
+            --json number,title \
+            --jq ".[] | select(.title == \"${ISSUE_TITLE}\") | .number" \
+            | head -1)
+
+          if [ -n "$EXISTING" ]; then
+            if [ -n "$PRERELEASE" ]; then
+              # Update the beta version reference in the pre-requisites.
+              gh issue view "$EXISTING" \
+                --repo ${{ github.repository }} \
+                --json body --jq '.body' \
+                | sed "s|Beta \`v${RELEASE_VERSION}-beta\.[0-9][0-9]*\`|Beta \`v${VERSION}\`|g" \
+                | jq -Rs '{body: .}' \
+                | gh api repos/${{ github.repository }}/issues/${EXISTING} \
+                    -X PATCH --input -
+
+              # Mark the existing checklist comment as superseded and post a fresh one.
+              CHECKLIST_COMMENT_ID=$(gh api \
+                repos/${{ github.repository }}/issues/${EXISTING}/comments \
+                --jq '[.[] | select(.body | startswith("## Release Testing Checklist"))] | last | .id // empty')
+              if [ -n "$CHECKLIST_COMMENT_ID" ]; then
+                SUPERSEDED_BODY=$(gh api \
+                  repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
+                  --jq '.body')
+                (printf '> [!NOTE]\n> Superseded by **v%s** — see updated checklist below.\n\n' "${VERSION}"; \
+                 printf '%s' "${SUPERSEDED_BODY}") \
+                  | jq -Rs '{body: .}' \
+                  | gh api repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
+                      -X PATCH --input -
+              fi
+
+              gh issue comment "$EXISTING" \
+                --body "$(cat docs/release-testing-checklist.md)" \
+                --repo ${{ github.repository }}
+            else
+              gh issue comment "$EXISTING" \
+                --body "Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists." \
+                --repo ${{ github.repository }}
+            fi
+          else
+            if [ -n "$PRERELEASE" ]; then
+              ISSUE_BODY=$(sed \
+                  -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                  -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                  docs/release-process.md)
+            else
+              ISSUE_BODY=$(sed \
+                  -e "s|<major\.minor\.patch>|${VERSION}|g" \
+                  docs/release-process.md)
+            fi
+
+            # Substitute or remove the SNAPSHOT bump PR line.
+            if [ "$CREATE_PR" = "true" ]; then
+              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed \
+                "s|<!-- snapshot-bump-pr-line -->|- [ ] Review and merge the \`v${NEXT_VERSION_SNAPSHOT}\` bump PR to \`main\`|g")
+            else
+              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed "/<!-- snapshot-bump-pr-line -->/d")
+            fi
+            ISSUE_URL=$(gh issue create \
+              --title "$ISSUE_TITLE" \
+              --body "$ISSUE_BODY" \
+              --label "release" \
+              "${MILESTONE_ARGS[@]}" \
+              --type "Task" \
+              --repo ${{ github.repository }})
+
+            ISSUE_NUMBER="${ISSUE_URL##*/}"
+            gh issue comment "$ISSUE_NUMBER" \
+              --body "$(cat docs/release-testing-checklist.md)" \
+              --repo ${{ github.repository }}
+          fi
 
   create_snapshot_pr:
     name: Create Snapshot Bump PR
