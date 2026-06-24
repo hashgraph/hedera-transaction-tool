@@ -382,7 +382,7 @@ jobs:
           retention-days: 5
 
   # ----------------------------
-  # Close the milestone, publish the GitHub release, and attach macOS artifacts.
+  # Close the milestone, attach macOS artifacts, and publish the GitHub release.
   # ----------------------------
   github_release:
     name: Publish GitHub Release
@@ -487,6 +487,28 @@ jobs:
             --draft=false \
             --prerelease \
             --repo ${{ github.repository }}
+
+
+  # ----------------------------
+  # Create or update the release tracking issue. Runs in parallel with
+  # create_snapshot_pr so a flaky GitHub API call cannot block the snapshot PR.
+  # ----------------------------
+  create_tracking_issue:
+    name: Create or Update Release Tracking Issue
+    runs-on: transaction-tools-linux-medium
+    needs: [prepare, cut_release, github_release]
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          ref: ${{ needs.prepare.outputs.release_branch }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Create or Update Release Tracking Issue
         env:
