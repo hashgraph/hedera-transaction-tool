@@ -555,7 +555,6 @@ jobs:
               --body "$ISSUE_BODY" \
               --label "release" \
               "${MILESTONE_ARGS[@]}" \
-              --type "Task" \
               --repo ${{ github.repository }})
 
             ISSUE_NUMBER="${ISSUE_URL##*/}"
