@@ -69,7 +69,7 @@ export class NotificationPreferencesService {
     const newPreferences = this.repo.create({
       userId: user.id,
       type,
-      email: true,
+      email: false,
       inApp: true,
     });
 
