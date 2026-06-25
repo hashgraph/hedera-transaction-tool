@@ -29,17 +29,7 @@ const useUserStore = defineStore('user', () => {
   const afterOrganizationSelection = useAfterOrganizationSelection();
   const { reset: resetVersionCheck } = useVersionCheck();
 
-  /* Injected */
-  // const accountByKeyCache = AppCache.inject().mirrorAccountByPublicKey;
-
   /* State */
-  /** Keys */
-  // const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
-  // const recoveryPhrase: Ref<RecoveryPhrase|null> = ref(null);
-  // const keyPairs = ref<KeyPair[]>([]);
-  // const mnemonics = ref<Mnemonic[]>([]);
-  // const publicKeyMappings = ref<PublicKeyMapping[]>([]);
-
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
   const passwordStoreDuration = ref<number>(10 * 60 * 1_000);
@@ -51,14 +41,6 @@ const useUserStore = defineStore('user', () => {
 
   /** AccountSetup */
   const accountSetupStarted = ref<boolean | null>(null);
-
-  /* Computed */
-  /** Keys */
-  // const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
-  // const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
-  // const publicKeysToAccountsFlattened = computed(() =>
-  //   ush.flattenAccountIds(publicKeyToAccounts.value),
-  // );
 
   /* Actions */
   /** Personal */
@@ -81,9 +63,6 @@ const useUserStore = defineStore('user', () => {
     };
     selectedOrganization.value = null;
     organizations.value = [];
-    // publicKeyToAccounts.value = [];
-    // keyPairs.value = [];
-    // recoveryPhrase.value = null;
     resetVersionCheck();
   };
 
@@ -119,67 +98,6 @@ const useUserStore = defineStore('user', () => {
       personal.value.passwordExpiresAt = new Date(prevSetAt + durationMs);
     }
   };
-
-  /** Keys */
-  // const setRecoveryPhrase = async (words: string[] | null) => {
-  //   if (words === null) {
-  //     recoveryPhrase.value = null;
-  //   } else {
-  //     recoveryPhrase.value = await ush.createRecoveryPhrase(words);
-  //   }
-  // };
-  //
-  // const refetchAccounts = async () => {
-  //   publicKeyToAccounts.value = [];
-  //   publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
-  //     publicKeyToAccounts.value,
-  //     keyPairs.value,
-  //     network.mirrorNodeBaseURL,
-  //     accountByKeyCache,
-  //   );
-  // };
-
-  // const refetchKeys = async () => {
-  //   keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
-  // };
-  //
-  // const refetchPublicKeys = async () => {
-  //   publicKeyMappings.value = await ush.getAllPublicKeyMappings();
-  // };
-  //
-  // const refetchMnemonics = async () => {
-  //   mnemonics.value = await ush.getMnemonics(personal.value);
-  // };
-  //
-  // const storeKey = async (
-  //   keyPair: Prisma.KeyPairUncheckedCreateInput,
-  //   mnemonic: string[] | string | null,
-  //   password: string | null,
-  //   encrypted: boolean,
-  // ) => {
-  //   await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
-  //   await refetchKeys();
-  //   await refetchAccounts();
-  // };
-  //
-  // const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
-  //   await ush.addPublicKeyMapping(publicKey, nickname);
-  //   await refetchPublicKeys();
-  // };
-  //
-  // const updatePublicKeyMappingNickname = async (
-  //   id: string,
-  //   publicKey: string,
-  //   newNickname: string,
-  // ) => {
-  //   await ush.updatePublicKeyNickname(id, publicKey, newNickname);
-  //   await refetchPublicKeys();
-  // };
-  //
-  // const deletePublicKeyMapping = async (id: string) => {
-  //   await pks.deletePublicKey(id);
-  //   await refetchPublicKeys();
-  // };
 
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
@@ -236,15 +154,6 @@ const useUserStore = defineStore('user', () => {
     accountSetupStarted.value = value;
   };
 
-  /* Watchers */
-  // watch(
-  //   () => network.network,
-  //   async () => {
-  //     await refetchAccounts();
-  //     await refetchPublicKeys();
-  //   },
-  // );
-
   watchEffect(async () => {
     const userId = personal.value && 'id' in personal.value ? personal.value.id : undefined;
     const setupStarted = accountSetupStarted.value;
@@ -259,25 +168,15 @@ const useUserStore = defineStore('user', () => {
 
   /* Exports */
   const exports = {
-    // keyPairs,
-    // publicKeyToAccounts,
-    // publicKeysToAccountsFlattened,
-    // recoveryPhrase,
     personal,
     selectedOrganization,
     organizations,
-    // secretHashes,
-    // publicKeys,
     accountSetupStarted,
-    // mnemonics,
     deleteOrganization,
     getJwtToken,
     getPassword,
     login,
     logout,
-    // refetchAccounts,
-    // refetchKeys,
-    // refetchMnemonics,
     refetchOrganizations,
     refetchOrganizationTokens,
     refetchUserState,
@@ -285,13 +184,6 @@ const useUserStore = defineStore('user', () => {
     setAccountSetupStarted,
     setPassword,
     setPasswordStoreDuration,
-    // setRecoveryPhrase,
-    // storeKey,
-    // storePublicKeyMapping,
-    // publicKeyMappings,
-    // refetchPublicKeys,
-    // updatePublicKeyMappingNickname,
-    // deletePublicKeyMapping,
   };
 
   return exports;
