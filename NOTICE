@@ -10,32 +10,13 @@ The Initial Developer of license-checker@25.0.1,
 is Dav Glass &lt;davglass@gmail.com&gt; (https://github.com/davglass/license-checker).
 Copyright Dav Glass &lt;davglass@gmail.com&gt;. All Rights Reserved.
 
-The Initial Developer of @electron-toolkit/tsconfig@1.0.1,
+The Initial Developer of @electron-toolkit/tsconfig@2.0.0,
 is Alex Wei (https://github.com/alex8088/electron-toolkit).
 Copyright Alex Wei. All Rights Reserved.
 
 The Initial Developer of @electron-toolkit/utils@4.0.0,
 is Alex Wei (https://github.com/alex8088/electron-toolkit).
 Copyright Alex Wei. All Rights Reserved.
-
-The Initial Developer of @eslint-community/eslint-utils@4.9.1,
-is Toru Nagashima (https://github.com/eslint-community/eslint-utils).
-Copyright Toru Nagashima. All Rights Reserved.
-
-The Initial Developer of @eslint-community/regexpp@4.12.2,
-is Toru Nagashima (https://github.com/eslint-community/regexpp).
-Copyright Toru Nagashima. All Rights Reserved.
-
-The Initial Developer of @eslint/config-array@0.23.3,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
-This product includes software (@eslint/config-helpers@0.5.3) developed at
-(https://github.com/eslint/rewrite).
-
-The Initial Developer of @eslint/core@1.1.1,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
 
 The Initial Developer of @eslint/eslintrc@3.3.4,
 is Nicholas C. Zakas (https://github.com/eslint/eslintrc).
@@ -51,27 +32,19 @@ This product includes software (@eslint/js@10.0.1) developed at
 This product includes software (@eslint/js@9.39.3) developed at
 (https://github.com/eslint/eslint).
 
-The Initial Developer of @eslint/object-schema@3.0.3,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
-The Initial Developer of @eslint/plugin-kit@0.6.1,
-is Nicholas C. Zakas (https://github.com/eslint/rewrite).
-Copyright Nicholas C. Zakas. All Rights Reserved.
-
-The Initial Developer of @hashgraph/hedera-local@2.40.1,
+The Initial Developer of @hashgraph/hedera-local@2.40.2,
 is hashgraph (https://github.com/hiero-ledger/hiero-local-node).
 Copyright hashgraph. All Rights Reserved.
 
-The Initial Developer of @hiero-ledger/cryptography@1.18.0,
+The Initial Developer of @hiero-ledger/cryptography@1.19.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hiero-ledger/proto@2.30.0,
+The Initial Developer of @hiero-ledger/proto@2.31.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
-The Initial Developer of @hiero-ledger/sdk@2.84.0,
+The Initial Developer of @hiero-ledger/sdk@2.85.0,
 is Launchbadge (https://github.com/hiero-ledger/hiero-sdk-js).
 Copyright Launchbadge. All Rights Reserved.
 
@@ -90,10 +63,10 @@ The Initial Developer of @nestjs/cache-manager@3.1.2,
 is Kamil Mysliwiec (https://github.com/nestjs/cache-manager).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-This product includes software (@nestjs/cli@11.0.16) developed at
+This product includes software (@nestjs/cli@11.0.21) developed at
 (https://github.com/nestjs/nest-cli).
 
-The Initial Developer of @nestjs/common@11.1.19,
+The Initial Developer of @nestjs/common@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -101,7 +74,7 @@ The Initial Developer of @nestjs/config@4.0.4,
 is Kamil Mysliwiec (https://github.com/nestjs/config).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/core@11.1.19,
+The Initial Developer of @nestjs/core@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -109,7 +82,7 @@ The Initial Developer of @nestjs/jwt@11.0.2,
 is Kamil Mysliwiec (https://github.com/nestjs/jwt).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/microservices@11.1.19,
+The Initial Developer of @nestjs/microservices@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -117,11 +90,11 @@ The Initial Developer of @nestjs/passport@11.0.5,
 is Kamil Mysliwiec (https://github.com/nestjs/passport).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/platform-express@11.1.19,
+The Initial Developer of @nestjs/platform-express@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/platform-socket.io@11.1.19,
+The Initial Developer of @nestjs/platform-socket.io@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -129,14 +102,14 @@ The Initial Developer of @nestjs/schedule@6.1.3,
 is Kamil Mysliwiec (https://github.com/nestjs/schedule).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-This product includes software (@nestjs/schematics@11.0.9) developed at
+This product includes software (@nestjs/schematics@11.1.0) developed at
 (https://github.com/nestjs/schematics).
 
-The Initial Developer of @nestjs/swagger@11.4.2,
+The Initial Developer of @nestjs/swagger@11.4.4,
 is Kamil Mysliwiec (https://github.com/nestjs/swagger).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/testing@11.1.19,
+The Initial Developer of @nestjs/testing@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -148,7 +121,7 @@ The Initial Developer of @nestjs/typeorm@11.0.1,
 is Kamil Mysliwiec (https://github.com/nestjs/typeorm).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
-The Initial Developer of @nestjs/websockets@11.1.19,
+The Initial Developer of @nestjs/websockets@11.1.27,
 is Kamil Mysliwiec (https://github.com/nestjs/nest).
 Copyright Kamil Mysliwiec. All Rights Reserved.
 
@@ -156,7 +129,7 @@ The Initial Developer of @pinia/testing@1.0.3,
 is Eduardo San Martin Morote (https://github.com/vuejs/pinia).
 Copyright Eduardo San Martin Morote. All Rights Reserved.
 
-The Initial Developer of @playwright/test@1.59.1,
+The Initial Developer of @playwright/test@1.61.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
@@ -192,16 +165,10 @@ This product includes software (@types/bcryptjs@3.0.0) developed at
 This product includes software (@types/better-sqlite3@7.6.13) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
-This product includes software (@types/bootstrap@5.2.10) developed at
+This product includes software (@types/bootstrap@5.2.11) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/deep-diff@1.0.5) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint-scope@3.7.7) developed at
-(https://github.com/DefinitelyTyped/DefinitelyTyped).
-
-This product includes software (@types/eslint@9.6.1) developed at
 (https://github.com/DefinitelyTyped/DefinitelyTyped).
 
 This product includes software (@types/express@5.0.6) developed at
@@ -249,30 +216,6 @@ This product includes software (@typescript-eslint/eslint-plugin@8.57.0) develop
 This product includes software (@typescript-eslint/parser@8.57.0) developed at
 (https://github.com/typescript-eslint/typescript-eslint).
 
-This product includes software (@typescript-eslint/project-service@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/scope-manager@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/tsconfig-utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/type-utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/types@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/typescript-estree@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/utils@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
-This product includes software (@typescript-eslint/visitor-keys@8.57.0) developed at
-(https://github.com/typescript-eslint/typescript-eslint).
-
 The Initial Developer of @vitejs/plugin-vue@5.2.4,
 is Evan You (https://github.com/vitejs/vite-plugin-vue).
 Copyright Evan You. All Rights Reserved.
@@ -289,7 +232,7 @@ The Initial Developer of @vue/eslint-config-typescript@14.1.3,
 is Evan You (https://github.com/vuejs/eslint-config-typescript).
 Copyright Evan You. All Rights Reserved.
 
-The Initial Developer of @vue/test-utils@2.4.6,
+The Initial Developer of @vue/test-utils@2.4.10,
 is Lachlan Miller (https://github.com/vuejs/test-utils).
 Copyright Lachlan Miller. All Rights Reserved.
 
@@ -312,6 +255,10 @@ Copyright Ranieri Althoff. All Rights Reserved.
 This product includes software (async-retry@1.3.3) developed at
 (https://github.com/vercel/async-retry).
 
+The Initial Developer of axios-mock-adapter@2.1.0,
+is Colin Timmermans (https://github.com/ctimmerm/axios-mock-adapter).
+Copyright Colin Timmermans. All Rights Reserved.
+
 The Initial Developer of axios@1.16.0,
 is Matt Zabriskie (https://github.com/axios/axios).
 Copyright Matt Zabriskie. All Rights Reserved.
@@ -324,7 +271,7 @@ The Initial Developer of bcryptjs@3.0.3,
 is Daniel Wirtz (https://github.com/dcodeIO/bcrypt.js).
 Copyright Daniel Wirtz. All Rights Reserved.
 
-The Initial Developer of better-sqlite3@12.9.0,
+The Initial Developer of better-sqlite3@12.11.1,
 is Joshua Wise (https://github.com/WiseLibs/better-sqlite3).
 Copyright Joshua Wise. All Rights Reserved.
 
@@ -365,19 +312,19 @@ Copyright Phillip Clark. All Rights Reserved.
 This product includes software (dotenv@17.4.2) developed at
 (https://github.com/motdotla/dotenv).
 
-The Initial Developer of electron-builder@26.8.1,
+The Initial Developer of electron-builder@26.15.3,
 is Vladimir Krivosheev (https://github.com/electron-userland/electron-builder).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
-The Initial Developer of electron-log@5.4.3,
+The Initial Developer of electron-log@5.4.4,
 is Alexey Prokhorov (https://github.com/megahertz/electron-log).
 Copyright Alexey Prokhorov. All Rights Reserved.
 
-The Initial Developer of electron-updater@6.8.3,
+The Initial Developer of electron-updater@6.8.9,
 is Vladimir Krivosheev (https://github.com/electron-userland/electron-builder).
 Copyright Vladimir Krivosheev. All Rights Reserved.
 
-The Initial Developer of electron@41.5.1,
+The Initial Developer of electron@42.4.1,
 is Electron Community (https://github.com/electron/electron).
 Copyright Electron Community. All Rights Reserved.
 
@@ -391,16 +338,6 @@ Copyright Teddy Katz. All Rights Reserved.
 
 The Initial Developer of eslint-plugin-vue@9.33.0,
 is Toru Nagashima (https://github.com/vuejs/eslint-plugin-vue).
-Copyright Toru Nagashima. All Rights Reserved.
-
-This product includes software (eslint-scope@5.1.1) developed at
-(https://github.com/eslint/eslint-scope).
-
-This product includes software (eslint-scope@9.1.2) developed at
-(https://github.com/eslint/js).
-
-The Initial Developer of eslint-visitor-keys@5.0.1,
-is Toru Nagashima (https://github.com/eslint/js).
 Copyright Toru Nagashima. All Rights Reserved.
 
 The Initial Developer of eslint@10.0.3,
@@ -426,7 +363,7 @@ The Initial Developer of globals@17.6.0,
 is Sindre Sorhus (https://github.com/sindresorhus/globals).
 Copyright Sindre Sorhus. All Rights Reserved.
 
-The Initial Developer of happy-dom@20.9.0,
+The Initial Developer of happy-dom@20.10.3,
 is David Ortner (https://github.com/capricorn86/happy-dom).
 Copyright David Ortner. All Rights Reserved.
 
@@ -476,7 +413,7 @@ The Initial Developer of node-forge@1.4.0,
 is Digital Bazaar, Inc. (https://github.com/digitalbazaar/forge).
 Copyright Digital Bazaar, Inc.. All Rights Reserved.
 
-The Initial Developer of nodemailer@8.0.7,
+The Initial Developer of nodemailer@8.0.9,
 is Andris Reinman (https://github.com/nodemailer/nodemailer).
 Copyright Andris Reinman. All Rights Reserved.
 
@@ -500,7 +437,7 @@ The Initial Developer of passport@0.7.0,
 is Jared Hanson (https://github.com/jaredhanson/passport).
 Copyright Jared Hanson. All Rights Reserved.
 
-The Initial Developer of pg@8.20.0,
+The Initial Developer of pg@8.21.0,
 is Brian Carlson (https://github.com/brianc/node-postgres).
 Copyright Brian Carlson. All Rights Reserved.
 
@@ -512,20 +449,17 @@ The Initial Developer of pinia@3.0.4,
 is Eduardo San Martin Morote (https://github.com/vuejs/pinia).
 Copyright Eduardo San Martin Morote. All Rights Reserved.
 
-The Initial Developer of playwright-core@1.59.1,
+The Initial Developer of playwright-core@1.61.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
-The Initial Developer of playwright@1.59.1,
+The Initial Developer of playwright@1.61.0,
 is Microsoft Corporation (https://github.com/microsoft/playwright).
 Copyright Microsoft Corporation. All Rights Reserved.
 
 The Initial Developer of prebuild-install@7.1.3,
 is Mathias Buus (https://github.com/prebuild/prebuild-install).
 Copyright Mathias Buus. All Rights Reserved.
-
-This product includes software (prettier-linter-helpers@1.0.1) developed at
-(https://github.com/prettier/prettier-linter-helpers).
 
 The Initial Developer of prettier@3.8.3,
 is James Long (https://github.com/prettier/prettier).
@@ -550,7 +484,7 @@ The Initial Developer of rxjs@7.8.2,
 is Ben Lesh (https://github.com/reactivex/rxjs).
 Copyright Ben Lesh. All Rights Reserved.
 
-The Initial Developer of sass@1.97.3,
+The Initial Developer of sass@1.99.0,
 is Natalie Weizenbaum (https://github.com/sass/dart-sass).
 Copyright Natalie Weizenbaum. All Rights Reserved.
 
@@ -579,7 +513,7 @@ The Initial Developer of testcontainers@11.14.0,
 is Cristian Greco (https://github.com/testcontainers/testcontainers-node).
 Copyright Cristian Greco. All Rights Reserved.
 
-The Initial Developer of ts-jest@29.4.9,
+The Initial Developer of ts-jest@29.4.11,
 is Kulshekhar Kabra (https://github.com/kulshekhar/ts-jest).
 Copyright Kulshekhar Kabra. All Rights Reserved.
 
@@ -618,7 +552,7 @@ Copyright Evan Oxfeld. All Rights Reserved.
 This product includes software (uuid@14.0.0) developed at
 (https://github.com/uuidjs/uuid).
 
-The Initial Developer of vite-plugin-electron@0.29.1,
+The Initial Developer of vite-plugin-electron@1.0.4,
 is Leo Wang (https://github.com/electron-vite/vite-plugin-electron).
 Copyright Leo Wang. All Rights Reserved.
 
@@ -630,7 +564,7 @@ The Initial Developer of vite-plugin-vue-devtools@7.7.9,
 is webfansplz (https://github.com/vuejs/devtools).
 Copyright webfansplz. All Rights Reserved.
 
-The Initial Developer of vite@6.4.2,
+The Initial Developer of vite@6.4.3,
 is Evan You (https://github.com/vitejs/vite).
 Copyright Evan You. All Rights Reserved.
 
@@ -653,14 +587,14 @@ Copyright ankurk91. All Rights Reserved.
 This product includes software (vue-tsc@2.2.12) developed at
 (https://github.com/vuejs/language-tools).
 
-The Initial Developer of vue@3.5.29,
+The Initial Developer of vue@3.5.34,
 is Evan You (https://github.com/vuejs/core).
 Copyright Evan You. All Rights Reserved.
 
-This product includes software (webpack-cli@6.0.1) developed at
+This product includes software (webpack-cli@7.0.2) developed at
 (https://github.com/webpack/webpack-cli).
 
-The Initial Developer of webpack@5.105.4,
+The Initial Developer of webpack@5.106.2,
 is Tobias Koppers @sokra (https://github.com/webpack/webpack).
 Copyright Tobias Koppers @sokra. All Rights Reserved.
 
