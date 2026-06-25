@@ -3,7 +3,7 @@ import { ref } from 'vue';
 
 import { RESTORE_KEY } from '@renderer/router';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 
@@ -12,7 +12,7 @@ import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPr
 import ImportEncrypted from '@renderer/components/KeyPair/ImportEncrypted';
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -31,7 +31,7 @@ const handleImportExternal = (type: 'ED25519' | 'ECDSA') => {
 const handleImportEncrypted = () => importEncryptedRef.value?.process();
 
 const handleImportMnemonic = async () => {
-  await user.setRecoveryPhrase(null);
+  await keys.setRecoveryPhrase(null);
   await router.push({ name: RESTORE_KEY });
 };
 </script>

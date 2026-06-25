@@ -8,6 +8,7 @@ import { computed, ref, watch } from 'vue';
 import { MATCH_RECOVERY_PHRASE, RESTORE_MISSING_KEYS } from '@renderer/router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
@@ -34,6 +35,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -46,7 +48,7 @@ const isUpdateRecoveryPhraseNicknameModalShown = ref(false);
 const recoveryPhraseHashes = computed(() => {
   const listedMnemonicHashes = isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.secretHashes
-    : user.secretHashes;
+    : keys.secretHashes;
 
   return listedMnemonicHashes.map((hash, i) => ({
     label: recoveryPhraseNickname.get(hash) || `Recovery Phrase ${i + 1}`,
@@ -57,7 +59,7 @@ const recoveryPhraseHashes = computed(() => {
 const missingKeys = computed(() =>
   isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.userKeys.filter(
-        key => !user.keyPairs.some(kp => kp.public_key === key.publicKey),
+        key => !keys.keyPairs.some(kp => kp.public_key === key.publicKey),
       )
     : [],
 );
@@ -159,7 +161,7 @@ watch(
         class="rounded-3 text-nowrap min-w-unset"
         @click="isUpdateRecoveryPhraseNicknameModalShown = true"
         >{{
-          !user.mnemonics.some(m => m.mnemonicHash === selectedRecoveryPhrase) ? 'Set' : 'Change'
+          !keys.mnemonics.some(m => m.mnemonicHash === selectedRecoveryPhrase) ? 'Set' : 'Change'
         }}
         Recovery Phrase Nickname</AppButton
       >

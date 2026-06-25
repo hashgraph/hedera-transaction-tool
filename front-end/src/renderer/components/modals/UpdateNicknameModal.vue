@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -14,10 +14,10 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Store */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Props */
 const props = defineProps<{
@@ -36,7 +36,7 @@ const isUpdating = ref(false);
 const handleShow = (show: boolean) => emit('update:show', show);
 
 const handleUpdate = async () => {
-  const oldNickname = getNicknameById(props.keyPairId, user.keyPairs);
+  const oldNickname = getNicknameById(props.keyPairId, keys.keyPairs);
 
   if (nickname.value.trim() === (oldNickname || '')) {
     toastManager.error('New nickname cannot be the same as the current one');
@@ -50,7 +50,7 @@ const handleUpdate = async () => {
 
     await updateNickname(props.keyPairId, nickname.value.trim());
     success = true;
-    await user.refetchKeys();
+    await keys.refetchKeys();
   } finally {
     isUpdating.value = false;
   }
@@ -64,7 +64,7 @@ const handleUpdate = async () => {
 /* Functions */
 const syncNickname = (show: boolean) => {
   if (show) {
-    nickname.value = getNicknameById(props.keyPairId, user.keyPairs) || '';
+    nickname.value = getNicknameById(props.keyPairId, keys.keyPairs) || '';
   } else {
     nickname.value = '';
   }

@@ -10,6 +10,7 @@ import {
 } from '@shared/utils/transactionFile.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { assertUserLoggedIn, hexToUint8Array, uint8ToHex } from '@renderer/utils';
@@ -30,6 +31,7 @@ const show = defineModel<boolean>('show', { required: true });
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -65,7 +67,7 @@ async function handleSignAll() {
         const sdkTransaction = Transaction.fromBytes(transactionBytes);
         const missingSignerKeys = await collectMissingSignerKeys(
           sdkTransaction,
-          user.publicKeys,
+          keys.publicKeys,
           network.getMirrorNodeREST(transactionFile.value!.network),
           appCache,
         );
@@ -121,7 +123,7 @@ watch(
 
         const status = await filterTransactionFileItemsToBeSigned(
           transactionFile.value.items,
-          user.publicKeys,
+          keys.publicKeys,
           network.getMirrorNodeREST(transactionFile.value.network),
           appCache,
         );

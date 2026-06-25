@@ -2,7 +2,7 @@
 import { ref } from 'vue';
 import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import useContactsStore from '@renderer/stores/storeContacts';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -33,7 +33,7 @@ const props = withDefaults(
 const emit = defineEmits(['update:keyList']);
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 const contacts = useContactsStore();
 
 /* Composables */
@@ -212,7 +212,7 @@ function emitNewKeyList(keys: Key[], threshold: number | null) {
                 readOnly
                 has-cross-icon
                 :label="
-                  ush.getNickname(key.toStringRaw(), user.keyPairs) ||
+                  ush.getNickname(key.toStringRaw(), keys.keyPairs) ||
                   contacts.getContactByPublicKey(key)?.nickname.trim() ||
                   contacts.getContactByPublicKey(key)?.user.email
                 "

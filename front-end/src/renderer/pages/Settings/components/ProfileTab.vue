@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
@@ -36,6 +37,7 @@ import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -124,7 +126,7 @@ const handleChangePassword = async () => {
     } else {
       await changePassword(user.personal.id, currentPassword.value, newPassword.value);
       user.setPassword(newPassword.value);
-      await user.refetchKeys();
+      await keys.refetchKeys();
     }
 
     isConfirmModalShown.value = false;
@@ -132,7 +134,7 @@ const handleChangePassword = async () => {
     currentPassword.value = '';
     newPassword.value = '';
 
-    await user.refetchAccounts();
+    await keys.refetchAccounts();
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to change password'));
   } finally {

@@ -4,6 +4,7 @@ import type { MigrateUserDataResult } from '@shared/interfaces/migration';
 import { Hbar } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -30,6 +31,7 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -67,7 +69,7 @@ const handleCopy = (event: ClipboardEvent) => {
 
 /* Functions */
 const copyRecoveryPhrase = () => {
-  const recoveryPhrase = user.recoveryPhrase?.words.join(', ') || '';
+  const recoveryPhrase = keys.recoveryPhrase?.words.join(', ') || '';
   navigator.clipboard.writeText(recoveryPhrase).then(() => {
     toastManager.success('Recovery phrase copied to clipboard');
   });
@@ -159,7 +161,7 @@ onBeforeUnmount(() => {
       />
 
       <SummaryItem
-        v-if="user.recoveryPhrase && user.recoveryPhrase?.words.length > 0"
+        v-if="keys.recoveryPhrase && keys.recoveryPhrase?.words.length > 0"
         class="mt-4"
         label="Recovery Phrase"
         value=""
@@ -175,7 +177,7 @@ onBeforeUnmount(() => {
           </AppButton>
           <div class="container p-4 border rounded">
             <div class="row row-cols-4 g-2">
-              <template v-for="(word, index) in user.recoveryPhrase?.words || []" :key="word">
+              <template v-for="(word, index) in keys.recoveryPhrase?.words || []" :key="word">
                 <div class="col p-1 user-select-none">
                   <span class="me-2">{{ index + 1 }}.</span>
                   <span>{{ word }}</span>

@@ -3,6 +3,7 @@ import type { PublicKeyMapping } from '@prisma/client';
 import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { AppCache } from '@renderer/caches/AppCache.ts';
@@ -14,6 +15,7 @@ import RenamePublicKeyModal from './components/RenamePublicKeyModal.vue';
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -30,7 +32,7 @@ const publicKeyMappingToEdit = ref<PublicKeyMapping | null>(null);
 const ownersMapping = ref<Record<string, string | null>>({});
 
 /* Computed */
-const listedPublicKeys = computed(() => user.publicKeyMappings);
+const listedPublicKeys = computed(() => keys.publicKeyMappings);
 const allKeysSelected = computed(
   () => selectedPublicKeysToDelete.value.length === listedPublicKeys.value.length,
 );
@@ -73,7 +75,7 @@ const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
 
 /* Helper Functions */
 const getOwnersFromOrganization = async () => {
-  const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
+  const publicKeys = keys.publicKeyMappings.map(mapping => mapping.public_key);
 
   const ownerPromises = publicKeys.map(async key => {
     return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!.serverUrl) };
@@ -119,7 +121,7 @@ watch(
 );
 
 watch(
-  () => user.publicKeyMappings,
+  () => keys.publicKeyMappings,
   async (newMappings, oldMappings) => {
     if (newMappings.length === oldMappings.length || !user.selectedOrganization) {
       return;
@@ -137,7 +139,7 @@ watch(
 
 /* Lifecycle hooks */
 onBeforeMount(async () => {
-  await user.refetchPublicKeys();
+  await keys.refetchPublicKeys();
 
   if (user.selectedOrganization) {
     await getOwnersFromOrganization();

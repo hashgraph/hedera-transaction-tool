@@ -51,6 +51,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 const props = defineProps<{
@@ -70,10 +71,11 @@ defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 const transactionGroup = useTransactionGroupStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
@@ -95,7 +97,7 @@ const flattenedSignatureKey = computed(() =>
   signatureKey.value ? flattenKeyList(signatureKey.value).map(pk => pk.toStringRaw()) : [],
 );
 const localPublicKeysReq = computed(() =>
-  flattenedSignatureKey.value.filter(pk => user.publicKeys.includes(pk)),
+  flattenedSignatureKey.value.filter(pk => keys.publicKeys.includes(pk)),
 );
 
 const transfersOutOfStaking = computed(() => {
@@ -174,7 +176,7 @@ async function process(requiredKey: Key) {
   signatureKey.value = requiredKey;
 
   await nextTick();
-  await user.refetchKeys();
+  await keys.refetchKeys();
 
   validateProcess();
 
@@ -194,7 +196,7 @@ function validateProcess() {
 
   if (
     signatureKey.value &&
-    !ableToSign(user.publicKeys, signatureKey.value) &&
+    !ableToSign(keys.publicKeys, signatureKey.value) &&
     !user.selectedOrganization
   ) {
     throw new Error(
@@ -300,7 +302,7 @@ async function sendSignedTransactionsToOrganization() {
   if (passwordModalOpened(personalPassword)) return;
 
   /* Verifies the user has at least one key pair */
-  if (user.keyPairs.length == 0) {
+  if (keys.keyPairs.length == 0) {
     throw new Error("You don't have any key pair. Please add one and retry.");
   }
 
@@ -314,7 +316,7 @@ async function sendSignedTransactionsToOrganization() {
   }
 
   /* Signs the unfrozen transaction */
-  const keyToSignWith = user.keyPairs[0].public_key;
+  const keyToSignWith = keys.keyPairs[0].public_key;
 
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
@@ -350,7 +352,11 @@ async function sendSignedTransactionsToOrganization() {
     apiGroupItems,
   );
 
-  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
+  const group: IGroup = await getTransactionGroupById(
+    user.selectedOrganization.serverUrl,
+    id,
+    false,
+  );
 
   toastManager.success('Transaction submitted successfully');
 

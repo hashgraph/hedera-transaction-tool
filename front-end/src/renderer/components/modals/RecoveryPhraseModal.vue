@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
@@ -18,32 +18,32 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const shouldClearInputs = ref(false);
 
 /* Handlers */
 const handleSubmit = () => {
-  if (!user.recoveryPhrase) throw new Error('Recovery phrase is required');
-  user.setRecoveryPhrase(user.recoveryPhrase.words);
+  if (!keys.recoveryPhrase) throw new Error('Recovery phrase is required');
+  keys.setRecoveryPhrase(keys.recoveryPhrase.words);
   emit('continue');
 };
 
 const handleSkip = () => {
-  user.setRecoveryPhrase(null);
+  keys.setRecoveryPhrase(null);
   emit('continue');
 };
 
 const handleClose = (show: boolean) => {
-  user.setRecoveryPhrase(null);
+  keys.setRecoveryPhrase(null);
   emit('update:show', show);
 };
 
 /* Handlers */
 const handleClearWords = (value: boolean) => {
   shouldClearInputs.value = value;
-  user.setRecoveryPhrase(null);
+  keys.setRecoveryPhrase(null);
 };
 </script>
 <template>
@@ -86,7 +86,7 @@ const handleClearWords = (value: boolean) => {
           >
           <div class="flex-between-centered gap-4">
             <AppButton color="secondary" type="button" @click="handleSkip">Skip</AppButton>
-            <AppButton color="primary" type="submit" :disabled="!user.recoveryPhrase"
+            <AppButton color="primary" type="submit" :disabled="!keys.recoveryPhrase"
               >Import</AppButton
             >
           </div>

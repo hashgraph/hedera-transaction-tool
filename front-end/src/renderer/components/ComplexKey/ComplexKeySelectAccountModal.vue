@@ -7,6 +7,7 @@ import { Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
@@ -34,13 +35,14 @@ const selectedAccountData = useAccountId();
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* State */
 const accounts = ref<HederaAccount[]>([]);
 
 /* Computed */
 const accountIdsList = computed(() => {
-  const keyPairsAccountIds = user.publicKeyToAccounts
+  const keyPairsAccountIds = keys.publicKeyToAccounts
     .map(a => a.accounts)
     .flat()
     .filter(

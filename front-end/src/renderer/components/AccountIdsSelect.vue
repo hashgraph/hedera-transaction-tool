@@ -5,6 +5,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import { getAll } from '@renderer/services/accountsService';
 
@@ -24,12 +25,13 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* State */
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
-const accountIds = computed(() => flattenAccountIds(user.publicKeyToAccounts));
+const accountIds = computed(() => flattenAccountIds(keys.publicKeyToAccounts));
 
 /* Handlers */
 const handleAccountIdChange = (e: Event) => {
@@ -58,7 +60,7 @@ onBeforeMount(async () => {
 
 /* Watchers */
 watch(
-  () => user.publicKeyToAccounts,
+  () => keys.publicKeyToAccounts,
   () => {
     const accountId = props.accountId?.trim() || '';
 

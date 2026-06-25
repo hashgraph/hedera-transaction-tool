@@ -6,6 +6,7 @@ import { FileCreateTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { assertUserLoggedIn, ableToSign, validateFileUpdateTransaction } from '@renderer/utils';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
@@ -18,6 +19,7 @@ const SIZE_BUFFER_BYTES = 200;
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Injected */
 const accountByIdCache = AppCache.inject().mirrorAccountById;
@@ -72,7 +74,7 @@ function validate(request: TransactionRequest, transaction: Transaction) {
 function validateSignableInPersonal(request: BaseRequest) {
   if (
     request.requestKey &&
-    !ableToSign(user.publicKeys, request.requestKey) &&
+    !ableToSign(keys.publicKeys, request.requestKey) &&
     !user.selectedOrganization
   ) {
     throw new Error(

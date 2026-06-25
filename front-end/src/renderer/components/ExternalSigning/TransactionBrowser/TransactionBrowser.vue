@@ -6,7 +6,7 @@ import type { ITransactionBrowserItem } from './ITransactionBrowserItem.ts';
 import TransactionBrowserTable from './TransactionBrowserTable.vue';
 import { TransactionBrowserEntry } from '@renderer/components/ExternalSigning/TransactionBrowser/TransactionBrowserEntry.ts';
 import { AppCache } from '@renderer/caches/AppCache.ts';
-import useUserStore from '@renderer/stores/storeUser.ts';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 const props = defineProps<{
@@ -18,7 +18,7 @@ const appCache = AppCache.inject();
 
 /* Stores */
 const network = useNetworkStore();
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const entries = ref<TransactionBrowserEntry[] | Error | null>(null); // null means loading
@@ -32,7 +32,7 @@ const updateEntries = async () => {
       props.items,
       mirrorNodeLink,
       appCache,
-      user.publicKeys,
+      keys.publicKeys,
     );
   } catch {
     entries.value = new Error('Failed to create entries');

@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import Import from '@renderer/components/RecoveryPhrase/Import.vue';
 import RecoveryPhraseNicknameInput from '@renderer/components/RecoveryPhrase/RecoveryPhraseNicknameInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Emits */
 const emit = defineEmits<{
@@ -41,7 +41,7 @@ const handleClearWords = (value: boolean) => {
         <label class="form-label">Enter Recovery Phrase Nickname</label>
         <RecoveryPhraseNicknameInput
           v-model="mnemonicHashNickname"
-          :mnemonic-hash="user.recoveryPhrase?.hash"
+          :mnemonic-hash="keys.recoveryPhrase?.hash"
           :filled="true"
           data-testid="input-recovery-phrase-nickname"
         />
@@ -58,7 +58,7 @@ const handleClearWords = (value: boolean) => {
             color="primary"
             data-testid="button-continue-phrase"
             type="submit"
-            :disabled="!user.recoveryPhrase"
+            :disabled="!keys.recoveryPhrase"
           >
             Continue
           </AppButton>

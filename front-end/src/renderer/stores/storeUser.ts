@@ -1,17 +1,9 @@
-import type { KeyPair, Mnemonic, Organization, PublicKeyMapping } from '@prisma/client';
+import type { Organization } from '@prisma/client';
 
-import type {
-  PersonalUser,
-  PublicKeyAccounts,
-  RecoveryPhrase,
-  ConnectedOrganization,
-  OrganizationTokens,
-} from '@renderer/types';
+import type { ConnectedOrganization, OrganizationTokens, PersonalUser } from '@renderer/types';
 
-import { computed, ref, watch, nextTick, watchEffect, type Ref } from 'vue';
+import { nextTick, ref, watchEffect } from 'vue';
 import { defineStore } from 'pinia';
-
-import { Prisma } from '@prisma/client';
 
 import { ACCOUNT_SETUP_STARTED, SELECTED_NETWORK } from '@shared/constants';
 
@@ -21,13 +13,11 @@ import useAfterOrganizationSelection from '@renderer/composables/user/useAfterOr
 import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { safeAwait } from '@renderer/utils';
-import * as pks from '@renderer/services/publicKeyMappingService';
 import * as ush from '@renderer/utils/userStoreHelpers';
 import { getVersionStatusForOrg, resetVersionStatusForOrg } from './versionState';
 
 import useNetworkStore from './storeNetwork';
 import useOrganizationConnection from './storeOrganizationConnection';
-import { AppCache } from '@renderer/caches/AppCache';
 import { reconnectOrganization } from '@renderer/services/organization';
 
 const useUserStore = defineStore('user', () => {
@@ -40,15 +30,15 @@ const useUserStore = defineStore('user', () => {
   const { reset: resetVersionCheck } = useVersionCheck();
 
   /* Injected */
-  const accountByKeyCache = AppCache.inject().mirrorAccountByPublicKey;
+  // const accountByKeyCache = AppCache.inject().mirrorAccountByPublicKey;
 
   /* State */
   /** Keys */
-  const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
-  const recoveryPhrase: Ref<RecoveryPhrase|null> = ref(null);
-  const keyPairs = ref<KeyPair[]>([]);
-  const mnemonics = ref<Mnemonic[]>([]);
-  const publicKeyMappings = ref<PublicKeyMapping[]>([]);
+  // const publicKeyToAccounts = ref<PublicKeyAccounts[]>([]);
+  // const recoveryPhrase: Ref<RecoveryPhrase|null> = ref(null);
+  // const keyPairs = ref<KeyPair[]>([]);
+  // const mnemonics = ref<Mnemonic[]>([]);
+  // const publicKeyMappings = ref<PublicKeyMapping[]>([]);
 
   /** Personal */
   const personal = ref<PersonalUser | null>(null);
@@ -64,11 +54,11 @@ const useUserStore = defineStore('user', () => {
 
   /* Computed */
   /** Keys */
-  const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
-  const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
-  const publicKeysToAccountsFlattened = computed(() =>
-    ush.flattenAccountIds(publicKeyToAccounts.value),
-  );
+  // const secretHashes = computed<string[]>(() => ush.getSecretHashesFromKeys(keyPairs.value));
+  // const publicKeys = computed(() => keyPairs.value.map(kp => kp.public_key));
+  // const publicKeysToAccountsFlattened = computed(() =>
+  //   ush.flattenAccountIds(publicKeyToAccounts.value),
+  // );
 
   /* Actions */
   /** Personal */
@@ -91,9 +81,9 @@ const useUserStore = defineStore('user', () => {
     };
     selectedOrganization.value = null;
     organizations.value = [];
-    publicKeyToAccounts.value = [];
-    keyPairs.value = [];
-    recoveryPhrase.value = null;
+    // publicKeyToAccounts.value = [];
+    // keyPairs.value = [];
+    // recoveryPhrase.value = null;
     resetVersionCheck();
   };
 
@@ -131,65 +121,65 @@ const useUserStore = defineStore('user', () => {
   };
 
   /** Keys */
-  const setRecoveryPhrase = async (words: string[] | null) => {
-    if (words === null) {
-      recoveryPhrase.value = null;
-    } else {
-      recoveryPhrase.value = await ush.createRecoveryPhrase(words);
-    }
-  };
+  // const setRecoveryPhrase = async (words: string[] | null) => {
+  //   if (words === null) {
+  //     recoveryPhrase.value = null;
+  //   } else {
+  //     recoveryPhrase.value = await ush.createRecoveryPhrase(words);
+  //   }
+  // };
+  //
+  // const refetchAccounts = async () => {
+  //   publicKeyToAccounts.value = [];
+  //   publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
+  //     publicKeyToAccounts.value,
+  //     keyPairs.value,
+  //     network.mirrorNodeBaseURL,
+  //     accountByKeyCache,
+  //   );
+  // };
 
-  const refetchAccounts = async () => {
-    publicKeyToAccounts.value = [];
-    publicKeyToAccounts.value = await ush.getPublicKeyToAccounts(
-      publicKeyToAccounts.value,
-      keyPairs.value,
-      network.mirrorNodeBaseURL,
-      accountByKeyCache,
-    );
-  };
-
-  const refetchKeys = async () => {
-    keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
-  };
-
-  const refetchPublicKeys = async () => {
-    publicKeyMappings.value = await ush.getAllPublicKeyMappings();
-  };
-
-  const refetchMnemonics = async () => {
-    mnemonics.value = await ush.getMnemonics(personal.value);
-  };
-
-  const storeKey = async (
-    keyPair: Prisma.KeyPairUncheckedCreateInput,
-    mnemonic: string[] | string | null,
-    password: string | null,
-    encrypted: boolean,
-  ) => {
-    await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
-    await refetchKeys();
-    await refetchAccounts();
-  };
-
-  const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
-    await ush.addPublicKeyMapping(publicKey, nickname);
-    await refetchPublicKeys();
-  };
-
-  const updatePublicKeyMappingNickname = async (
-    id: string,
-    publicKey: string,
-    newNickname: string,
-  ) => {
-    await ush.updatePublicKeyNickname(id, publicKey, newNickname);
-    await refetchPublicKeys();
-  };
-
-  const deletePublicKeyMapping = async (id: string) => {
-    await pks.deletePublicKey(id);
-    await refetchPublicKeys();
-  };
+  // const refetchKeys = async () => {
+  //   keyPairs.value = await ush.getLocalKeyPairs(personal.value, selectedOrganization.value);
+  // };
+  //
+  // const refetchPublicKeys = async () => {
+  //   publicKeyMappings.value = await ush.getAllPublicKeyMappings();
+  // };
+  //
+  // const refetchMnemonics = async () => {
+  //   mnemonics.value = await ush.getMnemonics(personal.value);
+  // };
+  //
+  // const storeKey = async (
+  //   keyPair: Prisma.KeyPairUncheckedCreateInput,
+  //   mnemonic: string[] | string | null,
+  //   password: string | null,
+  //   encrypted: boolean,
+  // ) => {
+  //   await ush.storeKeyPair(keyPair, mnemonic, password, encrypted);
+  //   await refetchKeys();
+  //   await refetchAccounts();
+  // };
+  //
+  // const storePublicKeyMapping = async (publicKey: string, nickname: string) => {
+  //   await ush.addPublicKeyMapping(publicKey, nickname);
+  //   await refetchPublicKeys();
+  // };
+  //
+  // const updatePublicKeyMappingNickname = async (
+  //   id: string,
+  //   publicKey: string,
+  //   newNickname: string,
+  // ) => {
+  //   await ush.updatePublicKeyNickname(id, publicKey, newNickname);
+  //   await refetchPublicKeys();
+  // };
+  //
+  // const deletePublicKeyMapping = async (id: string) => {
+  //   await pks.deletePublicKey(id);
+  //   await refetchPublicKeys();
+  // };
 
   /* Organization */
   const selectOrganization = async (organization: Organization | null) => {
@@ -237,7 +227,6 @@ const useUserStore = defineStore('user', () => {
     await ush.deleteOrganizationConnection(organizationId, personal.value);
   };
 
-
   const getJwtToken = (organizationId?: string): string | null => {
     return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;
   };
@@ -248,13 +237,13 @@ const useUserStore = defineStore('user', () => {
   };
 
   /* Watchers */
-  watch(
-    () => network.network,
-    async () => {
-      await refetchAccounts();
-      await refetchPublicKeys();
-    },
-  );
+  // watch(
+  //   () => network.network,
+  //   async () => {
+  //     await refetchAccounts();
+  //     await refetchPublicKeys();
+  //   },
+  // );
 
   watchEffect(async () => {
     const userId = personal.value && 'id' in personal.value ? personal.value.id : undefined;
@@ -270,25 +259,25 @@ const useUserStore = defineStore('user', () => {
 
   /* Exports */
   const exports = {
-    keyPairs,
-    publicKeyToAccounts,
-    publicKeysToAccountsFlattened,
-    recoveryPhrase,
+    // keyPairs,
+    // publicKeyToAccounts,
+    // publicKeysToAccountsFlattened,
+    // recoveryPhrase,
     personal,
     selectedOrganization,
     organizations,
-    secretHashes,
-    publicKeys,
+    // secretHashes,
+    // publicKeys,
     accountSetupStarted,
-    mnemonics,
+    // mnemonics,
     deleteOrganization,
     getJwtToken,
     getPassword,
     login,
     logout,
-    refetchAccounts,
-    refetchKeys,
-    refetchMnemonics,
+    // refetchAccounts,
+    // refetchKeys,
+    // refetchMnemonics,
     refetchOrganizations,
     refetchOrganizationTokens,
     refetchUserState,
@@ -296,13 +285,13 @@ const useUserStore = defineStore('user', () => {
     setAccountSetupStarted,
     setPassword,
     setPasswordStoreDuration,
-    setRecoveryPhrase,
-    storeKey,
-    storePublicKeyMapping,
-    publicKeyMappings,
-    refetchPublicKeys,
-    updatePublicKeyMappingNickname,
-    deletePublicKeyMapping,
+    // setRecoveryPhrase,
+    // storeKey,
+    // storePublicKeyMapping,
+    // publicKeyMappings,
+    // refetchPublicKeys,
+    // updatePublicKeyMappingNickname,
+    // deletePublicKeyMapping,
   };
 
   return exports;

@@ -7,6 +7,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -22,6 +23,7 @@ import AccountDeleteConfirmModal from '@renderer/components/Transaction/Create/A
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const route = useRoute();
@@ -80,8 +82,8 @@ const handleExecuted = async () => {
   await safeAwait(remove(user.personal.id, [accountData.accountId.value]));
 
   setTimeout(async () => {
-    await user.refetchKeys();
-    await user.refetchAccounts();
+    await keys.refetchKeys();
+    await keys.refetchAccounts();
   }, 5000); /* Counter mirror node delay */
 };
 

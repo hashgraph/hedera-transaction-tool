@@ -5,6 +5,7 @@ import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import { isPublicKey, isLoggedInOrganization, findIdentifier } from '@renderer/utils';
 
@@ -41,6 +42,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const keys = useKeysStore();
 
 /* Injected */
 const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
@@ -54,13 +56,13 @@ const isLoadingIdentifiers = ref(false);
 
 /* Computed */
 const myKeys = computed(() => {
-  return user.keyPairs.map(kp => ({
+  return keys.keyPairs.map(kp => ({
     publicKey: kp.public_key,
     nickname: kp.nickname,
   }));
 });
 const myPublicKeys = computed(() => {
-  return user.publicKeyMappings.map(m => ({
+  return keys.publicKeyMappings.map(m => ({
     publicKey: m.public_key,
     nickname: m.nickname,
   }));
@@ -168,7 +170,10 @@ watch(
             const identifier = await findIdentifier(key.publicKey, publicKeyOwnerCache);
             return identifier || 'Public Key';
           } catch (error) {
-            logger.error('Failed to find owner/nickname for key', { publicKey: key.publicKey, error });
+            logger.error('Failed to find owner/nickname for key', {
+              publicKey: key.publicKey,
+              error,
+            });
             return 'Public Key';
           }
         }),

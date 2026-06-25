@@ -31,6 +31,7 @@ import {
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
@@ -76,6 +77,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 const nextTransaction = useNextTransactionV2();
 
 /* Composables */
@@ -403,7 +405,7 @@ defineExpose({
         :create-button-label="
           getPropagationButtonLabel(
             transactionKey,
-            user.keyPairs,
+            keys.keyPairs,
             Boolean(user.selectedOrganization),
           )
         "

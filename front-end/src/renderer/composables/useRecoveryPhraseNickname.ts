@@ -1,4 +1,5 @@
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { add, update, remove } from '@renderer/services/mnemonicService';
 
@@ -7,16 +8,17 @@ import { assertUserLoggedIn } from '@renderer/utils';
 export default function useRecoveryPhraseNickname() {
   /* Stores */
   const user = useUserStore();
+  const keys = useKeysStore();
 
   /* Functions */
   const get = (mnemonicHash: string) => {
-    return user.mnemonics.find(m => m.mnemonicHash === mnemonicHash)?.nickname || null;
+    return keys.mnemonics.find(m => m.mnemonicHash === mnemonicHash)?.nickname || null;
   };
 
   const set = async (mnemonicHash: string, nickname: string) => {
     assertUserLoggedIn(user.personal);
 
-    const existingMnemonicData = user.mnemonics.find(m => m.mnemonicHash === mnemonicHash);
+    const existingMnemonicData = keys.mnemonics.find(m => m.mnemonicHash === mnemonicHash);
 
     if (existingMnemonicData && existingMnemonicData.nickname === nickname) {
       return;
@@ -24,7 +26,7 @@ export default function useRecoveryPhraseNickname() {
 
     if (!nickname && existingMnemonicData) {
       await remove(user.personal.id, [mnemonicHash]);
-      await user.refetchMnemonics();
+      await keys.refetchMnemonics();
       return;
     }
 
@@ -34,7 +36,7 @@ export default function useRecoveryPhraseNickname() {
       await add(user.personal.id, mnemonicHash, nickname);
     }
 
-    await user.refetchMnemonics();
+    await keys.refetchMnemonics();
   };
 
   return { get, set };

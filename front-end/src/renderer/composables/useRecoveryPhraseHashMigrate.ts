@@ -3,6 +3,7 @@ import type { KeyPair } from '@prisma/client';
 import { MIGRATE_RECOVERY_PHRASE_HASH } from '@renderer/router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRoute, useRouter } from 'vue-router';
 
@@ -27,6 +28,7 @@ export default function useRecoveryPhraseHashMigrate() {
 
   /* Stores */
   const user = useUserStore();
+  const keys = useKeysStore();
 
   /* Composables */
   const router = useRouter();
@@ -94,7 +96,7 @@ export default function useRecoveryPhraseHashMigrate() {
       await updateLocalMnemonicHash(localKeyPair.id, recoveryPhraseHash);
     }
     await user.refetchUserState();
-    await user.refetchKeys();
+    await keys.refetchKeys();
   };
 
   const tryMigrateOrganizationKeys = async (localOrganizationKeys: KeyPair[]): Promise<void> => {
@@ -106,12 +108,12 @@ export default function useRecoveryPhraseHashMigrate() {
     const hashToKeys: { [hash: string]: KeyPair[] } = {};
     const keyAddedToUpdate: Set<string> = new Set();
 
-    if (user.recoveryPhrase) {
+    if (keys.recoveryPhrase) {
       const keyPairsForRecoveryPhrase = await getKeysToUpdateForRecoveryPhrase(
-        user.recoveryPhrase.words,
+        keys.recoveryPhrase.words,
         localOrganizationKeys,
       );
-      hashToKeys[user.recoveryPhrase.hash] = keyPairsForRecoveryPhrase;
+      hashToKeys[keys.recoveryPhrase.hash] = keyPairsForRecoveryPhrase;
     }
 
     for (const personalKey of personalKeys) {

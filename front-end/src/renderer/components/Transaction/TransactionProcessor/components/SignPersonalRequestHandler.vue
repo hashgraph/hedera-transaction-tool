@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 import { signTransaction } from '@renderer/services/transactionService';
@@ -20,6 +21,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -31,7 +33,7 @@ const localPublicKeys = computed(() => {
   if (!key) return [];
 
   const flattenedSignatureKey = flattenKeyList(key).map(pk => pk.toStringRaw());
-  return flattenedSignatureKey.filter(pk => user.publicKeys.includes(pk));
+  return flattenedSignatureKey.filter(pk => keys.publicKeys.includes(pk));
 });
 const transaction = computed(() =>
   request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,

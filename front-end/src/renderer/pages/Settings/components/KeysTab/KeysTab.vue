@@ -6,6 +6,7 @@ import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -35,6 +36,7 @@ import { KeyType } from '@renderer/types';
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -67,13 +69,13 @@ const keyType = ref<KeyType>(KeyType.ED25519);
 const missingKeys = computed(() =>
   isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.userKeys.filter(
-        key => !user.keyPairs.some(kp => kp.public_key === key.publicKey),
+        key => !keys.keyPairs.some(kp => kp.public_key === key.publicKey),
       )
     : [],
 );
 
 const listedKeyPairs = computed(() => {
-  return user.keyPairs.filter(item => {
+  return keys.keyPairs.filter(item => {
     switch (selectedTab.value) {
       case Tabs.ALL:
         return true;
@@ -184,7 +186,7 @@ const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index
 };
 
 const handleAccountString = (publicKey: string): string | null => {
-  const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
+  const account = keys.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
     ?.account;
   if (account) {
     return getAccountIdWithChecksum(account);
@@ -305,7 +307,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
               <td :data-testid="`cell-account-${index}`">
                 <span
                   v-if="
-                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
+                    keys.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
                       ?.accounts[0]?.account
                   "
                   :class="{
@@ -420,7 +422,7 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
                 <td :data-testid="`cell-account-missing-${index}`">
                   <span
                     v-if="
-                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
+                      keys.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
                         ?.accounts[0]?.account
                     "
                     :class="{

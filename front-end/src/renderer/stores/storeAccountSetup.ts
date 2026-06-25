@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import useKeysStore from './storeKeys';
 import { computed } from 'vue';
 import { SKIPPED_ORGANIZATION_SETUP, SKIPPED_PERSONAL_SETUP } from '@shared/constants';
 import { getSecretHashesFromKeys, isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -19,6 +20,7 @@ export interface StoreAccountSetup {
 const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSetup => {
   /* Stores */
   const user = useUserStore();
+  const keys = useKeysStore();
 
   /* Computed */
   const skipClaimKey = computed(() => {
@@ -54,7 +56,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
     } else if (isLoggedInOrganization(user.selectedOrganization)) {
       result = user.selectedOrganization.secretHashes.length === 0;
     } else {
-      result = getSecretHashesFromKeys(user.keyPairs).length === 0;
+      result = getSecretHashesFromKeys(keys.keyPairs).length === 0;
     }
     return result;
   };

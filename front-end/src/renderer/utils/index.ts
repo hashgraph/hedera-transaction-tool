@@ -7,6 +7,7 @@ import pLimit from 'p-limit';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 
 import { getOne } from '@renderer/services/accountsService';
@@ -221,8 +222,8 @@ export async function collectRequiredKeys(
 
 export function collectMissingKeys(signatureItems: SignatureItem[]): string[] {
   const result = new Set<string>();
-  const user = useUserStore();
-  const userPublicKeys = new Set(user.keyPairs.map(k => k.public_key)); // hoist Set outside loop
+  const keys = useKeysStore();
+  const userPublicKeys = new Set(keys.keyPairs.map(k => k.public_key)); // hoist Set outside loop
 
   for (const { publicKeys } of signatureItems) {
     const missingKeys = publicKeys.filter(k => !userPublicKeys.has(k));

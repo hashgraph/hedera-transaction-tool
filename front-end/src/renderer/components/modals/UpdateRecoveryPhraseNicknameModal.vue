@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
@@ -11,7 +12,6 @@ import { assertUserLoggedIn } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
-
 
 /* Props */
 const props = defineProps<{ show: boolean; recoveryPhraseHash: string }>();
@@ -24,9 +24,10 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
@@ -54,7 +55,7 @@ const handleUpdate = async () => {
 /* Functions */
 const syncNickname = (show: boolean) => {
   if (show) {
-    const mnemonic = user.mnemonics.find(m => m.mnemonicHash === props.recoveryPhraseHash);
+    const mnemonic = keys.mnemonics.find(m => m.mnemonicHash === props.recoveryPhraseHash);
     nickname.value = mnemonic?.nickname || '';
   } else {
     nickname.value = '';

@@ -12,7 +12,7 @@ import { hashData } from '@renderer/services/electronUtilsService';
 import { getKeysFromSecretHash, getRecoveryPhraseHashValue, safeAwait } from '@renderer/utils';
 
 import DecryptKeyModal from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeyModal.vue';
-
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 defineProps<{
@@ -28,6 +28,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -67,7 +68,7 @@ async function process(keyPaths: string[], words?: string[] | null) {
   mnemomicHash.value = words ? await hashData(getRecoveryPhraseHashValue(words), true) : null;
 
   if (words) {
-    indexesFromMnemonic.value = (await getKeysFromSecretHash(user.keyPairs, words)).map(
+    indexesFromMnemonic.value = (await getKeysFromSecretHash(keys.keyPairs, words)).map(
       key => key.index,
     );
   }
@@ -101,8 +102,8 @@ async function end() {
     toastManager.success('Keys imported successfully');
   }
 
-  await user.refetchKeys();
-  await user.refetchAccounts();
+  await keys.refetchKeys();
+  await keys.refetchAccounts();
   await user.refetchUserState();
   await safeAwait(contacts.fetch());
 }

@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { computed } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import {
   assertUserLoggedIn,
   generateTransactionExportFileName,
@@ -26,6 +27,7 @@ const activate = defineModel<boolean>('activate', { required: true });
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -68,12 +70,12 @@ const handleExportTransaction = async (
     //  - <chosen-file-path>.tx: contains the transaction bytes
     //  - <chosen-file-path>.txt: contains the transaction description JSON content
 
-    if (user.publicKeys.length === 0) {
+    if (keys.publicKeys.length === 0) {
       throw new Error(
         'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
       );
     }
-    const publicKey = user.publicKeys[0]; // get the first key pair's public key
+    const publicKey = keys.publicKeys[0]; // get the first key pair's public key
     const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
     const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 

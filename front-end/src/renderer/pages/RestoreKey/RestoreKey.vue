@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -11,7 +11,7 @@ import RestoreStep from './components/RestoreStep.vue';
 import SaveStep from './components/SaveStep.vue';
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
@@ -33,12 +33,12 @@ const handleMnemonicHashNickname = (nickname: string) => {
 const handleNextStep = () => step.value++;
 
 const handleClearWords = () => {
-  user.setRecoveryPhrase(null);
+  keys.setRecoveryPhrase(null);
 };
 
 /* Hooks */
 onBeforeUnmount(() => {
-  user.recoveryPhrase = null;
+  keys.recoveryPhrase = null;
 });
 </script>
 <template>

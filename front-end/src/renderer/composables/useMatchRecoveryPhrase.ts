@@ -1,6 +1,7 @@
 import type { KeyPair } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import {
   restorePrivateKey,
@@ -15,9 +16,10 @@ import { computed, type Ref } from 'vue';
 export default function useMatchRecoveryPrase() {
   /* Stores */
   const user = useUserStore();
+  const keys = useKeysStore();
 
   /* Computed */
-  const externalKeys = computed(() => user.keyPairs.filter(k => !k.secret_hash));
+  const externalKeys = computed(() => keys.keyPairs.filter(k => !k.secret_hash));
 
   /* Functions */
   const startMatching = async (
@@ -26,7 +28,7 @@ export default function useMatchRecoveryPrase() {
     abortController: AbortController,
     totalRef: Ref<number>,
   ) => {
-    if (!user.recoveryPhrase) {
+    if (!keys.recoveryPhrase) {
       throw new Error('Recovery phrase is not set');
     }
 
@@ -37,8 +39,8 @@ export default function useMatchRecoveryPrase() {
         break;
       }
 
-      const pkED25519 = await restorePrivateKey(user.recoveryPhrase.words, '', i, 'ED25519');
-      const pkECDSA = await restorePrivateKey(user.recoveryPhrase.words, '', i, 'ECDSA');
+      const pkED25519 = await restorePrivateKey(keys.recoveryPhrase.words, '', i, 'ED25519');
+      const pkECDSA = await restorePrivateKey(keys.recoveryPhrase.words, '', i, 'ECDSA');
 
       const keyPairED25519 = externalKeys.value.find(
         k => k.public_key === pkED25519.publicKey.toStringRaw(),
@@ -60,13 +62,13 @@ export default function useMatchRecoveryPrase() {
     }
 
     await user.refetchUserState();
-    await user.refetchKeys();
+    await keys.refetchKeys();
 
     return count;
   };
 
   const updateKeyPairsHash = async (localKeyPair: KeyPair, index: number): Promise<void> => {
-    if (!user.recoveryPhrase) {
+    if (!keys.recoveryPhrase) {
       return;
     }
 
@@ -79,12 +81,12 @@ export default function useMatchRecoveryPrase() {
           user.selectedOrganization.serverUrl,
           user.selectedOrganization.userId,
           organizationKeyPair.id,
-          user.recoveryPhrase.hash,
+          keys.recoveryPhrase.hash,
           index,
         );
       }
     }
-    await updateLocalMnemonicHash(localKeyPair.id, user.recoveryPhrase.hash);
+    await updateLocalMnemonicHash(localKeyPair.id, keys.recoveryPhrase.hash);
     await updateIndex(localKeyPair.id, index);
   };
 

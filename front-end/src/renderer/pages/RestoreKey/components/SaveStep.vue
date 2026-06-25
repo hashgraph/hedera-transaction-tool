@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import {
   assertUserLoggedIn,
@@ -32,6 +33,7 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
@@ -69,7 +71,7 @@ const handleSaveKey = async () => {
       nickname: nickname.value || null,
     };
 
-    const keyStored = user.keyPairs.find(k => k.public_key === restoredKey.publicKey);
+    const keyStored = keys.keyPairs.find(k => k.public_key === restoredKey.publicKey);
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const keyUploaded = user.selectedOrganization.userKeys.some(
         k => k.publicKey === restoredKey.publicKey,
@@ -89,11 +91,11 @@ const handleSaveKey = async () => {
     }
 
     if (!keyStored) {
-      await user.storeKey(keyPair, restoredKey.mnemonicHash, personalPassword, false);
+      await keys.storeKey(keyPair, restoredKey.mnemonicHash, personalPassword, false);
     }
 
     await safeAwait(recoveryPhraseNickname.set(restoredKey.mnemonicHash, mnemonicHashNickname));
-    user.recoveryPhrase = null;
+    keys.recoveryPhrase = null;
     await user.refetchUserState();
 
     toastManager.success('Key pair saved');

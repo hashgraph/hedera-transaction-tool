@@ -7,6 +7,7 @@ import { getErrorMessage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 import storeUser from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 /* Props */
 const props = defineProps<{
@@ -20,6 +21,7 @@ const toastManager = ToastManager.inject()
 
 /* Stores */
 const user = storeUser();
+const keys = useKeysStore();
 
 /* State */
 const request: Ref<Processable | null> = ref(null);
@@ -35,7 +37,7 @@ function setNext(next: Handler) {
 function handle(req: Processable) {
   request.value = req;
   // If user has no private key setup, we show the modal
-  if (user.keyPairs.length === 0) {
+  if (keys.keyPairs.length === 0) {
     show.value = true;
   } else if (nextHandler.value !== null) {
     nextHandler.value.handle(request.value);

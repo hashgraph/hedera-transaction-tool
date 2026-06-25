@@ -7,6 +7,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import useRecoveryPhraseNickname from '@renderer/composables/useRecoveryPhraseNickname';
@@ -29,6 +30,7 @@ const emit = defineEmits(['update:selectedPersonalKeyPair']);
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
@@ -56,12 +58,12 @@ const activeTabTitle = computed(() => tabItems.value[activeTabIndex.value].title
 /* Handlers */
 const handleClearWords = (value: boolean) => {
   shouldClearInputs.value = value;
-  user.setRecoveryPhrase(null);
+  keys.setRecoveryPhrase(null);
 };
 
 const handleImport = async () => {
-  if (user.recoveryPhrase === null) return;
-  await recoveryPhraseNickname.set(user.recoveryPhrase.hash, mnemonicHashNickname.value);
+  if (keys.recoveryPhrase === null) return;
+  await recoveryPhraseNickname.set(keys.recoveryPhrase.hash, mnemonicHashNickname.value);
   await props.handleNext();
 };
 
@@ -74,7 +76,7 @@ const handleSkip = async () => {
 /* Hooks */
 onBeforeMount(() => {
   if (!isLoggedInOrganization(user.selectedOrganization)) {
-    user.secretHashes.length > 0 && tabItems.value.shift();
+    keys.secretHashes.length > 0 && tabItems.value.shift();
     tabItems.value.pop();
   } else {
     user.selectedOrganization.secretHashes.length > 0 && tabItems.value.shift();
@@ -111,7 +113,7 @@ watch(activeTabTitle, newTitle => {
           <label class="form-label">Enter Recovery Phrase Nickname</label>
           <RecoveryPhraseNicknameInput
             v-model="mnemonicHashNickname"
-            :mnemonic-hash="user.recoveryPhrase?.hash"
+            :mnemonic-hash="keys.recoveryPhrase?.hash"
             :filled="true"
             data-testid="input-recovery-phrase-nickname"
           />
@@ -126,7 +128,7 @@ watch(activeTabTitle, newTitle => {
               >Skip</AppButton
             >
             <AppButton
-              :disabled="user.recoveryPhrase === null"
+              :disabled="keys.recoveryPhrase === null"
               color="primary"
               @click="handleImport"
               data-testid="button-next-import"

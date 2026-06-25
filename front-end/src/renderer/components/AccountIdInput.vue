@@ -4,6 +4,7 @@ import type { HederaAccount } from '@prisma/client';
 import { computed, onBeforeMount, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/accountsService';
@@ -35,6 +36,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* State */
 const accountIds = ref<HederaAccount[]>([]);
@@ -46,7 +48,7 @@ const formattedAccountIds = computed(() => {
     result = props.items;
   } else {
     const linkedAccounts = accountIds.value.map(a => a.account_id);
-    const ownedAccounts = user.publicKeysToAccountsFlattened;
+    const ownedAccounts = keys.publicKeysToAccountsFlattened;
     linkedAccounts.sort(compareAccountIds);
     ownedAccounts.sort(compareAccountIds);
     if (linkedAccounts.length > 0 && ownedAccounts.length > 0) {

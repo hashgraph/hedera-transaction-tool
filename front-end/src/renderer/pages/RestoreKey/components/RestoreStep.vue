@@ -5,6 +5,7 @@ import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { restorePrivateKey } from '@renderer/services/keyPairService';
 import { PrivateKey } from '@hiero-ledger/sdk';
@@ -31,6 +32,7 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const index = ref(0);
@@ -42,7 +44,7 @@ const restoredKey = ref<{ privateKey: string; publicKey: string; mnemonicHash: s
 
 /* Handlers */
 const handleRestoreKey = async (): Promise<true | void> => {
-  if (!user.recoveryPhrase) {
+  if (!keys.recoveryPhrase) {
     throw new Error('Recovery phrase not found');
   }
 
@@ -50,7 +52,7 @@ const handleRestoreKey = async (): Promise<true | void> => {
     loadingText.value = 'Restoring key pair...';
 
     const privateKey = await restorePrivateKey(
-      user.recoveryPhrase.words,
+      keys.recoveryPhrase.words,
       '',
       Number(index.value),
       'ED25519',
@@ -64,12 +66,12 @@ const handleRestoreKey = async (): Promise<true | void> => {
     restoredKey.value = {
       privateKey: privateKey.toStringRaw(),
       publicKey: privateKey.publicKey.toStringRaw(),
-      mnemonicHash: user.recoveryPhrase.hash,
+      mnemonicHash: keys.recoveryPhrase.hash,
     };
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
       const alreadyUploadedHash = await getSecretHashFromUploadedKeys(
-        user.recoveryPhrase,
+        keys.recoveryPhrase,
         user.selectedOrganization.userKeys,
       );
       if (alreadyUploadedHash) {
@@ -77,8 +79,8 @@ const handleRestoreKey = async (): Promise<true | void> => {
       }
     } else {
       const alreadyStoredHash = await getSecretHashFromLocalKeys(
-        user.recoveryPhrase,
-        user.keyPairs,
+        keys.recoveryPhrase,
+        keys.keyPairs,
       );
       if (alreadyStoredHash) {
         restoredKey.value.mnemonicHash = alreadyStoredHash;
@@ -94,12 +96,12 @@ const handleRestoreKey = async (): Promise<true | void> => {
 };
 
 const handleFindEmptyIndex = async () => {
-  if (!user.recoveryPhrase) return;
+  if (!keys.recoveryPhrase) return;
 
   let exists = false;
   do {
     const privateKey = await restorePrivateKey(
-      user.recoveryPhrase.words,
+      keys.recoveryPhrase.words,
       '',
       Number(index.value),
       'ED25519',
@@ -116,7 +118,7 @@ const handleFindEmptyIndex = async () => {
 
 /* Functions */
 const keyExists = (privateKey: PrivateKey) => {
-  return user.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
+  return keys.keyPairs.some(kp => kp.public_key === privateKey.publicKey.toStringRaw());
 };
 
 /* Lifecycle */

@@ -16,6 +16,7 @@ import { getErrorMessage, isLoggedInOrganization, safeAwait } from '@renderer/ut
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,6 +40,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Injected */
@@ -49,11 +51,11 @@ const isDeletingKey = ref(false);
 
 /* Computed */
 const modalMessage = computed(() => {
-  const recoveryPhraseKeyIds = user.keyPairs
+  const recoveryPhraseKeyIds = keys.keyPairs
     .filter(item => item.secret_hash != null)
     .map(item => item.id);
 
-  const privateKeyIds = user.keyPairs.filter(item => item.secret_hash == null).map(item => item.id);
+  const privateKeyIds = keys.keyPairs.filter(item => item.secret_hash == null).map(item => item.id);
 
   const allRecoveryPhraseKeyPairsSelected =
     recoveryPhraseKeyIds.length > 0 &&
@@ -132,8 +134,8 @@ const handleDelete = async () => {
     toastManager.success('Private key(s) deleted successfully');
 
     await user.refetchUserState();
-    await user.refetchKeys();
-    await user.refetchAccounts();
+    await keys.refetchKeys();
+    await keys.refetchAccounts();
 
     if (await accountSetupStore.shouldShowAccountSetup()) {
       // User has deleted all key pairs
@@ -163,7 +165,7 @@ function resetSelection() {
 }
 
 function getUserKeyToDelete(keyPairId: string) {
-  const localKey = user.keyPairs.find(kp => kp.id === keyPairId);
+  const localKey = keys.keyPairs.find(kp => kp.id === keyPairId);
   if (!localKey) {
     throw Error('Local key not found');
   }

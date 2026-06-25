@@ -2,7 +2,7 @@
 import { reactive, watch } from 'vue';
 
 import { PublicKey } from '@hiero-ledger/sdk';
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { getErrorMessage } from '@renderer/utils';
 
@@ -19,7 +19,7 @@ const props = defineProps<{
 const emit = defineEmits(['update:show']);
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -37,7 +37,7 @@ const handleImportPublicKey = async () => {
     if (!isValid) {
       throw new Error('Invalid public key! Please enter a valid Hedera public key.');
     }
-    await user.storePublicKeyMapping(publicKeyMapping.publicKey, publicKeyMapping.nickname);
+    await keys.storePublicKeyMapping(publicKeyMapping.publicKey, publicKeyMapping.nickname);
 
     emit('update:show', false);
 

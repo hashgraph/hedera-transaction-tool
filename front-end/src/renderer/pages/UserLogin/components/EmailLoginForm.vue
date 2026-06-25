@@ -4,6 +4,7 @@ import type { GLOBAL_MODAL_LOADER_TYPE } from '@renderer/providers';
 import { computed, inject, onMounted, reactive, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import useRecoveryPhraseHashMigrate from '@renderer/composables/useRecoveryPhraseHashMigrate';
@@ -42,6 +43,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -153,7 +155,7 @@ const handleOnFormSubmit = async () => {
         await user.refetchOrganizations();
         await setupStores();
 
-        if (user.secretHashes.length === 0) {
+        if (keys.secretHashes.length === 0) {
           await router.push({ name: 'accountSetup' });
           return;
         }

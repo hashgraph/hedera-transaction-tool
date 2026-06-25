@@ -8,6 +8,7 @@ import { computed, ref, type Ref } from 'vue';
 import { KeyPathWithName } from '@shared/interfaces';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
@@ -30,6 +31,7 @@ type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
@@ -156,11 +158,10 @@ const initializeUserStore = async () => {
   }
 
   if (recoveryPhrase.value) {
-    await user.setRecoveryPhrase(recoveryPhrase.value.words);
+    await keys.setRecoveryPhrase(recoveryPhrase.value.words);
   }
   personalUser.value.password && user.setPassword(personalUser.value.password);
 };
-
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">

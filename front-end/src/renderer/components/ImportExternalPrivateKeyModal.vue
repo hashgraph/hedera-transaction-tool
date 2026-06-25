@@ -25,6 +25,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,6 +40,7 @@ const emit = defineEmits(['update:show']);
 /* Stores */
 const user = useUserStore();
 const contacts = useContactsStore();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -71,12 +73,12 @@ const handleImportExternalKey = async () => {
       secret_hash: null,
     };
 
-    if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+    if (keys.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
       throw new Error('Key pair already exists');
     }
 
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      if (user.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
+      if (keys.keyPairs.find(kp => kp.public_key === keyPair.public_key)) {
         throw new Error('Key pair already exists');
       }
 
@@ -88,7 +90,7 @@ const handleImportExternalKey = async () => {
       });
     }
 
-    await user.storeKey(keyPair, null, personalPassword, false);
+    await keys.storeKey(keyPair, null, personalPassword, false);
     await user.refetchUserState();
     await safeAwait(contacts.fetch());
 

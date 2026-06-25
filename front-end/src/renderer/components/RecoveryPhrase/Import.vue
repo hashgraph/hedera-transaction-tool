@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeMount, ref, watch, watchEffect } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { validateMnemonic } from '@renderer/services/keyPairService';
 
@@ -20,7 +20,7 @@ const WORD_COUNT = 24;
 const getDefaultWords = () => Array(WORD_COUNT).fill('');
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const words = ref<string[]>(getDefaultWords());
@@ -83,8 +83,8 @@ const onKeyDownHandler = (e: KeyboardEvent) => {
 
 /* Hooks */
 onBeforeMount(() => {
-  if (user.recoveryPhrase) {
-    words.value = user.recoveryPhrase.words;
+  if (keys.recoveryPhrase) {
+    words.value = keys.recoveryPhrase.words;
   }
 });
 
@@ -94,9 +94,9 @@ watch(words, async newWords => {
   isMnemonicValid.value = await validateMnemonic(normalizedWords);
 
   if (isMnemonicValid.value) {
-    await user.setRecoveryPhrase(normalizedWords);
+    await keys.setRecoveryPhrase(normalizedWords);
   } else {
-    user.recoveryPhrase = null;
+    keys.recoveryPhrase = null;
   }
 });
 

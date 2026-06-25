@@ -22,6 +22,7 @@ import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
@@ -80,6 +81,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Composables */
 const { getPassword, passwordModalOpened } = usePersonalPassword();
@@ -264,7 +266,7 @@ async function signGroupItems(groupItems: GroupItem[], description: string) {
   });
   if (passwordModalOpened(personalPassword)) return;
 
-  const keyToSignWith = user.keyPairs[0].public_key;
+  const keyToSignWith = keys.keyPairs[0].public_key;
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 

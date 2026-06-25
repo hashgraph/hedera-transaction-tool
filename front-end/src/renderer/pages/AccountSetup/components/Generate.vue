@@ -3,6 +3,7 @@ import { ref, watch } from 'vue';
 import { Mnemonic } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useRouter } from 'vue-router';
@@ -26,11 +27,12 @@ const props = defineProps<{
 
 /* Store */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const recoveryPhraseNickname = useRecoveryPhraseNickname();
 
 /* State */
@@ -79,7 +81,7 @@ const handleSaveWords = async (words: string[]) => {
   if (!isValid) {
     throw new Error('Invalid Recovery Phrase!');
   } else {
-    await user.setRecoveryPhrase(words);
+    await keys.setRecoveryPhrase(words);
     wordsConfirmed.value = true;
   }
 };
@@ -95,8 +97,8 @@ const handleCopyRecoveryPhrase = () => {
 };
 
 const handleGenerate = async () => {
-  if (user.recoveryPhrase === null) return;
-  await recoveryPhraseNickname.set(user.recoveryPhrase.hash, mnemonicHashNickname.value);
+  if (keys.recoveryPhrase === null) return;
+  await recoveryPhraseNickname.set(keys.recoveryPhrase.hash, mnemonicHashNickname.value);
   await props.handleNext();
 };
 
@@ -208,7 +210,7 @@ watch(words, newWords => {
       <label class="form-label">Enter Recovery Phrase Nickname</label>
       <RecoveryPhraseNicknameInput
         v-model="mnemonicHashNickname"
-        :mnemonic-hash="user.recoveryPhrase?.hash"
+        :mnemonic-hash="keys.recoveryPhrase?.hash"
         :filled="true"
         data-testid="input-recovery-phrase-nickname"
       />

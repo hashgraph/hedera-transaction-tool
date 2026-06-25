@@ -8,6 +8,7 @@ import { AccountId, Hbar, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRoute } from 'vue-router';
@@ -24,6 +25,7 @@ import AccountCreateFormData from '@renderer/components/Transaction/Create/Accou
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Composables */
 const route = useRoute();
@@ -81,8 +83,8 @@ const handleExecutedSuccess = async ({ receipt }: ExecutedSuccessData) => {
   const accountId = getEntityIdFromTransactionReceipt(receipt, 'accountId');
   await add(user.personal.id, accountId, network.network, nickname.value);
   setTimeout(async () => {
-    await user.refetchKeys();
-    await user.refetchAccounts();
+    await keys.refetchKeys();
+    await keys.refetchAccounts();
   }, 5000);
   toastManager.success(`Account ${accountId} has been linked`);
 };

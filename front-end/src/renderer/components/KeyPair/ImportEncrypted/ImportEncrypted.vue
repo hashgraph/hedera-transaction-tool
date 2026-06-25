@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import SelectEncryptedKeysModal from '@renderer/components/KeyPair/ImportEncrypted/components/SelectEncryptedKeysModal.vue';
 import RecoveryPhraseModal from '@renderer/components/modals/RecoveryPhraseModal.vue';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
@@ -29,7 +29,7 @@ const handleEncryptedKeysSelected = () => {
 
 const handleRecoveryPhraseContinue = async () => {
   isRecoveryPhraseModalShown.value = false;
-  await decryptKeysRef.value?.process(keyPaths.value || [], user.recoveryPhrase?.words || null);
+  await decryptKeysRef.value?.process(keyPaths.value || [], keys.recoveryPhrase?.words || null);
 };
 
 /* Functions */

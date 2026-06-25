@@ -7,6 +7,7 @@ import { onBeforeMount, ref } from 'vue';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
@@ -41,6 +42,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keysStore = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -72,9 +74,9 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
     encrypted: false,
   };
   try {
-    if (user.recoveryPhrase) {
+    if (keysStore.recoveryPhrase) {
       const restoredPrivateKey = await restorePrivateKey(
-        user.recoveryPhrase.words,
+        keysStore.recoveryPhrase.words,
         '',
         index,
         'ED25519',
@@ -97,17 +99,15 @@ const addKeyToRestored = async (index: number, mnemonicHash: string, veirificati
       keys.value.push(key);
     }
   } catch (error) {
-    toastManager.error(
-      getErrorMessage(error, `Restoring key at index: ${index} failed`),
-    );
+    toastManager.error(getErrorMessage(error, `Restoring key at index: ${index} failed`));
   }
 };
 
 const restoreDefaultKey = async () => {
-  if (!user.recoveryPhrase) {
+  if (!keysStore.recoveryPhrase) {
     throw new Error('Recovery phrase is not set');
   }
-  await addKeyToRestored(0, user.recoveryPhrase.hash);
+  await addKeyToRestored(0, keysStore.recoveryPhrase.hash);
 };
 
 const restoreForExistingKey = async (key: KeyPair) => {
@@ -118,14 +118,14 @@ const restoreForExistingKey = async (key: KeyPair) => {
 };
 
 const restoreForOrganization = async (organization: ConnectedOrganization) => {
-  await updateOrganizationKeysHash(organization, user.recoveryPhrase);
+  await updateOrganizationKeysHash(organization, keysStore.recoveryPhrase);
   await user.refetchUserState();
 
   const restoredKeys = await restoreOrganizationKeys(
     organization,
-    user.recoveryPhrase,
+    keysStore.recoveryPhrase,
     user.personal,
-    user.keyPairs,
+    keysStore.keyPairs,
     false,
   );
 
@@ -201,14 +201,14 @@ const handleSave = async () => {
         });
       }
 
-      await user.storeKey(
+      await keysStore.storeKey(
         keyPair,
         key.mnemonicHash,
         personalPassword,
         Boolean(props.selectedPersonalKeyPair),
       );
-      if (!user.secretHashes.includes(key.mnemonicHash)) {
-        user.secretHashes.push(key.mnemonicHash);
+      if (!keysStore.secretHashes.includes(key.mnemonicHash)) {
+        keysStore.secretHashes.push(key.mnemonicHash);
       }
       storedCount++;
     } catch (error) {

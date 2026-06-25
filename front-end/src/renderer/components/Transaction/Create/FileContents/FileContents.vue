@@ -11,6 +11,7 @@ import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import useAccountId from '@renderer/composables/useAccountId';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
@@ -34,6 +35,7 @@ import TransactionHeaderControls from '@renderer/components/Transaction/Transact
 /* Stores */
 const user = useUserStore();
 const network = useNetworkStore();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -59,10 +61,10 @@ const readFile = async () => {
   try {
     isLoading.value = true;
 
-    const publicKey = user.publicKeyToAccounts.find(pa =>
+    const publicKey = keys.publicKeyToAccounts.find(pa =>
       pa.accounts.some(acc => acc.account === payerData.accountIdFormatted.value),
     )?.publicKey;
-    const keyPair = user.keyPairs.find(kp => kp.public_key === publicKey);
+    const keyPair = keys.keyPairs.find(kp => kp.public_key === publicKey);
 
     if (!keyPair) {
       throw new Error('Unable to execute query, you should use a payer ID with one of your keys');

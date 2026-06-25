@@ -7,6 +7,7 @@ import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useDraft from '@renderer/composables/useDraft';
@@ -40,6 +41,7 @@ const emit = defineEmits<{
 /* Stores */
 const user = useUserStore();
 const network = useNetwork();
+const keys = useKeysStore();
 
 /* Composables */
 const toastManager = ToastManager.inject()
@@ -99,7 +101,7 @@ async function handle(req: Processable) {
 
   request.value = req;
 
-  const publicKey = user.keyPairs[0].public_key;
+  const publicKey = keys.keyPairs[0].public_key;
 
   try {
     emit('loading:begin');

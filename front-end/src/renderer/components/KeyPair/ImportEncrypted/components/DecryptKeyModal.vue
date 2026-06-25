@@ -23,6 +23,7 @@ import {
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 /* Props */
 const props = defineProps<{
@@ -45,6 +46,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const decryptPassword = ref<string>(props.defaultPassword || '');
@@ -90,7 +92,7 @@ async function decrypt() {
   error.value = null;
 
   try {
-    const indexesFromMnemonic = props.indexesFromMnemonic ?? []
+    const indexesFromMnemonic = props.indexesFromMnemonic ?? [];
     key = {
       fileName: fileName.value,
       ...(await decryptEncryptedKey(
@@ -140,7 +142,7 @@ async function storeKey(key: {
   const publicKey = privateKey.publicKey;
 
   if (
-    user.keyPairs.some(k => k.public_key === publicKey.toStringRaw()) ||
+    keys.keyPairs.some(k => k.public_key === publicKey.toStringRaw()) ||
     decryptedKeys.value.includes(publicKey.toStringRaw())
   )
     return;

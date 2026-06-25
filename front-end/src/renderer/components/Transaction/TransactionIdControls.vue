@@ -5,6 +5,7 @@ import { Hbar, HbarUnit } from '@hiero-ledger/sdk';
 import { DEFAULT_MAX_TRANSACTION_FEE_CLAIM_KEY } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 
 import { useRoute } from 'vue-router';
 
@@ -32,6 +33,7 @@ const emit = defineEmits(['update:payerId', 'update:validStart', 'update:maxTran
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
 const route = useRoute();
@@ -63,7 +65,7 @@ onBeforeMount(async () => {
     );
   }
 
-  const allAccounts = user.publicKeyToAccounts.map(a => a.accounts).flat();
+  const allAccounts = keys.publicKeyToAccounts.map(a => a.accounts).flat();
   if (allAccounts.length > 0 && allAccounts[0].account) {
     account.accountId.value = allAccounts[0].account;
     emit('update:payerId', allAccounts[0].account || '');
@@ -78,9 +80,9 @@ watch(
 );
 
 watch(
-  () => user.publicKeyToAccounts,
+  () => keys.publicKeyToAccounts,
   () => {
-    handlePayerChange(user.publicKeysToAccountsFlattened[0]);
+    handlePayerChange(keys.publicKeysToAccountsFlattened[0]);
   },
 );
 

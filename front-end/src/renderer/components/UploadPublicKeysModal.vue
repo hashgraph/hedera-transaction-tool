@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { showOpenDialog } from '@renderer/services/electronUtilsService';
 import { searchPublicKeys, abortFileSearch } from '@renderer/services/publicKeyMappingService';
@@ -23,10 +23,10 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* State */
 const foundKeys = ref<{ publicKey: string; nickname: string }[]>([]);
@@ -53,7 +53,7 @@ const handleSubmit = async () => {
     const newKeys = selectedKeys.value.filter(k => !existingKeys.has(k.publicKey));
     const skippedKeys = selectedKeys.value.length - newKeys.length;
 
-    await Promise.allSettled(newKeys.map(k => user.storePublicKeyMapping(k.publicKey, k.nickname)));
+    await Promise.allSettled(newKeys.map(k => keys.storePublicKeyMapping(k.publicKey, k.nickname)));
 
     if (skippedKeys === selectedKeys.value.length) {
       toastManager.error('All selected keys are already imported in your list');

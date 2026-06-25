@@ -4,6 +4,7 @@ import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -44,6 +45,7 @@ const toastManager = ToastManager.inject();
 /* Stores */
 const transactionGroup = useTransactionGroupStore();
 const user = useUserStore();
+const keys = useKeysStore();
 const useNextTransaction = useNextTransactionV2();
 
 /* Composables */
@@ -181,7 +183,7 @@ async function handleSignSubmit() {
     updateValidStarts.value = false;
     transactionGroup.updateTransactionValidStarts(transactionGroup.groupValidStart);
     const ownerKeys = new Array<PublicKey>();
-    for (const key of user.keyPairs) {
+    for (const key of keys.keyPairs) {
       ownerKeys.push(PublicKey.fromString(key.public_key));
     }
     const requiredKey = new KeyList(ownerKeys);
@@ -330,7 +332,7 @@ onBeforeRouteLeave(async to => {
               {{
                 getPropagationButtonLabel(
                   transactionKey,
-                  user.keyPairs,
+                  keys.keyPairs,
                   Boolean(user.selectedOrganization),
                 )
               }}</AppButton
@@ -418,14 +420,9 @@ onBeforeRouteLeave(async to => {
                 class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
               >
-                <span
-                  v-if="groupItem.transferSummary"
-                  v-html="groupItem.transferSummary"
-                />
+                <span v-if="groupItem.transferSummary" v-html="groupItem.transferSummary" />
                 <template v-else>{{
-                  groupItem.description !== ''
-                    ? groupItem.description
-                    : groupItem.transactionMemo
+                  groupItem.description !== '' ? groupItem.description : groupItem.transactionMemo
                 }}</template>
               </div>
               <div
@@ -433,11 +430,7 @@ onBeforeRouteLeave(async to => {
                 style="width: 11rem"
                 :data-testid="'span-transaction-valid-start-' + index"
               >
-                <DateTimeString
-                  :date="groupItem.validStart"
-                  compact
-                  wrap
-                />
+                <DateTimeString :date="groupItem.validStart" compact wrap />
               </div>
               <div class="d-flex flex-shrink-0 align-items-center gap-3 ms-3">
                 <AppButton

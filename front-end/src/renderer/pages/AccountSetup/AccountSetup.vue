@@ -5,6 +5,7 @@ import { computed, onBeforeMount, ref } from 'vue';
 import { onBeforeRouteLeave, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import useSetDynamicLayout, {
   ACCOUNT_SETUP_LAYOUT,
@@ -26,6 +27,7 @@ type StepName = 'newPassword' | 'recoveryPhrase' | 'keyPairs';
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
@@ -187,7 +189,7 @@ onBeforeRouteLeave(async () => {
         </div>
         <AppButton
           v-if="
-            (user.recoveryPhrase && currentStep !== 'recoveryPhrase') ||
+            (keys.recoveryPhrase && currentStep !== 'recoveryPhrase') ||
             (isLoggedInOrganization(user.selectedOrganization) && selectedPersonalKeyPair !== null)
           "
           color="primary"

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -27,7 +27,7 @@ const emit = defineEmits<{
 }>();
 
 /* Stores */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -53,7 +53,7 @@ const handleDelete = async () => {
     if (idsToDeleteArray.length > 0) {
       for (const id of idsToDeleteArray) {
         try {
-          await user.deletePublicKeyMapping(id);
+          await keys.deletePublicKeyMapping(id);
         } catch (error) {
           toastManager.error(
             getErrorMessage(error, 'Unable to delete one or more public key mapping(s)'),

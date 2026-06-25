@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
+import useKeysStore from '@renderer/stores/storeKeys.ts';
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
@@ -35,6 +36,7 @@ const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const progressText = ref<string>('');
@@ -56,7 +58,7 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
         group = props.groupOrId;
       }
 
-      if (user.publicKeys.length === 0) {
+      if (keys.publicKeys.length === 0) {
         toastManager.error(
           'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
         );
@@ -64,7 +66,7 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
       }
       progressText.value = `Exporting ${group.groupItems.length} transactions`;
 
-      const publicKey = user.publicKeys[0]; // get the first key pair's public key
+      const publicKey = keys.publicKeys[0]; // get the first key pair's public key
 
       const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, publicKey);
       const privateKey = getPrivateKey(publicKey, privateKeyRaw);

@@ -1,4 +1,5 @@
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 
@@ -20,6 +21,7 @@ import {
 export default function useAfterOrganizationSelection() {
   /* Stores */
   const user = useUserStore();
+  const keys = useKeysStore();
   const accountSetup = useAccountSetup();
 
   /* Composables */
@@ -40,8 +42,8 @@ export default function useAfterOrganizationSelection() {
       await user.selectOrganization(null);
       throw new Error('Failed to retrieve key pairs or mnemonics');
     }
-    user.keyPairs = keyPairs;
-    user.mnemonics = mnemonics;
+    keys.keyPairs = keyPairs;
+    keys.mnemonics = mnemonics;
 
     return { keyPairs, mnemonics };
   };
@@ -82,7 +84,7 @@ export default function useAfterOrganizationSelection() {
     await handleNavigation();
 
     await setupStores();
-    await user.refetchAccounts();
+    await keys.refetchAccounts();
   };
 
   return afterOrganizationSelection;

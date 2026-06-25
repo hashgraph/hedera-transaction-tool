@@ -6,6 +6,7 @@ import type { RecoveryPhrase } from '@renderer/types';
 import { ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService';
 import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
@@ -37,6 +38,7 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 
 /* State */
 const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
@@ -85,7 +87,7 @@ const restoreExistingKeys = async () => {
       );
 
       if (matchedHash) {
-        const alreadyRestored = user.keyPairs.some(kp => kp.public_key === userKey.publicKey);
+        const alreadyRestored = keys.keyPairs.some(kp => kp.public_key === userKey.publicKey);
         if (!alreadyRestored) {
           await safeAwait(restoreKeyPair(userKey.index, `Restored Key ${i + 1}`, false));
         }
@@ -130,7 +132,7 @@ const restoreKeyPair = async (index: number, nickname: string, upload: boolean) 
   }
 
   await storeKeyPair(keyPair, user.personal.useKeychain ? null : user.personal.password, false);
-  await user.refetchKeys();
+  await keys.refetchKeys();
 };
 
 /* Watchers */

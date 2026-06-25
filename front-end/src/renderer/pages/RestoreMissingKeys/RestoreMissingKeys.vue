@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -32,6 +33,7 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
+const keysStore = useKeysStore();
 
 /* Composables */
 const router = useRouter();
@@ -51,10 +53,10 @@ const handleImportRecoveryPhrase = async () => {
     const index = props.index;
     const publicKey = props.publicKey;
 
-    if (index !== undefined && publicKey && user.recoveryPhrase) {
+    if (index !== undefined && publicKey && keysStore.recoveryPhrase) {
       const { keyType } = getPublicKeyAndType(publicKey);
       const derivedKey = await restorePrivateKey(
-        user.recoveryPhrase.words,
+        keysStore.recoveryPhrase.words,
         '',
         Number(index),
         keyType,
@@ -67,9 +69,9 @@ const handleImportRecoveryPhrase = async () => {
 
     const restoredKeys = await restoreOrganizationKeys(
       user.selectedOrganization,
-      user.recoveryPhrase,
+      keysStore.recoveryPhrase,
       user.personal,
-      user.keyPairs,
+      keysStore.keyPairs,
       true,
     );
 
@@ -90,7 +92,7 @@ const handleImportRecoveryPhrase = async () => {
 
 const handleClearWords = (value: boolean) => {
   shouldClearInputs.value = value;
-  user.setRecoveryPhrase(null);
+  keysStore.setRecoveryPhrase(null);
 };
 
 const storeKeys = async (
@@ -110,12 +112,12 @@ const storeKeys = async (
   let restoredKeys = 0;
   for (const key of keys) {
     assertIsLoggedInOrganization(user.selectedOrganization);
-    if (!user.recoveryPhrase) {
+    if (!keysStore.recoveryPhrase) {
       throw new Error('Recovery phrase is not set');
     }
 
     try {
-      await user.storeKey(
+      await keysStore.storeKey(
         {
           user_id: user.personal.id,
           index: key.index,
@@ -137,7 +139,7 @@ const storeKeys = async (
     }
   }
 
-  user.recoveryPhrase = null;
+  keysStore.recoveryPhrase = null;
   await user.refetchUserState();
 
   if (restoredKeys > 0) {
@@ -148,7 +150,7 @@ const storeKeys = async (
 
 /* Hooks */
 onMounted(() => {
-  user.recoveryPhrase = null;
+  keysStore.recoveryPhrase = null;
 });
 </script>
 <template>
@@ -171,7 +173,7 @@ onMounted(() => {
               <AppButton
                 color="primary"
                 data-testid="button-continue-phrase"
-                :disabled="!user.recoveryPhrase"
+                :disabled="!keysStore.recoveryPhrase"
                 :loading="Boolean(loadingText)"
                 :loading-text="loadingText || ''"
                 type="submit"

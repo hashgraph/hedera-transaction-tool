@@ -4,6 +4,7 @@ import type { KeyPair } from '@prisma/client';
 import { onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -26,6 +27,7 @@ const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
+const keys = useKeysStore();
 const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
@@ -48,7 +50,7 @@ const isDeleteAllModalShown = ref<boolean>(false);
 
 /* Handlers */
 const handleSkip = async () => {
-  await user.setRecoveryPhrase(null);
+  await keys.setRecoveryPhrase(null);
 
   let keysToMigrate = await getRequiredKeysToMigrate();
   if (isLoggedInOrganization(user.selectedOrganization) && keysToMigrate.length > 0) {
@@ -59,13 +61,13 @@ const handleSkip = async () => {
     await updateMnemonicHash(key.id, null);
     await updateIndex(key.id, -1);
   }
-  await user.refetchKeys();
+  await keys.refetchKeys();
 
   await router.push({ name: 'transactions' });
 };
 
 const handleVerify = async () => {
-  if (!user.recoveryPhrase) {
+  if (!keys.recoveryPhrase) {
     errorMessage.value = null;
     return;
   }
@@ -74,7 +76,7 @@ const handleVerify = async () => {
   loadingText.value = 'Verifying recovery phrase...';
 
   const { data, error } = await safeAwait(
-    getKeysToUpdateForRecoveryPhrase(user.recoveryPhrase.words),
+    getKeysToUpdateForRecoveryPhrase(keys.recoveryPhrase.words),
   );
 
   if (error) {
@@ -93,13 +95,13 @@ const handleVerify = async () => {
 };
 
 const handleContinue = async () => {
-  if (!user.recoveryPhrase) {
+  if (!keys.recoveryPhrase) {
     return;
   }
 
   loadingText.value = 'Updating recovery phrase hash...';
   const { error } = await safeAwait(
-    updateKeyPairsHash(keysToUpdate.value, user.recoveryPhrase.hash),
+    updateKeyPairsHash(keysToUpdate.value, keys.recoveryPhrase.hash),
   );
   if (!error) {
     toastManager.success('Recovery phrase hash updated successfully');
@@ -114,8 +116,8 @@ const handleDataReset = () => router.push({ name: 'login' });
 const handleOpenDeleteAllKeysModal = () => (isDeleteAllModalShown.value = true);
 const handleKeysDeleted = async () => {
   await user.refetchUserState();
-  await user.refetchKeys();
-  await user.refetchAccounts();
+  await keys.refetchKeys();
+  await keys.refetchAccounts();
 
   if (await accountSetupStore.shouldShowAccountSetup()) {
     await router.push({ name: 'accountSetup' });
@@ -124,11 +126,11 @@ const handleKeysDeleted = async () => {
 
 /* Hooks */
 onMounted(async () => {
-  await user.setRecoveryPhrase(null);
+  await keys.setRecoveryPhrase(null);
 });
 
 /* Watchers */
-watch(() => user.recoveryPhrase, handleVerify);
+watch(() => keys.recoveryPhrase, handleVerify);
 </script>
 <template>
   <div class="flex-column-100 flex-centered">
@@ -199,7 +201,7 @@ watch(() => user.recoveryPhrase, handleVerify);
                 color="primary"
                 @click="handleContinue"
                 data-testid="button-next"
-                :disabled="Boolean(loadingText) || !user.recoveryPhrase || !isRecoveryPhraseValid"
+                :disabled="Boolean(loadingText) || !keys.recoveryPhrase || !isRecoveryPhraseValid"
                 :loading="Boolean(loadingText)"
                 :loading-text="loadingText || ''"
                 >Continue</AppButton

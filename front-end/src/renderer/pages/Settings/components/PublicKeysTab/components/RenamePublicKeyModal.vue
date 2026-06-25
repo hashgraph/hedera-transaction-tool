@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 
 import type { PublicKeyMapping } from '@prisma/client';
 
-import useUserStore from '@renderer/stores/storeUser';
+import useKeysStore from '@renderer/stores/storeKeys';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { getErrorMessage } from '@renderer/utils';
@@ -13,7 +13,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
 /* Store */
-const user = useUserStore();
+const keys = useKeysStore();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -39,14 +39,14 @@ const handleUpdate = async () => {
   try {
     isUpdating.value = true;
     if (props.publicKeyMapping) {
-      await user.updatePublicKeyMappingNickname(
+      await keys.updatePublicKeyMappingNickname(
         props.publicKeyMapping.id,
         props.publicKeyMapping.public_key,
         newNickname.value,
       );
       toastManager.success('Nickname updated successfully');
     } else if (props.publicKey) {
-      await user.storePublicKeyMapping(props.publicKey, newNickname.value);
+      await keys.storePublicKeyMapping(props.publicKey, newNickname.value);
       toastManager.success('Nickname set successfully');
     }
     emit('change');
