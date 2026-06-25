@@ -52,9 +52,14 @@ vi.mock('@renderer/stores/storeUser', () => ({
       serverUrl: 'https://org.test',
       userKeys: [{ publicKey: 'pubkey-1', id: 42 }],
     },
-    keyPairs: [{ public_key: 'pubkey-1' }],
     personal: { id: 'user-1', useKeychain: false },
     getPassword: () => 'password',
+  })),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => ({
+    keyPairs: [{ public_key: 'pubkey-1' }],
   })),
 }));
 

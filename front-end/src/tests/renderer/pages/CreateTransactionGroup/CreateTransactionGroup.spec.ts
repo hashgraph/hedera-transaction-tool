@@ -37,9 +37,14 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@renderer/stores/storeUser', () => ({
   default: vi.fn(() => ({
-    keyPairs: [],
     personal: { id: 'local-user-id' },
     selectedOrganization: null,
+  })),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => ({
+    keyPairs: [],
   })),
 }));
 

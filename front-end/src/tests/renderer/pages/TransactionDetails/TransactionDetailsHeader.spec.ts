@@ -22,6 +22,9 @@ const userStore = {
     serverUrl: 'https://org.example.com',
     userKeys: [],
   },
+};
+
+const keysStore = {
   publicKeys: [],
 };
 
@@ -59,6 +62,10 @@ vi.mock('vue-toast-notification', () => ({
 
 vi.mock('@renderer/stores/storeUser', () => ({
   default: vi.fn(() => userStore),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => keysStore),
 }));
 
 vi.mock('@renderer/stores/storeNetwork', () => ({

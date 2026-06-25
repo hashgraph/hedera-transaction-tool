@@ -20,10 +20,12 @@ const mocks = vi.hoisted(() => ({
       email?: string;
     },
     logout: vi.fn(),
-    refetchAccounts: vi.fn(),
-    refetchKeys: vi.fn(),
     setPassword: vi.fn(),
     selectOrganization: vi.fn(),
+  },
+  keysStore: {
+    refetchAccounts: vi.fn(),
+    refetchKeys: vi.fn(),
   },
   getPasswordAsync: vi.fn(),
   changePasswordUser: vi.fn(),
@@ -42,6 +44,10 @@ vi.mock('vue-router', () => ({
 
 vi.mock('@renderer/stores/storeUser', () => ({
   default: vi.fn(() => mocks.userStore),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => mocks.keysStore),
 }));
 
 vi.mock('@renderer/composables/useLoader', () => ({
@@ -190,8 +196,8 @@ describe('settings profile coverage', () => {
 
     test('happy path: calls user changePassword, refetches keys, clears fields, opens success modal', async () => {
       mocks.changePasswordUser.mockResolvedValueOnce(undefined);
-      mocks.userStore.refetchKeys.mockResolvedValueOnce(undefined);
-      mocks.userStore.refetchAccounts.mockResolvedValueOnce(undefined);
+      mocks.keysStore.refetchKeys.mockResolvedValueOnce(undefined);
+      mocks.keysStore.refetchAccounts.mockResolvedValueOnce(undefined);
 
       const wrapper = mountProfile();
       await setPasswords(wrapper, STRONG_OLD, STRONG_NEW);
@@ -204,8 +210,8 @@ describe('settings profile coverage', () => {
         STRONG_NEW,
       );
       expect(mocks.userStore.setPassword).toHaveBeenCalledWith(STRONG_NEW);
-      expect(mocks.userStore.refetchKeys).toHaveBeenCalled();
-      expect(mocks.userStore.refetchAccounts).toHaveBeenCalled();
+      expect(mocks.keysStore.refetchKeys).toHaveBeenCalled();
+      expect(mocks.keysStore.refetchAccounts).toHaveBeenCalled();
       expect(
         (wrapper.find('[data-testid="input-current-password"]').element as HTMLInputElement).value,
       ).toBe('');

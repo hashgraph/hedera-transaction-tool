@@ -6,7 +6,7 @@ import { KeyList } from '@hiero-ledger/sdk';
 import ComplexKeyThreshold from '@renderer/components/ComplexKey/ComplexKeyThreshold.vue';
 
 const mocks = vi.hoisted(() => ({
-  userStore: { keyPairs: [] },
+  keysStore: { keyPairs: [] },
   contactsStore: {
     getContactByPublicKey: vi.fn(() => null),
   },
@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
-vi.mock('@renderer/stores/storeUser', () => ({
-  default: vi.fn(() => mocks.userStore),
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => mocks.keysStore),
 }));
 
 vi.mock('@renderer/stores/storeContacts', () => ({

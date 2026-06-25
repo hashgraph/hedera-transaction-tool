@@ -13,7 +13,10 @@ vi.mock('vue-router', () => ({
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
-  default: () => ({ selectedOrganization: null, keyPairs: [] }),
+  default: () => ({ selectedOrganization: null }),
+}));
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: () => ({ keyPairs: [] }),
 }));
 vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => ({ mirrorNodeBaseURL: 'http://localhost' }),

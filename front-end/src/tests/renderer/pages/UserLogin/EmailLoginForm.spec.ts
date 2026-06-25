@@ -24,9 +24,14 @@ vi.mock('@renderer/stores/storeUser', () => ({
     login: vi.fn(),
     personal: null,
     refetchOrganizations: vi.fn(),
-    secretHashes: [],
     setAccountSetupStarted: vi.fn(),
     setPassword: vi.fn(),
+  })),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => ({
+    secretHashes: [],
   })),
 }));
 

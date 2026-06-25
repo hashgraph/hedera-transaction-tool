@@ -24,6 +24,9 @@ const userStore = {
     serverUrl: 'https://org.example.com',
     userKeys: [{ id: 77, publicKey: 'pub', mnemonicHash: 'hash' }],
   },
+};
+
+const keyStore = {
   publicKeys: [],
   keyPairs: [],
 };
@@ -101,6 +104,11 @@ vi.mock('@renderer/stores/storeNetwork', () => ({
     mirrorNodeBaseURL: 'https://mirror.example.com',
   })),
 }));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => keyStore),
+}));
+
 
 vi.mock('@renderer/stores/storeNextTransactionV2.ts', () => ({
   default: vi.fn(() => ({

@@ -13,6 +13,8 @@ const mocks = vi.hoisted(() => ({
   userStore: {
     personal: { id: 'local-user-id' },
     selectedOrganization: null as any,
+  },
+  keysStore: {
     publicKeyMappings: [] as any[],
     refetchPublicKeys: vi.fn(),
     storePublicKeyMapping: vi.fn(),
@@ -23,6 +25,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('@renderer/stores/storeUser', () => ({
   default: vi.fn(() => mocks.userStore),
+}));
+
+vi.mock('@renderer/stores/storeKeys', () => ({
+  default: vi.fn(() => mocks.keysStore),
 }));
 
 vi.mock('@renderer/caches/backend/PublicKeyOwnerCache', () => {
@@ -99,7 +105,7 @@ describe('settings public keys coverage', () => {
       return {};
     });
     mocks.userStore.selectedOrganization = null;
-    mocks.userStore.publicKeyMappings = [
+    mocks.keysStore.publicKeyMappings = [
       {
         id: 'mapping-1',
         nickname: 'Key One',
@@ -111,10 +117,10 @@ describe('settings public keys coverage', () => {
         public_key: 'valid-public-key-two',
       },
     ];
-    mocks.userStore.refetchPublicKeys.mockReset();
-    mocks.userStore.storePublicKeyMapping.mockReset();
-    mocks.userStore.updatePublicKeyMappingNickname.mockReset();
-    mocks.userStore.deletePublicKeyMapping.mockReset();
+    mocks.keysStore.refetchPublicKeys.mockReset();
+    mocks.keysStore.storePublicKeyMapping.mockReset();
+    mocks.keysStore.updatePublicKeyMappingNickname.mockReset();
+    mocks.keysStore.deletePublicKeyMapping.mockReset();
 
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
@@ -158,7 +164,7 @@ describe('settings public keys coverage', () => {
     await wrapper.find('[data-testid="button-confirm-update-nickname"]').trigger('submit');
     await flushPromises();
 
-    expect(mocks.userStore.updatePublicKeyMappingNickname).toHaveBeenCalledWith(
+    expect(mocks.keysStore.updatePublicKeyMappingNickname).toHaveBeenCalledWith(
       'mapping-1',
       'valid-public-key-one',
       'Renamed Key',
@@ -179,8 +185,8 @@ describe('settings public keys coverage', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
-    expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-2');
+    expect(mocks.keysStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
+    expect(mocks.keysStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-2');
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
       'Public key mapping(s) deleted successfully',
     );
@@ -198,7 +204,7 @@ describe('settings public keys coverage', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    expect(mocks.userStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
+    expect(mocks.keysStore.deletePublicKeyMapping).toHaveBeenCalledWith('mapping-1');
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
       'Public key mapping(s) deleted successfully',
     );
@@ -225,14 +231,14 @@ describe('settings public keys coverage', () => {
     expect(mocks.toastError).toHaveBeenCalledWith(
       'Invalid public key! Please enter a valid Hedera public key.',
     );
-    expect(mocks.userStore.storePublicKeyMapping).not.toHaveBeenCalled();
+    expect(mocks.keysStore.storePublicKeyMapping).not.toHaveBeenCalled();
 
     await wrapper.find('[data-testid="input-public-key-mapping"]').setValue('valid-public-key');
     await wrapper.find('[data-testid="input-public-key-nickname"]').setValue('Good Key');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    expect(mocks.userStore.storePublicKeyMapping).toHaveBeenCalledWith(
+    expect(mocks.keysStore.storePublicKeyMapping).toHaveBeenCalledWith(
       'valid-public-key',
       'Good Key',
     );

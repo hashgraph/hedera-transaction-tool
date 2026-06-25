@@ -21,6 +21,12 @@ vi.mock('@renderer/stores/storeUser', () => ({
   default: () => mockUseUserStore(),
 }));
 
+const mockUseKeysStore = vi.fn();
+vi.mock('@renderer/stores/storeKeys', () => ({
+  __esModule: true,
+  default: () => mockUseKeysStore(),
+}));
+
 const mockUseNetworkStore = vi.fn();
 vi.mock('@renderer/stores/storeNetwork', () => ({
   __esModule: true,
@@ -207,7 +213,6 @@ describe('collectRequiredKeys', () => {
 
     mockUseUserStore.mockReturnValue({
       personal: { id: 'user-1', isLoggedIn: true },
-      keyPairs: [{ public_key: 'pk-1' }],
       selectedOrganization: {
         serverUrl: 'https://api.test',
         userKeys: ['org-key-1'],
@@ -215,6 +220,10 @@ describe('collectRequiredKeys', () => {
         isServerActive: true,
         loginRequired: false,
       },
+    });
+
+    mockUseKeysStore.mockReturnValue({
+      keyPairs: [{ public_key: 'pk-1' }],
     });
   });
 
@@ -246,7 +255,6 @@ describe('collectMissingKeys', () => {
 
     mockUseUserStore.mockReturnValue({
       personal: { id: 'user-1', isLoggedIn: true },
-      keyPairs: [{ public_key: 'pk-1' }],
       selectedOrganization: {
         serverUrl: 'https://api.test',
         userKeys: ['org-key-1'],
@@ -254,6 +262,10 @@ describe('collectMissingKeys', () => {
         isServerActive: true,
         loginRequired: false,
       },
+    });
+
+    mockUseKeysStore.mockReturnValue({
+      keyPairs: [{ public_key: 'pk-1' }],
     });
   });
 
