@@ -52,10 +52,7 @@ const toBeReUploadedKeyInfo = ref<KeyInfo | null>(null);
 
 /* Computed */
 const displayedKeyInfos = computed(() => {
-  return keyManager.keyInfos.value;
-  // return keyInfos.value.filter(info =>
-  //   info.isVisible(selectedTab.value, selectedRecoveryPhrase.value ?? null),
-  // );
+  return keyManager.keyInfos.value.filter(info => isKeyInfoVisible(info));
 });
 
 const allKeysSelected = computed(
@@ -136,6 +133,18 @@ const reUploadCompleted = async () => {
   await user.refetchUserState();
   await user.refetchKeys();
   await user.refetchAccounts();
+};
+
+/* Functions */
+const isKeyInfoVisible = (keyInfo: KeyInfo) => {
+  switch (selectedTab.value) {
+    case Tabs.ALL:
+      return true;
+    case Tabs.RECOVERY_PHRASE:
+      return keyInfo.mnemonicHash() === selectedRecoveryPhrase.value;
+    case Tabs.PRIVATE_KEY:
+      return keyInfo.mnemonicHash() === null;
+  }
 };
 
 /* Watchers */
