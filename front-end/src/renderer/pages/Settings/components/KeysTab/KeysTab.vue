@@ -16,7 +16,7 @@ import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPr
 import { KeyType } from '@renderer/types';
 import KeyRow from '@renderer/pages/Settings/components/KeysTab/components/KeyRow.vue';
 import DeleteKeyPairsController from '@renderer/pages/Settings/components/KeysTab/components/DeleteKeyPairsController.vue';
-import ReconcileKeyPairController from '@renderer/pages/Settings/components/KeysTab/components/ReconcileKeyPairController.vue';
+import ReUploadKeyPairController from '@renderer/pages/Settings/components/KeysTab/components/ReUploadKeyPairController.vue';
 import { getPublicKeyAndType, isLoggedInOrganization } from '@renderer/utils';
 import { RESTORE_MISSING_KEYS } from '@renderer/router';
 
@@ -47,8 +47,8 @@ const isImportExternalModalShown = ref(false);
 const publicKey = ref<string>('');
 const keyType = ref<KeyType>(KeyType.ED25519);
 
-const isReconcileActionActive = ref<boolean>(false);
-const toBeReconciledKeyInfo = ref<KeyInfo | null>(null);
+const isReUploadActionActive = ref<boolean>(false);
+const toBeReUploadedKeyInfo = ref<KeyInfo | null>(null);
 
 /* Computed */
 const displayedKeyInfos = computed(() => {
@@ -127,12 +127,12 @@ const handleRestoreMissingKey = (keyInfo: KeyInfo) => {
 };
 
 const handleReconcile = (keyInfo: KeyInfo) => {
-  toBeReconciledKeyInfo.value = keyInfo;
-  isReconcileActionActive.value = true;
+  toBeReUploadedKeyInfo.value = keyInfo;
+  isReUploadActionActive.value = true;
 };
 
-const reconcileCompleted = async () => {
-  toBeReconciledKeyInfo.value = null;
+const reUploadCompleted = async () => {
+  toBeReUploadedKeyInfo.value = null;
   await user.refetchUserState();
   await user.refetchKeys();
   await user.refetchAccounts();
@@ -210,10 +210,10 @@ watch(selectedKeyInfos, () => (toBeDeletedKeyInfos.value = []));
         :callback="deleteCompleted"
       />
 
-      <ReconcileKeyPairController
-        v-model:activate="isReconcileActionActive"
-        :key-info="toBeReconciledKeyInfo"
-        :callback="reconcileCompleted"
+      <ReUploadKeyPairController
+        v-model:activate="isReUploadActionActive"
+        :key-info="toBeReUploadedKeyInfo"
+        :callback="reUploadCompleted"
       />
 
       <UpdateNicknameModal

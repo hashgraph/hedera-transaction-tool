@@ -21,7 +21,7 @@ const toastManager = ToastManager.inject();
 const user = useUserStore();
 
 /* Handlers */
-const handleReconcile = async (): Promise<ActionReport | null> => {
+const handleReUpload = async (): Promise<ActionReport | null> => {
   let result: ActionReport | null;
   const keyPair = props.keyInfo?.keyPair;
   if (keyPair && isLoggedInOrganization(user.selectedOrganization)) {
@@ -54,9 +54,9 @@ const invokeCallback = async () => {
 <template>
   <ActionController
     v-model:activate="activate"
-    :actionCallback="handleReconcile"
-    data-testid="button-delete-keypair"
-    progress-title="Reconcile key pair"
-    progress-text="Reconciling key pair…"
+    :actionCallback="handleReUpload"
+    data-testid="button-re-upload-keypair"
+    progress-title="Re-upload key pair"
+    progress-text="Re-uploading key pair…"
   />
 </template>
