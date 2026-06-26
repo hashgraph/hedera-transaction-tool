@@ -184,15 +184,17 @@ watch(selectedKeyInfos, () => (toBeDeletedKeyInfos.value = []));
             <th>Public Key</th>
             <th>Private Key</th>
             <th class="text-center">
-              <AppButton
-                size="small"
-                color="danger"
-                :data-testid="`button-delete-key-all`"
-                @click="handleDeleteSelectedClick"
-                class="min-w-unset"
-                :class="selectedKeyInfos.length > 0 ? null : 'invisible'"
-                ><span class="bi bi-trash"></span
-              ></AppButton>
+              <div class="d-flex justify-content-end">
+                <AppButton
+                  size="small"
+                  color="danger"
+                  :data-testid="`button-delete-key-all`"
+                  @click="handleDeleteSelectedClick"
+                  class="min-w-unset"
+                  :class="selectedKeyInfos.length > 0 ? null : 'invisible'"
+                  ><span class="bi bi-trash"></span
+                ></AppButton>
+              </div>
             </th>
           </tr>
         </thead>
