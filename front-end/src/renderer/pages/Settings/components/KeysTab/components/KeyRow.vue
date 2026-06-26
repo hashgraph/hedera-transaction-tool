@@ -93,13 +93,14 @@ const handleShowPrivateKey = async () => {
   const pp = await getPasswordAsync({
     subHeading: 'Enter your application password to decrypt your key',
   });
-  if (typeof pp === 'string' && props.keyInfo.keyPair?.private_key) {
+  if (pp === false) return; // User cancelled action
+  if (props.keyInfo.keyPair?.private_key) {
     try {
       assertUserLoggedIn(user.personal);
       decryptedKey.value = await decryptPrivateKey(
         user.personal.id,
         pp,
-        props.keyInfo.keyPair?.private_key,
+        props.keyInfo.publicKey,
       );
     } catch {
       toastManager.error('Failed to decrypt private key');
@@ -194,7 +195,7 @@ const handleShowPrivateKey = async () => {
           <span
             :data-testid="`span-show-modal-${props.rowIndex}`"
             class="bi bi-eye cursor-pointer ms-3"
-            @click="handleShowPrivateKey"
+            @click="handleShowPrivateKey()"
           ></span>
         </template>
       </p>
