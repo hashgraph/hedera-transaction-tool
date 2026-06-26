@@ -168,7 +168,9 @@ const handleShowPrivateKey = async () => {
     </td>
     <td>
       <p class="d-flex text-nowrap">
-        <template v-if="props.keyInfo.keyPair === null">Missing</template>
+        <template v-if="props.keyInfo.keyPair === null"
+          ><span class="text-secondary">To be re-imported</span></template
+        >
         <template v-else-if="decryptedKey !== null">
           <span
             :data-testid="`span-private-key-${props.rowIndex}`"
