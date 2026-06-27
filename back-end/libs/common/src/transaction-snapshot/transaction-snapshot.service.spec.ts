@@ -7,8 +7,10 @@ import { Repository } from 'typeorm';
 import {
   AccountSnapshot,
   NodeSnapshot,
+  TransactionAccountSnapshot,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionNodeSnapshot,
 } from '@entities';
 
 import { TransactionSnapshotService } from './transaction-snapshot.service';
@@ -20,11 +22,31 @@ describe('TransactionSnapshotService', () => {
   const nodeSnapshotRepo = mockDeep<Repository<NodeSnapshot>>();
   const transactionCachedAccountRepo = mockDeep<Repository<TransactionCachedAccount>>();
   const transactionCachedNodeRepo = mockDeep<Repository<TransactionCachedNode>>();
+  const transactionAccountSnapshotRepo = mockDeep<Repository<TransactionAccountSnapshot>>();
+  const transactionNodeSnapshotRepo = mockDeep<Repository<TransactionNodeSnapshot>>();
 
   const executedAt = new Date('2024-01-01T00:00:00Z');
 
+  const makeInsertChain = () => {
+    const chain = {
+      insert: jest.fn(),
+      into: jest.fn(),
+      values: jest.fn(),
+      orIgnore: jest.fn(),
+      execute: jest.fn().mockResolvedValue({}),
+    };
+    chain.insert.mockReturnValue(chain);
+    chain.into.mockReturnValue(chain);
+    chain.values.mockReturnValue(chain);
+    chain.orIgnore.mockReturnValue(chain);
+    return chain;
+  };
+
   beforeEach(async () => {
     jest.resetAllMocks();
+
+    transactionAccountSnapshotRepo.createQueryBuilder.mockReturnValue(makeInsertChain() as any);
+    transactionNodeSnapshotRepo.createQueryBuilder.mockReturnValue(makeInsertChain() as any);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +55,8 @@ describe('TransactionSnapshotService', () => {
         { provide: getRepositoryToken(NodeSnapshot), useValue: nodeSnapshotRepo as any },
         { provide: getRepositoryToken(TransactionCachedAccount), useValue: transactionCachedAccountRepo as any },
         { provide: getRepositoryToken(TransactionCachedNode), useValue: transactionCachedNodeRepo as any },
+        { provide: getRepositoryToken(TransactionAccountSnapshot), useValue: transactionAccountSnapshotRepo as any },
+        { provide: getRepositoryToken(TransactionNodeSnapshot), useValue: transactionNodeSnapshotRepo as any },
       ],
     }).compile();
 

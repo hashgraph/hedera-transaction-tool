@@ -130,6 +130,8 @@ describe('TransactionsController', () => {
       groupItem: null,
       transactionCachedAccounts: [],
       transactionCachedNodes: [],
+      transactionAccountSnapshots: [],
+      transactionNodeSnapshots: [],
     };
     pagination = {
       page: 1,

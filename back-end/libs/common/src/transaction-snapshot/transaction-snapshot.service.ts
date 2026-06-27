@@ -6,8 +6,10 @@ import { createHash } from 'crypto';
 import {
   AccountSnapshot,
   NodeSnapshot,
+  TransactionAccountSnapshot,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionNodeSnapshot,
 } from '@entities';
 
 import { deserializeKey, flattenKeyList } from '../utils/sdk/key';
@@ -25,6 +27,10 @@ export class TransactionSnapshotService {
     private readonly transactionCachedAccountRepo: Repository<TransactionCachedAccount>,
     @InjectRepository(TransactionCachedNode)
     private readonly transactionCachedNodeRepo: Repository<TransactionCachedNode>,
+    @InjectRepository(TransactionAccountSnapshot)
+    private readonly transactionAccountSnapshotRepo: Repository<TransactionAccountSnapshot>,
+    @InjectRepository(TransactionNodeSnapshot)
+    private readonly transactionNodeSnapshotRepo: Repository<TransactionNodeSnapshot>,
   ) {}
 
   // Called at every terminal state transition (EXECUTED, FAILED, EXPIRED,
@@ -55,16 +61,34 @@ export class TransactionSnapshotService {
     });
 
     for (const link of links) {
-      const { account, mirrorNetwork, encodedKey, receiverSignatureRequired } = link.cachedAccount;
-      if (!encodedKey) continue;
+      const ca = link.cachedAccount;
+      if (!ca?.encodedKey) {
+        this.logger.warn(
+          `Skipping account snapshot for transaction ${transactionId}: ` +
+          `${!ca ? 'cachedAccount missing' : `encodedKey null on ${ca.account}/${ca.mirrorNetwork}`}`,
+        );
+        continue;
+      }
 
-      await this.resolveAccountSnapshot(
-        account,
-        mirrorNetwork,
-        encodedKey,
-        receiverSignatureRequired ?? false,
+      const snapshot = await this.resolveAccountSnapshot(
+        ca.account,
+        ca.mirrorNetwork,
+        ca.encodedKey,
+        ca.receiverSignatureRequired ?? false,
         executedAt,
       );
+
+      await this.transactionAccountSnapshotRepo
+        .createQueryBuilder()
+        .insert()
+        .into(TransactionAccountSnapshot)
+        .values({
+          transaction: { id: transactionId },
+          accountSnapshot: { id: snapshot.id },
+          isReceiver: link.isReceiver,
+        })
+        .orIgnore()
+        .execute();
     }
   }
 
@@ -75,26 +99,45 @@ export class TransactionSnapshotService {
     });
 
     for (const link of links) {
-      const { nodeId, mirrorNetwork, encodedKey } = link.cachedNode;
-      if (!encodedKey) continue;
+      const cn = link.cachedNode;
+      if (!cn?.encodedKey) {
+        this.logger.warn(
+          `Skipping node snapshot for transaction ${transactionId}: ` +
+          `${!cn ? 'cachedNode missing' : `encodedKey null on nodeId ${cn.nodeId}/${cn.mirrorNetwork}`}`,
+        );
+        continue;
+      }
 
-      await this.resolveNodeSnapshot(nodeId, mirrorNetwork, encodedKey, executedAt);
+      const snapshot = await this.resolveNodeSnapshot(
+        cn.nodeId,
+        cn.mirrorNetwork,
+        cn.encodedKey,
+        executedAt,
+      );
+
+      await this.transactionNodeSnapshotRepo
+        .createQueryBuilder()
+        .insert()
+        .into(TransactionNodeSnapshot)
+        .values({
+          transaction: { id: transactionId },
+          nodeSnapshot: { id: snapshot.id },
+        })
+        .orIgnore()
+        .execute();
     }
   }
 
   // Changelog model: compare the latest snapshot for this account against the
-  // current key. If unchanged, do nothing (reuse the existing row). If changed,
-  // insert a new row stamped with executedAt so the timeline stays accurate.
-  // A→B→A produces three rows with distinct createdAt values, which lets the
-  // standard lookup query (WHERE createdAt <= executedAt ORDER BY createdAt DESC)
-  // return the correct snapshot for any transaction in history.
+  // current key. If unchanged, reuse the existing row. If changed, insert a new
+  // row stamped with executedAt so the timeline stays accurate.
   private async resolveAccountSnapshot(
     account: string,
     mirrorNetwork: string,
     encodedKey: Buffer,
     receiverSignatureRequired: boolean,
     executedAt: Date,
-  ): Promise<void> {
+  ): Promise<AccountSnapshot> {
     const keyHash = createHash('sha256').update(encodedKey).digest('hex');
 
     const latest = await this.accountSnapshotRepo.findOne({
@@ -104,11 +147,11 @@ export class TransactionSnapshotService {
     });
 
     if (latest?.keyHash === keyHash && latest.receiverSignatureRequired === receiverSignatureRequired) {
-      return;
+      return latest;
     }
 
     const publicKeys = this.extractPublicKeys(encodedKey);
-    await this.accountSnapshotRepo.save({
+    return this.accountSnapshotRepo.save({
       account, mirrorNetwork, encodedKey, keyHash, publicKeys, receiverSignatureRequired,
       createdAt: executedAt,
     });
@@ -120,7 +163,7 @@ export class TransactionSnapshotService {
     mirrorNetwork: string,
     encodedKey: Buffer,
     executedAt: Date,
-  ): Promise<void> {
+  ): Promise<NodeSnapshot> {
     const keyHash = createHash('sha256').update(encodedKey).digest('hex');
 
     const latest = await this.nodeSnapshotRepo.findOne({
@@ -130,11 +173,11 @@ export class TransactionSnapshotService {
     });
 
     if (latest?.keyHash === keyHash) {
-      return;
+      return latest;
     }
 
     const publicKeys = this.extractPublicKeys(encodedKey);
-    await this.nodeSnapshotRepo.save({
+    return this.nodeSnapshotRepo.save({
       nodeId, mirrorNetwork, encodedKey, keyHash, publicKeys,
       createdAt: executedAt,
     });

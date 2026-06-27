@@ -21,6 +21,8 @@ import {
   TransactionGroupItem,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionAccountSnapshot,
+  TransactionNodeSnapshot,
 } from './';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -170,6 +172,12 @@ export class Transaction {
 
   @OneToMany(() => TransactionCachedNode, (ta) => ta.transaction)
   transactionCachedNodes: TransactionCachedNode[];
+
+  @OneToMany(() => TransactionAccountSnapshot, (tas) => tas.transaction)
+  transactionAccountSnapshots: TransactionAccountSnapshot[];
+
+  @OneToMany(() => TransactionNodeSnapshot, (tns) => tns.transaction)
+  transactionNodeSnapshots: TransactionNodeSnapshot[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [
