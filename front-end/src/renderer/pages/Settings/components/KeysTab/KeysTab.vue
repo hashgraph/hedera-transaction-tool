@@ -4,6 +4,7 @@ import { Tabs } from '.';
 import { computed, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useRouter } from 'vue-router';
 import useKeyManager, { KeyInfo } from '@renderer/composables/useKeyManager.ts';
@@ -22,6 +23,7 @@ import { RESTORE_MISSING_KEYS } from '@renderer/router';
 
 /* Stores */
 const user = useUserStore();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
@@ -105,6 +107,13 @@ const deleteCompleted = async () => {
   await user.refetchUserState();
   await user.refetchKeys();
   await user.refetchAccounts();
+
+  if (await accountSetupStore.shouldShowAccountSetup()) {
+    // User has deleted all key pairs
+    // => we don't want user to be display Account Setup during next navigation
+    // => we simulate Skip immediately
+    await accountSetupStore.handleSkipRecoveryPhrase();
+  }
 };
 
 const handleRestoreMissingKey = (keyInfo: KeyInfo) => {
