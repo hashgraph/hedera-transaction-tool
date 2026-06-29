@@ -134,7 +134,7 @@ export class OrganizationPage extends BasePage {
     'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
-  firstMissingKeyIndexSelector = 'cell-index-missing-0';
+  firstMissingKeyIndexSelector = 'cell-index-0';
 
   transactionNodeTransactionIdIndexSelector = 'td-transaction-node-transaction-id-';
   transactionNodeTransactionTypeIndexSelector = 'td-transaction-node-transaction-type-';
