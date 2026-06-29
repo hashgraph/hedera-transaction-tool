@@ -110,7 +110,7 @@ const handleShowPrivateKey = async () => {
 </script>
 
 <template>
-  <tr>
+  <tr :class="props.keyInfo.isMaintenanceRequired() ? 'disabled-w-action' : null">
     <td>
       <AppCheckBox
         :checked="checked"
