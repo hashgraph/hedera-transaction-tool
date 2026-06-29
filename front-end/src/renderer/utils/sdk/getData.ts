@@ -314,8 +314,52 @@ const getRegisteredEndpointType = (
   return endpoint.type;
 };
 
+/**
+ * Converts an IP (v4 or v6) address represented as a Uint8Array into a string.
+ * In the case of an IPv6 address, this returns the (compressed) canonical text representation
+ * defined in RFC 5952 §4.
+ * For instance: 2001:0db8:0000:0000:0000:ff00:0042:8329
+ * becomes:      2001:db8::ff00:42:8329
+ */
 export function stringifyIpAddressBytes(ipBytes: Uint8Array | null | undefined): string {
-  return ipBytes && ipBytes.length === 4 ? Array.from(ipBytes).join('.') : '';
+  if (!ipBytes) return '';
+  if (ipBytes.length === 4) return Array.from(ipBytes).join('.');
+  if (ipBytes.length === 16) {
+    const groups: string[] = [];
+    for (let i = 0; i < 16; i += 2) {
+      groups.push(((ipBytes[i] << 8) | ipBytes[i + 1]).toString(16));
+    }
+
+    // Find the longest run of consecutive groups of only zeros for '::'.
+    // Choose the first run in case of multiple runs of the same length.
+    let bestStart = -1;
+    let bestLen = 0;
+    let runStart = -1;
+    let runLen = 0;
+    for (let i = 0; i < groups.length; i++) {
+      if (groups[i] === '0') {
+        if (runStart === -1) {
+          runStart = i;
+          runLen = 0;
+        }
+        runLen++;
+        if (runLen > bestLen) {
+          bestLen = runLen;
+          bestStart = runStart;
+        }
+      } else {
+        runStart = -1;
+      }
+    }
+
+    // Minimal length to compress groups of only zeros is 2 groups.
+    if (bestLen < 2) return groups.join(':');
+
+    const before = groups.slice(0, bestStart).join(':');
+    const after = groups.slice(bestStart + bestLen).join(':');
+    return `${before}::${after}`;
+  }
+  return '';
 }
 
 /**
