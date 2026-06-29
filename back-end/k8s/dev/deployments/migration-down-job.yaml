@@ -36,3 +36,5 @@ spec:
               value: 'postgres'
             - name: POSTGRES_PASSWORD
               value: 'postgres'
+            - name: POSTGRES_SSL
+              value: 'false'
