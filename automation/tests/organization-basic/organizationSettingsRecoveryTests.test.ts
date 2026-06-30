@@ -115,8 +115,8 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     await organizationPage.recoverAccount(0);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKey = await organizationPage.isFirstMissingKeyVisible();
-    expect(missingKey).toBe(true);
+    const keyRestoreButtonCount = await organizationPage.countKeyRestoreButtons();
+    expect(keyRestoreButtonCount).toBe(1);
     await organizationPage.recoverPrivateKey(window);
   });
 

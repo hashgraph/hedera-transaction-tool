@@ -634,10 +634,6 @@ export class OrganizationPage extends BasePage {
     }
   }
 
-  async isFirstMissingKeyVisible() {
-    return await this.isElementVisible(this.firstMissingKeyIndexSelector);
-  }
-
   async countKeyRestoreButtons(): Promise<number> {
     let result = 0;
     const count = await this.countElements(this.keyRestoreButtonSelector);
