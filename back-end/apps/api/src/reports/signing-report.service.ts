@@ -36,10 +36,6 @@ interface ReportOptions {
   includeUnexecuted: boolean;
 }
 
-// Snapshot key-overlap predicate, reused for the account and node snapshot
-// selection queries (the joined snapshot is always aliased `snap`).
-const SNAPSHOT_KEY_OVERLAP = 'snap."publicKeys" && ARRAY[:...publicKeys]::text[]';
-
 // A resolved, empty transaction-id selection — used to skip the pending-cache
 // queries when the report is limited to completed transactions.
 const noTransactionIds = (): Promise<number[]> => Promise.resolve([]);
@@ -201,7 +197,7 @@ export class SigningReportService {
       this.selectTransactionIds(
         this.txAccountSnapshotRepo
           .createQueryBuilder('tas')
-          .innerJoin('tas.accountSnapshot', 'snap', SNAPSHOT_KEY_OVERLAP, { publicKeys }),
+          .innerJoin('tas.accountSnapshot', 'snap', 'snap."publicKeys" && ARRAY[:...publicKeys]::text[]', { publicKeys }),
         true,
         range,
         mirrorNetwork,
@@ -209,7 +205,7 @@ export class SigningReportService {
       this.selectTransactionIds(
         this.txNodeSnapshotRepo
           .createQueryBuilder('tns')
-          .innerJoin('tns.nodeSnapshot', 'snap', SNAPSHOT_KEY_OVERLAP, { publicKeys }),
+          .innerJoin('tns.nodeSnapshot', 'snap', 'snap."publicKeys" && ARRAY[:...publicKeys]::text[]', { publicKeys }),
         true,
         range,
         mirrorNetwork,
@@ -219,7 +215,7 @@ export class SigningReportService {
             this.txCachedAccountRepo
               .createQueryBuilder('tca')
               .innerJoin('tca.cachedAccount', 'ca')
-              .innerJoin('ca.keys', 'cak', 'cak.publicKey IN (:...publicKeys)', { publicKeys }),
+              .innerJoin('ca.keys', 'keys', 'keys.publicKey IN (:...publicKeys)', { publicKeys }),
             false,
             range,
             mirrorNetwork,
@@ -230,7 +226,7 @@ export class SigningReportService {
             this.txCachedNodeRepo
               .createQueryBuilder('tcn')
               .innerJoin('tcn.cachedNode', 'cn')
-              .innerJoin('cn.keys', 'cnk', 'cnk.publicKey IN (:...publicKeys)', { publicKeys }),
+              .innerJoin('cn.keys', 'keys', 'keys.publicKey IN (:...publicKeys)', { publicKeys }),
             false,
             range,
             mirrorNetwork,
