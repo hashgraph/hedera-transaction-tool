@@ -107,6 +107,7 @@ function makeTx(
 ): Transaction {
   return {
     id,
+    transactionId: `0.0.1001@${id}`,
     createdAt: CREATED_AT,
     validStart: VALID_START,
     executedAt: opts.executedAt === null ? undefined : (opts.executedAt ?? EXECUTED_AT),
@@ -216,7 +217,7 @@ describe('SigningReportService', () => {
 
       expect(result).toEqual([
         {
-          transactionId: 1,
+          transactionId: '0.0.1001@1',
           createdAt: CREATED_AT.toISOString(),
           validStart: VALID_START.toISOString(),
           executedAt: EXECUTED_AT.toISOString(),
@@ -228,7 +229,7 @@ describe('SigningReportService', () => {
           signingStatus: SigningStatus.SIGNED,
         },
         {
-          transactionId: 1,
+          transactionId: '0.0.1001@1',
           createdAt: CREATED_AT.toISOString(),
           validStart: VALID_START.toISOString(),
           executedAt: EXECUTED_AT.toISOString(),
@@ -335,7 +336,7 @@ describe('SigningReportService', () => {
 
       const result = await service.getSigningReport({ type: SigningReportType.GROUP, id: '5' });
 
-      expect(result.map(r => r.transactionId)).toEqual([1, 2]);
+      expect(result.map(r => r.transactionId)).toEqual(['0.0.1001@1', '0.0.1001@2']);
       expect(result.map(r => r.publicKey)).toEqual([PK_ALICE, PK_NODE]);
       expect(result.map(r => r.entityType)).toEqual([
         SigningEntityType.ACCOUNT,
@@ -514,7 +515,7 @@ describe('SigningReportService', () => {
       });
 
       // tx 2 reports only the queried account, not the unrelated 0.0.999.
-      expect(result.map(r => r.transactionId)).toEqual([1, 2]);
+      expect(result.map(r => r.transactionId)).toEqual(['0.0.1001@1', '0.0.1001@2']);
       expect(result.every(r => r.entityId === '0.0.100')).toBe(true);
       expect(transactionRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -654,11 +655,11 @@ describe('SigningReportService', () => {
 
       expect(result.map(r => [r.transactionId, r.entityType, r.publicKey])).toEqual([
         // tx 1 first (earlier validStart): ACCOUNT keys sorted, then NODE
-        [1, SigningEntityType.ACCOUNT, PK_ALICE],
-        [1, SigningEntityType.ACCOUNT, PK_BOB],
-        [1, SigningEntityType.NODE, PK_NODE],
+        ['0.0.1001@1', SigningEntityType.ACCOUNT, PK_ALICE],
+        ['0.0.1001@1', SigningEntityType.ACCOUNT, PK_BOB],
+        ['0.0.1001@1', SigningEntityType.NODE, PK_NODE],
         // tx 2 last (later validStart)
-        [2, SigningEntityType.ACCOUNT, PK_ALICE],
+        ['0.0.1001@2', SigningEntityType.ACCOUNT, PK_ALICE],
       ]);
     });
   });

@@ -21,6 +21,11 @@ export enum SigningEntityType {
   NODE = 'NODE',
 }
 
+export enum SigningReportFormat {
+  CSV = 'csv',
+  JSON = 'json',
+}
+
 export class SigningReportQueryDto {
   @ApiProperty({ enum: SigningReportType })
   @IsEnum(SigningReportType)
@@ -70,11 +75,21 @@ export class SigningReportQueryDto {
   @IsBoolean()
   @IsOptional()
   completedOnly?: boolean = true;
+
+  @ApiProperty({
+    enum: SigningReportFormat,
+    required: false,
+    default: SigningReportFormat.CSV,
+    description: 'Response format. Defaults to CSV; pass json for the structured JSON array.',
+  })
+  @IsEnum(SigningReportFormat)
+  @IsOptional()
+  format?: SigningReportFormat = SigningReportFormat.CSV;
 }
 
 export class SigningReportItemDto {
-  @ApiProperty()
-  transactionId: number;
+  @ApiProperty({ description: 'The Hedera transaction ID (e.g. 0.0.1001@1700000000.000000000)' })
+  transactionId: string;
 
   @ApiProperty()
   createdAt: string;

@@ -45,7 +45,7 @@ const noTransactionIds = (): Promise<number[]> => Promise.resolve([]);
 // the output ordering is a stable contract regardless of DB/relation order.
 const byReportOrder = (a: SigningReportItemDto, b: SigningReportItemDto): number =>
   a.validStart.localeCompare(b.validStart) ||
-  a.transactionId - b.transactionId ||
+  a.transactionId.localeCompare(b.transactionId) ||
   a.entityType.localeCompare(b.entityType) ||
   a.entityId.localeCompare(b.entityId, undefined, { numeric: true }) ||
   a.publicKey.localeCompare(b.publicKey);
@@ -287,7 +287,7 @@ export class SigningReportService {
       where: mirrorNetwork ? { id: In(ids), mirrorNetwork } : { id: In(ids) },
       // Only the columns the report emits — avoids loading the large transaction
       // byte blobs and other unused columns.
-      select: { id: true, createdAt: true, validStart: true, executedAt: true },
+      select: { id: true, transactionId: true, createdAt: true, validStart: true, executedAt: true },
       // Load each to-many relation in its own query rather than via LEFT JOINs,
       // which would otherwise produce a cartesian product across the account and
       // node relations.
@@ -358,7 +358,7 @@ export class SigningReportService {
           const signed = owner != null && txSignerKeyIds.has(owner.userKeyId);
 
           entries.push({
-            transactionId: tx.id,
+            transactionId: tx.transactionId,
             createdAt: tx.createdAt.toISOString(),
             validStart: tx.validStart.toISOString(),
             executedAt: tx.executedAt?.toISOString() ?? null,
