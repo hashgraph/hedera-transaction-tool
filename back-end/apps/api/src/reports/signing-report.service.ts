@@ -458,6 +458,10 @@ export class SigningReportService {
    * and rejects uploads of a key owned by another user. If key sharing is added
    * later this would become a one-to-many lookup; that change lives here and in
    * the per-key emission loop in buildReport.
+   *
+   * publicKey has no unique DB constraint, so should duplicate rows ever exist
+   * the query orders deterministically (non-deleted first, then latest id) and
+   * we keep the first match per key rather than overwriting arbitrarily.
    */
   private async resolveKeyOwners(
     publicKeys: string[],
@@ -471,10 +475,13 @@ export class SigningReportService {
       .leftJoinAndSelect('uk.user', 'user')
       .where('uk.publicKey IN (:...publicKeys)', { publicKeys })
       .withDeleted()
+      .orderBy('uk.deletedAt', 'ASC', 'NULLS FIRST')
+      .addOrderBy('uk.id', 'DESC')
       .getMany();
 
     for (const userKey of userKeys) {
       if (!userKey.user) continue;
+      if (keyToOwner.has(userKey.publicKey)) continue;
       keyToOwner.set(userKey.publicKey, {
         userId: userKey.userId,
         userEmail: userKey.user.email,
@@ -486,8 +493,13 @@ export class SigningReportService {
   }
 
   private parseNumericId(id: string): number {
+    // Require the entire string to be digits so partially-numeric ids like
+    // '1.5' or '123abc' are rejected rather than silently truncated by parseInt.
+    if (!/^\d+$/.test(id)) {
+      throw new BadRequestException(`Invalid id: ${id}`);
+    }
     const parsed = Number.parseInt(id, 10);
-    if (!Number.isInteger(parsed) || parsed <= 0) {
+    if (parsed <= 0) {
       throw new BadRequestException(`Invalid id: ${id}`);
     }
     return parsed;

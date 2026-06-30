@@ -129,6 +129,7 @@ function makeQb<T>(): ReturnType<typeof mockDeep<SelectQueryBuilder<T>>> {
     'where',
     'andWhere',
     'orderBy',
+    'addOrderBy',
     'limit',
     'innerJoin',
     'leftJoinAndSelect',
@@ -297,11 +298,14 @@ describe('SigningReportService', () => {
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('rejects a non-numeric id', async () => {
-      await expect(
-        service.getSigningReport({ type: SigningReportType.TRANSACTION, id: 'abc' }),
-      ).rejects.toBeInstanceOf(BadRequestException);
-    });
+    it.each(['abc', '1.5', '123abc', '0', '-1', ''])(
+      'rejects a non-positive-integer id (%p)',
+      async id => {
+        await expect(
+          service.getSigningReport({ type: SigningReportType.TRANSACTION, id }),
+        ).rejects.toBeInstanceOf(BadRequestException);
+      },
+    );
 
     it('skips receiver accounts that do not require a signature', async () => {
       const tx = makeTx(1, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE]), true)] });
@@ -492,7 +496,10 @@ describe('SigningReportService', () => {
         makeTx(1, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE]))] }),
         makeTx(2, {
           executedAt: null,
-          cachedAccounts: [makeTca(makeCachedAccount('0.0.100', [PK_BOB]))],
+          cachedAccounts: [
+            makeTca(makeCachedAccount('0.0.100', [PK_BOB])),
+            makeTca(makeCachedAccount('0.0.999', [PK_ALICE])), // other account, filtered out
+          ],
         }),
       ]);
       wireSigners([]);
@@ -506,7 +513,9 @@ describe('SigningReportService', () => {
         completedOnly: false,
       });
 
+      // tx 2 reports only the queried account, not the unrelated 0.0.999.
       expect(result.map(r => r.transactionId)).toEqual([1, 2]);
+      expect(result.every(r => r.entityId === '0.0.100')).toBe(true);
       expect(transactionRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({ mirrorNetwork: MIRROR_NETWORK }),
@@ -567,6 +576,44 @@ describe('SigningReportService', () => {
     });
   });
 
+  describe('key owner resolution', () => {
+    it('keeps the first match per public key when duplicate UserKey rows exist', async () => {
+      const tx = makeTx(1, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE]))] });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([makeSigner(1, 9)]); // signed with the kept (active) row's id
+
+      // The query orders non-deleted first, latest id first; the loop keeps the
+      // first match, so the active row (id 9) wins over the deleted one (id 5).
+      wireOwners([
+        makeUserKey(9, 7, PK_ALICE, makeUser(7, 'alice@example.com')),
+        {
+          id: 5,
+          userId: 7,
+          publicKey: PK_ALICE,
+          deletedAt: new Date(),
+          user: makeUser(7, 'old@example.com'),
+        } as UserKey,
+      ]);
+
+      const result = await service.getSigningReport({ type: SigningReportType.TRANSACTION, id: '1' });
+
+      expect(result).toEqual([
+        expect.objectContaining({
+          publicKey: PK_ALICE,
+          userId: 7,
+          userEmail: 'alice@example.com',
+          signingStatus: SigningStatus.SIGNED,
+        }),
+      ]);
+    });
+  });
+
+  it('rejects an unknown report type', async () => {
+    await expect(
+      service.getSigningReport({ type: 'bogus' as SigningReportType, id: '1' }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
   describe('date range', () => {
     it('rejects a startDate that is on or after the endDate', async () => {
       await expect(
@@ -578,6 +625,119 @@ describe('SigningReportService', () => {
           endDate: new Date('2026-06-01T00:00:00.000Z'),
         }),
       ).rejects.toBeInstanceOf(BadRequestException);
+    });
+  });
+
+  describe('edge cases', () => {
+    it('returns empty for a group with no transactions', async () => {
+      transactionGroupRepo.findOne.mockResolvedValue({ id: 5 } as TransactionGroup);
+      transactionGroupItemRepo.find.mockResolvedValue([]);
+      wireSigners([]);
+
+      const result = await service.getSigningReport({ type: SigningReportType.GROUP, id: '5' });
+      expect(result).toEqual([]);
+    });
+
+    it('skips missing snapshot relations and treats null publicKeys as empty', async () => {
+      const tx = makeTx(1, {
+        accounts: [
+          makeTas(null as unknown as AccountSnapshot), // missing snapshot
+          makeTas(makeAccountSnapshot('0.0.100', null as unknown as string[])), // null publicKeys
+        ],
+        nodes: [
+          makeTns(null as unknown as NodeSnapshot), // missing node snapshot
+          makeTns(makeNodeSnapshot(3, null as unknown as string[])), // null node publicKeys
+        ],
+      });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([]);
+      wireOwners();
+
+      const result = await service.getSigningReport({ type: SigningReportType.TRANSACTION, id: '1' });
+      expect(result).toEqual([]);
+    });
+
+    it('skips missing cached relations and treats null keys as empty', async () => {
+      const tx = makeTx(1, {
+        executedAt: null,
+        cachedAccounts: [
+          makeTca(null as unknown as CachedAccount), // missing cached account
+          makeTca({ account: '0.0.100' } as CachedAccount), // null keys
+        ],
+        cachedNodes: [
+          makeTcn(null as unknown as CachedNode), // missing cached node
+          makeTcn({ nodeId: 3 } as CachedNode), // null keys
+        ],
+      });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([]);
+      wireOwners();
+
+      const result = await service.getSigningReport({
+        type: SigningReportType.TRANSACTION,
+        id: '1',
+        completedOnly: false,
+      });
+      expect(result).toEqual([]);
+    });
+
+    it.each([
+      ['executed', EXECUTED_AT, { completedOnly: true }],
+      ['unexecuted', undefined, { completedOnly: false }],
+    ])('tolerates a %s transaction whose relations were not loaded', async (_label, executedAt, opts) => {
+      // Bare transaction (no relation arrays) exercises the `?? []` fallbacks on
+      // both the snapshot and cached collection paths.
+      const bare = {
+        id: 1,
+        createdAt: CREATED_AT,
+        validStart: VALID_START,
+        executedAt,
+        mirrorNetwork: MIRROR_NETWORK,
+      } as Transaction;
+      transactionRepo.find.mockResolvedValue([bare]);
+      wireSigners([]);
+      wireOwners();
+
+      const result = await service.getSigningReport({
+        type: SigningReportType.TRANSACTION,
+        id: '1',
+        ...opts,
+      });
+      expect(result).toEqual([]);
+    });
+
+    it('ignores a UserKey row with no associated user', async () => {
+      const tx = makeTx(1, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE]))] });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([]);
+      wireOwners([makeUserKey(1, 7, PK_ALICE, undefined)]); // user relation not loaded/null
+
+      const result = await service.getSigningReport({ type: SigningReportType.TRANSACTION, id: '1' });
+      expect(result).toEqual([
+        expect.objectContaining({ publicKey: PK_ALICE, userId: null, userEmail: null }),
+      ]);
+    });
+
+    it('de-duplicates a public key repeated within one source', async () => {
+      const tx = makeTx(1, {
+        accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE, PK_ALICE]))],
+      });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([]);
+      wireOwners();
+
+      const result = await service.getSigningReport({ type: SigningReportType.TRANSACTION, id: '1' });
+      expect(result.filter(r => r.publicKey === PK_ALICE)).toHaveLength(1);
+    });
+
+    it('groups multiple signers belonging to the same transaction', async () => {
+      const tx = makeTx(1, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE, PK_BOB]))] });
+      transactionRepo.find.mockResolvedValue([tx]);
+      wireSigners([makeSigner(1, 1), makeSigner(1, 2)]); // two signers, same tx
+      wireOwners();
+
+      const result = await service.getSigningReport({ type: SigningReportType.TRANSACTION, id: '1' });
+      expect(result.every(r => r.signingStatus === SigningStatus.SIGNED)).toBe(true);
     });
   });
 });
