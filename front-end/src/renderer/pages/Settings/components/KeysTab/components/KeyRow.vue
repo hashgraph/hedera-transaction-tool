@@ -86,10 +86,18 @@ const keyTypeCell = computed(() => {
   return result;
 });
 const reImportActionEnabled = computed(() => {
-  return props.keyInfo.keyPair === null && isLoggedInOrganization(user.selectedOrganization);
+  return (
+    props.keyInfo.keyPair === null &&
+    isLoggedInOrganization(user.selectedOrganization) &&
+    props.enableDelete
+  );
 });
 const reUploadActionEnabled = computed(() => {
-  return props.keyInfo.userKey === null && isLoggedInOrganization(user.selectedOrganization);
+  return (
+    props.keyInfo.userKey === null &&
+    isLoggedInOrganization(user.selectedOrganization) &&
+    props.enableDelete
+  );
 });
 
 /* Handlers */
@@ -208,21 +216,23 @@ const handleShowPrivateKey = async () => {
     <td class="text-center text-end">
       <div class="d-flex justify-content-end">
         <AppButton
-          v-if="reImportActionEnabled"
+          v-if="props.keyInfo.keyPair === null"
           size="small"
           color="primary"
           :data-testid="`button-restore-key-${props.rowIndex}`"
           @click="emit('restore', props.keyInfo)"
           class="min-w-unset me-2"
+          :class="reImportActionEnabled ? null : 'invisible'"
           ><span class="bi bi-arrow-repeat"></span
         ></AppButton>
         <AppButton
-          v-if="reUploadActionEnabled"
+          v-else
           size="small"
           color="primary"
           :data-testid="`button-reconcile-key-${props.rowIndex}`"
           @click="emit('reconcile', props.keyInfo)"
           class="min-w-unset me-2"
+          :class="reUploadActionEnabled ? null : 'invisible'"
           ><span class="bi bi-upload"></span
         ></AppButton>
         <AppButton
