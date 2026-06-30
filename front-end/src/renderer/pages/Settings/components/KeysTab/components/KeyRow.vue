@@ -11,7 +11,11 @@ import useUserStore from '@renderer/stores/storeUser.js';
 import useNetworkStore from '@renderer/stores/storeNetwork.js';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { assertUserLoggedIn, getAccountIdWithChecksum } from '@renderer/utils';
+import {
+  assertUserLoggedIn,
+  getAccountIdWithChecksum,
+  isLoggedInOrganization,
+} from '@renderer/utils';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.js';
 import type { KeyInfo } from '@renderer/composables/useKeyManager';
 
@@ -81,9 +85,14 @@ const keyTypeCell = computed(() => {
 
   return result;
 });
+const reImportActionEnabled = computed(() => {
+  return props.keyInfo.keyPair === null && isLoggedInOrganization(user.selectedOrganization);
+});
+const reUploadActionEnabled = computed(() => {
+  return props.keyInfo.userKey === null && isLoggedInOrganization(user.selectedOrganization);
+});
 
 /* Handlers */
-
 const handleCopy = (text: string, message: string) => {
   navigator.clipboard.writeText(text);
   toastManager.success(message);
@@ -97,11 +106,7 @@ const handleShowPrivateKey = async () => {
   if (props.keyInfo.keyPair?.private_key) {
     try {
       assertUserLoggedIn(user.personal);
-      decryptedKey.value = await decryptPrivateKey(
-        user.personal.id,
-        pp,
-        props.keyInfo.publicKey,
-      );
+      decryptedKey.value = await decryptPrivateKey(user.personal.id, pp, props.keyInfo.publicKey);
     } catch {
       toastManager.error('Failed to decrypt private key');
     }
@@ -110,7 +115,7 @@ const handleShowPrivateKey = async () => {
 </script>
 
 <template>
-  <tr :class="props.keyInfo.isMaintenanceRequired() ? 'disabled-w-action' : null">
+  <tr :class="reImportActionEnabled || reUploadActionEnabled ? 'disabled-w-action' : null">
     <td>
       <AppCheckBox
         :checked="checked"
@@ -203,7 +208,7 @@ const handleShowPrivateKey = async () => {
     <td class="text-center text-end">
       <div class="d-flex justify-content-end">
         <AppButton
-          v-if="props.keyInfo.keyPair === null"
+          v-if="reImportActionEnabled"
           size="small"
           color="primary"
           :data-testid="`button-restore-key-${props.rowIndex}`"
@@ -212,7 +217,7 @@ const handleShowPrivateKey = async () => {
           ><span class="bi bi-arrow-repeat"></span
         ></AppButton>
         <AppButton
-          v-if="props.keyInfo.userKey === null"
+          v-if="reUploadActionEnabled"
           size="small"
           color="primary"
           :data-testid="`button-reconcile-key-${props.rowIndex}`"
