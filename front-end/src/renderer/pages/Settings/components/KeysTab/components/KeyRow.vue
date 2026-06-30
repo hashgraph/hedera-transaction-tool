@@ -205,7 +205,7 @@ const handleShowPrivateKey = async () => {
         <AppButton
           v-if="props.keyInfo.keyPair === null"
           size="small"
-          color="secondary"
+          color="primary"
           :data-testid="`button-restore-key-${props.rowIndex}`"
           @click="emit('restore', props.keyInfo)"
           class="min-w-unset me-2"
@@ -214,7 +214,7 @@ const handleShowPrivateKey = async () => {
         <AppButton
           v-if="props.keyInfo.userKey === null"
           size="small"
-          color="secondary"
+          color="primary"
           :data-testid="`button-reconcile-key-${props.rowIndex}`"
           @click="emit('reconcile', props.keyInfo)"
           class="min-w-unset me-2"
