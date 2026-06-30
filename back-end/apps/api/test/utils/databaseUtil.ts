@@ -12,22 +12,26 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  AccountSnapshot,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
   Client as ClientEntity,
+  NodeSnapshot,
   Notification,
   NotificationPreferences,
   NotificationReceiver,
   NotificationType,
   Transaction,
+  TransactionAccountSnapshot,
   TransactionApprover,
   TransactionCachedAccount,
   TransactionCachedNode,
   TransactionComment,
   TransactionGroup,
   TransactionGroupItem,
+  TransactionNodeSnapshot,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -557,6 +561,10 @@ async function connectDatabase() {
       Notification,
       NotificationReceiver,
       NotificationPreferences,
+      AccountSnapshot,
+      NodeSnapshot,
+      TransactionAccountSnapshot,
+      TransactionNodeSnapshot,
     ],
   });
 

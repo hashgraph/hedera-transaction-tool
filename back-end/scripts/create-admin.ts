@@ -27,10 +27,14 @@ import {
   NotificationReceiver,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionAccountSnapshot,
+  TransactionNodeSnapshot,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  NodeSnapshot,
+  AccountSnapshot,
 } from '@entities';
 
 dotenv.config({
@@ -149,6 +153,10 @@ async function connectDatabase() {
       Notification,
       NotificationPreferences,
       NotificationReceiver,
+      AccountSnapshot,
+      NodeSnapshot,
+      TransactionAccountSnapshot,
+      TransactionNodeSnapshot,
     ],
   });
 
