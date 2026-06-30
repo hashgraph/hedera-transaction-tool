@@ -55,10 +55,6 @@ export class KeyInfo {
     return this.keyPair?.index ?? this.userKey?.index ?? -1;
   }
 
-  public isMaintenanceRequired(): boolean {
-    return this.keyPair === null || this.userKey === null;
-  }
-
   public static compare(i1: KeyInfo, i2: KeyInfo): number {
     let result: number;
     const h1 = i1.mnemonicHash();
