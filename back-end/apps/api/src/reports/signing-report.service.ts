@@ -44,6 +44,16 @@ const SNAPSHOT_KEY_OVERLAP = 'snap."publicKeys" && ARRAY[:...publicKeys]::text[]
 // queries when the report is limited to completed transactions.
 const noTransactionIds = (): Promise<number[]> => Promise.resolve([]);
 
+// Deterministic report order: chronological by transaction, then by the
+// account/node within it, then by public key. Applied to the flat row list so
+// the output ordering is a stable contract regardless of DB/relation order.
+const byReportOrder = (a: SigningReportItemDto, b: SigningReportItemDto): number =>
+  a.validStart.localeCompare(b.validStart) ||
+  a.transactionId - b.transactionId ||
+  a.entityType.localeCompare(b.entityType) ||
+  a.entityId.localeCompare(b.entityId, undefined, { numeric: true }) ||
+  a.publicKey.localeCompare(b.publicKey);
+
 @Injectable()
 export class SigningReportService {
   constructor(
@@ -367,7 +377,7 @@ export class SigningReportService {
       }
     }
 
-    return entries;
+    return entries.sort(byReportOrder);
   }
 
   /**

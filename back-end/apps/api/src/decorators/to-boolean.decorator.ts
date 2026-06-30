@@ -10,8 +10,12 @@ import { Transform } from 'class-transformer';
  * 400 rather than silently treating them as true. Omitted stays undefined.
  */
 export const ToBoolean = (): PropertyDecorator =>
-  Transform(({ value }) => {
-    if (value === true || value === 'true') return true;
-    if (value === false || value === 'false') return false;
-    return value;
-  });
+  Transform(
+    ({ value }) => {
+      if (value === true || value === 'true') return true;
+      if (value === false || value === 'false') return false;
+      return value;
+    },
+    // Inbound coercion only — don't alter values when serializing back to plain.
+    { toClassOnly: true },
+  );

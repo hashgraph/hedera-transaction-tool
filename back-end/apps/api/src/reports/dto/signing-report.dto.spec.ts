@@ -1,4 +1,4 @@
-import { plainToInstance } from 'class-transformer';
+import { instanceToPlain, plainToInstance } from 'class-transformer';
 import { validateSync } from 'class-validator';
 
 import { SigningReportQueryDto, SigningReportType } from './signing-report.dto';
@@ -31,6 +31,13 @@ describe('SigningReportQueryDto', () => {
       const dto = toDto({ ...base, completedOnly: token });
       const errors = validateSync(dto);
       expect(errors.some(e => e.property === 'completedOnly')).toBe(true);
+    });
+
+    it('does not re-coerce on serialization back to plain (toClassOnly)', () => {
+      const dto = toDto({ ...base });
+      // A value the inbound transform would coerce; outbound must leave it as-is.
+      (dto as unknown as { completedOnly: unknown }).completedOnly = 'false';
+      expect(instanceToPlain(dto).completedOnly).toBe('false');
     });
   });
 

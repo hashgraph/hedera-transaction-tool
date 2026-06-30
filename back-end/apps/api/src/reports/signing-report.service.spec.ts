@@ -628,6 +628,41 @@ describe('SigningReportService', () => {
     });
   });
 
+  describe('output ordering', () => {
+    it('orders rows by validStart, then transaction, entity, and public key', async () => {
+      // Returned out of order; the report must sort deterministically.
+      const later = new Date('2026-06-02T00:00:00.000Z');
+      const txLater = {
+        ...makeTx(2, { accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_ALICE]))] }),
+        validStart: later,
+      } as Transaction;
+      const txEarly = makeTx(1, {
+        accounts: [makeTas(makeAccountSnapshot('0.0.100', [PK_BOB, PK_ALICE]))],
+        nodes: [makeTns(makeNodeSnapshot(3, [PK_NODE]))],
+      });
+
+      transactionGroupRepo.findOne.mockResolvedValue({ id: 5 } as TransactionGroup);
+      transactionGroupItemRepo.find.mockResolvedValue([
+        { transactionId: 2 } as TransactionGroupItem,
+        { transactionId: 1 } as TransactionGroupItem,
+      ]);
+      transactionRepo.find.mockResolvedValue([txLater, txEarly]);
+      wireSigners([]);
+      wireOwners();
+
+      const result = await service.getSigningReport({ type: SigningReportType.GROUP, id: '5' });
+
+      expect(result.map(r => [r.transactionId, r.entityType, r.publicKey])).toEqual([
+        // tx 1 first (earlier validStart): ACCOUNT keys sorted, then NODE
+        [1, SigningEntityType.ACCOUNT, PK_ALICE],
+        [1, SigningEntityType.ACCOUNT, PK_BOB],
+        [1, SigningEntityType.NODE, PK_NODE],
+        // tx 2 last (later validStart)
+        [2, SigningEntityType.ACCOUNT, PK_ALICE],
+      ]);
+    });
+  });
+
   describe('edge cases', () => {
     it('returns empty for a group with no transactions', async () => {
       transactionGroupRepo.findOne.mockResolvedValue({ id: 5 } as TransactionGroup);
