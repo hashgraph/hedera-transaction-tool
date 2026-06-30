@@ -145,6 +145,7 @@ const handleShowPrivateKey = async () => {
         ></span>
         {{ props.keyInfo.keyPair.nickname || 'N/A' }}
       </span>
+      <span v-else>N/A</span>
     </td>
     <td :data-testid="`cell-account-${props.rowIndex}`">
       <span
