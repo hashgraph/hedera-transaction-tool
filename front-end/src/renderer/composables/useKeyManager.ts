@@ -57,19 +57,56 @@ export class KeyInfo {
 
   public static compare(i1: KeyInfo, i2: KeyInfo): number {
     let result: number;
-    const h1 = i1.mnemonicHash();
-    const h2 = i2.mnemonicHash();
-    if (h1 !== null && h2 !== null) {
-      result = h1.localeCompare(h2);
-      if (result === 0) {
-        result = i1.index() < i2.index() ? -1 : +1;
-      }
-    } else if (h1 !== null) {
+
+    if (i1.keyPair !== null && i1.userKey !== null && i2.keyPair !== null && i2.userKey !== null) {
+      result = KeyInfo.compareKeyPair(i1.keyPair, i2.keyPair);
+    } else if (i1.keyPair !== null && i1.userKey !== null) {
+      // i1 is complete
       result = -1;
-    } else if (h2 !== null) {
+    } else if (i2.keyPair !== null && i2.userKey !== null) {
+      // i2 is complete
+      result = +1;
+    } else if (i1.keyPair !== null && i2.keyPair !== null) {
+      result = KeyInfo.compareKeyPair(i1.keyPair, i2.keyPair);
+    } else if (i1.userKey !== null && i2.userKey !== null) {
+      result = KeyInfo.compareUserKey(i1.userKey, i2.userKey);
+    } else {
+      result = i1.keyPair !== null || i2.keyPair !== null ? -1 : +1;
+    }
+
+    return result;
+  }
+
+  private static compareKeyPair(kp1: KeyPair, kp2: KeyPair): number {
+    let result: number;
+    if (kp1.secret_hash !== null && kp2.secret_hash !== null) {
+      result = kp1.secret_hash.localeCompare(kp2.secret_hash);
+      if (result === 0) {
+        result = kp1.index < kp2.index ? -1 : +1;
+      }
+    } else if (kp1.secret_hash !== null) {
+      result = +1;
+    } else if (kp2.secret_hash !== null) {
       result = +1;
     } else {
-      result = i1.publicKey.localeCompare(i2.publicKey);
+      result = kp1.public_key.localeCompare(kp2.public_key);
+    }
+    return result;
+  }
+
+  private static compareUserKey(uk1: IUserKey, uk2: IUserKey): number {
+    let result: number;
+    if (uk1.mnemonicHash && uk2.mnemonicHash) {
+      result = uk1.mnemonicHash.localeCompare(uk2.mnemonicHash);
+      if (result === 0 && uk1.index && uk2.index) {
+        result = uk1.index < uk2.index ? -1 : +1;
+      }
+    } else if (uk1.mnemonicHash !== null) {
+      result = +1;
+    } else if (uk2.mnemonicHash !== null) {
+      result = +1;
+    } else {
+      result = uk1.publicKey.localeCompare(uk2.publicKey);
     }
     return result;
   }
