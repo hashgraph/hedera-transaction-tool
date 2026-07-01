@@ -92,7 +92,7 @@ const invokeCallback = async () => {
     v-model:activate="activate"
     :actionCallback="handleDelete"
     action-button-text="Delete"
-    cancel-button-text="Dot not delete"
+    cancel-button-text="Do not delete"
     confirm-text="You are about to delete the selected key pair(s). Do you wish to continue?"
     confirm-title="Delete key pair"
     data-testid="button-delete-keypair"
