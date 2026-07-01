@@ -257,12 +257,12 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           # build-push-action emits its own SLSA provenance by default (the
           # source of the "unknown/unknown" entries on the GHCR package page).
-          # Disable it so the dedicated attest-build-provenance step below is the
-          # single source of provenance, wired into GitHub's attestation UI.
+          # Disable it so the dedicated attest step below is the single source
+          # of provenance, wired into GitHub's attestation UI.
           provenance: false
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest@a1948c3f048ba23858d222213b7c278aabede763 # v4.1.1
         with:
           subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
