@@ -10,7 +10,8 @@ import { GetUser } from '../../decorators';
 
 import { CommentsService } from './comments.service';
 
-import { CreateCommentDto } from '../dto';
+import { CreateCommentDto, TransactionCommentDto } from '../dto';
+import { Serialize } from '@app/common';
 
 @ApiTags('Transaction Comments')
 @Controller('transactions/:transactionId/comments')
@@ -19,6 +20,7 @@ export class CommentsController {
   constructor(private commentsService: CommentsService) {}
 
   @Post()
+  @Serialize(TransactionCommentDto)
   createComment(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
@@ -28,11 +30,13 @@ export class CommentsController {
   }
 
   @Get()
+  @Serialize(TransactionCommentDto)
   getComments(@Param('transactionId', ParseIntPipe) transactionId: number) {
     return this.commentsService.getTransactionComments(transactionId);
   }
 
   @Get('/:id')
+  @Serialize(TransactionCommentDto)
   getCommentById(
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Param('id', ParseIntPipe) id: number,
