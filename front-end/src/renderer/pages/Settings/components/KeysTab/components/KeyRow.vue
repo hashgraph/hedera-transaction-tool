@@ -184,7 +184,7 @@ const handleShowPrivateKey = async () => {
     <td>
       <p class="d-flex text-nowrap">
         <template v-if="props.keyInfo.keyPair === null"
-          ><span class="text-secondary">To be re-imported</span></template
+          ><span class="text-secondary">Key missing</span></template
         >
         <template v-else-if="decryptedKey !== null">
           <span
