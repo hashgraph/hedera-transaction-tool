@@ -636,15 +636,14 @@ export class OrganizationPage extends BasePage {
 
   async countKeyRestoreButtons(): Promise<number> {
     let result = 0;
-    const count = await this.countElements(this.keyRestoreButtonSelector);
-    for (let i = 0; i < count; i++) {
-      const isVisible = await this.isElementVisible(
-        this.keyRestoreButtonSelector,
-        i,
-        this.SHORT_TIMEOUT,
-      );
-      if (!isVisible) {
-        result += 1;
+    const selector = `[data-testid^="${this.keyRestoreButtonSelector}"]`;
+    const restoreButtons = this.window.locator(selector);
+    const count = await restoreButtons.count();
+    if (count > 0) {
+      for (const b of await restoreButtons.all()) {
+        if (await b.isVisible()) {
+          result += 1;
+        }
       }
     }
     return result;
@@ -652,19 +651,14 @@ export class OrganizationPage extends BasePage {
 
   async countKeyUploadButtons(): Promise<number> {
     let result = 0;
-    const count = await this.countElements(this.keyUploadButtonSelector);
-    for (let i = 0; i < count; i++) {
-      const isVisible = await this.isElementVisible(
-        this.keyUploadButtonSelector,
-        i,
-        this.SHORT_TIMEOUT,
-      );
-      if (!isVisible) {
+    const selector = `[data-testid^="${this.keyUploadButtonSelector}"]`;
+    const uploadButtons = this.window.locator(selector);
+    for (const b of await uploadButtons.all()) {
+      if (await b.isVisible()) {
         result += 1;
       }
     }
     return result;
-
   }
 
   async clickOnDeleteNextButton() {
