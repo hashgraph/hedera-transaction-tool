@@ -24,7 +24,7 @@ describe('useKeyManager', () => {
       nickname: 'Nice key pair',
       organization_user_id: 1,
     };
-    keyPairs.value.push(SAMPLE_KEY_PAIR);
+    keyPairs.value = [SAMPLE_KEY_PAIR];
     expect(manager.keyInfos.value.length).toBe(1);
     expect(manager.keyInfos.value[0]).toEqual({
       publicKey: SAMPLE_KEY_PAIR.public_key,
@@ -43,12 +43,35 @@ describe('useKeyManager', () => {
       publicKey: SAMPLE_KEY_PAIR.public_key,
       deletedAt: undefined,
     };
-    userKeys.value.push(SAMPLE_USER_KEY);
+    userKeys.value = [SAMPLE_USER_KEY];
     expect(manager.keyInfos.value.length).toBe(1);
     expect(manager.keyInfos.value[0]).toEqual({
       publicKey: SAMPLE_KEY_PAIR.public_key,
       keyPair: SAMPLE_KEY_PAIR,
       userKey: SAMPLE_USER_KEY,
+    });
+    expect(manager.keyInfos.value[0].mnemonicHash()).toBe(null);
+    expect(manager.keyInfos.value[0].index()).toBe(-1);
+
+    // Removes matching user key
+    userKeys.value = [];
+    expect(manager.keyInfos.value.length).toBe(1);
+    expect(manager.keyInfos.value[0]).toEqual({
+      publicKey: SAMPLE_KEY_PAIR.public_key,
+      keyPair: SAMPLE_KEY_PAIR,
+      userKey: null,
+    });
+    expect(manager.keyInfos.value[0].mnemonicHash()).toBe(null);
+    expect(manager.keyInfos.value[0].index()).toBe(-1);
+
+    // Adds matching user key with deletedAt set
+    const DELETED_SAMPLE_USER_KEY = { ...SAMPLE_USER_KEY, deletedAt: '2026-07-01 07:02:03.815225' };
+    userKeys.value = [DELETED_SAMPLE_USER_KEY];
+    expect(manager.keyInfos.value.length).toBe(1);
+    expect(manager.keyInfos.value[0]).toEqual({
+      publicKey: SAMPLE_KEY_PAIR.public_key,
+      keyPair: SAMPLE_KEY_PAIR,
+      userKey: null,
     });
     expect(manager.keyInfos.value[0].mnemonicHash()).toBe(null);
     expect(manager.keyInfos.value[0].index()).toBe(-1);
