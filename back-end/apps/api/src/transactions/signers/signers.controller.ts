@@ -53,6 +53,7 @@ export class SignersController {
   @Get()
   @HttpCode(200)
   @UseGuards(TransactionAccessGuard)
+  @Serialize(TransactionSignerUserKeyDto)
   getSignaturesByTransactionId(
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<TransactionSigner[]> {
