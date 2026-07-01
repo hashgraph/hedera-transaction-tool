@@ -34,7 +34,7 @@ const handleDelete = async (): Promise<ActionReport | null> => {
       failedKeyInfos.push(keyInfo);
     }
   }
-  invokeCallback();
+  await invokeCallback();
 
   let result: ActionReport | null;
   if (failedKeyInfos.length === 0) {
