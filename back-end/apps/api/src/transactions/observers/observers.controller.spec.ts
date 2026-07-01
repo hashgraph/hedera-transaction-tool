@@ -5,6 +5,7 @@ import { BlacklistService, guardMock } from '@app/common';
 import { Role, TransactionObserver, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { ObserversController } from './observers.controller';
 import { ObserversService } from './observers.service';
@@ -32,6 +33,8 @@ describe('ObserversController', () => {
       ],
     })
       .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .overrideGuard(TransactionAccessGuard)
       .useValue(guardMock())
       .compile();
 
