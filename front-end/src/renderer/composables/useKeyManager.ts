@@ -85,7 +85,7 @@ export class KeyInfo {
         result = kp1.index < kp2.index ? -1 : +1;
       }
     } else if (kp1.secret_hash !== null) {
-      result = +1;
+      result = -1;
     } else if (kp2.secret_hash !== null) {
       result = +1;
     } else {
@@ -102,7 +102,7 @@ export class KeyInfo {
         result = uk1.index < uk2.index ? -1 : +1;
       }
     } else if (uk1.mnemonicHash !== null) {
-      result = +1;
+      result = -1;
     } else if (uk2.mnemonicHash !== null) {
       result = +1;
     } else {
