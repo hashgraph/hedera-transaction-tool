@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /* Props */
 import { computed, ref } from 'vue';
-import { ToastManager } from '@renderer/utils/ToastManager.js';
+import { ToastManager } from '@renderer/utils/ToastManager';
 import { PublicKey } from '@hiero-ledger/sdk';
 
 import { CommonNetwork } from '@shared/enums';
 
-import usePersonalPassword from '@renderer/composables/usePersonalPassword.js';
-import useUserStore from '@renderer/stores/storeUser.js';
-import useNetworkStore from '@renderer/stores/storeNetwork.js';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
+import useUserStore from '@renderer/stores/storeUser';
+import useNetworkStore from '@renderer/stores/storeNetwork';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import {
