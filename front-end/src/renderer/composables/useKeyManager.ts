@@ -32,7 +32,7 @@ export class KeyManager {
     for (const key of publicKeys) {
       const keyPair = this.keyPairs.value.find(keyPair => keyPair.public_key === key);
       const userKey = this.userKeys.value.find(
-        userKey => userKey.publicKey === key && userKey.deletedAt === undefined,
+        userKey => userKey.publicKey === key && !userKey.deletedAt,
       );
       result.push(new KeyInfo(key, keyPair ?? null, userKey ?? null));
     }
