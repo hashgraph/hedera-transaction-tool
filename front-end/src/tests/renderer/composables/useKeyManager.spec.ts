@@ -5,7 +5,7 @@ import useKeyManager from '@renderer/composables/useKeyManager.ts';
 
 describe('useKeyManager', () => {
 
-  test('abc', async () => {
+  test('Check reactive merge of KeyPair and userKey', async () => {
     const keyPairs = ref<KeyPair[]>([]);
     const userKeys = ref<IUserKey[]>([]);
     const manager = useKeyManager(keyPairs, userKeys);
