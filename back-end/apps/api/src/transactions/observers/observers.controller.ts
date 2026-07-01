@@ -15,18 +15,19 @@ import { Serialize } from '@app/common';
 import { TransactionObserver, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 import { GetUser } from '../../decorators';
 import {
-  TransactionObserverDto,
   CreateTransactionObserversDto,
+  TransactionObserverDto,
   UpdateTransactionObserverDto,
 } from '../dto/';
 
 import { ObserversService } from './observers.service';
 
 @ApiTags('Transaction Observers')
-@Controller('transactions{/:transactionId}/observers')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
+@Controller('transactions/:transactionId/observers')
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard, TransactionAccessGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {
   constructor(private observersService: ObserversService) {}
