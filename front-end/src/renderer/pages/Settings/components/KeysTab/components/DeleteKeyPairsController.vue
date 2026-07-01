@@ -47,7 +47,7 @@ const handleDelete = async (): Promise<ActionReport | null> => {
       title: 'Delete key',
       what:
         failedKeyInfos.length === 1
-          ? `Failed to delete key pair ${failedKeyInfos[0]}`
+          ? `Failed to delete key pair ${failedKeyInfos[0].publicKey}`
           : `Failed to delete ${failedKeyInfos.length} key pairs`,
     };
   } else {
