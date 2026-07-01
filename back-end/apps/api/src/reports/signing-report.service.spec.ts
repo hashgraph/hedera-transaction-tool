@@ -119,8 +119,10 @@ function makeTx(
   } as Transaction;
 }
 
+const SIGNED_AT = new Date('2026-06-01T00:00:05.000Z');
+
 function makeSigner(transactionId: number, userKeyId: number): TransactionSigner {
-  return { transactionId, userKeyId } as TransactionSigner;
+  return { transactionId, userKeyId, createdAt: SIGNED_AT } as TransactionSigner;
 }
 
 // QueryBuilder mock where every chain method returns `this`.
@@ -226,6 +228,7 @@ describe('SigningReportService', () => {
           publicKey: PK_ALICE,
           userId: 7,
           userEmail: 'alice@example.com',
+          signedAt: SIGNED_AT.toISOString(),
           signingStatus: SigningStatus.SIGNED,
         },
         {
@@ -238,6 +241,7 @@ describe('SigningReportService', () => {
           publicKey: PK_BOB,
           userId: 8,
           userEmail: 'bob@example.com',
+          signedAt: null,
           signingStatus: SigningStatus.NOT_SIGNED,
         },
       ]);

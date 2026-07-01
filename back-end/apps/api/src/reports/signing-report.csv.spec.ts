@@ -12,6 +12,7 @@ function row(overrides: Partial<SigningReportItemDto> = {}): SigningReportItemDt
     publicKey: 'pk_alice',
     userId: 7,
     userEmail: 'alice@example.com',
+    signedAt: '2026-01-01T00:00:03.000Z',
     signingStatus: SigningStatus.SIGNED,
     ...overrides,
   };
@@ -20,7 +21,7 @@ function row(overrides: Partial<SigningReportItemDto> = {}): SigningReportItemDt
 describe('toCsv', () => {
   it('emits a header row even with no data', () => {
     expect(toCsv([])).toBe(
-      'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signingStatus\r\n',
+      'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signedAt,signingStatus\r\n',
     );
   });
 
@@ -29,15 +30,15 @@ describe('toCsv', () => {
     const lines = csv.trimEnd().split('\r\n');
     expect(lines).toHaveLength(2);
     expect(lines[1]).toBe(
-      '0.0.1001@1700000000.000000000,2026-01-01T00:00:00.000Z,2026-01-01T00:00:01.000Z,2026-01-01T00:00:02.000Z,ACCOUNT,0.0.100,pk_alice,7,alice@example.com,SIGNED',
+      '0.0.1001@1700000000.000000000,2026-01-01T00:00:00.000Z,2026-01-01T00:00:01.000Z,2026-01-01T00:00:02.000Z,ACCOUNT,0.0.100,pk_alice,7,alice@example.com,2026-01-01T00:00:03.000Z,SIGNED',
     );
   });
 
-  it('renders null/absent user fields as empty', () => {
-    const csv = toCsv([row({ executedAt: null, userId: null, userEmail: null })]);
+  it('renders null/absent fields as empty', () => {
+    const csv = toCsv([row({ executedAt: null, userId: null, userEmail: null, signedAt: null })]);
     const line = csv.trimEnd().split('\r\n')[1];
     expect(line).toContain(',ACCOUNT,'); // executedAt blank before entityType
-    expect(line.endsWith(',,,SIGNED')).toBe(true); // userId, userEmail blank
+    expect(line.endsWith(',,,,SIGNED')).toBe(true); // userId, userEmail, signedAt blank
   });
 
   it('escapes commas, quotes, and newlines per RFC 4180', () => {

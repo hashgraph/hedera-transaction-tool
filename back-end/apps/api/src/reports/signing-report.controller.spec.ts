@@ -52,6 +52,7 @@ describe('SigningReportController', () => {
       publicKey: 'pk_alice',
       userId: 7,
       userEmail: 'alice@example.com',
+      signedAt: '2026-01-01T00:00:03.000Z',
       signingStatus: SigningStatus.SIGNED,
     },
   ];

@@ -117,6 +117,12 @@ export class SigningReportItemDto {
   @ApiProperty({ nullable: true, description: 'Null when no UserKey matches the public key' })
   userEmail: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    description: 'When the key signed the transaction (from the signer record); null if not signed',
+  })
+  signedAt: string | null;
+
   @ApiProperty({ enum: SigningStatus })
   signingStatus: SigningStatus;
 }

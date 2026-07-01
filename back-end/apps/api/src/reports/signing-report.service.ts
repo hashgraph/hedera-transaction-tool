@@ -313,16 +313,16 @@ export class SigningReportService {
 
     const txIds = transactions.map(tx => tx.id);
 
-    // transactionId -> set of userKeyIds that signed the transaction
+    // transactionId -> (userKeyId -> when it signed)
     const signers = await this.transactionSignerRepo.find({
       where: { transactionId: In(txIds) },
-      select: { transactionId: true, userKeyId: true },
+      select: { transactionId: true, userKeyId: true, createdAt: true },
     });
-    const signersByTx = new Map<number, Set<number>>();
+    const signedAtByTx = new Map<number, Map<number, Date>>();
     for (const signer of signers) {
-      let set = signersByTx.get(signer.transactionId);
-      if (!set) signersByTx.set(signer.transactionId, (set = new Set()));
-      set.add(signer.userKeyId);
+      let byKey = signedAtByTx.get(signer.transactionId);
+      if (!byKey) signedAtByTx.set(signer.transactionId, (byKey = new Map()));
+      byKey.set(signer.userKeyId, signer.createdAt);
     }
 
     // transactionId -> the account/node key sources to report
@@ -341,7 +341,7 @@ export class SigningReportService {
     const entries: SigningReportItemDto[] = [];
 
     for (const tx of transactions) {
-      const txSignerKeyIds = signersByTx.get(tx.id) ?? new Set<number>();
+      const txSignedAt = signedAtByTx.get(tx.id) ?? new Map<number, Date>();
 
       for (const source of sourcesByTx.get(tx.id) ?? []) {
         const seen = new Set<string>();
@@ -355,7 +355,7 @@ export class SigningReportService {
           // For the user report, only include keys that belong to the queried user.
           if (options.userFilter !== undefined && owner?.userId !== options.userFilter) continue;
 
-          const signed = owner != null && txSignerKeyIds.has(owner.userKeyId);
+          const signedAt = owner ? (txSignedAt.get(owner.userKeyId) ?? null) : null;
 
           entries.push({
             transactionId: tx.transactionId,
@@ -367,7 +367,8 @@ export class SigningReportService {
             publicKey,
             userId: owner?.userId ?? null,
             userEmail: owner?.userEmail ?? null,
-            signingStatus: signed ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
+            signedAt: signedAt ? signedAt.toISOString() : null,
+            signingStatus: signedAt ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
           });
         }
       }

@@ -11,6 +11,7 @@ const COLUMNS: (keyof SigningReportItemDto)[] = [
   'publicKey',
   'userId',
   'userEmail',
+  'signedAt',
   'signingStatus',
 ];
 
