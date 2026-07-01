@@ -1,5 +1,12 @@
 import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiProduces, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiExtraModels,
+  ApiOperation,
+  ApiProduces,
+  ApiResponse,
+  ApiTags,
+  getSchemaPath,
+} from '@nestjs/swagger';
 import { Response } from 'express';
 
 import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
@@ -25,8 +32,24 @@ export class SigningReportController {
       'or user, filtered by date range. Admin only. Returns CSV by default; pass format=json ' +
       'for the structured JSON array.',
   })
+  @ApiExtraModels(SigningReportItemDto)
   @ApiProduces('text/csv', 'application/json')
-  @ApiResponse({ status: 200, type: [SigningReportItemDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'Signing activity rows — CSV by default (text/csv), or a JSON array when format=json.',
+    content: {
+      'text/csv': {
+        schema: {
+          type: 'string',
+          example:
+            'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signingStatus',
+        },
+      },
+      'application/json': {
+        schema: { type: 'array', items: { $ref: getSchemaPath(SigningReportItemDto) } },
+      },
+    },
+  })
   @Get()
   async getSigningReport(
     @Query() query: SigningReportQueryDto,

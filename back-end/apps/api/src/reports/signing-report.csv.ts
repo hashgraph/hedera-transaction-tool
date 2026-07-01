@@ -14,11 +14,16 @@ const COLUMNS: (keyof SigningReportItemDto)[] = [
   'signingStatus',
 ];
 
-// RFC 4180: quote fields containing a comma, quote, or newline; double embedded
-// quotes. null/undefined render as empty.
+// Serializes a single cell:
+// 1. Neutralizes spreadsheet formula injection — a cell starting with =, +, -,
+//    @, tab, or CR can be executed as a formula by Excel/Sheets, so prefix it
+//    with a single quote to force text. Fields like userEmail are user-supplied.
+// 2. RFC 4180: quote fields containing a comma, quote, or newline; double
+//    embedded quotes. null/undefined render as empty.
 function escape(value: unknown): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+  if (/^[=+\-@\t\r]/.test(str)) str = `'${str}`;
   return /[",\r\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
 }
 

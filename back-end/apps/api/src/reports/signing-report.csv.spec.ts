@@ -46,4 +46,17 @@ describe('toCsv', () => {
     const dataLine = csv.trimEnd().split('\r\n')[1];
     expect(dataLine).toContain('"a,b""c\nd"');
   });
+
+  it.each(['=1+2', '+1', '-1', '@cmd', '\tx'])(
+    'prefixes formula-injection values (%p) with a single quote',
+    value => {
+      const dataLine = toCsv([row({ userEmail: value })]).trimEnd().split('\r\n')[1];
+      expect(dataLine).toContain(`,'${value},`);
+    },
+  );
+
+  it('quotes a formula value that also contains a comma', () => {
+    const dataLine = toCsv([row({ userEmail: '=a,b' })]).trimEnd().split('\r\n')[1];
+    expect(dataLine).toContain(`,"'=a,b",`);
+  });
 });
