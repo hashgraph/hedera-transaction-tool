@@ -16,7 +16,7 @@ import {
   getAccountIdWithChecksum,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import { decryptPrivateKey } from '@renderer/services/keyPairService.js';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import type { KeyInfo } from '@renderer/composables/useKeyManager';
 
 const props = defineProps<{
