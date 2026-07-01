@@ -119,7 +119,7 @@ const deleteCompleted = async () => {
 const handleRestoreMissingKey = (keyInfo: KeyInfo) => {
   const userKey = keyInfo.userKey;
   if (userKey !== null) {
-    if (userKey.index) {
+    if (userKey.index != undefined) {
       router.push({
         name: RESTORE_MISSING_KEYS,
         params: { index: userKey.index, publicKey: userKey.publicKey },
