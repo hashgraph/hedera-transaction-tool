@@ -5,6 +5,14 @@ import { UserStatus } from '@entities';
 
 import { UserKeyDto } from '../../user-keys/dtos';
 
+export class UserCoreDto {
+  @Expose()
+  id: number;
+
+  @Expose()
+  email: string;
+}
+
 export class UserDto {
   @Expose()
   id: number;
