@@ -70,13 +70,11 @@ const deleteOneKey = async (keyInfo: KeyInfo): Promise<void> => {
   // 2) Deletes remotely if any
   if (keyInfo.userKey !== null) {
     assertIsLoggedInOrganization(user.selectedOrganization);
-    await safeAwait(
-      deleteKey(
-        user.selectedOrganization.serverUrl,
-        user.selectedOrganization.userId,
-        keyInfo.userKey.id,
-      ),
-    );
+    deleteKey(
+      user.selectedOrganization.serverUrl,
+      user.selectedOrganization.userId,
+      keyInfo.userKey.id,
+    )
   }
 };
 
