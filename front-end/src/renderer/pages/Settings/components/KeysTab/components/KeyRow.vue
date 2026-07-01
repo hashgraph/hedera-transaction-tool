@@ -31,7 +31,7 @@ const emit = defineEmits<{
   (event: 'update:checked', keyInfo: KeyInfo): void;
   (event: 'delete', keyInfo: KeyInfo): void;
   (event: 'restore', keyInfo: KeyInfo): void;
-  (event: 'reconcile', keyInfo: KeyInfo): void;
+  (event: 'upload', keyInfo: KeyInfo): void;
   (event: 'editNickname', keyPairId: string): void;
 }>();
 
@@ -230,8 +230,8 @@ const handleShowPrivateKey = async () => {
           v-else
           size="small"
           color="primary"
-          :data-testid="`button-reconcile-key-${props.rowIndex}`"
-          @click="emit('reconcile', props.keyInfo)"
+          :data-testid="`button-upload-key-${props.rowIndex}`"
+          @click="emit('upload', props.keyInfo)"
           class="min-w-unset me-2"
           :class="reUploadActionEnabled ? null : 'invisible'"
           ><span class="bi bi-upload"></span

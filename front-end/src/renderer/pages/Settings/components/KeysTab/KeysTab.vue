@@ -132,7 +132,7 @@ const handleRestoreMissingKey = (keyInfo: KeyInfo) => {
   }
 };
 
-const handleReconcile = (keyInfo: KeyInfo) => {
+const handleUploadKey = (keyInfo: KeyInfo) => {
   toBeReUploadedKeyInfo.value = keyInfo;
   isReUploadActionActive.value = true;
 };
@@ -217,7 +217,7 @@ watch(selectedKeyInfos, () => (toBeDeletedKeyInfos.value = []));
               @update:checked="handleSelect"
               @delete="handleDeleteSingle"
               @restore="handleRestoreMissingKey"
-              @reconcile="handleReconcile"
+              @upload="handleUploadKey"
               @editNickname="handleStartNicknameEdit"
             />
           </template>

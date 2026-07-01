@@ -7,7 +7,7 @@ import {
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { deleteKeyPair } from '@renderer/services/keyPairService';
-import { assertIsLoggedInOrganization, safeAwait } from '@renderer/utils';
+import { assertIsLoggedInOrganization } from '@renderer/utils';
 import { deleteKey } from '@renderer/services/organization';
 import type { KeyInfo } from '@renderer/composables/useKeyManager';
 
