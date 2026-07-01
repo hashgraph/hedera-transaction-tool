@@ -56,13 +56,20 @@ describe('TransactionAccessGuard', () => {
     expect(transactionsService.getTransactionWithVerifiedAccess).not.toHaveBeenCalled();
   });
 
+  it('should deny access when transactionId is not a valid integer', async () => {
+    const user = { id: 1 } as User;
+    const context = mockExecutionContext(user, { transactionId: 'not-a-number' });
+    expect(await guard.canActivate(context)).toBe(false);
+    expect(transactionsService.getTransactionWithVerifiedAccess).not.toHaveBeenCalled();
+  });
+
   it('should read transactionId from request.params.transactionId', async () => {
     const user = { id: 1 } as User;
     transactionsService.getTransactionWithVerifiedAccess.mockResolvedValue(undefined);
     const context = mockExecutionContext(user, { transactionId: '42' });
 
     expect(await guard.canActivate(context)).toBe(true);
-    expect(transactionsService.getTransactionWithVerifiedAccess).toHaveBeenCalledWith('42', user);
+    expect(transactionsService.getTransactionWithVerifiedAccess).toHaveBeenCalledWith(42, user);
   });
 
   it('should allow access when the user has a relationship with the transaction', async () => {

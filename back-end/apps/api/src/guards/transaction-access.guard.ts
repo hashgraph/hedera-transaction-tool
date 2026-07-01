@@ -9,9 +9,9 @@ export class TransactionAccessGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
-    const transactionId = request.params.transactionId;
+    const transactionId = parseInt(request.params.transactionId, 10);
 
-    if (!user || !transactionId) {
+    if (!user || isNaN(transactionId)) {
       return false;
     }
 
