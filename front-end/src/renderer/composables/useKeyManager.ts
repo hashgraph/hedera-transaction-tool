@@ -73,7 +73,7 @@ export class KeyInfo {
     } else if (i1.userKey !== null && i2.userKey !== null) {
       result = KeyInfo.compareUserKey(i1.userKey, i2.userKey);
     } else {
-      result = i1.keyPair !== null ? -1 : +1;
+      result = i1.keyPair !== null ? +1 : -1;
     }
 
     return result;
