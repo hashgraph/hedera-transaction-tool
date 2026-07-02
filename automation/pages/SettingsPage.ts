@@ -59,7 +59,7 @@ export class SettingsPage extends BasePage {
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
   decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
-  deleteKeyPairButton = 'button-delete-keypair';
+  deleteKeyPairButton = 'button-delete-keypair-confirm';
   deleteKeyButtonPrefix = 'button-delete-key-';
   deleteKeyAllButton = 'button-delete-key-all';
   changePasswordButtonSelector = 'button-change-password';
