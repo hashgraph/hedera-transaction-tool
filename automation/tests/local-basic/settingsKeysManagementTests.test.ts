@@ -31,7 +31,7 @@ test.describe('Settings keys management tests @local-basic', () => {
     await suite.settingsPage.clickOnDeleteKeyPairButton();
 
     const toastMessage = await suite.registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Private key(s) deleted successfully');
+    expect(toastMessage).toBe('Private key pairs deleted successfully');
 
     await suite.loginPage.waitForToastToDisappear();
     expect(await suite.settingsPage.getKeyRowCount()).toBe(initialRowCount);

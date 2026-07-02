@@ -134,7 +134,9 @@ export class OrganizationPage extends BasePage {
     'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
-  firstMissingKeyIndexSelector = 'cell-index-missing-0';
+  keyIndexSelector = 'cell-index-0';
+  keyRestoreButtonSelector = 'button-restore-key-';
+  keyUploadButtonSelector = 'button-upload-key-';
 
   transactionNodeTransactionIdIndexSelector = 'td-transaction-node-transaction-id-';
   transactionNodeTransactionTypeIndexSelector = 'td-transaction-node-transaction-type-';
@@ -632,12 +634,28 @@ export class OrganizationPage extends BasePage {
     }
   }
 
-  async isFirstMissingKeyVisible() {
-    return await this.isElementVisible(this.firstMissingKeyIndexSelector);
+  async countKeyRestoreButtons(): Promise<number> {
+    let result = 0;
+    const selector = `[data-testid^="${this.keyRestoreButtonSelector}"]`;
+    const restoreButtons = this.window.locator(selector);
+    for (const b of await restoreButtons.all()) {
+      if (await b.isVisible()) {
+        result += 1;
+      }
+    }
+    return result;
   }
 
-  async isFirstMissingKeyHidden() {
-    return await this.isElementHidden(this.firstMissingKeyIndexSelector);
+  async countKeyUploadButtons(): Promise<number> {
+    let result = 0;
+    const selector = `[data-testid^="${this.keyUploadButtonSelector}"]`;
+    const uploadButtons = this.window.locator(selector);
+    for (const b of await uploadButtons.all()) {
+      if (await b.isVisible()) {
+        result += 1;
+      }
+    }
+    return result;
   }
 
   async clickOnDeleteNextButton() {
@@ -857,9 +875,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async signTransactionByAllUsersViaApi(txId: string) {
-    console.log(
-      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`,
-    );
+    console.log(`[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`);
     const result = await signTransactionByAllUsersViaApi(this.users, txId);
     console.log(
       `[signTransactionByAllUsersViaApi] tx db-id=${result.transactionDbId}: sent ${result.signedUsers} signer(s), backend registered ${result.totalAcceptedSigners} new signer(s) total`,

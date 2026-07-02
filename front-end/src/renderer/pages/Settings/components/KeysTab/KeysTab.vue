@@ -2,231 +2,165 @@
 import { Tabs } from '.';
 
 import { computed, ref, watch } from 'vue';
-import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useNetworkStore from '@renderer/stores/storeNetwork';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 import { useRouter } from 'vue-router';
-import { ToastManager } from '@renderer/utils/ToastManager';
-import usePersonalPassword from '@renderer/composables/usePersonalPassword';
-
-import { CommonNetwork } from '@shared/enums';
-
-import { decryptPrivateKey } from '@renderer/services/keyPairService';
-
-import {
-  assertUserLoggedIn,
-  getAccountIdWithChecksum,
-  getPublicKeyAndType,
-  isLoggedInOrganization,
-} from '@renderer/utils';
+import useKeyManager, { KeyInfo } from '@renderer/composables/useKeyManager.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import UpdateNicknameModal from '@renderer/components/modals/UpdateNicknameModal.vue';
 import TabHeading from './components/TabHeading.vue';
-import DeleteKeyPairsModal from './components/DeleteKeyPairsModal.vue';
-
-import { RESTORE_MISSING_KEYS } from '@renderer/router';
 import ImportExternalPrivateKeyModal from '@renderer/components/ImportExternalPrivateKeyModal.vue';
 import { KeyType } from '@renderer/types';
+import KeyRow from '@renderer/pages/Settings/components/KeysTab/components/KeyRow.vue';
+import DeleteKeyPairsController from '@renderer/pages/Settings/components/KeysTab/components/DeleteKeyPairsController.vue';
+import ReUploadKeyPairController from '@renderer/pages/Settings/components/KeysTab/components/ReUploadKeyPairController.vue';
+import { getPublicKeyAndType, isLoggedInOrganization } from '@renderer/utils';
+import { RESTORE_MISSING_KEYS } from '@renderer/router';
 
 /* Stores */
 const user = useUserStore();
-const network = useNetworkStore();
-
-/* Injected */
-const toastManager = ToastManager.inject();
+const accountSetupStore = useAccountSetupStore();
 
 /* Composables */
 const router = useRouter();
-const { getPassword, passwordModalOpened } = usePersonalPassword();
+const keyManager = useKeyManager(
+  computed(() => user.keyPairs),
+  computed(() =>
+    isLoggedInOrganization(user.selectedOrganization) ? user.selectedOrganization.userKeys : [],
+  ),
+);
 
 /* State */
-const decryptedKeys = ref<{ decrypted: string | null; publicKey: string }[]>([]);
-const publicKeysPrivateKeyToDecrypt = ref('');
-
 const isUpdateNicknameModalShown = ref(false);
 const keyPairIdToEdit = ref<string | null>(null);
 
 const selectedTab = ref(Tabs.ALL);
-const selectedRecoveryPhrase = ref<string>('');
+const selectedRecoveryPhrase = ref<string | undefined>();
+const selectedKeyInfos = ref<KeyInfo[]>([]);
 
 const isDeleteModalShown = ref(false);
-const selectedKeyPairIdsToDelete = ref<string[]>([]);
-const selectedMissingKeyPairIdsToDelete = ref<number[]>([]);
-const deleteSingleLocal = ref<string | null>(null);
-const deleteSingleMissing = ref<number | null>(null);
+const toBeDeletedKeyInfos = ref<KeyInfo[]>([]);
 
 const isImportExternalModalShown = ref(false);
 const publicKey = ref<string>('');
 const keyType = ref<KeyType>(KeyType.ED25519);
 
+const isReUploadActionActive = ref<boolean>(false);
+const toBeReUploadedKeyInfo = ref<KeyInfo | null>(null);
+
 /* Computed */
-const missingKeys = computed(() =>
-  isLoggedInOrganization(user.selectedOrganization)
-    ? user.selectedOrganization.userKeys.filter(
-        key => !user.keyPairs.some(kp => kp.public_key === key.publicKey),
-      )
-    : [],
-);
-
-const listedKeyPairs = computed(() => {
-  return user.keyPairs.filter(item => {
-    switch (selectedTab.value) {
-      case Tabs.ALL:
-        return true;
-      case Tabs.RECOVERY_PHRASE:
-        return item.secret_hash !== null && item.secret_hash === selectedRecoveryPhrase.value;
-      case Tabs.PRIVATE_KEY:
-        return item.secret_hash === null;
-    }
-  });
-});
-
-const listedMissingKeyPairs = computed(() => {
-  return missingKeys.value.filter(keyPair => {
-    return (
-      selectedTab.value === Tabs.ALL ||
-      (selectedTab.value === Tabs.RECOVERY_PHRASE &&
-        keyPair.mnemonicHash &&
-        keyPair.mnemonicHash === selectedRecoveryPhrase.value) ||
-      (selectedTab.value === Tabs.PRIVATE_KEY && !keyPair.mnemonicHash)
-    );
-  });
+const displayedKeyInfos = computed(() => {
+  return keyManager.keyInfos.value.filter(info => isKeyInfoVisible(info));
 });
 
 const allKeysSelected = computed(
-  () =>
-    selectedKeyPairIdsToDelete.value.length === listedKeyPairs.value.length &&
-    selectedMissingKeyPairIdsToDelete.value.length === listedMissingKeyPairs.value.length,
+  () => displayedKeyInfos.value.length === selectedKeyInfos.value.length,
 );
 
-const isSelectAllDisabled = computed(
-  () => listedKeyPairs.value.length === 0 && listedMissingKeyPairs.value.length === 0,
-);
+const isSelectAllDisabled = computed(() => displayedKeyInfos.value.length === 0);
 
 const keyTypeString = computed(() => {
   return KeyType[keyType.value] as 'ED25519' | 'ECDSA';
 });
 
 /* Handlers */
-const handleStartNicknameEdit = (id: string) => {
-  keyPairIdToEdit.value = id;
+const handleStartNicknameEdit = (keyPairId: string) => {
+  keyPairIdToEdit.value = keyPairId;
   isUpdateNicknameModalShown.value = true;
 };
 
-const handleShowPrivateKey = async (publicKey: string) => {
-  publicKeysPrivateKeyToDecrypt.value = publicKey;
-  await decrypt();
-};
-
-const handleHideDecryptedKey = (publicKey: string) => {
-  const keyFromDecryptedIndex = decryptedKeys.value.findIndex(kp => kp.publicKey === publicKey);
-
-  if (keyFromDecryptedIndex >= 0) {
-    decryptedKeys.value.splice(keyFromDecryptedIndex, 1);
-    decryptedKeys.value = [...decryptedKeys.value];
+const handleSelect = (keyInfo: KeyInfo) => {
+  const keyInfoIndex = selectedKeyInfos.value.indexOf(keyInfo);
+  if (keyInfoIndex != -1) {
+    selectedKeyInfos.value.splice(keyInfoIndex, 1);
+  } else {
+    selectedKeyInfos.value.push(keyInfo);
   }
-};
-
-const handleCopy = (text: string, message: string) => {
-  navigator.clipboard.writeText(text);
-  toastManager.success(message);
 };
 
 const handleSelectAll = () => {
-  const allListedKeyPairIds = listedKeyPairs.value.map(key => key.id);
-  const allListedMissingKeyPairIds = listedMissingKeyPairs.value.map(key => key.id);
-  if (!allKeysSelected.value) {
-    selectedKeyPairIdsToDelete.value = allListedKeyPairIds;
-    selectedMissingKeyPairIdsToDelete.value = allListedMissingKeyPairIds;
+  if (selectedKeyInfos.value.length === displayedKeyInfos.value.length) {
+    // We deselect all
+    selectedKeyInfos.value = [];
   } else {
-    selectedKeyPairIdsToDelete.value = [];
-    selectedMissingKeyPairIdsToDelete.value = [];
+    // We select all
+    selectedKeyInfos.value = displayedKeyInfos.value.slice();
   }
 };
 
-const handleCheckBox = (keyPairId: string | number) => {
-  const arrayToChange =
-    typeof keyPairId === 'number' ? selectedMissingKeyPairIdsToDelete : selectedKeyPairIdsToDelete;
-
-  // @ts-ignore: TypeScript cannot infer the type relationship here
-  arrayToChange.value = arrayToChange.value.includes(keyPairId)
-    ? arrayToChange.value.filter(id => id !== keyPairId)
-    : [...arrayToChange.value, keyPairId];
-};
-
-const handleDeleteModal = (keyId: string) => {
-  deleteSingleLocal.value = keyId;
+const handleDeleteSelectedClick = () => {
+  toBeDeletedKeyInfos.value = selectedKeyInfos.value.slice();
   isDeleteModalShown.value = true;
 };
 
-const handleMissingKeyDeleteModal = (id: number) => {
-  deleteSingleMissing.value = id;
+const handleDeleteSingle = (keyInfo: KeyInfo) => {
+  toBeDeletedKeyInfos.value = [keyInfo];
   isDeleteModalShown.value = true;
 };
 
-const handleDeleteSelectedClick = () => (isDeleteModalShown.value = true);
+const deleteCompleted = async () => {
+  selectedKeyInfos.value = []; // => resets toBeDeletedKeyInfos
+  await user.refetchUserState();
+  await user.refetchKeys();
+  await user.refetchAccounts();
 
-const handleRestoreMissingKey = (keyPair: { id: number; publicKey: string; index?: number }) => {
-  if (keyPair.index !== undefined) {
-    router.push({
-      name: RESTORE_MISSING_KEYS,
-      params: { index: keyPair.index, publicKey: keyPair.publicKey },
-    });
-  } else {
-    keyType.value = getPublicKeyAndType(keyPair.publicKey).keyType;
-    publicKey.value = keyPair.publicKey;
-    isImportExternalModalShown.value = true;
+  if (await accountSetupStore.shouldShowAccountSetup()) {
+    // User has deleted all key pairs
+    // => we don't want user to be display Account Setup during next navigation
+    // => we simulate Skip immediately
+    await accountSetupStore.handleSkipRecoveryPhrase();
   }
 };
 
-const handleAccountString = (publicKey: string): string | null => {
-  const account = user.publicKeyToAccounts.find(acc => acc.publicKey === publicKey)?.accounts[0]
-    ?.account;
-  if (account) {
-    return getAccountIdWithChecksum(account);
+const handleRestoreMissingKey = (keyInfo: KeyInfo) => {
+  const userKey = keyInfo.userKey;
+  if (userKey !== null) {
+    if (userKey.index != undefined) {
+      router.push({
+        name: RESTORE_MISSING_KEYS,
+        params: { index: userKey.index, publicKey: userKey.publicKey },
+      });
+    } else {
+      keyType.value = getPublicKeyAndType(userKey.publicKey).keyType;
+      publicKey.value = userKey.publicKey;
+      isImportExternalModalShown.value = true;
+    }
   }
-  return null;
+};
+
+const handleUploadKey = (keyInfo: KeyInfo) => {
+  toBeReUploadedKeyInfo.value = keyInfo;
+  isReUploadActionActive.value = true;
+};
+
+const reUploadCompleted = async () => {
+  toBeReUploadedKeyInfo.value = null;
+  await user.refetchUserState();
+  await user.refetchKeys();
+  await user.refetchAccounts();
 };
 
 /* Functions */
-const decrypt = async () => {
-  try {
-    assertUserLoggedIn(user.personal);
-    const personalPassword = getPassword(decrypt, {
-      subHeading: 'Enter your application password to decrypt your key',
-    });
-    if (passwordModalOpened(personalPassword)) return;
-
-    const keyFromDecrypted = decryptedKeys.value.find(
-      kp => kp.publicKey === publicKeysPrivateKeyToDecrypt.value,
-    );
-
-    if (!keyFromDecrypted) {
-      const decryptedKey = await decryptPrivateKey(
-        user.personal.id,
-        personalPassword,
-        publicKeysPrivateKeyToDecrypt.value,
-      );
-
-      decryptedKeys.value.push({
-        publicKey: publicKeysPrivateKeyToDecrypt.value,
-        decrypted: decryptedKey,
-      });
-    }
-  } catch {
-    toastManager.error('Failed to decrypt private key');
+const isKeyInfoVisible = (keyInfo: KeyInfo) => {
+  switch (selectedTab.value) {
+    case Tabs.ALL:
+      return true;
+    case Tabs.RECOVERY_PHRASE:
+      return keyInfo.mnemonicHash() === selectedRecoveryPhrase.value;
+    case Tabs.PRIVATE_KEY:
+      return keyInfo.mnemonicHash() === null;
   }
 };
 
 /* Watchers */
 watch([selectedTab, selectedRecoveryPhrase], () => {
-  selectedKeyPairIdsToDelete.value = [];
-  selectedMissingKeyPairIdsToDelete.value = [];
+  selectedKeyInfos.value = [];
 });
+watch(selectedKeyInfos, () => (toBeDeletedKeyInfos.value = []));
 </script>
 <template>
   <div class="flex-column-100">
@@ -234,20 +168,17 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
       <TabHeading
         v-model:selected-tab="selectedTab"
         v-model:selected-recovery-phrase="selectedRecoveryPhrase"
-        :listed-key-pairs="listedKeyPairs"
-        :listed-missing-key-pairs="listedMissingKeyPairs"
+        :key-infos="displayedKeyInfos"
       />
     </div>
 
-    <div class="fill-remaining overflow-x-auto pe-4 pb-2 mt-4">
+    <div class="fill-remaining overflow-x-auto pb-2 mt-4">
       <table class="table-custom">
         <thead>
           <tr>
             <th>
               <AppCheckBox
-                :checked="
-                  allKeysSelected && (listedKeyPairs.length > 0 || listedMissingKeyPairs.length > 0)
-                "
+                :checked="allKeysSelected && displayedKeyInfos.length > 0"
                 @update:checked="handleSelectAll"
                 name="select-card"
                 :data-testid="'checkbox-select-all-keys'"
@@ -262,251 +193,47 @@ watch([selectedTab, selectedRecoveryPhrase], () => {
             <th>Public Key</th>
             <th>Private Key</th>
             <th class="text-center">
-              <AppButton
-                size="small"
-                color="danger"
-                :data-testid="`button-delete-key-all`"
-                @click="handleDeleteSelectedClick"
-                class="min-w-unset"
-                :class="
-                  selectedKeyPairIdsToDelete.length > 0 ||
-                  selectedMissingKeyPairIdsToDelete.length > 0
-                    ? null
-                    : 'invisible'
-                "
-                ><span class="bi bi-trash"></span
-              ></AppButton>
+              <div class="d-flex justify-content-end">
+                <AppButton
+                  size="small"
+                  color="danger"
+                  :data-testid="`button-delete-key-all`"
+                  @click="handleDeleteSelectedClick"
+                  class="min-w-unset"
+                  :class="selectedKeyInfos.length > 0 ? null : 'invisible'"
+                  ><span class="bi bi-trash"></span
+                ></AppButton>
+              </div>
             </th>
           </tr>
         </thead>
         <tbody class="text-secondary">
-          <template v-for="(keyPair, index) in listedKeyPairs" :key="keyPair.public_key">
-            <tr>
-              <td>
-                <AppCheckBox
-                  :checked="selectedKeyPairIdsToDelete.includes(keyPair.id)"
-                  @update:checked="handleCheckBox(keyPair.id)"
-                  name="select-card"
-                  :data-testid="'checkbox-multiple-keys-id-' + index"
-                  class="cursor-pointer d-flex justify-content-center"
-                />
-              </td>
-              <td :data-testid="`cell-index-${index}`" class="text-center">
-                {{ keyPair.index >= 0 ? keyPair.index : 'N/A' }}
-              </td>
-              <td :data-testid="`cell-nickname-${index}`">
-                <span
-                  class="bi bi-pencil-square text-main text-primary me-3 cursor-pointer"
-                  data-testid="button-change-key-nickname"
-                  @click="handleStartNicknameEdit(keyPair.id)"
-                ></span>
-                {{ keyPair.nickname || 'N/A' }}
-              </td>
-              <td :data-testid="`cell-account-${index}`">
-                <span
-                  v-if="
-                    user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.public_key)
-                      ?.accounts[0]?.account
-                  "
-                  :class="{
-                    'text-mainnet': network.network === CommonNetwork.MAINNET,
-                    'text-testnet': network.network === CommonNetwork.TESTNET,
-                    'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                    'text-info': ![
-                      CommonNetwork.MAINNET,
-                      CommonNetwork.TESTNET,
-                      CommonNetwork.PREVIEWNET,
-                    ].includes(network.network),
-                  }"
-                >
-                  {{ handleAccountString(keyPair.public_key) ?? 'N/A' }}
-                </span>
-                <span v-else>N/A</span>
-              </td>
-              <td :data-testid="`cell-key-type-${index}`">
-                {{
-                  PublicKey.fromString(keyPair.public_key)._key._type === 'secp256k1'
-                    ? 'ECDSA'
-                    : 'ED25519'
-                }}
-              </td>
-              <td>
-                <p class="d-flex text-nowrap">
-                  <span
-                    :data-testid="`span-public-key-${index}`"
-                    class="d-inline-block text-truncate"
-                    style="width: 12vw"
-                    >{{ keyPair.public_key }}</span
-                  >
-                  <span
-                    :data-testid="`span-copy-public-key-${index}`"
-                    class="bi bi-copy cursor-pointer ms-3"
-                    @click="handleCopy(keyPair.public_key, 'Public Key copied successfully')"
-                  ></span>
-                </p>
-              </td>
-              <td>
-                <p class="d-flex text-nowrap">
-                  <template v-if="decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)">
-                    <span
-                      :data-testid="`span-private-key-${index}`"
-                      class="d-inline-block text-truncate"
-                      style="width: 12vw"
-                      >{{
-                        decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)?.decrypted
-                      }}</span
-                    >
-                    <span
-                      :data-testid="`span-copy-private-key-${index}`"
-                      class="bi bi-copy cursor-pointer ms-3"
-                      @click="
-                        handleCopy(
-                          decryptedKeys.find(kp => kp.publicKey === keyPair.public_key)
-                            ?.decrypted || '',
-                          'Private Key copied successfully',
-                        )
-                      "
-                    ></span>
-                    <span
-                      :data-testid="`span-hide-private-key-${index}`"
-                      class="bi bi-eye-slash cursor-pointer ms-3"
-                      @click="handleHideDecryptedKey(keyPair.public_key)"
-                    ></span>
-                  </template>
-                  <template v-else>
-                    {{ '*'.repeat(16) }}
-                    <span
-                      :data-testid="`span-show-modal-${index}`"
-                      class="bi bi-eye cursor-pointer ms-3"
-                      @click="handleShowPrivateKey(keyPair.public_key)"
-                    ></span>
-                  </template>
-                </p>
-              </td>
-              <td class="text-center">
-                <AppButton
-                  size="small"
-                  color="danger"
-                  :data-testid="`button-delete-key-${index}`"
-                  @click="handleDeleteModal(keyPair.id)"
-                  class="min-w-unset"
-                  :class="
-                    selectedKeyPairIdsToDelete.length === 0 &&
-                    selectedMissingKeyPairIdsToDelete.length === 0
-                      ? null
-                      : 'invisible'
-                  "
-                  ><span class="bi bi-trash"></span
-                ></AppButton>
-              </td>
-            </tr>
-          </template>
-          <template v-if="isLoggedInOrganization(user.selectedOrganization)">
-            <template v-for="(keyPair, index) in listedMissingKeyPairs" :key="keyPair.publicKey">
-              <tr class="disabled-w-action position-relative">
-                <td>
-                  <AppCheckBox
-                    :checked="selectedMissingKeyPairIdsToDelete.includes(keyPair.id)"
-                    @update:checked="handleCheckBox(keyPair.id)"
-                    name="select-card"
-                    :data-testid="'checkbox-multiple-keys-id-' + index"
-                    class="cursor-pointer d-flex justify-content-center"
-                  />
-                </td>
-                <td :data-testid="`cell-index-missing-${index}`" class="text-end">
-                  {{ keyPair.index != null && keyPair.index >= 0 ? keyPair.index : 'N/A' }}
-                </td>
-                <td :data-testid="`cell-nickname-missing-${index}`">N/A</td>
-                <td :data-testid="`cell-account-missing-${index}`">
-                  <span
-                    v-if="
-                      user.publicKeyToAccounts.find(acc => acc.publicKey === keyPair.publicKey)
-                        ?.accounts[0]?.account
-                    "
-                    :class="{
-                      'text-mainnet': network.network === CommonNetwork.MAINNET,
-                      'text-testnet': network.network === CommonNetwork.TESTNET,
-                      'text-previewnet': network.network === CommonNetwork.PREVIEWNET,
-                      'text-info': ![
-                        CommonNetwork.MAINNET,
-                        CommonNetwork.TESTNET,
-                        CommonNetwork.PREVIEWNET,
-                      ].includes(network.network),
-                    }"
-                  >
-                    {{ handleAccountString(keyPair.publicKey) ?? 'N/A' }}</span
-                  >
-                  <span v-else>N/A</span>
-                </td>
-                <td :data-testid="`cell-key-type-missing-${index}`">
-                  {{
-                    PublicKey.fromString(keyPair.publicKey)._key._type === 'secp256k1'
-                      ? 'ECDSA'
-                      : 'ED25519'
-                  }}
-                </td>
-                <td>
-                  <p class="d-flex text-nowrap">
-                    <span
-                      :data-testid="`span-public-key-missing-${index}`"
-                      class="d-inline-block text-truncate"
-                      style="width: 12vw"
-                      >{{ keyPair.publicKey }}</span
-                    >
-                    <span
-                      :data-testid="`span-copy-public-key-missing-${index}`"
-                      class="bi bi-copy cursor-pointer ms-3"
-                      @click="handleCopy(keyPair.publicKey, 'Public Key copied successfully')"
-                    ></span>
-                  </p>
-                </td>
-                <td>
-                  <p class="d-flex text-nowrap">N/A</p>
-                </td>
-                <td class="text-center">
-                  <AppButton
-                    size="small"
-                    color="danger"
-                    :data-testid="`button-delete-key-${index}`"
-                    @click="handleRestoreMissingKey(keyPair)"
-                    class="min-w-unset me-2"
-                    :class="
-                      selectedKeyPairIdsToDelete.length === 0 &&
-                      selectedMissingKeyPairIdsToDelete.length === 0
-                        ? null
-                        : 'invisible'
-                    "
-                    ><span class="bi bi-arrow-repeat"></span
-                  ></AppButton>
-                  <AppButton
-                    size="small"
-                    color="danger"
-                    :data-testid="`button-delete-key-${index}`"
-                    @click="handleMissingKeyDeleteModal(keyPair.id)"
-                    class="min-w-unset ms-2"
-                    :class="
-                      selectedKeyPairIdsToDelete.length === 0 &&
-                      selectedMissingKeyPairIdsToDelete.length === 0
-                        ? null
-                        : 'invisible'
-                    "
-                    ><span class="bi bi-trash"></span
-                  ></AppButton>
-                </td>
-              </tr>
-            </template>
+          <template v-for="(keyInfo, index) in displayedKeyInfos" :key="keyInfo.publicKey">
+            <KeyRow
+              :keyInfo="keyInfo"
+              :row-index="index"
+              :checked="selectedKeyInfos.includes(keyInfo)"
+              :enable-delete="selectedKeyInfos.length === 0"
+              @update:checked="handleSelect"
+              @delete="handleDeleteSingle"
+              @restore="handleRestoreMissingKey"
+              @upload="handleUploadKey"
+              @editNickname="handleStartNicknameEdit"
+            />
           </template>
         </tbody>
       </table>
 
-      <DeleteKeyPairsModal
-        v-model:show="isDeleteModalShown"
-        :selected-tab="selectedTab"
-        :all-selected="allKeysSelected"
-        v-model:selected-ids="selectedKeyPairIdsToDelete"
-        v-model:selected-missing-ids="selectedMissingKeyPairIdsToDelete"
-        v-model:selected-single-id="deleteSingleLocal"
-        v-model:selected-single-missing-id="deleteSingleMissing"
+      <DeleteKeyPairsController
+        v-model:activate="isDeleteModalShown"
+        :key-infos="toBeDeletedKeyInfos"
+        :callback="deleteCompleted"
+      />
+
+      <ReUploadKeyPairController
+        v-model:activate="isReUploadActionActive"
+        :key-info="toBeReUploadedKeyInfo"
+        :callback="reUploadCompleted"
       />
 
       <UpdateNicknameModal

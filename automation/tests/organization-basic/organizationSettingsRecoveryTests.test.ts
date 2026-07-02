@@ -115,8 +115,8 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     await organizationPage.recoverAccount(0);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKey = await organizationPage.isFirstMissingKeyVisible();
-    expect(missingKey).toBe(true);
+    const keyRestoreButtonCount = await organizationPage.countKeyRestoreButtons();
+    expect(keyRestoreButtonCount).toBe(1);
     await organizationPage.recoverPrivateKey(window);
   });
 
@@ -135,8 +135,9 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     await organizationPage.recoverPrivateKey(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKeyHidden = await organizationPage.isFirstMissingKeyHidden();
-    expect(missingKeyHidden).toBe(true);
+    const restoreButtonCount = await organizationPage.countKeyRestoreButtons();
+    const uploadButtonCount = await organizationPage.countKeyUploadButtons();
+    expect(restoreButtonCount + uploadButtonCount).toBe(0);
   });
 
   test('Verify organization user can change password', async () => {
