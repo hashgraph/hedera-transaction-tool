@@ -38,7 +38,11 @@ const handleDelete = async (): Promise<ActionReport | null> => {
 
   let result: ActionReport | null;
   if (failedKeyInfos.length === 0) {
-    toastManager.success('Private key(s) deleted successfully');
+    const message =
+        props.keyInfos.length === 1
+          ? 'Private key pair deleted successfully'
+          : 'Private key pair(s) deleted successfully'
+    toastManager.success(message);
     result = null;
   } else if (failedKeyInfos.length < props.keyInfos.length) {
     // At least one key has been deleted correctly
@@ -70,7 +74,7 @@ const deleteOneKey = async (keyInfo: KeyInfo): Promise<void> => {
   // 2) Deletes remotely if any
   if (keyInfo.userKey !== null) {
     assertIsLoggedInOrganization(user.selectedOrganization);
-    deleteKey(
+    await deleteKey(
       user.selectedOrganization.serverUrl,
       user.selectedOrganization.userId,
       keyInfo.userKey.id,
