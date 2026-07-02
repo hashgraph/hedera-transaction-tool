@@ -100,7 +100,7 @@ export class KeyInfo {
     let result: number;
     if (uk1.mnemonicHash && uk2.mnemonicHash) {
       result = uk1.mnemonicHash.localeCompare(uk2.mnemonicHash);
-      if (result === 0 && uk1.index && uk2.index) {
+      if (result === 0 && uk1.index != null && uk2.index != null) {
         result = uk1.index < uk2.index ? -1 : +1;
       }
     } else if (uk1.mnemonicHash != null) {
