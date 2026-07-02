@@ -10,8 +10,8 @@
   },
   "pnpm": {
     "overrides": {
-      "protobufjs@<8.0.0": "7.5.8",
-      "protobufjs@>=8.0.0": "8.2.0",
+      "protobufjs@<8.0.0": "7.6.1",
+      "protobufjs@>=8.0.0": "8.4.1",
       "follow-redirects": "1.16.0",
       "lodash": "4.18.1",
       "handlebars": "4.7.9",
@@ -26,7 +26,7 @@
       "flatted": "3.4.2",
       "socket.io-parser": "4.2.6",
       "js-yaml": "4.1.1",
-      "hono": "4.12.23",
+      "hono": "4.12.25",
       "@hono/node-server": "1.19.13",
       "tmp": "0.2.7",
       "@xmldom/xmldom": "0.8.13",
@@ -34,7 +34,12 @@
       "tar": "7.5.11",
       "fast-uri": "3.1.2",
       "diff@<5.0.0": "5.2.0",
-      "@tootallnate/once@<2.0.0": "2.0.0"
+      "@tootallnate/once@<2.0.0": "2.0.0",
+      "form-data": "4.0.6",
+      "ws@>=8.0.0": "8.21.0",
+      "undici@>=7.0.0": "7.28.0",
+      "multer": "2.2.0",
+      "@grpc/grpc-js@<1.12.7": "1.12.7"
     }
   },
   "engines": {
