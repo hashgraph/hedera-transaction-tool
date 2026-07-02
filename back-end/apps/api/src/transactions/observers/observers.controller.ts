@@ -26,8 +26,8 @@ import {
 import { ObserversService } from './observers.service';
 
 @ApiTags('Transaction Observers')
-@Controller('transactions/:transactionId/observers')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard, TransactionAccessGuard)
+@Controller('transactions{/:transactionId}/observers')
+@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 @Serialize(TransactionObserverDto)
 export class ObserversController {
   constructor(private observersService: ObserversService) {}
@@ -42,6 +42,7 @@ export class ObserversController {
     type: TransactionObserverDto,
   })
   @Post()
+  @UseGuards(TransactionAccessGuard)
   createTransactionObserver(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
@@ -60,6 +61,7 @@ export class ObserversController {
     type: [TransactionObserverDto],
   })
   @Get()
+  @UseGuards(TransactionAccessGuard)
   getTransactionObserversByTransactionId(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) id: number,
