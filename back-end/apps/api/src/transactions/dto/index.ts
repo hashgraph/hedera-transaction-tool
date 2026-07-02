@@ -8,6 +8,7 @@ export * from './create-transaction-observers.dto';
 export * from './signature-import-result.dto';
 export * from './transaction.dto';
 export * from './transaction-approver.dto';
+export * from './transaction-comment.dto';
 export * from './transaction-group.dto';
 export * from './transaction-observer.dto';
 export * from './transaction-signer.dto';

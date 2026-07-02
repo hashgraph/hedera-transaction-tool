@@ -5,11 +5,5 @@ export class UserKeyCoreDto {
   id: number;
 
   @Expose()
-  mnemonicHash?: string;
-
-  @Expose()
-  index?: number;
-
-  @Expose()
   publicKey: string;
 }
