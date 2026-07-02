@@ -41,7 +41,7 @@ const handleDelete = async (): Promise<ActionReport | null> => {
     const message =
         props.keyInfos.length === 1
           ? 'Private key pair deleted successfully'
-          : 'Private key pair(s) deleted successfully'
+          : 'Private key pairs deleted successfully'
     toastManager.success(message);
     result = null;
   } else if (failedKeyInfos.length < props.keyInfos.length) {

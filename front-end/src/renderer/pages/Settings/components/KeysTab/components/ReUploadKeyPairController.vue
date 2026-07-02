@@ -22,7 +22,6 @@ const user = useUserStore();
 
 /* Handlers */
 const handleReUpload = async (): Promise<ActionReport | null> => {
-  let result: ActionReport | null;
   const keyPair = props.keyInfo?.keyPair;
   if (keyPair && isLoggedInOrganization(user.selectedOrganization)) {
     try {
@@ -31,15 +30,12 @@ const handleReUpload = async (): Promise<ActionReport | null> => {
         index: keyPair.index != -1 ? keyPair.index : undefined,
         mnemonicHash: keyPair.secret_hash ?? undefined,
       });
-      result = null;
       toastManager.success('Key re-uploaded to server successfully!');
     } finally {
       await invokeCallback();
     }
-  } else {
-    result = null;
   }
-  return result;
+  return null;
 };
 
 const invokeCallback = async () => {
