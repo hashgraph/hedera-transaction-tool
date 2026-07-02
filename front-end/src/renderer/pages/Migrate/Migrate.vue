@@ -24,6 +24,7 @@ import ImportUserData from './components/ImportUserData.vue';
 import BeginKeysImport from './components/BeginKeysImport.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
+import type { ModelValue } from './components/SetupOrganizationForm.vue';
 
 /* Types */
 type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
@@ -42,7 +43,7 @@ const step = ref<StepName>('recoveryPhrase');
 const recoveryPhrase: Ref<RecoveryPhrase | null> = ref(null);
 const recoveryPhrasePassword = ref<string | null>(null);
 const personalUser = ref<PersonalUser | null>(null);
-const organizationId = ref<string | null>(null);
+const organizationSetup = ref<ModelValue | null>(null);
 
 const userInitialized = ref(false);
 const keysImported = ref(0);
@@ -101,8 +102,8 @@ const handleSetPersonalUser = async (value: PersonalUser) => {
   step.value = 'organization';
 };
 
-const handleSetOrganizationId = async (value: string | null) => {
-  organizationId.value = value;
+const handleSetOrganizationSetup = async (value: ModelValue | null) => {
+  organizationSetup.value = value;
   await initializeUserStore();
   userInitialized.value = true;
   // Write the skip claim now that the org (if any) is selected, using the correct claim key.
@@ -201,7 +202,7 @@ const initializeUserStore = async () => {
         <template v-if="stepIs('organization') && personalUser">
           <SetupOrganization
             :personal-user="personalUser"
-            @set-organization-id="handleSetOrganizationId"
+            @set-organization-setup="handleSetOrganizationSetup"
             @migration:cancel="handleStopMigration"
           />
         </template>
