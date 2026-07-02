@@ -56,7 +56,7 @@ const handleDelete = async (): Promise<ActionReport | null> => {
       status: ActionStatus.Warning,
       title: 'Delete key',
       what:
-        props.keyInfos.length === 1 ? `Failed to delete key pair` : `Failed to delete key pair(s)`,
+        props.keyInfos.length === 1 ? `Failed to delete key pair` : `Failed to delete key pairs`,
     };
   }
   return result;
