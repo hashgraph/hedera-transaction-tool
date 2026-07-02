@@ -103,9 +103,9 @@ export class KeyInfo {
       if (result === 0 && uk1.index && uk2.index) {
         result = uk1.index < uk2.index ? -1 : +1;
       }
-    } else if (uk1.mnemonicHash !== null) {
+    } else if (uk1.mnemonicHash != null) {
       result = -1;
-    } else if (uk2.mnemonicHash !== null) {
+    } else if (uk2.mnemonicHash != null) {
       result = +1;
     } else {
       result = uk1.publicKey.localeCompare(uk2.publicKey);
