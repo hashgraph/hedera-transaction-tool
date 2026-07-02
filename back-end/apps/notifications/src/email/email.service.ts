@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
@@ -16,7 +16,7 @@ import { Notification } from '@entities';
 import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleDestroy {
   private readonly sender: string;
   private readonly transporter = nodemailer.createTransport({
     host: this.configService.getOrThrow<string>('EMAIL_API_HOST'),
@@ -31,9 +31,9 @@ export class EmailService {
 
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      2000,
+      30000,
       200,
-      10000,
+      300000,
       this.configService.get('REDIS_URL'),
       'emails',
     );
@@ -43,6 +43,10 @@ export class EmailService {
     const user = this.configService.get<string>('EMAIL_API_USERNAME');
     const pass = this.configService.get<string>('EMAIL_API_PASSWORD');
     return user && pass ? { auth: { user, pass } } : {};
+  }
+
+  async onModuleDestroy() {
+    await this.batcher.flushAll();
   }
 
   async processUserInviteNotifications(events: EmailDto[]) {
