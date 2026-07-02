@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
-import { EntityManager } from 'typeorm';
 import { SignatureMap } from '@hiero-ledger/sdk';
 
 import { BlacklistService, guardMock } from '@app/common';
 import { TransactionSigner, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { SignersController } from './signers.controller';
 import { SignersService } from './signers.service';
@@ -35,7 +35,6 @@ describe('SignaturesController', () => {
   let signer: TransactionSigner;
 
   const signersService = mockDeep<SignersService>();
-  const entityManager = mockDeep<EntityManager>();
   const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
@@ -47,16 +46,14 @@ describe('SignaturesController', () => {
           useValue: signersService,
         },
         {
-          provide: EntityManager,
-          useValue: entityManager,
-        },
-        {
           provide: BlacklistService,
           useValue: blacklistService,
         },
       ],
     })
       .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .overrideGuard(TransactionAccessGuard)
       .useValue(guardMock())
       .compile();
 

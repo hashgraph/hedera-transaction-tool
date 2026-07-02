@@ -81,13 +81,16 @@ describe('CommentsService', () => {
   });
 
   describe('getTransactionCommentById', () => {
-    it('should return a transaction comment by id', async () => {
+    it('should return a transaction comment by id scoped to the transaction', async () => {
       const mockComment = { id: 1, message: 'Test comment' } as TransactionComment;
-      repo.findOneBy.mockResolvedValue(mockComment);
+      repo.findOne.mockResolvedValue(mockComment);
 
-      const result = await service.getTransactionCommentById(1);
+      const result = await service.getTransactionCommentById(10, 1);
 
-      expect(repo.findOneBy).toHaveBeenCalledWith({ id: 1 });
+      expect(repo.findOne).toHaveBeenCalledWith({
+        where: { id: 1, transaction: { id: 10 } },
+        relations: ['user'],
+      });
       expect(result).toEqual(mockComment);
     });
   });
@@ -101,6 +104,7 @@ describe('CommentsService', () => {
       ] as TransactionComment[];
 
       repo.createQueryBuilder.mockReturnValue({
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         getMany: jest.fn().mockResolvedValue(mockComments),
       } as unknown as SelectQueryBuilder<TransactionComment>);

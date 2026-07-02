@@ -2612,7 +2612,6 @@ describe('TransactionsService', () => {
     it('should throw if transaction is not found', async () => {
       transactionsRepo.find.mockResolvedValue([]);
 
-      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
         ErrorCodes.TNF,
       );
@@ -2737,28 +2736,34 @@ describe('TransactionsService', () => {
       );
     });
 
-    it('should return history transaction, even if the user does not have verified access', async () => {
+    it('should return EXECUTED transaction without checking user association', async () => {
       const transaction = {
         id: 123,
-        creatorKey: {
-          id: 1,
-          userId: 1,
-          user: {
-            id: 1,
-            email: 'test@email.com',
-          },
-        },
+        creatorKey: { id: 1, userId: 99, user: { id: 99, email: 'other@email.com' } },
         status: TransactionStatus.EXECUTED,
       };
 
-      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
       transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
 
-      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
-        transaction,
-      );
+      await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(transaction);
+      expect(userKeysRequiredToSign).not.toHaveBeenCalled();
+    });
+
+    it('should return FAILED transaction without checking user association', async () => {
+      const transaction = {
+        id: 456,
+        creatorKey: { id: 1, userId: 99, user: { id: 99, email: 'other@email.com' } },
+        status: TransactionStatus.FAILED,
+      };
+
+      jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
+      jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
+      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+
+      await expect(service.getTransactionWithVerifiedAccess(456, user as User)).resolves.toEqual(transaction);
+      expect(userKeysRequiredToSign).not.toHaveBeenCalled();
     });
   });
 

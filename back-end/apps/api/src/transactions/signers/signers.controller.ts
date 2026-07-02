@@ -22,14 +22,15 @@ import {
 import { TransactionSigner, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 import { GetUser } from '../../decorators';
 
 import {
+  TransactionSignerDto,
+  TransactionSignerFullDto,
+  TransactionSignerUserKeyDto,
   UploadSignatureMapDto,
   UploadSignatureMapResponseDto,
-  TransactionSignerDto,
-  TransactionSignerUserKeyDto,
-  TransactionSignerFullDto,
 } from '../dto';
 
 import { SignersService } from './signers.service';
@@ -51,17 +52,18 @@ export class SignersController {
   })
   @Get()
   @HttpCode(200)
+  @UseGuards(TransactionAccessGuard)
+  @Serialize(TransactionSignerUserKeyDto)
   getSignaturesByTransactionId(
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<TransactionSigner[]> {
     return this.signaturesService.getSignaturesByTransactionId(transactionId, true);
   }
 
-  /* Returns all signatures for a particular user for the transaction */
+  /* Returns all signatures for a particular user */
   @ApiOperation({
     summary: 'Get signatures for user',
-    description:
-      'Get all transaction signatures for the current user for the transaction with the given id.',
+    description: 'Get all transaction signatures for the current user.',
   })
   @ApiResponse({
     status: 200,
@@ -77,7 +79,6 @@ export class SignersController {
     return this.signaturesService.getSignaturesByUser(user, pagination, true);
   }
 
-
   /* Upload one or more signature maps for one or more transactions */
   @ApiOperation({
     summary: 'Upload one or more signature maps for one or more transactions',
@@ -90,12 +91,12 @@ export class SignersController {
   @ApiResponse({
     status: 201,
     type: [TransactionSignerFullDto],
-    description: 'Deprecated: use ?includeNotifications=true for full response'
+    description: 'Deprecated: use ?includeNotifications=true for full response',
   })
   @ApiResponse({
     status: 201,
     type: UploadSignatureMapResponseDto,
-    description: 'Returned when includeNotifications=true'
+    description: 'Returned when includeNotifications=true',
   })
   @Post()
   @HttpCode(201)
