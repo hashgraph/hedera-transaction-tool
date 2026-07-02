@@ -68,7 +68,7 @@
     "@types/async-retry": "1.4.9",
     "@types/bcrypt": "catalog:",
     "@types/deep-diff": "1.0.5",
-    "@types/k6": "1.7.0",
+    "@types/k6": "2.0.0",
     "@types/node": "catalog:",
     "@types/pg": "8.20.0",
     "glob": "13.0.6",
