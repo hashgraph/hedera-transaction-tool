@@ -638,12 +638,9 @@ export class OrganizationPage extends BasePage {
     let result = 0;
     const selector = `[data-testid^="${this.keyRestoreButtonSelector}"]`;
     const restoreButtons = this.window.locator(selector);
-    const count = await restoreButtons.count();
-    if (count > 0) {
-      for (const b of await restoreButtons.all()) {
-        if (await b.isVisible()) {
-          result += 1;
-        }
+    for (const b of await restoreButtons.all()) {
+      if (await b.isVisible()) {
+        result += 1;
       }
     }
     return result;
