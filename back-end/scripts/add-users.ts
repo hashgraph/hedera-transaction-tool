@@ -2,6 +2,7 @@
 import 'tsconfig-paths/register';
 
 import * as path from 'path';
+import * as rl from 'readline-sync';
 
 import * as dotenv from 'dotenv';
 import * as pc from 'picocolors';
@@ -44,36 +45,59 @@ async function main() {
   /* Verify environment variables */
   verifyEnv();
 
+  const data = [
+    {
+      email: 'victor@test.com',
+      password: 'qwerty====',
+      admin: true,
+      status: UserStatus.NONE,
+    },
+    {
+      email: 'alice@test.com',
+      password: 'qwerty====',
+      admin: false,
+      status: UserStatus.NONE,
+    },
+    {
+      email: 'bob@test.com',
+      password: 'qwerty====',
+      admin: false,
+      status: UserStatus.NEW,
+    },
+  ];
+
+  console.log('The following users will be inserted in ' + postgresLabel() + ':');
+  console.log();
+  for (const d of data) {
+    console.log(
+      '    ' + d.email + ', password=' + d.password + ', admin=' + d.admin + ', status=' + d.status,
+    );
+  }
+  console.log();
+  if (!rl.keyInYN('Continue?')) {
+    return;
+  }
+
   /* Setup database connection */
   const dataSource = await connectDatabase();
   const userRepo = dataSource.getRepository(User);
 
-  const data = [
-    {
-      email: 'test10@test.com',
-      password: '159357',
-      admin: true,
+  for (const userData of data) {
+    const newUser = userRepo.create({
+      email: userData.email,
+      password: await hash(userData.password),
+      admin: userData.admin,
       status: UserStatus.NONE,
-    },
-    {
-      email: 'test11@test.com',
-      password: '159357',
-      admin: true,
-      status: UserStatus.NONE,
-    },
-  ];
-
-  for (let i = 0; i < data.length; i++) {
-    /* Create user */
-    let user = userRepo.create(data[i]);
-
-    const hashed = await hash(user.password);
-    user.password = hashed;
-    console.log(`Password set: ${pc.blue(hashed)}\n`);
+    });
 
     /* Create user in database */
     try {
-      user = await userRepo.save(user);
+      await userRepo.save(newUser);
+      console.log(pc.green('User created successfully\n'));
+      console.log(`User ID: ${pc.cyan(newUser.id)}`);
+      console.log(`Email: ${pc.cyan(newUser.email)}`);
+      console.log(`Password hash: ${pc.cyan(newUser.password)}`);
+      console.log(`Admin: ${pc.cyan(newUser.admin.toString())}`);
     } catch (error) {
       console.log(pc.red(error.message));
     }
@@ -110,6 +134,16 @@ function verifyEnv() {
   if (isNaN(Number(process.env.POSTGRES_PORT))) {
     throw new Error('POSTGRES_PORT must be a number');
   }
+}
+
+function postgresLabel(): string {
+  return (
+    process.env.POSTGRES_HOST +
+    ':' +
+    process.env.POSTGRES_PORT +
+    '/' +
+    process.env.POSTGRES_DATABASE
+  );
 }
 
 async function connectDatabase() {
