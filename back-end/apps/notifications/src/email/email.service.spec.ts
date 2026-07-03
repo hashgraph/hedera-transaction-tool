@@ -169,7 +169,7 @@ describe('EmailService', () => {
   });
 
   describe('processEmails', () => {
-    it('should call batcher.add for each notification except TRANSACTION_EXECUTED', async () => {
+    it('should call batcher.add for each notification', async () => {
       const emailNotifications = [
         {
           email: 'user1@example.com',
@@ -611,6 +611,17 @@ describe('EmailService', () => {
       );
 
       logSpy.mockRestore();
+    });
+  });
+
+  describe('onModuleDestroy', () => {
+    it('calls batcher.flushAll when the module is destroyed', async () => {
+      const flushAllMock = jest.fn().mockResolvedValue(undefined);
+      (service as any).batcher = { add: jest.fn(), flushAll: flushAllMock };
+
+      await service.onModuleDestroy();
+
+      expect(flushAllMock).toHaveBeenCalledTimes(1);
     });
   });
 });

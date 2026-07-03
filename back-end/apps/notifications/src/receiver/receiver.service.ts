@@ -49,11 +49,24 @@ export class ReceiverService {
     [TransactionStatus.WAITING_FOR_SIGNATURES]: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
     [TransactionStatus.WAITING_FOR_EXECUTION]: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
     [TransactionStatus.EXECUTED]: NotificationType.TRANSACTION_EXECUTED,
-    // [TransactionStatus.FAILED]: NotificationType.TRANSACTION_EXECUTED,
-    // [TransactionStatus.REJECTED]: NotificationType.TRANSACTION_EXECUTED,
+    [TransactionStatus.FAILED]: NotificationType.TRANSACTION_FAILED,
+    [TransactionStatus.REJECTED]: NotificationType.TRANSACTION_REJECTED,
     [TransactionStatus.EXPIRED]: NotificationType.TRANSACTION_EXPIRED,
     [TransactionStatus.CANCELED]: NotificationType.TRANSACTION_CANCELLED,
   };
+
+  // Three lifecycle tiers used to determine when a group email should fire.
+  // Tier 1 = signing, Tier 2 = executing, Tier 3 = terminal (all else).
+  // A group email fires once all non-CANCELLED members share the same tier.
+  private static readonly EMAIL_TYPE_TIER: Partial<Record<NotificationType, number>> = {
+    [NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES]: 1,
+    [NotificationType.TRANSACTION_READY_FOR_EXECUTION]: 2,
+  };
+
+  private getEmailTier(emailType: NotificationType | null): number {
+    if (!emailType) return 3;
+    return ReceiverService.EMAIL_TYPE_TIER[emailType] ?? 3;
+  }
 
   constructor(
     @InjectEntityManager() private entityManager: EntityManager,
@@ -1012,6 +1025,101 @@ export class ReceiverService {
     };
   }
 
+  // --- Group notification helpers --------------------------------------
+
+  /**
+   * Returns true if this transaction should trigger the group-level email for
+   * the given emailType. Two conditions must hold:
+   *
+   * 1. All non-CANCELLED peers are at the same email tier:
+   *    - Tier 1: WAITING_FOR_SIGNATURES
+   *    - Tier 2: WAITING_FOR_EXECUTION (READY_FOR_EXECUTION email)
+   *    - Tier 3: EXECUTED, FAILED, REJECTED, EXPIRED (and any unmapped status)
+   *    CANCELLED always fires an individual email and is skipped in this check.
+   * 2. Among all non-CANCELLED peers, this transaction is the stable "last" by
+   *    COALESCE(executedAt, validStart) DESC, id DESC — so exactly one pod fires
+   *    the group email even if multiple pods race.
+   */
+  private isLastInGroupToReachStage(
+    transaction: Transaction,
+    emailType: NotificationType | null,
+    allGroupTransactions: Transaction[],
+  ): boolean {
+    const tier = this.getEmailTier(emailType);
+
+    // All non-CANCELLED peers must be at the same tier.
+    for (const other of allGroupTransactions) {
+      if (other.id === transaction.id) continue;
+      const otherEmailType = this.getEmailNotificationType(other.status);
+      if (otherEmailType === NotificationType.TRANSACTION_CANCELLED) continue;
+      if (this.getEmailTier(otherEmailType) !== tier) return false;
+    }
+
+    // CANCELLED transactions always send individually, so exclude them.
+    // Among the remaining, the one with the latest executedAt (falling back to
+    // validStart, then id) is the deterministic trigger — only that transaction
+    // fires the group email, ensuring exactly one send regardless of pod count.
+    const candidates = allGroupTransactions.filter(t =>
+      this.getEmailNotificationType(t.status) !== NotificationType.TRANSACTION_CANCELLED,
+    );
+
+    const last = candidates.reduce<Transaction | null>((best, tx) => {
+      if (!best) return tx;
+      const bestTime = (best.executedAt ?? best.validStart)?.getTime() ?? 0;
+      const txTime = (tx.executedAt ?? tx.validStart)?.getTime() ?? 0;
+      if (txTime !== bestTime) return txTime > bestTime ? tx : best;
+      return tx.id > best.id ? tx : best;
+    }, null);
+
+    return last?.id === transaction.id;
+  }
+
+  /**
+   * Called when the last-ordered transaction in a group fires a status-update
+   * email. Creates email notification receivers for every transaction in the
+   * group that maps to the same email type, batching them all into a single
+   * email send so the recipient sees one message listing all N transactions.
+   */
+  private async handleGroupEmailForLastTransaction(
+    entityManager: EntityManager,
+    cache: Map<number, User>,
+    keyCache: Map<string, UserKey>,
+    emailNotifications: { [email: string]: Notification[] },
+    emailReceiverIds: number[],
+    groupTransactions: Transaction[],
+  ): Promise<void> {
+    if (groupTransactions.length === 0) return;
+
+    const approversMap = await this.getApproversByTransactionIds(
+      entityManager,
+      groupTransactions.map(t => t.id),
+    );
+
+    for (const tx of groupTransactions) {
+      const emailType = this.getEmailNotificationType(tx.status);
+      if (!emailType || emailType === NotificationType.TRANSACTION_CANCELLED) continue;
+
+      try {
+        const approvers = approversMap.get(tx.id) ?? [];
+        const additionalData = this.buildAdditionalData(tx);
+
+        const newReceivers = await this.createNotificationWithReceivers(
+          entityManager,
+          tx,
+          approvers,
+          emailType,
+          additionalData,
+          cache,
+          keyCache,
+        );
+
+        this.collectEmailNotifications(newReceivers, [], emailNotifications, emailReceiverIds, cache);
+      } catch (error) {
+        console.error(`Error processing group email notification for transaction ${tx.id}:`, error);
+      }
+    }
+  }
+
   // --- Public processors (entry points) --------------------------------
 
   async processTransactionStatusUpdateNotifications(events: NotificationEventDto[]) {
@@ -1031,6 +1139,33 @@ export class ReceiverService {
       affectedUsers,
     } = ctx;
 
+    // Pre-fetch all group transactions for every group present in this batch in
+    // a single query, then group them in memory.  This avoids N sequential round
+    // trips when the batch contains transactions from multiple groups.
+    const groupTransactionCache = new Map<number, Transaction[]>();
+    const uniqueGroupIds = [...new Set(
+      [...transactionMap.values()]
+        .map(tx => tx.groupItem?.groupId)
+        .filter((id): id is number => id != null),
+    )];
+
+    if (uniqueGroupIds.length > 0) {
+      const allGroupTxs = await this.entityManager.find(Transaction, {
+        where: { groupItem: { groupId: In(uniqueGroupIds) } },
+        relations: { creatorKey: true, observers: true, signers: true, groupItem: true },
+      });
+      for (const tx of allGroupTxs) {
+        const gId = tx.groupItem?.groupId;
+        if (gId == null) continue;
+        if (!groupTransactionCache.has(gId)) groupTransactionCache.set(gId, []);
+        groupTransactionCache.get(gId)!.push(tx);
+      }
+    }
+
+    // Groups that need a group email after the loop. The tiebreaker in
+    // isLastInGroupToReachStage guarantees at most one add per group per batch.
+    const groupsNeedingEmail = new Set<number>();
+
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
@@ -1047,17 +1182,31 @@ export class ReceiverService {
         transaction.status = TransactionStatus.CANCELED;
       }
 
-      const syncType = this.getInAppNotificationType(transaction.status);
+      const groupId = transaction.groupItem?.groupId;
       const emailType = this.getEmailNotificationType(transaction.status);
 
-      // Single transaction for both notification types
+      // CANCELLED always fires an individual email even inside a group.
+      // All other statuses suppress the per-transaction email and let the group
+      // email fire once every member of the same tier is settled.
+      let txEmailType: NotificationType | null;
+      if (groupId && emailType !== NotificationType.TRANSACTION_CANCELLED) {
+        const groupTxs = groupTransactionCache.get(groupId) ?? [];
+        const isLast = this.isLastInGroupToReachStage(transaction, emailType, groupTxs);
+        if (isLast) groupsNeedingEmail.add(groupId);
+        txEmailType = null;
+      } else {
+        txEmailType = emailType;
+      }
+
+      const syncType = this.getInAppNotificationType(transaction.status);
+
       await this.entityManager.transaction(async entityManager => {
         await this.handleTransactionStatusUpdateNotifications(
           entityManager,
           transaction,
           approvers,
           syncType,
-          emailType,
+          txEmailType,
           cache,
           keyCache,
           deletionNotifications,
@@ -1067,6 +1216,22 @@ export class ReceiverService {
           emailReceiverIds,
           affectedUsers,
           transactionId,
+        );
+      });
+    }
+
+    // For each settled group, emit one group email covering all non-CANCELLED members.
+    for (const groupId of groupsNeedingEmail) {
+      const groupTxs = groupTransactionCache.get(groupId) ?? [];
+
+      await this.entityManager.transaction(async entityManager => {
+        await this.handleGroupEmailForLastTransaction(
+          entityManager,
+          cache,
+          keyCache,
+          emailNotifications,
+          emailReceiverIds,
+          groupTxs,
         );
       });
     }

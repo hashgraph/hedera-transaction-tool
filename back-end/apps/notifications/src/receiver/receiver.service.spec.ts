@@ -1652,4 +1652,444 @@ describe('ReceiverService', () => {
       expect(sendDeletionSpy).toHaveBeenCalledWith({});
     });
   });
+
+  describe('getEmailTier', () => {
+    it('returns 1 for TRANSACTION_WAITING_FOR_SIGNATURES', () => {
+      expect((service as any).getEmailTier(NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES)).toBe(1);
+    });
+
+    it('returns 2 for TRANSACTION_READY_FOR_EXECUTION', () => {
+      expect((service as any).getEmailTier(NotificationType.TRANSACTION_READY_FOR_EXECUTION)).toBe(2);
+    });
+
+    it('returns 3 for TRANSACTION_EXECUTED', () => {
+      expect((service as any).getEmailTier(NotificationType.TRANSACTION_EXECUTED)).toBe(3);
+    });
+
+    it('returns 3 for TRANSACTION_EXPIRED', () => {
+      expect((service as any).getEmailTier(NotificationType.TRANSACTION_EXPIRED)).toBe(3);
+    });
+
+    it('returns 3 for TRANSACTION_CANCELLED', () => {
+      expect((service as any).getEmailTier(NotificationType.TRANSACTION_CANCELLED)).toBe(3);
+    });
+
+    it('returns 3 for null', () => {
+      expect((service as any).getEmailTier(null)).toBe(3);
+    });
+
+    it('returns 3 for an unknown/unmapped notification type', () => {
+      expect((service as any).getEmailTier('SOME_UNMAPPED_TYPE' as any)).toBe(3);
+    });
+  });
+
+  describe('isLastInGroupToReachStage', () => {
+    const makeTx = (id: number, status: TransactionStatus, opts?: { validStart?: Date; executedAt?: Date }): Transaction =>
+      ({
+        id,
+        status,
+        validStart: opts?.validStart ?? new Date('2025-01-01T00:00:00Z'),
+        executedAt: opts?.executedAt ?? null,
+      } as any);
+
+    it('returns true for a single-transaction group', () => {
+      const tx = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);
+      expect(
+        (service as any).isLastInGroupToReachStage(tx, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, [tx]),
+      ).toBe(true);
+    });
+
+    it('returns true when all peers share the same tier and this tx has the latest validStart', () => {
+      const earlier = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const later = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const all = [earlier, later];
+      expect((service as any).isLastInGroupToReachStage(later, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+    });
+
+    it('returns false when this tx has an earlier validStart than a peer at the same tier', () => {
+      const earlier = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const later = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const all = [earlier, later];
+      expect((service as any).isLastInGroupToReachStage(earlier, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+    });
+
+    it('returns false when a peer is at a different tier', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);  // tier 1
+      const txB = makeTx(2, TransactionStatus.WAITING_FOR_EXECUTION);   // tier 2
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_READY_FOR_EXECUTION, all)).toBe(false);
+    });
+
+    it('skips CANCELLED peers when checking tier uniformity', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const cancelled = makeTx(2, TransactionStatus.CANCELED);
+      const all = [txA, cancelled];
+      // txA is the only non-CANCELLED member, so it is the last
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+    });
+
+    it('returns true when all other members are CANCELLED', () => {
+      const txA = makeTx(3, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const c1 = makeTx(1, TransactionStatus.CANCELED);
+      const c2 = makeTx(2, TransactionStatus.CANCELED);
+      const all = [c1, c2, txA];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
+    });
+
+    it('uses executedAt as the primary tiebreaker over validStart', () => {
+      const txA = makeTx(1, TransactionStatus.EXECUTED, {
+        validStart: new Date('2025-01-01T00:00:00Z'),
+        executedAt: new Date('2025-06-01T00:00:00Z'), // later executedAt
+      });
+      const txB = makeTx(2, TransactionStatus.EXECUTED, {
+        validStart: new Date('2025-01-10T00:00:00Z'), // later validStart but ignored
+        executedAt: new Date('2025-03-01T00:00:00Z'), // earlier executedAt
+      });
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
+    });
+
+    it('falls back to validStart when executedAt is null', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-10T00:00:00Z') });
+      const txB = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+    });
+
+    it('uses id as the final tiebreaker when times are equal', () => {
+      const sameTime = new Date('2025-01-01T00:00:00Z');
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
+      const txB = makeTx(5, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime }); // higher id
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+    });
+
+    it('treats EXECUTED and EXPIRED as the same tier (tier 3)', () => {
+      const txA = makeTx(1, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const txB = makeTx(2, TransactionStatus.EXPIRED, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const all = [txA, txB];
+      // Both are tier 3; txB has the later validStart so it is the last
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXPIRED, all)).toBe(true);
+    });
+
+    it('selects the highest id when all times are equal across multiple transactions', () => {
+      const sameTime = new Date('2025-05-01T00:00:00Z');
+      const txA = makeTx(10, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
+      const txB = makeTx(20, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
+      const txC = makeTx(30, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
+      const all = [txA, txB, txC];
+      expect((service as any).isLastInGroupToReachStage(txC, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
+    });
+
+    it('treats FAILED and REJECTED as tier 3 (they now have mapped email types)', () => {
+      const txExecuted = makeTx(1, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const txFailed = makeTx(2, TransactionStatus.FAILED, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const txRejected = makeTx(3, TransactionStatus.REJECTED, { validStart: new Date('2025-01-03T00:00:00Z') });
+      const all = [txExecuted, txFailed, txRejected];
+      // All three are tier 3; txRejected has the latest validStart → it fires
+      expect((service as any).isLastInGroupToReachStage(txRejected, NotificationType.TRANSACTION_REJECTED, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txFailed, NotificationType.TRANSACTION_FAILED, all)).toBe(false);
+      expect((service as any).isLastInGroupToReachStage(txExecuted, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
+    });
+  });
+
+  describe('handleGroupEmailForLastTransaction', () => {
+    const makeTx = (id: number, status: TransactionStatus): Transaction => ({
+      id,
+      status,
+      transactionId: `tx-${id}`,
+      mirrorNetwork: 'testnet',
+      groupItem: { groupId: 100 },
+    } as any);
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    it('returns immediately for empty groupTransactions without querying the DB', async () => {
+      const approversSpy = jest.spyOn(service as any, 'getApproversByTransactionIds');
+
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), {}, [], [],
+      );
+
+      expect(approversSpy).not.toHaveBeenCalled();
+    });
+
+    it('skips transactions whose status maps to a null emailType (e.g., ARCHIVED)', async () => {
+      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
+
+      const tx = makeTx(1, TransactionStatus.ARCHIVED);
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), {}, [], [tx],
+      );
+
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('skips CANCELLED transactions', async () => {
+      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
+
+      const tx = makeTx(1, TransactionStatus.CANCELED);
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), {}, [], [tx],
+      );
+
+      expect(createSpy).not.toHaveBeenCalled();
+    });
+
+    it('creates a notification and collects email receivers for a valid (EXECUTED) transaction', async () => {
+      const fakeReceiver = { id: 99, userId: 5 } as any;
+      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([fakeReceiver]);
+      const collectSpy = jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
+
+      const emailNotifications = {};
+      const emailReceiverIds: number[] = [];
+      const tx = makeTx(1, TransactionStatus.EXECUTED);
+
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), emailNotifications, emailReceiverIds, [tx],
+      );
+
+      expect(createSpy).toHaveBeenCalledTimes(1);
+      expect(collectSpy).toHaveBeenCalledTimes(1);
+      expect(collectSpy).toHaveBeenCalledWith(
+        [fakeReceiver], [], emailNotifications, emailReceiverIds, expect.any(Map),
+      );
+    });
+
+    it('processes valid statuses and skips CANCELLED and null-mapped (ARCHIVED) ones in the same group', async () => {
+      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
+      jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
+
+      const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
+      const txExpired = makeTx(2, TransactionStatus.EXPIRED);
+      const txFailed = makeTx(3, TransactionStatus.FAILED);     // TRANSACTION_FAILED → processed
+      const txRejected = makeTx(4, TransactionStatus.REJECTED); // TRANSACTION_REJECTED → processed
+      const txCancelled = makeTx(5, TransactionStatus.CANCELED); // skipped (individual email)
+      const txArchived = makeTx(6, TransactionStatus.ARCHIVED);  // null emailType → skipped
+
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), {}, [],
+        [txExecuted, txExpired, txFailed, txRejected, txCancelled, txArchived],
+      );
+
+      // EXECUTED, EXPIRED, FAILED, REJECTED all have email types; CANCELLED and ARCHIVED are skipped
+      expect(createSpy).toHaveBeenCalledTimes(4);
+    });
+
+    it('catches per-transaction errors and continues processing remaining transactions', async () => {
+      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+      const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
+        .mockRejectedValueOnce(new Error('db error'))
+        .mockResolvedValueOnce([]);
+      jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
+      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+      const tx1 = makeTx(1, TransactionStatus.EXECUTED);
+      const tx2 = makeTx(2, TransactionStatus.EXECUTED);
+
+      await (service as any).handleGroupEmailForLastTransaction(
+        em as any, new Map(), new Map(), {}, [], [tx1, tx2],
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Error processing group email notification for transaction 1'),
+        expect.any(Error),
+      );
+      // tx2 is still processed despite tx1's error
+      expect(createSpy).toHaveBeenCalledTimes(2);
+
+      consoleSpy.mockRestore();
+    });
+  });
+
+  describe('processTransactionStatusUpdateNotifications - group email logic', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
+    const makeGroupTx = (
+      id: number,
+      status: TransactionStatus,
+      groupId: number,
+      opts?: { validStart?: Date; executedAt?: Date },
+    ) => ({
+      id,
+      transactionId: `tx-${id}`,
+      mirrorNetwork: 'testnet',
+      status,
+      groupItem: { groupId },
+      deletedAt: null,
+      validStart: opts?.validStart ?? new Date('2025-01-01T00:00:00Z'),
+      executedAt: opts?.executedAt ?? null,
+      creatorKey: null,
+      signers: [],
+      observers: [],
+    } as any);
+
+    it('passes normal email type for solo transactions (no groupItem)', async () => {
+      const tx = { ...makeGroupTx(10, TransactionStatus.EXECUTED, 0), groupItem: null };
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[10, tx]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      const handlerSpy = jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 10 } as any]);
+
+      // No group pre-fetch for solo tx
+      expect(em.find).not.toHaveBeenCalled();
+      // emailType is forwarded as-is (not suppressed)
+      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_EXECUTED);
+    });
+
+    it('passes individual email for CANCELLED transactions even inside a group', async () => {
+      const tx = makeGroupTx(20, TransactionStatus.CANCELED, 5);
+      const groupTxs = [tx, makeGroupTx(21, TransactionStatus.EXECUTED, 5)];
+
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[20, tx]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      em.find.mockResolvedValueOnce(groupTxs);
+      const handlerSpy = jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      const groupHandlerSpy = jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 20 } as any]);
+
+      // CANCELLED fires its own individual email
+      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_CANCELLED);
+      expect(groupHandlerSpy).not.toHaveBeenCalled();
+    });
+
+    it('suppresses individual email (txEmailType = null) for non-CANCELLED group transactions', async () => {
+      const tx = makeGroupTx(30, TransactionStatus.EXECUTED, 7);
+      const otherTx = makeGroupTx(31, TransactionStatus.WAITING_FOR_SIGNATURES, 7); // different tier → not last
+      const groupTxs = [tx, otherTx];
+
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[30, tx]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      em.find.mockResolvedValueOnce(groupTxs);
+      const handlerSpy = jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      const groupHandlerSpy = jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 30 } as any]);
+
+      // Mixed tiers → isLast = false → individual email suppressed, no group email
+      expect(handlerSpy.mock.calls[0][4]).toBeNull();
+      expect(groupHandlerSpy).not.toHaveBeenCalled();
+    });
+
+    it('fires group email when this transaction is the last in the group to reach its tier', async () => {
+      // Single-member group → the only member is always the last
+      const tx = makeGroupTx(40, TransactionStatus.EXECUTED, 8);
+      const groupTxs = [tx];
+
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[40, tx]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      em.find.mockResolvedValueOnce(groupTxs);
+      jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      const groupHandlerSpy = jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 40 } as any]);
+
+      expect(groupHandlerSpy).toHaveBeenCalledTimes(1);
+      expect(groupHandlerSpy).toHaveBeenCalledWith(
+        expect.anything(),       // entityManager from transaction callback
+        expect.any(Map),         // cache
+        expect.any(Map),         // keyCache
+        ctx.emailNotifications,
+        ctx.emailReceiverIds,
+        groupTxs,
+      );
+    });
+
+    it('does not fire group email when this transaction is not the last in the group', async () => {
+      // tx1 has an earlier validStart than tx2 → tx1 is not the last
+      const tx1 = makeGroupTx(60, TransactionStatus.EXECUTED, 10, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const tx2 = makeGroupTx(61, TransactionStatus.EXECUTED, 10, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const groupTxs = [tx1, tx2];
+
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[60, tx1]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      em.find.mockResolvedValueOnce(groupTxs);
+      jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      const groupHandlerSpy = jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 60 } as any]);
+
+      expect(groupHandlerSpy).not.toHaveBeenCalled();
+    });
+
+    it('pre-fetches group transactions exactly once per unique groupId', async () => {
+      const tx1 = makeGroupTx(50, TransactionStatus.EXECUTED, 9, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const tx2 = makeGroupTx(51, TransactionStatus.EXECUTED, 9, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const groupTxs = [tx1, tx2];
+
+      const ctx = {
+        cache: new Map(), keyCache: new Map(),
+        transactionMap: new Map([[50, tx1], [51, tx2]]),
+        approversMap: new Map(),
+        deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
+        inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
+      };
+
+      jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
+      em.find.mockResolvedValueOnce(groupTxs);
+      jest.spyOn(service as any, 'handleTransactionStatusUpdateNotifications').mockResolvedValue(undefined);
+      jest.spyOn(service as any, 'handleGroupEmailForLastTransaction').mockResolvedValue(undefined);
+
+      await service.processTransactionStatusUpdateNotifications([{ entityId: 50 } as any, { entityId: 51 } as any]);
+
+      // Two transactions share the same groupId → single IN query, not two separate finds
+      expect(em.find).toHaveBeenCalledTimes(1);
+      expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({
+        where: { groupItem: { groupId: In([9]) } },
+      }));
+    });
+  });
 });
