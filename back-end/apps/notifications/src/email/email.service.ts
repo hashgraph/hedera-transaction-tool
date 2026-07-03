@@ -31,9 +31,9 @@ export class EmailService implements OnModuleDestroy {
 
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      30000,
+      parseInt(this.configService.get('EMAIL_DEBOUNCE_DELAY_MS', '30000'), 10),
       200,
-      300000,
+      parseInt(this.configService.get('EMAIL_DEBOUNCE_MAX_FLUSH_MS', '300000'), 10),
       this.configService.get('REDIS_URL'),
       'emails',
     );

@@ -1,8 +1,5 @@
 import { Redis } from 'ioredis';
 
-// after creating a group of > 100, I see one of these for each account that needs to sign for each transaction
-//https://testnet.mirrornode.hedera.com/api/v1/accounts/0.0.2673708
-//which is toooooo many. so I can use a debouncer in front end, as well?
 export class DebouncedNotificationBatcher<T = unknown> {
   private pubClient: Redis;
   private subClient: Redis;
@@ -10,6 +7,9 @@ export class DebouncedNotificationBatcher<T = unknown> {
   private readonly flushKeyPrefix: string;
 
   private readonly GLOBAL_KEY = '__global__';
+  // Tracks group keys that have at least one pending message in Redis. Maintained
+  // locally so flushAll/destroy never need KEYS (which blocks Redis on large keyspaces).
+  private readonly activeGroupKeys = new Set<string>();
 
   constructor(
     private readonly flushCallback: (groupKey: string | number | null, messages: T[]) => Promise<void>,
@@ -69,6 +69,7 @@ export class DebouncedNotificationBatcher<T = unknown> {
     const length = await this.pubClient.rpush(batchKey, JSON.stringify(message));
     if (length === 1) {
       await this.pubClient.pexpire(batchKey, this.maxFlushMS);
+      this.activeGroupKeys.add(groupKeyStr);
     }
 
     // If batch size reached, flush immediately, removing the flush key in the process
@@ -103,9 +104,10 @@ export class DebouncedNotificationBatcher<T = unknown> {
       return;
     }
 
-    // Clear both the batch and flush keys
+    // Clear both the batch and flush keys, then remove from local index
     await this.pubClient.del(batchKey);
     await this.pubClient.del(flushKey);
+    this.activeGroupKeys.delete(groupKeyStr);
 
     // Parse messages and call the flush callback
     const parsedMessages = messages.map((msg) => JSON.parse(msg));
@@ -113,36 +115,25 @@ export class DebouncedNotificationBatcher<T = unknown> {
   }
 
   /**
-   * Flushes all batches for all group keys.
-   * Deletes all flush keys and processes each batch.
+   * Flushes all pending batches for this batcher instance. Uses the local
+   * activeGroupKeys index — no KEYS scan against Redis.
    */
   async flushAll(): Promise<void> {
-    // Delete all flush keys
-    const flushKeys = await this.pubClient.keys(`${this.flushKeyPrefix}*`);
-    for (const key of flushKeys) {
-      await this.pubClient.del(key);
-    }
-    // Flush all batches
-    const batchKeys = await this.pubClient.keys(`${this.batchKeyPrefix}*`);
-    for (const key of batchKeys) {
-      const groupKey = key.slice(this.batchKeyPrefix.length);
+    for (const groupKeyStr of [...this.activeGroupKeys]) {
+      const groupKey = groupKeyStr === this.GLOBAL_KEY ? null : groupKeyStr;
       await this.flush(groupKey);
     }
   }
 
   /**
-   * Destroys the batcher, cleaning up all keys and disconnecting from Redis.
-   * This does not flush the remaining batches first.
+   * Discards all pending batches without flushing and disconnects from Redis.
    */
   async destroy(): Promise<void> {
-    const batchKeys = await this.pubClient.keys(`${this.batchKeyPrefix}*`);
-    for (const key of batchKeys) {
-      await this.pubClient.del(key);
+    for (const groupKeyStr of [...this.activeGroupKeys]) {
+      await this.pubClient.del(`${this.batchKeyPrefix}${groupKeyStr}`);
+      await this.pubClient.del(`${this.flushKeyPrefix}${groupKeyStr}`);
     }
-    const flushKeys = await this.pubClient.keys(`${this.flushKeyPrefix}*`);
-    for (const key of flushKeys) {
-      await this.pubClient.del(key);
-    }
+    this.activeGroupKeys.clear();
     this.pubClient.disconnect();
     this.subClient.disconnect();
   }

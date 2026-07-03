@@ -1029,16 +1029,10 @@ export class ReceiverService {
 
   /**
    * Returns true if this transaction should trigger the group-level email for
-   * the given emailType. Two conditions must hold:
-   *
-   * 1. All non-CANCELLED peers are at the same email tier:
-   *    - Tier 1: WAITING_FOR_SIGNATURES
-   *    - Tier 2: WAITING_FOR_EXECUTION (READY_FOR_EXECUTION email)
-   *    - Tier 3: EXECUTED, FAILED, REJECTED, EXPIRED (and any unmapped status)
-   *    CANCELLED always fires an individual email and is skipped in this check.
-   * 2. Among all non-CANCELLED peers, this transaction is the stable "last" by
-   *    COALESCE(executedAt, validStart) DESC, id DESC — so exactly one pod fires
-   *    the group email even if multiple pods race.
+   * the given emailType. Fires when no non-CANCELLED peer is still at an
+   * earlier email tier — i.e., every other group member has already reached
+   * this lifecycle stage or moved past it. CANCELLED peers are always skipped;
+   * they fire individual emails regardless.
    */
   private isLastInGroupToReachStage(
     transaction: Transaction,
@@ -1047,38 +1041,21 @@ export class ReceiverService {
   ): boolean {
     const tier = this.getEmailTier(emailType);
 
-    // All non-CANCELLED peers must be at the same tier.
     for (const other of allGroupTransactions) {
       if (other.id === transaction.id) continue;
       const otherEmailType = this.getEmailNotificationType(other.status);
       if (otherEmailType === NotificationType.TRANSACTION_CANCELLED) continue;
-      if (this.getEmailTier(otherEmailType) !== tier) return false;
+      if (this.getEmailTier(otherEmailType) < tier) return false;
     }
 
-    // CANCELLED transactions always send individually, so exclude them.
-    // Among the remaining, the one with the latest executedAt (falling back to
-    // validStart, then id) is the deterministic trigger — only that transaction
-    // fires the group email, ensuring exactly one send regardless of pod count.
-    const candidates = allGroupTransactions.filter(t =>
-      this.getEmailNotificationType(t.status) !== NotificationType.TRANSACTION_CANCELLED,
-    );
-
-    const last = candidates.reduce<Transaction | null>((best, tx) => {
-      if (!best) return tx;
-      const bestTime = (best.executedAt ?? best.validStart)?.getTime() ?? 0;
-      const txTime = (tx.executedAt ?? tx.validStart)?.getTime() ?? 0;
-      if (txTime !== bestTime) return txTime > bestTime ? tx : best;
-      return tx.id > best.id ? tx : best;
-    }, null);
-
-    return last?.id === transaction.id;
+    return true;
   }
 
   /**
    * Called when the last-ordered transaction in a group fires a status-update
-   * email. Creates email notification receivers for every transaction in the
-   * group that maps to the same email type, batching them all into a single
-   * email send so the recipient sees one message listing all N transactions.
+   * email. Creates email notification receivers for every non-CANCELLED member
+   * of the group that has a mapped email type. The debounce batcher groups
+   * them per email type so each recipient receives one message per type.
    */
   private async handleGroupEmailForLastTransaction(
     entityManager: EntityManager,
@@ -1098,6 +1075,7 @@ export class ReceiverService {
     for (const tx of groupTransactions) {
       const emailType = this.getEmailNotificationType(tx.status);
       if (!emailType || emailType === NotificationType.TRANSACTION_CANCELLED) continue;
+      if (!NOTIFICATION_CHANNELS[emailType].email) continue;
 
       try {
         const approvers = approversMap.get(tx.id) ?? [];

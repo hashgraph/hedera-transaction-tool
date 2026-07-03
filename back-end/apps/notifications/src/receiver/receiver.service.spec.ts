@@ -1684,13 +1684,8 @@ describe('ReceiverService', () => {
   });
 
   describe('isLastInGroupToReachStage', () => {
-    const makeTx = (id: number, status: TransactionStatus, opts?: { validStart?: Date; executedAt?: Date }): Transaction =>
-      ({
-        id,
-        status,
-        validStart: opts?.validStart ?? new Date('2025-01-01T00:00:00Z'),
-        executedAt: opts?.executedAt ?? null,
-      } as any);
+    const makeTx = (id: number, status: TransactionStatus): Transaction =>
+      ({ id, status } as any);
 
     it('returns true for a single-transaction group', () => {
       const tx = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);
@@ -1699,104 +1694,61 @@ describe('ReceiverService', () => {
       ).toBe(true);
     });
 
-    it('returns true when all peers share the same tier and this tx has the latest validStart', () => {
-      const earlier = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const later = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-02T00:00:00Z') });
-      const all = [earlier, later];
-      expect((service as any).isLastInGroupToReachStage(later, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
-    });
-
-    it('returns false when this tx has an earlier validStart than a peer at the same tier', () => {
-      const earlier = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const later = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-02T00:00:00Z') });
-      const all = [earlier, later];
-      expect((service as any).isLastInGroupToReachStage(earlier, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-    });
-
-    it('returns false when a peer is at a different tier', () => {
-      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);  // tier 1
-      const txB = makeTx(2, TransactionStatus.WAITING_FOR_EXECUTION);   // tier 2
+    it('returns true when all peers are at the same tier', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);
+      const txB = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES);
       const all = [txA, txB];
-      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_READY_FOR_EXECUTION, all)).toBe(false);
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
     });
 
-    it('skips CANCELLED peers when checking tier uniformity', () => {
-      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
+    it('returns false when any peer is at an earlier tier', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_EXECUTION); // tier 2
+      const txB = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES); // tier 1 — not yet at tier 2
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_READY_FOR_EXECUTION, all)).toBe(false);
+    });
+
+    it('returns true when all peers have moved past this tier', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES); // tier 1
+      const txB = makeTx(2, TransactionStatus.EXECUTED); // tier 3 — already past tier 1
+      const all = [txA, txB];
+      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
+    });
+
+    it('skips CANCELLED peers when checking tier', () => {
+      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES);
       const cancelled = makeTx(2, TransactionStatus.CANCELED);
       const all = [txA, cancelled];
-      // txA is the only non-CANCELLED member, so it is the last
       expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
     });
 
     it('returns true when all other members are CANCELLED', () => {
-      const txA = makeTx(3, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
+      const txA = makeTx(3, TransactionStatus.EXECUTED);
       const c1 = makeTx(1, TransactionStatus.CANCELED);
       const c2 = makeTx(2, TransactionStatus.CANCELED);
       const all = [c1, c2, txA];
       expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
     });
 
-    it('uses executedAt as the primary tiebreaker over validStart', () => {
-      const txA = makeTx(1, TransactionStatus.EXECUTED, {
-        validStart: new Date('2025-01-01T00:00:00Z'),
-        executedAt: new Date('2025-06-01T00:00:00Z'), // later executedAt
-      });
-      const txB = makeTx(2, TransactionStatus.EXECUTED, {
-        validStart: new Date('2025-01-10T00:00:00Z'), // later validStart but ignored
-        executedAt: new Date('2025-03-01T00:00:00Z'), // earlier executedAt
-      });
+    it('treats EXECUTED and EXPIRED as the same tier (tier 3) — both return true', () => {
+      const txA = makeTx(1, TransactionStatus.EXECUTED);
+      const txB = makeTx(2, TransactionStatus.EXPIRED);
       const all = [txA, txB];
+      // Both at tier 3; either can be the trigger
       expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
-    });
-
-    it('falls back to validStart when executedAt is null', () => {
-      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-10T00:00:00Z') });
-      const txB = makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const all = [txA, txB];
-      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-    });
-
-    it('uses id as the final tiebreaker when times are equal', () => {
-      const sameTime = new Date('2025-01-01T00:00:00Z');
-      const txA = makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
-      const txB = makeTx(5, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime }); // higher id
-      const all = [txA, txB];
-      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-    });
-
-    it('treats EXECUTED and EXPIRED as the same tier (tier 3)', () => {
-      const txA = makeTx(1, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const txB = makeTx(2, TransactionStatus.EXPIRED, { validStart: new Date('2025-01-02T00:00:00Z') });
-      const all = [txA, txB];
-      // Both are tier 3; txB has the later validStart so it is the last
-      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
       expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXPIRED, all)).toBe(true);
     });
 
-    it('selects the highest id when all times are equal across multiple transactions', () => {
-      const sameTime = new Date('2025-05-01T00:00:00Z');
-      const txA = makeTx(10, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
-      const txB = makeTx(20, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
-      const txC = makeTx(30, TransactionStatus.WAITING_FOR_SIGNATURES, { validStart: sameTime });
-      const all = [txA, txB, txC];
-      expect((service as any).isLastInGroupToReachStage(txC, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-      expect((service as any).isLastInGroupToReachStage(txA, NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES, all)).toBe(false);
-    });
-
-    it('treats FAILED and REJECTED as tier 3 (they now have mapped email types)', () => {
-      const txExecuted = makeTx(1, TransactionStatus.EXECUTED, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const txFailed = makeTx(2, TransactionStatus.FAILED, { validStart: new Date('2025-01-02T00:00:00Z') });
-      const txRejected = makeTx(3, TransactionStatus.REJECTED, { validStart: new Date('2025-01-03T00:00:00Z') });
+    it('treats FAILED and REJECTED as tier 3', () => {
+      const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
+      const txFailed = makeTx(2, TransactionStatus.FAILED);
+      const txRejected = makeTx(3, TransactionStatus.REJECTED);
       const all = [txExecuted, txFailed, txRejected];
-      // All three are tier 3; txRejected has the latest validStart → it fires
+      // All tier 3 — any of them is eligible to trigger the group email
+      expect((service as any).isLastInGroupToReachStage(txExecuted, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
+      expect((service as any).isLastInGroupToReachStage(txFailed, NotificationType.TRANSACTION_FAILED, all)).toBe(true);
       expect((service as any).isLastInGroupToReachStage(txRejected, NotificationType.TRANSACTION_REJECTED, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txFailed, NotificationType.TRANSACTION_FAILED, all)).toBe(false);
-      expect((service as any).isLastInGroupToReachStage(txExecuted, NotificationType.TRANSACTION_EXECUTED, all)).toBe(false);
     });
   });
 
@@ -1868,15 +1820,15 @@ describe('ReceiverService', () => {
       );
     });
 
-    it('processes valid statuses and skips CANCELLED and null-mapped (ARCHIVED) ones in the same group', async () => {
+    it('processes email-enabled statuses and skips CANCELLED, null-mapped (ARCHIVED), and email-disabled (FAILED, REJECTED) ones', async () => {
       jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
       jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
 
       const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
       const txExpired = makeTx(2, TransactionStatus.EXPIRED);
-      const txFailed = makeTx(3, TransactionStatus.FAILED);     // TRANSACTION_FAILED → processed
-      const txRejected = makeTx(4, TransactionStatus.REJECTED); // TRANSACTION_REJECTED → processed
+      const txFailed = makeTx(3, TransactionStatus.FAILED);     // TRANSACTION_FAILED → email: false → skipped
+      const txRejected = makeTx(4, TransactionStatus.REJECTED); // TRANSACTION_REJECTED → email: false → skipped
       const txCancelled = makeTx(5, TransactionStatus.CANCELED); // skipped (individual email)
       const txArchived = makeTx(6, TransactionStatus.ARCHIVED);  // null emailType → skipped
 
@@ -1885,8 +1837,8 @@ describe('ReceiverService', () => {
         [txExecuted, txExpired, txFailed, txRejected, txCancelled, txArchived],
       );
 
-      // EXECUTED, EXPIRED, FAILED, REJECTED all have email types; CANCELLED and ARCHIVED are skipped
-      expect(createSpy).toHaveBeenCalledTimes(4);
+      // Only EXECUTED and EXPIRED have email: true; FAILED/REJECTED are classified but email-disabled
+      expect(createSpy).toHaveBeenCalledTimes(2);
     });
 
     it('catches per-transaction errors and continues processing remaining transactions', async () => {
@@ -2041,10 +1993,10 @@ describe('ReceiverService', () => {
       );
     });
 
-    it('does not fire group email when this transaction is not the last in the group', async () => {
-      // tx1 has an earlier validStart than tx2 → tx1 is not the last
-      const tx1 = makeGroupTx(60, TransactionStatus.EXECUTED, 10, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const tx2 = makeGroupTx(61, TransactionStatus.EXECUTED, 10, { validStart: new Date('2025-01-02T00:00:00Z') });
+    it('does not fire group email when a peer is still at an earlier tier', async () => {
+      // tx1 (EXECUTED, tier 3) has a peer still at tier 1 → not the last to reach this tier
+      const tx1 = makeGroupTx(60, TransactionStatus.EXECUTED, 10);
+      const tx2 = makeGroupTx(61, TransactionStatus.WAITING_FOR_SIGNATURES, 10);
       const groupTxs = [tx1, tx2];
 
       const ctx = {
@@ -2066,8 +2018,8 @@ describe('ReceiverService', () => {
     });
 
     it('pre-fetches group transactions exactly once per unique groupId', async () => {
-      const tx1 = makeGroupTx(50, TransactionStatus.EXECUTED, 9, { validStart: new Date('2025-01-01T00:00:00Z') });
-      const tx2 = makeGroupTx(51, TransactionStatus.EXECUTED, 9, { validStart: new Date('2025-01-02T00:00:00Z') });
+      const tx1 = makeGroupTx(50, TransactionStatus.EXECUTED, 9);
+      const tx2 = makeGroupTx(51, TransactionStatus.EXECUTED, 9);
       const groupTxs = [tx1, tx2];
 
       const ctx = {

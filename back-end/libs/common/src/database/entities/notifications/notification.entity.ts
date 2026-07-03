@@ -109,11 +109,11 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: false,
   },
   [NotificationType.TRANSACTION_FAILED]: {
-    email: true,
+    email: false, // type used for tier classification; template not yet implemented
     inApp: false,
   },
   [NotificationType.TRANSACTION_REJECTED]: {
-    email: true,
+    email: false, // type used for tier classification; template not yet implemented
     inApp: false,
   },
   [NotificationType.TRANSACTION_EXPIRED]: {
