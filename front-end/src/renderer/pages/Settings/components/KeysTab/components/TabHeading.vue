@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { KeyPair } from '@prisma/client';
-import type { IUserKey } from '@shared/interfaces';
 import { Tabs } from '..';
 
 import { computed, ref, watch } from 'vue';
@@ -17,13 +15,13 @@ import { isLoggedInOrganization } from '@renderer/utils';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppSelect from '@renderer/components/ui/AppSelect.vue';
 import UpdateRecoveryPhraseNickname from '@renderer/components/modals/UpdateRecoveryPhraseNicknameModal.vue';
+import type { KeyInfo } from '@renderer/composables/useKeyManager';
 
 /* Props */
 const props = defineProps<{
   selectedTab: Tabs;
-  selectedRecoveryPhrase: string;
-  listedKeyPairs: KeyPair[];
-  listedMissingKeyPairs: IUserKey[];
+  selectedRecoveryPhrase: string | undefined;
+  keyInfos: KeyInfo[];
 }>();
 
 /* Emits */
@@ -94,13 +92,9 @@ watch(
 );
 
 watch(
-  [() => props.listedKeyPairs, () => props.listedMissingKeyPairs],
-  ([keyPairs, missingKeyPairs]) => {
-    if (
-      keyPairs.length === 0 &&
-      missingKeyPairs.length === 0 &&
-      props.selectedTab === Tabs.RECOVERY_PHRASE
-    ) {
+  () => props.keyInfos,
+  keyInfos => {
+    if (keyInfos.length === 0 && props.selectedTab === Tabs.RECOVERY_PHRASE) {
       handleTabChange(Tabs.ALL);
     }
   },
@@ -179,7 +173,7 @@ watch(
 
       <!-- Restore missing keys from recovery phrase -->
       <AppButton
-        v-if="selectedTab === Tabs.PRIVATE_KEY && listedKeyPairs.length > 0"
+        v-if="selectedTab === Tabs.PRIVATE_KEY && keyInfos.length > 0"
         color="primary"
         :data-testid="`button-restore-lost-keys`"
         class="rounded-3 text-nowrap min-w-unset"
@@ -190,7 +184,7 @@ watch(
 
     <UpdateRecoveryPhraseNickname
       v-model:show="isUpdateRecoveryPhraseNicknameModalShown"
-      :recovery-phrase-hash="selectedRecoveryPhrase"
+      :recovery-phrase-hash="selectedRecoveryPhrase ?? ''"
     />
   </div>
 </template>
