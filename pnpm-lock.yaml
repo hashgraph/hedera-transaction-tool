@@ -3179,8 +3179,8 @@ packages:
   '@types/node@26.0.0':
     resolution: {integrity: sha512-vf2YFi1iY9lHGwNJMs01biZFbKJkrZR1T6/MlzjhJLPdntOHLhTrDSnSVcdtvjihi4VQNlrFRIxLsDBlQpAipA==}
 
-  '@types/node@26.1.0':
-    resolution: {integrity: sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw==}
+  '@types/node@26.0.1':
+    resolution: {integrity: sha512-fc3KiUoBt6kie0N9bIW3E47vZsuaMf0PM2AaUpLCLT0s/LvX1nxAim6Fc049cNxODPpGm6qRAuUOB86SkRuPQw==}
 
   '@types/node@26.1.0':
     resolution: {integrity: sha512-O0A1G3xPGy4w7AgQdAQYUlQ+BKk2Oovw8eRpofyp5KdBZULnbe+WqaOVNrm705SHphCiG4XHsACrSmPu1f+Kgw==}
@@ -8361,14 +8361,6 @@ packages:
       typescript:
         optional: true
 
-  ts-essentials@10.2.1:
-    resolution: {integrity: sha512-+Id1fRkuir+CsgK2x04/icS2b4V1hQmq7ObzIrDjhN0ozfRYivnP7aaKMVJfLApQm0trjR39A6NIMVchiB9Erw==}
-    peerDependencies:
-      typescript: '>=4.5.0'
-    peerDependenciesMeta:
-      typescript:
-        optional: true
-
   ts-jest@29.4.11:
     resolution: {integrity: sha512-IrFl7l9AuB/qrNw5quqvAv/hmKMb8dhWOH4jQOGo0Oq8tCeo1O86/iTFG1FaRimgUkF13l4PcepO8ATFT6Ns4g==}
     engines: {node: ^14.15.0 || ^16.10.0 || ^18.0.0 || >=20.0.0}
@@ -11977,7 +11969,7 @@ snapshots:
     dependencies:
       undici-types: 8.3.0
 
-  '@types/node@26.1.0':
+  '@types/node@26.0.1':
     dependencies:
       undici-types: 8.3.0
 
@@ -18472,13 +18464,13 @@ snapshots:
     dependencies:
       typescript: 5.9.3
 
+  ts-essentials@10.2.0(typescript@5.7.3):
+    optionalDependencies:
+      typescript: 5.7.3
+
   ts-essentials@10.2.0(typescript@5.9.3):
     optionalDependencies:
       typescript: 5.9.3
-
-  ts-essentials@10.2.1(typescript@5.7.3):
-    optionalDependencies:
-      typescript: 5.7.3
 
   ts-jest@29.4.11(@babel/core@7.29.0)(@jest/transform@30.4.1)(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.0))(jest-util@30.4.1)(jest@30.4.2(@types/node@25.5.0)(ts-node@10.9.2(@types/node@25.5.0)(typescript@5.9.3)))(typescript@5.9.3):
     dependencies:
@@ -18940,7 +18932,7 @@ snapshots:
 
   vitest-mock-extended@4.0.0(typescript@5.7.3)(vitest@4.1.5):
     dependencies:
-      ts-essentials: 10.2.1(typescript@5.7.3)
+      ts-essentials: 10.2.0(typescript@5.7.3)
       typescript: 5.7.3
       vitest: 4.1.5(@types/node@25.5.0)(@vitest/coverage-v8@4.1.5)(happy-dom@20.10.3)(vite@6.4.3(@types/node@25.5.0)(jiti@2.7.0)(sass@1.99.0)(terser@5.48.0)(tsx@4.21.0)(yaml@2.9.0))
 
