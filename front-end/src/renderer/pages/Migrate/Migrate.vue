@@ -21,13 +21,19 @@ import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupOrganization from './components/SetupOrganization.vue';
 import ImportUserData from './components/ImportUserData.vue';
-import BeginKeysImport from './components/BeginKeysImport.vue';
+import PerformSetup from './components/PerformSetup.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
 import type { ModelValue } from './components/SetupOrganizationForm.vue';
 
 /* Types */
-type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
+type StepName =
+  | 'recoveryPhrase'
+  | 'personal'
+  | 'organization'
+  | 'selectKeys'
+  | 'performSetup'
+  | 'summary';
 
 /* Stores */
 const user = useUserStore();
@@ -62,6 +68,8 @@ const heading = computed(() => {
       return 'Organization Information';
     case 'selectKeys':
       return 'Select Keys To Recover';
+    case 'performSetup':
+      return 'Setup';
     case 'summary':
       return 'Summary';
     default:
@@ -113,24 +121,21 @@ const handleSetOrganizationSetup = async (value: ModelValue | null) => {
   if (allUserKeysToRecover.value.length !== 0) {
     step.value = 'selectKeys';
   } else {
-    step.value = 'summary';
+    step.value = 'performSetup';
   }
 };
 
-const handleKeysImported = async (value: number) => {
+const didPerformSetup = async (importedKeyCount: number) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  if (!value) {
+  if (importedKeyCount === 0) {
     await accountSetupStore.storeSkipRecoveryPhraseClaim();
   }
-  keysImported.value = value;
   step.value = 'summary';
 };
 
 const handleSelectedKeys = (keysToRecover: KeyPathWithName[]) => {
   selectedKeysToRecover.value = keysToRecover;
-  if (keysToRecover.length === 0) {
-    step.value = 'summary';
-  }
+  step.value = 'performSetup';
 };
 
 /* Functions */
@@ -150,18 +155,11 @@ const initializeUserStore = async () => {
   // is detected on next startup and triggers resetDataLocal(), allowing migration to restart.
   user.setAccountSetupStarted(true);
 
-  await user.refetchOrganizations();
-
-  if (user.organizations[0]) {
-    await user.selectOrganization(user.organizations[0]);
-  }
-
   if (recoveryPhrase.value) {
     await user.setRecoveryPhrase(recoveryPhrase.value.words);
   }
   personalUser.value.password && user.setPassword(personalUser.value.password);
 };
-
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">
@@ -220,20 +218,28 @@ const initializeUserStore = async () => {
             @migration:cancel="handleStopMigration"
             @selected-keys="handleSelectedKeys"
           />
+        </template>
 
-          <template v-if="selectedKeysToRecover.length > 0">
-            <BeginKeysImport
-              :recovery-phrase="recoveryPhrase ?? undefined"
-              :recovery-phrase-password="recoveryPhrasePassword ?? undefined"
-              :selected-keys="selectedKeysToRecover"
-              @keys-imported="handleKeysImported"
-            />
-          </template>
+        <!-- Perform Migration Step -->
+        <template v-if="stepIs('performSetup')">
+          <PerformSetup
+            :personal-user="personalUser!"
+            :organization-setup="organizationSetup"
+            :recovery-phrase="recoveryPhrase"
+            :recovery-phrase-password="recoveryPhrasePassword"
+            :selected-keys="selectedKeysToRecover"
+            @didPerformSetup="didPerformSetup"
+          />
         </template>
 
         <!-- Summary Step -->
         <template v-if="stepIs('summary')">
-          <Summary :imported-keys-count="keysImported" :imported-user-data="importedUserData" />
+          <Summary
+            :imported-keys-count="keysImported"
+            :imported-user-data="importedUserData"
+            :personal-user="personalUser"
+            :organization-setup="organizationSetup"
+          />
         </template>
       </div>
     </div>
