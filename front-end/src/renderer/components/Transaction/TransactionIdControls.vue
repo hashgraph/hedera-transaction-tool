@@ -119,7 +119,7 @@ const columnClass = 'col-4 col-xxxl-3';
           "
           class="text-warning bi bi-exclamation-triangle-fill me-1"
         >
-          Account ID should be belong to the 0.0.2-0.0.55 range
+          Account ID should belong to the 0.0.2-0.0.55 range
         </span>
         <span v-else class="text-muted">
           Balance:
