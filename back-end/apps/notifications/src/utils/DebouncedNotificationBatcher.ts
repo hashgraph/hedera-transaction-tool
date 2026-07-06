@@ -101,6 +101,10 @@ export class DebouncedNotificationBatcher<T = unknown> {
     // Retrieve all messages for the group
     const messages = await this.pubClient.lrange(batchKey, 0, -1);
     if (!messages || messages.length === 0) {
+      // Batch expired or was flushed concurrently; evict from local index and
+      // clean up any stale flush key so the entry doesn't linger in memory.
+      this.activeGroupKeys.delete(groupKeyStr);
+      await this.pubClient.del(flushKey);
       return;
     }
 

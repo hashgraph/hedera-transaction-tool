@@ -1164,16 +1164,21 @@ export class ReceiverService {
       const emailType = this.getEmailNotificationType(transaction.status);
 
       // CANCELLED always fires an individual email even inside a group.
-      // All other statuses suppress the per-transaction email and let the group
-      // email fire once every member of the same tier is settled.
+      // Null (unmapped) emailTypes are excluded from group email logic entirely.
+      // All other non-CANCELLED group members suppress their individual email and
+      // let the group email fire once every member of the same tier is settled.
       let txEmailType: NotificationType | null;
-      if (groupId && emailType !== NotificationType.TRANSACTION_CANCELLED) {
+      if (emailType === null) {
+        txEmailType = null;
+      } else if (groupId && emailType !== NotificationType.TRANSACTION_CANCELLED) {
         const groupTxs = groupTransactionCache.get(groupId) ?? [];
         const isLast = this.isLastInGroupToReachStage(transaction, emailType, groupTxs);
         if (isLast) groupsNeedingEmail.add(groupId);
         txEmailType = null;
       } else {
-        txEmailType = emailType;
+        // Gate by channel config: email-disabled types (e.g. TRANSACTION_FAILED/REJECTED)
+        // must not reach the mailer — they have no template yet.
+        txEmailType = NOTIFICATION_CHANNELS[emailType].email ? emailType : null;
       }
 
       const syncType = this.getInAppNotificationType(transaction.status);
