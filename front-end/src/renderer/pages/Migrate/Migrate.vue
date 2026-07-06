@@ -172,12 +172,6 @@ const initializeUserStore = async () => {
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
 
-      <h5 v-if="step === 'selectKeys'" class="text-title fs-6 mt-4 text-normal text-center">
-        <span>You can import a single/multiple decrypted key(s)</span>
-        <br />
-        <span>or select all of them.</span>
-      </h5>
-
       <div class="fill-remaining mt-4">
         <!-- Decrypt Recovery Phrase Step -->
         <template v-if="stepIs('recoveryPhrase')">
