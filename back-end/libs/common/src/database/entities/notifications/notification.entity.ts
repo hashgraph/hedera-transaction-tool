@@ -17,6 +17,8 @@ export enum NotificationType {
   TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL = 'TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL',
   TRANSACTION_READY_FOR_EXECUTION = 'TRANSACTION_READY_FOR_EXECUTION',
   TRANSACTION_EXECUTED = 'TRANSACTION_EXECUTED',
+  TRANSACTION_FAILED = 'TRANSACTION_FAILED',
+  TRANSACTION_REJECTED = 'TRANSACTION_REJECTED',
   TRANSACTION_EXPIRED = 'TRANSACTION_EXPIRED',
   TRANSACTION_CANCELLED = 'TRANSACTION_CANCELLED',
   TRANSACTION_APPROVED = 'TRANSACTION_APPROVED',
@@ -104,6 +106,14 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
   },
   [NotificationType.TRANSACTION_EXECUTED]: {
     email: true,
+    inApp: false,
+  },
+  [NotificationType.TRANSACTION_FAILED]: {
+    email: false, // type used for tier classification; template not yet implemented
+    inApp: false,
+  },
+  [NotificationType.TRANSACTION_REJECTED]: {
+    email: false, // type used for tier classification; template not yet implemented
     inApp: false,
   },
   [NotificationType.TRANSACTION_EXPIRED]: {
