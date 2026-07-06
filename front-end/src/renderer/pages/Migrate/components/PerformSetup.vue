@@ -41,9 +41,8 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* State */
-const progressText = ref('Setup…');
 const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
-const eyePersistence = new Promise(resolve => setTimeout(resolve, 3000));
+const eyePersistence = new Promise(resolve => setTimeout(resolve, 1500));
 
 /* Handlers */
 const didDecryptKeys = async (importedCount: number) => {
@@ -60,7 +59,6 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
 
 const setupOrganization = async (setup: ModelValue) => {
   // 1) Add organization
-  progressText.value = 'Adding Organization...';
   const { id: organizationId } = await addOrganization({
     nickname: setup.organizationNickname,
     serverUrl: setup.organizationURL,
@@ -68,7 +66,6 @@ const setupOrganization = async (setup: ModelValue) => {
   });
 
   // 2) Login to organization
-  progressText.value = 'Logging in Organization...';
   const email = setup.organizationEmail ?? props.personalUser.email!;
   const { jwtToken } = await login(
     setup.organizationURL,
@@ -78,7 +75,6 @@ const setupOrganization = async (setup: ModelValue) => {
   toggleAuthTokenInSessionStorage(setup.organizationURL, jwtToken, false);
 
   // 3) Set new password
-  progressText.value = 'Setting New Password...';
   await changePassword(
     setup.organizationURL,
     setup.temporaryOrganizationPassword,
@@ -86,7 +82,6 @@ const setupOrganization = async (setup: ModelValue) => {
   );
 
   // 4) Add Organization Credentials
-  progressText.value = 'Storing encrypted credentials...';
   addOrganizationCredentials(
     email,
     setup.newOrganizationPassword,
@@ -217,12 +212,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <span>{{ progressText }}</span>
-  <div>
-    <DecryptKeys
-      ref="decryptKeysRef"
-      :default-password="recoveryPhrasePassword ?? undefined"
-      @end="didDecryptKeys"
-    />
+  <div class="flex-column-100">
+    <div class="fill-remaining text-center">
+      <p class="text-secondary text-small lh-base text-center">Setup is on-going…</p>
+      <div class="bi bi-arrow-left-right large-icon mt-12 mb-12" />
+      <div>
+        <DecryptKeys
+          ref="decryptKeysRef"
+          :default-password="recoveryPhrasePassword ?? undefined"
+          @end="didDecryptKeys"
+        />
+      </div>
+    </div>
   </div>
 </template>
