@@ -42,7 +42,7 @@ const user = useUserStore();
 
 /* State */
 const decryptKeysRef = ref<InstanceType<typeof DecryptKeys> | null>(null);
-const eyePersistence = new Promise(resolve => setTimeout(resolve, 1500));
+const eyePersistence = new Promise(resolve => setTimeout(resolve, 1200));
 
 /* Handlers */
 const didDecryptKeys = async (importedCount: number) => {
@@ -53,7 +53,6 @@ const didDecryptKeys = async (importedCount: number) => {
 
 /* Functions */
 const concludeSetup = async (importedKeyCount: number, error: unknown) => {
-  await eyePersistence;
   emit('didPerformSetup', importedKeyCount, error);
 };
 
@@ -97,6 +96,9 @@ const setupOrganization = async (setup: ModelValue) => {
   if (user.organizations[0]) {
     await user.selectOrganization(user.organizations[0]);
   }
+
+  // 6) Wait a little to avoid flash effect and help user identify what's happening
+  await eyePersistence;
 };
 
 const startKeyImport = async () => {
