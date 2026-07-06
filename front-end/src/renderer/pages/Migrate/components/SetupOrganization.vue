@@ -63,91 +63,6 @@ const handleFormSubmit: SubmitCallback = async (
 
   return { error: null };
 };
-//
-// const handleFormSubmitOld: SubmitCallback = async (formData: ModelValue) => {
-//   loading.value = true;
-//
-//   const sameOrganization = organizationURL.value === formData.organizationURL;
-//   const sameEmail = organizationEmail.value === formData.organizationEmail;
-//
-//   /* Add Organization */
-//   if (!organizationId.value || !sameOrganization) {
-//     loadingText.value = 'Checking version compatibility...';
-//     await healthCheck(formData.organizationURL);
-//     if (getVersionStatusForOrg(formData.organizationURL) === 'belowMinimum') {
-//       loading.value = false;
-//       return {
-//         error:
-//           'Your app version is no longer supported by this organization. Please update the app before continuing migration.',
-//       };
-//     }
-//
-//     loadingText.value = 'Adding Organization...';
-//     if (organizationId.value) {
-//       await safeAwait(deleteOrganization(organizationId.value));
-//     }
-//     const setupOrganizationResult = await safeAwait(setupOrganization(formData));
-//     if ('error' in setupOrganizationResult) {
-//       loading.value = false;
-//       throw setupOrganizationResult.error;
-//     }
-//     organizationId.value = setupOrganizationResult.data;
-//     organizationURL.value = formData.organizationURL;
-//   }
-//
-//   /* Login in Organization */
-//   if (!loggedIn.value || !sameOrganization || !sameEmail) {
-//     loadingText.value = 'Logging in Organization...';
-//     const loginInOrganizationResult = await safeAwait(loginInOrganization(formData));
-//     if (loginInOrganizationResult.error instanceof Error) {
-//       loading.value = false;
-//       return { error: loginInOrganizationResult.error.message };
-//     }
-//     loggedIn.value = true;
-//   }
-//
-//   /* Set New Password */
-//   loadingText.value = 'Setting New Password...';
-//   const setNewPasswordResult = await safeAwait(setNewPassword(formData));
-//   if (setNewPasswordResult.error instanceof Error) {
-//     loading.value = false;
-//     return { error: setNewPasswordResult.error.message };
-//   }
-//
-//   loadingText.value = 'Storing encrypted credentials...';
-//
-//   /* Add Organization Credentials */
-//   let email;
-//   if (props.personalUser.useKeychain) {
-//     if (!formData.organizationEmail) {
-//       throw new Error('(BUG) Organization email is required');
-//     }
-//     email = formData.organizationEmail;
-//   } else {
-//     email = props.personalUser.email;
-//   }
-//
-//   const addOrganizationCredentialsResult = await safeAwait(
-//     addOrganizationCredentials(
-//       email,
-//       formData.newOrganizationPassword,
-//       organizationId.value,
-//       props.personalUser.personalId,
-//       organizationJwtToken.value || '',
-//       props.personalUser.password,
-//       true,
-//     ),
-//   );
-//   if ('error' in addOrganizationCredentialsResult) {
-//     loading.value = false;
-//     throw addOrganizationCredentialsResult.error;
-//   }
-//
-//   loading.value = false;
-//   emit('setOrganizationId', organizationId.value);
-//
-//   return { error: null };
-// };
 
 const handleSkip = () => {
   emit('setOrganizationSetup', null);
@@ -156,15 +71,6 @@ const handleSkip = () => {
 const handleMigrationCancel = () => emit('migration:cancel');
 
 /* Functions */
-// const setupOrganization = async ({ organizationURL, organizationNickname }: ModelValue) => {
-//   const { id } = await addOrganization({
-//     nickname: organizationNickname,
-//     serverUrl: organizationURL,
-//     key: '',
-//   });
-//   return id;
-// };
-//
 const checkLoginInOrganization = async (data: ModelValue) => {
   let email;
   if (props.personalUser.useKeychain) {
@@ -178,37 +84,6 @@ const checkLoginInOrganization = async (data: ModelValue) => {
 
   await login(data.organizationURL, email, data.temporaryOrganizationPassword);
 };
-
-// const loginInOrganization = async (data: ModelValue) => {
-//   let email;
-//   if (props.personalUser.useKeychain) {
-//     if (!data.organizationEmail) {
-//       throw new Error('(BUG) Organization email is required');
-//     }
-//     email = data.organizationEmail;
-//   } else {
-//     email = props.personalUser.email;
-//   }
-//
-//   const { id, jwtToken } = await login(
-//     data.organizationURL,
-//     email,
-//     data.temporaryOrganizationPassword,
-//   );
-//   toggleAuthTokenInSessionStorage(data.organizationURL, jwtToken, false);
-//
-//   organizationUserId.value = id;
-//   organizationJwtToken.value = jwtToken;
-//   organizationEmail.value = email;
-// };
-//
-// const setNewPassword = async ({
-//   organizationURL,
-//   temporaryOrganizationPassword,
-//   newOrganizationPassword,
-// }: ModelValue) => {
-//   await changePassword(organizationURL, temporaryOrganizationPassword, newOrganizationPassword);
-// };
 </script>
 <template>
   <SetupOrganizationForm
