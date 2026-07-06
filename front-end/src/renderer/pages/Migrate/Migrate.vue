@@ -232,8 +232,6 @@ const initializeUserStore = async () => {
           <Summary
             :imported-keys-count="keysImported"
             :imported-user-data="importedUserData"
-            :personal-user="personalUser"
-            :organization-setup="organizationSetup"
           />
         </template>
       </div>
