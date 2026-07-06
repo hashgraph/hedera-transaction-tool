@@ -130,6 +130,7 @@ const didPerformSetup = async (importedKeyCount: number) => {
   if (importedKeyCount === 0) {
     await accountSetupStore.storeSkipRecoveryPhraseClaim();
   }
+  keysImported.value = importedKeyCount;
   step.value = 'summary';
 };
 
