@@ -325,7 +325,7 @@ jobs:
         # front-end postinstall (electron-builder install-app-deps) rebuilds
         # native modules for the macOS electron runtime.
         working-directory: front-end
-        run: pnpm install
+        run: pnpm install --frozen-lockfile
 
       - name: Build and Sign macOS Artifacts
         working-directory: front-end

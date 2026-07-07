@@ -11,6 +11,7 @@ on:
     branches:
       - main
       - release/**
+      - security-test
   workflow_dispatch:
 
 defaults:
@@ -81,7 +82,7 @@ jobs:
         run: pnpm audit --audit-level=high
 
   semgrep:
-    if: github.ref == 'refs/heads/main'
+    #if: github.ref == 'refs/heads/main'
     name: Semgrep
     permissions:
       security-events: write  # Required for uploading SARIF
@@ -105,7 +106,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install Semgrep
-        run: pip install semgrep
+        run: pip install semgrep==1.168.0
 
       - name: Run Semgrep
         run: semgrep scan --error --sarif --output semgrep.sarif
