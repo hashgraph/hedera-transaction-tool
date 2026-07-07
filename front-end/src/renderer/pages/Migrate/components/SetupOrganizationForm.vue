@@ -64,9 +64,7 @@ const handleOnFormSubmit = async () => {
 
   const result = await props.submitCallback({
     organizationURL,
-    organizationEmail: props.personalUser.useKeychain
-      ? organizationEmail
-      : props.personalUser.email,
+    organizationEmail,
     organizationNickname: organizationNickname || 'Organization 1',
     temporaryOrganizationPassword,
     newOrganizationPassword,
