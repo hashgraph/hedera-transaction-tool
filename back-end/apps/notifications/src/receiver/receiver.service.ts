@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectEntityManager } from '@nestjs/typeorm';
 import { EntityManager, In } from 'typeorm';
 
@@ -72,6 +73,7 @@ export class ReceiverService {
     @InjectEntityManager() private entityManager: EntityManager,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly configService: ConfigService,
   ) {}
 
   // --- Small lookups -----------------------------------------------------
@@ -284,6 +286,7 @@ export class ReceiverService {
     notificationType: NotificationType,
     userIds: Set<number>,
     cache: Map<number, User>, // User with preferences relation
+    channel: 'email' | 'inApp' | 'any' = 'any',
   ): Promise<number[]> {
     // Load uncached users
     await this.loadUsersWithPreferences(entityManager, Array.from(userIds), cache);
@@ -298,12 +301,16 @@ export class ReceiverService {
         p => p.type === notificationType
       );
 
-      const channel = NOTIFICATION_CHANNELS[notificationType];
-      const emailAllowed = !channel.email || !preference || preference.email !== false;
-      const inAppAllowed = !channel.inApp || !preference || preference.inApp !== false;
-      if (emailAllowed && inAppAllowed) {
-        result.push(id);
-      }
+      const ch = NOTIFICATION_CHANNELS[notificationType];
+      const emailAllowed = !ch.email || !preference || preference.email !== false;
+      const inAppAllowed = !ch.inApp || !preference || preference.inApp !== false;
+
+      const passes =
+        channel === 'email' ? emailAllowed :
+        channel === 'inApp' ? inAppAllowed :
+        emailAllowed && inAppAllowed;
+
+      if (passes) result.push(id);
     }
 
     return result;
@@ -420,11 +427,9 @@ export class ReceiverService {
       });
     }
 
-    if (indicatorNotifications.length > 0) {
-      await entityManager.delete(Notification, {
-        id: In(indicatorNotifications.map(n => n.id)),
-      });
-    }
+    await entityManager.delete(Notification, {
+      id: In(indicatorNotifications.map(n => n.id)),
+    });
 
     return deletedReceiverIds;
   }
@@ -453,6 +458,13 @@ export class ReceiverService {
       },
       relations: { notificationReceivers: true },
     });
+
+    if (!notification) {
+      console.warn(
+        `Notification row not found for entityId=${transactionId}, type=${notificationType}; skipping receiver updates/creates`,
+      );
+      return { newReceivers: [], updatedReceivers: [] };
+    }
 
     // Get users who should receive this notification (filtered by preferences)
     const receiverIds = await this.filterReceiversByPreferenceForType(
@@ -866,8 +878,9 @@ export class ReceiverService {
       );
     }
 
+    const emailsDisabled = this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS');
     if (isManual) {
-      const emailType = this.getEmailNotificationType(transaction.status);
+      const emailType = emailsDisabled ? null : this.getEmailNotificationType(transaction.status);
       if (emailType) {
         const { newReceivers, updatedReceivers } = await this.processNotificationType(
           entityManager,
@@ -885,7 +898,7 @@ export class ReceiverService {
           cache,
         );
       }
-    } else {
+    } else if (!emailsDisabled) {
       const newReceivers = await this.processReminderEmail(
         entityManager,
         transaction,
@@ -920,15 +933,19 @@ export class ReceiverService {
       NotificationType.USER_REGISTERED,
       adminUserIds,
       cache,
+      'inApp',
     );
 
     // Get admin users who want email notifications (filtered by preferences)
-    const emailReceiverUserIds = await this.filterReceiversByPreferenceForType(
-      entityManager,
-      NotificationType.USER_REGISTERED,
-      adminUserIds,
-      cache,
-    );
+    const emailReceiverUserIds = this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS')
+      ? []
+      : await this.filterReceiversByPreferenceForType(
+          entityManager,
+          NotificationType.USER_REGISTERED,
+          adminUserIds,
+          cache,
+          'email',
+        );
 
     // Combine all receivers (union of in-app and email preferences)
     const allReceiverIds = new Set([...inAppReceiverUserIds, ...emailReceiverUserIds]);
@@ -1066,6 +1083,7 @@ export class ReceiverService {
     groupTransactions: Transaction[],
   ): Promise<void> {
     if (groupTransactions.length === 0) return;
+    if (this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS')) return;
 
     const approversMap = await this.getApproversByTransactionIds(
       entityManager,
@@ -1143,6 +1161,7 @@ export class ReceiverService {
     // Groups that need a group email after the loop. The tiebreaker in
     // isLastInGroupToReachStage guarantees at most one add per group per batch.
     const groupsNeedingEmail = new Set<number>();
+    const emailsDisabled = this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS');
 
     // Process each event
     for (const { entityId: transactionId } of events) {
@@ -1161,7 +1180,7 @@ export class ReceiverService {
       }
 
       const groupId = transaction.groupItem?.groupId;
-      const emailType = this.getEmailNotificationType(transaction.status);
+      const emailType = emailsDisabled ? null : this.getEmailNotificationType(transaction.status);
 
       // CANCELLED always fires an individual email even inside a group.
       // Null (unmapped) emailTypes are excluded from group email logic entirely.
