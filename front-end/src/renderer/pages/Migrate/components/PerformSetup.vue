@@ -63,7 +63,7 @@ const setupOrganization = async (setup: ModelValue) => {
   });
 
   // 2) Login to organization
-  const email = setup.organizationEmail ?? props.personalUser.email!;
+  const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
   const { jwtToken } = await login(
     setup.organizationURL,
     email,

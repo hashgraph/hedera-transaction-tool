@@ -10,7 +10,7 @@ import { safeAwait } from '@renderer/utils';
 import { getVersionStatusForOrg } from '@renderer/stores/versionState';
 
 /* Props */
-const props = defineProps<{
+defineProps<{
   personalUser: PersonalUser;
 }>();
 
@@ -72,15 +72,10 @@ const handleMigrationCancel = () => emit('migration:cancel');
 
 /* Functions */
 const checkLoginInOrganization = async (data: ModelValue) => {
-  let email;
-  if (props.personalUser.useKeychain) {
-    if (!data.organizationEmail) {
-      throw new Error('(BUG) Organization email is required');
-    }
-    email = data.organizationEmail;
-  } else {
-    email = props.personalUser.email;
+  if (!data.organizationEmail) {
+    throw new Error('(BUG) Organization email is required');
   }
+  const email = data.organizationEmail;
 
   await login(data.organizationURL, email, data.temporaryOrganizationPassword);
 };
