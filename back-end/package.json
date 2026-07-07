@@ -61,7 +61,7 @@
     "bcryptjs": "catalog:",
     "cache-manager": "7.2.8",
     "class-transformer": "0.5.1",
-    "class-validator": "0.14.1",
+    "class-validator": "0.15.1",
     "dotenv": "catalog:",
     "express": "5.2.1",
     "ioredis": "5.10.1",
