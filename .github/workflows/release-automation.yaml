@@ -569,18 +569,14 @@ jobs:
               gh issue comment "$EXISTING" \
                 --body "Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists." \
                 --repo ${{ github.repository }}
+              gh issue close "$EXISTING" \
+                --repo ${{ github.repository }}
             fi
-          else
-            if [ -n "$PRERELEASE" ]; then
-              ISSUE_BODY=$(sed \
-                  -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
-                  -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
-                  docs/release-process.md)
-            else
-              ISSUE_BODY=$(sed \
-                  -e "s|<major\.minor\.patch>|${VERSION}|g" \
-                  docs/release-process.md)
-            fi
+          elif [ -n "$PRERELEASE" ]; then
+            ISSUE_BODY=$(sed \
+                -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                docs/release-process.md)
 
             # Substitute or remove the SNAPSHOT bump PR line.
             if [ "$CREATE_PR" = "true" ]; then
