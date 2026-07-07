@@ -19,7 +19,6 @@
 ### Pre-requisites
 - [ ] Beta `v<major.minor.patch>-beta.<number>` deployed and stable
 - [ ] Run performance tests against `staging`
-- [ ] Manual testing issue created from `docs/test-scenarios.md`
 - [ ] Manual testing completed and beta approved
 
 ### Publish Release
