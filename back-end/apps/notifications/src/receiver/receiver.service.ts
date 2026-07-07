@@ -459,7 +459,12 @@ export class ReceiverService {
       relations: { notificationReceivers: true },
     });
 
-    if (!notification) return { newReceivers: [], updatedReceivers: [] };
+    if (!notification) {
+      console.warn(
+        `Notification row not found for entityId=${transactionId}, type=${notificationType}; skipping receiver updates/creates`,
+      );
+      return { newReceivers: [], updatedReceivers: [] };
+    }
 
     // Get users who should receive this notification (filtered by preferences)
     const receiverIds = await this.filterReceiversByPreferenceForType(
