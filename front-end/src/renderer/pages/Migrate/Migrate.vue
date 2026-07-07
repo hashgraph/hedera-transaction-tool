@@ -10,6 +10,8 @@ import { KeyPathWithName } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
+import { ToastManager } from '@renderer/utils/ToastManager';
+
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
 
@@ -25,6 +27,7 @@ import PerformSetup from './components/PerformSetup.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
 import type { ModelValue } from './components/SetupOrganizationForm.vue';
+import { getErrorMessage } from '@renderer/utils';
 
 /* Types */
 type StepName =
@@ -34,6 +37,9 @@ type StepName =
   | 'selectKeys'
   | 'performSetup'
   | 'summary';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -125,13 +131,16 @@ const handleSetOrganizationSetup = async (value: ModelValue | null) => {
   }
 };
 
-const didPerformSetup = async (importedKeyCount: number) => {
+const didPerformSetup = async (importedKeyCount: number, error: unknown) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
   if (importedKeyCount === 0) {
     await accountSetupStore.storeSkipRecoveryPhraseClaim();
   }
   keysImported.value = importedKeyCount;
   step.value = 'summary';
+  if (error !== null) {
+    toastManager.error(getErrorMessage(error, 'Organization setup failed'));
+  }
 };
 
 const handleSelectedKeys = (keysToRecover: KeyPathWithName[]) => {
