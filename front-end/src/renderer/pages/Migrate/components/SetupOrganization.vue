@@ -91,15 +91,10 @@ const handleFormSubmit: SubmitCallback = async (formData: ModelValue) => {
   loadingText.value = 'Storing encrypted credentials...';
 
   /* Add Organization Credentials */
-  let email;
-  if (props.personalUser.useKeychain) {
-    if (!formData.organizationEmail) {
-      throw new Error('(BUG) Organization email is required');
-    }
-    email = formData.organizationEmail;
-  } else {
-    email = props.personalUser.email;
+  if (!formData.organizationEmail) {
+    throw new Error('(BUG) Organization email is required');
   }
+  const email = formData.organizationEmail;
 
   const addOrganizationCredentialsResult = await safeAwait(
     addOrganizationCredentials(
@@ -140,15 +135,10 @@ const setupOrganization = async ({ organizationURL, organizationNickname }: Mode
 };
 
 const loginInOrganization = async (data: ModelValue) => {
-  let email;
-  if (props.personalUser.useKeychain) {
-    if (!data.organizationEmail) {
-      throw new Error('(BUG) Organization email is required');
-    }
-    email = data.organizationEmail;
-  } else {
-    email = props.personalUser.email;
+  if (!data.organizationEmail) {
+    throw new Error('(BUG) Organization email is required');
   }
+  const email = data.organizationEmail;
 
   const { id, jwtToken } = await login(
     data.organizationURL,
