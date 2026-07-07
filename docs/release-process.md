@@ -23,6 +23,7 @@
 - [ ] Manual testing completed and beta approved
 
 ### Publish Release
+- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>`
 - [ ] Add a short description to the GitHub release draft for `v<major.minor.patch>`
 - [ ] Publish the GitHub release draft
 
