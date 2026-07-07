@@ -117,7 +117,7 @@ const columnClass = 'col-4 col-xxxl-3';
           v-else-if="
             props.isNodeCreationPrivRequired && !isNodeCreationAuthorizedFeePayer(props.payerId)
           "
-          class="text-warning bi bi-exclamation-triangle-fill me-1"
+          class="text-info bi bi-exclamation-circle-fill me-1"
         >
           Account ID should belong to the 0.0.2-0.0.55 range
         </span>
