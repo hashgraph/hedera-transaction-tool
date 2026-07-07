@@ -56,7 +56,7 @@ const handleOnFormSubmit = async () => {
 
   if (
     inputOrganizationURLInvalid.value ||
-    (props.personalUser.useKeychain ? organizationEmail.length === 0 : false) ||
+    organizationEmail.length === 0 ||
     temporaryOrganizationPassword.length === 0
   ) {
     return;
@@ -208,7 +208,7 @@ watch(
           :disabled="
             inputTemporaryOrganizationPassword.trim().length === 0 ||
             inputOrganizationURL.trim().length === 0 ||
-            (personalUser.useKeychain ? inputOrganizationEmail.length === 0 : false) ||
+            inputOrganizationEmail.trim().length === 0 ||
             inputNewOrganizationPassword.trim().length === 0 ||
             inputNewOrganizationPassword.trim() === inputTemporaryOrganizationPassword.trim()
           "

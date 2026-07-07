@@ -56,13 +56,6 @@ vi.mock('@renderer/utils', () => ({
   }),
 }));
 
-const personalUserWithPassword: PersonalUser = {
-  personalId: 'personal-id-123',
-  useKeychain: false,
-  email: 'original@example.com',
-  password: 'personalPassword',
-};
-
 const stubs = {
   AppButton: {
     props: ['disabled', 'loading', 'loadingText'],
@@ -91,7 +84,7 @@ describe('SetupOrganization.vue — email field during migration', () => {
     mocks.addOrganizationCredentials.mockResolvedValue(undefined);
   });
 
-  function mountSetupOrganization(personalUser: PersonalUser = personalUserWithPassword) {
+  function mountSetupOrganization(personalUser: PersonalUser) {
     return mount(SetupOrganization, {
       props: { personalUser },
       global: { stubs },
@@ -104,50 +97,94 @@ describe('SetupOrganization.vue — email field during migration', () => {
     await wrapper
       .find('[data-testid="input-temporary-organization-password"]')
       .setValue('tempPass123');
-    await wrapper
-      .find('[data-testid="input-new-organization-password"]')
-      .setValue('newPass456');
+    await wrapper.find('[data-testid="input-new-organization-password"]').setValue('newPass456');
     await wrapper.find('form').trigger('submit');
     await flushPromises();
   }
 
-  test('email field is pre-filled with the personal user email', () => {
-    const wrapper = mountSetupOrganization();
+  describe('non-keychain (email/password) user', () => {
+    const personalUser: PersonalUser = {
+      personalId: 'personal-id-123',
+      useKeychain: false,
+      email: 'original@example.com',
+      password: 'personalPassword',
+    };
 
-    const emailInput = wrapper.find('[data-testid="input-organization-email"]');
-    expect((emailInput.element as HTMLInputElement).value).toBe('original@example.com');
+    test('email field is pre-filled with the personal user email', () => {
+      const wrapper = mountSetupOrganization(personalUser);
+
+      const emailInput = wrapper.find('[data-testid="input-organization-email"]');
+      expect((emailInput.element as HTMLInputElement).value).toBe('original@example.com');
+    });
+
+    test('updated email is submitted when the user edits the pre-filled value', async () => {
+      const wrapper = mountSetupOrganization(personalUser);
+
+      await fillAndSubmit(wrapper, 'updated@example.com');
+
+      expect(mocks.login).toHaveBeenCalledWith(
+        'https://org.example.com',
+        'updated@example.com',
+        'tempPass123',
+      );
+      expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
+        'updated@example.com',
+        'newPass456',
+        'org-id',
+        'personal-id-123',
+        'jwt-token',
+        'personalPassword',
+        true,
+      );
+    });
+
+    test('original email is not used when the user has changed it', async () => {
+      const wrapper = mountSetupOrganization(personalUser);
+
+      await fillAndSubmit(wrapper, 'updated@example.com');
+
+      expect(mocks.login).not.toHaveBeenCalledWith(
+        expect.anything(),
+        'original@example.com',
+        expect.anything(),
+      );
+    });
   });
 
-  test('updated email is submitted when the user edits the pre-filled value', async () => {
-    const wrapper = mountSetupOrganization();
+  describe('keychain user', () => {
+    const personalUser: PersonalUser = {
+      personalId: 'personal-id-123',
+      useKeychain: true,
+      email: null,
+      password: null,
+    };
 
-    await fillAndSubmit(wrapper, 'updated@example.com');
+    test('email field is empty (not pre-filled) when using keychain auth', () => {
+      const wrapper = mountSetupOrganization(personalUser);
 
-    expect(mocks.login).toHaveBeenCalledWith(
-      'https://org.example.com',
-      'updated@example.com',
-      'tempPass123',
-    );
-    expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
-      'updated@example.com',
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-      expect.anything(),
-    );
-  });
+      const emailInput = wrapper.find('[data-testid="input-organization-email"]');
+      expect((emailInput.element as HTMLInputElement).value).toBe('');
+    });
 
-  test('original email is not used when the user has changed it', async () => {
-    const wrapper = mountSetupOrganization();
+    test('entered organization email is used for login and credential storage', async () => {
+      const wrapper = mountSetupOrganization(personalUser);
 
-    await fillAndSubmit(wrapper, 'updated@example.com');
+      await fillAndSubmit(wrapper, 'org@example.com');
 
-    expect(mocks.login).not.toHaveBeenCalledWith(
-      expect.anything(),
-      'original@example.com',
-      expect.anything(),
-    );
+      expect(mocks.login).toHaveBeenCalledWith(
+        'https://org.example.com',
+        'org@example.com',
+        'tempPass123',
+      );
+      expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
+        'org@example.com',
+        'newPass456',
+        'org-id',
+        'personal-id-123',
+        'jwt-token',
+        null,
+        true,
+      );
+    });
   });
 });
