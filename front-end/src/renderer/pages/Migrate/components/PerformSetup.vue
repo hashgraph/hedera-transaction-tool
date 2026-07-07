@@ -15,8 +15,6 @@ import {
   userKeyHasMnemonic,
 } from '@renderer/utils';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials.ts';
-import { getDataMigrationKeysPath } from '@renderer/services/migrateDataService.ts';
-import { searchEncryptedKeys } from '@renderer/services/encryptedKeys.ts';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 import { compareHash } from '@renderer/services/electronUtilsService.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
@@ -81,7 +79,7 @@ const setupOrganization = async (setup: ModelValue) => {
   );
 
   // 4) Add Organization Credentials
-  addOrganizationCredentials(
+  await addOrganizationCredentials(
     email,
     setup.newOrganizationPassword,
     organizationId,
@@ -102,14 +100,8 @@ const setupOrganization = async (setup: ModelValue) => {
 };
 
 const startKeyImport = async () => {
-  if (props.selectedKeys && props.selectedKeys.length > 0) {
-    const selectedKeyPaths = props.selectedKeys.map(key => key.filepath);
-    await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase?.words);
-  } else {
-    const keysPath = await getDataMigrationKeysPath();
-    const encryptedKeyPaths = await searchEncryptedKeys([keysPath]);
-    await decryptKeysRef.value?.process(encryptedKeyPaths, props.recoveryPhrase?.words);
-  }
+  const selectedKeyPaths = props.selectedKeys.map(key => key.filepath);
+  await decryptKeysRef.value?.process(selectedKeyPaths, props.recoveryPhrase?.words);
 };
 
 const restoreOnEmpty = async (userKeysWithMnemonic: IUserKeyWithMnemonic[]) => {
