@@ -27,7 +27,7 @@ catalog:
   ts-jest: 29.4.11
   ts-loader: 9.5.7
   ts-node: 10.9.2
-  typeorm: 0.3.28
+  typeorm: 0.3.29
   typescript: 5.9.3
 
 catalogs:
