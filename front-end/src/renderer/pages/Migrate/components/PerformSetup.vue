@@ -85,7 +85,7 @@ const setupOrganization = async (setup: ModelValue) => {
     organizationId,
     props.personalUser.personalId,
     jwtToken,
-    setup.newOrganizationPassword,
+    props.personalUser.password,
     true,
   );
 
