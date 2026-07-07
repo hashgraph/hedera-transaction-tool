@@ -105,7 +105,7 @@ jobs:
           python-version: "3.13"
 
       - name: Install Semgrep
-        run: pip install semgrep
+        run: pip install semgrep==1.168.0
 
       - name: Run Semgrep
         run: semgrep scan --error --sarif --output semgrep.sarif
