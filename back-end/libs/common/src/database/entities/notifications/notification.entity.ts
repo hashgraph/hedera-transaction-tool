@@ -77,7 +77,7 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: true,
   },
   [NotificationType.USER_REGISTERED]: {
-    email: false,
+    email: true,
     inApp: true,
   },
 
