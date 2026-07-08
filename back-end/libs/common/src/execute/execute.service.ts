@@ -222,7 +222,7 @@ export class ExecuteService {
     try {
       signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
     } catch (error) {
-      this.logger.warn(`Key resolution failed for transaction ${transaction.id}, proceeding without signature validation: ${error.message}`);
+      this.logger.warn(`Key resolution failed for transaction ${transaction.id}, proceeding without signature validation`, error);
       return sdkTransaction;
     }
 

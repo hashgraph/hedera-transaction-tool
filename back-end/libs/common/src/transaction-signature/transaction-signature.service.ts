@@ -122,7 +122,7 @@ export class TransactionSignatureService {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {
-        errors.push(error);
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
     }
     if (errors.length > 0) {
@@ -151,7 +151,7 @@ export class TransactionSignatureService {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {
-        errors.push(error);
+        errors.push(error instanceof Error ? error : new Error(String(error)));
       }
     }
     if (errors.length > 0) {

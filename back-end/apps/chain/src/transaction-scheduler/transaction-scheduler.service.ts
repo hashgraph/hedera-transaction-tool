@@ -232,7 +232,7 @@ export class TransactionSchedulerService {
           try {
             requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
           } catch (error) {
-            console.log(`Key resolution failed for transaction ${transaction.id} in group, skipping collation: ${error.message}`);
+            console.log(`Key resolution failed for transaction ${transaction.id} in group, skipping collation`, error);
             keyResolutionFailed = true;
             break;
           }
@@ -313,7 +313,7 @@ export class TransactionSchedulerService {
         try {
           requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
         } catch (error) {
-          console.log(`Key resolution failed for transaction ${transaction.id}, skipping collation: ${error.message}`);
+          console.log(`Key resolution failed for transaction ${transaction.id}, skipping collation`, error);
           this.addExecutionTimeout(transaction);
           return;
         }

@@ -40,8 +40,4 @@ export class TransactionSigner {
 
   @CreateDateColumn()
   createdAt: Date;
-
-  // version - 0.35.0, 0.0.14.8
-  //
-  // imortedUserId
 }

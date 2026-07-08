@@ -142,7 +142,7 @@ export async function processTransactionStatus(
     try {
       signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
     } catch (error) {
-      console.error(`[processTransactionStatus] key resolution failed for transaction ${transaction.id}, skipping status update: ${error.message}`);
+      console.error(`[processTransactionStatus] key resolution failed for transaction ${transaction.id}, skipping status update`, error);
       continue;
     }
 
