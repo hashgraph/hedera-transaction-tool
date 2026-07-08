@@ -63,7 +63,7 @@ function makeOldNodeInfo(
     reward_rate_start: null,
     decline_reward: false,
     grpc_web_proxy_endpoint: null,
-    associated_registered_node: [],
+    associated_registered_nodes: [],
     ...overrides,
   };
 }
@@ -111,7 +111,7 @@ describe('createNodeUpdateTransaction — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: ['1', '2'] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     expect(tx.associatedRegisteredNodes).toBeNull();
   });
@@ -122,7 +122,7 @@ describe('createNodeUpdateTransaction — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: [] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     expect(tx.associatedRegisteredNodes).toEqual([]);
   });
@@ -133,7 +133,7 @@ describe('createNodeUpdateTransaction — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: ['3', '4'] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     expect(tx.associatedRegisteredNodes).toEqual(longs([3, 4]));
   });
@@ -144,7 +144,7 @@ describe('createNodeUpdateTransaction — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: ['5'] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [] }),
+      makeOldNodeInfo({ associated_registered_nodes: [] }),
     );
     expect(tx.associatedRegisteredNodes).toEqual(longs([5]));
   });
@@ -206,7 +206,7 @@ describe('NodeUpdate proto roundtrip — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: ['1', '2'] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     const decoded = freezeAndRoundtrip(built);
     expect(decoded.associatedRegisteredNodes).toBeNull();
@@ -218,7 +218,7 @@ describe('NodeUpdate proto roundtrip — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: [] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     const decoded = freezeAndRoundtrip(built);
     expect(decoded.associatedRegisteredNodes).toEqual([]);
@@ -230,7 +230,7 @@ describe('NodeUpdate proto roundtrip — associatedRegisteredNodes', () => {
         ...common,
         ...makeUpdateData({ associatedRegisteredNodes: ['3', '4'] }),
       },
-      makeOldNodeInfo({ associated_registered_node: [1, 2] }),
+      makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
     );
     const decoded = freezeAndRoundtrip(built);
     expect(longStrings(decoded.associatedRegisteredNodes)).toEqual(['3', '4']);
