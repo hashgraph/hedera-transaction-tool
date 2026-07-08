@@ -1,6 +1,6 @@
 import type { Transfer } from '@hiero-ledger/sdk';
 
-import { stringifyHbarWithFont } from './index';
+import { stringifyHbarOrTinybar } from './index';
 
 export function formatHbarTransfers(transfers: Transfer[]): string {
   if (transfers.length === 0) {
@@ -26,7 +26,7 @@ export function formatHbarTransfers(transfers: Transfer[]): string {
       sender = transfers[1];
       receiver = transfers[0];
     }
-    return `${sender.accountId} --> ${stringifyHbarWithFont(receiver.amount)} --> ${receiver.accountId}`;
+    return `${sender.accountId} --> ${stringifyHbarOrTinybar(receiver.amount)} --> ${receiver.accountId}`;
   }
 
   return 'Multiple transfers';

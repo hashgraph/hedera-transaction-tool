@@ -176,7 +176,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 const TINYBAR_THRESHOLD = 1_000_000;
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-secondary'): string {
+export function stringifyHbarOrTinybar(hbar: Hbar): string {
   const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
 
@@ -185,7 +185,7 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-se
     : Hbar.fromTinybars(amount).toBigNumber().toString();
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
-  return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
+  return `${displayAmount} ${displayUnit}`;
 }
 
 export async function collectRequiredKeys(

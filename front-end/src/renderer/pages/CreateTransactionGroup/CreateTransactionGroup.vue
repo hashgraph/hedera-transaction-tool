@@ -418,10 +418,7 @@ onBeforeRouteLeave(async to => {
                 class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
               >
-                <span
-                  v-if="groupItem.transferSummary"
-                  v-html="groupItem.transferSummary"
-                />
+                <span v-if="groupItem.transferSummary">{{ groupItem.transferSummary }}</span>
                 <template v-else>{{
                   groupItem.description !== ''
                     ? groupItem.description
