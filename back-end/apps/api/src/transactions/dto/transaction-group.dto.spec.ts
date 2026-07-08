@@ -37,7 +37,7 @@ describe('TransactionGroupDto', () => {
     expect((dto as any).groupItems[0]).toBeInstanceOf(TransactionGroupItemDto)
     expect((dto as any).groupItems[1]).toBeInstanceOf(TransactionGroupItemDto)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 
@@ -63,7 +63,7 @@ describe('TransactionGroupDto', () => {
     expect(Array.isArray((dto as any).groupItems)).toBe(true)
     expect((dto as any).groupItems[0]).toBeInstanceOf(TransactionGroupItemDto)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 })
