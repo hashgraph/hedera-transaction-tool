@@ -1191,7 +1191,7 @@ describe('SignersService', () => {
       user.keys[0].publicKey = originalPublicKey;
     });
 
-    it('should use null tool when not provided in dto', async () => {
+    it('should default tool to api when not provided in dto', async () => {
       const transactionId = 3;
       const originalPublicKey = user.keys[0].publicKey;
       const privateKey = PrivateKey.generateECDSA();
@@ -1239,7 +1239,7 @@ describe('SignersService', () => {
         null,
       );
 
-      expect(valuesCapture[0]).toMatchObject({ tool: null });
+      expect(valuesCapture[0]).toMatchObject({ tool: 'api' });
 
       user.keys[0].publicKey = originalPublicKey;
     });

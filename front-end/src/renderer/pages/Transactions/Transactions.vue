@@ -234,6 +234,7 @@ async function importSignaturesFromV2File(filePath: string) {
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
+        tool: 'v2',
       });
     } catch {
       unknownTransactionIds.push(transactionId!.toString());

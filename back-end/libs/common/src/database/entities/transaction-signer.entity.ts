@@ -11,6 +11,15 @@ import { Transaction } from './transaction.entity';
 import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
 
+export type NewSignerRow = {
+  userId: number;
+  transactionId: number;
+  userKeyId: number;
+  recorderId: number;
+  tool: string | null;
+  version: string | null;
+};
+
 @Entity()
 @Index(['transactionId', 'userKeyId'])
 export class TransactionSigner {

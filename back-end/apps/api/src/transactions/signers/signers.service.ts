@@ -17,7 +17,7 @@ import {
   TransactionSignatureService,
   validateSignature,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { type NewSignerRow, Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -60,6 +60,9 @@ export class SignersService {
         id: true,
         transactionId: true,
         userKeyId: true,
+        recorderId: true,
+        tool: true,
+        version: true,
         createdAt: true,
       },
       withDeleted,
@@ -190,12 +193,13 @@ export class SignersService {
             sdkTransaction,
             userKeys,
             isSameBytes,
-            tool: tool ?? null,
+            tool: tool ?? 'api',
             error: null,
           };
         } catch (err) {
-          console.error(`[TX ${id}] Error:`, err.message);
-          return { id, error: err.message };
+          const e = err instanceof Error ? err : new Error(String(err));
+          console.error(`[TX ${id}] Error:`, e);
+          return { id, error: e.message };
         }
       })
     );
@@ -274,7 +278,7 @@ export class SignersService {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
     const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
-    const signersToInsert: { userId: number; transactionId: number; userKeyId: number; recorderId: number; tool: string | null; version: string | null }[] = [];
+    const signersToInsert: NewSignerRow[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
     for (const result of validationResults) {

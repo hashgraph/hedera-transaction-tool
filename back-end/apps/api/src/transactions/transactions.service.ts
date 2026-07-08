@@ -27,6 +27,7 @@ import {
 } from 'typeorm';
 
 import {
+  type NewSignerRow,
   Transaction,
   TransactionApprover,
   TransactionObserver,
@@ -587,7 +588,7 @@ export class TransactionsService {
 
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
-    const newSignerRows: { userId: number; transactionId: number; userKeyId: number; recorderId: number; tool: string | null; version: string | null }[] = [];
+    const newSignerRows: NewSignerRow[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
     // Dedups (userId, txId) so one user with multiple keys produces one UNNEST row.
     const notificationDismissalKeys = new Set<string>();
@@ -643,8 +644,11 @@ export class TransactionsService {
           allPubKeyStrings.add(pk.toStringDer());
         }
 
-        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? null });
+        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? 'api' });
       } catch (error) {
+        if (!(error instanceof BadRequestException)) {
+          this.logger.error(`[TX ${id}] Unexpected error during signature import`, error);
+        }
         results.set(id, {
           id,
           error:
@@ -672,7 +676,7 @@ export class TransactionsService {
 
     for (const [id, { transaction, publicKeys, newBytes, isSameBytes, tool }] of intermediate) {
       // Create TransactionSigner rows for any keys found in the imported signatures (issue #2552).
-      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number; recorderId: number; tool: string | null; version: string | null }[] = [];
+      const newSignersForDto: NewSignerRow[] = [];
       if (publicKeys.length > 0) {
         let txExistingSigners = signersByTransaction.get(id);
         if (!txExistingSigners) {

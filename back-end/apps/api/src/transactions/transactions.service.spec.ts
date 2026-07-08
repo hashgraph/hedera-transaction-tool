@@ -1372,7 +1372,7 @@ describe('TransactionsService', () => {
       /* New signer row inserted so the key owner is recognised as a participant. */
       expect(insertQb.into).toHaveBeenCalledWith(TransactionSigner);
       expect(insertQb.values).toHaveBeenCalledWith([
-        { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: null, version: null },
+        { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: 'api', version: null },
       ]);
       expect(insertQb.execute).toHaveBeenCalled();
 
@@ -1502,8 +1502,8 @@ describe('TransactionsService', () => {
       );
 
       expect(insertQb.values).toHaveBeenCalledWith([
-        { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: null, version: null },
-        { userId: 9, transactionId, userKeyId: 43, recorderId: userWithKeys.id, tool: null, version: null },
+        { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: 'api', version: null },
+        { userId: 9, transactionId, userKeyId: 43, recorderId: userWithKeys.id, tool: 'api', version: null },
       ]);
     });
 
@@ -1543,8 +1543,8 @@ describe('TransactionsService', () => {
 
       expect(insertQb.values).toHaveBeenCalledWith(
         expect.arrayContaining([
-          { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: null, version: null },
-          { userId: 9, transactionId, userKeyId: 43, recorderId: userWithKeys.id, tool: null, version: null },
+          { userId: 7, transactionId, userKeyId: 42, recorderId: userWithKeys.id, tool: 'api', version: null },
+          { userId: 9, transactionId, userKeyId: 43, recorderId: userWithKeys.id, tool: 'api', version: null },
         ]),
       );
     });
@@ -2087,7 +2087,7 @@ describe('TransactionsService', () => {
       ]);
     });
 
-    it('should use null tool when not present on the DTO item', async () => {
+    it('should default tool to api when not present on the DTO item', async () => {
       const transaction = {
         id: transactionId,
         transactionId: sdkTransaction.transactionId.toString(),
@@ -2114,7 +2114,7 @@ describe('TransactionsService', () => {
       );
 
       expect(insertQb.values).toHaveBeenCalledWith([
-        expect.objectContaining({ tool: null }),
+        expect.objectContaining({ tool: 'api' }),
       ]);
     });
 

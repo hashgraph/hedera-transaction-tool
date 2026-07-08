@@ -86,7 +86,7 @@ export const uploadSignatures = async (
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
-  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap; tool: string }[] = [];
 
   if (!items) {
     if (!publicKeys || !transaction || !transactionId) {
@@ -113,6 +113,7 @@ export const uploadSignatures = async (
     formattedMaps.push({
       id: transactionId,
       signatureMap: formatSignatureMap(signatureMap),
+      tool: 'v2',
     });
   }
 
