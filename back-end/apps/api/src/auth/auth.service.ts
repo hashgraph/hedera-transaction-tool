@@ -8,6 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
+import { randomInt } from 'crypto';
 
 import { totp } from 'otplib';
 import * as bcrypt from 'bcryptjs';
@@ -147,9 +148,7 @@ export class AuthService {
   /* Generate a random password */
   private generatePassword() {
     const getRandomLetters = (length: number) =>
-      Array.from({ length }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join(
-        '',
-      );
+      Array.from({ length }, () => String.fromCharCode(97 + randomInt(26))).join('');
 
     return `${getRandomLetters(5)}-${getRandomLetters(5)}`;
   }
