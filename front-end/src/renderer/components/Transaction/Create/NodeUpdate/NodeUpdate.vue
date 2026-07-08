@@ -106,7 +106,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
     data.declineReward = nodeInfo.decline_reward;
-    data.associatedRegisteredNodes = nodeInfo.associated_registered_node.map(String);
+    data.associatedRegisteredNodes = nodeInfo.associated_registered_nodes.map(String);
   }
 });
 watch(

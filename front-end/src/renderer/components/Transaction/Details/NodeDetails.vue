@@ -41,7 +41,7 @@ const grpcWebProxyEndpoint = computed(() => {
   return null;
 });
 
-// HIP-1137 `associated_registered_node`. NodeCreate uses a plain repeated field
+// HIP-1137 `associated_registered_nodes`. NodeCreate uses a plain repeated field
 // (the SDK getter always returns `Long[]`, possibly empty). NodeUpdate uses the
 // `AssociatedRegisteredNodeList` wrapper, so the SDK distinguishes three states:
 //   - `null`  → wrapper absent → "unchanged" → omit the row

@@ -102,7 +102,7 @@ function makeNodeInfo(overrides: Partial<INodeInfoParsed> = {}): INodeInfoParsed
     reward_rate_start: null,
     decline_reward: false,
     grpc_web_proxy_endpoint: null,
-    associated_registered_node: [],
+    associated_registered_nodes: [],
     ...overrides,
   };
 }
@@ -133,7 +133,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('seeds data.associatedRegisteredNodes from nodeInfo when it loads', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [1, 7, 12] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 7, 12] });
     await flushPromises();
 
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual(['1', '7', '12']);
@@ -142,7 +142,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('seeds data.associatedRegisteredNodes to [] when nodeInfo carries an empty list', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [] });
     await flushPromises();
 
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual([]);
@@ -151,7 +151,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('resets data.associatedRegisteredNodes to [] when nodeInfo clears', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [1, 2] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 2] });
     await flushPromises();
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual(['1', '2']);
 
@@ -167,7 +167,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
     mockRouteQuery = { draftId: 'abc' };
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [9, 10] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [9, 10] });
     await flushPromises();
 
     // Untouched — stays at the initial empty state from the reactive declaration.
