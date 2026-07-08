@@ -17,7 +17,7 @@ import {
   TransactionSignatureService,
   validateSignature,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { type NewSignerRow, Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -60,6 +60,9 @@ export class SignersService {
         id: true,
         transactionId: true,
         userKeyId: true,
+        recorderId: true,
+        tool: true,
+        version: true,
         createdAt: true,
       },
       withDeleted,
@@ -100,6 +103,7 @@ export class SignersService {
   async uploadSignatureMaps(
     dto: UploadSignatureMapDto[],
     user: User,
+    version: string | null = null,
   ): Promise<{ signers: TransactionSigner[]; notificationReceiverIds: number[] }> {
     // Load all necessary data
     const { transactionMap, signersByTransaction } = await this.loadTransactionData(dto);
@@ -113,7 +117,7 @@ export class SignersService {
     );
 
     // Persist changes to database
-    const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user);
+    const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user, version);
 
     // Update transaction statuses and emit notifications
     await this.updateStatusesAndNotify(transactionsToProcess);
@@ -166,7 +170,7 @@ export class SignersService {
     }
 
     return Promise.all(
-      dto.map(async ({ id, signatureMap: map }) => {
+      dto.map(async ({ id, signatureMap: map, tool }) => {
         try {
           const transaction = transactionMap.get(id);
           if (!transaction) return { id, error: ErrorCodes.TNF };
@@ -189,11 +193,13 @@ export class SignersService {
             sdkTransaction,
             userKeys,
             isSameBytes,
+            tool: tool ?? 'api',
             error: null,
           };
         } catch (err) {
-          console.error(`[TX ${id}] Error:`, err.message);
-          return { id, error: err.message };
+          const e = err instanceof Error ? err : new Error(String(err));
+          console.error(`[TX ${id}] Error:`, e);
+          return { id, error: e.message };
         }
       })
     );
@@ -264,6 +270,7 @@ export class SignersService {
   private async persistSignatureChanges(
     validationResults: any[],
     user: User,
+    version: string | null,
   ) {
     const signers = new Set<TransactionSigner>();
     let notificationsToDismiss: number[] = [];
@@ -271,7 +278,7 @@ export class SignersService {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
     const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
-    const signersToInsert: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const signersToInsert: NewSignerRow[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
     for (const result of validationResults) {
@@ -280,7 +287,7 @@ export class SignersService {
         continue;
       }
 
-      const { id, transaction, sdkTransaction, userKeys, isSameBytes } = result;
+      const { id, transaction, sdkTransaction, userKeys, isSameBytes, tool } = result;
 
       // Skip if nothing to do - no signatures were added to the transaction
       // AND no new signers were inserted (the signature can be present on the transaction
@@ -299,6 +306,9 @@ export class SignersService {
           userId: user.id,
           transactionId: id,
           userKeyId: userKey.id,
+          recorderId: user.id,
+          tool,
+          version,
         }));
         signersToInsert.push(...newSigners);
       }

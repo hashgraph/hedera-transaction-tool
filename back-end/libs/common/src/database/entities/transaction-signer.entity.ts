@@ -11,6 +11,15 @@ import { Transaction } from './transaction.entity';
 import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
 
+export type NewSignerRow = {
+  userId: number;
+  transactionId: number;
+  userKeyId: number;
+  recorderId: number;
+  tool: string | null;
+  version: string | null;
+};
+
 @Entity()
 @Index(['transactionId', 'userKeyId'])
 export class TransactionSigner {
@@ -37,6 +46,19 @@ export class TransactionSigner {
 
   @Column()
   userId: number;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'recorderId' })
+  recorder: User | null;
+
+  @Column({ nullable: true })
+  recorderId: number | null;
+
+  @Column({ nullable: true })
+  tool: string | null;
+
+  @Column({ nullable: true })
+  version: string | null;
 
   @CreateDateColumn()
   createdAt: Date;

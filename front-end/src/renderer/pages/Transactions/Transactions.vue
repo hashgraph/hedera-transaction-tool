@@ -7,6 +7,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import {
   type ISignatureImport,
   NotificationType,
+  SignerTool,
   type V1ImportFilterResult,
 } from '@shared/interfaces';
 import {
@@ -234,6 +235,7 @@ async function importSignaturesFromV2File(filePath: string) {
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
+        tool: SignerTool.V2,
       });
     } catch {
       unknownTransactionIds.push(transactionId!.toString());

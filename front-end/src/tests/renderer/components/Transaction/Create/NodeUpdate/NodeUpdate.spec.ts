@@ -102,7 +102,7 @@ function makeNodeInfo(overrides: Partial<INodeInfoParsed> = {}): INodeInfoParsed
     reward_rate_start: null,
     decline_reward: false,
     grpc_web_proxy_endpoint: null,
-    associated_registered_node: [],
+    associated_registered_nodes: [],
     ...overrides,
   };
 }
@@ -121,6 +121,100 @@ function readSeededData(wrapper: ReturnType<typeof mount>) {
   };
 }
 
+function readCreateDisabled(wrapper: ReturnType<typeof mount>) {
+  return wrapper.findComponent({ name: 'BaseTransaction' }).props('createDisabled') as boolean;
+}
+
+async function emitUpdateData(
+  wrapper: ReturnType<typeof mount>,
+  overrides: Record<string, unknown>,
+) {
+  const base = wrapper.findComponent({ name: 'NodeUpdateFormData' }).props('data') as Record<
+    string,
+    unknown
+  >;
+  wrapper
+    .findComponent({ name: 'NodeUpdateFormData' })
+    .vm.$emit('update:data', { ...base, ...overrides });
+  await flushPromises();
+}
+
+describe('NodeUpdate.vue — createDisabled (change detection)', () => {
+  beforeEach(() => {
+    mockRouteQuery = {};
+    refs.nodeInfo.value = null;
+    refs.nodeId.value = null;
+    refs.newAccountId.value = '';
+    vi.clearAllMocks();
+  });
+
+  test('is disabled when nodeInfo has not loaded', async () => {
+    const wrapper = await mountAndSettle();
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  test('is disabled when nodeInfo loads but no field is changed', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo();
+    await flushPromises();
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  test('is enabled when description changes, then disabled again when description reverts to original value', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo({ description: 'original' });
+    await flushPromises();
+    await emitUpdateData(wrapper, { description: 'updated' });
+    expect(readCreateDisabled(wrapper)).toBe(false);
+    await emitUpdateData(wrapper, { description: 'original' });
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  test('is enabled when declineReward flips', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo({ decline_reward: false });
+    await flushPromises();
+    await emitUpdateData(wrapper, { declineReward: true });
+    expect(readCreateDisabled(wrapper)).toBe(false);
+  });
+
+  test('is enabled when a gossip endpoint is added', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo();
+    await flushPromises();
+    await emitUpdateData(wrapper, {
+      gossipEndpoints: [{ ipAddressV4: '1.2.3.4', domainName: '', port: '50211' }],
+    });
+    expect(readCreateDisabled(wrapper)).toBe(false);
+  });
+
+  test('is enabled when a node is removed from the pre-populated associated registered nodes', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 2] });
+    await flushPromises();
+    // Remove node 1: submit list with only [2]
+    await emitUpdateData(wrapper, { associatedRegisteredNodes: ['2'] });
+    expect(readCreateDisabled(wrapper)).toBe(false);
+  });
+
+  test('is disabled when associated registered nodes are emitted unchanged after pre-population', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 2] });
+    await flushPromises();
+    // Emit the exact same list that was seeded — should not count as a change
+    await emitUpdateData(wrapper, { associatedRegisteredNodes: ['1', '2'] });
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  test('is enabled when a new node is added to the associated registered nodes', async () => {
+    const wrapper = await mountAndSettle();
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1] });
+    await flushPromises();
+    await emitUpdateData(wrapper, { associatedRegisteredNodes: ['1', '5'] });
+    expect(readCreateDisabled(wrapper)).toBe(false);
+  });
+});
+
 describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   beforeEach(() => {
     mockRouteQuery = {};
@@ -133,7 +227,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('seeds data.associatedRegisteredNodes from nodeInfo when it loads', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [1, 7, 12] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 7, 12] });
     await flushPromises();
 
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual(['1', '7', '12']);
@@ -142,7 +236,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('seeds data.associatedRegisteredNodes to [] when nodeInfo carries an empty list', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [] });
     await flushPromises();
 
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual([]);
@@ -151,7 +245,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
   test('resets data.associatedRegisteredNodes to [] when nodeInfo clears', async () => {
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [1, 2] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [1, 2] });
     await flushPromises();
     expect(readSeededData(wrapper).associatedRegisteredNodes).toEqual(['1', '2']);
 
@@ -167,7 +261,7 @@ describe('NodeUpdate.vue — associatedRegisteredNodes seeding watcher', () => {
     mockRouteQuery = { draftId: 'abc' };
     const wrapper = await mountAndSettle();
 
-    refs.nodeInfo.value = makeNodeInfo({ associated_registered_node: [9, 10] });
+    refs.nodeInfo.value = makeNodeInfo({ associated_registered_nodes: [9, 10] });
     await flushPromises();
 
     // Untouched — stays at the initial empty state from the reactive declaration.

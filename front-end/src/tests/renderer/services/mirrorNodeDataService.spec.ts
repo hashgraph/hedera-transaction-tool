@@ -57,32 +57,32 @@ function mockNodesResponse(node: Record<string, unknown>) {
   axiosGet.mockResolvedValueOnce({ data: { nodes: [node] } });
 }
 
-describe('mirrorNodeDataService.getNodeInfo — associated_registered_node', () => {
+describe('mirrorNodeDataService.getNodeInfo — associated_registered_nodes', () => {
   beforeEach(() => {
     axiosGet.mockReset();
   });
 
   test('defaults to [] when the mirror response omits the field', async () => {
-    mockNodesResponse(nodePayload()); // no associated_registered_node key
+    mockNodesResponse(nodePayload()); // no associated_registered_nodes key
     const info = await getNodeInfo(3, 'https://mirror.example');
-    expect(info?.associated_registered_node).toEqual([]);
+    expect(info?.associated_registered_nodes).toEqual([]);
   });
 
   test('passes a numeric array through unchanged', async () => {
-    mockNodesResponse(nodePayload({ associated_registered_node: [1, 7, 12] }));
+    mockNodesResponse(nodePayload({ associated_registered_nodes: [1, 7, 12] }));
     const info = await getNodeInfo(3, 'https://mirror.example');
-    expect(info?.associated_registered_node).toEqual([1, 7, 12]);
+    expect(info?.associated_registered_nodes).toEqual([1, 7, 12]);
   });
 
   test('treats explicit null as []', async () => {
-    mockNodesResponse(nodePayload({ associated_registered_node: null }));
+    mockNodesResponse(nodePayload({ associated_registered_nodes: null }));
     const info = await getNodeInfo(3, 'https://mirror.example');
-    expect(info?.associated_registered_node).toEqual([]);
+    expect(info?.associated_registered_nodes).toEqual([]);
   });
 
   test('treats explicit empty array as []', async () => {
-    mockNodesResponse(nodePayload({ associated_registered_node: [] }));
+    mockNodesResponse(nodePayload({ associated_registered_nodes: [] }));
     const info = await getNodeInfo(3, 'https://mirror.example');
-    expect(info?.associated_registered_node).toEqual([]);
+    expect(info?.associated_registered_nodes).toEqual([]);
   });
 });
