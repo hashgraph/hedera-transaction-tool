@@ -19,10 +19,10 @@
 ### Pre-requisites
 - [ ] Beta `v<major.minor.patch>-beta.<number>` deployed and stable
 - [ ] Run performance tests against `staging`
-- [ ] Manual testing issue created from `docs/test-scenarios.md`
 - [ ] Manual testing completed and beta approved
 
 ### Publish Release
+- [ ] Trigger the Release Automation workflow with version `<major.minor.patch>`
 - [ ] Add a short description to the GitHub release draft for `v<major.minor.patch>`
 - [ ] Publish the GitHub release draft
 
