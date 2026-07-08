@@ -3,6 +3,7 @@ import { SignatureMap } from '@hiero-ledger/sdk';
 import type { ITransactionApprover } from '../approvers';
 import type { ITransactionObserverUserId } from '../observers';
 import type { ITransactionSignerUserKey } from '../signers';
+import { type SignerTool } from '../signers';
 
 export enum BackEndTransactionType {
   ACCOUNT_CREATE = 'ACCOUNT CREATE',
@@ -110,7 +111,7 @@ export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-nod
 export interface ISignatureImport {
   id: number; // Database ID of the transaction to which the signatures belong. In a bulk transaction (File Append with multiple transactions inside), this ID refers to the parent transaction.
   signatureMap: SignatureMap;
-  tool?: string;
+  tool?: SignerTool;
 }
 
 export interface SignatureImportResultDto {

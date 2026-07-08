@@ -9,6 +9,7 @@ import TransactionImportRow from '@renderer/components/TransactionImportRow.vue'
 import {
   type ISignatureImport,
   type ITransactionFull,
+  SignerTool,
   type SignatureImportResultDto,
   type V1ImportCandidate,
   type V1ImportFilterResult,
@@ -101,7 +102,7 @@ const importSelectedCandidates = async (): Promise<void> => {
         importInputs.push({
           id: transaction.id,
           signatureMap,
-          tool: 'v1',
+          tool: SignerTool.V1,
         });
       } catch {
         rejectedTransactionIds.push(transactionId);

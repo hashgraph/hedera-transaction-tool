@@ -11,6 +11,7 @@ import type {
   SignatureImportResultDto,
   TransactionApproverDto,
 } from '@shared/interfaces';
+import { SignerTool } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,
@@ -113,7 +114,7 @@ export const uploadSignatures = async (
     formattedMaps.push({
       id: transactionId,
       signatureMap: formatSignatureMap(signatureMap),
-      tool: 'v2',
+      tool: SignerTool.V2,
     });
   }
 
