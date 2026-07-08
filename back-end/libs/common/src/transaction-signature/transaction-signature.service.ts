@@ -94,17 +94,12 @@ export class TransactionSignatureService {
     transaction: Transaction,
     feePayerAccount: string
   ): Promise<void> {
-    try {
-      const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
-        transaction,
-        feePayerAccount,
-      );
-      if (accountInfo?.key) {
-        signatureKey.push(accountInfo.key);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to get fee payer key: ${error.message}`);
-      return null;
+    const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
+      transaction,
+      feePayerAccount,
+    );
+    if (accountInfo?.key) {
+      signatureKey.push(accountInfo.key);
     }
   }
 
@@ -116,6 +111,7 @@ export class TransactionSignatureService {
     transaction: Transaction,
     signingAccounts: Set<string>
   ): Promise<void> {
+    const errors: Error[] = [];
     for (const account of signingAccounts) {
       try {
         const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
@@ -126,8 +122,11 @@ export class TransactionSignatureService {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {
-        this.logger.error(`Failed to get key for account ${account}: ${error.message}`);
+        errors.push(error);
       }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to resolve keys for ${errors.length} signing account(s): ${errors.map(e => e.message).join('; ')}`);
     }
   }
 
@@ -140,6 +139,7 @@ export class TransactionSignatureService {
     receiverAccounts: Set<string>,
     showAll: boolean,
   ): Promise<void> {
+    const errors: Error[] = [];
     for (const account of receiverAccounts) {
       try {
         const accountInfo = await this.accountCacheService.getAccountInfoForTransaction(
@@ -151,8 +151,11 @@ export class TransactionSignatureService {
           signatureKey.push(accountInfo.key);
         }
       } catch (error) {
-        this.logger.error(`Failed to get receiver key for account ${account}: ${error.message}`);
+        errors.push(error);
       }
+    }
+    if (errors.length > 0) {
+      throw new Error(`Failed to resolve keys for ${errors.length} receiver account(s): ${errors.map(e => e.message).join('; ')}`);
     }
   }
 
@@ -186,8 +189,7 @@ export class TransactionSignatureService {
     transaction: Transaction,
     nodeId: number,
   ): Promise<void> {
-    try {
-      const nodeInfo = await this.nodeCacheService.getNodeInfoForTransaction(transaction, nodeId);
+    const nodeInfo = await this.nodeCacheService.getNodeInfoForTransaction(transaction, nodeId);
 
       if (!nodeInfo) {
         this.logger.warn(`No node info found for node ${nodeId}`);
@@ -276,9 +278,6 @@ export class TransactionSignatureService {
           }
         }
       }
-    } catch (error) {
-      this.logger.error(`Failed to get node keys for node ${nodeId}: ${error.message}`);
-    }
   }
 
   private shouldIncludeAccountKey(tx: NodeUpdateTransaction): boolean {
@@ -300,46 +299,42 @@ export class TransactionSignatureService {
     transaction: Transaction,
     registeredNodeId: number,
   ): Promise<void> {
-    try {
-      const { data } = await this.mirrorNodeClient.fetchRegisteredNodeInfo(
-        registeredNodeId,
-        transaction.mirrorNetwork,
-      );
+    const { data } = await this.mirrorNodeClient.fetchRegisteredNodeInfo(
+      registeredNodeId,
+      transaction.mirrorNetwork,
+    );
 
-      if (!data) {
-        this.logger.warn(`No registered node info found for node ${registeredNodeId}`);
-        return;
-      }
+    if (!data) {
+      this.logger.warn(`No registered node info found for node ${registeredNodeId}`);
+      return;
+    }
 
-      if (!data.admin_key) {
-        this.logger.warn(`No admin key found for registered node ${registeredNodeId}`);
-        return;
-      }
+    if (!data.admin_key) {
+      this.logger.warn(`No admin key found for registered node ${registeredNodeId}`);
+      return;
+    }
 
-      const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
+    const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-      if (sdkTransaction instanceof RegisteredNodeDeleteTransaction) {
-        signatureKey.push(data.admin_key);
-        return;
-      }
+    if (sdkTransaction instanceof RegisteredNodeDeleteTransaction) {
+      signatureKey.push(data.admin_key);
+      return;
+    }
 
-      const nodeUpdateTx = sdkTransaction as RegisteredNodeUpdateTransaction;
+    const nodeUpdateTx = sdkTransaction as RegisteredNodeUpdateTransaction;
 
-      const isAdminKeyChanging =
-        nodeUpdateTx.adminKey !== null &&
-        data.admin_key !== null &&
-        nodeUpdateTx.adminKey.toString() !== data.admin_key.toString();
+    const isAdminKeyChanging =
+      nodeUpdateTx.adminKey !== null &&
+      data.admin_key !== null &&
+      nodeUpdateTx.adminKey.toString() !== data.admin_key.toString();
 
-      if (!isAdminKeyChanging) {
-        // Case 1: admin key is not changing — new admin key alone is sufficient
-        signatureKey.push(data.admin_key);
-      } else {
-        // Case 2: admin key is changing => new and old admin keys are needed
-        signatureKey.push(data.admin_key);
-        signatureKey.push(nodeUpdateTx.adminKey);
-      }
-    } catch (error) {
-      this.logger.error(`Failed to get registered node keys for registered node ${registeredNodeId}: ${error.message}`);
+    if (!isAdminKeyChanging) {
+      // Case 1: admin key is not changing — new admin key alone is sufficient
+      signatureKey.push(data.admin_key);
+    } else {
+      // Case 2: admin key is changing => new and old admin keys are needed
+      signatureKey.push(data.admin_key);
+      signatureKey.push(nodeUpdateTx.adminKey);
     }
   }
 }

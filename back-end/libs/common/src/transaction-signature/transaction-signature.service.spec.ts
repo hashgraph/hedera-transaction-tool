@@ -389,6 +389,7 @@ describe('TransactionSignatureService', () => {
       accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
         makeAccountInfo('fee-payer-key'),
       );
+      mirrorNodeClientMock.fetchRegisteredNodeInfo.mockResolvedValue({ data: null } as any);
 
       await service.computeSignatureKey(makeTransaction());
 
@@ -403,6 +404,7 @@ describe('TransactionSignatureService', () => {
       accountCacheMock.getAccountInfoForTransaction.mockResolvedValue(
         makeAccountInfo('fee-payer-key'),
       );
+      mirrorNodeClientMock.fetchRegisteredNodeInfo.mockResolvedValue({ data: null } as any);
 
       await service.computeSignatureKey(makeTransaction());
 
@@ -417,14 +419,12 @@ describe('TransactionSignatureService', () => {
   // -------------------------------------------------------------------------
 
   describe('fee payer error handling', () => {
-    it('gracefully handles an error from accountCacheService for the fee payer', async () => {
+    it('propagates an error from accountCacheService for the fee payer', async () => {
       (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
       (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(makeTransactionModel());
       accountCacheMock.getAccountInfoForTransaction.mockRejectedValue(new Error('cache miss'));
 
-      const result = await service.computeSignatureKey(makeTransaction());
-
-      expect(result).toBeDefined();
+      await expect(service.computeSignatureKey(makeTransaction())).rejects.toThrow('cache miss');
     });
 
     it('handles null accountInfo for fee payer without crashing', async () => {
@@ -446,7 +446,7 @@ describe('TransactionSignatureService', () => {
   // -------------------------------------------------------------------------
 
   describe('signing account error handling', () => {
-    it('continues processing remaining signing accounts after one fails', async () => {
+    it('attempts all signing accounts before propagating errors', async () => {
       (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
       (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
         makeTransactionModel({
@@ -455,14 +455,48 @@ describe('TransactionSignatureService', () => {
       );
       accountCacheMock.getAccountInfoForTransaction
         .mockResolvedValueOnce(makeAccountInfo('fee-payer-key'))
-        .mockRejectedValueOnce(new Error('error for 200'))
+        .mockRejectedValueOnce(new Error('mirror node unreachable'))
         .mockResolvedValueOnce(makeAccountInfo('signer-201-key'));
 
-      const result = await service.computeSignatureKey(makeTransaction());
-      const items = (result as unknown as AsMockKeyList).getItems();
+      await expect(service.computeSignatureKey(makeTransaction())).rejects.toThrow('mirror node unreachable');
 
-      expect(items).toContainEqual(mockKey('signer-201-key'));
-      expect(items).not.toContainEqual(mockKey('signer-200-key'));
+      // Both signing accounts must have been attempted despite the first failure
+      expect(accountCacheMock.getAccountInfoForTransaction).toHaveBeenCalledTimes(3); // fee payer + 200 + 201
+    });
+
+    it('propagates a combined error message when multiple signing accounts fail', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({
+          getSigningAccounts: jest.fn().mockReturnValue(new Set(['0.0.200', '0.0.201'])),
+        }),
+      );
+      accountCacheMock.getAccountInfoForTransaction
+        .mockResolvedValueOnce(makeAccountInfo('fee-payer-key'))
+        .mockRejectedValueOnce(new Error('node A down'))
+        .mockRejectedValueOnce(new Error('node B down'));
+
+      await expect(service.computeSignatureKey(makeTransaction())).rejects.toThrow('2 signing account(s)');
+    });
+  });
+
+  describe('receiver account error handling', () => {
+    it('attempts all receiver accounts before propagating errors', async () => {
+      (SDKTransaction.fromBytes as jest.Mock).mockReturnValue({});
+      (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
+        makeTransactionModel({
+          getReceiverAccounts: jest.fn().mockReturnValue(new Set(['0.0.300', '0.0.301'])),
+        }),
+      );
+      accountCacheMock.getAccountInfoForTransaction
+        .mockResolvedValueOnce(makeAccountInfo('fee-payer-key'))
+        .mockRejectedValueOnce(new Error('mirror node unreachable'))
+        .mockResolvedValueOnce(makeAccountInfo('receiver-301-key', true));
+
+      await expect(service.computeSignatureKey(makeTransaction())).rejects.toThrow('mirror node unreachable');
+
+      // Both receiver accounts must have been attempted despite the first failure
+      expect(accountCacheMock.getAccountInfoForTransaction).toHaveBeenCalledTimes(3); // fee payer + 300 + 301
     });
   });
 
@@ -710,12 +744,10 @@ describe('TransactionSignatureService', () => {
       expect((result as unknown as AsMockKeyList).getItems()).toHaveLength(1); // only fee payer
     });
 
-    it('handles exception thrown by nodeCacheService gracefully', async () => {
+    it('propagates exception thrown by nodeCacheService', async () => {
       nodeCacheMock.getNodeInfoForTransaction.mockRejectedValue(new Error('node cache failure'));
 
-      const result = await service.computeSignatureKey(makeTransaction());
-
-      expect(result).toBeDefined();
+      await expect(service.computeSignatureKey(makeTransaction())).rejects.toThrow('node cache failure');
     });
   });
 

@@ -355,6 +355,24 @@ describe('ExecuteService', () => {
       await expect(service.executeTransaction(null)).rejects.toThrow('Transaction not found');
       await expect(service.executeTransaction(undefined)).rejects.toThrow('Transaction not found');
     });
+
+    it('should execute a transaction without signature validation when computeSignatureKey throws', async () => {
+      const client = mockDeep<Client>();
+      const transaction = getTransaction('executable') as Transaction;
+
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+      transactionSignatureService.computeSignatureKey.mockRejectedValueOnce(new Error('mirror node unreachable'));
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      const { receipt } = mockSDKTransactionExecution();
+
+      await service.executeTransaction(transaction);
+
+      // hasValidSignatureKey must not have been called (skipped when mirror is down)
+      expect(hasValidSignatureKey).not.toHaveBeenCalled();
+      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
+        expect.objectContaining({ status: TransactionStatus.EXECUTED, statusCode: receipt.status._code }),
+      );
+    });
   });
 
   describe('executeTransactionGroup', () => {

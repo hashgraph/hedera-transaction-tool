@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import {
+  KeyList,
   Status,
   Transaction as SDKTransaction,
 } from '@hiero-ledger/sdk';
@@ -216,8 +217,14 @@ export class ExecuteService {
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    /* Gets the signature key */
-    const signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
+    /* Gets the signature key — if mirror node is unreachable, skip the check and attempt execution */
+    let signatureKey: KeyList;
+    try {
+      signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
+    } catch (error) {
+      this.logger.warn(`Key resolution failed for transaction ${transaction.id}, proceeding without signature validation: ${error.message}`);
+      return sdkTransaction;
+    }
 
     /* Checks if the transaction has valid signatureKey */
     if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))

@@ -349,6 +349,9 @@ describe('TransactionStatusService', () => {
       await service.updateTransactions(new Date(), new Date());
 
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: 1 }, { entityId: 2 }]);
+      // In-memory statuses should reflect the DB changes so prepareTransactions sees them
+      expect(transactions[0].status).toBe(TransactionStatus.WAITING_FOR_EXECUTION);
+      expect(transactions[1].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
     });
 
     it('should not emit notifications event if no transactions updated', async () => {
@@ -385,7 +388,7 @@ describe('TransactionStatusService', () => {
       jest.resetAllMocks();
     });
 
-    it('should call collateAndExecute for each transaction with status WAITING_FOR_EXECUTION', async () => {
+    it('should call collateAndExecute for transactions with status WAITING_FOR_EXECUTION or WAITING_FOR_SIGNATURES when validStart is executable', async () => {
       const transactions = [
         {
           id: 1,
@@ -409,18 +412,20 @@ describe('TransactionStatusService', () => {
 
       await service.prepareTransactions(transactions);
 
-      expect(service.collateAndExecute).toHaveBeenCalledTimes(2);
+      expect(service.collateAndExecute).toHaveBeenCalledTimes(3);
       expect(service.collateAndExecute).toHaveBeenCalledWith(transactions[0]);
+      expect(service.collateAndExecute).toHaveBeenCalledWith(transactions[1]);
       expect(service.collateAndExecute).toHaveBeenCalledWith(transactions[2]);
     });
 
-    it('should not call collateAndExecute for transactions with status other than WAITING_FOR_EXECUTION', async () => {
+    it('should not call collateAndExecute for transactions with status NEW regardless of validStart', async () => {
       const transactions = [
-        { id: 1, status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction,
-        { id: 2, status: TransactionStatus.NEW } as Transaction,
+        { id: 1, status: TransactionStatus.NEW, validStart: new Date() } as Transaction,
+        { id: 2, status: TransactionStatus.REJECTED, validStart: new Date() } as Transaction,
       ];
 
       jest.spyOn(service, 'collateAndExecute').mockImplementation(jest.fn());
+      jest.spyOn(service, 'isValidStartExecutable').mockImplementation(() => true);
 
       await service.prepareTransactions(transactions);
 
@@ -483,18 +488,20 @@ describe('TransactionStatusService', () => {
       expect(service.collateGroupAndExecute).toHaveBeenCalledTimes(2);
     });
 
-    it('should not call collateGroupAndExecute for transaction groups with status other than WAITING_FOR_EXECUTION', async () => {
+    it('should not call collateGroupAndExecute for transaction groups with status NEW or REJECTED', async () => {
       const transactionGroups = [
         {
           id: 1,
-          status: TransactionStatus.WAITING_FOR_SIGNATURES,
+          status: TransactionStatus.NEW,
+          validStart: new Date(),
           groupItem: {
             groupId: 1,
           },
         } as Transaction,
         {
           id: 2,
-          status: TransactionStatus.NEW,
+          status: TransactionStatus.REJECTED,
+          validStart: new Date(),
           groupItem: {
             groupId: 2,
           },
@@ -822,6 +829,17 @@ describe('TransactionStatusService', () => {
       expect(service.addGroupExecutionTimeout).not.toHaveBeenCalled();
       expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
     });
+
+    it('should skip collation and schedule group execution directly when computeSignatureKey throws', async () => {
+      transactionSignatureService.computeSignatureKey.mockRejectedValue(new Error('mirror node unreachable'));
+
+      service.collateGroupAndExecute(mockTransactionGroup);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addGroupExecutionTimeout).toHaveBeenCalledWith(mockTransactionGroup);
+      expect(smartCollate).not.toHaveBeenCalled();
+    });
   });
 
   describe('collateAndExecute', () => {
@@ -967,6 +985,17 @@ describe('TransactionStatusService', () => {
 
       expect(service.addExecutionTimeout).not.toHaveBeenCalled();
       expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
+    });
+
+    it('should skip collation and schedule execution directly when computeSignatureKey throws', async () => {
+      transactionSignatureService.computeSignatureKey.mockRejectedValue(new Error('mirror node unreachable'));
+
+      service.collateAndExecute(mockTransaction);
+
+      await jest.advanceTimersToNextTimerAsync();
+
+      expect(service.addExecutionTimeout).toHaveBeenCalledWith(mockTransaction);
+      expect(smartCollate).not.toHaveBeenCalled();
     });
   });
 
