@@ -31,7 +31,12 @@ const handleContinue = () => {
 </script>
 <template>
   <div class="flex-column-100">
-    <div class="pb-2 mt-4 flex-grow-1 overflow-y-auto">
+    <div class="fill-remaining">
+      <p class="text-secondary text-small lh-base text-center">
+        <span>You can import a single/multiple decrypted key(s)</span>
+        <br />
+        <span>or select all of them.</span>
+      </p>
       <EncryptedKeysBox
         :keys="keysToRecover.map(key => key.fileName)"
         :fileNames="keysToRecover.map(key => key.fileName)"

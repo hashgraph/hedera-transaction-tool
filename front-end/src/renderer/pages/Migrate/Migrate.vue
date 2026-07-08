@@ -10,6 +10,8 @@ import { KeyPathWithName } from '@shared/interfaces';
 import useUserStore from '@renderer/stores/storeUser';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
+import { ToastManager } from '@renderer/utils/ToastManager';
+
 import useSetDynamicLayout, { DEFAULT_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import { useRouter } from 'vue-router';
 
@@ -21,12 +23,23 @@ import { searchEncryptedKeys } from '@renderer/services/encryptedKeys';
 import DecryptRecoveryPhrase from './components/DecryptRecoveryPhrase.vue';
 import SetupOrganization from './components/SetupOrganization.vue';
 import ImportUserData from './components/ImportUserData.vue';
-import BeginKeysImport from './components/BeginKeysImport.vue';
+import PerformSetup from './components/PerformSetup.vue';
 import Summary from './components/Summary.vue';
 import SelectKeys from './components/SelectKeys.vue';
+import type { ModelValue } from './components/SetupOrganizationForm.vue';
+import { getErrorMessage } from '@renderer/utils';
 
 /* Types */
-type StepName = 'recoveryPhrase' | 'personal' | 'organization' | 'selectKeys' | 'summary';
+type StepName =
+  | 'recoveryPhrase'
+  | 'personal'
+  | 'organization'
+  | 'selectKeys'
+  | 'performSetup'
+  | 'summary';
+
+/* Injected */
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = useUserStore();
@@ -42,7 +55,7 @@ const step = ref<StepName>('recoveryPhrase');
 const recoveryPhrase: Ref<RecoveryPhrase | null> = ref(null);
 const recoveryPhrasePassword = ref<string | null>(null);
 const personalUser = ref<PersonalUser | null>(null);
-const organizationId = ref<string | null>(null);
+const organizationSetup = ref<ModelValue | null>(null);
 
 const userInitialized = ref(false);
 const keysImported = ref(0);
@@ -61,6 +74,8 @@ const heading = computed(() => {
       return 'Organization Information';
     case 'selectKeys':
       return 'Select Keys To Recover';
+    case 'performSetup':
+      return 'Setup';
     case 'summary':
       return 'Summary';
     default:
@@ -101,8 +116,8 @@ const handleSetPersonalUser = async (value: PersonalUser) => {
   step.value = 'organization';
 };
 
-const handleSetOrganizationId = async (value: string | null) => {
-  organizationId.value = value;
+const handleSetOrganizationSetup = async (value: ModelValue | null) => {
+  organizationSetup.value = value;
   await initializeUserStore();
   userInitialized.value = true;
   // Write the skip claim now that the org (if any) is selected, using the correct claim key.
@@ -112,24 +127,25 @@ const handleSetOrganizationId = async (value: string | null) => {
   if (allUserKeysToRecover.value.length !== 0) {
     step.value = 'selectKeys';
   } else {
-    step.value = 'summary';
+    step.value = 'performSetup';
   }
 };
 
-const handleKeysImported = async (value: number) => {
+const didPerformSetup = async (importedKeyCount: number, error: unknown) => {
   if (!personalUser.value) throw new Error('(BUG) Personal User not set');
-  if (!value) {
+  if (importedKeyCount === 0) {
     await accountSetupStore.storeSkipRecoveryPhraseClaim();
   }
-  keysImported.value = value;
+  keysImported.value = importedKeyCount;
   step.value = 'summary';
+  if (error !== null) {
+    toastManager.error(getErrorMessage(error, 'Organization setup failed'));
+  }
 };
 
 const handleSelectedKeys = (keysToRecover: KeyPathWithName[]) => {
   selectedKeysToRecover.value = keysToRecover;
-  if (keysToRecover.length === 0) {
-    step.value = 'summary';
-  }
+  step.value = 'performSetup';
 };
 
 /* Functions */
@@ -149,18 +165,11 @@ const initializeUserStore = async () => {
   // is detected on next startup and triggers resetDataLocal(), allowing migration to restart.
   user.setAccountSetupStarted(true);
 
-  await user.refetchOrganizations();
-
-  if (user.organizations[0]) {
-    await user.selectOrganization(user.organizations[0]);
-  }
-
   if (recoveryPhrase.value) {
     await user.setRecoveryPhrase(recoveryPhrase.value.words);
   }
   personalUser.value.password && user.setPassword(personalUser.value.password);
 };
-
 </script>
 <template>
   <div class="flex-column flex-centered flex-1 overflow-hidden p-6">
@@ -172,12 +181,6 @@ const initializeUserStore = async () => {
       }"
     >
       <h4 class="text-title text-semi-bold text-center">{{ heading }}</h4>
-
-      <h5 v-if="step === 'selectKeys'" class="text-title fs-6 mt-4 text-normal text-center">
-        <span>You can import a single/multiple decrypted key(s)</span>
-        <br />
-        <span>or select all of them.</span>
-      </h5>
 
       <div class="fill-remaining mt-4">
         <!-- Decrypt Recovery Phrase Step -->
@@ -201,7 +204,7 @@ const initializeUserStore = async () => {
         <template v-if="stepIs('organization') && personalUser">
           <SetupOrganization
             :personal-user="personalUser"
-            @set-organization-id="handleSetOrganizationId"
+            @set-organization-setup="handleSetOrganizationSetup"
             @migration:cancel="handleStopMigration"
           />
         </template>
@@ -219,20 +222,26 @@ const initializeUserStore = async () => {
             @migration:cancel="handleStopMigration"
             @selected-keys="handleSelectedKeys"
           />
+        </template>
 
-          <template v-if="selectedKeysToRecover.length > 0">
-            <BeginKeysImport
-              :recovery-phrase="recoveryPhrase ?? undefined"
-              :recovery-phrase-password="recoveryPhrasePassword ?? undefined"
-              :selected-keys="selectedKeysToRecover"
-              @keys-imported="handleKeysImported"
-            />
-          </template>
+        <!-- Perform Migration Step -->
+        <template v-if="stepIs('performSetup')">
+          <PerformSetup
+            :personal-user="personalUser!"
+            :organization-setup="organizationSetup"
+            :recovery-phrase="recoveryPhrase"
+            :recovery-phrase-password="recoveryPhrasePassword"
+            :selected-keys="selectedKeysToRecover"
+            @didPerformSetup="didPerformSetup"
+          />
         </template>
 
         <!-- Summary Step -->
         <template v-if="stepIs('summary')">
-          <Summary :imported-keys-count="keysImported" :imported-user-data="importedUserData" />
+          <Summary
+            :imported-keys-count="keysImported"
+            :imported-user-data="importedUserData"
+          />
         </template>
       </div>
     </div>
