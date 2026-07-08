@@ -38,6 +38,19 @@ export class TransactionSigner {
   @Column()
   userId: number;
 
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'recorderId' })
+  recorder: User | null;
+
+  @Column({ nullable: true })
+  recorderId: number | null;
+
+  @Column({ nullable: true })
+  tool: string | null;
+
+  @Column({ nullable: true })
+  version: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

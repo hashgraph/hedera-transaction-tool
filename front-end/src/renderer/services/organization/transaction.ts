@@ -134,12 +134,13 @@ export const importSignatures = async (
   organization: LoggedInOrganization & Organization,
   signatureImport: ISignatureImport[] | ISignatureImport,
 ): Promise<SignatureImportResultDto[]> => {
-  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap; tool?: string }[] = [];
   const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
-  for (const signatureImport of imports) {
+  for (const si of imports) {
     formattedMaps.push({
-      id: signatureImport.id,
-      signatureMap: formatSignatureMap(signatureImport.signatureMap),
+      id: si.id,
+      signatureMap: formatSignatureMap(si.signatureMap),
+      tool: si.tool,
     });
   }
   return commonRequestHandler(async () => {

@@ -101,6 +101,7 @@ const importSelectedCandidates = async (): Promise<void> => {
         importInputs.push({
           id: transaction.id,
           signatureMap,
+          tool: 'v1',
         });
       } catch {
         rejectedTransactionIds.push(transactionId);

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseIntPipe,
@@ -104,12 +105,14 @@ export class SignersController {
     @Body() body: UploadSignatureMapDto | UploadSignatureMapDto[],
     @GetUser() user: User,
     @Query('includeNotifications') includeNotifications?: boolean,
+    @Headers('x-frontend-version') version?: string,
   ): Promise<TransactionSigner[] | UploadSignatureMapResponseDto> {
     const transformedSignatureMaps = await transformAndValidateDto(UploadSignatureMapDto, body);
 
     const { signers, notificationReceiverIds } = await this.signaturesService.uploadSignatureMaps(
       transformedSignatureMaps,
       user,
+      version ?? null,
     );
 
     if (includeNotifications) {

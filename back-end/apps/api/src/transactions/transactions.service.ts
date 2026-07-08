@@ -547,6 +547,7 @@ export class TransactionsService {
   async importSignatures(
     dto: UploadSignatureMapDto[],
     user: User,
+    version: string | null = null,
   ): Promise<SignatureImportResultDto[]> {
     type UpdateRecord = {
       id: number;
@@ -586,7 +587,7 @@ export class TransactionsService {
 
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
-    const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const newSignerRows: { userId: number; transactionId: number; userKeyId: number; recorderId: number; tool: string | null; version: string | null }[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
     // Dedups (userId, txId) so one user with multiple keys produces one UNNEST row.
     const notificationDismissalKeys = new Set<string>();
@@ -598,12 +599,13 @@ export class TransactionsService {
       publicKeys: PublicKey[];
       newBytes: Buffer;
       isSameBytes: boolean;
+      tool: string | null;
     };
     const intermediate = new Map<number, DtoIntermediate>();
     const allPubKeyStrings = new Set<string>();
 
     // Two-pass: defer UserKey resolution to a single bulk find below (was N+1).
-    for (const { id, signatureMap: map } of dto) {
+    for (const { id, signatureMap: map, tool } of dto) {
       const transaction = transactionMap.get(id);
 
       try {
@@ -641,7 +643,7 @@ export class TransactionsService {
           allPubKeyStrings.add(pk.toStringDer());
         }
 
-        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes });
+        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? null });
       } catch (error) {
         results.set(id, {
           id,
@@ -668,9 +670,9 @@ export class TransactionsService {
       }
     }
 
-    for (const [id, { transaction, publicKeys, newBytes, isSameBytes }] of intermediate) {
+    for (const [id, { transaction, publicKeys, newBytes, isSameBytes, tool }] of intermediate) {
       // Create TransactionSigner rows for any keys found in the imported signatures (issue #2552).
-      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
+      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number; recorderId: number; tool: string | null; version: string | null }[] = [];
       if (publicKeys.length > 0) {
         let txExistingSigners = signersByTransaction.get(id);
         if (!txExistingSigners) {
@@ -685,7 +687,7 @@ export class TransactionsService {
           for (const uk of matches) {
             if (txExistingSigners.has(uk.id)) continue;
             txExistingSigners.add(uk.id);
-            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id, recorderId: user.id, tool, version });
           }
         }
       }
