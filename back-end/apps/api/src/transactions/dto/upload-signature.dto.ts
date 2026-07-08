@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 
 import { IsSignatureMap } from '@app/common';
-import { IsDefined, IsNotEmptyObject, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsDefined, IsIn, IsNotEmptyObject, IsNumber, IsOptional } from 'class-validator';
 import { SignatureMap } from '@hiero-ledger/sdk';
 
 export class UploadSignatureMapDto {
@@ -41,8 +41,8 @@ export class UploadSignatureMapDto {
   @IsSignatureMap()
   signatureMap: SignatureMap;
 
-  @ApiProperty({ description: 'Signing tool identifier (v1, v2, api)', required: false })
+  @ApiProperty({ description: 'Signing tool identifier', enum: ['v1', 'v2', 'api'], required: false })
   @IsOptional()
-  @IsString()
+  @IsIn(['v1', 'v2', 'api'])
   tool?: string;
 }

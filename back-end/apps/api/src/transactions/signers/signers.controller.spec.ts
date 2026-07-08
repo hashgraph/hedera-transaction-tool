@@ -255,5 +255,37 @@ describe('SignaturesController', () => {
 
       expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, null);
     });
+
+    it('should strip a leading v from the version header before forwarding', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user, undefined, 'v1.5.0');
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, '1.5.0');
+    });
+
+    it('should pass null for an invalid version string', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user, undefined, 'not-a-version');
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, null);
+    });
   });
 });

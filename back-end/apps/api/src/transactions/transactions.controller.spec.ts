@@ -234,6 +234,32 @@ describe('TransactionsController', () => {
 
       expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
     });
+
+    it('should strip a leading v from the version header before forwarding', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'v2.0.0');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, '2.0.0');
+    });
+
+    it('should pass null for an invalid version string', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'not-a-version');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
+    });
   });
 
   describe('getTransactions', () => {

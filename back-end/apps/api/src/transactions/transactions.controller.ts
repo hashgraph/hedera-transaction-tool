@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 
 import { TransactionId } from '@hiero-ledger/sdk';
+import * as semver from 'semver';
 
 import {
   Filtering,
@@ -105,7 +106,7 @@ export class TransactionsController {
     );
 
     // Delegate to service to perform the import
-    return this.transactionsService.importSignatures(transformedSignatureMaps, user, version ?? null);
+    return this.transactionsService.importSignatures(transformedSignatureMaps, user, version ? semver.clean(version) ?? null : null);
   }
 
   /* Get all transactions visible by the user */

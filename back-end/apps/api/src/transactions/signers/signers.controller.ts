@@ -20,6 +20,7 @@ import {
   transformAndValidateDto,
   withPaginatedResponse,
 } from '@app/common';
+import * as semver from 'semver';
 import { TransactionSigner, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
@@ -112,7 +113,7 @@ export class SignersController {
     const { signers, notificationReceiverIds } = await this.signaturesService.uploadSignatureMaps(
       transformedSignatureMaps,
       user,
-      version ?? null,
+      version ? semver.clean(version) ?? null : null,
     );
 
     if (includeNotifications) {

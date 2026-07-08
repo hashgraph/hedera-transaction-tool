@@ -647,7 +647,7 @@ export class TransactionsService {
         intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? 'api' });
       } catch (error) {
         if (!(error instanceof BadRequestException)) {
-          this.logger.error(`[TX ${id}] Unexpected error during signature import`, error);
+          this.logger.error(`[TX ${id}] Unexpected error during signature import`, (error as any)?.stack ?? (error as any)?.message ?? String(error));
         }
         results.set(id, {
           id,

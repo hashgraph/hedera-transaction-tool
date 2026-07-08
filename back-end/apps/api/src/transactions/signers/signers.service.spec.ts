@@ -159,6 +159,9 @@ describe('SignersService', () => {
           id: true,
           transactionId: true,
           userKeyId: true,
+          recorderId: true,
+          tool: true,
+          version: true,
           createdAt: true,
         },
         withDeleted: true,
@@ -940,7 +943,7 @@ describe('SignersService', () => {
         user,
       );
 
-      expect(consoleError).toHaveBeenCalledWith(`[TX ${transactionId}] Error:`, 'Fail');
+      expect(consoleError).toHaveBeenCalledWith(`[TX ${transactionId}] Error:`, expect.objectContaining({ message: 'Fail' }));
       expect(result.signers).toHaveLength(0);
       expect(result.notificationReceiverIds).toEqual([]);
 
