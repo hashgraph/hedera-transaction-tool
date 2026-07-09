@@ -65,6 +65,8 @@ export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 // increased transaction size limit of 128 KB to accommodate council signatures.
 export const MAX_PRIVILEGED_TRANSACTION_BYTE_SIZE = 131_072;
 
+export const MAX_TRANSACTION_DESCRIPTION_LENGTH = 256;
+
 @Entity()
 @Index(['status', 'mirrorNetwork'])
 @Index(['creatorKeyId'])
@@ -82,7 +84,7 @@ export class Transaction {
   @Column()
   type: TransactionType;
 
-  @Column({ length: 256 })
+  @Column({ length: MAX_TRANSACTION_DESCRIPTION_LENGTH })
   description: string;
 
   @Column()

@@ -3,6 +3,8 @@ import { plainToInstance } from 'class-transformer'
 
 import { CreateTransactionGroupDto } from './create-transaction-group.dto'
 import { CreateTransactionGroupItemDto } from './create-transaction-group-item.dto'
+import { validateSync } from 'class-validator';
+import { MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH } from '@entities';
 
 const toDto = (plain: Record<string, unknown>) =>
   plainToInstance(CreateTransactionGroupDto, plain, { enableImplicitConversion: true })
@@ -64,5 +66,18 @@ describe('CreateTransactionGroupDto', () => {
     expect((dtoMissing as any).groupItems).toBeUndefined()
     expect(Array.isArray((dtoEmpty as any).groupItems)).toBe(true)
     expect((dtoEmpty as any).groupItems.length).toBe(0)
+  })
+
+  test('validation fails when description is too long', () => {
+    const plain = {
+      description: 'a'.repeat(MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH + 1),
+      atomic: true,
+      sequential: false,
+      groupItems: [{ id: 1 }, { id: 2 }],
+    };
+
+    const dto = toDto(plain);
+    const errors = validateSync(dto as any);
+    expect(errors.length).toBeGreaterThan(0);
   })
 })

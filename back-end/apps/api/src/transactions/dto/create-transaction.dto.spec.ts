@@ -3,6 +3,7 @@ import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 
 import { CreateTransactionDto } from './create-transaction.dto'
+import { MAX_TRANSACTION_DESCRIPTION_LENGTH } from '@app/common/database/entities';
 
 const toDto = (plain: Record<string, unknown>) =>
   plainToInstance(CreateTransactionDto, plain)
@@ -50,4 +51,22 @@ describe('CreateTransactionDto', () => {
     const errors = validateSync(dto as any)
     expect(errors.length).toBeGreaterThan(0)
   })
+
+  test('validation fails when description is too long', () => {
+    const plain = {
+      name: 'Send',
+      description: 'a'.repeat(MAX_TRANSACTION_DESCRIPTION_LENGTH + 1),
+      transactionBytes: 'deadbeef',
+      signature: 'beef',
+      creatorKeyId: 7,
+      mirrorNetwork: 'testnet',
+      cutoffAt: '2024-01-02T00:00:00.000Z',
+      isManual: false,
+      reminderMillisecondsBefore: 60000,
+    };
+
+    const dto = toDto(plain);
+    const errors = validateSync(dto as any);
+    expect(errors.length).toBeGreaterThan(0);
+  });
 })

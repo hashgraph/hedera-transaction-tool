@@ -1,12 +1,15 @@
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 import { TransactionGroupItem } from './';
 
+export const MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH = 256;
+
 @Entity()
 export class TransactionGroup {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
+  // @Column({ length: MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH })
   description: string;
 
   @Column({ default: false })
