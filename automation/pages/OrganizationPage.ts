@@ -21,6 +21,7 @@ import {
   verifyOrganizationExists,
 } from '../utils/db/databaseQueries.js';
 import * as fs from 'node:fs';
+import { randomInt } from 'node:crypto';
 import { argonHash } from '../utils/crypto/crypto.js';
 import { generateMnemonic } from '../utils/crypto/keyUtil.js';
 import {
@@ -250,7 +251,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async setupWrongOrganization(organizationNickname = 'Bad Organization') {
-    const serverUrl = (process.env.ORGANIZATION_URL ?? '') + Math.floor(Math.random() * 10);
+    const serverUrl = (process.env.ORGANIZATION_URL ?? '') + randomInt(0, 10);
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
   }

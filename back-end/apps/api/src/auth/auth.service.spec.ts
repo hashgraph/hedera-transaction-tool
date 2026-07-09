@@ -146,6 +146,30 @@ describe('AuthService', () => {
     );
   });
 
+  it('should use FRONTEND_REPO_URL when building the download URL', async () => {
+    const dto: SignUpUserDto = { email: 'test@email.com' };
+
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('FRONTEND_REPO_URL')
+      .mockReturnValue('https://example.com/releases/');
+
+    jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          additionalData: expect.objectContaining({
+            downloadUrl: 'https://example.com/releases/latest',
+          }),
+        }),
+      ]),
+    );
+  });
+
   it('should update the password and resend an email for an existing user with status NEW', async () => {
     const dto: SignUpUserDto = { email: 'test@test.com' };
 
