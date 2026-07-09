@@ -1,5 +1,6 @@
 {
   "name": "hedera-transaction-tool-root",
+  "version": "0.35.0-SNAPSHOT",
   "private": true,
   "scripts": {
     "clean:deps": "rm -rf node_modules **/node_modules",
