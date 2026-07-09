@@ -118,3 +118,6 @@ export interface SignatureImportResultDto {
   id: number; // The database ID of the transaction
   error?: string;
 }
+
+export const MAX_TRANSACTION_DESCRIPTION_LENGTH = 256;
+export const MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH = 256;
