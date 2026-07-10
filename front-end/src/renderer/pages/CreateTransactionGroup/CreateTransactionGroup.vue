@@ -37,6 +37,7 @@ import ImportCSVController from '@renderer/pages/CreateTransactionGroup/ImportCS
 import useNextTransactionV2, {
   type TransactionNodeId,
 } from '@renderer/stores/storeNextTransactionV2.ts';
+import { MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH } from '@shared/interfaces';
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -302,6 +303,7 @@ onBeforeRouteLeave(async to => {
               filled
               placeholder="Enter Description"
               data-testid="input-transaction-group-description"
+              :limit="MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH"
             />
           </div>
           <div class="mt-4 align-self-end">
