@@ -79,5 +79,7 @@ describe('CreateTransactionGroupDto', () => {
     const dto = toDto(plain);
     const errors = validateSync(dto as any);
     expect(errors.length).toBeGreaterThan(0);
+    const descriptionError = errors.find(e => e.property === 'description');
+    expect(descriptionError?.constraints).toHaveProperty('maxLength');
   })
 })
