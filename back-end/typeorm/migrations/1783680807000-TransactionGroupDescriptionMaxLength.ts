@@ -5,7 +5,7 @@ export class TransactionGroupDescriptionMaxLength1783680807000 implements Migrat
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(
-      `ALTER TABLE "transaction_group" ALTER COLUMN "description" TYPE character varying(256)`,
+      `ALTER TABLE "transaction_group" ALTER COLUMN "description" TYPE character varying(4000)`,
     );
   }
 
