@@ -269,7 +269,7 @@ describe('CreateTransactionGroup.vue', () => {
     const element = wrapper.find('[data-testid="input-transaction-group-description"]').element;
     expect(element instanceof HTMLInputElement).toBe(true);
     const input = element as HTMLInputElement;
-    expect(input.maxLength).toBe(256);
+    expect(input.maxLength).toBe(4000);
   })
 
   describe('group item row', () => {

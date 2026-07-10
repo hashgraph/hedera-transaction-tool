@@ -120,4 +120,4 @@ export interface SignatureImportResultDto {
 }
 
 export const MAX_TRANSACTION_DESCRIPTION_LENGTH = 256;
-export const MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH = 256;
+export const MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH = 4000;
