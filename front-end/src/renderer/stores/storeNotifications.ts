@@ -109,6 +109,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   });
 
   let notificationsQueue = Promise.resolve();
+  let notificationListenerDisposers: (() => void)[] = [];
 
   /** Preferences **/
   async function fetchPreferences() {
@@ -162,21 +163,28 @@ const useNotificationsStore = defineStore('notifications', () => {
   }
 
   function listenForUpdates() {
+    notificationListenerDisposers.forEach(d => d());
+    notificationListenerDisposers = [];
+
     const serverUrls = organizationServerUrls.value;
     for (const serverUrl of serverUrls) {
-      ws.on(serverUrl, NOTIFICATIONS_NEW, e => {
-        const newNotifications: INotificationReceiver[] = e;
+      notificationListenerDisposers.push(
+        ws.on(serverUrl, NOTIFICATIONS_NEW, e => {
+          const newNotifications: INotificationReceiver[] = e;
 
-        notifications.value[serverUrl] = [...notifications.value[serverUrl], ...newNotifications];
-        notifications.value = { ...notifications.value };
-      });
+          notifications.value[serverUrl] = [...notifications.value[serverUrl], ...newNotifications];
+          notifications.value = { ...notifications.value };
+        }),
+      );
 
-      ws.on(serverUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-        const deleteNotifications: {notificationReceiverIds: number}[] = e;
-        const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
+      notificationListenerDisposers.push(
+        ws.on(serverUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
+          const deleteNotifications: {notificationReceiverIds: number}[] = e;
+          const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
 
-        dismissNotifications(serverUrl, notificationReceiverIds);
-      });
+          dismissNotifications(serverUrl, notificationReceiverIds);
+        }),
+      );
     }
   }
 
