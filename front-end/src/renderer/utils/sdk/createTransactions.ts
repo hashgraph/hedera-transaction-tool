@@ -566,7 +566,7 @@ const setNodeData = (
     transaction.setDeclineReward(data.declineReward);
   }
 
-  const oldAssociated = (oldData?.associated_registered_node ?? []).map(String).sort().join(',');
+  const oldAssociated = (oldData?.associated_registered_nodes ?? []).map(String).sort().join(',');
   const newAssociated = data.associatedRegisteredNodes.slice().sort().join(',');
   if (oldAssociated !== newAssociated) {
     transaction.setAssociatedRegisteredNodes(

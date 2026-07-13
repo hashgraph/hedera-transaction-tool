@@ -59,7 +59,7 @@ watch(
         data-testid="checkbox-select-all-keys-component"
         class="cursor-pointer"
       />
-      <span>Select all</span>
+      <span class="text-secondary text-small">Select all</span>
     </div>
     <ul class="overflow-x-hidden" style="max-height: 30vh">
       <li v-for="(key, index) in keys" :key="key" class="d-flex flex-row align-items-center gap-3">
@@ -74,7 +74,7 @@ watch(
       </li>
     </ul>
   </div>
-  <p class="text-end mt-4">
+  <p class="text-secondary text-small text-end mt-2">
     {{ selectedCount }} of {{ keys.length }} key{{ selectedCount !== 1 ? 's' : '' }} selected
   </p>
 </template>

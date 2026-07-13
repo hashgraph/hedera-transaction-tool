@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { INodeInfoParsed } from '@shared/interfaces';
-import type { NodeUpdateData } from '@renderer/utils/sdk/createTransactions';
+import type {
+  ComponentServiceEndpoint,
+  NodeUpdateData,
+} from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
 import { computed, reactive, ref, watch } from 'vue';
@@ -12,15 +15,14 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
+import { compareKeys, getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
 
-
 /* Composables */
 const route = useRoute();
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const nodeData = useNodeId();
 const newNodeAccountData = useAccountId();
 
@@ -53,8 +55,43 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     );
 });
 
+const hasAnyChange = computed(() => {
+  const nodeInfo = nodeData.nodeInfo?.value as INodeInfoParsed | null;
+  if (!nodeInfo) return false;
+
+  if ((data.description ?? '') !== (nodeInfo.description ?? '')) return true;
+
+  if (data.nodeAccountId !== (nodeInfo.node_account_id?.toString() ?? '')) return true;
+
+  if (data.gossipEndpoints.length > 0) return true;
+  if (data.serviceEndpoints.length > 0) return true;
+
+  const initialGrpc = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
+  const currentGrpc = data.grpcWebProxyEndpoint;
+  const endpointKey = (ep: ComponentServiceEndpoint | null) =>
+    ep ? `${ep.ipAddressV4}|${ep.domainName}|${ep.port}` : '';
+  if (endpointKey(initialGrpc) !== endpointKey(currentGrpc)) return true;
+
+  if (data.gossipCaCertificate.length > 0) return true;
+  if (data.certificateHash.length > 0) return true;
+
+  if (data.adminKey && nodeInfo.admin_key) {
+    if (!compareKeys(data.adminKey, nodeInfo.admin_key)) return true;
+  } else if (data.adminKey || nodeInfo.admin_key) {
+    return true;
+  }
+
+  if (data.declineReward !== nodeInfo.decline_reward) return true;
+
+  const oldNodes = [...nodeInfo.associated_registered_nodes].map(String).sort().join(',');
+  const newNodes = [...data.associatedRegisteredNodes].sort().join(',');
+  if (oldNodes !== newNodes) return true;
+
+  return false;
+});
+
 const createDisabled = computed(() => {
-  return !nodeData.nodeInfo?.value;
+  return !nodeData.nodeInfo?.value || !hasAnyChange.value;
 });
 
 /* Handlers */
@@ -106,7 +143,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.certificateHash = Uint8Array.from([]);
     data.adminKey = nodeInfo.admin_key;
     data.declineReward = nodeInfo.decline_reward;
-    data.associatedRegisteredNodes = nodeInfo.associated_registered_node.map(String);
+    data.associatedRegisteredNodes = nodeInfo.associated_registered_nodes.map(String);
   }
 });
 watch(

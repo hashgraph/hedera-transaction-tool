@@ -174,7 +174,7 @@ describe('TransactionsController', () => {
 
       expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
       expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
-      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
       expect(result).toEqual(expectedResult);
     });
 
@@ -205,8 +205,60 @@ describe('TransactionsController', () => {
       expect((plainToInstance as jest.Mock).mock.calls[0]).toEqual([UploadSignatureMapDto, dtoInput[0]]);
       expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
       expect(validateOrReject).toHaveBeenCalledTimes(2);
-      expect(transactionService.importSignatures).toHaveBeenCalledWith(transformedDtos, user);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith(transformedDtos, user, null);
       expect(result).toEqual(expectedResult);
+    });
+
+    it('should forward x-frontend-version header to importSignatures', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, '2.0.0');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, '2.0.0');
+    });
+
+    it('should pass null version when header is absent', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user);
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
+    });
+
+    it('should strip a leading v from the version header before forwarding', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'v2.0.0');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, '2.0.0');
+    });
+
+    it('should pass null for an invalid version string', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'not-a-version');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
     });
   });
 

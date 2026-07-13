@@ -140,9 +140,9 @@ describe('CreateTransactionGroup.vue', () => {
           AppInput: {
             emits: ['update:modelValue'],
             inheritAttrs: false,
-            props: ['modelValue'],
+            props: ['modelValue', 'limit'],
             template:
-              '<input v-bind="$attrs" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />',
+              '<input v-bind="$attrs" :value="modelValue" :maxlength="limit" @input="$emit(\'update:modelValue\', $event.target.value)" />',
           },
           AppModal: {
             inheritAttrs: false,
@@ -263,6 +263,14 @@ describe('CreateTransactionGroup.vue', () => {
 
     expect(mocks.transactionGroupStore.clearGroup).toHaveBeenCalled();
   });
+
+  test('check maxLength is set on description <input>', () => {
+    const wrapper = mountCreateTransactionGroup();
+    const element = wrapper.find('[data-testid="input-transaction-group-description"]').element;
+    expect(element instanceof HTMLInputElement).toBe(true);
+    const input = element as HTMLInputElement;
+    expect(input.maxLength).toBe(256);
+  })
 
   describe('group item row', () => {
     const baseItem = {

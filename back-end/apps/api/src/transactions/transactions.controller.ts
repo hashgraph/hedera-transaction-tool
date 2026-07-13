@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseIntPipe,
@@ -18,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 
 import { TransactionId } from '@hiero-ledger/sdk';
+import * as semver from 'semver';
 
 import {
   Filtering,
@@ -96,6 +98,7 @@ export class TransactionsController {
   async importSignatures(
     @Body() body: UploadSignatureMapDto[] | UploadSignatureMapDto,
     @GetUser() user: User,
+    @Headers('x-frontend-version') version?: string,
   ): Promise<SignatureImportResultDto[]> {
     const transformedSignatureMaps = await transformAndValidateDto(
       UploadSignatureMapDto,
@@ -103,7 +106,7 @@ export class TransactionsController {
     );
 
     // Delegate to service to perform the import
-    return this.transactionsService.importSignatures(transformedSignatureMaps, user);
+    return this.transactionsService.importSignatures(transformedSignatureMaps, user, version ? semver.clean(version) ?? null : null);
   }
 
   /* Get all transactions visible by the user */

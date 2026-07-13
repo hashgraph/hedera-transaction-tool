@@ -10,7 +10,7 @@ catalog:
   '@hiero-ledger/sdk': 2.85.0
   '@types/bcrypt': 6.0.0
   '@types/jest': 30.0.0
-  '@types/node': 25.5.0
+  '@types/node': 26.1.1
   '@types/semver': 7.7.1
   argon2: 0.44.0
   axios: 1.18.1
@@ -20,14 +20,14 @@ catalog:
   jest: 30.4.2
   jszip: 3.10.1
   long: 5.3.2
-  pg: 8.21.0
+  pg: 8.22.0
   prettier: 3.8.3
   reflect-metadata: 0.2.2
-  semver: 7.8.0
+  semver: 7.8.5
   ts-jest: 29.4.11
   ts-loader: 9.5.7
   ts-node: 10.9.2
-  typeorm: 0.3.28
+  typeorm: 0.3.29
   typescript: 5.9.3
 
 catalogs:
@@ -38,7 +38,7 @@ catalogs:
   # @nestjs/passport, @nestjs/config, @nestjs/swagger) — their version match
   # is coincidental.
   nestjs-core:
-    '@nestjs/common': &nestjsCore 11.1.27
+    '@nestjs/common': &nestjsCore 11.1.28
     '@nestjs/core': *nestjsCore
     '@nestjs/microservices': *nestjsCore
     '@nestjs/platform-express': *nestjsCore

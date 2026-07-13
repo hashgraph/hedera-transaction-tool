@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
   login: vi.fn(),
   changePassword: vi.fn(),
   healthCheck: vi.fn(),
-  addOrganizationCredentials: vi.fn(),
   toggleAuthTokenInSessionStorage: vi.fn(),
   getVersionStatusForOrg: vi.fn(),
 }));
@@ -25,10 +24,6 @@ vi.mock('@renderer/services/organization', () => ({
   login: mocks.login,
   changePassword: mocks.changePassword,
   healthCheck: mocks.healthCheck,
-}));
-
-vi.mock('@renderer/services/organizationCredentials', () => ({
-  addOrganizationCredentials: mocks.addOrganizationCredentials,
 }));
 
 vi.mock('@renderer/stores/versionState', () => ({
@@ -81,7 +76,6 @@ describe('SetupOrganization.vue — email field during migration', () => {
     mocks.addOrganization.mockResolvedValue({ id: 'org-id' });
     mocks.login.mockResolvedValue({ id: 1, jwtToken: 'jwt-token' });
     mocks.changePassword.mockResolvedValue(undefined);
-    mocks.addOrganizationCredentials.mockResolvedValue(undefined);
   });
 
   function mountSetupOrganization(personalUser: PersonalUser) {
@@ -127,15 +121,6 @@ describe('SetupOrganization.vue — email field during migration', () => {
         'updated@example.com',
         'tempPass123',
       );
-      expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
-        'updated@example.com',
-        'newPass456',
-        'org-id',
-        'personal-id-123',
-        'jwt-token',
-        'personalPassword',
-        true,
-      );
     });
 
     test('original email is not used when the user has changed it', async () => {
@@ -175,15 +160,6 @@ describe('SetupOrganization.vue — email field during migration', () => {
         'https://org.example.com',
         'org@example.com',
         'tempPass123',
-      );
-      expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
-        'org@example.com',
-        'newPass456',
-        'org-id',
-        'personal-id-123',
-        'jwt-token',
-        null,
-        true,
       );
     });
   });

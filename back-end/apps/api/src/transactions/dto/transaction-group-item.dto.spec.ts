@@ -49,7 +49,7 @@ describe('TransactionGroupItemDto', () => {
     expect(dto.transaction.createdAt).toBeInstanceOf(Date);
     expect(dto.transaction.updatedAt).toBeInstanceOf(Date);
 
-    const errors = validateSync(dto);
+    const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
   });
 });

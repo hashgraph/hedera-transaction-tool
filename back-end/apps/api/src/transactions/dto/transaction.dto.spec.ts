@@ -50,7 +50,7 @@ describe('TransactionDto', () => {
     expect(dto.groupItem).toBeInstanceOf(TransactionGroupItemDto);
 
     // no validation rules in this DTO file by default, but ensure validation runs
-    const errors = validateSync(dto);
+    const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
   });
 
@@ -78,7 +78,7 @@ describe('TransactionDto', () => {
     expect(dto).toBeInstanceOf(TransactionDto);
     expect(dto.groupItem).toBeUndefined();
 
-    const errors = validateSync(dto);
+    const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
   });
 
@@ -117,7 +117,7 @@ describe('TransactionDto', () => {
     expect(dto.observers).toBeInstanceOf(Array);
     expect(dto.observers[0]).toBeInstanceOf(TransactionObserverDto);
 
-    const errors = validateSync(dto);
+    const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
   });
 });

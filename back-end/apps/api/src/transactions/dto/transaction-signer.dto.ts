@@ -13,6 +13,15 @@ export class TransactionSignerDto {
   userKeyId: number;
 
   @Expose()
+  recorderId: number | null;
+
+  @Expose()
+  tool: string | null;
+
+  @Expose()
+  version: string | null;
+
+  @Expose()
   createdAt: Date;
 }
 
@@ -26,6 +35,15 @@ export class TransactionSignerUserKeyDto {
   @Expose()
   @Type(() => UserKeyCoreDto)
   userKey: UserKeyCoreDto;
+
+  @Expose()
+  recorderId: number | null;
+
+  @Expose()
+  tool: string | null;
+
+  @Expose()
+  version: string | null;
 
   @Expose()
   createdAt: Date;
@@ -42,6 +60,15 @@ export class TransactionSignerFullDto {
   @Expose()
   @Type(() => UserKeyCoreDto)
   userKey: UserKeyCoreDto;
+
+  @Expose()
+  recorderId: number | null;
+
+  @Expose()
+  tool: string | null;
+
+  @Expose()
+  version: string | null;
 
   @Expose()
   createdAt: Date;
