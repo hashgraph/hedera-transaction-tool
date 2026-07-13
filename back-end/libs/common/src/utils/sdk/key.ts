@@ -31,6 +31,9 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
 export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
   if (key instanceof KeyList) {
     const keys = key.toArray();
+
+    if (keys.length === 0) return false;
+
     let currentThreshold = 0;
 
     keys.forEach(key => {

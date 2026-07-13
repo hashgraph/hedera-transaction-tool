@@ -1,5 +1,5 @@
 import { mockDeep } from 'jest-mock-extended';
-import { EntityManager } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import {
   AccountId,
   AccountCreateTransaction,
@@ -9,9 +9,10 @@ import {
   TransactionId,
 } from '@hiero-ledger/sdk';
 
-import { TransactionSignatureService, flattenKeyList } from '@app/common';
+import { TransactionSignatureService, flattenKeyList, hasValidSignatureKey, smartCollate } from '@app/common';
+import { Transaction, TransactionStatus } from '@entities';
 
-import { keysRequiredToSign, userKeysRequiredToSign } from '.';
+import { keysRequiredToSign, processTransactionStatus, userKeysRequiredToSign } from '.';
 
 jest.mock('@app/common/utils');
 
@@ -108,5 +109,64 @@ describe('userKeysRequiredToSign', () => {
       false,
     );
     expect(result).toEqual([1]);
+  });
+});
+
+describe('processTransactionStatus', () => {
+  const transactionSignatureService = mockDeep<TransactionSignatureService>();
+  const transactionRepo = mockDeep<Repository<Transaction>>();
+
+  const makeTransaction = (id: number, status: TransactionStatus): Transaction => ({
+    id,
+    status,
+    transactionBytes: new AccountCreateTransaction().toBytes() as Buffer,
+  } as unknown as Transaction);
+
+  const setupQueryBuilder = () => {
+    const qb = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      returning: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue({ raw: [] }),
+    };
+    transactionRepo.createQueryBuilder.mockReturnValue(qb as any);
+    return qb;
+  };
+
+  beforeEach(() => {
+    jest.resetAllMocks();
+    setupQueryBuilder();
+  });
+
+  it('skips a transaction and does not change its status when computeSignatureKey throws', async () => {
+    const transaction = makeTransaction(1, TransactionStatus.WAITING_FOR_SIGNATURES);
+    transactionSignatureService.computeSignatureKey.mockRejectedValue(new Error('mirror node down'));
+
+    const result = await processTransactionStatus(transactionRepo, transactionSignatureService, [transaction]);
+
+    expect(result.size).toBe(0);
+    expect(transactionRepo.createQueryBuilder).not.toHaveBeenCalled();
+  });
+
+  it('processes other transactions when one has a key resolution failure', async () => {
+    const failing = makeTransaction(1, TransactionStatus.WAITING_FOR_SIGNATURES);
+    const succeeding = makeTransaction(2, TransactionStatus.WAITING_FOR_SIGNATURES);
+
+    transactionSignatureService.computeSignatureKey
+      .mockRejectedValueOnce(new Error('mirror node down'))
+      .mockResolvedValueOnce(new KeyList());
+
+    jest.mocked(hasValidSignatureKey).mockReturnValue(true);
+    jest.mocked(smartCollate).mockResolvedValue({} as SDKTransaction);
+
+    const qb = setupQueryBuilder();
+    qb.execute.mockResolvedValue({ raw: [{ id: 2 }] });
+
+    const result = await processTransactionStatus(transactionRepo, transactionSignatureService, [failing, succeeding]);
+
+    // Only the succeeding transaction should have a status change
+    expect(result.has(1)).toBe(false);
+    expect(result.has(2)).toBe(true);
   });
 });

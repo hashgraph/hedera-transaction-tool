@@ -1,8 +1,33 @@
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
-import { areKeysEqual, computeShortenedPublicKeyList } from '.';
+import { areKeysEqual, computeShortenedPublicKeyList, hasValidSignatureKey } from '.';
 
 jest.mock('@app/common/utils');
+
+describe('hasValidSignatureKey', () => {
+  it('should return false for an empty KeyList with no threshold', () => {
+    const emptyKeyList = new KeyList();
+    expect(hasValidSignatureKey([], emptyKeyList)).toBe(false);
+  });
+
+  it('should return false for an empty KeyList even when publicKeys are provided', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const emptyKeyList = new KeyList();
+    expect(hasValidSignatureKey([pk.toStringRaw()], emptyKeyList)).toBe(false);
+  });
+
+  it('should return true when a single public key satisfies the key list', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const keyList = new KeyList([pk]);
+    expect(hasValidSignatureKey([pk.toStringRaw()], keyList)).toBe(true);
+  });
+
+  it('should return false when no public key satisfies the key list', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const keyList = new KeyList([pk]);
+    expect(hasValidSignatureKey([], keyList)).toBe(false);
+  });
+});
 
 describe('computeShortenedPublicKeyList', () => {
   let publicKey1,
