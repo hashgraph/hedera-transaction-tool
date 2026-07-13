@@ -62,6 +62,23 @@ watch([file, manualContent], () => {
     manualContent.value.length > 0 ? manualContent.value : file.value?.content || null,
   );
 });
+
+watch(
+  () => props.contents,
+  contents => {
+    if (contents === null) {
+      manualContent.value = '';
+      file.value = null;
+    } else if (typeof contents === 'string') {
+      file.value = null;
+      manualContent.value = contents;
+    } else {
+      // contents is Uint8Array, meaning user just loaded a File
+      manualContent.value = '';
+    }
+  },
+  { immediate: true },
+);
 </script>
 <template>
   <div class="mt-6 form-group">
