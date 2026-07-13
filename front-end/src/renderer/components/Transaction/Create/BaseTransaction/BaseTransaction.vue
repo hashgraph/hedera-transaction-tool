@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   applyNanoOffset,
@@ -18,8 +18,6 @@ import type { CreateTransactionFunc } from '.';
 
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
   Hbar,
   KeyList,
   NodeCreateTransaction,
@@ -327,13 +325,6 @@ const saveDraft = async (): Promise<void> => {
 
 const getTransactionBytes = () => {
   const transaction = createTransaction({ ...data } as TransactionCommonData);
-  if (
-    transaction instanceof FileUpdateTransaction ||
-    transaction instanceof FileAppendTransaction
-  ) {
-    //@ts-expect-error - contents should be null
-    transaction.setContents(null);
-  }
   return transaction.toBytes();
 };
 
