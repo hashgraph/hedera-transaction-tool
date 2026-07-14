@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 3 — Org Settings: Approver Group Management</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --page-bg: #f9fafe; --card-bg: #ffffff; --panel-bg: #edefff;
+    --border: #dddeee; --border-dark: #bbbddd;
+    --text: #1a1a1a; --text-secondary: #333666; --text-muted: #777abb;
+    --primary: #6600cc; --danger: #cd0000;
+    --tag-auto-bg: #f2e5ff; --tag-auto-text: #4c0099;
+  }
+  body { font-family: 'Inter', sans-serif; background: #d8daf0; color: var(--text); font-size: 14px; line-height: 1.5; padding: 32px; }
+  .app-window { background: var(--page-bg); border-radius: 12px; box-shadow: 0 8px 40px rgba(9,10,20,0.18); overflow: hidden; width: 960px; }
+  .app-topbar { background: #15162a; height: 40px; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+  .app-topbar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .app-topbar .dot.red { background: #ff5f57; } .app-topbar .dot.yellow { background: #febc2e; } .app-topbar .dot.green { background: #28c840; }
+  .app-topbar .title { flex: 1; text-align: center; color: #777abb; font-size: 12px; }
+  .app-body { display: flex; min-height: 580px; }
+  .settings-nav { width: 200px; border-right: 1px solid var(--border); padding: 20px 0; flex-shrink: 0; background: #fff; }
+  .settings-nav-item { padding: 9px 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; border-left: 3px solid transparent; }
+  .settings-nav-item.active { color: var(--primary); border-left-color: var(--primary); background: #f2e5ff; font-weight: 600; }
+  .main-content { flex: 1; padding: 28px 32px; overflow-y: auto; }
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; }
+  .page-header h2 { font-size: 20px; font-weight: 300; color: var(--text); }
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 6px; padding: 7px 16px; font-size: 14px; font-weight: 500; cursor: pointer; line-height: 24px; font-family: 'Inter', sans-serif; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid var(--border-dark); color: var(--text-secondary); }
+  .btn-danger-outline { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+  .btn-sm { padding: 4px 10px; font-size: 12px; line-height: 18px; }
+  .btn-icon { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--border-dark); background: transparent; cursor: pointer; color: var(--text-muted); }
+  .btn-icon:hover { background: var(--panel-bg); color: var(--text); }
+  .btn-icon.danger { border-color: #e0b0b0; color: #cd0000; }
+  .btn-icon.danger:hover { background: #fff0f0; }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .data-table th { background: var(--panel-bg); color: var(--text-secondary); font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--border); }
+  .data-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tbody tr:hover { background: #f5f7ff; }
+  .threshold-pill { background: #e5ccff; color: #4c0099; border-radius: 100px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  .entity-tag { display: inline-flex; align-items: center; gap: 4px; background: #f2e5ff; color: #4c0099; border-radius: 4px; padding: 2px 7px; font-size: 11px; font-family: 'Noto Sans Mono', monospace; font-weight: 500; margin-right: 4px; margin-bottom: 2px; }
+  .avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; color: #fff; }
+  .av-purple { background: #6600cc; } .av-blue { background: #444788; } .av-teal { background: #1896b2; } .av-orange { background: #fa6c00; } .av-green { background: #008035; }
+</style>
+</head>
+<body>
+<div class="app-window">
+  <div class="app-topbar">
+    <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+    <span class="title">Organization Settings — Acme Corp</span>
+  </div>
+  <div class="app-body">
+    <div class="settings-nav">
+      <div class="settings-nav-item">General</div>
+      <div class="settings-nav-item">Members</div>
+      <div class="settings-nav-item">Keys</div>
+      <div class="settings-nav-item active">Approver Groups</div>
+      <div class="settings-nav-item">Notifications</div>
+      <div class="settings-nav-item">Billing</div>
+    </div>
+    <div class="main-content">
+      <div class="page-header">
+        <div>
+          <h2>Approver Groups</h2>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">Define groups that are automatically applied to transactions based on affected entities. Admins only.</div>
+        </div>
+        <button class="btn btn-primary">+ Create Group</button>
+      </div>
+
+      <div style="border:1px solid var(--border); border-radius:8px; overflow:hidden; margin-bottom:28px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Group Name</th>
+              <th>Threshold</th>
+              <th>Assigned Entities</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>
+                <div style="font-weight:600;">Treasury Board</div>
+                <div style="font-size:11px; color:var(--text-muted);">Approves all treasury operations</div>
+              </td>
+              <td><span class="threshold-pill">2 of 3</span></td>
+              <td>
+                <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+                  <span class="entity-tag">0.0.12345</span>
+                  <span class="entity-tag">0.0.23456</span>
+                  <span style="font-size:11px; color:var(--text-muted);">+5 more</span>
+                </div>
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <button class="btn-icon" title="Edit">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon danger" title="Delete">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="font-weight:600;">Finance Committee</div>
+                <div style="font-size:11px; color:var(--text-muted);">Reviews large transfers</div>
+              </td>
+              <td><span class="threshold-pill">3 of 5</span></td>
+              <td>
+                <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+                  <span class="entity-tag">0.0.67890</span>
+                  <span class="entity-tag">0.0.78901</span>
+                  <span style="font-size:11px; color:var(--text-muted);">+1 more</span>
+                </div>
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <button class="btn-icon" title="Edit">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon danger" title="Delete">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <div style="font-weight:600;">Node Governance</div>
+                <div style="font-size:11px; color:var(--text-muted);">Required for node management</div>
+              </td>
+              <td><span class="threshold-pill">1 of 2</span></td>
+              <td>
+                <div style="display:flex; flex-direction:column; gap:3px; align-items:flex-start;">
+                  <span class="entity-tag">node:3</span>
+                </div>
+              </td>
+              <td style="text-align:right; white-space:nowrap;">
+                <button class="btn-icon" title="Edit">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button class="btn-icon danger" title="Delete">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2"/></svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div style="font-size:12px; color:var(--text-muted); background:var(--panel-bg); border-radius:8px; padding:12px 16px; border:1px solid var(--border);">
+        <strong style="color:var(--text-secondary);">Entity assignments</strong> are managed per group via the Edit action. One group can be assigned to multiple entities; one entity can have multiple groups.
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
