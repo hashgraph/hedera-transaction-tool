@@ -70,11 +70,12 @@ watch(
       manualContent.value = '';
       file.value = null;
     } else if (typeof contents === 'string') {
-      file.value = null;
       manualContent.value = contents;
+      file.value = null;
     } else {
-      // contents is Uint8Array, meaning user just loaded a File
+      // contents is Uint8Array, meaning user has uploaded a file
       manualContent.value = '';
+      // we don't set file.value here because the file is already set when user uploads a file
     }
   },
   { immediate: true },
