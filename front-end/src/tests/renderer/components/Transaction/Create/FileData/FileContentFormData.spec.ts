@@ -41,6 +41,74 @@ describe('FileContentFormData', () => {
     vi.clearAllMocks();
   });
 
+  describe('persisted contents props', () => {
+    test('displays existing string file content loaded from a pre-existing draft', async () => {
+      const draftContents = 'persisted text contents from draft';
+
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.12345', contents: draftContents },
+      });
+
+      await flushPromises();
+
+      const manualTextarea = wrapper.find<HTMLTextAreaElement>(
+        '[data-testid="textarea-file-content"]',
+      );
+
+      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+      expect(manualTextarea.exists()).toBe(true);
+      expect(manualTextarea.element.value).toBe(draftContents);
+    });
+
+    test('does not restore Uint8Array contents as uploaded file state', async () => {
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.101', contents: BIN_BYTES },
+      });
+
+      await flushPromises();
+
+      expect(decodeProtoMock).not.toHaveBeenCalled();
+      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+      expect(
+        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
+      ).toBe('');
+    });
+
+    test('does not emit restored Uint8Array contents from props', async () => {
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.12345', contents: TXT_BYTES },
+      });
+
+      await flushPromises();
+
+      expect(wrapper.emitted('update:contents')).toBeUndefined();
+      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+      expect(
+        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
+      ).toBe('');
+    });
+
+    test('clears displayed content when persisted contents are null', async () => {
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.12345', contents: 'persisted text contents' },
+      });
+
+      await flushPromises();
+
+      expect(
+        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
+      ).toBe('persisted text contents');
+
+      await wrapper.setProps({ contents: null });
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+      expect(
+        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
+      ).toBe('');
+    });
+  });
+
   describe('Order 1: set fileId first, then upload file', () => {
     test('special fileId + .bin file → protobuf decoded content displayed', async () => {
       const wrapper = mount(FileContentFormData, {

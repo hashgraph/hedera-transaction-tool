@@ -1,11 +1,6 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted } from 'vue';
-import {
-  FileAppendTransaction,
-  FileCreateTransaction,
-  FileUpdateTransaction,
-  type Transaction,
-} from '@hiero-ledger/sdk';
+import { type Transaction } from '@hiero-ledger/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
@@ -47,14 +42,6 @@ const handleLoadFromDraft = async () => {
 
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
-    if (
-      transaction instanceof FileCreateTransaction ||
-      transaction instanceof FileUpdateTransaction ||
-      (transaction instanceof FileAppendTransaction && transaction.contents?.length === 0)
-    ) {
-      //@ts-expect-error - contents should be null
-      transaction.setContents(null);
-    }
     emit('draft-loaded', transaction);
   }
 };
