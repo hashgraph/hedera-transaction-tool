@@ -18,7 +18,7 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hiero-ledger/sdk';
 
-import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
+// import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
 
 import {
   getUserState,
@@ -469,20 +469,20 @@ export const getOrganizationJwtTokens = async (
   return {};
 };
 
-export const setSessionStorageTokens = (
-  organizations: Organization[],
-  organizationTokens: OrganizationTokens,
-) => {
-  for (const organization of organizations) {
-    const token = organizationTokens[organization.id]?.trim();
-    if (token && token.length > 0) {
-      sessionStorage.setItem(
-        `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(organization.serverUrl).origin}`,
-        token,
-      );
-    }
-  }
-};
+// export const setSessionStorageTokens = (
+//   organizations: Organization[],
+//   organizationTokens: OrganizationTokens,
+// ) => {
+//   for (const organization of organizations) {
+//     const token = organizationTokens[organization.id]?.trim();
+//     if (token && token.length > 0) {
+//       sessionStorage.setItem(
+//         `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(organization.serverUrl).origin}`,
+//         token,
+//       );
+//     }
+//   }
+// };
 
 export const deleteOrganizationConnection = async (
   organizationId: string,
@@ -496,24 +496,24 @@ export const deleteOrganizationConnection = async (
   await deleteOrganization(organizationId);
 };
 
-export const toggleAuthTokenInSessionStorage = (
-  serverUrl: string,
-  token: string,
-  remove: boolean = false,
-) => {
-  const origin = new URL(serverUrl).origin;
-  if (remove) {
-    sessionStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
-    return;
-  }
-  sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`, token);
-};
-
-export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
-  const origin = new URL(serverUrl).origin;
-  return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
-};
-
+// export const toggleAuthTokenInSessionStorage = (
+//   serverUrl: string,
+//   token: string,
+//   remove: boolean = false,
+// ) => {
+//   const origin = new URL(serverUrl).origin;
+//   if (remove) {
+//     sessionStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+//     return;
+//   }
+//   sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`, token);
+// };
+//
+// export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
+//   const origin = new URL(serverUrl).origin;
+//   return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
+// };
+//
 export const restoreOrganizationKeys = async (
   organization: ConnectedOrganization,
   recoveryPhrase: RecoveryPhrase | null,

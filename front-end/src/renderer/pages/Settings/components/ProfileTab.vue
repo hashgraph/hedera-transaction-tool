@@ -25,7 +25,7 @@ import {
   isLoggedInOrganization,
   isPasswordStrong,
   isUserLoggedIn,
-  toggleAuthTokenInSessionStorage,
+  // toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -155,7 +155,7 @@ const handleLogout = async () => {
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
     await logout(serverUrl);
     await updateOrganizationCredentials(id, user.personal.id, undefined, '', null);
-    toggleAuthTokenInSessionStorage(serverUrl, '', true);
+    // toggleAuthTokenInSessionStorage(serverUrl, '', true);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
     localStorage.removeItem(HTX_USER);

@@ -5,7 +5,7 @@ import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
 
 import { createLogger } from '@renderer/utils/logger';
-import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
+// import { toggleAuthTokenInSessionStorage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { updateOrganizationCredentials } from '../organizationCredentials';
 
@@ -24,7 +24,7 @@ export async function disconnectOrganization(
 
   orgConnection.setConnectionStatus(serverUrl, 'disconnected', reason);
 
-  toggleAuthTokenInSessionStorage(serverUrl, '', true);
+  // toggleAuthTokenInSessionStorage(serverUrl, '', true);
 
   const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   const user = userStore.personal;

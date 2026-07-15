@@ -7,7 +7,7 @@ import useOrganizationConnection from './storeOrganizationConnection';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
-import { createLogger, getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
+import { createLogger, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 interface WebsocketConnectionStoreReturn {
@@ -75,10 +75,17 @@ const useWebsocketConnection = defineStore(
 
     function connect(serverUrl: string, url: string) {
       const socket = sockets.value[serverUrl];
+      const userStore = useUserStore();
+      const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
+      if (!org) {
+        logger.error('Organization not found during web socket connect', { serverUrl });
+        throw new Error('Organization not found');
+      }
+      const authToken = userStore.getJwtToken(org.id);
 
       if (socket) {
         //@ts-expect-error - auth is missing in typings
-        if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
+        if (socket.auth?.token !== `bearer ${authToken}`) {
           socket.off();
           socket.disconnect();
           connectionStates.value[serverUrl] = 'disconnected';
@@ -95,15 +102,14 @@ const useWebsocketConnection = defineStore(
       const newSocket = io(url, {
         path: '/ws',
         auth: cb => {
-          const token = getAuthTokenFromSessionStorage(serverUrl);
 
           logger.debug('Preparing websocket auth payload', {
-            hasToken: !!token,
+            hasToken: authToken !== null,
             serverUrl,
           });
 
           cb({
-            token: token ? `bearer ${token}` : undefined,
+            token: authToken ? `bearer ${authToken}` : undefined,
             version: FRONTEND_VERSION,
           });
         },

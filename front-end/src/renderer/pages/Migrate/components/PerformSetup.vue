@@ -11,7 +11,6 @@ import {
   isUserLoggedIn,
   safeAwait,
   safeDuplicateUploadKey,
-  toggleAuthTokenInSessionStorage,
   userKeyHasMnemonic,
 } from '@renderer/utils';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials.ts';
@@ -69,7 +68,7 @@ const setupOrganization = async (setup: ModelValue) => {
     email,
     setup.temporaryOrganizationPassword,
   );
-  toggleAuthTokenInSessionStorage(setup.organizationURL, jwtToken, false);
+  // toggleAuthTokenInSessionStorage(setup.organizationURL, jwtToken, false);
 
   // 3) Set new password
   await changePassword(
