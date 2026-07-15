@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { DateTimeOptions } from '@renderer/composables/user/useDateTimeSetting';
-import { parseDateTime } from '@renderer/utils/parseDateTime';
+import { DateTimeOptions } from '@renderer/composables/user/useDateTimeSetting.ts';
+import { parseDateTime } from '@renderer/utils/parseDateTime.ts';
 
 const mocks = vi.hoisted(() => ({
   getDateTimeSetting: vi.fn(),
 }));
 
-vi.mock('@renderer/composables/user/useDateTimeSetting', () => ({
+vi.mock('@renderer/composables/user/useDateTimeSetting.ts', () => ({
   default: () => ({
     getDateTimeSetting: () => mocks.getDateTimeSetting(),
   }),
