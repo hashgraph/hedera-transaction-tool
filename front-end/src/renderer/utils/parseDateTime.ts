@@ -44,6 +44,15 @@ export async function parseDateTime(date: string, time: string): Promise<Date> {
   const minute = Number(timeMinute);
   const second = timeSecond ? Number(timeSecond) : 0;
 
+  // Validate ranges to avoid Date overflow
+  const maxDay = new Date(Date.UTC(fullYear, monthNum, 0)).getUTCDate();
+  if (monthNum < 1 || monthNum > 12 || dayNum < 1 || dayNum > maxDay) {
+    throw new Error(`Invalid date value: ${date}`);
+  }
+  if (hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 59) {
+    throw new Error(`Invalid time value: ${time}`);
+  }
+
   // Pad for ISO string formatting
   const paddedMonth = String(monthNum).padStart(2, '0');
   const paddedDay = String(dayNum).padStart(2, '0');
@@ -51,17 +60,26 @@ export async function parseDateTime(date: string, time: string): Promise<Date> {
   const paddedMinute = String(minute).padStart(2, '0');
   const paddedSecond = String(second).padStart(2, '0');
 
+  let result: Date;
+
   // If timezone (offset or Z) is provided, use it directly
   if (timezone) {
-    return new Date(
+    result = new Date(
       `${fullYear}-${paddedMonth}-${paddedDay}T${paddedHour}:${paddedMinute}:${paddedSecond}${timezone}`,
     );
+  } else {
+    // Otherwise, use the app's Date/Time Format setting
+    const settings = await useDateTimeSetting().getDateTimeSetting();
+
+    result = settings === DateTimeOptions.UTC_TIME
+      ? new Date(Date.UTC(fullYear, monthNum - 1, dayNum, hour, minute, second))
+      : new Date(fullYear, monthNum - 1, dayNum, hour, minute, second);
   }
 
-  // Otherwise, use the app's Date/Time Format setting
-  const settings = await useDateTimeSetting().getDateTimeSetting();
+  // Validate the resulting date
+  if (Number.isNaN(result.getTime())) {
+    throw new Error(`Invalid date/time value: ${date} ${time}`);
+  }
 
-  return settings === DateTimeOptions.UTC_TIME
-    ? new Date(Date.UTC(fullYear, monthNum - 1, dayNum, hour, minute, second))
-    : new Date(fullYear, monthNum - 1, dayNum, hour, minute, second);
+  return result;
 }
