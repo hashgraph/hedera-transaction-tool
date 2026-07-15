@@ -6,7 +6,7 @@ import useDateTimeSetting, {
  * Parses a date and time string with optional timezone offset.
  *
  * Date format: MM/DD/YY
- * Time format: HH:MM[Z|±HH:MM]
+ * Time format: HH:MM[:SS][Z|±HH:MM]
  *   - Z: Designates UTC time
  *   - +HH:MM or -HH:MM: Timezone offset
  *
