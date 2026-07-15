@@ -41,7 +41,12 @@ vi.mock('@renderer/services/organization', () => ({
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
-  default: () => ({ organizations: mockOrgs, personal: mockPersonal, refetchUserState: refetchUserStateMock }),
+  default: () => ({
+    organizations: mockOrgs,
+    personal: mockPersonal,
+    getJwtToken: getAuthTokenMock,
+    refetchUserState: refetchUserStateMock
+  }),
 }));
 
 vi.mock('@renderer/stores/storeWebsocketConnection', () => ({
@@ -60,11 +65,11 @@ vi.mock('@renderer/services/organizationCredentials', () => ({
   getOrganizationCredentials: (...args: unknown[]) => getOrganizationCredentialsMock(...args),
   updateOrganizationCredentials: (...args: unknown[]) => updateOrganizationCredentialsMock(...args),
 }));
-
-vi.mock('@renderer/utils/userStoreHelpers', () => ({
-  getAuthTokenFromSessionStorage: () => getAuthTokenMock(),
-  toggleAuthTokenInSessionStorage: vi.fn(),
-}));
+//
+// vi.mock('@renderer/utils/userStoreHelpers', () => ({
+//   getAuthTokenFromSessionStorage: () => getAuthTokenMock(),
+//   toggleAuthTokenInSessionStorage: vi.fn(),
+// }));
 
 vi.mock('@renderer/utils/version', () => ({
   FRONTEND_VERSION: '1.0.0',
