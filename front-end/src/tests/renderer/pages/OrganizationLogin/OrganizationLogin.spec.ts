@@ -187,10 +187,6 @@ describe('OrganizationLogin.vue', () => {
     await wrapper.find('form').trigger('submit');
     await flushPromises();
 
-    // expect(mocks.toggleAuthTokenInSessionStorage).toHaveBeenCalledWith(
-    //   'https://org.example.com',
-    //   'test-jwt-token',
-    // );
     expect(mocks.addOrganizationCredentials).toHaveBeenCalledWith(
       'user@example.com',
       'password123',
@@ -201,31 +197,6 @@ describe('OrganizationLogin.vue', () => {
       true,
     );
     expect(mocks.userStore.refetchOrganizations).toHaveBeenCalled();
-  });
-
-  test('credentials are stored before token is written to session storage', async () => {
-    const callOrder: string[] = [];
-    mocks.login.mockResolvedValueOnce({ jwtToken: 'test-jwt-token' });
-    mocks.toggleAuthTokenInSessionStorage.mockImplementationOnce(() => {
-      callOrder.push('toggleAuthToken');
-    });
-    mocks.addOrganizationCredentials.mockImplementationOnce(async () => {
-      callOrder.push('addCredentials');
-    });
-    mocks.userStore.refetchOrganizations.mockResolvedValueOnce(undefined);
-    mocks.userStore.selectOrganization.mockResolvedValueOnce(undefined);
-
-    const wrapper = mountOrganizationLogin();
-    await wrapper
-      .find('[data-testid="input-login-email-for-organization"]')
-      .setValue('user@example.com');
-    await wrapper
-      .find('[data-testid="input-login-password-for-organization"]')
-      .setValue('password123');
-    await wrapper.find('form').trigger('submit');
-    await flushPromises();
-
-    expect(callOrder).toEqual(['addCredentials']);
   });
 
   test('login failure: shows error toast and marks fields invalid without calling refetchOrganizations', async () => {

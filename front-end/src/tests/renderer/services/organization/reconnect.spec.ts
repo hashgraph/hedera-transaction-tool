@@ -65,11 +65,6 @@ vi.mock('@renderer/services/organizationCredentials', () => ({
   getOrganizationCredentials: (...args: unknown[]) => getOrganizationCredentialsMock(...args),
   updateOrganizationCredentials: (...args: unknown[]) => updateOrganizationCredentialsMock(...args),
 }));
-//
-// vi.mock('@renderer/utils/userStoreHelpers', () => ({
-//   getAuthTokenFromSessionStorage: () => getAuthTokenMock(),
-//   toggleAuthTokenInSessionStorage: vi.fn(),
-// }));
 
 vi.mock('@renderer/utils/version', () => ({
   FRONTEND_VERSION: '1.0.0',
