@@ -68,7 +68,6 @@ const setupOrganization = async (setup: ModelValue) => {
     email,
     setup.temporaryOrganizationPassword,
   );
-  // toggleAuthTokenInSessionStorage(setup.organizationURL, jwtToken, false);
 
   // 3) Set new password
   await changePassword(

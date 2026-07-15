@@ -14,10 +14,6 @@ import { login } from '@renderer/services/organization';
 
 import { createLogger } from '@renderer/utils/logger';
 import { RequestError } from '@renderer/utils/axios';
-// import {
-//   getAuthTokenFromSessionStorage,
-//   toggleAuthTokenInSessionStorage,
-// } from '@renderer/utils/userStoreHelpers';
 
 import {
   getOrganizationCredentials,
@@ -64,7 +60,6 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
             undefined,
             jwtToken,
           );
-          // toggleAuthTokenInSessionStorage(org.serverUrl, jwtToken, false);
         } catch (loginError) {
           // HTTP 426 from /auth/login means the backend rejected the client
           // as below its minimum supported version. If the 426 payload has

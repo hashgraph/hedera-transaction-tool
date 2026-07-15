@@ -6,8 +6,6 @@ import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.axios');
 
-// import { getAuthTokenFromSessionStorage } from '@renderer/utils';
-
 import { FRONTEND_VERSION } from './version';
 import {
   setVersionDataForOrg,
