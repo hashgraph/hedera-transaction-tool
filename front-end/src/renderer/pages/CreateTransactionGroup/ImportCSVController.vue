@@ -9,6 +9,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
+import { parseDateTime } from '@renderer/utils/parseDateTime.ts';
 
 const logger = createLogger('renderer.page.importCSVController');
 
@@ -112,7 +113,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
           if (!validStart) {
             const startDate = rowInfo[2];
-            validStart = new Date(`${startDate} ${sendingTime}`);
+            validStart = await parseDateTime(startDate, sendingTime);
             if (validStart < new Date()) {
               validStart = new Date();
             }
