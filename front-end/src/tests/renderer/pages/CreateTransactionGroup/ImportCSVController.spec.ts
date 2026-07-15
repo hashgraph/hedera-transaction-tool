@@ -60,6 +60,20 @@ describe('ImportCSVController - parseDateTime', () => {
       );
     });
 
+    test('rejects invalid date with invalid month', async () => {
+      mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
+      await expect(parseDateTime('13/15/26', '10:30')).rejects.toThrow(
+        'Invalid date value: 13/15/26',
+      );
+    });
+
+    test('rejects invalid date with invalid day of month', async () => {
+      mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
+      await expect(parseDateTime('02/30/26', '10:30')).rejects.toThrow(
+        'Invalid date value: 02/30/26',
+      );
+    });
+
     test('rejects empty date components', async () => {
       mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
       await expect(parseDateTime('//26', '10:30')).rejects.toThrow('Invalid date format: //26');
@@ -110,6 +124,21 @@ describe('ImportCSVController - parseDateTime', () => {
     test('rejects empty time components', async () => {
       mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
       await expect(parseDateTime('01/15/26', '::30')).rejects.toThrow('Invalid time format: ::30');
+    });
+
+    test('rejects time with invalid hours', async () => {
+      mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
+      await expect(parseDateTime('01/15/26', '25:30')).rejects.toThrow('Invalid time value: 25:30');
+    });
+
+    test('rejects time with invalid minutes', async () => {
+      mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
+      await expect(parseDateTime('01/15/26', '10:60')).rejects.toThrow('Invalid time value: 10:60');
+    });
+
+    test('rejects time with invalid seconds', async () => {
+      mocks.getDateTimeSetting.mockResolvedValue(DateTimeOptions.UTC_TIME);
+      await expect(parseDateTime('01/15/26', '10:30:60')).rejects.toThrow('Invalid time value: 10:30:60');
     });
   });
 
