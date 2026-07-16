@@ -545,26 +545,28 @@ jobs:
               # Mark the existing checklist comment as superseded and post a fresh one.
               CHECKLIST_COMMENT_ID=$(gh api \
                 repos/${{ github.repository }}/issues/${EXISTING}/comments \
-                --jq '[.[] | select(.body | startswith("## Release Testing Checklist"))] | last | .id // empty')
+                --jq '[.[] | select(.user.login == "github-actions[bot]") | select(.body | startswith("# Release Testing Checklist"))] | last | .id // empty')
               if [ -n "$CHECKLIST_COMMENT_ID" ]; then
                 SUPERSEDED_BODY=$(gh api \
                   repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
                   --jq '.body')
-                (printf '> [!NOTE]\n> Superseded by **v%s** — see updated checklist below.\n\n' "${VERSION}"; \
-                 printf '%s' "${SUPERSEDED_BODY}") \
+                printf '<details>\n<summary>Superseded by **v%s**</summary>\n\n%s\n</details>' \
+                  "${VERSION}" "${SUPERSEDED_BODY}" \
                   | jq -Rs '{body: .}' \
                   | gh api repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
                       -X PATCH --input -
               fi
 
+              CHECKLIST_BODY=$(sed \
+                -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                docs/release-testing-checklist.md)
               gh issue comment "$EXISTING" \
-                --body "$(cat docs/release-testing-checklist.md)" \
+                --body "$CHECKLIST_BODY" \
                 --repo ${{ github.repository }}
             else
               gh issue comment "$EXISTING" \
                 --body "Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists." \
-                --repo ${{ github.repository }}
-              gh issue close "$EXISTING" \
                 --repo ${{ github.repository }}
             fi
           elif [ -n "$PRERELEASE" ]; then
@@ -588,8 +590,9 @@ jobs:
               --repo ${{ github.repository }})
 
             ISSUE_NUMBER="${ISSUE_URL##*/}"
+            CHECKLIST_BODY=$(sed "s|^# Release Testing Checklist$|# Release Testing Checklist - ${VERSION}|" docs/release-testing-checklist.md)
             gh issue comment "$ISSUE_NUMBER" \
-              --body "$(cat docs/release-testing-checklist.md)" \
+              --body "$CHECKLIST_BODY" \
               --repo ${{ github.repository }}
           fi
 

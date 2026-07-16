@@ -1,4 +1,4 @@
-# Release Testing Checklist
+# Release Testing Checklist - <major.minor.patch>-beta.<number>
 
 ## Installation
 
