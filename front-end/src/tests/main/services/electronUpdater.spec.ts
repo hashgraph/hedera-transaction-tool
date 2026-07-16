@@ -83,6 +83,11 @@ import {
   initializeUpdaterService,
 } from '@main/services/electronUpdater';
 
+const TRUSTED_UPDATE_BASE =
+  'https://github.com/hashgraph/hedera-transaction-tool/releases/download/';
+
+const buildExpectedUrl = (version: string) => `${TRUSTED_UPDATE_BASE}v${version}/`;
+
 describe('ElectronUpdaterService', () => {
   let mockWindow: any;
   let service: ElectronUpdaterService;
@@ -118,77 +123,86 @@ describe('ElectronUpdaterService', () => {
   });
 
   describe('initialize', () => {
-    it('should not initialize when updateUrl is empty', () => {
+    it('should not initialize when version is empty', () => {
       service.initialize('');
 
       expect(service.getUpdateUrl()).toBeNull();
     });
 
-    it('should set updateUrl when valid URL is provided', () => {
-      service.initialize('https://releases.example.com');
+    it('should reject strings that are not valid semver versions', () => {
+      service.initialize('https://evil.example.com/malware');
 
-      expect(service.getUpdateUrl()).toBe('https://releases.example.com');
-    });
-
-    it('should create updater when initialized with valid URL', () => {
-      service.initialize('https://releases.example.com');
-
-      expect(service.getUpdateUrl()).toBe('https://releases.example.com');
-      expect(mockSetFeedURL).toHaveBeenCalledWith({
-        provider: 'generic',
-        url: 'https://releases.example.com',
-      });
-    });
-
-    it('should not re-initialize when called with the same URL', () => {
-      const url = 'https://releases.example.com';
-      
-      // First initialization
-      service.initialize(url);
-      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
-      expect(mockSetFeedURL).toHaveBeenCalledWith({
-        provider: 'generic',
-        url: url,
-      });
-
-      // Clear the mock to track subsequent calls
-      mockSetFeedURL.mockClear();
-
-      // Second initialization with same URL should not call setFeedURL again
-      service.initialize(url);
+      expect(service.getUpdateUrl()).toBeNull();
       expect(mockSetFeedURL).not.toHaveBeenCalled();
-      expect(service.getUpdateUrl()).toBe(url);
     });
 
-    it('should re-initialize when called with a different URL', () => {
-      const firstUrl = 'https://releases.example.com';
-      const secondUrl = 'https://releases.different.com';
-      
-      // First initialization
-      service.initialize(firstUrl);
-      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+    it('should reject path traversal attempts', () => {
+      service.initialize('../../../etc/passwd');
+
+      expect(service.getUpdateUrl()).toBeNull();
+      expect(mockSetFeedURL).not.toHaveBeenCalled();
+    });
+
+    it('should set the constructed update URL when a valid semver version is provided', () => {
+      service.initialize('1.0.0');
+
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl('1.0.0'));
+    });
+
+    it('should accept pre-release versions (e.g. SNAPSHOT builds)', () => {
+      service.initialize('0.30.0-SNAPSHOT');
+
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl('0.30.0-SNAPSHOT'));
+    });
+
+    it('should call setFeedURL with the hardcoded base URL and the validated version', () => {
+      service.initialize('1.0.0');
+
       expect(mockSetFeedURL).toHaveBeenCalledWith({
         provider: 'generic',
-        url: firstUrl,
+        url: buildExpectedUrl('1.0.0'),
       });
-      expect(service.getUpdateUrl()).toBe(firstUrl);
+    });
 
-      // Clear the mock to track subsequent calls
+    it('should not re-initialize when called with the same version', () => {
+      const version = '1.0.0';
+
+      service.initialize(version);
+      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+
       mockSetFeedURL.mockClear();
 
-      // Second initialization with different URL should call setFeedURL again
-      service.initialize(secondUrl);
+      service.initialize(version);
+      expect(mockSetFeedURL).not.toHaveBeenCalled();
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl(version));
+    });
+
+    it('should re-initialize when called with a different version', () => {
+      const firstVersion = '1.0.0';
+      const secondVersion = '2.0.0';
+
+      service.initialize(firstVersion);
       expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
       expect(mockSetFeedURL).toHaveBeenCalledWith({
         provider: 'generic',
-        url: secondUrl,
+        url: buildExpectedUrl(firstVersion),
       });
-      expect(service.getUpdateUrl()).toBe(secondUrl);
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl(firstVersion));
+
+      mockSetFeedURL.mockClear();
+
+      service.initialize(secondVersion);
+      expect(mockSetFeedURL).toHaveBeenCalledTimes(1);
+      expect(mockSetFeedURL).toHaveBeenCalledWith({
+        provider: 'generic',
+        url: buildExpectedUrl(secondVersion),
+      });
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl(secondVersion));
     });
   });
 
   describe('checkForUpdatesAndDownload', () => {
-    it('should send error when updater is not initialized and no URL provided', async () => {
+    it('should send error when updater is not initialized and no version provided', async () => {
       await service.checkForUpdatesAndDownload();
 
       expect(mockWindow.webContents.send).toHaveBeenCalledWith(
@@ -200,14 +214,14 @@ describe('ElectronUpdaterService', () => {
       );
     });
 
-    it('should initialize updater when URL is provided', async () => {
-      await service.checkForUpdatesAndDownload('https://releases.example.com');
+    it('should initialize updater when version is provided', async () => {
+      await service.checkForUpdatesAndDownload('1.0.0');
 
-      expect(service.getUpdateUrl()).toBe('https://releases.example.com');
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl('1.0.0'));
     });
 
     it('should call updater.checkForUpdates when initialized', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       await service.checkForUpdatesAndDownload();
 
@@ -215,7 +229,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should set up one-time listener for update-available that triggers download', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       // Should have called once() to set up a one-time listener for 'update-available'
@@ -223,7 +237,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should call downloadUpdate when update-available event fires', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       // Capture the handler passed to once()
       let updateAvailableHandler: (() => void) | undefined;
@@ -249,7 +263,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should NOT call downloadUpdate when update-not-available event fires', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       // Simulate update-not-available event
@@ -267,7 +281,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should handle checkForUpdates error', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       mockCheckForUpdates.mockRejectedValueOnce(new Error('Network error'));
 
       await service.checkForUpdatesAndDownload();
@@ -296,7 +310,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should call updater.downloadUpdate when initialized', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       await service.downloadUpdate();
 
@@ -304,7 +318,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should handle downloadUpdate error', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       mockDownloadUpdate.mockRejectedValueOnce(new Error('Download failed'));
 
       await service.downloadUpdate();
@@ -324,7 +338,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should call updater.quitAndInstall when initialized', () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       service.quitAndInstall();
 
@@ -332,7 +346,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should pass isSilent and isForceRunAfter parameters', () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       service.quitAndInstall(true, false);
 
@@ -346,7 +360,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should remove event listeners when initialized', () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       service.cancelUpdate();
 
@@ -359,16 +373,22 @@ describe('ElectronUpdaterService', () => {
       expect(service.getUpdateUrl()).toBeNull();
     });
 
-    it('should return the update URL when initialized', () => {
-      service.initialize('https://releases.example.com');
+    it('should return the constructed trusted update URL when initialized', () => {
+      service.initialize('1.0.0');
 
-      expect(service.getUpdateUrl()).toBe('https://releases.example.com');
+      expect(service.getUpdateUrl()).toBe(buildExpectedUrl('1.0.0'));
+    });
+
+    it('should return null after initialization fails validation', () => {
+      service.initialize('https://evil.example.com/');
+
+      expect(service.getUpdateUrl()).toBeNull();
     });
   });
 
   describe('event listeners', () => {
     it('should set up event listeners when checking for updates', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       await service.checkForUpdatesAndDownload();
 
@@ -381,7 +401,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should remove old listeners before setting up new ones', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       await service.checkForUpdatesAndDownload();
 
@@ -402,7 +422,7 @@ describe('ElectronUpdaterService', () => {
     };
 
     it('should send update-not-available event when no update is available', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-not-available');
@@ -415,7 +435,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should send download-progress event with progress info', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('download-progress');
@@ -439,7 +459,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should send update-downloaded event when download completes', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-downloaded');
@@ -452,7 +472,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should send categorized error event on updater error', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('error');
@@ -474,7 +494,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should send checking-for-update event when check starts', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('checking-for-update');
@@ -487,7 +507,7 @@ describe('ElectronUpdaterService', () => {
     });
 
     it('should send update-available event with update info', async () => {
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
       await service.checkForUpdatesAndDownload();
 
       const callback = getEventCallback('update-available');
@@ -582,7 +602,7 @@ describe('ElectronUpdaterService - edge cases', () => {
       };
 
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       await service.checkForUpdatesAndDownload();
 
@@ -597,18 +617,29 @@ describe('ElectronUpdaterService - edge cases', () => {
   });
 
   describe('setFeedURL configuration', () => {
-    it('should call setFeedURL with correct parameters when initializing', () => {
+    it('should call setFeedURL with the hardcoded trusted base URL, not the raw input', () => {
       const mockWindow = {
         webContents: { send: vi.fn() },
       };
 
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       expect(mockSetFeedURL).toHaveBeenCalledWith({
         provider: 'generic',
-        url: 'https://releases.example.com',
+        url: buildExpectedUrl('1.0.0'),
       });
+    });
+
+    it('should not call setFeedURL when given a non-semver string', () => {
+      const mockWindow = {
+        webContents: { send: vi.fn() },
+      };
+
+      const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
+      service.initialize('https://evil.example.com/malware');
+
+      expect(mockSetFeedURL).not.toHaveBeenCalled();
     });
   });
 
@@ -619,7 +650,7 @@ describe('ElectronUpdaterService - edge cases', () => {
       };
 
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       // Call downloadUpdate without checkForUpdates first
       await service.downloadUpdate();
@@ -635,7 +666,7 @@ describe('ElectronUpdaterService - edge cases', () => {
       };
 
       const service = new ElectronUpdaterService(mockWindow as unknown as BrowserWindow);
-      service.initialize('https://releases.example.com');
+      service.initialize('1.0.0');
 
       // First call
       await service.checkForUpdatesAndDownload();

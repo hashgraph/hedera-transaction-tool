@@ -1,15 +1,19 @@
 import { BrowserWindow } from 'electron';
 import { autoUpdater, type AppUpdater, type UpdateInfo, type ProgressInfo } from 'electron-updater';
 import { is } from '@electron-toolkit/utils';
+import { valid as semverValid } from 'semver';
 
 import { getAppUpdateLogger } from '@main/modules/logger';
 import { categorizeUpdateError } from '@main/utils/updateErrors';
+
+const TRUSTED_UPDATE_BASE =
+  'https://github.com/hashgraph/hedera-transaction-tool/releases/download/';
 
 export class ElectronUpdaterService {
   private updater: AppUpdater | null = null;
   private logger = getAppUpdateLogger();
   private window: BrowserWindow | null = null;
-  private currentUpdateUrl: string | null = null;
+  private currentVersion: string | null = null;
 
   constructor(window: BrowserWindow) {
     this.window = window;
@@ -23,26 +27,31 @@ export class ElectronUpdaterService {
     autoUpdater.forceDevUpdateConfig = is.dev;
   }
 
-  initialize(updateUrl: string): void {
-    if (!updateUrl) {
-      this.logger.error('Cannot initialize updater: updateUrl is empty');
+  initialize(version: string): void {
+    if (!version) {
+      this.logger.error('Cannot initialize updater: version is empty');
       return;
     }
 
-    // Only re-initialize if the URL has changed
-    if (this.currentUpdateUrl === updateUrl && this.updater) {
-      this.logger.debug(`Updater already initialized with URL: ${updateUrl}`);
+    if (!semverValid(version)) {
+      this.logger.error(`Refusing to initialize updater: invalid version "${version}"`);
       return;
     }
 
-    this.currentUpdateUrl = updateUrl;
+    if (this.currentVersion === version && this.updater) {
+      this.logger.debug(`Updater already initialized for version: ${version}`);
+      return;
+    }
+
+    this.currentVersion = version;
     this.updater = autoUpdater;
+    const url = `${TRUSTED_UPDATE_BASE}v${version}/`;
     this.updater.setFeedURL({
       provider: 'generic',
-      url: updateUrl,
+      url,
     });
 
-    this.logger.info(`Updater initialized with URL: ${updateUrl}`);
+    this.logger.info(`Updater initialized for version: ${version} → ${url}`);
   }
 
   private setupEventListeners(): void {
@@ -98,9 +107,9 @@ export class ElectronUpdaterService {
     this.updater?.removeAllListeners('error');
   }
 
-  async checkForUpdatesAndDownload(updateUrl?: string): Promise<void> {
-    if (updateUrl) {
-      this.initialize(updateUrl);
+  async checkForUpdatesAndDownload(version?: string): Promise<void> {
+    if (version) {
+      this.initialize(version);
     }
 
     if (!this.updater) {
@@ -189,7 +198,8 @@ export class ElectronUpdaterService {
   }
 
   getUpdateUrl(): string | null {
-    return this.currentUpdateUrl;
+    if (!this.currentVersion) return null;
+    return `${TRUSTED_UPDATE_BASE}v${this.currentVersion}/`;
   }
 }
 
