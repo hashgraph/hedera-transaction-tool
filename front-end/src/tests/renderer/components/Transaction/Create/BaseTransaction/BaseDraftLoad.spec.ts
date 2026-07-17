@@ -60,7 +60,7 @@ describe('BaseDraftLoad', () => {
     const setContentsSpy = vi.spyOn(transaction, 'setContents');
 
     mocks.routeQuery = { draftId: 'draft-1' };
-    mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234' });
+    mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234', description: 'draft description' });
     mocks.getTransactionFromBytes.mockReturnValue(transaction);
 
     const wrapper = mount(BaseDraftLoad);
@@ -70,6 +70,6 @@ describe('BaseDraftLoad', () => {
     expect(mocks.getTransactionFromBytes).toHaveBeenCalledWith('0x1234');
     expect(setContentsSpy).not.toHaveBeenCalled();
     expect(Array.from(transaction.contents ?? [])).toEqual([1, 2, 3]);
-    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction]);
+    expect(wrapper.emitted('draft-loaded')?.[0]).toEqual([transaction, 'draft description']);
   });
 });
