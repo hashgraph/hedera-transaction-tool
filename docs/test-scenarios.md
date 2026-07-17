@@ -558,12 +558,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 ### 7.5 Group Execution (Organization)
 
 | #     | Scenario                                                | Automated | Covered By                                                |
-| ----- | ------------------------------------------------------- | --------- | --------------------------------------------------------- |
+| ----- |---------------------------------------------------------| --------- | --------------------------------------------------------- |
 | 7.5.1 | User can execute org group transaction (all users sign) | Yes       | Verify user can execute group transaction in organization |
 | 7.5.2 | User can cancel all items in a transaction group        | Yes       | Verify user can cancel all items in a transaction group   |
 | 7.5.3 | Sign All button signs all transactions in group         | Yes       | Verify user can execute group transaction in organization |
 | 7.5.4 | Cancel All button cancels entire group                  | Yes       | Verify user can cancel all items in a transaction group   |
-| 7.5.5 | Export group as .tx (V1 format)                        | No        |                                                           |
+| 7.5.5 | Export group as .tx (V1 format)                         | No        |                                                           |
 
 ### 7.6 Group Details View
 
