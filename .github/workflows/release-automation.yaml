@@ -553,7 +553,7 @@ jobs:
                 SUPERSEDED_BODY=$(gh api \
                   repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
                   --jq '.body')
-                printf '<details>\n<summary>Superseded by **v%s**</summary>\n\n%s\n</details>' \
+                printf '<details>\n<summary>Superseded by v%s</summary>\n\n%s\n</details>' \
                   "${VERSION}" "${SUPERSEDED_BODY}" \
                   | jq -Rs '{body: .}' \
                   | gh api repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
