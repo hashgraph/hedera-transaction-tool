@@ -490,11 +490,81 @@ jobs:
             --prerelease \
             --repo ${{ github.repository }}
 
-  create_tracking_issue:
+  create_snapshot_pr:
+    name: Create Snapshot Bump PR
+    runs-on: transaction-tools-linux-medium
+    needs: [prepare, cut_release, github_release]
+    if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
+    outputs:
+      pull_request_url: ${{ steps.create_pr.outputs.pull-request-url }}
+    env:
+      NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
+      RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: main
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+      - name: Import GPG Key
+        id: gpg_importer
+        uses: step-security/ghaction-import-gpg@c0b4a334b9b72bfaaebec86ef022a78a5b17f828 # v7.0.0
+        with:
+          git_commit_gpgsign: true
+          git_committer_email: ${{ vars.GIT_USER_EMAIL }}
+          git_committer_name: ${{ vars.GIT_USER_NAME }}
+          git_tag_gpgsign: true
+          git_user_signingkey: true
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Reset main to release branch
+        run: |
+          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
+          git reset --hard $RELEASE_BRANCH
+
+      - name: Install pnpm
+        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
+
+      - name: Bump to Next Snapshot Version
+        run: pnpm -r --include-workspace-root exec npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }}
+
+      - name: Update Lockfiles
+        run: pnpm install
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
+          branch: create-pull-request/${{ env.RELEASE_BRANCH }}
+          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}"
+          committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          delete-branch: true
+          signoff: true
+          title: ${{ needs.cut_release.outputs.pr_title }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+  create_or_update_tracking_issue:
     name: Create or Update Release Tracking Issue
     runs-on: transaction-tools-linux-medium
     needs: [prepare, cut_release, github_release, create_snapshot_pr]
-    if: ${{ always() && needs.prepare.result == 'success' && needs.cut_release.result == 'success' && needs.github_release.result == 'success' && (needs.create_snapshot_pr.result == 'success' || needs.create_snapshot_pr.result == 'skipped') }}
+    if: ${{ always() && needs.github_release.result == 'success' && needs.create_snapshot_pr.result != 'failure' }}
 
     steps:
       - name: Harden Runner
@@ -594,73 +664,3 @@ jobs:
               --body "$CHECKLIST_BODY" \
               --repo ${{ github.repository }}
           fi
-
-  create_snapshot_pr:
-    name: Create Snapshot Bump PR
-    runs-on: transaction-tools-linux-medium
-    needs: [prepare, cut_release, github_release]
-    if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
-    outputs:
-      pull_request_url: ${{ steps.create_pr.outputs.pull-request-url }}
-    env:
-      NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
-      RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
-        with:
-          egress-policy: audit
-
-      - name: Checkout Repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: main
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}
-
-      - name: Import GPG Key
-        id: gpg_importer
-        uses: step-security/ghaction-import-gpg@c0b4a334b9b72bfaaebec86ef022a78a5b17f828 # v7.0.0
-        with:
-          git_commit_gpgsign: true
-          git_committer_email: ${{ vars.GIT_USER_EMAIL }}
-          git_committer_name: ${{ vars.GIT_USER_NAME }}
-          git_tag_gpgsign: true
-          git_user_signingkey: true
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-
-      - name: Reset main to release branch
-        run: |
-          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
-          git reset --hard $RELEASE_BRANCH
-
-      - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-          node-version-file: package.json
-
-      - name: Bump to Next Snapshot Version
-        run: pnpm -r --include-workspace-root exec npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }}
-
-      - name: Update Lockfiles
-        run: pnpm install
-
-      - name: Create Pull Request
-        id: create_pr
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
-          branch: create-pull-request/${{ env.RELEASE_BRANCH }}
-          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}"
-          committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          delete-branch: true
-          signoff: true
-          title: ${{ needs.cut_release.outputs.pr_title }}
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}
