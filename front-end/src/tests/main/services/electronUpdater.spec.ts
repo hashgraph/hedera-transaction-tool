@@ -220,6 +220,26 @@ describe('ElectronUpdaterService', () => {
       expect(service.getUpdateUrl()).toBe(buildExpectedUrl('1.0.0'));
     });
 
+    it('should emit error and not check for updates when an invalid version is provided', async () => {
+      await service.checkForUpdatesAndDownload('not-a-version');
+
+      expect(mockCheckForUpdates).not.toHaveBeenCalled();
+      expect(mockWindow.webContents.send).toHaveBeenCalledWith(
+        'update:error',
+        expect.objectContaining({ type: 'generic' }),
+      );
+    });
+
+    it('should not use a stale updater when an invalid version is provided', async () => {
+      service.initialize('1.0.0');
+      mockSetFeedURL.mockClear();
+
+      await service.checkForUpdatesAndDownload('not-a-version');
+
+      // checkForUpdates must not run — even though a previous valid updater exists
+      expect(mockCheckForUpdates).not.toHaveBeenCalled();
+    });
+
     it('should call updater.checkForUpdates when initialized', async () => {
       service.initialize('1.0.0');
 
