@@ -490,7 +490,6 @@ jobs:
             --prerelease \
             --repo ${{ github.repository }}
 
-
   create_tracking_issue:
     name: Create or Update Release Tracking Issue
     runs-on: transaction-tools-linux-medium
