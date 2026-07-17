@@ -294,6 +294,23 @@ jobs:
           ref: ${{ needs.prepare.outputs.release_tag }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
+      - name: Prepare App Store Connect API Key
+        run: |
+          API_KEY_PATH="${RUNNER_TEMP}/apple_api_key.p8"
+          echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 --decode > "${API_KEY_PATH}"
+          echo "APPLE_API_KEY=${API_KEY_PATH}" >> "$GITHUB_ENV"
+
+      - name: Verify Apple Notarization Credentials
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcrun notarytool history \
+            --key "${APPLE_API_KEY}" \
+            --key-id "${APPLE_API_KEY_ID}" \
+            --issuer "${APPLE_API_ISSUER}" \
+            --page-size 1
+
       - name: Install pnpm
         uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
 
@@ -341,15 +358,6 @@ jobs:
           CSC_INSTALLER_LINK: ${{ secrets.MACOS_CERT_INSTALLER_BASE64 }}
           CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.MACOS_CERT_INSTALLER_PASSWORD }}
         run: pnpm run build && pnpm exec electron-builder --mac --publish=never
-
-      - name: Prepare App Store Connect API Key
-        # notarytool needs the App Store Connect API key as a .p8 file on disk;
-        # the secret holds it base64-encoded. Write it to the runner temp dir
-        # and export its path for the notarization step.
-        run: |
-          API_KEY_PATH="${RUNNER_TEMP}/apple_api_key.p8"
-          echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 --decode > "${API_KEY_PATH}"
-          echo "APPLE_API_KEY=${API_KEY_PATH}" >> "$GITHUB_ENV"
 
       - name: Notarize and Staple Installers
         # APPLE_API_KEY (.p8 path) is exported into $GITHUB_ENV by the prior step.
@@ -484,14 +492,11 @@ jobs:
             --repo ${{ github.repository }}
 
 
-  # ----------------------------
-  # Create or update the release tracking issue. Runs in parallel with
-  # create_snapshot_pr so a flaky GitHub API call cannot block the snapshot PR.
-  # ----------------------------
   create_tracking_issue:
     name: Create or Update Release Tracking Issue
     runs-on: transaction-tools-linux-medium
-    needs: [prepare, cut_release, github_release]
+    needs: [prepare, cut_release, github_release, create_snapshot_pr]
+    if: ${{ always() && needs.prepare.result == 'success' && needs.cut_release.result == 'success' && needs.github_release.result == 'success' && (needs.create_snapshot_pr.result == 'success' || needs.create_snapshot_pr.result == 'skipped') }}
 
     steps:
       - name: Harden Runner
@@ -512,7 +517,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.release }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
           NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
-          CREATE_PR: ${{ needs.cut_release.outputs.create_pr }}
+          SNAPSHOT_PR_URL: ${{ needs.create_snapshot_pr.outputs.pull_request_url }}
         run: |
           ISSUE_TITLE="v${RELEASE_VERSION} Release Task"
           MILESTONE="v${RELEASE_VERSION}"
@@ -572,20 +577,13 @@ jobs:
           elif [ -n "$PRERELEASE" ]; then
             ISSUE_BODY=$(sed \
                 -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                -e "s|<major\.minor\.patch>-SNAPSHOT|${NEXT_VERSION_SNAPSHOT}|g" \
                 -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                -e "s|<snapshot-pr-url>|${SNAPSHOT_PR_URL}|g" \
                 docs/release-process.md)
-
-            # Substitute or remove the SNAPSHOT bump PR line.
-            if [ "$CREATE_PR" = "true" ]; then
-              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed \
-                "s|<!-- snapshot-bump-pr-line -->|- [ ] Review and merge the \`v${NEXT_VERSION_SNAPSHOT}\` bump PR to \`main\`|g")
-            else
-              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed "/<!-- snapshot-bump-pr-line -->/d")
-            fi
             ISSUE_URL=$(gh issue create \
               --title "$ISSUE_TITLE" \
               --body "$ISSUE_BODY" \
-              --label "release" \
               "${MILESTONE_ARGS[@]}" \
               --repo ${{ github.repository }})
 
@@ -601,6 +599,8 @@ jobs:
     runs-on: transaction-tools-linux-medium
     needs: [prepare, cut_release, github_release]
     if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
+    outputs:
+      pull_request_url: ${{ steps.create_pr.outputs.pull-request-url }}
     env:
       NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
       RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
@@ -651,12 +651,13 @@ jobs:
         run: pnpm install
 
       - name: Create Pull Request
+        id: create_pr
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
           branch: create-pull-request/${{ env.RELEASE_BRANCH }}
-          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }} [skip ci]"
+          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}"
           committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
           delete-branch: true
           signoff: true

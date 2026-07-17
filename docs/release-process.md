@@ -2,7 +2,8 @@
 
 ## Pre-Release
 
-<!-- snapshot-bump-pr-line -->
+- [ ] Set type, labels, and project board on this tracking issue
+- [ ] Review and merge the [`v<major.minor.patch>-SNAPSHOT` bump PR](<snapshot-pr-url>) to `main`
 
 ### Pre-release deployment
 - [ ] Create a new branch on DevOps-GitOps:

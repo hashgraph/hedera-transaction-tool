@@ -563,7 +563,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 7.5.2 | User can cancel all items in a transaction group        | Yes       | Verify user can cancel all items in a transaction group   |
 | 7.5.3 | Sign All button signs all transactions in group         | Yes       | Verify user can execute group transaction in organization |
 | 7.5.4 | Cancel All button cancels entire group                  | Yes       | Verify user can cancel all items in a transaction group   |
-| 7.5.5 | Export group as .tx2 (V2 format)                        | No        |                                                           |
+| 7.5.5 | Export group as .tx (V1 format)                        | No        |                                                           |
 
 ### 7.6 Group Details View
 
@@ -988,7 +988,7 @@ These scenarios cover secondary workflows and infrequently used transaction type
 | **Complex Key Builder**  | 5.13.3         | User can add account-based keys at various depths            | When the complex key builder UI is modified         |
 | **Transaction Groups**   | 7.1.6          | User can set a payer account for the group                   | When group creation form is modified                |
 | **Transaction Groups**   | 7.1.7          | Valid start time picker works with running clock             | When the date/time picker is modified               |
-| **Group Export**         | 7.5.5          | Export group as .tx2 (V2 format)                             | When signature export format is modified            |
+| **Group Export**         | 7.5.5          | Export group as .tx (V1 format)                             | When signature export format is modified            |
 | **Group Details**        | 7.6.2          | User can navigate between transactions in group details      | When group detail view is modified                  |
 | **Group Details**        | 7.6.4          | Approval decision state is displayed (org admin)             | When org approval flows are modified                |
 
