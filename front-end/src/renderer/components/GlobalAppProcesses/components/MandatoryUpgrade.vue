@@ -18,7 +18,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import {
   triggeringOrganizationServerUrl,
   organizationCompatibilityResults,
-  organizationUpdateUrls,
+  organizationLatestVersions,
   getVersionStatusForOrg,
   resetVersionStatusForOrg,
   getMostRecentOrganizationRequiringUpdate,
@@ -33,7 +33,7 @@ import InstallUpgrade from '@renderer/components/GlobalAppProcesses/components/I
 import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/CheckForUpgrade.vue';
 import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
 
-const { versionStatus, updateUrl } = useVersionCheck();
+const { versionStatus, latestVersion } = useVersionCheck();
 const { state, progress, error, updateInfo, startUpdate, installUpdate, cancelUpdate } = useElectronUpdater();
 const user = useUserStore();
 const toastManager = ToastManager.inject();
@@ -63,12 +63,12 @@ const shown = computed(() => {
   return versionStatus.value === 'belowMinimum';
 });
 
-const orgUpdateUrl = computed(() => {
+const orgLatestVersion = computed(() => {
   const serverUrl = triggeringOrganizationServerUrl.value;
-  if (serverUrl && organizationUpdateUrls.value[serverUrl]) {
-    return organizationUpdateUrls.value[serverUrl];
+  if (serverUrl && organizationLatestVersions.value[serverUrl]) {
+    return organizationLatestVersions.value[serverUrl];
   }
-  return updateUrl.value;
+  return latestVersion.value;
 });
 
 const isChecking = computed(() => state.value === 'checking');
@@ -126,9 +126,9 @@ watch(
 );
 
 const handleDownload = () => {
-  const urlToUse = orgUpdateUrl.value;
-  if (urlToUse) {
-    startUpdate(urlToUse);
+  const version = orgLatestVersion.value;
+  if (version) {
+    startUpdate(version);
   }
 };
 
@@ -176,9 +176,9 @@ const handleDisconnect = async () => {
 };
 
 const handleRetry = () => {
-  const urlToUse = orgUpdateUrl.value;
-  if (urlToUse) {
-    startUpdate(urlToUse);
+  const version = orgLatestVersion.value;
+  if (version) {
+    startUpdate(version);
   }
 };
 

@@ -20,7 +20,7 @@ import CheckForUpgrade from '@renderer/components/GlobalAppProcesses/components/
 import UpgradeError from '@renderer/components/GlobalAppProcesses/components/UpgradeError.vue';
 import AvailableUpgrade from '@renderer/components/GlobalAppProcesses/components/AvailableUpgrade.vue';
 
-const { versionStatus, updateUrl, latestVersion, isDismissed, dismissOptionalUpdate } =
+const { versionStatus, latestVersion, isDismissed, dismissOptionalUpdate } =
   useVersionCheck();
 const {
   state,
@@ -76,8 +76,8 @@ const progressBarLabel = computed(() => {
 });
 
 const handleUpdate = () => {
-  if (updateUrl.value) {
-    startUpdate(updateUrl.value);
+  if (latestVersion.value) {
+    startUpdate(latestVersion.value);
   }
 };
 
@@ -91,8 +91,8 @@ const handleCancel = () => {
 };
 
 const handleRetry = () => {
-  if (updateUrl.value) {
-    startUpdate(updateUrl.value);
+  if (latestVersion.value) {
+    startUpdate(latestVersion.value);
   }
 };
 
