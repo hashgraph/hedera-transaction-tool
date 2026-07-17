@@ -27,31 +27,33 @@ export class ElectronUpdaterService {
     autoUpdater.forceDevUpdateConfig = is.dev;
   }
 
-  initialize(version: string): void {
+  initialize(version: string): boolean {
     if (!version) {
       this.logger.error('Cannot initialize updater: version is empty');
-      return;
+      return false;
     }
 
-    if (!semverValid(version)) {
+    const normalized = semverValid(version);
+    if (!normalized) {
       this.logger.error(`Refusing to initialize updater: invalid version "${version}"`);
-      return;
+      return false;
     }
 
-    if (this.currentVersion === version && this.updater) {
-      this.logger.debug(`Updater already initialized for version: ${version}`);
-      return;
+    if (this.currentVersion === normalized && this.updater) {
+      this.logger.debug(`Updater already initialized for version: ${normalized}`);
+      return true;
     }
 
-    this.currentVersion = version;
+    this.currentVersion = normalized;
     this.updater = autoUpdater;
-    const url = `${TRUSTED_UPDATE_BASE}v${version}/`;
+    const url = `${TRUSTED_UPDATE_BASE}v${normalized}/`;
     this.updater.setFeedURL({
       provider: 'generic',
       url,
     });
 
-    this.logger.info(`Updater initialized for version: ${version} → ${url}`);
+    this.logger.info(`Updater initialized for version: ${normalized} → ${url}`);
+    return true;
   }
 
   private setupEventListeners(): void {
@@ -108,13 +110,20 @@ export class ElectronUpdaterService {
   }
 
   async checkForUpdatesAndDownload(version?: string): Promise<void> {
-    if (version) {
-      this.initialize(version);
+    if (version && !this.initialize(version)) {
+      const error = new Error(`Cannot check for updates: invalid version string "${version}"`);
+      const categorized = categorizeUpdateError(error);
+      this.window?.webContents.send('update:error', {
+        type: categorized.type,
+        message: categorized.message,
+        details: categorized.details,
+      });
+      return;
     }
 
     if (!this.updater) {
       const error = new Error(
-        'Updater not initialized. Call initialize() first or provide updateUrl.',
+        'Updater not initialized. Call initialize() first or provide a version string.',
       );
       const categorized = categorizeUpdateError(error);
       this.window?.webContents.send('update:error', {
