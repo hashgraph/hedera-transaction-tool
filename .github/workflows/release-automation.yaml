@@ -588,7 +588,10 @@ jobs:
               --repo ${{ github.repository }})
 
             ISSUE_NUMBER="${ISSUE_URL##*/}"
-            CHECKLIST_BODY=$(sed "s|^# Release Testing Checklist$|# Release Testing Checklist - ${VERSION}|" docs/release-testing-checklist.md)
+            CHECKLIST_BODY=$(sed \
+              -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+              -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+              docs/release-testing-checklist.md)
             gh issue comment "$ISSUE_NUMBER" \
               --body "$CHECKLIST_BODY" \
               --repo ${{ github.repository }}
