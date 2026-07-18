@@ -62,7 +62,7 @@
     "playwright-core": "1.61.1",
     "prettier": "catalog:",
     "sqlite3": "5.1.6",
-    "uuid": "14.0.0"
+    "uuid": "14.0.1"
   },
   "devDependencies": {
     "@types/async-retry": "1.4.9",
