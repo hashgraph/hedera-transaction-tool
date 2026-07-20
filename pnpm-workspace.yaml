@@ -1,5 +1,6 @@
 virtualStoreDirMaxLength: 60
 shamefullyHoist: true
+trustLockfile: true
 
 packages:
   - back-end
