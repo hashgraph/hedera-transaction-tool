@@ -12,7 +12,7 @@ import { getTransactionFromBytes } from '@renderer/utils';
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'draft-loaded', transaction: Transaction, description: string): void;
 }>();
 
 /* Stores */
@@ -32,17 +32,21 @@ const handleLoadFromDraft = async () => {
   }
 
   let transactionBytes: string | null = null;
+  let description = '';
 
   if (!group) {
     const draft = await getDraft(draftId);
     transactionBytes = draft.transactionBytes;
+    description = draft.description || '';
   } else if (groupIndex) {
-    transactionBytes = transactionGroup.groupItems[Number(groupIndex)].transactionBytes.toString();
+    const groupItem = transactionGroup.groupItems[Number(groupIndex)];
+    transactionBytes = groupItem.transactionBytes.toString();
+    description = groupItem.description || '';
   }
 
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
-    emit('draft-loaded', transaction);
+    emit('draft-loaded', transaction, description);
   }
 };
 

@@ -632,10 +632,10 @@ export function hasStartTimestampChanged(
 export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {
   const t1Data = getAllData(t1);
   const t2Data = getAllData(t2);
-  t1Data.validStart = undefined
-  t2Data.validStart = undefined
-  t1Data.startTimestamp = undefined;
-  t2Data.startTimestamp = undefined;
+
+  clearComparisonFields(t1Data);
+  clearComparisonFields(t2Data);
+
   // Defensive: `uiId` is a render-side stable key for endpoint rows and must
   // never affect the "has the user edited anything?" comparison. The current
   // `getRegisteredNodeData` does not emit it, but strip here too so that any
@@ -644,6 +644,14 @@ export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean
   stripUiIds(t2Data);
   return JSON.stringify(t1Data) === JSON.stringify(t2Data);
 }
+
+const comparisonIgnoreFields = ['validStart', 'startTimestamp', 'expirationTime'];
+
+const clearComparisonFields = (data: Record<string, unknown>) => {
+  for (const field of comparisonIgnoreFields) {
+    data[field] = undefined;
+  }
+};
 
 const stripUiIds = (data: Record<string, unknown>) => {
   const endpoints = data['serviceEndpoints'];
