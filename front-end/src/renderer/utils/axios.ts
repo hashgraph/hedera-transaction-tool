@@ -6,8 +6,6 @@ import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.axios');
 
-import { getAuthTokenFromSessionStorage } from '@renderer/utils';
-
 import { FRONTEND_VERSION } from './version';
 import {
   setVersionDataForOrg,
@@ -147,11 +145,14 @@ export const commonRequestHandler = async <T>(
 };
 
 const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
+  const userStore = useUserStore();
+  const org = userStore.organizations.find(o => url.startsWith(o.serverUrl));
+  const authToken = org?.id ? userStore.getJwtToken(org.id) : null;
   return {
     ...config,
     headers: {
       ...config.headers,
-      Authorization: `bearer ${getAuthTokenFromSessionStorage(url)}`,
+      Authorization: `bearer ${authToken}`,
     },
   };
 };

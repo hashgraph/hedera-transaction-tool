@@ -222,7 +222,6 @@ const useUserStore = defineStore('user', () => {
 
   const refetchOrganizationTokens = async () => {
     organizationTokens.value = await ush.getOrganizationJwtTokens(personal.value);
-    ush.setSessionStorageTokens(organizations.value, organizationTokens.value);
   };
 
   const refetchOrganizations = async () => {

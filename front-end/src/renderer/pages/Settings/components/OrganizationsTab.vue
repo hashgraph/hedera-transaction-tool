@@ -19,7 +19,6 @@ import { updateOrganization } from '@renderer/services/organizationsService';
 import {
   assertUserLoggedIn,
   isOrganizationActive,
-  toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganization';
@@ -51,7 +50,6 @@ const handleDeleteConnection = async (organizationId: string) => {
 
   const serverUrl = user.organizations.find(org => org.id === organizationId)?.serverUrl || '';
   ws.disconnect(serverUrl);
-  toggleAuthTokenInSessionStorage(serverUrl, '', true);
   await user.selectOrganization(null);
   await user.deleteOrganization(organizationId);
   await setLast(null);
