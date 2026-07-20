@@ -7,7 +7,7 @@ RUN npm install -g pnpm@11.15.1
 FROM base AS development
 
 # Root workspace files
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 # All workspace package manifests so pnpm-workspace.yaml + lockfile resolve.
 # Only manifests (and the tsconfig needed to build) are copied here so the
@@ -40,7 +40,7 @@ FROM base AS production
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 COPY front-end/package.json ./front-end/
 COPY automation/package.json ./automation/
