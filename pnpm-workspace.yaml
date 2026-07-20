@@ -1,3 +1,6 @@
+virtualStoreDirMaxLength: 60
+shamefullyHoist: true
+
 packages:
   - back-end
   - back-end/apps/*
