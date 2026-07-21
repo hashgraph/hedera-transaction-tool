@@ -1,5 +1,5 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue';
-import { type Router, _RouterClassic } from 'vue-router';
+import { type _RouterClassic } from 'vue-router';
 import { defineStore } from 'pinia';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';

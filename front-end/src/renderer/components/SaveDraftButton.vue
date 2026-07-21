@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useRoute, useRouter } from 'vue-router';
+import { useRoute, useRouter, type _RouterClassic } from 'vue-router';
 
 import { redirectToPreviousTransactionsTab } from '@renderer/utils';
 
@@ -14,7 +14,7 @@ const props = defineProps<{
 
 /* Composables */
 const route = useRoute();
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 
 /* Handlers */
 const handleDraft = async () => {

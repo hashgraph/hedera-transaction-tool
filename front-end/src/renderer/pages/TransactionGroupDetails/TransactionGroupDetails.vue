@@ -10,7 +10,7 @@ import {
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { type _RouterClassic, useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hiero-ledger/sdk';
@@ -86,7 +86,7 @@ const contacts = useContactsStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;

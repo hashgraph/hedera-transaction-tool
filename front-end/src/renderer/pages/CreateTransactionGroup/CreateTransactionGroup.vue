@@ -7,7 +7,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
+import { useRouter, useRoute, onBeforeRouteLeave, type _RouterClassic } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
@@ -48,7 +48,7 @@ const user = useUserStore();
 const useNextTransaction = useNextTransactionV2();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { dateTimeSettingLabel } = useDateTimeSetting();
@@ -422,9 +422,7 @@ onBeforeRouteLeave(async to => {
               >
                 <span v-if="groupItem.transferSummary">{{ groupItem.transferSummary }}</span>
                 <template v-else>{{
-                  groupItem.description !== ''
-                    ? groupItem.description
-                    : groupItem.transactionMemo
+                  groupItem.description !== '' ? groupItem.description : groupItem.transactionMemo
                 }}</template>
               </div>
               <div
@@ -432,11 +430,7 @@ onBeforeRouteLeave(async to => {
                 style="width: 11rem"
                 :data-testid="'span-transaction-valid-start-' + index"
               >
-                <DateTimeString
-                  :date="groupItem.validStart"
-                  compact
-                  wrap
-                />
+                <DateTimeString :date="groupItem.validStart" compact wrap />
               </div>
               <div class="d-flex flex-shrink-0 align-items-center gap-3 ms-3">
                 <AppButton
