@@ -739,8 +739,8 @@ importers:
         specifier: 6.4.3
         version: 6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
       vite-plugin-electron:
-        specifier: 1.1.0
-        version: 1.1.0
+        specifier: 1.0.4
+        version: 1.0.4
       vite-plugin-eslint:
         specifier: 1.8.1
         version: 1.8.1(eslint@9.39.3(jiti@2.7.0)(supports-color@8.1.1))(vite@6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
@@ -8688,8 +8688,8 @@ packages:
     peerDependencies:
       vite: ^2.6.0 || ^3.0.0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0 || ^7.0.0-0 || ^8.0.0
 
-  vite-plugin-electron@1.1.0:
-    resolution: {integrity: sha512-4qktNiYlRsaOp+n0vVknIA9m6Abjp6WDHLE9E/czElJgl8WRMJIqmw7ZvlYWflEK28hH5FHUuWEQLEwx9lMCWg==}
+  vite-plugin-electron@1.0.4:
+    resolution: {integrity: sha512-YBpc7l0gQMAhmt/aETr1Xa4IXEmPUFEoY+2FZK05wusfdsqtvAVcSGStfOPc/JpQBdtLPwFNERoxUB/brn8VLw==}
     peerDependencies:
       vite-plugin-electron-renderer: '*'
     peerDependenciesMeta:
@@ -18229,7 +18229,7 @@ snapshots:
     dependencies:
       vite: 6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
 
-  vite-plugin-electron@1.1.0:
+  vite-plugin-electron@1.0.4:
     dependencies:
       local-pkg: 1.2.1
 
