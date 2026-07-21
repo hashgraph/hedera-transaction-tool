@@ -15,7 +15,7 @@ const props = defineProps<{
 }>();
 
 /* Model */
-const model = defineModel<T>('value');
+const model = defineModel<T>('value', {required: true});
 
 /* State */
 const dropdownRef = ref<HTMLDivElement | null>(null);
