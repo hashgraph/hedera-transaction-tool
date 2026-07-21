@@ -2,7 +2,7 @@
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { FreezeData } from '@renderer/utils/sdk';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import { createFreezeTransaction, getFreezeData } from '@renderer/utils/sdk';
@@ -12,8 +12,6 @@ import FreezeFormData from '@renderer/components/Transaction/Create/Freeze/Freez
 import { isAccountId } from '@renderer/utils';
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
-
 const data = reactive<FreezeData>({
   freezeType: -1,
   fileId: '',

@@ -34,7 +34,7 @@ import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
 import { getLatestClient } from '@renderer/utils/clientVersion.ts';
 
 /* Modals */
-const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts');
+const linkedAccounts = defineModel<HederaAccount[]>('linkedAccounts', {required: true});
 
 /* Props */
 const props = defineProps<{

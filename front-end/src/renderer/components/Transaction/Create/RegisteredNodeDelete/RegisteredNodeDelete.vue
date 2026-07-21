@@ -5,7 +5,7 @@ import RegisteredNodeDeleteFormData from '@renderer/components/Transaction/Creat
 import type { RegisteredNodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 import { createRegisteredNodeDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive } from 'vue';
 import { RegisteredNodeDeleteTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -18,8 +18,6 @@ const toastManager = ToastManager.inject();
 const nodeData = useRegisteredNodeId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
-
 const data = reactive<RegisteredNodeDeleteData>({
   registeredNodeId: '',
 });

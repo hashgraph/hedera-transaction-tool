@@ -2,7 +2,7 @@
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
 
-import { computed, reactive, ref } from 'vue';
+import { computed, reactive } from 'vue';
 import { NodeDeleteTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -21,8 +21,6 @@ const toastManager = ToastManager.inject()
 const nodeData = useNodeId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
-
 const data = reactive<NodeDeleteData>({
   nodeId: '',
 });

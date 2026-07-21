@@ -45,7 +45,7 @@ const linkedAccounts = computed(
       <Transition name="fade" mode="out-in">
         <div v-show="isCollapsed" class="col-7">
           <ul class="d-flex flex-wrap gap-3">
-            <template v-for="account in linkedAccounts" :key="`${publicKey}${account.account}`">
+            <template v-for="account in linkedAccounts" :key="`${publicKey}${account.account_id}`">
               <li class="flex-centered text-center badge-bg rounded py-2 px-3">
                 <p class="text-small text-secondary">
                   {{ handleFormatAccount(linkedAccounts, account) }}

@@ -529,7 +529,7 @@ watch(files, newFiles => {
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </div>
-            <template v-for="(file, index) in files" :key="file.fileId">
+            <template v-for="(file, index) in files" :key="file.file_id">
               <div class="d-flex align-items-center mt-3">
                 <div
                   v-if="selectMany"
