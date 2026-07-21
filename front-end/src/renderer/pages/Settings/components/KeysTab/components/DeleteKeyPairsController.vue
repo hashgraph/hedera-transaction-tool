@@ -75,7 +75,7 @@ const deleteOneKey = async (keyInfo: KeyInfo): Promise<void> => {
   if (keyInfo.userKey !== null) {
     assertIsLoggedInOrganization(user.selectedOrganization);
     await deleteKey(
-      user.selectedOrganization.serverUrl,
+      user.selectedOrganization,
       user.selectedOrganization.userId,
       keyInfo.userKey.id,
     )

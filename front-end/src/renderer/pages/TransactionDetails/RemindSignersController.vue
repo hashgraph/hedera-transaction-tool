@@ -34,12 +34,12 @@ const handleRemindSigners = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (props.transaction !== null) {
-    const serverUrl = user.selectedOrganization.serverUrl;
+    const org = user.selectedOrganization;
     const transactionId = props.transaction.id;
 
     await executeTransactionActionFlow({
       execute: async () => {
-        await remindSigners(serverUrl, transactionId);
+        await remindSigners(org, transactionId);
       },
       refresh: props.callback,
       onSuccess: () => {

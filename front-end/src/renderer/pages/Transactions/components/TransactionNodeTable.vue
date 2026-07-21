@@ -2,7 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { type ITransactionNode, TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import {
+  type ITransactionNode,
+  TransactionNodeCollection,
+} from '../../../../../../shared/src/ITransactionNode.ts';
 
 import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
 
@@ -11,7 +14,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
-import useNextTransactionV2, { type TransactionNodeId } from '@renderer/stores/storeNextTransactionV2.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -74,7 +79,8 @@ const nextTransaction = useNextTransactionV2();
 const router = useRouter();
 const toastManager = ToastManager.inject();
 const logger = createLogger('renderer.transactions.nodeTable');
-const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } =
+  useTransactionLiveHighlight();
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
@@ -94,9 +100,8 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   // For non-status updates, only refetch if current items are affected
   const txIds = new Set(parsed.transactionIds);
   const grpIds = new Set(parsed.groupIds);
-  const hasMatch = nodes.value.some(n =>
-    (n.transactionId && txIds.has(n.transactionId)) ||
-    (n.groupId && grpIds.has(n.groupId)),
+  const hasMatch = nodes.value.some(
+    n => (n.transactionId && txIds.has(n.transactionId)) || (n.groupId && grpIds.has(n.groupId)),
   );
   if (hasMatch) {
     await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
@@ -114,11 +119,12 @@ const { oldNotifications } = useMarkNotifications(
 );
 
 const defaults = initialSort();
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
-  TRANSACTION_NODE_SORT_URL_VALUES,
-  sortFieldToUrl(defaults.field),
-  defaults.direction,
-);
+const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
+  useTableQueryState(
+    TRANSACTION_NODE_SORT_URL_VALUES,
+    sortFieldToUrl(defaults.field),
+    defaults.direction,
+  );
 
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
@@ -231,7 +237,7 @@ async function fetchNodes(options?: { silent?: boolean }): Promise<void> {
     if (!options?.silent) isLoading.value = true;
     try {
       nodes.value = await getTransactionNodes(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         props.collection,
         network.network,
         statusFilter.value,
@@ -267,11 +273,10 @@ function clampPage(): void {
 async function fetchNodesOnNotif(options?: { silent?: boolean }): Promise<void> {
   // 1) Before calling fetchNodes(), we clear transaction cache
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    const serverUrl = user.selectedOrganization.serverUrl;
     for (const node of nodes.value) {
       // We clear cache with strict==false to keep young data
       if (node.transactionId) {
-        transactionCache.forget(node.transactionId, serverUrl, false);
+        transactionCache.forget(node.transactionId, user.selectedOrganization, false);
       }
     }
   }
@@ -281,19 +286,27 @@ async function fetchNodesOnNotif(options?: { silent?: boolean }): Promise<void> 
 
 /* Watchers */
 watch(sort, () => {
-    currentPage.value = 1;
-    sortNodes();
-  },
-);
-
-watch([currentPage, pageSize], () => {
-  syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction, pageSize.value);
+  currentPage.value = 1;
+  sortNodes();
 });
 
-watch([statusFilter, transactionTypeFilter], () => {
-  currentPage.value = 1;
-  fetchNodes();
-}, { deep: true });
+watch([currentPage, pageSize], () => {
+  syncToUrl(
+    currentPage.value,
+    sortFieldToUrl(sort.value.field),
+    sort.value.direction,
+    pageSize.value,
+  );
+});
+
+watch(
+  [statusFilter, transactionTypeFilter],
+  () => {
+    currentPage.value = 1;
+    fetchNodes();
+  },
+  { deep: true },
+);
 
 /* Hooks */
 onMounted(fetchNodes);

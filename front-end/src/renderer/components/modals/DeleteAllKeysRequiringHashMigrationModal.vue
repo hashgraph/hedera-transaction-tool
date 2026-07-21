@@ -50,7 +50,7 @@ const handleDelete = async () => {
 
         if (organizationKeyPair) {
           await deleteKey(
-            user.selectedOrganization.serverUrl,
+            user.selectedOrganization,
             user.selectedOrganization.userId,
             organizationKeyPair.id,
           );

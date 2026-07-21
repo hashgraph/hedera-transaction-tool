@@ -3,6 +3,7 @@ import axios from 'axios';
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 import { cancelTransaction } from './transaction';
 import { cancelGroupFallback } from './cancelGroupFallback';
+import type { Organization } from '@prisma/client';
 
 export interface ApiGroupItem {
   seq: number;
@@ -26,7 +27,7 @@ export interface IGroup {
 }
 
 export const submitTransactionGroup = async (
-  serverUrl: string,
+  organization: Organization,
   description: string,
   atomic: boolean,
   sequential: boolean,
@@ -34,7 +35,8 @@ export const submitTransactionGroup = async (
 ): Promise<{ id: number; transactionBytes: string }> => {
   return commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${serverUrl}/transaction-groups`,
+      organization,
+      `transaction-groups`,
       {
         description,
         atomic,
@@ -76,21 +78,22 @@ export interface CancelGroupResult {
 }
 
 export const cancelTransactionGroup = async (
-  serverUrl: string,
+  organization: Organization,
   groupId: number,
   groupItems: IGroupItem[],
 ): Promise<CancelGroupResult> => {
   return commonRequestHandler(async () => {
     try {
       const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
-        `${serverUrl}/transaction-groups/${groupId}/cancel`,
+        organization,
+        `transaction-groups/${groupId}/cancel`,
         undefined,
         { withCredentials: true },
       );
       return data;
     } catch (error) {
       if (axios.isAxiosError(error) && error.response?.status === 404) {
-        return cancelGroupFallback(serverUrl, groupItems, cancelTransaction);
+        return cancelGroupFallback(organization, groupItems, cancelTransaction);
       }
       // Let commonRequestHandler handle non-404 errors and map them consistently.
       throw error;
@@ -99,15 +102,12 @@ export const cancelTransactionGroup = async (
 };
 
 /* Get transaction groups */
-export const getTransactionGroupById = async (serverUrl: string, id: number, full?: boolean) => {
+export const getTransactionGroupById = async (org: Organization, id: number, full?: boolean) => {
   return commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get<IGroup>(
-      `${serverUrl}/transaction-groups/${id}`,
-      {
-        withCredentials: true,
-        params: full !== undefined ? { full } : undefined,
-      },
-    );
+    const { data } = await axiosWithCredentials.get<IGroup>(org, `transaction-groups/${id}`, {
+      withCredentials: true,
+      params: full !== undefined ? { full } : undefined,
+    });
 
     return data;
   }, 'Failed to get transaction groups');

@@ -120,7 +120,7 @@ const signUpUser = async (email: string) => {
     throw new Error('Please select organization');
   if (!user.selectedOrganization.admin) throw new Error('Only admin can register users');
 
-  const { id } = await signUp(user.selectedOrganization.serverUrl, email);
+  const { id } = await signUp(user.selectedOrganization, email);
 
   return id;
 };

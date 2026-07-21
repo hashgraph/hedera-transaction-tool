@@ -102,7 +102,7 @@ const handleChangePassword = async () => {
       );
 
       await organizationChangePassword(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         currentPassword.value,
         newPassword.value,
       );
@@ -152,7 +152,7 @@ const handleLogout = async () => {
     if (!isUserLoggedIn(user.personal)) return;
 
     const { id, nickname, serverUrl, key } = user.selectedOrganization;
-    await logout(serverUrl);
+    await logout(user.selectedOrganization);
     await updateOrganizationCredentials(id, user.personal.id, undefined, '', null);
     await user.selectOrganization({ id, nickname, serverUrl, key });
   } else {
@@ -187,7 +187,9 @@ watch(newPassword, pass => {
       </div>
       <AppButton
         v-if="
-          (isUserLoggedIn(user.personal) && !user.personal.useKeychain && !user.selectedOrganization) ||
+          (isUserLoggedIn(user.personal) &&
+            !user.personal.useKeychain &&
+            !user.selectedOrganization) ||
           isLoggedInOrganization(user.selectedOrganization)
         "
         color="primary"
@@ -292,5 +294,4 @@ watch(newPassword, pass => {
     </form>
     <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
   </div>
-
 </template>

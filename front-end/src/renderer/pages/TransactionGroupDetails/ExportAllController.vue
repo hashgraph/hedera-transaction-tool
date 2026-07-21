@@ -50,8 +50,7 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
     try {
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
-        const serverUrl = user.selectedOrganization.serverUrl;
-        group = await getTransactionGroupById(serverUrl, props.groupOrId);
+        group = await getTransactionGroupById(user.selectedOrganization, props.groupOrId);
       } else {
         group = props.groupOrId;
       }
@@ -74,7 +73,7 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
       for (const item of group.groupItems as IGroupItem[]) {
         const orgTransaction = await transactionCache.lookup(
           item.transactionId,
-          user.selectedOrganization.serverUrl,
+          user.selectedOrganization,
         );
 
         const baseName = generateTransactionExportFileName(orgTransaction);

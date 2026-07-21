@@ -51,7 +51,7 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
     if (props.transaction && user.selectedOrganization) {
       appCache.backendTransaction.forgetTransaction(
         props.transaction,
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
       );
     }
     await props.callback(result === null);

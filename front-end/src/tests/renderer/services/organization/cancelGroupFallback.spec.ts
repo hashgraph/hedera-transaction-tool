@@ -16,8 +16,14 @@ import {
   CancelFailureCode,
   type IGroupItem,
 } from '@renderer/services/organization/transactionGroup';
+import type { Organization } from '@prisma/client';
 
-const serverUrl = 'https://org.example.com';
+const organization: Organization = {
+  id: 'id-a',
+  nickname: 'ACME A',
+  serverUrl: 'https://a.example.com',
+  key: '',
+};
 
 function makeGroupItem(
   transactionId: number,
@@ -31,10 +37,10 @@ function makeGroupItem(
 }
 
 describe('cancelGroupFallback', () => {
-  let cancelOne: Mock<(serverUrl: string, id: number) => Promise<boolean>>;
+  let cancelOne: Mock<(org: Organization, id: number) => Promise<boolean>>;
 
   beforeEach(() => {
-    cancelOne = vi.fn<(serverUrl: string, id: number) => Promise<boolean>>().mockResolvedValue(true);
+    cancelOne = vi.fn<(org: Organization, id: number) => Promise<boolean>>().mockResolvedValue(true);
   });
 
   test('cancels all in-progress items successfully', async () => {
@@ -44,7 +50,7 @@ describe('cancelGroupFallback', () => {
       makeGroupItem(3, TransactionStatus.NEW),
     ];
 
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
 
     expect(result.canceled).toEqual([1, 2, 3]);
     expect(result.alreadyCanceled).toEqual([]);
@@ -65,7 +71,7 @@ describe('cancelGroupFallback', () => {
       makeGroupItem(3, TransactionStatus.EXECUTED),
     ];
 
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
 
     expect(result.canceled).toEqual([1]);
     expect(result.alreadyCanceled).toEqual([2]);
@@ -78,7 +84,7 @@ describe('cancelGroupFallback', () => {
     ]);
     expect(result.summary.processedCount).toBe(3);
     expect(cancelOne).toHaveBeenCalledTimes(1);
-    expect(cancelOne).toHaveBeenCalledWith(serverUrl, 1);
+    expect(cancelOne).toHaveBeenCalledWith(organization, 1);
   });
 
   test('records partial failures', async () => {
@@ -91,7 +97,7 @@ describe('cancelGroupFallback', () => {
       makeGroupItem(2, TransactionStatus.WAITING_FOR_SIGNATURES),
     ];
 
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
 
     expect(result.canceled).toEqual([1]);
     expect(result.failed).toEqual([
@@ -111,7 +117,7 @@ describe('cancelGroupFallback', () => {
       makeGroupItem(2, TransactionStatus.CANCELED),
     ];
 
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
 
     expect(result.canceled).toEqual([]);
     expect(result.alreadyCanceled).toEqual([1, 2]);
@@ -121,7 +127,7 @@ describe('cancelGroupFallback', () => {
   });
 
   test('empty group returns empty result', async () => {
-    const result = await cancelGroupFallback(serverUrl, [], cancelOne);
+    const result = await cancelGroupFallback(organization, [], cancelOne);
 
     expect(result.canceled).toEqual([]);
     expect(result.alreadyCanceled).toEqual([]);
@@ -142,7 +148,7 @@ describe('cancelGroupFallback', () => {
       makeGroupItem(4, TransactionStatus.EXECUTED),
     ];
 
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
 
     expect(result.summary.canceled).toBe(result.canceled.length);
     expect(result.summary.alreadyCanceled).toBe(result.alreadyCanceled.length);
@@ -155,7 +161,7 @@ describe('cancelGroupFallback', () => {
   test('uses fallback message when cancelOne rejects with a non-Error value', async () => {
     cancelOne.mockRejectedValueOnce('some string rejection');
     const items = [makeGroupItem(1, TransactionStatus.WAITING_FOR_SIGNATURES)];
-    const result = await cancelGroupFallback(serverUrl, items, cancelOne);
+    const result = await cancelGroupFallback(organization, items, cancelOne);
     expect(result.failed).toEqual([
       { id: 1, code: CancelFailureCode.INTERNAL_ERROR, message: 'Failed to cancel transaction' },
     ]);

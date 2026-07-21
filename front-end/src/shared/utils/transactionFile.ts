@@ -7,25 +7,26 @@ import { getTransactionGroupById } from '@renderer/services/organization';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
 import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
 import { createLogger } from '@renderer/utils/logger';
+import type { Organization } from '@prisma/client';
 
 const logger = createLogger('renderer.transactionFile');
 
 export async function flattenNodeCollection(
   nodeCollection: ITransactionNode[],
-  serverUrl: string,
+  org: Organization,
   transactionCache: BackendTransactionCache,
 ): Promise<ITransaction[]> {
   const result: ITransaction[] = [];
 
   for (const node of nodeCollection) {
     if (node.groupId !== undefined) {
-      const group = await getTransactionGroupById(serverUrl, node.groupId, false);
+      const group = await getTransactionGroupById(org, node.groupId, false);
       for (const item of group.groupItems) {
         result.push(item.transaction);
       }
     } else {
       if (node.transactionId !== undefined) {
-        const transaction = await transactionCache.lookup(node.transactionId, serverUrl);
+        const transaction = await transactionCache.lookup(node.transactionId, org);
         result.push(transaction);
       }
     }

@@ -143,7 +143,7 @@ const handleDisconnect = async () => {
       await disconnectOrganization(org.serverUrl, 'upgradeRequired');
 
       try {
-        await logout(org.serverUrl);
+        await logout(org);
       } catch (logoutError) {
         logger.warn('Logout failed (may already be disconnected)', { error: logoutError });
       }

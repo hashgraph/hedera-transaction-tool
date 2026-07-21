@@ -55,7 +55,7 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
 
 const setupOrganization = async (setup: ModelValue) => {
   // 1) Add organization
-  const { id: organizationId } = await addOrganization({
+  const addedOrg = await addOrganization({
     nickname: setup.organizationNickname,
     serverUrl: setup.organizationURL,
     key: '',
@@ -71,7 +71,7 @@ const setupOrganization = async (setup: ModelValue) => {
 
   // 3) Set new password
   await changePassword(
-    setup.organizationURL,
+    addedOrg,
     setup.temporaryOrganizationPassword,
     setup.newOrganizationPassword,
   );
@@ -80,7 +80,7 @@ const setupOrganization = async (setup: ModelValue) => {
   await addOrganizationCredentials(
     email,
     setup.newOrganizationPassword,
-    organizationId,
+    addedOrg.id,
     props.personalUser.personalId,
     jwtToken,
     props.personalUser.password,
@@ -158,7 +158,7 @@ const restoreExistingKeys = async () => {
   if (!isLoggedInOrganization(user.selectedOrganization))
     throw new Error('(BUG) Organization user id not set');
 
-  const { userKeys } = await getUserState(user.selectedOrganization.serverUrl);
+  const { userKeys } = await getUserState(user.selectedOrganization);
   const userKeysWithMnemonic = userKeys.filter(userKeyHasMnemonic);
 
   await restoreOnEmpty(userKeysWithMnemonic);

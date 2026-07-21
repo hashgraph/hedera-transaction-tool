@@ -193,7 +193,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
       for (const key of signatureKeys) {
         const flatKeys = flattenKeyList(key);
         for (const flatKey of flatKeys) {
-          const o = await publicKeyOwnerCache.lookup(flatKey.toStringRaw(), organization.serverUrl);
+          const o = await publicKeyOwnerCache.lookup(flatKey.toStringRaw(), organization);
           if (o === null) {
             // flatKey has no matching user in organization
             // => flatKey is external

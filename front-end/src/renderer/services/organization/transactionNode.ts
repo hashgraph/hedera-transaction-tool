@@ -10,9 +10,10 @@ import {
   TRANSACTION_NODE_STATUS_MESSAGES,
   SESSION_EXPIRED_MESSAGE,
 } from './errorMessages';
+import type { Organization } from '@prisma/client';
 
 export const getTransactionNodes = async (
-  serverUrl: string,
+  organization: Organization,
   collection: TransactionNodeCollection,
   network: Network,
   statusFilter: TransactionStatus[],
@@ -32,7 +33,9 @@ export const getTransactionNodes = async (
     if (transactionTypeFilter.length > 0) {
       params.transactionType = `${transactionTypeFilter}`;
     }
-    const r = await axiosWithCredentials.get(`${serverUrl}/transaction-nodes`, { params });
+    const r = await axiosWithCredentials.get(organization, `transaction-nodes`, {
+      params,
+    });
 
     return r.data;
   },

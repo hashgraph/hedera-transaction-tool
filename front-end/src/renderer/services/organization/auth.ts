@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import type { Organization } from '@prisma/client';
 
 /* Authentification service for organization */
 
@@ -14,7 +15,7 @@ export const login = async (
 ): Promise<{ id: number; jwtToken: string }> =>
   commonRequestHandler(
     async () => {
-      const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
+      const { data } = await axios.post(`${serverUrl}/${authController}/login`, {
         email,
         password,
       });
@@ -26,50 +27,40 @@ export const login = async (
   );
 
 /* Logout the user */
-export const logout = async (serverUrl: string): Promise<{ id: number }> =>
+export const logout = async (org: Organization): Promise<{ id: number }> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
+    const { data } = await axiosWithCredentials.post(org, `${authController}/logout`);
     return { id: data.id };
   }, 'Failed to Log out of Organization');
 
 /* Changes the password */
 export const changePassword = async (
-  organizationServerUrl: string,
+  org: Organization,
   oldPassword: string,
   newPassword: string,
 ): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(
-      `${organizationServerUrl}/${authController}/change-password`,
-      {
-        oldPassword,
-        newPassword,
-      },
-    );
+    const response = await axiosWithCredentials.patch(org, `${authController}/change-password`, {
+      oldPassword,
+      newPassword,
+    });
     return response.data;
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
-export const resetPassword = async (
-  organizationServerUrl: string,
-  email: string,
-): Promise<string> =>
+export const resetPassword = async (org: Organization, email: string): Promise<string> =>
   commonRequestHandler(async () => {
-    const response = await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
+    const response = await axios.post(`${org.serverUrl}/${authController}/reset-password`, {
       email,
     });
     return response.data.token;
   }, 'Failed to request passoword reset');
 
 /* Sends the OTP in order to verify the password reset */
-export const verifyReset = async (
-  organizationServerUrl: string,
-  otp: string,
-  token: string,
-): Promise<string> =>
+export const verifyReset = async (org: Organization, otp: string, token: string): Promise<string> =>
   commonRequestHandler(async () => {
     const response = await axios.post(
-      `${organizationServerUrl}/${authController}/verify-reset`,
+      `${org.serverUrl}/${authController}/verify-reset`,
       {
         token: otp,
       },
@@ -83,14 +74,10 @@ export const verifyReset = async (
   }, 'Failed to verify password reset');
 
 /* Sets new password after being OTP verified */
-export const setPassword = async (
-  organizationServerUrl: string,
-  password: string,
-  token: string,
-): Promise<void> =>
+export const setPassword = async (org: Organization, password: string, token: string): Promise<void> =>
   commonRequestHandler(async () => {
     const response = await axios.patch(
-      `${organizationServerUrl}/${authController}/set-password`,
+      `${org.serverUrl}/${authController}/set-password`,
       {
         password,
       },
@@ -105,7 +92,7 @@ export const setPassword = async (
 
 /* ADMIN ONLY: Signs a user to the organization */
 export const signUp = (
-  organizationServerUrl: string,
+  org: Organization,
   email: string,
 ): Promise<{
   id: number;
@@ -113,19 +100,16 @@ export const signUp = (
   createdAt: string;
 }> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.post(
-      `${organizationServerUrl}/${authController}/signup`,
-      {
-        email,
-      },
-    );
+    const response = await axiosWithCredentials.post(org, `${authController}/signup`, {
+      email,
+    });
     return response.data;
   }, 'Failed to sign up the user');
 
 /* ADMIN ONLY: elevate a user to admin */
-export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
+export const elevateUserToAdmin = (  org: Organization, id: number) =>
   commonRequestHandler(async () => {
-    await axiosWithCredentials.patch(`${organizationServerUrl}/${authController}/elevate-admin`, {
+    await axiosWithCredentials.patch(org, `${authController}/elevate-admin`, {
       id,
     });
   }, 'Failed to assign user as admin');

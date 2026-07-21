@@ -102,9 +102,10 @@ const useNotificationsStore = defineStore('notifications', () => {
     const allForOrg = notifications.value[key] || [];
 
     // keep the same network filter behavior as in markAsRead
-    return allForOrg.filter(n =>
-      !n.notification.additionalData?.network ||
-      n.notification.additionalData.network === network.network,
+    return allForOrg.filter(
+      n =>
+        !n.notification.additionalData?.network ||
+        n.notification.additionalData.network === network.network,
     );
   });
 
@@ -114,9 +115,7 @@ const useNotificationsStore = defineStore('notifications', () => {
   /** Preferences **/
   async function fetchPreferences() {
     if (loggedInOrganization.value !== null) {
-      const userPreferences = await getUserNotificationPreferences(
-        loggedInOrganization.value.serverUrl,
-      );
+      const userPreferences = await getUserNotificationPreferences(loggedInOrganization.value);
 
       const newPreferences = { ...notificationsPreferences.value };
 
@@ -134,7 +133,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     }
 
     const newPreferences = await updateUserNotificationPreferences(
-      loggedInOrganization.value.serverUrl,
+      loggedInOrganization.value,
       data,
     );
 
@@ -149,7 +148,7 @@ const useNotificationsStore = defineStore('notifications', () => {
     notificationsQueue = notificationsQueue.then(async () => {
       const severUrls = organizationServerUrls.value;
       const results = await Promise.allSettled(
-        connectedOrganizations.value.map(o => getAllInAppNotifications(o.serverUrl, true)),
+        connectedOrganizations.value.map(o => getAllInAppNotifications(o, true)),
       );
 
       for (let i = 0; i < results.length; i++) {
@@ -179,8 +178,10 @@ const useNotificationsStore = defineStore('notifications', () => {
 
       notificationListenerDisposers.push(
         ws.on(serverUrl, NOTIFICATIONS_INDICATORS_DELETE, e => {
-          const deleteNotifications: {notificationReceiverIds: number}[] = e;
-          const notificationReceiverIds = deleteNotifications.flatMap(item => item.notificationReceiverIds || []);
+          const deleteNotifications: { notificationReceiverIds: number }[] = e;
+          const notificationReceiverIds = deleteNotifications.flatMap(
+            item => item.notificationReceiverIds || [],
+          );
 
           dismissNotifications(serverUrl, notificationReceiverIds);
         }),
@@ -196,9 +197,9 @@ const useNotificationsStore = defineStore('notifications', () => {
   }
 
   async function markAsRead(type: NotificationType) {
-    if (!isLoggedInOrganization(user.selectedOrganization)) {
-      throw new Error('No organization selected');
-    }
+    // if (!isLoggedInOrganization(user.selectedOrganization)) {
+    //   throw new Error('No organization selected');
+    // }
 
     const notificationsKey = currentNotificationsKey.value;
     if (!notificationsKey) return;
@@ -240,7 +241,10 @@ const useNotificationsStore = defineStore('notifications', () => {
 
       if (notificationsToUpdate.length === 0) return;
 
-      await updateNotifications(notificationsKey, notificationsToUpdate);
+      const organization = user.organizations.find(o => o.serverUrl == notificationsKey);
+      if (organization) {
+        await updateNotifications(organization, notificationsToUpdate);
+      }
 
       dismissNotifications(notificationsKey, notificationIds);
     });

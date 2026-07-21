@@ -2,16 +2,18 @@ import type { IVersionCheckResponse } from '@shared/interfaces';
 import { VERSION_CHECK_TIMEOUT_MS } from '@shared/constants';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import type { Organization } from '@prisma/client';
 
 const controller = 'users';
 
 export const checkVersion = async (
-  serverUrl: string,
+  organization: Organization,
   version: string,
 ): Promise<IVersionCheckResponse> =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${serverUrl}/${controller}/version-check`,
+      organization,
+      `${controller}/version-check`,
       { version },
       { timeout: VERSION_CHECK_TIMEOUT_MS },
     );

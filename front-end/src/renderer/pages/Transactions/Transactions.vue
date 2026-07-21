@@ -217,7 +217,6 @@ async function handleTransactionFileAction(action: string) {
 /* Functions */
 async function importSignaturesFromV2File(filePath: string) {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
 
   const transactionFile = await readTransactionFile(filePath);
   const importInputs: ISignatureImport[] = [];
@@ -231,7 +230,10 @@ async function importSignaturesFromV2File(filePath: string) {
 
     const transactionId = sdkTransaction.transactionId;
     try {
-      const transaction = await transactionCache.lookup(transactionId!.toString(), serverUrl);
+      const transaction = await transactionCache.lookup(
+        transactionId!.toString(),
+        user.selectedOrganization,
+      );
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
@@ -272,7 +274,7 @@ async function importSignaturesFromV2File(filePath: string) {
 
   for (const i of importInputs) {
     // We forget cached data for transaction i.id
-    transactionCache.forget(i.id, serverUrl);
+    transactionCache.forget(i.id, user.selectedOrganization);
   }
 }
 
@@ -321,7 +323,7 @@ async function findPrimaryTabTitle(): Promise<string> {
   if (user.selectedOrganization.isPasswordTemporary) return historyTitle;
 
   const nodes = await getTransactionNodes(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     TransactionNodeCollection.READY_FOR_REVIEW,
     network.network,
     [],

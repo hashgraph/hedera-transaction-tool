@@ -18,6 +18,7 @@ import {
   initialVersionCheckState,
   type VersionStatus,
 } from '@renderer/stores/versionState';
+import type { Organization } from '@prisma/client';
 
 const isDismissed = ref(
   typeof sessionStorage !== 'undefined'
@@ -29,17 +30,17 @@ const isDismissed = ref(
 const orgChecks = ref<Record<string, boolean>>({});
 
 export default function useVersionCheck() {
-  const performVersionCheck = async (serverUrl: string): Promise<void> => {
-    if (orgChecks.value[serverUrl]) {
+  const performVersionCheck = async (organization: Organization): Promise<void> => {
+    if (orgChecks.value[organization.serverUrl]) {
       return;
     }
 
     try {
-      orgChecks.value[serverUrl] = true;
+      orgChecks.value[organization.serverUrl] = true;
 
-      const response = await checkVersion(serverUrl, FRONTEND_VERSION);
+      const response = await checkVersion(organization, FRONTEND_VERSION);
 
-      setVersionDataForOrg(serverUrl, {
+      setVersionDataForOrg(organization.serverUrl, {
         latestSupportedVersion: response.latestSupportedVersion,
         minimumSupportedVersion: response.minimumSupportedVersion,
         updateUrl: response.updateUrl,
@@ -52,7 +53,7 @@ export default function useVersionCheck() {
       // or earlier successful check) is preserved automatically.
       logger.error('Version check failed', { error });
     } finally {
-      orgChecks.value[serverUrl] = false;
+      orgChecks.value[organization.serverUrl] = false;
     }
   };
 
@@ -61,12 +62,12 @@ export default function useVersionCheck() {
   // on 'done') start rendering. Single entry point for both auto-login
   // and manual-login startup paths. Concurrent re-entry is dropped: the
   // 'running' state bars a second batch from racing the first into 'done'.
-  const performInitialVersionCheck = async (serverUrls: string[]): Promise<void> => {
+  const performInitialVersionCheck = async (organizations: Organization[]): Promise<void> => {
     if (initialVersionCheckState.value !== 'idle') return;
 
     initialVersionCheckState.value = 'running';
     try {
-      await Promise.allSettled(serverUrls.map(url => performVersionCheck(url)));
+      await Promise.allSettled(organizations.map(org => performVersionCheck(org)));
     } finally {
       initialVersionCheckState.value = 'done';
     }

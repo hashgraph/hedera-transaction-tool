@@ -3,7 +3,7 @@ import type { TransactionByIdResponse } from '@shared/interfaces';
 import { getTransactionInfo } from '@renderer/services/mirrorNodeDataService.ts';
 import axios from 'axios';
 
-export class TransactionByIdCache extends EntityCache<string, TransactionByIdResponse | null> {
+export class TransactionByIdCache extends EntityCache<string, TransactionByIdResponse | null, string> {
   //
   // EntityCache
   //
@@ -23,5 +23,9 @@ export class TransactionByIdCache extends EntityCache<string, TransactionByIdRes
       }
     }
     return result;
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeURL: string): string {
+    return key.toString() + '/' + mirrorNodeURL;
   }
 }

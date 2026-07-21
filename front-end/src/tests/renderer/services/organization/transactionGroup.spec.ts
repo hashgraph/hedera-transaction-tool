@@ -25,6 +25,7 @@ vi.mock('@renderer/utils', () => ({
 }));
 
 import { cancelTransaction } from '@renderer/services/organization/transaction';
+import type { Organization } from '@prisma/client';
 
 vi.mock('@renderer/services/organization/transaction', () => ({
   cancelTransaction: vi.fn(),
@@ -33,10 +34,16 @@ vi.mock('@renderer/services/organization/transaction', () => ({
 const mockCancelGroupFallback = vi.fn();
 vi.mock('@renderer/services/organization/cancelGroupFallback', () => ({
   cancelGroupFallback: (...args: unknown[]) => mockCancelGroupFallback(...args),
-}));
+}))
+
+const organizationA: Organization = {
+  id: 'id-a',
+  nickname: 'ACME A',
+  serverUrl: 'https://a.example.com',
+  key: '',
+};
 
 describe('transactionGroup service', () => {
-  const serverUrl = 'https://org.example.com';
   const groupId = 123;
   const groupItems: IGroupItem[] = [];
 
@@ -59,9 +66,12 @@ describe('transactionGroup service', () => {
 
     vi.mocked(axiosWithCredentials.patch).mockResolvedValueOnce({ data: payload } as any);
 
-    await expect(cancelTransactionGroup(serverUrl, groupId, groupItems)).resolves.toEqual(payload);
+    await expect(cancelTransactionGroup(organizationA, groupId, groupItems)).resolves.toEqual(
+      payload,
+    );
     expect(axiosWithCredentials.patch).toHaveBeenCalledWith(
-      `${serverUrl}/transaction-groups/${groupId}/cancel`,
+      organizationA,
+      `transaction-groups/${groupId}/cancel`,
       undefined,
       { withCredentials: true },
     );
@@ -85,10 +95,10 @@ describe('transactionGroup service', () => {
     };
     mockCancelGroupFallback.mockResolvedValueOnce(fallbackResult);
 
-    const result = await cancelTransactionGroup(serverUrl, groupId, groupItems);
+    const result = await cancelTransactionGroup(organizationA, groupId, groupItems);
     expect(result).toEqual(fallbackResult);
     expect(mockCancelGroupFallback).toHaveBeenCalledWith(
-      serverUrl,
+      organizationA,
       groupItems,
       cancelTransaction,
     );
@@ -104,7 +114,7 @@ describe('transactionGroup service', () => {
     });
     vi.mocked(axiosWithCredentials.patch).mockRejectedValueOnce(axiosError);
 
-    await expect(cancelTransactionGroup(serverUrl, groupId, groupItems)).rejects.toThrow(
+    await expect(cancelTransactionGroup(organizationA, groupId, groupItems)).rejects.toThrow(
       'Failed to cancel transactions in group',
     );
     expect(mockCancelGroupFallback).not.toHaveBeenCalled();
@@ -113,7 +123,7 @@ describe('transactionGroup service', () => {
   test('cancelTransactionGroup throws on network error (no response)', async () => {
     vi.mocked(axiosWithCredentials.patch).mockRejectedValueOnce(new Error('network error'));
 
-    await expect(cancelTransactionGroup(serverUrl, groupId, groupItems)).rejects.toThrow(
+    await expect(cancelTransactionGroup(organizationA, groupId, groupItems)).rejects.toThrow(
       'Failed to cancel transactions in group',
     );
     expect(mockCancelGroupFallback).not.toHaveBeenCalled();

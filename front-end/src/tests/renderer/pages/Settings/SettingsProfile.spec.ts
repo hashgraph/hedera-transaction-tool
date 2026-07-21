@@ -263,7 +263,7 @@ describe('settings profile coverage', () => {
 
       expect(mocks.encryptOrganizationPassword).toHaveBeenCalledWith(STRONG_NEW, undefined);
       expect(mocks.organizationChangePassword).toHaveBeenCalledWith(
-        ORG.serverUrl,
+        ORG,
         STRONG_OLD,
         STRONG_NEW,
       );
@@ -436,7 +436,7 @@ describe('settings profile coverage', () => {
         'entered-personal-password',
       );
       expect(mocks.organizationChangePassword).toHaveBeenCalledWith(
-        ORG.serverUrl,
+        ORG,
         STRONG_OLD,
         STRONG_NEW,
       );
@@ -529,7 +529,7 @@ describe('settings profile coverage', () => {
       await wrapper.find('[data-testid="button-logout"]').trigger('click');
       await flushPromises();
 
-      expect(mocks.organizationLogout).toHaveBeenCalledWith(ORG.serverUrl);
+      expect(mocks.organizationLogout).toHaveBeenCalledWith(ORG);
       expect(mocks.updateOrganizationCredentials).toHaveBeenCalledWith(
         ORG.id,
         'local-user-id',

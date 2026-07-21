@@ -209,7 +209,7 @@ const useUserStore = defineStore('user', () => {
           }
         }
 
-        await reconnectOrganization(organization.serverUrl);
+        await reconnectOrganization(organization);
       }
     }
 

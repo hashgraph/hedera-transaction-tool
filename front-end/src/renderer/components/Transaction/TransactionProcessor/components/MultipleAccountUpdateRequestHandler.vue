@@ -303,13 +303,13 @@ async function submitGroup(
 
   try {
     const { id } = await submitTransactionGroup(
-      user.selectedOrganization.serverUrl,
+      user.selectedOrganization,
       description || 'Automatically created group for multiple accounts update',
       false,
       true,
       apiGroupItems,
     );
-    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
+    const group = await getTransactionGroupById(user.selectedOrganization, id, false);
     await safeAwait(submitApproversObservers(group));
     emit('transaction:group:submit:success', id);
   } catch (error) {
@@ -320,17 +320,17 @@ async function submitGroup(
 
 async function submitApproversObservers(group: IGroup) {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
+  const organization = user.selectedOrganization;
 
   const promises = group.groupItems.map(groupItem => {
     const observerPromise =
       props.observers?.length > 0
-        ? addObservers(serverUrl, groupItem.transactionId, props.observers)
+        ? addObservers(organization, groupItem.transactionId, props.observers)
         : Promise.resolve();
 
     const approverPromise =
       props.approvers?.length > 0
-        ? addApprovers(serverUrl, groupItem.transactionId, props.approvers)
+        ? addApprovers(organization, groupItem.transactionId, props.approvers)
         : Promise.resolve();
 
     return Promise.allSettled([observerPromise, approverPromise]);

@@ -141,21 +141,15 @@ const importSelectedCandidates = async (): Promise<void> => {
       );
     } else if (rejectedCount == 1) {
       const transactionId = rejectedTransactionIds[0];
-      toastManager.error(
-        'Transaction ' + transactionId + ' does not exist or is not accessible',
-      );
+      toastManager.error('Transaction ' + transactionId + ' does not exist or is not accessible');
     } else {
       // successCount == 1
       const [transactionId] = successResults.entries().next().value!;
-      toastManager.success(
-        'Imported transaction ' + transactionId + ' successfully.',
-      );
+      toastManager.success('Imported transaction ' + transactionId + ' successfully.');
     }
   } else {
     if (successCount >= 1) {
-      toastManager.success(
-        'Imported ' + successCount + ' transaction(s) successfully.',
-      );
+      toastManager.success('Imported ' + successCount + ' transaction(s) successfully.');
     }
     if (errorCount >= 1) {
       toastManager.error('Failed to import ' + errorCount + ' transaction(s)');
@@ -181,15 +175,17 @@ const formatError = (r: SignatureImportResultDto): string => {
 };
 
 const candidatesDidChange = async (newValue: V1ImportCandidate[]) => {
-  const serverUrl = user.selectedOrganization?.serverUrl;
 
   // 1) Retrieves transaction info from backend
   transactionMap.value.clear();
-  if (serverUrl) {
+  if (user.selectedOrganization) {
     for (const candidate of newValue) {
       if (transactionMap.value.get(candidate.transactionId) === undefined) {
         try {
-          const t = await transactionCache.lookup(candidate.transactionId, serverUrl);
+          const t = await transactionCache.lookup(
+            candidate.transactionId,
+            user.selectedOrganization,
+          );
           transactionMap.value.set(candidate.transactionId, t);
         } catch (error) {
           logger.error('Failed to fetch transaction by id', { error });

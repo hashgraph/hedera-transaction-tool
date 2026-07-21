@@ -1,4 +1,4 @@
-export abstract class EntityCache<K extends string | number, E> {
+export abstract class EntityCache<K extends string | number, E, C> {
   public static readonly FRESH_DURATION = 500; // ms
   private readonly records = new Map<string, EntityRecord<E>>();
 
@@ -10,26 +10,26 @@ export abstract class EntityCache<K extends string | number, E> {
     public readonly youngDuration: number = 10 * 60_000, // ms
   ) {}
 
-  public async lookup(key: K, mirrorNodeUrl: string, forceLoad = false): Promise<E> {
+  public async lookup(key: K, context: C, forceLoad = false): Promise<E> {
     let result: Promise<E>;
 
-    const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
+    const recordKey = this.makeRecordKey(key, context);
     const currentRecord = this.records.get(recordKey);
     if (currentRecord && currentRecord.isUsable(forceLoad, this)) {
       // cache hit
       result = currentRecord.promise;
     } else {
       // cache miss or reload
-      const newPromise = this.load(key, mirrorNodeUrl);
-      this.mutate(key, mirrorNodeUrl, newPromise);
+      const newPromise = this.load(key, context);
+      this.mutate(key, context, newPromise);
       result = newPromise;
     }
 
     return result;
   }
 
-  public forget(key: K, mirrorNodeUrl: string, strict = true): void {
-    const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
+  public forget(key: K, context: C, strict = true): void {
+    const recordKey = this.makeRecordKey(key, context);
     const currentRecord = this.records.get(recordKey);
     if (currentRecord) {
       // When strict is off, we forget only if data is 1s old (help for notification mgt)
@@ -57,21 +57,19 @@ export abstract class EntityCache<K extends string | number, E> {
   // Protected (to be subclassed)
   //
 
-  protected async load(key: K, mirrorNodeUrl: string): Promise<E> {
-    throw new Error('Must be subclassed to load ' + key + ' with ' + mirrorNodeUrl);
+  protected async load(key: K, context: C): Promise<E> {
+    throw new Error('Must be subclassed to load ' + key + ' with ' + context);
   }
+
+  abstract makeRecordKey(key: K, context: C): string;
 
   //
   // Protected (for subclasses only)
   //
 
-  protected mutate(key: K, mirrorNodeUrl: string, promise: Promise<E>): void {
-    const recordKey = this.makeRecordKey(key, mirrorNodeUrl);
+  protected mutate(key: K, context: C, promise: Promise<E>): void {
+    const recordKey = this.makeRecordKey(key, context);
     this.records.set(recordKey, new EntityRecord(promise));
-  }
-
-  protected makeRecordKey(key: K, mirrorNodeUrl: string): string {
-    return key.toString() + '/' + mirrorNodeUrl;
   }
 }
 
@@ -84,7 +82,7 @@ class EntityRecord<E> {
     this.time = Date.now();
   }
 
-  isUsable(forceLoad: boolean, cache: EntityCache<any, E>): boolean {
+  isUsable(forceLoad: boolean, cache: EntityCache<any, E, any>): boolean {
     let result: boolean;
     if (forceLoad) {
       result = this.age() < EntityCache.FRESH_DURATION; // ms

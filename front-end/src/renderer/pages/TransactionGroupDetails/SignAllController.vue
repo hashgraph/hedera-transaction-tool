@@ -62,9 +62,8 @@ const performSignAll = async (
     let group: IGroup;
     if (typeof props.groupOrId === 'number') {
       assertIsLoggedInOrganization(user.selectedOrganization);
-      const serverUrl = user.selectedOrganization.serverUrl;
       progressText.value = 'Loading group items…';
-      group = await getTransactionGroupById(serverUrl, props.groupOrId);
+      group = await getTransactionGroupById(user.selectedOrganization, props.groupOrId);
     } else {
       group = props.groupOrId;
     }

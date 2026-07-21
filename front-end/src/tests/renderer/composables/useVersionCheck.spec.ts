@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
+import type { Organization } from '@prisma/client';
 
 // We mock the network call so the composable's orchestration is what's under
 // test, not the side effects of the version-check HTTP layer. The store
@@ -9,7 +10,20 @@ import { SESSION_STORAGE_DISMISSED_UPDATE_PROMPT } from '@shared/constants';
 // so asserting on `organizationVersionStatus` exercises the real pipeline.
 const checkVersionMock = vi.fn();
 
-const mockOrgs: Array<{ serverUrl: string; nickname?: string }> = [];
+const organizationA: Organization = {
+  id: 'id-a',
+  nickname: 'ACME A',
+  serverUrl: 'https://a.example.com',
+  key: '',
+};
+
+const organizationB: Organization = {
+  id: 'id-b',
+  nickname: 'ACME B',
+  serverUrl: 'https://b.example.com',
+  key: '',
+};
+const mockOrgs = [organizationA, organizationB];
 
 vi.mock('@renderer/services/organization', () => ({
   checkVersion: (...args: unknown[]) => checkVersionMock(...args),
@@ -26,8 +40,6 @@ vi.mock('@renderer/utils/version', () => ({
 describe('useVersionCheck', () => {
   beforeEach(() => {
     localStorage.clear();
-    sessionStorage.clear();
-    mockOrgs.length = 0;
     checkVersionMock.mockReset();
     vi.resetModules();
   });
@@ -43,11 +55,11 @@ describe('useVersionCheck', () => {
     checkVersionMock.mockResolvedValueOnce(response);
 
     const { performVersionCheck } = useVersionCheck();
-    await performVersionCheck('https://a');
+    await performVersionCheck(organizationA);
 
-    expect(checkVersionMock).toHaveBeenCalledWith('https://a', '1.0.0');
-    expect(state.organizationVersionData.value['https://a']).toEqual(response);
-    expect(state.organizationVersionStatus.value['https://a']).toBe('updateAvailable');
+    expect(checkVersionMock).toHaveBeenCalledWith(organizationA, '1.0.0');
+    expect(state.organizationVersionData.value[organizationA.serverUrl]).toEqual(response);
+    expect(state.organizationVersionStatus.value[organizationA.serverUrl]).toBe('updateAvailable');
   });
 
   test('performVersionCheck leaves status unset on error so the global aggregator stays null', async () => {
@@ -56,10 +68,10 @@ describe('useVersionCheck', () => {
     checkVersionMock.mockRejectedValueOnce(new Error('network down'));
 
     const { performVersionCheck } = useVersionCheck();
-    await performVersionCheck('https://offline');
+    await performVersionCheck(organizationA);
 
-    expect(state.organizationVersionStatus.value['https://offline']).toBeUndefined();
-    expect(state.organizationVersionData.value['https://offline']).toBeUndefined();
+    expect(state.organizationVersionStatus.value[organizationA.serverUrl]).toBeUndefined();
+    expect(state.organizationVersionData.value[organizationA.serverUrl]).toBeUndefined();
   });
 
   test('performVersionCheck dedupes concurrent calls for the same org', async () => {
@@ -73,8 +85,8 @@ describe('useVersionCheck', () => {
     );
 
     const { performVersionCheck } = useVersionCheck();
-    const first = performVersionCheck('https://a');
-    const second = performVersionCheck('https://a');
+    const first = performVersionCheck(organizationA);
+    const second = performVersionCheck(organizationA);
 
     resolve({
       latestSupportedVersion: '2.0.0',
@@ -114,7 +126,7 @@ describe('useVersionCheck', () => {
     );
 
     const { performInitialVersionCheck } = useVersionCheck();
-    const promise = performInitialVersionCheck(['https://a', 'https://b']);
+    const promise = performInitialVersionCheck([organizationA, organizationB]);
     // Still running while the batch is in flight — modals must stay hidden.
     expect(state.initialVersionCheckState.value).toBe('running');
 
@@ -136,12 +148,12 @@ describe('useVersionCheck', () => {
     checkVersionMock.mockRejectedValueOnce(new Error('boom'));
 
     const { performInitialVersionCheck } = useVersionCheck();
-    await performInitialVersionCheck(['https://a', 'https://b']);
+    await performInitialVersionCheck([organizationA, organizationB]);
 
     expect(state.initialVersionCheckState.value).toBe('done');
     // First org went through; second got no entry because it failed.
-    expect(state.organizationVersionData.value['https://a']).toBeDefined();
-    expect(state.organizationVersionData.value['https://b']).toBeUndefined();
+    expect(state.organizationVersionData.value[organizationA.serverUrl]).toBeDefined();
+    expect(state.organizationVersionData.value[organizationB.serverUrl]).toBeUndefined();
   });
 
   test('a second performInitialVersionCheck while one is running is a no-op and does not race the flag', async () => {
@@ -162,12 +174,12 @@ describe('useVersionCheck', () => {
     );
 
     const { performInitialVersionCheck } = useVersionCheck();
-    const first = performInitialVersionCheck(['https://a']);
+    const first = performInitialVersionCheck([organizationA]);
     expect(state.initialVersionCheckState.value).toBe('running');
 
     // Second call while the first is still in flight — must bail without
     // flipping the state to 'done' or invoking checkVersion again.
-    await performInitialVersionCheck(['https://a']);
+    await performInitialVersionCheck([organizationA]);
     expect(state.initialVersionCheckState.value).toBe('running');
     expect(checkVersionMock).toHaveBeenCalledTimes(1);
 
@@ -183,7 +195,7 @@ describe('useVersionCheck', () => {
     state.initialVersionCheckState.value = 'done';
 
     const { performInitialVersionCheck } = useVersionCheck();
-    await performInitialVersionCheck(['https://a', 'https://b']);
+    await performInitialVersionCheck([organizationA, organizationB]);
 
     expect(checkVersionMock).not.toHaveBeenCalled();
   });

@@ -3,7 +3,7 @@ import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import type { INodeInfoParsed } from '@shared/interfaces';
 import { getNodeInfo } from '@renderer/services/mirrorNodeDataService.ts';
 
-export class NodeByIdCache extends EntityCache<number, INodeInfoParsed | null> {
+export class NodeByIdCache extends EntityCache<number, INodeInfoParsed | null, string> {
   //
   // EntityCache
   //
@@ -23,5 +23,9 @@ export class NodeByIdCache extends EntityCache<number, INodeInfoParsed | null> {
       }
     }
     return result;
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeUrl: string): string {
+    return key.toString() + '/' + mirrorNodeUrl;
   }
 }

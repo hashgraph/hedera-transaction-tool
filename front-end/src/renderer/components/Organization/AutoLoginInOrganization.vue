@@ -76,10 +76,10 @@ watch(
       // Run a single consolidated version check across every org now that
       // org-level auto-signin (if any) has finished. Drives the upgrade
       // modals via the pending flag — they wait until every org reports in.
-      const eligibleServerUrls = user.organizations
-        .filter(o => orgConnection.getConnectionStatus(o.serverUrl) !== 'disconnected')
-        .map(o => o.serverUrl);
-      void performInitialVersionCheck(eligibleServerUrls);
+      const eligibleOrganizations = user.organizations.filter(
+        o => orgConnection.getConnectionStatus(o.serverUrl) !== 'disconnected',
+      );
+      void performInitialVersionCheck(eligibleOrganizations);
     }
   },
 );

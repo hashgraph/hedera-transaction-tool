@@ -35,7 +35,7 @@ export default function useTransactionAudit(transactionId: Ref<number | null>): 
       try {
         result = await appCache.backendTransaction.lookup(
           transactionId.value,
-          user.selectedOrganization.serverUrl,
+          user.selectedOrganization,
         );
       } catch {
         result = null;

@@ -10,6 +10,7 @@ import {
   PUBLIC_KEY_OWNER_STATUS_MESSAGES,
   SESSION_EXPIRED_MESSAGE,
 } from '@renderer/services/organization/errorMessages';
+import type { Organization } from '@prisma/client';
 
 // Replicate the real commonRequestHandler logic so we test the actual behavior
 // of getPublicKeyOwner with its messageOn401 and statusMessages params
@@ -66,7 +67,12 @@ const createAxiosError = (
 };
 
 describe('getPublicKeyOwner', () => {
-  const serverUrl = 'https://org.example.com';
+  const organization: Organization = {
+    id: 'dummy',
+    nickname: 'ACME',
+    serverUrl: 'https://org.example.com',
+    key: '',
+  }
   const publicKey = '2434cdf54e5f33570791bebdf3f0527347c2310c66f3db6799d64ed9b8666c39';
 
   beforeEach(() => {
@@ -80,11 +86,11 @@ describe('getPublicKeyOwner', () => {
       data: 'alice@example.com',
     } as any);
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
+    const result = await getPublicKeyOwner(organization, publicKey);
 
     expect(result).toBe('alice@example.com');
     expect(axiosWithCredentials.get).toHaveBeenCalledWith(
-      `${serverUrl}/users/public-owner/${publicKey}`,
+      organization, `users/public-owner/${publicKey}`,
     );
   });
 
@@ -93,7 +99,7 @@ describe('getPublicKeyOwner', () => {
       data: '',
     } as any);
 
-    const result = await getPublicKeyOwner(serverUrl, publicKey);
+    const result = await getPublicKeyOwner(organization, publicKey);
 
     expect(result).toBeNull();
   });
@@ -108,7 +114,7 @@ describe('getPublicKeyOwner', () => {
       }),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       SESSION_EXPIRED_MESSAGE,
     );
   });
@@ -120,7 +126,7 @@ describe('getPublicKeyOwner', () => {
       createAxiosError('Forbidden', '403', 403),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       PUBLIC_KEY_OWNER_STATUS_MESSAGES[403],
     );
   });
@@ -130,7 +136,7 @@ describe('getPublicKeyOwner', () => {
       createAxiosError('Not Found', '404', 404),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       PUBLIC_KEY_OWNER_STATUS_MESSAGES[404],
     );
   });
@@ -140,7 +146,7 @@ describe('getPublicKeyOwner', () => {
       createAxiosError('Server Error', '500', 500),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       PUBLIC_KEY_OWNER_STATUS_MESSAGES[500],
     );
   });
@@ -152,7 +158,7 @@ describe('getPublicKeyOwner', () => {
       createAxiosError('Too Many Requests', '429', 429),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       'Too many requests. Please try again later.',
     );
   });
@@ -162,7 +168,7 @@ describe('getPublicKeyOwner', () => {
       createAxiosError('Teapot', '418', 418),
     );
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
     );
   });
@@ -171,7 +177,7 @@ describe('getPublicKeyOwner', () => {
     const axiosError = new AxiosError('Network Error', 'ERR_NETWORK');
     vi.mocked(axiosWithCredentials.get).mockRejectedValueOnce(axiosError);
 
-    await expect(getPublicKeyOwner(serverUrl, publicKey)).rejects.toThrow(
+    await expect(getPublicKeyOwner(organization, publicKey)).rejects.toThrow(
       'Failed to connect to the server',
     );
   });

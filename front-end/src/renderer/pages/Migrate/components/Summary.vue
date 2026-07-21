@@ -43,7 +43,7 @@ const handleFinishMigration = async () => {
   await router.push({ name: 'settingsKeys' });
   // Now fully out of migration — check for optional updates.
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    performVersionCheck(user.selectedOrganization.serverUrl);
+    await performVersionCheck(user.selectedOrganization);
   }
 };
 

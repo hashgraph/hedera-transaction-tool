@@ -35,13 +35,12 @@ const progressText = computed(() =>
 /* Handlers */
 const handleArchiveTransaction = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
 
   let result: ActionReport | null;
   try {
     if (props.transaction !== null) {
       const transactionId = props.transaction.id;
-      const done = await archiveTransaction(serverUrl, transactionId);
+      const done = await archiveTransaction(user.selectedOrganization, transactionId);
       if (done) {
         result = null;
         toastManager.success('Transaction archived successfully');
@@ -59,7 +58,7 @@ const handleArchiveTransaction = async (): Promise<ActionReport | null> => {
   } finally {
     // 1) we clear transaction cache
     if (props.transaction) {
-      transactionCache.forgetTransaction(props.transaction, serverUrl);
+      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization);
     }
     // 2) we run callback (that will get fresh data from cache)
     await props.callback();

@@ -343,14 +343,14 @@ async function sendSignedTransactionsToOrganization() {
   }
 
   const { id, transactionBytes } = await submitTransactionGroup(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     transactionGroup.description,
     false,
     transactionGroup.sequential,
     apiGroupItems,
   );
 
-  const group: IGroup = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
+  const group: IGroup = await getTransactionGroupById(user.selectedOrganization, id, false);
 
   toastManager.success('Transaction submitted successfully');
 
@@ -381,7 +381,7 @@ async function uploadObservers(transactionId: number, seqId: number) {
     throw new Error('User is not logged in organization');
 
   await addObservers(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     transactionId,
     transactionGroup.groupItems[seqId].observers,
   );
@@ -398,7 +398,7 @@ async function uploadApprovers(transactionId: number, seqId: number) {
     throw new Error('User is not logged in organization');
 
   await addApprovers(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     transactionId,
     transactionGroup.groupItems[seqId].approvers,
   );

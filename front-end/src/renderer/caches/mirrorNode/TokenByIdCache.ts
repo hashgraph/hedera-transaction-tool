@@ -2,7 +2,7 @@ import axios from 'axios';
 import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import type { ITokenInfo } from '@shared/interfaces/ITokenInfo';
 
-export class TokenByIdCache extends EntityCache<string, ITokenInfo | null> {
+export class TokenByIdCache extends EntityCache<string, ITokenInfo | null, string> {
   //
   // EntityCache
   //
@@ -24,6 +24,10 @@ export class TokenByIdCache extends EntityCache<string, ITokenInfo | null> {
       }
     }
     return result;
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeURL: string): string {
+    return key.toString() + '/' + mirrorNodeURL;
   }
 }
 

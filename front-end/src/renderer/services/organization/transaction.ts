@@ -28,7 +28,7 @@ const controller = 'transactions';
 
 /* Submits a transaction to the back end */
 export const submitTransaction = async (
-  serverUrl: string,
+  organization: Organization,
   name: string,
   description: string,
   transactionBytes: string,
@@ -39,7 +39,7 @@ export const submitTransaction = async (
   reminderMillisecondsBefore?: number | null,
 ): Promise<{ id: number; transactionBytes: string }> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.post(`${serverUrl}/${controller}`, {
+    const { data } = await axiosWithCredentials.post(organization, `${controller}`, {
       name,
       description,
       transactionBytes,
@@ -54,25 +54,31 @@ export const submitTransaction = async (
   }, 'Failed submit transaction');
 
 /* Cancel a transaction  */
-export const cancelTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+export const cancelTransaction = async (organization: Organization, id: number): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
+    const { data } = await axiosWithCredentials.patch(organization, `${controller}/cancel/${id}`);
 
     return data;
   }, `Failed to cancel transaction with id ${id}`);
 
 /* Archive a transaction  */
-export const archiveTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+export const archiveTransaction = async (
+  organization: Organization,
+  id: number,
+): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/archive/${id}`);
+    const { data } = await axiosWithCredentials.patch(organization, `${controller}/archive/${id}`);
 
     return data;
   }, `Failed to archive transaction with id ${id}`);
 
 /* Executes the manual transaction  */
-export const executeTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
+export const executeTransaction = async (
+  organization: Organization,
+  id: number,
+): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/execute/${id}`);
+    const { data } = await axiosWithCredentials.patch(organization, `${controller}/execute/${id}`);
 
     return data;
   }, `Failed to execute transaction with id ${id}`);
@@ -120,7 +126,8 @@ export const uploadSignatures = async (
 
   return await commonRequestHandler(async () => {
     return await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/signers?includeNotifications=true`,
+      organization,
+      `${controller}/signers?includeNotifications=true`,
       formattedMaps,
     );
   }, 'Failed upload signatures');
@@ -147,7 +154,8 @@ export const importSignatures = async (
   }
   return commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${organization.serverUrl}/${controller}/signatures/import`,
+      organization,
+      `${controller}/signatures/import`,
       formattedMaps,
     );
     return data;
@@ -176,20 +184,24 @@ export const getUserShouldApprove = async (
 
 /* Get the count of the transactions to sign */
 export const getTransactionById = async (
-  serverUrl: string,
+  organization: Organization,
   id: number | TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
-      withCredentials: true,
-    });
+    const { data } = await axiosWithCredentials.get(
+      organization,
+      `${controller}/${id.toString()}`,
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   }, `Failed to get transaction with id ${id}`);
 
 /* Get history transactions */
 export const getHistoryTransactions = async (
-  serverUrl: string,
+  organization: Organization,
   page: number,
   size: number,
   filter: {
@@ -204,17 +216,22 @@ export const getHistoryTransactions = async (
     const filtering = filter.map(f => `&filter=${f.property}:${f.rule}:${f.value}`).join('');
 
     const { data } = await axiosWithCredentials.get(
-      `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
+      organization,
+      `${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
     );
 
     return data;
   }, 'Failed to get history transactions');
 
 /* Adds observers */
-export const addObservers = async (serverUrl: string, transactionId: number, userIds: number[]) =>
+export const addObservers = async (
+  organization: Organization,
+  transactionId: number,
+  userIds: number[],
+) =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${serverUrl}/${controller}/${transactionId}/observers`,
+      organization, `${controller}/${transactionId}/observers`,
       {
         userIds,
       },
@@ -225,13 +242,14 @@ export const addObservers = async (serverUrl: string, transactionId: number, use
 
 /* Adds approvers */
 export const addApprovers = async (
-  serverUrl: string,
+  organization: Organization,
   transactionId: number,
   approvers: TransactionApproverDto[],
 ) =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${serverUrl}/${controller}/${transactionId}/approvers`,
+      organization,
+      `${controller}/${transactionId}/approvers`,
       {
         approversArray: approvers,
       },
@@ -242,7 +260,7 @@ export const addApprovers = async (
 
 /* Sends approver's choice */
 export const sendApproverChoice = async (
-  serverUrl: string,
+  organization: Organization,
   transactionId: number,
   userKeyId: number,
   signature: string,
@@ -250,7 +268,8 @@ export const sendApproverChoice = async (
 ) =>
   commonRequestHandler(async () => {
     const { data } = await axiosWithCredentials.post(
-      `${serverUrl}/${controller}/${transactionId}/approvers/approve`,
+      organization,
+      `${controller}/${transactionId}/approvers/approve`,
       {
         userKeyId: userKeyId,
         signature: signature,

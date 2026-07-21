@@ -66,7 +66,7 @@ const handleToggle = async (checked: boolean) => {
 };
 
 const handleReconnect = async () => {
-  const result = await reconnectOrganization(props.organization.serverUrl);
+  const result = await reconnectOrganization(props.organization);
 
   if (result.success) {
     if (isLoggedOutOrganization(props.organization)) {

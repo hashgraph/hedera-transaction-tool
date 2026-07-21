@@ -5,7 +5,7 @@ import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import { getAccountInfo } from '@renderer/services/mirrorNodeDataService.ts';
 
-export class AccountByIdCache extends EntityCache<string, IAccountInfoParsed | null> {
+export class AccountByIdCache extends EntityCache<string, IAccountInfoParsed | null, string> {
   //
   // EntityCache
   //
@@ -25,5 +25,9 @@ export class AccountByIdCache extends EntityCache<string, IAccountInfoParsed | n
       }
     }
     return result;
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeUrl: string): string {
+    return key.toString() + '/' + mirrorNodeUrl;
   }
 }

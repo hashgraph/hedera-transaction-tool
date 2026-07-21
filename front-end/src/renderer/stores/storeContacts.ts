@@ -61,7 +61,7 @@ const useContactsStore = defineStore('contacts', () => {
 
   async function fetchUserKeys(userId: number) {
     if (isLoggedInOrganization(user.selectedOrganization)) {
-      const keys = await getUserKeys(user.selectedOrganization.serverUrl, userId);
+      const keys = await getUserKeys(user.selectedOrganization, userId);
 
       const contactIndex = contacts.value.findIndex(c => c.user.id === userId);
       if (contactIndex === -1) return;
@@ -105,8 +105,7 @@ async function loadContacts(
   let result: Contact[];
 
   if (organization !== null) {
-    const serverUrl = organization.serverUrl;
-    const users = await getUsers(serverUrl);
+    const users = await getUsers(organization);
 
     const orgContacts = await getOrganizationContacts(
       user.id,
@@ -115,7 +114,7 @@ async function loadContacts(
     );
     result = [];
 
-    const allKeys = await getAllUserKeys(serverUrl);
+    const allKeys = await getAllUserKeys(organization);
     const userToKeys = new Map<number, IUserKey[]>();
     allKeys.forEach(k => {
       if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);

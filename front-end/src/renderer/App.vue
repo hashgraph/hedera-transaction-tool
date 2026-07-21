@@ -87,10 +87,9 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   } // Legacy fallback
 
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    const serverUrl = user.selectedOrganization.serverUrl;
     for (const transactionId of parsed.transactionIds) {
       // We clear cache with strict==false to keep young data
-      appCache.backendTransaction.forget(transactionId, serverUrl, false);
+      appCache.backendTransaction.forget(transactionId, user.selectedOrganization, false);
     }
   }
 });

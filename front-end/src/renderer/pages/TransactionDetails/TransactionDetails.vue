@@ -162,7 +162,7 @@ async function fetchTransaction() {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
       orgTransaction.value = await appCache.backendTransaction.lookup(
         Number(id),
-        user.selectedOrganization?.serverUrl || '',
+        user.selectedOrganization,
       );
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
@@ -173,9 +173,9 @@ async function fetchTransaction() {
           groupDescription.value = groupItem.group.description;
         } else if (groupItem.groupId) {
           // Backwards compatibility for older organization servers where groupItem.group is not populated
-          if (user.selectedOrganization?.serverUrl) {
+          if (user.selectedOrganization) {
             const orgGroup = await getTransactionGroupById(
-              user.selectedOrganization?.serverUrl,
+              user.selectedOrganization,
               groupItem.groupId,
               false,
             );
@@ -240,7 +240,7 @@ async function fetchTransactionOnNotif(): Promise<void> {
   const id = Number(formattedId.value);
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
     // We clear cache with strict==false to keep young data
-    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl, false);
+    appCache.backendTransaction.forget(id, user.selectedOrganization, false);
   }
   // 2) Now fetch transaction
   await fetchTransaction();

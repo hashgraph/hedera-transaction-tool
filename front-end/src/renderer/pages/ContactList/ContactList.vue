@@ -108,7 +108,7 @@ async function handleRemove() {
   if (!contact.value) throw new Error('Contact is not selected');
 
   if (isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin) {
-    await deleteUser(user.selectedOrganization.serverUrl, contact.value.user.id);
+    await deleteUser(user.selectedOrganization, contact.value.user.id);
     contact.value.nicknameId && (await removeContact(user.personal.id, contact.value.nicknameId));
   }
 
@@ -125,7 +125,7 @@ async function handleElevate() {
     throw new Error('User is not an admin');
   }
 
-  await elevateUserToAdmin(user.selectedOrganization.serverUrl, contact.value.user.id);
+  await elevateUserToAdmin(user.selectedOrganization, contact.value.user.id);
 
   toastManager.success('User elevate to admin successfully');
   selectedId.value = null;

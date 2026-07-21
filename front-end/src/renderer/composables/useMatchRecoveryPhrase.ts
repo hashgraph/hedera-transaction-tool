@@ -76,7 +76,7 @@ export default function useMatchRecoveryPrase() {
       );
       if (organizationKeyPair) {
         await updateOrganizationKey(
-          user.selectedOrganization.serverUrl,
+          user.selectedOrganization,
           user.selectedOrganization.userId,
           organizationKeyPair.id,
           user.recoveryPhrase.hash,
