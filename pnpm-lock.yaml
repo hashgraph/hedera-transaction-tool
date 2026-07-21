@@ -565,7 +565,7 @@ importers:
     dependencies:
       '@electron-toolkit/utils':
         specifier: 4.0.0
-        version: 4.0.0(electron@42.4.1(supports-color@8.1.1))
+        version: 4.0.0(electron@43.1.1(supports-color@8.1.1))
       '@hiero-ledger/cryptography':
         specifier: 1.19.0
         version: 1.19.0(react-native@0.85.2(@babel/core@7.29.6(supports-color@8.1.1))(@types/react@19.2.14)(react@19.2.5)(supports-color@8.1.1))(supports-color@8.1.1)
@@ -706,8 +706,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0(axios@1.18.1(debug@4.4.1(supports-color@8.1.1))(supports-color@8.1.1))
       electron:
-        specifier: 42.4.1
-        version: 42.4.1(supports-color@8.1.1)
+        specifier: 43.1.1
+        version: 43.1.1(supports-color@8.1.1)
       electron-builder:
         specifier: 26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)(supports-color@8.1.1)
@@ -739,8 +739,8 @@ importers:
         specifier: 6.4.3
         version: 6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
       vite-plugin-electron:
-        specifier: 1.0.4
-        version: 1.0.4
+        specifier: 1.1.0
+        version: 1.1.0
       vite-plugin-eslint:
         specifier: 1.8.1
         version: 1.8.1(eslint@9.39.3(jiti@2.7.0)(supports-color@8.1.1))(vite@6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0))
@@ -3539,9 +3539,6 @@ packages:
   '@vue/compiler-ssr@3.5.34':
     resolution: {integrity: sha512-cDtTHKibkThKGHH1SP+WdccquNRYQDFH6rRjQCqT9G2ltFAfoR5pUftpab/z+aM5mW9HLLVQW7hfKKQe/1GBeQ==}
 
-  '@vue/devtools-api@6.6.4':
-    resolution: {integrity: sha512-sGhTPMuXqZ1rVOk32RylztWkfXTRhuS7vgAKv0zjqk8gbsHkJ7xfFf+jbySxt7tWObEJwyKaHMikV/WGDiQm8g==}
-
   '@vue/devtools-api@7.7.9':
     resolution: {integrity: sha512-kIE8wvwlcZ6TJTbNeU2HQNtaxLx3a84aotTITUuL/4bzfPxzajGBOoqjMhwZJ8L9qFYDU/lAYMEEm11dnZOD6g==}
 
@@ -4897,8 +4894,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@42.4.1:
-    resolution: {integrity: sha512-8CYHJP5O4wFO+ycoJR98yy907MmPeo+vWXrzjxmGGgRNKqv8pOjjm+wphO0CCgQJnBU7+QUPSJS4QXhbKrO50w==}
+  electron@43.1.1:
+    resolution: {integrity: sha512-I5c5vfuVvaXpWx3IZdwvXgxQW44+e7OP1wXGVQkogLeSFSkUZ6sLCcWV05AdEcs65AO5tAIJJwbp7ixw+LdarA==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -8691,8 +8688,8 @@ packages:
     peerDependencies:
       vite: ^2.6.0 || ^3.0.0 || ^4.0.0 || ^5.0.0-0 || ^6.0.0-0 || ^7.0.0-0 || ^8.0.0
 
-  vite-plugin-electron@1.0.4:
-    resolution: {integrity: sha512-YBpc7l0gQMAhmt/aETr1Xa4IXEmPUFEoY+2FZK05wusfdsqtvAVcSGStfOPc/JpQBdtLPwFNERoxUB/brn8VLw==}
+  vite-plugin-electron@1.1.0:
+    resolution: {integrity: sha512-4qktNiYlRsaOp+n0vVknIA9m6Abjp6WDHLE9E/czElJgl8WRMJIqmw7ZvlYWflEK28hH5FHUuWEQLEwx9lMCWg==}
     peerDependencies:
       vite-plugin-electron-renderer: '*'
     peerDependenciesMeta:
@@ -9491,9 +9488,9 @@ snapshots:
     dependencies:
       '@types/node': 26.1.1
 
-  '@electron-toolkit/utils@4.0.0(electron@42.4.1(supports-color@8.1.1))':
+  '@electron-toolkit/utils@4.0.0(electron@43.1.1(supports-color@8.1.1))':
     dependencies:
-      electron: 42.4.1(supports-color@8.1.1)
+      electron: 43.1.1(supports-color@8.1.1)
 
   '@electron/asar@3.4.1':
     dependencies:
@@ -12250,8 +12247,6 @@ snapshots:
       '@vue/compiler-dom': 3.5.34
       '@vue/shared': 3.5.34
 
-  '@vue/devtools-api@6.6.4': {}
-
   '@vue/devtools-api@7.7.9':
     dependencies:
       '@vue/devtools-kit': 7.7.9
@@ -13759,7 +13754,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@42.4.1(supports-color@8.1.1):
+  electron@43.1.1(supports-color@8.1.1):
     dependencies:
       '@electron-internal/extract-zip': 1.0.3
       '@electron/get': 5.0.0(supports-color@8.1.1)
@@ -18234,7 +18229,7 @@ snapshots:
     dependencies:
       vite: 6.4.3(@types/node@26.1.1)(jiti@2.7.0)(lightningcss@1.32.0)(sass@1.99.0)(terser@5.49.0)(tsx@4.21.0)(yaml@2.9.0)
 
-  vite-plugin-electron@1.0.4:
+  vite-plugin-electron@1.1.0:
     dependencies:
       local-pkg: 1.2.1
 
