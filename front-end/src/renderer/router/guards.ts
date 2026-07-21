@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router';
+import type { _RouterClassic } from 'vue-router';
 
 import { MIGRATE_RECOVERY_PHRASE_HASH } from './constants';
 
@@ -16,9 +16,9 @@ const excludedPreviousPaths = [
   MIGRATE_RECOVERY_PHRASE_HASH,
 ];
 
-export function addGuards(router: Router) {
+export function addGuards(router: _RouterClassic) {
   const user = useUserStore();
-  const setupAccount = useAccountSetupStore()
+  const setupAccount = useAccountSetupStore();
 
   router.beforeEach(async (to, from) => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
@@ -66,7 +66,7 @@ export function addGuards(router: Router) {
     }
 
     if (!to.meta.withoutAuth && userIsLoggedIn === false) {
-      return({ name: 'login' });
+      return { name: 'login' };
     }
 
     return true;

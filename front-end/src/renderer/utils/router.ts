@@ -1,10 +1,10 @@
-import type { RouteLocationRaw, Router } from 'vue-router';
+import type { _RouterClassic, RouteLocationRaw } from 'vue-router';
 
-export const redirectToPrevious = async (router: Router, defaultRoute: RouteLocationRaw) => {
+export const redirectToPrevious = async (router: _RouterClassic, defaultRoute: RouteLocationRaw) => {
   await router.push(router.previousPath ?? defaultRoute);
 };
 
-export const redirectToPreviousTransactionsTab = async (router: Router) => {
+export const redirectToPreviousTransactionsTab = async (router: _RouterClassic) => {
   await router.push({
     name: 'transactions',
     query: {

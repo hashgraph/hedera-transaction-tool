@@ -1,5 +1,5 @@
 import { computed, type ComputedRef, type Ref, ref } from 'vue';
-import { type Router } from 'vue-router';
+import { type Router, _RouterClassic } from 'vue-router';
 import { defineStore } from 'pinia';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
@@ -32,14 +32,14 @@ export interface StoreNextTransactionV2 {
   routeDown: (
     current: TransactionNodeId,
     collection: TransactionNodeId[],
-    router: Router,
+    router: _RouterClassic,
     context?: TransactionNodeCollection | string | null,
     topLevel?: boolean,
     replace?: boolean,
   ) => Promise<void>;
-  routeUp: (router: Router, nbLevels?: number) => Promise<void>;
-  routeToNext: (router: Router) => Promise<void>;
-  routeToPrev: (router: Router) => Promise<void>;
+  routeUp: (router: _RouterClassic, nbLevels?: number) => Promise<void>;
+  routeToNext: (router: _RouterClassic) => Promise<void>;
+  routeToPrev: (router: _RouterClassic) => Promise<void>;
   hasNext: ComputedRef<boolean>;
   hasPrev: ComputedRef<boolean>;
   currentIndex: ComputedRef<number>;
@@ -79,7 +79,7 @@ const useNextTransactionV2 = defineStore(
     const routeDown = async (
       current: TransactionNodeId,
       collection: TransactionNodeId[],
-      router: Router,
+      router: _RouterClassic,
       context: TransactionNodeCollection | string | null = null,
       topLevel = false,
       replace = false,
@@ -101,7 +101,7 @@ const useNextTransactionV2 = defineStore(
       await routeToCurrent(router, replace);
     };
 
-    const routeToNext = async (router: Router): Promise<void> => {
+    const routeToNext = async (router: _RouterClassic): Promise<void> => {
       if (hasNext.value) {
         const currentIndex = currentIndexStack.value.pop()!;
         currentIndexStack.value.push(currentIndex + 1);
@@ -111,7 +111,7 @@ const useNextTransactionV2 = defineStore(
       }
     };
 
-    const routeToPrev = async (router: Router): Promise<void> => {
+    const routeToPrev = async (router: _RouterClassic): Promise<void> => {
       if (hasPrev.value) {
         const currentIndex = currentIndexStack.value.pop()!;
         currentIndexStack.value.push(currentIndex - 1);
@@ -121,7 +121,7 @@ const useNextTransactionV2 = defineStore(
       }
     };
 
-    const routeUp = async (router: Router, nbLevels = 1): Promise<void> => {
+    const routeUp = async (router: _RouterClassic, nbLevels = 1): Promise<void> => {
       while (nbLevels >= 1) {
         if (currentCollection.value !== null && currentIndex.value !== -1) {
           collectionStack.value.pop();
@@ -188,7 +188,7 @@ const useNextTransactionV2 = defineStore(
       return result;
     };
 
-    const routeToCurrent = async (router: Router, replace: boolean): Promise<void> => {
+    const routeToCurrent = async (router: _RouterClassic, replace: boolean): Promise<void> => {
       if (currentCollection.value !== null && currentIndex.value < currentCollection.value.length) {
         const nodeId = currentCollection.value[currentIndex.value];
         if (nodeId.transactionId) {
