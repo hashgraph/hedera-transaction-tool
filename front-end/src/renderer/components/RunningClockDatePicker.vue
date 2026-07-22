@@ -9,7 +9,6 @@ import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';
 const props = defineProps<{
   modelValue: Date;
   nowButtonVisible?: boolean;
-  placeholder?: string;
   minDate?: DateValue;
   maxDate?: DateValue;
 }>();
@@ -85,7 +84,6 @@ onUnmounted(() => {
     :minDate="minDate"
     :maxDate="maxDate"
     :clearable="false"
-    :placeholder="placeholder"
     :nowButtonVisible="nowButtonVisible"
     @open="handleOpen"
     @closed="handleClosed"
