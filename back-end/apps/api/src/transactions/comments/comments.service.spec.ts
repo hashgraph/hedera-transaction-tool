@@ -57,7 +57,11 @@ describe('CommentsService', () => {
 
       const result = await service.createComment(user as User, transactionId, dto);
 
-      expect(repo.create).toHaveBeenCalledWith(dto);
+      expect(repo.create).toHaveBeenCalledWith({
+        ...dto,
+        transaction: { id: transactionId },
+        user,
+      });
       expect(repo.save).toHaveBeenCalledWith(expectedComment);
       expect(result).toEqual(expectedComment);
     });
