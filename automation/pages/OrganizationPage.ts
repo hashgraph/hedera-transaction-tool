@@ -83,8 +83,8 @@ export class OrganizationPage extends BasePage {
   addUserButtonSelector = 'button-add-user';
   openDatePickerButtonSelector =
     '[data-testid="date-picker-valid-start"] [data-test-id="dp-input"]';
-  datePickerCalendarSelector = 'css=.dp__instance_calendar';
-  datePickerInputSelector = 'css=.dp__time_input';
+  datePickerCalendarSelector = 'css=.dp--instance-calendar';
+  datePickerInputSelector = 'css=.dp--time-input';
   timePickerIconSelector = 'css=.dp--tp-wrap button[aria-label="Open time picker"]';
   incrementSecondsButtonSelector = 'css=button[aria-label="Increment seconds"]';
   incrementMinutesButtonSelector = 'css=button[aria-label="Increment minutes"]';

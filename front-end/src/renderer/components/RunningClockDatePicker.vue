@@ -1,17 +1,17 @@
 <script setup lang="ts">
-import type { VueDatePickerProps } from '@vuepic/vue-datepicker';
+import type { DateValue } from '@vuepic/vue-datepicker';
 
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 import AppDatePicker from '@renderer/components/ui/AppDatePicker.vue';
 
 /* Props */
-const props = defineProps<
-  {
-    modelValue: Date;
-    nowButtonVisible?: boolean;
-  } & VueDatePickerProps
->();
+const props = defineProps<{
+  modelValue: Date;
+  nowButtonVisible?: boolean;
+  minDate?: DateValue;
+  maxDate?: DateValue;
+}>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -84,7 +84,6 @@ onUnmounted(() => {
     :minDate="minDate"
     :maxDate="maxDate"
     :clearable="false"
-    :placeholder="placeholder"
     :nowButtonVisible="nowButtonVisible"
     @open="handleOpen"
     @closed="handleClosed"

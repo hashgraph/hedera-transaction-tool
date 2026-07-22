@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import type { DatePickerInstance, VueDatePickerProps } from '@vuepic/vue-datepicker';
+import { VueDatePicker, type DateValue } from '@vuepic/vue-datepicker';
 
 import { computed, ref } from 'vue';
 
-import DatePicker from '@vuepic/vue-datepicker';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 /* Props */
-const props = defineProps<
-  {
-    modelValue: Date | undefined;
-    nowButtonVisible?: boolean;
-  } & VueDatePickerProps
->();
+const props = defineProps<{
+  modelValue: Date | undefined;
+  nowButtonVisible?: boolean;
+  clearable?: boolean;
+  placeholder?: string;
+  minDate?: DateValue;
+  maxDate?: DateValue;
+}>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -26,7 +27,7 @@ const emit = defineEmits<{
 const { isUtcSelected } = useDateTimeSetting();
 
 /* State */
-const datePicker = ref<DatePickerInstance|null>(null);
+const datePicker = ref<typeof VueDatePicker | null>(null);
 
 /* Computed */
 const inputValue = computed(() => {
@@ -54,13 +55,12 @@ function handleUpdate(value: string | Date) {
 }
 </script>
 <template>
-  <DatePicker
+  <VueDatePicker
     ref="datePicker"
     :model-value="inputValue"
-    :utc="isUtcSelected ? 'preserve' : undefined"
-    :clearable="clearable"
+    :timezone="isUtcSelected ? 'utc' : undefined"
+    :input-attrs="{ clearable: props.clearable }"
     auto-apply
-    partial-flow
     text-input
     :config="{
       keepActionRow: true,
@@ -74,9 +74,9 @@ function handleUpdate(value: string | Date) {
     :placeholder="placeholder"
     :min-date="minDate"
     :max-date="maxDate"
-    teleport="body"
+    :teleport="true"
     class="is-fill"
-    enable-seconds
+    :time-config="{enableSeconds: true}"
     @open="$emit('open')"
     @closed="$emit('closed')"
     @update:model-value="handleUpdate"
@@ -103,5 +103,5 @@ function handleUpdate(value: string | Date) {
         </AppButton>
       </div>
     </template>
-  </DatePicker>
+  </VueDatePicker>
 </template>
