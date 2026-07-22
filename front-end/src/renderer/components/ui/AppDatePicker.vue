@@ -61,7 +61,6 @@ function handleUpdate(value: string | Date) {
     :timezone="isUtcSelected ? 'utc' : undefined"
     :input-attrs="{ clearable: props.clearable }"
     auto-apply
-    :flow="{ partial: true }"
     text-input
     :config="{
       keepActionRow: true,
