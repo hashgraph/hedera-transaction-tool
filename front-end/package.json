@@ -41,7 +41,7 @@
     "@hiero-ledger/sdk": "catalog:",
     "@prisma/adapter-better-sqlite3": "7.8.0",
     "@prisma/client": "7.8.0",
-    "@vuepic/vue-datepicker": "11.0.3",
+    "@vuepic/vue-datepicker": "12.1.0",
     "@vueuse/core": "12.8.2",
     "argon2": "catalog:",
     "axios": "catalog:",

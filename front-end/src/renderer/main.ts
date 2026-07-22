@@ -8,7 +8,7 @@ import { addGuards } from '@renderer/router/guards';
 
 import ToastPlugin from 'vue-toast-notification';
 
-import DatePicker from '@vuepic/vue-datepicker';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
@@ -36,7 +36,7 @@ app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 app.directive('focus-first-input', AutoFocusFirstInputDirective);
 
 /* Custom Components */
-app.component('DatePicker', DatePicker);
+app.component('DatePicker', VueDatePicker);
 
 /* App mount */
 app.mount('#app');
