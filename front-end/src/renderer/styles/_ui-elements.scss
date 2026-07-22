@@ -1015,7 +1015,7 @@ td .btn {
 }
 
 /* Vue Date Time Picker */
-.dp__theme_light {
+.dp--theme-light {
   --dp-background-color: var(--#{$prefix}body-bg);
   --dp-text-color: var(--#{$prefix}body-color);
   --dp-hover-color: var(--#{$prefix}primary);
@@ -1051,21 +1051,21 @@ td .btn {
     // To update
     --dp-border-color: var(--#{$prefix}input-fill-bg-color);
 
-    .dp__input:hover {
+    .dp--input:hover {
       border-color: var(--#{$prefix}input-fill-bg-color);
     }
   }
 
-  .dp__input {
+  .dp--input {
     line-height: 2 !important;
 
-    &.dp__input_focus,
+    &.dp--input-focus,
     &:focus {
       --dp-background-color: var(--#{$prefix}input-fill-focus-bg-color);
     }
   }
 
-  .dp__inc_dec_button:hover {
+  .dp--inc-dec-button:hover {
     color: var(--#{$prefix}white);
   }
 
@@ -1077,11 +1077,11 @@ td .btn {
     border-radius: 50%;
   }
 
-  .dp__overlay_cell_disabled {
+  .dp--overlay-cell-disabled {
     color: var(--dp-disabled-color-text);
   }
 
-  .dp__arrow_top {
+  .dp--arrow-top {
     display: none;
   }
 }

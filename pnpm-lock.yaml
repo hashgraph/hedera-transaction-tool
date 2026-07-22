@@ -582,8 +582,8 @@ importers:
         specifier: 7.8.0
         version: 7.8.0(prisma@7.8.0(@types/react@19.2.14)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@5.7.3))(typescript@5.7.3)
       '@vuepic/vue-datepicker':
-        specifier: 12.1.0
-        version: 12.1.0(vue@3.5.34(typescript@5.7.3))
+        specifier: 13.0.0
+        version: 13.0.0(vue@3.5.34(typescript@5.7.3))
       '@vueuse/core':
         specifier: 12.8.2
         version: 12.8.2(typescript@5.7.3)
@@ -3641,8 +3641,8 @@ packages:
       vue:
         optional: true
 
-  '@vuepic/vue-datepicker@12.1.0':
-    resolution: {integrity: sha512-QuWcO+CqIGYFoRNCagp9xUY9sMK/OHUlVIDxBYjw7HjCTWXfuE/r3l3loB00faEtb0Teo3DeBn26hT3tYA5pgg==}
+  '@vuepic/vue-datepicker@13.0.0':
+    resolution: {integrity: sha512-7emyDtXcTDn0w1+RLcyYhdZFw2pE9EGbDuyFrN3XJju8nJVPcU822M2znrzmNdZU82R5ItyBeagZBtsYzUVy3g==}
     engines: {node: '>=18.12.0'}
     peerDependencies:
       vue: '>=3.5.0'
@@ -12436,7 +12436,7 @@ snapshots:
       typescript: 5.7.3
       vue: 3.5.34(typescript@5.7.3)
 
-  '@vuepic/vue-datepicker@12.1.0(vue@3.5.34(typescript@5.7.3))':
+  '@vuepic/vue-datepicker@13.0.0(vue@3.5.34(typescript@5.7.3))':
     dependencies:
       '@date-fns/tz': 1.5.0
       '@floating-ui/vue': 1.1.11(vue@3.5.34(typescript@5.7.3))
