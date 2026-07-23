@@ -233,6 +233,8 @@ jobs:
           sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^USER_MINUTE_LIMIT=.*/USER_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^USER_SECOND_LIMIT=.*/USER_SECOND_LIMIT=99999/' apps/api/.env
 
           export COMPOSE_PARALLEL_LIMIT=4
 

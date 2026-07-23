@@ -61,6 +61,10 @@ spec:
               value: '10000'
             - name: GLOBAL_SECOND_LIMIT
               value: '1000'
+            - name: USER_MINUTE_LIMIT
+              value: '100'
+            - name: USER_SECOND_LIMIT
+              value: '10'
             - name: LATEST_SUPPORTED_FRONTEND_VERSION
               value: '0.30.0-SNAPSHOT'
             - name: MINIMUM_SUPPORTED_FRONTEND_VERSION
