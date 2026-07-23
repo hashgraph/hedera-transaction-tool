@@ -1,7 +1,7 @@
 import type { IAccountInfoParsed, CryptoAllowance } from '@shared/interfaces';
 
-import { computed, ref, watch } from 'vue';
-import { AccountId, Client, Hbar } from '@hiero-ledger/sdk';
+import { computed, ref, watch, type Ref } from 'vue';
+import { AccountId, Client, Hbar, Key } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -12,13 +12,30 @@ import { flattenKeyList } from '@renderer/services/keyPairService';
 import { stringifyHbar } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache';
 
-export default function useAccountId() {
+export interface AccountIdStore {
+  accountId: Ref<string>;
+  accountInfo: Ref<IAccountInfoParsed | null>;
+  accountIdFormatted: Ref<string>;
+  accountIdWithChecksum: Ref<string | string[] | undefined>;
+  autoRenewPeriodInDays: Ref<string>;
+  key: Ref<Key | null>;
+  keysFlattened: Ref<string[]>;
+  allowances: Ref<CryptoAllowance[]>;
+  isValid: Ref<boolean>;
+  isLoading: Ref<boolean>;
+  getSpenderAllowance: (spenderId: string | AccountId) => Hbar;
+  getStakedToString: () => string;
+  getFormattedPendingRewards: () => string;
+  openAccountInHashscan: () => void;
+}
+
+export default function useAccountId(): AccountIdStore {
   /* Stores */
   const networkStore = useNetworkStore();
 
   /* State */
   const accountId = ref<string>('');
-  const accountInfo = ref<IAccountInfoParsed | null>(null);
+  const accountInfo: Ref<IAccountInfoParsed | null> = ref(null);
   const allowances = ref<CryptoAllowance[]>([]);
   const loading = ref<boolean>(false);
 
@@ -62,7 +79,7 @@ export default function useAccountId() {
     ((accountInfo.value?.autoRenewPeriod || 0) / 86400).toFixed(0),
   );
 
-  const key = computed(() => accountInfo.value?.key);
+  const key = computed(() => accountInfo.value?.key ?? null);
   const keysFlattened = computed(() => {
     if (accountInfo.value?.key) {
       return flattenKeyList(accountInfo.value?.key).map(pk => pk.toStringRaw());

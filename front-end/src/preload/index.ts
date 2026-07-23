@@ -8,5 +8,4 @@ export const electronAPI = {
   },
 };
 
-typeof electronAPI;
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
