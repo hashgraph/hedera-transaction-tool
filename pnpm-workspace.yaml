@@ -121,3 +121,7 @@ overrides:
   "postcss": "8.5.15"
   "body-parser": "2.3.0"
   "immutable": "5.1.8"
+
+minimumReleaseAgeExclude:
+  - '@vue/language-core@3.3.8'
+  - vue-tsc@3.3.8
