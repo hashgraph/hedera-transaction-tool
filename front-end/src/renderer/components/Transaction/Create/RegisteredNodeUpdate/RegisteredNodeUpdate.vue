@@ -198,7 +198,7 @@ watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
     data.description = registeredNodeInfo.description ?? '';
     data.adminKey = registeredNodeInfo.admin_key;
     data.serviceEndpoints = getComponentRegisteredEndpoints(
-      registeredNodeInfo.service_endpoints as any,
+      registeredNodeInfo.service_endpoints,
     );
   }
 });

@@ -15,13 +15,12 @@
   "compilerOptions": {
     "composite": true,
     "types": ["vitest/globals"],
-    "baseUrl": ".",
     "paths": {
-      "@renderer/*": ["src/renderer/*"],
-      "@main/*": ["src/main/*"],
-      "@shared/*": ["src/shared/*"],
-      "@prisma/client": ["src/generated/prisma/browser.ts"],
-      "long": ["node_modules/long"]
+      "@renderer/*": ["./src/renderer/*"],
+      "@main/*": ["./src/main/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@prisma/client": ["./src/generated/prisma/browser.ts"],
+      "long": ["./node_modules/long"]
     },
 
     "allowUnreachableCode": false,
