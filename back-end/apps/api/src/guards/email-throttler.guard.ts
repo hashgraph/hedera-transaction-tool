@@ -1,9 +1,36 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
+import { seconds, ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
 
 @Injectable()
 export class EmailThrottlerGuard extends ThrottlerGuard {
+  constructor(
+    @Inject(ConfigService) configService: ConfigService,
+    @Inject(ThrottlerStorage) storageService: ThrottlerStorage,
+    reflector: Reflector,
+  ) {
+    super(
+      {
+        throttlers: [
+          {
+            name: 'anonymous-minute',
+            ttl: seconds(60),
+            limit: configService.getOrThrow<number>('ANONYMOUS_MINUTE_LIMIT'),
+          },
+          {
+            name: 'anonymous-five-second',
+            ttl: seconds(5),
+            limit: configService.getOrThrow<number>('ANONYMOUS_FIVE_SECOND_LIMIT'),
+          },
+        ],
+      },
+      storageService,
+      reflector,
+    );
+  }
+
   protected getTracker(req: Record<string, any>): Promise<string> {
     const email = req.body.email;
     if (!email) {
