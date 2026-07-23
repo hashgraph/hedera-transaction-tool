@@ -3,7 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { User } from '@entities';
 
-import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
+import { JwtAuthGuard, JwtBlackListAuthGuard, UserThrottlerGuard, VerifiedUserGuard } from '../../guards';
 import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { GetUser } from '../../decorators';
@@ -20,6 +20,7 @@ export class CommentsController {
   constructor(private commentsService: CommentsService) {}
 
   @Post()
+  @UseGuards(UserThrottlerGuard)
   @Serialize(TransactionCommentDto)
   createComment(
     @GetUser() user: User,

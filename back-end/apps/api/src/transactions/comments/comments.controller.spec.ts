@@ -7,7 +7,7 @@ import { User } from '@entities';
 
 import { TransactionCommentDto } from '../dto';
 
-import { VerifiedUserGuard } from '../../guards';
+import { UserThrottlerGuard, VerifiedUserGuard } from '../../guards';
 import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { CommentsController } from './comments.controller';
@@ -42,6 +42,8 @@ describe('CommentsController', () => {
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
       .overrideGuard(TransactionAccessGuard)
+      .useValue(guardMock())
+      .overrideGuard(UserThrottlerGuard)
       .useValue(guardMock())
       .compile();
 
@@ -89,7 +91,7 @@ describe('CommentsController', () => {
       const dto = plainToInstance(TransactionCommentDto, raw, { excludeExtraneousValues: true });
 
       expect(dto.user).toEqual({ id: 2, email: 'user@test.com' });
-      expect((dto.user as any).password).toBeUndefined();
+      expect(dto.user).not.toHaveProperty('password');
     });
   });
 });
