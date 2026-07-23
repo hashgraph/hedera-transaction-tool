@@ -101,7 +101,7 @@
     "vitest": "catalog:vitest",
     "vitest-mock-extended": "5.0.0",
     "vue": "3.5.40",
-    "vue-tsc": "3.3.8"
+    "vue-tsc": "3.3.7"
   },
   "engines": {
     "node": ">=24.0.0"
