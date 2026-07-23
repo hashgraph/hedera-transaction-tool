@@ -57,7 +57,7 @@
     "jwt-decode": "4.0.0",
     "long": "catalog:",
     "node-forge": "1.4.0",
-    "p-limit": "7.3.0",
+    "p-limit": "7.3.1",
     "pinia": "4.0.2",
     "semver": "catalog:",
     "socket.io-client": "4.8.3",
