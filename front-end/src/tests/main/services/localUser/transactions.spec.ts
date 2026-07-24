@@ -98,7 +98,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; });
 
       const client = await getClientFromNetwork(mirrorNetwork);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -121,7 +121,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; });
 
       const client = await getClientFromNetwork(mirrorNetwork, ledgerId);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -476,7 +476,7 @@ describe('Services Local User Transactions', () => {
         const queryMock = new SDK.FileContentsQuery().setFileId(fileId);
         queryMock.execute = vi.fn().mockResolvedValue(response);
 
-        vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+        vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock);
         vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
           privateKey as unknown as SDK.PrivateKey,
         );
@@ -498,7 +498,7 @@ describe('Services Local User Transactions', () => {
       const queryMock = new SDK.FileContentsQuery();
       queryMock.execute = vi.fn().mockResolvedValue(response);
 
-      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock);
       vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
         privateKey as unknown as SDK.PrivateKey,
       );

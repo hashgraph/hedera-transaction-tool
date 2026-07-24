@@ -29,7 +29,7 @@ export const safeAwait = async <T>(promise: Promise<T>): Promise<ISafeAwaitResul
       throwNative(data);
       return { error: data };
     }
-    return { data } as ISafeAwaitResultData<T>;
+    return { data };
   } catch (error: unknown) {
     throwNative(error as Error);
     return { error };

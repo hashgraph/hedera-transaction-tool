@@ -18,12 +18,12 @@ describe('renameFunc', () => {
     expect(renamedFunc.name).toBe(newName);
   });
 
-  test('should call the original function with correct arguments', () => {
+  test('should call the original function with correct arguments', async () => {
     const originalFunc = vi.fn();
     const renamedFunc = renameFunc(originalFunc, 'newFuncName');
     const args = [1, 2, 3];
 
-    renamedFunc(...args);
+    await renamedFunc(...args);
 
     expect(originalFunc).toHaveBeenCalledWith(...args);
   });

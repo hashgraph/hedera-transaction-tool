@@ -100,7 +100,7 @@ export const getAccountInfo = async (
 
   const accountInfo: IAccountInfoParsed = {
     accountId: AccountId.fromString(rawAccountInfo.account || ''),
-    alias: rawAccountInfo.alias as string,
+    alias: rawAccountInfo.alias,
     balance: Hbar.from(rawAccountInfo.balance?.balance || 0, HbarUnit.Tinybar),
     declineReward: Boolean(rawAccountInfo.decline_reward),
     deleted: Boolean(rawAccountInfo.deleted),
@@ -182,7 +182,7 @@ export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
     } else if (usdAmount.isGreaterThan(-resolution) && usdAmount.isLessThan(0)) {
       usdAmount = new BigNumber(-resolution);
     }
-    result = `$${usdAmount.decimalPlaces(fractionDigits)}`;
+    result = `$${usdAmount.decimalPlaces(fractionDigits).toString()}`;
   } else {
     result = '';
   }

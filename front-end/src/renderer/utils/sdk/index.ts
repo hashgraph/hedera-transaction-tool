@@ -363,6 +363,7 @@ export const formatAccountId = (accountId: string) => {
 
 export const formatContractId = (contractId: string) => {
   if (isContractId(contractId)) {
+     
     return ContractId.fromString(contractId).toString();
   } else {
     return contractId;

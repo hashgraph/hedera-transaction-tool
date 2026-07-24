@@ -92,7 +92,7 @@ describe('Electron entry file', async () => {
   };
   vi.mocked(BrowserWindow).mockImplementation(function () {
     return mockBrowserWindowInstance;
-  } as unknown as typeof BrowserWindow);
+  });
 
   test('Should initialize the main process', async () => {
     is.dev = false;
@@ -284,7 +284,7 @@ describe('Electron entry file', async () => {
     const mockWindow2 = { webContents: { reload: vi.fn() } };
     const getAllWindowsMock = vi
       .fn()
-      .mockReturnValue([mockWindow1, mockWindow2] as unknown as BrowserWindow[]);
+      .mockReturnValue([mockWindow1, mockWindow2] as unknown);
     (BrowserWindow as unknown as Record<string, unknown>).getAllWindows = getAllWindowsMock;
 
     processMessageHandler('electron-vite&type=hot-reload');
@@ -297,7 +297,7 @@ describe('Electron entry file', async () => {
     const mockWindow = { webContents: { reload: vi.fn() } };
     const getAllWindowsMock = vi
       .fn()
-      .mockReturnValue([mockWindow] as unknown as BrowserWindow[]);
+      .mockReturnValue([mockWindow] as unknown);
     (BrowserWindow as unknown as Record<string, unknown>).getAllWindows = getAllWindowsMock;
 
     processMessageHandler('some-other-message');

@@ -18,7 +18,11 @@ const makeOrg = (overrides: Record<string, unknown> = {}) => ({
 
 const mocks = vi.hoisted(() => ({
   userStore: {
-    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as Record<string, unknown> | null,
+    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as null | {
+      id: string,
+      useKeychain: boolean,
+      email?: string
+    },
     selectedOrganization: null as Record<string, unknown> | null,
     organizations: [] as Record<string, unknown>[],
     selectOrganization: vi.fn(),

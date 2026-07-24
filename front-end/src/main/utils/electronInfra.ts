@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 
-export const renameFunc = (func: (...args: any[]) => void, name: string) => {
+export const renameFunc = (func: (...args: any[]) => void|Promise<void>, name: string) => {
   const newFunc = (...args: any[]) => func(...args);
   Object.defineProperty(newFunc, 'name', { value: name });
   return newFunc;

@@ -54,9 +54,9 @@ export const generateTransactionExportFileName = (orgTransaction: ITransaction) 
   const sdkTransaction = Transaction.fromBytes(transactionBytes);
 
   // Use TTv1 file name format:  `${epochSeconds}_${accountId}_${hash}.tx`
-  const validStart = sdkTransaction!.transactionId!.validStart;
+  const validStart = sdkTransaction.transactionId!.validStart;
   const accountId = sdkTransaction.transactionId!.accountId!.toString();
   const hash = javaFormatArrayHashCode(transactionBytes);
 
-  return `${validStart!.seconds}_${accountId}_${hash}`;
+  return `${validStart!.seconds.toString()}_${accountId}_${hash}`;
 };

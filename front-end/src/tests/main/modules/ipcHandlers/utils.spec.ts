@@ -452,7 +452,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
+        function () { return mockX509Certificate; },
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),
@@ -480,7 +480,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
+        function () { return mockX509Certificate; },
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),
@@ -507,7 +507,7 @@ describe('registerUtilsListeners', () => {
       };
 
       vi.mocked(X509Certificate).mockImplementation(
-        function () { return mockX509Certificate; } as unknown as typeof X509Certificate,
+        function () { return mockX509Certificate; },
       );
       vi.mocked(createHash).mockReturnValue({
         update: vi.fn().mockReturnThis(),
@@ -557,7 +557,7 @@ describe('setDockBounce listener', () => {
     } as unknown as Electron.BrowserWindow;
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
       fakeWindow,
-    ] as unknown as BrowserWindow[]);
+    ]);
     const bounceId = 123;
     const bounceMock = vi.fn().mockReturnValue(bounceId);
     const cancelBounceMock = vi.fn();
@@ -573,7 +573,7 @@ describe('setDockBounce listener', () => {
     } as unknown as Electron.BrowserWindow;
     vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([
       fakeWindow,
-    ] as unknown as BrowserWindow[]);
+    ]);
     const bounceMock = vi.fn();
     const cancelBounceMock = vi.fn();
     (app as any).dock = { bounce: bounceMock, cancelBounce: cancelBounceMock };

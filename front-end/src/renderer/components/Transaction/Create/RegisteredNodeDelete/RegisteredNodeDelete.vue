@@ -27,7 +27,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createRegisteredNodeDeleteTransaction({
       ...common,
-      ...(data as RegisteredNodeDeleteData),
+      ...(data),
     });
 });
 

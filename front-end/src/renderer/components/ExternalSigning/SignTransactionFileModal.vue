@@ -53,11 +53,11 @@ async function handleSignAll() {
 
   if (transactionFile.value) {
     const updatedFile: TransactionFile = {
-      network: transactionFile.value!.network,
+      network: transactionFile.value.network,
       items: [],
     };
 
-    for (const item of transactionFile.value!.items) {
+    for (const item of transactionFile.value.items) {
       const updatedItem = { ...item };
 
       if (itemsToBeSigned.value.includes(item)) {
@@ -66,7 +66,7 @@ async function handleSignAll() {
         const missingSignerKeys = await collectMissingSignerKeys(
           sdkTransaction,
           user.publicKeys,
-          network.getMirrorNodeREST(transactionFile.value!.network),
+          network.getMirrorNodeREST(transactionFile.value.network),
           appCache,
         );
 

@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Client, FileId, FileInfo } from '@hiero-ledger/sdk';
+import { FileId, FileInfo } from '@hiero-ledger/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
@@ -150,7 +150,7 @@ const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
     FileId.fromString(selectedFile.value?.file_id)
-      .toStringWithChecksum(network.client as Client)
+      .toStringWithChecksum(network.client)
       .split('-'),
 );
 

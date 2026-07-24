@@ -101,7 +101,7 @@ describe('OrganizationRequestHandler.vue', () => {
       submitTransactionMock.mockResolvedValue({
         id: 1,
         transactionBytes: 'bytes-hex',
-      } as never);
+      });
 
       const wrapper = mountHandler();
       const factory = vi.fn();
@@ -120,7 +120,7 @@ describe('OrganizationRequestHandler.vue', () => {
     test('retries with a nano-offset and emits success when retry resolves', async () => {
       submitTransactionMock
         .mockRejectedValueOnce(texError())
-        .mockResolvedValueOnce({ id: 7, transactionBytes: 'b' } as never);
+        .mockResolvedValueOnce({ id: 7, transactionBytes: 'b' });
 
       const factory = vi.fn((_: number) => new Uint8Array([1]));
       const wrapper = mountHandler();
@@ -131,7 +131,7 @@ describe('OrganizationRequestHandler.vue', () => {
       expect(submitTransactionMock).toHaveBeenCalledTimes(2);
       expect(factory).toHaveBeenCalledTimes(1);
 
-      const offset = factory.mock.calls[0][0] as number;
+      const offset = factory.mock.calls[0][0];
       // Attempt-1 bucket
       expect(offset).toBeGreaterThanOrEqual(1);
       expect(offset).toBeLessThanOrEqual(333_333);
@@ -168,7 +168,7 @@ describe('OrganizationRequestHandler.vue', () => {
         .mockRejectedValueOnce(err)
         .mockRejectedValueOnce(err)
         .mockRejectedValueOnce(err)
-        .mockResolvedValueOnce({ id: 1, transactionBytes: 'b' } as never);
+        .mockResolvedValueOnce({ id: 1, transactionBytes: 'b' });
 
       const factory = vi.fn((_: number) => new Uint8Array([0]));
       const wrapper = mountHandler();
@@ -177,7 +177,7 @@ describe('OrganizationRequestHandler.vue', () => {
       );
 
       expect(factory).toHaveBeenCalledTimes(3);
-      const offsets = factory.mock.calls.map(c => c[0] as number);
+      const offsets = factory.mock.calls.map(c => c[0]);
       const [o1, o2, o3] = offsets;
 
       expect(o1).toBeGreaterThanOrEqual(1);

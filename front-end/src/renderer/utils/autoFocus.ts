@@ -9,12 +9,12 @@ export const AutoFocusFirstInputDirective: Directive = {
         firstElement.focus();
       }
     };
-    nextTick(() => focus());
+    void nextTick(() => focus());
   },
 };
 
 export const focusFirstInput = (container: HTMLElement | null): void => {
-  nextTick(() => {
+  void nextTick(() => {
     const firstElement = container?.querySelector('input, textarea, select') as HTMLElement | null;
     if (firstElement) {
       firstElement.focus();

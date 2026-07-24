@@ -24,7 +24,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createFreezeTransaction({
       ...common,
-      ...(data as FreezeData),
+      ...(data),
     });
 });
 

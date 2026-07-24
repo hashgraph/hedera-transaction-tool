@@ -345,7 +345,7 @@ describe('TransactionDetailsHeader.vue', () => {
     vi.mocked(showSaveDialog).mockResolvedValueOnce({
       filePath: '/tmp/export.tx2',
       canceled: false,
-    } as any);
+    });
 
     const wrapper = mountHeader(
       { status: TransactionStatus.CANCELED },

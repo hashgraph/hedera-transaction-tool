@@ -76,6 +76,6 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     const tx = new NodeCreateTransaction();
     // Replace prototype so instanceof check fails — a quick way to stress the guard.
     Object.setPrototypeOf(tx, Object.prototype);
-    expect(() => getNodeData(tx as unknown as NodeCreateTransaction)).toThrow();
+    expect(() => getNodeData(tx)).toThrow();
   });
 });

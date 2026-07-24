@@ -26,7 +26,7 @@ export function formatHbarTransfers(transfers: Transfer[]): string {
       sender = transfers[1];
       receiver = transfers[0];
     }
-    return `${sender.accountId} --> ${stringifyHbarOrTinybar(receiver.amount)} --> ${receiver.accountId}`;
+    return `${sender.accountId.toString()} --> ${stringifyHbarOrTinybar(receiver.amount)} --> ${receiver.accountId.toString()}`;
   }
 
   return 'Multiple transfers';
