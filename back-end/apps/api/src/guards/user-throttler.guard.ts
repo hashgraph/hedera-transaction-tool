@@ -17,12 +17,12 @@ export class UserThrottlerGuard extends ThrottlerGuard {
           {
             name: 'user-minute',
             ttl: seconds(60),
-            limit: Number(configService.getOrThrow('USER_MINUTE_LIMIT')),
+            limit: Number(configService.get('USER_MINUTE_LIMIT', 100)),
           },
           {
             name: 'user-second',
             ttl: seconds(1),
-            limit: Number(configService.getOrThrow('USER_SECOND_LIMIT')),
+            limit: Number(configService.get('USER_SECOND_LIMIT', 10)),
           },
         ],
       },

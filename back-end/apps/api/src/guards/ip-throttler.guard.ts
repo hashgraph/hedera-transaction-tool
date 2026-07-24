@@ -17,12 +17,12 @@ export class IpThrottlerGuard extends ThrottlerGuard {
           {
             name: 'global-minute',
             ttl: seconds(60),
-            limit: Number(configService.getOrThrow('GLOBAL_MINUTE_LIMIT')),
+            limit: Number(configService.get('GLOBAL_MINUTE_LIMIT', 10_000)),
           },
           {
             name: 'global-second',
             ttl: seconds(1),
-            limit: Number(configService.getOrThrow('GLOBAL_SECOND_LIMIT')),
+            limit: Number(configService.get('GLOBAL_SECOND_LIMIT', 1_000)),
           },
         ],
       },

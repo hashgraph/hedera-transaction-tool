@@ -17,12 +17,12 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
           {
             name: 'anonymous-minute',
             ttl: seconds(60),
-            limit: Number(configService.getOrThrow('ANONYMOUS_MINUTE_LIMIT')),
+            limit: Number(configService.get('ANONYMOUS_MINUTE_LIMIT', 3)),
           },
           {
             name: 'anonymous-five-second',
             ttl: seconds(5),
-            limit: Number(configService.getOrThrow('ANONYMOUS_FIVE_SECOND_LIMIT')),
+            limit: Number(configService.get('ANONYMOUS_FIVE_SECOND_LIMIT', 1)),
           },
         ],
       },
