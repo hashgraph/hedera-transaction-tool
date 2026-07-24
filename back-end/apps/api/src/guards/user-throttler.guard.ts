@@ -17,12 +17,12 @@ export class UserThrottlerGuard extends ThrottlerGuard {
           {
             name: 'user-minute',
             ttl: seconds(60),
-            limit: configService.getOrThrow<number>('USER_MINUTE_LIMIT'),
+            limit: Number(configService.getOrThrow('USER_MINUTE_LIMIT')),
           },
           {
             name: 'user-second',
             ttl: seconds(1),
-            limit: configService.getOrThrow<number>('USER_SECOND_LIMIT'),
+            limit: Number(configService.getOrThrow('USER_SECOND_LIMIT')),
           },
         ],
       },
@@ -36,6 +36,6 @@ export class UserThrottlerGuard extends ThrottlerGuard {
     if (!user) {
       throw new HttpException('No user connected.', HttpStatus.BAD_REQUEST);
     }
-    return user.id;
+    return Promise.resolve(user.id);
   }
 }

@@ -17,12 +17,12 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
           {
             name: 'anonymous-minute',
             ttl: seconds(60),
-            limit: configService.getOrThrow<number>('ANONYMOUS_MINUTE_LIMIT'),
+            limit: Number(configService.getOrThrow('ANONYMOUS_MINUTE_LIMIT')),
           },
           {
             name: 'anonymous-five-second',
             ttl: seconds(5),
-            limit: configService.getOrThrow<number>('ANONYMOUS_FIVE_SECOND_LIMIT'),
+            limit: Number(configService.getOrThrow('ANONYMOUS_FIVE_SECOND_LIMIT')),
           },
         ],
       },
@@ -36,6 +36,6 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
     if (!email) {
       throw new HttpException('No email specified.', HttpStatus.BAD_REQUEST);
     }
-    return email;
+    return Promise.resolve(email);
   }
 }

@@ -17,12 +17,12 @@ export class IpThrottlerGuard extends ThrottlerGuard {
           {
             name: 'global-minute',
             ttl: seconds(60),
-            limit: configService.getOrThrow<number>('GLOBAL_MINUTE_LIMIT'),
+            limit: Number(configService.getOrThrow('GLOBAL_MINUTE_LIMIT')),
           },
           {
             name: 'global-second',
             ttl: seconds(1),
-            limit: configService.getOrThrow<number>('GLOBAL_SECOND_LIMIT'),
+            limit: Number(configService.getOrThrow('GLOBAL_SECOND_LIMIT')),
           },
         ],
       },
@@ -36,6 +36,6 @@ export class IpThrottlerGuard extends ThrottlerGuard {
     if (!clientIp) {
       throw new HttpException('Unable to determine client IP', HttpStatus.INTERNAL_SERVER_ERROR);
     }
-    return clientIp;
+    return Promise.resolve(clientIp);
   }
 }
