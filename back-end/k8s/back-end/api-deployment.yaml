@@ -79,6 +79,10 @@ spec:
               value: '10000'
             - name: GLOBAL_SECOND_LIMIT
               value: '1000'
+            - name: USER_MINUTE_LIMIT
+              value: '100'
+            - name: USER_SECOND_LIMIT
+              value: '10'
             - name: NODE_ENV
               value: 'production'
             - name: LATEST_SUPPORTED_FRONTEND_VERSION

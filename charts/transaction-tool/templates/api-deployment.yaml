@@ -22,8 +22,9 @@ spec:
         {{- include "common.labels" . | nindent 8 }}
     spec:
       automountServiceAccountToken: false
-      seccompProfile:
-        type: RuntimeDefault
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: api
           image: {{ .Values.api.image }}
@@ -111,6 +112,10 @@ spec:
               value: {{ .Values.api.env.GLOBAL_MINUTE_LIMIT | squote }}
             - name: GLOBAL_SECOND_LIMIT
               value: {{ .Values.api.env.GLOBAL_SECOND_LIMIT | squote }}
+            - name: USER_MINUTE_LIMIT
+              value: {{ .Values.api.env.USER_MINUTE_LIMIT | squote }}
+            - name: USER_SECOND_LIMIT
+              value: {{ .Values.api.env.USER_SECOND_LIMIT | squote }}
             - name: NODE_ENV
               value: {{ .Values.api.env.NODE_ENV | squote }}
           ports:

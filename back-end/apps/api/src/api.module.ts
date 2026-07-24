@@ -18,7 +18,7 @@ import getEnvFilePaths from './config/envFilePaths';
 
 import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
-import { EmailThrottlerModule, IpThrottlerModule } from './throttlers';
+import { ThrottlerStorageModule } from './throttlers';
 
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
@@ -67,8 +67,7 @@ export const config = ConfigModule.forRoot({
     NotificationReceiverModule,
     ReportsModule,
     HealthModule,
-    IpThrottlerModule,
-    EmailThrottlerModule,
+    ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),
     SchedulerModule.register({ isGlobal: true }),
   ],
