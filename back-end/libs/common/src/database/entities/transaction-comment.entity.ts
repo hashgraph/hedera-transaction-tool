@@ -2,6 +2,8 @@ import { Column, CreateDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn } f
 import { Transaction } from './transaction.entity';
 import { User } from './user.entity';
 
+export const MAX_TRANSACTION_COMMENT_LENGTH = 2000;
+
 @Entity()
 export class TransactionComment {
   @PrimaryGeneratedColumn()
@@ -13,7 +15,7 @@ export class TransactionComment {
   @ManyToOne(() => User, user => user.comments)
   user: User;
 
-  @Column()
+  @Column({ length: MAX_TRANSACTION_COMMENT_LENGTH })
   message: string;
 
   @CreateDateColumn()
