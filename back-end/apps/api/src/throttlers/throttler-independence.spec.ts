@@ -37,6 +37,26 @@ const countAllowed = async (guard: ThrottlerGuard) => {
 };
 
 describe('throttler guard independence', () => {
+  it('uses the documented limits when throttler configuration is absent', () => {
+    const get = jest.fn((_key: string, defaultValue: number) => defaultValue);
+    const config = { get } as unknown as ConfigService;
+    const storage: ThrottlerStorage = new ThrottlerStorageService();
+    const reflector = new Reflector();
+
+    new IpThrottlerGuard(config, storage, reflector);
+    new EmailThrottlerGuard(config, storage, reflector);
+    new UserThrottlerGuard(config, storage, reflector);
+
+    expect(get.mock.calls).toEqual([
+      ['GLOBAL_MINUTE_LIMIT', 10_000],
+      ['GLOBAL_SECOND_LIMIT', 1_000],
+      ['ANONYMOUS_MINUTE_LIMIT', 3],
+      ['ANONYMOUS_FIVE_SECOND_LIMIT', 1],
+      ['USER_MINUTE_LIMIT', 100],
+      ['USER_SECOND_LIMIT', 10],
+    ]);
+  });
+
   it('resolves each guard through Nest dependency injection', async () => {
     const module = await Test.createTestingModule({
       providers: [
@@ -46,7 +66,7 @@ describe('throttler guard independence', () => {
         Reflector,
         {
           provide: ConfigService,
-          useValue: { getOrThrow: jest.fn().mockReturnValue(10) },
+          useValue: { get: jest.fn().mockReturnValue(10) },
         },
         {
           provide: ThrottlerStorage,
@@ -69,13 +89,13 @@ describe('throttler guard independence', () => {
     const reflector = new Reflector();
 
     // Ip guard: both throttlers limited to 2 -> allows 2 in a burst.
-    const ipConfig = { getOrThrow: jest.fn().mockReturnValue(2) } as unknown as ConfigService;
+    const ipConfig = { get: jest.fn().mockReturnValue(2) } as unknown as ConfigService;
     // Email guard: both throttlers limited to 3 -> allows 3 in a burst.
-    const emailConfig = { getOrThrow: jest.fn().mockReturnValue(3) } as unknown as ConfigService;
+    const emailConfig = { get: jest.fn().mockReturnValue(3) } as unknown as ConfigService;
 
     // User guard: 100/min + 10/sec -> the 10/sec window dominates a burst.
     const userConfig = {
-      getOrThrow: jest.fn((key: string) => (key === 'USER_SECOND_LIMIT' ? 10 : 100)),
+      get: jest.fn((key: string) => (key === 'USER_SECOND_LIMIT' ? 10 : 100)),
     } as unknown as ConfigService;
 
     const ipGuard = new IpThrottlerGuard(ipConfig, storage, reflector);

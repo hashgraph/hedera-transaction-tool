@@ -11,7 +11,7 @@ describe('EmailThrottlerGuard', () => {
     const storageMock: Partial<ThrottlerStorage> = {};
 
     const configServiceMock = {
-      getOrThrow: jest.fn().mockReturnValue(100),
+      get: jest.fn().mockReturnValue(100),
     } as unknown as ConfigService;
 
     const reflector = new Reflector();
