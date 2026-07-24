@@ -64,24 +64,24 @@ catalogs:
   # is coincidental.
   nestjs-core:
     '@nestjs/common': &nestjsCore 11.1.28
-    '@nestjs/core': *nestjsCore
-    '@nestjs/microservices': *nestjsCore
-    '@nestjs/platform-express': *nestjsCore
-    '@nestjs/platform-socket.io': *nestjsCore
-    '@nestjs/testing': *nestjsCore
-    '@nestjs/websockets': *nestjsCore
+    '@nestjs/core': 11.1.28
+    '@nestjs/microservices': 11.1.28
+    '@nestjs/platform-express': 11.1.28
+    '@nestjs/platform-socket.io': 11.1.28
+    '@nestjs/testing': 11.1.28
+    '@nestjs/websockets': 11.1.28
 
   # testcontainers/* packages ship together and always share a version.
   testcontainers:
     testcontainers: &testcontainersVersion 11.14.0
-    '@testcontainers/postgresql': *testcontainersVersion
-    '@testcontainers/rabbitmq': *testcontainersVersion
-    '@testcontainers/redis': *testcontainersVersion
+    '@testcontainers/postgresql': 11.14.0
+    '@testcontainers/rabbitmq': 11.14.0
+    '@testcontainers/redis': 11.14.0
 
   # vitest/* packages ship together and always share a version.
   vitest:
     vitest: &vitestVersion 4.1.5
-    '@vitest/coverage-v8': *vitestVersion
+    '@vitest/coverage-v8': 4.1.5
 
 overrides:
   "protobufjs@<8.0.0": "7.6.5"
@@ -126,3 +126,4 @@ minimumReleaseAgeExclude:
   - '@vue/language-core@3.3.8'
   - vue-tsc@3.3.8
   - webpack@5.109.0
+  - sass@1.101.7
