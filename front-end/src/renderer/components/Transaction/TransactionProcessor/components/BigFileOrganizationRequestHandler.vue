@@ -134,9 +134,7 @@ function createAppendTransaction() {
   // the partial-upload failure mode where many sub-calls can't all execute
   // within a single transaction's valid window. `getMaxChunkSize` subtracts a
   // reserve for protobuf/signature overhead.
-  const chunkSize = getMaxChunkSize(
-    originalTransaction.transactionId?.accountId ?? null,
-  );
+  const chunkSize = getMaxChunkSize(originalTransaction.transactionId?.accountId ?? null);
 
   const append = createFileAppendTransaction({
     payerId,
@@ -224,13 +222,13 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
 
   try {
     const { id } = await submitTransactionGroup(
-      user.selectedOrganization.serverUrl,
+      user.selectedOrganization,
       'Automatically created group for large file update',
       false,
       true,
       apiGroupItems,
     );
-    const group = await getTransactionGroupById(user.selectedOrganization.serverUrl, id, false);
+    const group = await getTransactionGroupById(user.selectedOrganization, id, false);
     await safeAwait(submitApproversObservers(group));
     emit('transaction:group:submit:success', id);
   } catch (error) {
@@ -241,17 +239,17 @@ async function submitGroup(groupItems: GroupItem[], signature: string[], keyToSi
 
 async function submitApproversObservers(group: IGroup) {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
+  const organization = user.selectedOrganization;
 
   const promises = group.groupItems.map(groupItem => {
     const observerPromise =
       props.observers?.length > 0
-        ? addObservers(serverUrl, groupItem.transactionId, props.observers)
+        ? addObservers(organization, groupItem.transactionId, props.observers)
         : Promise.resolve();
 
     const approverPromise =
       props.approvers?.length > 0
-        ? addApprovers(serverUrl, groupItem.transactionId, props.approvers)
+        ? addApprovers(organization, groupItem.transactionId, props.approvers)
         : Promise.resolve();
 
     return Promise.allSettled([observerPromise, approverPromise]);

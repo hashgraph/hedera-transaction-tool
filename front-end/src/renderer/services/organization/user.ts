@@ -4,14 +4,18 @@ import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 
 import { getUserKeys } from './userKeys';
 
-import { PUBLIC_KEY_OWNER_DEFAULT_MESSAGE, PUBLIC_KEY_OWNER_STATUS_MESSAGES } from './errorMessages';
+import {
+  PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
+  PUBLIC_KEY_OWNER_STATUS_MESSAGES,
+} from './errorMessages';
+import type { Organization } from '@prisma/client';
 
 /* User service for organization */
 const controller = 'users';
 
 /* Get information about current user */
-export const getUserState = async (organizationServerUrl: string) => {
-  const { id, status, email, admin, keys } = await getMe(organizationServerUrl);
+export const getUserState = async (organization: Organization) => {
+  const { id, status, email, admin, keys } = await getMe(organization);
 
   const user: {
     id: number;
@@ -34,7 +38,7 @@ export const getUserState = async (organizationServerUrl: string) => {
   /* Backward compatibility */
   let userKeys: IUserKey[] = keys;
   if (!userKeys) {
-    userKeys = await getUserKeys(organizationServerUrl, id);
+    userKeys = await getUserKeys(organization, id);
   }
 
   user.userKeys.push(...userKeys);
@@ -51,39 +55,38 @@ export const getUserState = async (organizationServerUrl: string) => {
 };
 
 /* Get information about current user */
-export const getMe = async (organizationServerUrl: string): Promise<IUser> =>
+export const getMe = async (organization: Organization): Promise<IUser> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}/me`);
+    const response = await axiosWithCredentials.get(organization, `${controller}/me`);
     return response.data;
   }, 'Failed to get user information');
 
 /* Get information about organization users */
-export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
+export const getUsers = (organization: Organization): Promise<IUser[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
+    const response = await axiosWithCredentials.get(organization, `${controller}`);
     return response.data;
   }, 'Failed to get organization users');
 
 /* ADMIN ONLY: Delete a user */
-export const deleteUser = (organizationServerUrl: string, id: number) =>
+export const deleteUser = (organization: Organization, id: number) =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.delete(
-      `${organizationServerUrl}/${controller}/${id}`,
-    );
+    const response = await axiosWithCredentials.delete(organization, `${controller}/${id}`);
     return response.data;
   }, 'Failed to delete user');
 
 export const getPublicKeyOwner = async (
-  organizationServerUrl: string,
+  organization: Organization,
   publicKey: string,
 ): Promise<string | null> => {
   return commonRequestHandler(
     async () => {
       const response = await axiosWithCredentials.get(
-        `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
+        organization,
+        `${controller}/public-owner/${publicKey}`,
       );
       // response.data == "" when there is no matching user => fixing
-      return response.data === "" ? null : response.data;
+      return response.data === '' ? null : response.data;
     },
     PUBLIC_KEY_OWNER_DEFAULT_MESSAGE,
     PUBLIC_KEY_OWNER_STATUS_MESSAGES[401],

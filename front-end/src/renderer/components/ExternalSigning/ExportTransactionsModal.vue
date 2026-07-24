@@ -55,7 +55,7 @@ async function handleExport() {
 
   let collectionTransactions: ITransaction[] = await flattenNodeCollection(
     collectionNodes,
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     appCache.backendTransaction,
   );
   logger.debug('Flattened transactions', { count: collectionTransactions.length });
@@ -114,7 +114,7 @@ async function fetchNodes(): Promise<ITransactionNode[]> {
   if (isLoggedInOrganization(user.selectedOrganization)) {
     try {
       nodes = await getTransactionNodes(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         TransactionNodeCollection.IN_PROGRESS,
         network.network,
         [],

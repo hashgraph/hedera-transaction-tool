@@ -241,7 +241,7 @@ async function fetchTransactions(options?: { silent?: boolean }) {
       if (user.selectedOrganization.isPasswordTemporary) return;
 
       const { totalItems: totalItemsCount, items: rawTransactions } = await getHistoryTransactions(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         currentPage.value,
         pageSize.value,
         orgFilters.value,
@@ -269,10 +269,9 @@ async function fetchTransactions(options?: { silent?: boolean }) {
 async function fetchTransactionsOnNotif(options?: { silent?: boolean }) {
   // 1) Before calling fetchTransactions(), we clear transaction cache
   if (isLoggedInOrganization(user.selectedOrganization)) {
-    const serverUrl = user.selectedOrganization.serverUrl;
     for (const t of organizationTransactions.value) {
       // We clear cache with strict==false to keep young data
-      transactionCache.forget(t.transactionRaw.transactionId, serverUrl, false);
+      transactionCache.forget(t.transactionRaw.transactionId, user.selectedOrganization, false);
     }
   }
   // 2) Now fetch group

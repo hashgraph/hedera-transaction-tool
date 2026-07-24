@@ -69,7 +69,7 @@ const handleChangePassword = async () => {
       isLoading.value = true;
 
       await changePassword(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         currentPassword.value,
         newPassword.value,
       );

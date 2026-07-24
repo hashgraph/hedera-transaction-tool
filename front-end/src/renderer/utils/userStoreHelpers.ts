@@ -384,7 +384,7 @@ export const getConnectedOrganization = async (
 
   try {
     const { id, email, admin, passwordTemporary, secretHashes, userKeys } = await getUserState(
-      organization.serverUrl,
+      organization,
     );
 
     const connectedOrganization: ConnectedOrganization = {
@@ -410,7 +410,7 @@ export const refetchUserState = async (organization: ConnectedOrganization | nul
 
   try {
     const { id, email, admin, userKeys, secretHashes, passwordTemporary } = await getUserState(
-      organization.serverUrl,
+      organization,
     );
 
     organization.userId = id;
@@ -574,7 +574,7 @@ export const safeDuplicateUploadKey = async (
     const keyUploaded = organization.userKeys.some(k => k.publicKey === key.publicKey);
 
     if (!keyUploaded) {
-      await uploadKey(organization.serverUrl, organization.userId, key);
+      await uploadKey(organization, organization.userId, key);
     }
   }
 };
@@ -593,7 +593,7 @@ export const updateOrganizationKeysHash = async (
 
   for (const key of keys) {
     await updateOrganizationKey(
-      organization.serverUrl,
+      organization,
       organization.userId,
       key.id,
       recoveryPhrase.hash,

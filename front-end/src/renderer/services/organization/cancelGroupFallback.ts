@@ -2,11 +2,12 @@ import { TransactionStatus } from '@shared/interfaces';
 import type { IGroupItem, CancelGroupResult } from './transactionGroup';
 import { CancelFailureCode } from './transactionGroup';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards';
+import type { Organization } from '@prisma/client';
 
 export async function cancelGroupFallback(
-  serverUrl: string,
+  organization: Organization,
   groupItems: IGroupItem[],
-  cancelOne: (serverUrl: string, id: number) => Promise<boolean>,
+  cancelOne: (organization: Organization, id: number) => Promise<boolean>,
 ): Promise<CancelGroupResult> {
   const canceled: number[] = [];
   const alreadyCanceled: number[] = [];
@@ -31,7 +32,7 @@ export async function cancelGroupFallback(
     }
 
     try {
-      await cancelOne(serverUrl, txId);
+      await cancelOne(organization, txId);
       canceled.push(txId);
     } catch (error) {
       failed.push({

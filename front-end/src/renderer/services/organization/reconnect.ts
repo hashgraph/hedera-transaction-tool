@@ -3,10 +3,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 import useUserStore from '@renderer/stores/storeUser';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
 import useOrganizationConnection from '@renderer/stores/storeOrganizationConnection';
-import {
-  getVersionStatusForOrg,
-  organizationVersionData,
-} from '@renderer/stores/versionState';
+import { getVersionStatusForOrg, organizationVersionData } from '@renderer/stores/versionState';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
@@ -19,24 +16,22 @@ import {
   getOrganizationCredentials,
   updateOrganizationCredentials,
 } from '../organizationCredentials';
+import type{ Organization } from '@prisma/client';
+import type { ConnectedOrganization } from '@renderer/types';
 
 const logger = createLogger('renderer.organization.reconnect');
 
-export async function reconnectOrganization(serverUrl: string): Promise<{
+export async function reconnectOrganization(org: Organization): Promise<{
   success: boolean;
   requiresUpdate?: boolean;
 }> {
+  const serverUrl = org.serverUrl;
   const userStore = useUserStore();
   const ws = useWebsocketConnection();
   const orgConnection = useOrganizationConnection();
   const { performVersionCheck } = useVersionCheck();
 
-  const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
   const user = userStore.personal;
-  if (!org) {
-    logger.error('Organization not found during reconnect', { serverUrl });
-    throw new Error('Organization not found');
-  }
 
   try {
     let sawLogin426 = false;
@@ -86,7 +81,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
 
     // performVersionCheck stores fresh version data via setVersionDataForOrg;
     // status and compat are derived from that data automatically.
-    await performVersionCheck(serverUrl);
+    await performVersionCheck(org);
 
     const versionStatus = getVersionStatusForOrg(serverUrl);
     const versionData = organizationVersionData.value[serverUrl];
@@ -122,11 +117,9 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
 
     orgConnection.setConnectionStatus(serverUrl, 'connected');
 
-    if (org) {
-      org.connectionStatus = 'connected';
-      delete org.disconnectReason;
-      delete org.lastDisconnectedAt;
-    }
+    (org as ConnectedOrganization).connectionStatus = 'connected';
+    delete (org as ConnectedOrganization).disconnectReason;
+    delete (org as ConnectedOrganization).lastDisconnectedAt;
 
     logger.info('Organization reconnected successfully', {
       organization: org.nickname || serverUrl,

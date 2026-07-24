@@ -76,7 +76,7 @@ const getOwnersFromOrganization = async () => {
   const publicKeys = user.publicKeyMappings.map(mapping => mapping.public_key);
 
   const ownerPromises = publicKeys.map(async key => {
-    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!.serverUrl) };
+    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!) };
   });
   const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
 
@@ -89,7 +89,7 @@ const addOwners = async (newMappings: PublicKeyMapping[], oldMappings: PublicKey
   );
   const newPublicKeys = newItems.map(mapping => mapping.public_key);
   const ownerPromises = newPublicKeys.map(async key => {
-    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!.serverUrl) };
+    return { [key]: await publicKeyOwnerCache.lookup(key, user.selectedOrganization!) };
   });
   const results: Record<string, string | null>[] = await Promise.all(ownerPromises);
   Object.assign(ownersMapping.value, ...results);

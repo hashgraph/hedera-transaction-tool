@@ -137,7 +137,7 @@ const handleResend = async () => {
   try {
     if (user.selectedOrganization?.serverUrl) {
       const email = props.contact.user.email;
-      await signUp(user.selectedOrganization.serverUrl, email);
+      await signUp(user.selectedOrganization, email);
     }
     toastManager.success('Email sent successfully');
   } catch (error) {

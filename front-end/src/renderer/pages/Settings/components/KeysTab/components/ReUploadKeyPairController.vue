@@ -25,7 +25,7 @@ const handleReUpload = async (): Promise<ActionReport | null> => {
   const keyPair = props.keyInfo?.keyPair;
   if (keyPair && isLoggedInOrganization(user.selectedOrganization)) {
     try {
-      await uploadKey(user.selectedOrganization.serverUrl, user.selectedOrganization.userId, {
+      await uploadKey(user.selectedOrganization, user.selectedOrganization.userId, {
         publicKey: keyPair.public_key,
         index: keyPair.index != -1 ? keyPair.index : undefined,
         mnemonicHash: keyPair.secret_hash ?? undefined,

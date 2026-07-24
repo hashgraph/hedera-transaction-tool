@@ -218,12 +218,14 @@ const useNextTransactionV2 = defineStore(
         const preloadCount = 5;
         const startIndex = Math.max(0, index - preloadCount);
         const endIndex = startIndex + 2 * preloadCount;
-        const serverUrl = user.selectedOrganization.serverUrl;
         const mirrorNodeLink = network.getMirrorNodeREST(network.network);
         for (const nodeId of nodeIds.slice(startIndex, endIndex)) {
           if (nodeId.transactionId) {
             const transactionId = Number(nodeId.transactionId);
-            const tx = await appCache.backendTransaction.lookup(transactionId, serverUrl);
+            const tx = await appCache.backendTransaction.lookup(
+              transactionId,
+              user.selectedOrganization,
+            );
             const sdkTransaction = SDKTransaction.fromBytes(hexToUint8Array(tx.transactionBytes));
             // Note: we spawn computeSignatureKey() to preload caches but we don't await for them
             appCache.computeSignatureKey(sdkTransaction, user.selectedOrganization, mirrorNodeLink);

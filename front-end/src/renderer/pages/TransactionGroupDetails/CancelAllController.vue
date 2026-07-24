@@ -42,8 +42,7 @@ const handleCancelAll = async (): Promise<ActionReport | null> => {
     try {
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
-        const serverUrl = user.selectedOrganization.serverUrl;
-        group = await getTransactionGroupById(serverUrl, props.groupOrId);
+        group = await getTransactionGroupById(user.selectedOrganization, props.groupOrId);
       } else {
         group = props.groupOrId;
       }
@@ -55,7 +54,7 @@ const handleCancelAll = async (): Promise<ActionReport | null> => {
       }
       progressText.value = `Canceling ${itemsToCancel.length} transactions`;
       const results = await cancelTransactionGroup(
-        user.selectedOrganization.serverUrl,
+        user.selectedOrganization,
         group.id,
         itemsToCancel,
       );

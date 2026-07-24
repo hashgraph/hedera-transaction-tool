@@ -34,13 +34,12 @@ const progressText = computed(() =>
 /* Handlers */
 const handleCancelTransaction = async (): Promise<ActionReport | null> => {
   assertIsLoggedInOrganization(user.selectedOrganization);
-  const serverUrl = user.selectedOrganization.serverUrl;
 
   let result: ActionReport | null;
   try {
     if (props.transaction !== null) {
       const transactionId = props.transaction.id;
-      await cancelTransaction(serverUrl, transactionId);
+      await cancelTransaction(user.selectedOrganization, transactionId);
       result = null;
       toastManager.success('Transaction canceled successfully');
     } else {
@@ -49,7 +48,7 @@ const handleCancelTransaction = async (): Promise<ActionReport | null> => {
   } finally {
     // 1) we clear transaction cache
     if (props.transaction && user.selectedOrganization) {
-      transactionCache.forgetTransaction(props.transaction, serverUrl);
+      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization);
     }
     // 2) we run callback (that will get fresh data from cache)
     await props.callback();

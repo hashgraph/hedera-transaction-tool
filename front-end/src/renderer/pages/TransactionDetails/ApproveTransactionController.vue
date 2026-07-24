@@ -70,7 +70,7 @@ const handleApproveTransaction = async (
   } finally {
     // 1) we clear transaction cache
     if (props.transaction && user.selectedOrganization) {
-      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization.serverUrl);
+      transactionCache.forgetTransaction(props.transaction, user.selectedOrganization);
     }
     // 2) we run callback (that will get fresh data from cache)
     await props.callback();
@@ -99,7 +99,7 @@ const performApprove = async (
   const signature = getTransactionBodySignatureWithoutNodeAccountId(privateKey, sdkTransaction);
 
   await sendApproverChoice(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     transaction.id,
     orgKey.id,
     signature,

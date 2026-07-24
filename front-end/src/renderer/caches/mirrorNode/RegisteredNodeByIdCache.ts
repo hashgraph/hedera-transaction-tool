@@ -7,7 +7,11 @@ import type {
 } from '@shared/interfaces';
 import { parseRegisteredNode } from '@renderer/services/mirrorNodeDataService';
 
-export class RegisteredNodeByIdCache extends EntityCache<number, IRegisteredNodeInfoParsed | null> {
+export class RegisteredNodeByIdCache extends EntityCache<
+  number,
+  IRegisteredNodeInfoParsed | null,
+  string
+> {
   //
   // EntityCache
   //
@@ -29,5 +33,9 @@ export class RegisteredNodeByIdCache extends EntityCache<number, IRegisteredNode
     }
 
     return result !== null ? parseRegisteredNode(result) : null;
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeURL: string): string {
+    return key.toString() + '/' + mirrorNodeURL;
   }
 }

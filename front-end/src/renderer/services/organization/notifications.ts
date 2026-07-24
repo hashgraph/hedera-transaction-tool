@@ -2,6 +2,7 @@ import type { INotificationReceiver, IUpdateNotificationReceiver } from '@shared
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
+import type { Organization } from '@prisma/client';
 
 const logger = createLogger('renderer.organization.notifications');
 
@@ -11,7 +12,7 @@ const controller = 'notifications';
 
 /* Get keys for a user from organization */
 export const getAllInAppNotifications = async (
-  organizationServerUrl: string,
+  organization: Organization,
   onlyNew: boolean,
 ): Promise<INotificationReceiver[]> =>
   commonRequestHandler(async () => {
@@ -30,7 +31,8 @@ export const getAllInAppNotifications = async (
         }
 
         const { data } = await axiosWithCredentials.get(
-          `${organizationServerUrl}/${controller}?${paginationQuery}&${filterQuery}`,
+          organization,
+          `${controller}?${paginationQuery}&${filterQuery}`,
         );
         const totalItems = data.totalItems;
 
@@ -46,7 +48,7 @@ export const getAllInAppNotifications = async (
 
 /* Update notification */
 export const updateNotifications = async (
-  organizationServerUrl: string,
+  organization: Organization,
   notificationsToUpdate: IUpdateNotificationReceiver[],
 ): Promise<void> =>
   commonRequestHandler(async () => {
@@ -54,7 +56,7 @@ export const updateNotifications = async (
       const batchSize = 500;
       for (let i = 0; i < notificationsToUpdate.length; i += batchSize) {
         const batch = notificationsToUpdate.slice(i, i + batchSize);
-        await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
+        await axiosWithCredentials.patch(organization, `${controller}`, batch);
       }
     } catch (error) {
       logger.error('Failed to update notifications', { error });
@@ -62,9 +64,13 @@ export const updateNotifications = async (
   }, 'Failed to update notifications');
 
 /* Sends email to the required signers  */
-export const remindSigners = async (serverUrl: string, transactionId: number): Promise<void> =>
+export const remindSigners = async (
+  organization: Organization,
+  transactionId: number,
+): Promise<void> =>
   commonRequestHandler(async () => {
     await axiosWithCredentials.post(
-      `${serverUrl}/${controller}/remind-signers?transactionId=${transactionId}`,
+      organization,
+      `${controller}/remind-signers?transactionId=${transactionId}`,
     );
   }, `Failed to remind signers for transaction transaction with id ${transactionId}`);

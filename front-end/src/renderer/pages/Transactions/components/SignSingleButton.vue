@@ -34,7 +34,7 @@ const handleClick = async () => {
 
   transaction.value = await transactionCache.lookup(
     props.transactionId,
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
   );
 
   signStarted.value = true;
@@ -46,7 +46,7 @@ const didSign = async () => {
 
     const newTransaction = await transactionCache.lookup(
       props.transactionId,
-      user.selectedOrganization.serverUrl,
+      user.selectedOrganization,
     );
     emit('transactionSigned', { transaction: newTransaction });
   } else {

@@ -11,6 +11,7 @@ import {
   setVersionDataForOrg,
 } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
+import type { Organization } from '@prisma/client';
 
 const isValidVersionPayload = (
   data?: Partial<IVersionCheckResponse>,
@@ -144,10 +145,9 @@ export const commonRequestHandler = async <T>(
   }
 };
 
-const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
+const getConfigWithAuthHeader = (config: AxiosRequestConfig, org: Organization) => {
   const userStore = useUserStore();
-  const org = userStore.organizations.find(o => url.startsWith(o.serverUrl));
-  const authToken = org?.id ? userStore.getJwtToken(org.id) : null;
+  const authToken = userStore.getJwtToken(org.id);
   return {
     ...config,
     headers: {
@@ -159,33 +159,37 @@ const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
 
 export const axiosWithCredentials = {
   get: <T = any, R = AxiosResponse<T>, D = any>(
-    url: string,
+    org: Organization,
+    path: string,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
-    axios.get<T, R>(url, {
-      ...getConfigWithAuthHeader(config || {}, url),
+    axios.get<T, R>(`${org.serverUrl}/${path}`, {
+      ...getConfigWithAuthHeader(config || {}, org),
     }),
   post: <T = any, R = AxiosResponse<T>, D = any>(
-    url: string,
+    org: Organization,
+    path: string,
     data?: any,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
-    axios.post<T, R>(url, data, {
-      ...getConfigWithAuthHeader(config || {}, url),
+    axios.post<T, R>(`${org.serverUrl}/${path}`, data, {
+      ...getConfigWithAuthHeader(config || {}, org),
     }),
   patch: <T = any, R = AxiosResponse<T>, D = any>(
-    url: string,
+    org: Organization,
+    path: string,
     data?: any,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
-    axios.patch<T, R>(url, data, {
-      ...getConfigWithAuthHeader(config || {}, url),
+    axios.patch<T, R>(`${org.serverUrl}/${path}`, data, {
+      ...getConfigWithAuthHeader(config || {}, org),
     }),
   delete: <T = any, R = AxiosResponse<T>, D = any>(
-    url: string,
+    org: Organization,
+    path: string,
     config?: AxiosRequestConfig<D> | undefined,
   ) =>
-    axios.delete<T, R>(url, {
-      ...getConfigWithAuthHeader(config || {}, url),
+    axios.delete<T, R>(`${org.serverUrl}/${path}`, {
+      ...getConfigWithAuthHeader(config || {}, org),
     }),
 };

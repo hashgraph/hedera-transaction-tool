@@ -84,7 +84,7 @@ export default function useRecoveryPhraseHashMigrate() {
         );
         if (organizationKeyPair) {
           await updateOrganizationKey(
-            user.selectedOrganization.serverUrl,
+            user.selectedOrganization,
             user.selectedOrganization.userId,
             organizationKeyPair.id,
             recoveryPhraseHash,

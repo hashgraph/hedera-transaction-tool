@@ -336,7 +336,7 @@ async function fetchGroup(id: string | number) {
   fullyLoaded.value = false;
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
-      group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, Number(id));
+      group.value = await getTransactionGroupById(user.selectedOrganization, Number(id));
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
@@ -391,10 +391,9 @@ async function fetchGroup(id: string | number) {
 async function fetchGroupOnNotif(groupId: string | number) {
   // 1) Before calling fetchGroup(), we clear transaction cache
   if (isLoggedInOrganization(user.selectedOrganization) && group.value !== null) {
-    const serverUrl = user.selectedOrganization.serverUrl;
     for (const item of group.value.groupItems) {
       // We clear cache with strict==false to keep young data
-      appCache.backendTransaction.forget(item.transactionId, serverUrl, false);
+      appCache.backendTransaction.forget(item.transactionId, user.selectedOrganization, false);
     }
   }
   // 2) Now fetch group

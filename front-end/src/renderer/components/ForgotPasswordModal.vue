@@ -94,7 +94,7 @@ async function handleEmailEnter() {
   if (!user.selectedOrganization) throw new Error('Please select organization');
 
   try {
-    token.value = await resetPassword(user.selectedOrganization.serverUrl, email.value);
+    token.value = await resetPassword(user.selectedOrganization, email.value);
 
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
@@ -110,7 +110,7 @@ async function handleTokenEnter() {
 
   try {
     token.value = await verifyReset(
-      user.selectedOrganization.serverUrl,
+      user.selectedOrganization,
       otp.value.value,
       token.value,
     );
@@ -142,7 +142,7 @@ async function handleNewPassword() {
 
   try {
     !user.personal.useKeychain && user.setPassword(personalPassword.value);
-    await setPassword(user.selectedOrganization.serverUrl, newPassword.value, token.value);
+    await setPassword(user.selectedOrganization, newPassword.value, token.value);
 
     // Update organization credentials, if they exist.
     // If not, ignore as the password has already been submitted to the backend

@@ -2,7 +2,7 @@ import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
 import type { AccountInfo } from '@shared/interfaces';
 import { getAccountsByPublicKey } from '@renderer/services/mirrorNodeDataService.ts';
 
-export class AccountByPublicKeyCache extends EntityCache<string, AccountInfo[]> {
+export class AccountByPublicKeyCache extends EntityCache<string, AccountInfo[], string> {
   //
   // Public
   //
@@ -27,5 +27,9 @@ export class AccountByPublicKeyCache extends EntityCache<string, AccountInfo[]> 
 
   protected override async load(publicKey: string, mirrorNodeLink: string): Promise<AccountInfo[]> {
     return getAccountsByPublicKey(mirrorNodeLink, publicKey);
+  }
+
+  override makeRecordKey(key: string | number, mirrorNodeUrl: string): string {
+    return key.toString() + '/' + mirrorNodeUrl;
   }
 }

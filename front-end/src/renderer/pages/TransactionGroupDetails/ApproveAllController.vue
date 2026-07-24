@@ -65,8 +65,7 @@ const handleApproveAll = async (personalPassword: string | null): Promise<Action
     try {
       let group: IGroup;
       if (typeof props.groupOrId === 'number') {
-        const serverUrl = user.selectedOrganization.serverUrl;
-        group = await getTransactionGroupById(serverUrl, props.groupOrId);
+        group = await getTransactionGroupById(user.selectedOrganization, props.groupOrId);
       } else {
         group = props.groupOrId;
       }
@@ -87,7 +86,7 @@ const handleApproveAll = async (personalPassword: string | null): Promise<Action
           );
 
           await sendApproverChoice(
-            user.selectedOrganization.serverUrl,
+            user.selectedOrganization,
             item.transaction.id,
             user.selectedOrganization.userKeys[0].id,
             signature,

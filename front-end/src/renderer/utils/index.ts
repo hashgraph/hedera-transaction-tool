@@ -333,7 +333,7 @@ export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: Pu
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization);
     if (owner) {
       return `${owner} (${publicKey})`;
     }
@@ -348,7 +348,7 @@ export const findIdentifier = async (publicKey: string, publicKeyOwnerCache: Pub
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization);
     if (owner) {
       return owner as string;
     }

@@ -178,7 +178,7 @@ async function submit(publicKey: string, signature: string) {
   const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
 
   return await submitTransaction(
-    user.selectedOrganization.serverUrl,
+    user.selectedOrganization,
     request.value?.name || '',
     request.value?.description || '',
     hexTransactionBytes,
@@ -200,9 +200,9 @@ async function upload(type: 'observers' | 'approvers', id: number) {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
   if (type === 'observers') {
-    await addObservers(user.selectedOrganization.serverUrl, id, props.observers);
+    await addObservers(user.selectedOrganization, id, props.observers);
   } else {
-    await addApprovers(user.selectedOrganization.serverUrl, id, props.approvers);
+    await addApprovers(user.selectedOrganization, id, props.approvers);
   }
 }
 

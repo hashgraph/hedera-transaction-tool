@@ -297,7 +297,7 @@ describe('TransactionGroupDetails.vue', () => {
     await confirmCancelAll(wrapper);
 
     expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
-    expect(cancelTransactionGroup).toHaveBeenCalledWith('https://org.example.com', 10, expect.any(Array));
+    expect(cancelTransactionGroup).toHaveBeenCalledWith(userStore.selectedOrganization, 10, expect.any(Array));
     expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
     expect(toastError).toHaveBeenCalled();
   });
