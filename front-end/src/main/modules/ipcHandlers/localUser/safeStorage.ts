@@ -49,7 +49,7 @@ export default () => {
   });
 
   // Encrypt data
-  ipcMain.handle(createChannelName('encrypt'), async (_e, data: string) => {
+  ipcMain.handle(createChannelName('encrypt'), (_e, data: string) => {
     const buffer = safeStorage.encryptString(data);
     return buffer.toString('base64');
   });
@@ -57,7 +57,7 @@ export default () => {
   // Decrypt data
   ipcMain.handle(
     createChannelName('decrypt'),
-    async (_e, encrypted: string, encoding?: BufferEncoding) => {
+    (_e, encrypted: string, encoding?: BufferEncoding) => {
       return safeStorage.decryptString(Buffer.from(encrypted, encoding));
     },
   );

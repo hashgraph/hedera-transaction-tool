@@ -59,10 +59,10 @@ axios.interceptors.request.use(config => {
  * rejected the client as below its minimum supported version and includes
  * version metadata in the body. Exported for direct testing.
  */
-export async function handleAxiosResponseError(error: {
+export function handleAxiosResponseError(error: {
   response?: { status?: number; data?: Partial<IVersionCheckResponse> };
   config?: { url?: string; baseURL?: string };
-}): Promise<void> {
+}): void {
   if (error.response?.status !== 426) return;
 
   try {
@@ -86,8 +86,8 @@ export async function handleAxiosResponseError(error: {
 axios.interceptors.response.use(
   response => response,
   async error => {
-    await handleAxiosResponseError(error);
-    return Promise.reject(error);
+    handleAxiosResponseError(error);
+    return Promise.reject(error as Error);
   },
 );
 
@@ -160,7 +160,7 @@ const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
 export const axiosWithCredentials = {
   get: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.get<T, R>(url, {
       ...getConfigWithAuthHeader(config || {}, url),
@@ -168,7 +168,7 @@ export const axiosWithCredentials = {
   post: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.post<T, R>(url, data, {
       ...getConfigWithAuthHeader(config || {}, url),
@@ -176,14 +176,14 @@ export const axiosWithCredentials = {
   patch: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.patch<T, R>(url, data, {
       ...getConfigWithAuthHeader(config || {}, url),
     }),
   delete: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.delete<T, R>(url, {
       ...getConfigWithAuthHeader(config || {}, url),

@@ -92,7 +92,7 @@ const useNotificationsStore = defineStore('notifications', () => {
 
   const currentNotificationsKey = computed(() => {
     if (!isLoggedInOrganization(user.selectedOrganization)) return '';
-    return user.selectedOrganization!.serverUrl;
+    return user.selectedOrganization.serverUrl;
   });
 
   const currentOrganizationNotifications = computed<INotificationReceiver[]>(() => {

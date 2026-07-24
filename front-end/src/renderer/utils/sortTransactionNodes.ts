@@ -23,7 +23,7 @@ const SORT_FIELD_URL_MAP: Record<TransactionNodeSortField, string> = {
 };
 
 const URL_TO_SORT_FIELD_MAP: Record<string, TransactionNodeSortField> = Object.fromEntries(
-  Object.entries(SORT_FIELD_URL_MAP).map(([k, v]) => [v, Number(k) as TransactionNodeSortField]),
+  Object.entries(SORT_FIELD_URL_MAP).map(([k, v]) => [v, Number(k)]),
 );
 
 export const TRANSACTION_NODE_SORT_URL_VALUES: string[] = Object.values(SORT_FIELD_URL_MAP);

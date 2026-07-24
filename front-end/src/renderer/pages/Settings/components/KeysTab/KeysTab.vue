@@ -64,7 +64,7 @@ const allKeysSelected = computed(
 const isSelectAllDisabled = computed(() => displayedKeyInfos.value.length === 0);
 
 const keyTypeString = computed(() => {
-  return KeyType[keyType.value] as 'ED25519' | 'ECDSA';
+  return KeyType[keyType.value];
 });
 
 /* Handlers */

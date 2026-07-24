@@ -43,7 +43,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createAccountDeleteTransaction({
       ...common,
-      ...(data as AccountDeleteData),
+      ...(data),
     });
 });
 

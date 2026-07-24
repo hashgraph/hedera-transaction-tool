@@ -21,7 +21,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('does nothing for non-426 errors', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: { status: 500, data: {} },
       config: { url: 'https://org.example.com/api' },
     });
@@ -31,7 +31,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('does nothing when the serverUrl cannot be extracted', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: { latestSupportedVersion: '2.0.0', minimumSupportedVersion: '1.5.0' },
@@ -44,7 +44,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('on 426 with absolute URL, stores parsed data and derives belowMinimum status', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: {
@@ -69,7 +69,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
 
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: { updateUrl: 'https://download/v2' },
@@ -91,7 +91,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
       updateUrl: 'https://prior',
     });
 
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: {

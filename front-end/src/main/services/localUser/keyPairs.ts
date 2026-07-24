@@ -33,7 +33,7 @@ export const getSecretHashes = async (
     where,
   });
 
-  return groups.map(gr => gr.secret_hash).filter(sh => sh !== null) as string[];
+  return groups.map(gr => gr.secret_hash).filter(sh => sh !== null);
 };
 
 //Get stored key pairs

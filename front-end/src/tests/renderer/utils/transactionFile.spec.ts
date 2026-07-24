@@ -172,7 +172,7 @@ describe('generateTransactionV2ExportContent', () => {
   });
 
   test('does not include extra fields from the source transaction', () => {
-    const tx = makeTx({ createdAt: '2024-01-01' } as any);
+    const tx = makeTx({ createdAt: '2024-01-01' });
     const result = generateTransactionV2ExportContent([tx], 'mainnet');
     expect(result.items[0]).not.toHaveProperty('createdAt');
   });

@@ -8,7 +8,7 @@ import {
 } from '@hiero-ledger/sdk';
 
 const mocks = vi.hoisted(() => ({
-  routeQuery: {} as Record<string, string | undefined>,
+  routeQuery: {},
   groupItems: [] as Array<{ transactionBytes: Uint8Array }>,
   getDraft: vi.fn(),
   getTransactionFromBytes: vi.fn(),

@@ -98,8 +98,7 @@ export default async function initDatabase() {
 
           for (const sqlFile of sqlFiles) {
             const sqlFilePath = path.join(fullPath, sqlFile);
-            const sqlContent = await fsp.readFile(sqlFilePath, 'utf-8');
-            migrationObject.sql = sqlContent;
+            migrationObject.sql = await fsp.readFile(sqlFilePath, 'utf-8');
           }
 
           migrationsData.push(migrationObject);

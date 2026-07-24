@@ -51,7 +51,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createFileCreateTransaction({
       ...common,
-      ...(data as FileCreateData),
+      ...(data),
     });
 });
 

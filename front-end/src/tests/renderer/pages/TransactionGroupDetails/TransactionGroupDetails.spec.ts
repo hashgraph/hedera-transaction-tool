@@ -313,7 +313,7 @@ describe('TransactionGroupDetails.vue', () => {
         alreadyCanceled: 0,
         failed: 0,
       },
-    } as any);
+    });
 
     const wrapper = await mountGroupDetails();
     await confirmCancelAll(wrapper);
@@ -364,7 +364,7 @@ describe('TransactionGroupDetails.vue', () => {
         alreadyCanceled: 0,
         failed: 0,
       },
-    } as any);
+    });
 
     const wrapper = await mountGroupDetails();
 
@@ -413,7 +413,7 @@ describe('TransactionGroupDetails.vue', () => {
       alreadyCanceled: [],
       failed: [],
       summary: { processedCount: 1, canceled: 1, alreadyCanceled: 0, failed: 0 },
-    } as any);
+    });
 
     const wrapper = await mountGroupDetails();
     vi.mocked(getTransactionGroupById).mockRejectedValueOnce(new Error('refresh failed'));

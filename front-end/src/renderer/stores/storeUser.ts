@@ -255,14 +255,14 @@ const useUserStore = defineStore('user', () => {
     },
   );
 
-  watchEffect(async () => {
+  watchEffect(() => {
     const userId = personal.value && 'id' in personal.value ? personal.value.id : undefined;
     const setupStarted = accountSetupStarted.value;
     if (userId) {
       if (setupStarted) {
-        await safeAwait(add(userId, ACCOUNT_SETUP_STARTED, 'true'));
+        void safeAwait(add(userId, ACCOUNT_SETUP_STARTED, 'true'));
       } else {
-        await safeAwait(remove(userId, [ACCOUNT_SETUP_STARTED]));
+        void safeAwait(remove(userId, [ACCOUNT_SETUP_STARTED]));
       }
     }
   });

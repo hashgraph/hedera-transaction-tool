@@ -44,7 +44,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createFileAppendTransaction({
       ...common,
-      ...(data as FileAppendData),
+      ...(data),
     });
 });
 

@@ -7,11 +7,11 @@ import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   userStore: {
-    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as {
+    personal:  { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as null | {
       id: string;
       useKeychain: boolean;
-      email?: string;
-    } | null,
+      email?: string
+    },
     selectedOrganization: null as null | {
       id: string;
       nickname: string;

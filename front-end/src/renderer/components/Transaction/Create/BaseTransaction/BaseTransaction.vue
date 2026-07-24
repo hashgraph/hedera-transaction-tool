@@ -145,7 +145,7 @@ const hasTransactionChanged = computed(() => {
     } else if (
       hasStartTimestampChanged(
         initialTransaction.value as Transaction,
-        transaction.value as Transaction,
+        transaction.value,
         now,
       )
     ) {

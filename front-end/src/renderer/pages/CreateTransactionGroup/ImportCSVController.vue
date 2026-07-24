@@ -136,15 +136,14 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           const transaction = new TransferTransaction()
             .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
             .setMaxTransactionFee(
-              (transactionFee
-                ? new Hbar(transactionFee, HbarUnit.Tinybar)
-                : maxTransactionFee.value) as Hbar,
+              transactionFee ? new Hbar(transactionFee, HbarUnit.Tinybar) : maxTransactionFee.value,
             );
 
           transaction.setTransactionId(createTransactionId(feePayer, validStart));
           const transferAmount = rowInfo[1].replace(/,/g, '');
-          transaction.addHbarTransfer(receiverAccount, new Hbar(transferAmount, HbarUnit.Tinybar));
-          transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
+          const hbarAmount = new Hbar(transferAmount, HbarUnit.Tinybar);
+          transaction.addHbarTransfer(receiverAccount, hbarAmount);
+          transaction.addHbarTransfer(senderAccount, hbarAmount.negated());
           // If memo is not provided for the row, use the memo from the header portion
           // otherwise check if the memo is not 'n/a' and set it
           if (rowInfo.length < 4 || !rowInfo[3]?.trim()) {

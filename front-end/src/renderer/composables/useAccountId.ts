@@ -1,7 +1,7 @@
 import type { IAccountInfoParsed, CryptoAllowance } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
-import { AccountId, Client, Hbar } from '@hiero-ledger/sdk';
+import { AccountId, Hbar } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
@@ -50,7 +50,7 @@ export default function useAccountId() {
     try {
       return isValid.value
         ? accountInfo.value?.accountId
-            .toStringWithChecksum(networkStore.client as Client)
+            .toStringWithChecksum(networkStore.client)
             .split('-')
         : accountIdFormatted.value;
     } catch {

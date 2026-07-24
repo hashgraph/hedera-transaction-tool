@@ -78,7 +78,7 @@ describe('getPublicKeyOwner', () => {
   test('returns email when user owns the public key', async () => {
     vi.mocked(axiosWithCredentials.get).mockResolvedValueOnce({
       data: 'alice@example.com',
-    } as any);
+    });
 
     const result = await getPublicKeyOwner(serverUrl, publicKey);
 
@@ -91,7 +91,7 @@ describe('getPublicKeyOwner', () => {
   test('returns null when no user owns the public key (empty string response)', async () => {
     vi.mocked(axiosWithCredentials.get).mockResolvedValueOnce({
       data: '',
-    } as any);
+    });
 
     const result = await getPublicKeyOwner(serverUrl, publicKey);
 

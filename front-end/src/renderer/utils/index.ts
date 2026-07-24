@@ -156,7 +156,7 @@ export function validateAccountIdChecksum(accountId: string): boolean {
     const networkStore = useNetworkStore();
     const parsedAccountId = AccountId.fromString(baseId);
     const calculatedChecksum = parsedAccountId
-      .toStringWithChecksum(networkStore.client as Client)
+      .toStringWithChecksum(networkStore.client)
       .split('-')[1];
 
     return checksum === calculatedChecksum;
@@ -168,7 +168,7 @@ export function validateAccountIdChecksum(accountId: string): boolean {
 export const getAccountIdWithChecksum = (accountId: string): string => {
   try {
     const networkStore = useNetworkStore();
-    return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
+    return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client);
   } catch {
     return accountId;
   }
@@ -333,7 +333,7 @@ export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: Pu
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization.serverUrl);
     if (owner) {
       return `${owner} (${publicKey})`;
     }
@@ -344,14 +344,11 @@ export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: Pu
 export const findIdentifier = async (publicKey: string, publicKeyOwnerCache: PublicKeyOwnerCache) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping && mapping.nickname) {
-    return mapping.nickname as string;
+    return mapping.nickname;
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
-    if (owner) {
-      return owner as string;
-    }
+    return await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization.serverUrl);
   }
   return null;
 };

@@ -30,7 +30,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createNodeDeleteTransaction({
       ...common,
-      ...(data as NodeDeleteData),
+      ...(data),
     });
 });
 
