@@ -10,7 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
 import { randomInt } from 'crypto';
 
-import { totp } from 'otplib';
+import * as otplib from '@otplib/totp';
+import { crypto } from '@otplib/plugin-crypto-node';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
@@ -29,11 +30,12 @@ import { UsersService } from '../users/users.service';
 
 import { ChangePasswordDto, SignUpUserDto, OtpDto } from './dtos';
 
-totp.options = {
+const TOTP_OPTIONS = {
   digits: 8,
-  step: 60,
-  window: 20,
-};
+  period: 60,
+} as const;
+
+const TOTP_EPOCH_TOLERANCE = TOTP_OPTIONS.period * 20;
 
 @Injectable()
 export class AuthService {
@@ -103,7 +105,11 @@ export class AuthService {
     if (!user) return;
 
     const secret = this.getOtpSecret(user.email);
-    const otp = totp.generate(secret);
+    const otp = await otplib.generate({
+      secret,
+      crypto,
+      ...TOTP_OPTIONS,
+    });
 
     emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
 
@@ -114,7 +120,15 @@ export class AuthService {
   async verifyOtp(user: User, { token }: OtpDto): Promise<{ token: string }> {
     const secret = this.getOtpSecret(user.email);
 
-    if (!totp.check(token, secret)) throw new UnauthorizedException('Incorrect token');
+    const { valid } = await otplib.verify({
+      token,
+      secret,
+      crypto,
+      ...TOTP_OPTIONS,
+      epochTolerance: TOTP_EPOCH_TOLERANCE,
+    });
+
+    if (!valid) throw new UnauthorizedException('Incorrect token');
 
     try {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
@@ -126,8 +140,8 @@ export class AuthService {
   }
 
   /* Return unique OTP secret for each user */
-  private getOtpSecret(email: string): string {
-    return this.configService.get<string>('OTP_SECRET').concat(email);
+  private getOtpSecret(email: string): Uint8Array {
+    return Buffer.from(this.configService.get<string>('OTP_SECRET').concat(email));
   }
 
   /* Sets the OTP jwt */
