@@ -13,12 +13,17 @@ import {
   safeDuplicateUploadKey,
   userKeyHasMnemonic,
 } from '@renderer/utils';
-import { addOrganizationCredentials } from '@renderer/services/organizationCredentials.ts';
+import {
+  addOrganizationCredentials,
+  encryptOrganizationPassword,
+  updateOrganizationCredentials,
+} from '@renderer/services/organizationCredentials.ts';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 import { compareHash } from '@renderer/services/electronUtilsService.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService.ts';
 import type { Prisma } from '@prisma/client';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 
 /* Props */
 const props = defineProps<{
@@ -33,6 +38,9 @@ const props = defineProps<{
 const emit = defineEmits<{
   (event: 'didPerformSetup', importedKeyCount: number, error: unknown): void;
 }>();
+
+/* Composables */
+const { getPasswordAsync } = usePersonalPassword();
 
 /* Stores */
 const user = useUserStore();
@@ -54,14 +62,16 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
 };
 
 const setupOrganization = async (setup: ModelValue) => {
-  // 1) Add organization
-  const { id: organizationId } = await addOrganization({
-    nickname: setup.organizationNickname,
-    serverUrl: setup.organizationURL,
-    key: '',
+  // 0) Encrypt new password
+  const personalPassword = await getPasswordAsync({
+    subHeading: 'Enter your application password to encrypt your organization credentials',
   });
+  const encryptedNewPassword = await encryptOrganizationPassword(
+    setup.newOrganizationPassword,
+    personalPassword || undefined,
+  );
 
-  // 2) Login to organization
+  // 1) Login to organization
   const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
   const { jwtToken } = await login(
     setup.organizationURL,
@@ -69,22 +79,35 @@ const setupOrganization = async (setup: ModelValue) => {
     setup.temporaryOrganizationPassword,
   );
 
-  // 3) Set new password
+  // 2) Add organization and credentials to prisma db
+  const { id: organizationId } = await addOrganization({
+    nickname: setup.organizationNickname,
+    serverUrl: setup.organizationURL,
+    key: '',
+  });
+  await addOrganizationCredentials(
+    email,
+    setup.temporaryOrganizationPassword,
+    organizationId,
+    props.personalUser.personalId,
+    jwtToken,
+    null,
+  );
+  await user.refetchOrganizations();
+
+  // 3) Set new password and update prisma db
   await changePassword(
     setup.organizationURL,
     setup.temporaryOrganizationPassword,
     setup.newOrganizationPassword,
   );
-
-  // 4) Add Organization Credentials
-  await addOrganizationCredentials(
-    email,
-    setup.newOrganizationPassword,
+  await updateOrganizationCredentials(
     organizationId,
     props.personalUser.personalId,
-    jwtToken,
-    props.personalUser.password,
-    true,
+    undefined,
+    undefined,
+    undefined,
+    encryptedNewPassword,
   );
 
   // 5) Initialize user store
