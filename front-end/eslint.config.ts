@@ -33,7 +33,14 @@ export default withVueTs(
       parserOptions: {
         parser: tseslint.parser,
         projectService: {
-          allowDefaultProject: ['eslint.config.ts', 'prisma.config.ts', 'src/tests/setup.ts'],
+          allowDefaultProject: [
+            'eslint.config.ts',
+            'prisma.config.ts',
+            'src/tests/setup.ts',
+            'src/preload/index.d.ts',
+            'src/tests/shared/SignaturePair.spec.ts',
+            'src/tests/shared/logging.spec.ts',
+          ],
         },
       },
     },
