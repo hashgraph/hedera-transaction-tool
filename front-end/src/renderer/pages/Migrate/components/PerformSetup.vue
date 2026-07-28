@@ -5,7 +5,7 @@ import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './SetupPersonal.vue';
 import type { ModelValue } from './SetupOrganizationForm.vue';
 import { addOrganization } from '@renderer/services/organizationsService.ts';
-import { changePassword, getUserState, login } from '@renderer/services/organization';
+import { changePassword, getUserState } from '@renderer/services/organization';
 import {
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -29,6 +29,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 const props = defineProps<{
   personalUser: PersonalUser;
   organizationSetup: ModelValue | null;
+  jwtToken: string;
   recoveryPhrase: RecoveryPhrase | null;
   recoveryPhrasePassword: string | null;
   selectedKeys: KeyPathWithName[];
@@ -62,7 +63,7 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
 };
 
 const setupOrganization = async (setup: ModelValue) => {
-  // 0) Encrypt new password
+  // 1) Encrypt new password
   const personalPassword = await getPasswordAsync({
     subHeading: 'Enter your application password to encrypt your organization credentials',
   });
@@ -71,15 +72,8 @@ const setupOrganization = async (setup: ModelValue) => {
     personalPassword || undefined,
   );
 
-  // 1) Login to organization
-  const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
-  const { jwtToken } = await login(
-    setup.organizationURL,
-    email,
-    setup.temporaryOrganizationPassword,
-  );
-
   // 2) Add organization and credentials to prisma db
+  const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
   const { id: organizationId } = await addOrganization({
     nickname: setup.organizationNickname,
     serverUrl: setup.organizationURL,
@@ -90,7 +84,7 @@ const setupOrganization = async (setup: ModelValue) => {
     setup.temporaryOrganizationPassword,
     organizationId,
     props.personalUser.personalId,
-    jwtToken,
+    props.jwtToken,
     null,
   );
   await user.refetchOrganizations();

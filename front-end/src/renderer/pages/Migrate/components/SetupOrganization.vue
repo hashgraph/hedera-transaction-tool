@@ -16,7 +16,7 @@ defineProps<{
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'setOrganizationSetup', value: ModelValue | null): void;
+  (event: 'setOrganizationSetup', value: ModelValue | null, jwtToken: string | null): void;
   (event: 'migration:cancel'): void;
 }>();
 
@@ -25,6 +25,7 @@ const loading = ref(false);
 const loadingText = ref<string>('');
 const organizationURL = ref<string | null>(null);
 const organizationEmail = ref<string | null>(null);
+const jwtToken = ref<string | null>(null);
 
 /* Handlers */
 const handleFormSubmit: SubmitCallback = async (
@@ -56,28 +57,31 @@ const handleFormSubmit: SubmitCallback = async (
       return { error: loginInOrganizationResult.error.message };
     }
     organizationEmail.value = formData.organizationEmail;
+    jwtToken.value = loginInOrganizationResult.data!;
   }
 
-  emit('setOrganizationSetup', formData);
+  emit('setOrganizationSetup', formData, jwtToken.value);
   loading.value = false;
 
   return { error: null };
 };
 
 const handleSkip = () => {
-  emit('setOrganizationSetup', null);
+  emit('setOrganizationSetup', null, null);
 };
 
 const handleMigrationCancel = () => emit('migration:cancel');
 
 /* Functions */
-const checkLoginInOrganization = async (data: ModelValue) => {
+const checkLoginInOrganization = async (data: ModelValue): Promise<string> => {
   if (!data.organizationEmail) {
     throw new Error('(BUG) Organization email is required');
   }
   const email = data.organizationEmail;
 
-  await login(data.organizationURL, email, data.temporaryOrganizationPassword);
+  const { jwtToken } = await login(data.organizationURL, email, data.temporaryOrganizationPassword);
+
+  return jwtToken;
 };
 </script>
 <template>

@@ -56,6 +56,7 @@ const recoveryPhrase: Ref<RecoveryPhrase | null> = ref(null);
 const recoveryPhrasePassword = ref<string | null>(null);
 const personalUser = ref<PersonalUser | null>(null);
 const organizationSetup = ref<ModelValue | null>(null);
+const jwtToken = ref<string | null>(null);
 
 const userInitialized = ref(false);
 const keysImported = ref(0);
@@ -116,8 +117,9 @@ const handleSetPersonalUser = async (value: PersonalUser) => {
   step.value = 'organization';
 };
 
-const handleSetOrganizationSetup = async (value: ModelValue | null) => {
+const handleSetOrganizationSetup = async (value: ModelValue | null, token: string | null) => {
   organizationSetup.value = value;
+  jwtToken.value = token;
   await initializeUserStore();
   userInitialized.value = true;
   // Write the skip claim now that the org (if any) is selected, using the correct claim key.
@@ -229,6 +231,7 @@ const initializeUserStore = async () => {
           <PerformSetup
             :personal-user="personalUser!"
             :organization-setup="organizationSetup"
+            :jwt-token="jwtToken!"
             :recovery-phrase="recoveryPhrase"
             :recovery-phrase-password="recoveryPhrasePassword"
             :selected-keys="selectedKeysToRecover"
