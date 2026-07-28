@@ -95,7 +95,7 @@
     "sass": "1.102.0",
     "typescript": "catalog:",
     "vite": "7.3.6",
-    "vite-plugin-electron": "1.0.4",
+    "vite-plugin-electron": "1.1.0",
     "vite-plugin-eslint": "1.8.1",
     "vite-plugin-vue-devtools": "8.2.1",
     "vitest": "catalog:vitest",
