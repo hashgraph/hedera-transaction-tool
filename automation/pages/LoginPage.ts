@@ -89,11 +89,11 @@ export class LoginPage extends BasePage {
     let isLogoutVisible = await this.isElementVisible(this.logoutButtonSelector, null, this.SHORT_TIMEOUT);
 
     if (!isLogoutVisible) {
-      if (await this.isElementVisible(this.settingsButtonSelector, null, this.SHORT_TIMEOUT)) {
+      if (await this.isElementVisible(this.settingsButtonSelector, null, this.LONG_TIMEOUT)) {
         await this.click(this.settingsButtonSelector);
       }
 
-      if (await this.isElementVisible(this.profileTabButtonSelector, null, this.SHORT_TIMEOUT)) {
+      if (await this.isElementVisible(this.profileTabButtonSelector, null, this.LONG_TIMEOUT)) {
         await this.click(this.profileTabButtonSelector);
         isLogoutVisible = await this.isElementVisible(this.logoutButtonSelector);
       }
