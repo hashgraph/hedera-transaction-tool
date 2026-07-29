@@ -20,7 +20,7 @@ vi.mock('@renderer/utils/ToastManager', () => ({
 }));
 
 function makeFile(name: string, bytes: Uint8Array): { meta: File; content: Uint8Array; loadPercentage: number } {
-  return { meta: new File([bytes], name), content: bytes, loadPercentage: 100 };
+  return { meta: new File([Buffer.from(bytes)], name), content: bytes, loadPercentage: 100 };
 }
 
 const BIN_BYTES = new Uint8Array([0x0a, 0x00]);

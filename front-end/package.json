@@ -93,7 +93,7 @@
     "prettier": "catalog:",
     "prisma": "7.8.0",
     "sass": "1.102.0",
-    "typescript": "5.8.3",
+    "typescript": "6.0.3",
     "vite": "7.3.6",
     "vite-plugin-electron": "1.0.4",
     "vite-plugin-eslint": "1.8.1",

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { INodeInfoParsed } from '@shared/interfaces';
 import type {
   ComponentServiceEndpoint,
   NodeUpdateData,
@@ -51,12 +50,12 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
         ...common,
         ...(data as NodeUpdateData),
       },
-      (nodeData.nodeInfo?.value as INodeInfoParsed) || null,
+      nodeData.nodeInfo?.value || null,
     );
 });
 
 const hasAnyChange = computed(() => {
-  const nodeInfo = nodeData.nodeInfo?.value as INodeInfoParsed | null;
+  const nodeInfo = nodeData.nodeInfo?.value || null;
   if (!nodeInfo) return false;
 
   if ((data.description ?? '') !== (nodeInfo.description ?? '')) return true;

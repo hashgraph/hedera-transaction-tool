@@ -108,7 +108,7 @@ async function handleUpdateGossipCert(str: string) {
     const { data } = await safeAwait(x509BytesFromPem(str));
 
     if (data) {
-      gossipCaCertificate = data.raw;
+      gossipCaCertificate = Uint8Array.from(data.raw);
       publicKeyHash.value = data.hash;
     }
   }
