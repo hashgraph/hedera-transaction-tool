@@ -26,10 +26,10 @@ Understanding what already exists is important context for the sub-issues:
 ## The Three Sub-Issues and How They Relate
 
 ### 1. `approver-group-data-model.md` — Schema only
-Introduces four new back-end database tables: `approver_group`, `approver_group_member`, `entity_approver_group`, and `transaction_entity`. No behavior changes. This is a prerequisite for the workflow issue.
+Introduces new back-end database tables: `reviewer_group`, `reviewer_group_member`, `entity_reviewer_group`, `transaction_entity`, `transaction_reviewer_list`, and `transaction_reviewer_list_member`. Retires the existing `TransactionApprover` entity. No behavior changes. This is a prerequisite for the workflow issue.
 
-### 2. `approver-group-workflow.md` — Transaction approval behavior
-Builds on the schema to implement: admin UI for creating groups and assigning them to entities, automatic approver group resolution at transaction creation time, and conditional signer visibility gated on approval completion. This is about approving **individual transactions**, not app upgrades.
+### 2. `approver-group-workflow.md` — Transaction review behavior
+Builds on the schema to implement: admin UI for creating groups and assigning them to entities, automatic reviewer group resolution at transaction creation time, client-side verification of review records against locally stored group state, and conditional signer visibility based on review status. Reviewers can accept or reject a transaction — rejection does not block signing but is prominently displayed and triggers a creator notification. This is about reviewing **individual transactions**, not app upgrades.
 
 ### 3. `hcs-upgrade-approval.md` — App upgrade governance
 Entirely separate concern from issues 1 and 2. Uses a Hedera Consensus Service (HCS) topic to create a trustless, on-chain record of which app versions an org has approved. The frontend reads this directly from the mirror node — the backend is not in the verification path. This issue stands alone and can be implemented independently of 1 and 2.
@@ -44,8 +44,8 @@ The existing `TransactionApprover` supports arbitrary nested threshold trees. Fo
 **Many-to-many between entities and groups.**
 One group can be assigned to multiple entities. One entity can have multiple groups assigned. This avoids duplicating group definitions and is implemented via the `entity_approver_group` join table.
 
-**Live link, not snapshot.**
-Group membership is not copied into the transaction at creation time. Approval requirements are resolved at query time by walking `Transaction → TransactionEntity → EntityApproverGroup → ApproverGroup → ApproverGroupMember`. Updating a group immediately affects all pending transactions referencing it. A member removed after already approving retains their approval; a member added mid-transaction becomes a required approver going forward.
+**Snapshot at creation time, not live link.**
+When a transaction is created, each matched `reviewer_group` is snapshotted into a `transaction_reviewer_list` row — threshold, name, description, and current membership are copied at that moment. Subsequent changes to the predefined group have no effect on the transaction. This preserves a complete, immutable audit record and prevents a group change from affecting in-flight transactions.
 
 **HCS topic over Hedera File for upgrade approval.**
 A Hedera File was the first candidate. Rejected because: (a) reading file contents requires a paid `FileContentsQuery` — the mirror node does not expose file contents for free, and (b) there is no free way to verify what was written to the file via mirror node. HCS topics are free to read from mirror node and the network-enforced `submitKey` provides trustless access control without any backend involvement.
