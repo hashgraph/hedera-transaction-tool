@@ -227,15 +227,16 @@ const initializeUserStore = async () => {
         </template>
 
         <!-- Perform Migration Step -->
-        <template v-if="stepIs('performSetup')">
+        <template v-if="stepIs('performSetup') && personalUser !== null && jwtToken !== null">
           <PerformSetup
-            :personal-user="personalUser!"
+            :personal-user="personalUser"
             :organization-setup="organizationSetup"
-            :jwt-token="jwtToken!"
+            :jwt-token="jwtToken"
             :recovery-phrase="recoveryPhrase"
             :recovery-phrase-password="recoveryPhrasePassword"
             :selected-keys="selectedKeysToRecover"
             @didPerformSetup="didPerformSetup"
+            @didCancelSetup="handleStopMigration"
           />
         </template>
 
