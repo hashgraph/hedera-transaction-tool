@@ -38,6 +38,7 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'didPerformSetup', importedKeyCount: number, error: unknown): void;
+  (event: 'didCancelSetup'): void;
 }>();
 
 /* Composables */
@@ -67,6 +68,11 @@ const setupOrganization = async (setup: ModelValue) => {
   const personalPassword = await getPasswordAsync({
     subHeading: 'Enter your application password to encrypt your organization credentials',
   });
+  if (personalPassword === false) {
+    // User has refused to enter his application password => setup is cancelled
+    emit('didCancelSetup');
+    return;
+  }
   const encryptedNewPassword = await encryptOrganizationPassword(
     setup.newOrganizationPassword,
     personalPassword || undefined,
