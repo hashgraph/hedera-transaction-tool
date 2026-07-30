@@ -10,12 +10,16 @@ import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 import { ErrorCodes, NatsPublisherService } from '@app/common';
 import { User, UserStatus } from '@entities';
-import { totp } from 'otplib';
+import * as otplib from '@otplib/totp';
 import { UsersService } from '../users/users.service';
 import { SignUpUserDto } from './dtos';
 
 jest.mock('bcryptjs');
 jest.mock('argon2');
+jest.mock('@otplib/totp', () => ({
+  generate: jest.fn(),
+  verify: jest.fn(),
+}));
 
 describe('AuthService', () => {
   let service: AuthService;
@@ -90,7 +94,7 @@ describe('AuthService', () => {
 
     jwtService.sign.mockReturnValue('token');
 
-    jest.spyOn(totp, 'generate').mockReturnValue(totpRes);
+    jest.mocked(otplib.generate).mockResolvedValue(totpRes);
 
     await service.createOtp(email);
 
@@ -113,7 +117,12 @@ describe('AuthService', () => {
       //@ts-expect-error - incorrect overload expected
       .calledWith('NODE_ENV')
       .mockReturnValue(production ? 'production' : 'development');
-    jest.spyOn(totp, 'check').mockReturnValue(true);
+    jest.mocked(otplib.verify).mockResolvedValue({
+      valid: true,
+      delta: 0,
+      epoch: 0,
+      timeStep: 0,
+    });
 
     await service.verifyOtp(user as User, { token: '123456' });
 
@@ -272,21 +281,43 @@ describe('AuthService', () => {
   it('should create otp in dev', async () => {
     const { user, otpSecret, totpRes } = await invokeCreateOtp(false);
 
-    expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
-    expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.email.password-reset', [{
-      email: user.email,
-      additionalData: { otp: totpRes },
-    }]);
+    expect(otplib.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secret: Buffer.from(`${otpSecret}${user.email}`),
+        digits: 8,
+        period: 60,
+      }),
+    );
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [
+        {
+          email: user.email,
+          additionalData: { otp: totpRes },
+        },
+      ],
+    );
   });
 
   it('should create otp in production', async () => {
     const { user, otpSecret, totpRes } = await invokeCreateOtp(true);
 
-    expect(totp.generate).toHaveBeenCalledWith(`${otpSecret}${user.email}`);
-    expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.email.password-reset', [{
-      email: user.email,
-      additionalData: { otp: totpRes },
-    }]);
+    expect(otplib.generate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        secret: Buffer.from(`${otpSecret}${user.email}`),
+        digits: 8,
+        period: 60,
+      }),
+    );
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [
+        {
+          email: user.email,
+          additionalData: { otp: totpRes },
+        },
+      ],
+    );
   });
 
   it('should not create otp if user not found', async () => {
@@ -318,7 +349,7 @@ describe('AuthService', () => {
       .calledWith('OTP_SECRET')
       .mockReturnValue('');
 
-    jest.spyOn(totp, 'check').mockReturnValue(false);
+    jest.mocked(otplib.verify).mockResolvedValue({ valid: false });
 
     await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
       'Incorrect token',
@@ -334,7 +365,12 @@ describe('AuthService', () => {
       .calledWith('OTP_SECRET')
       .mockReturnValue('');
 
-    jest.spyOn(totp, 'check').mockReturnValue(true);
+    jest.mocked(otplib.verify).mockResolvedValue({
+      valid: true,
+      delta: 0,
+      epoch: 0,
+      timeStep: 0,
+    });
     userService.updateUser.mockRejectedValue(new Error());
 
     await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
