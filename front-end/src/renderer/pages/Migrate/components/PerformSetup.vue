@@ -22,7 +22,6 @@ import { compareHash } from '@renderer/services/electronUtilsService.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import { restorePrivateKey, storeKeyPair } from '@renderer/services/keyPairService.ts';
 import type { Prisma } from '@prisma/client';
-import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 
 /* Props */
 const props = defineProps<{
@@ -39,9 +38,6 @@ const emit = defineEmits<{
   (event: 'didPerformSetup', importedKeyCount: number, error: unknown): void;
   (event: 'didCancelSetup'): void;
 }>();
-
-/* Composables */
-const { getPasswordAsync } = usePersonalPassword();
 
 /* Stores */
 const user = useUserStore();
@@ -63,17 +59,7 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
 };
 
 const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
-  // 1) Encrypt new password
-  const personalPassword = await getPasswordAsync({
-    subHeading: 'Enter your application password to encrypt your organization credentials',
-  });
-  if (personalPassword === false) {
-    // User has refused to enter his application password => setup is cancelled
-    emit('didCancelSetup');
-    return;
-  }
-
-  // 2) Add organization and credentials to prisma db
+  // 1) Add organization and credentials to prisma db
   const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
   const { id: organizationId } = await addOrganization({
     nickname: setup.organizationNickname,
@@ -86,12 +72,12 @@ const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
     organizationId,
     props.personalUser.personalId,
     jwtToken,
-    null,
-    false
+    props.personalUser.password,
+    false,
   );
   await user.refetchOrganizations();
 
-  // 3) Set new password and update prisma db
+  // 2) Set new password and update prisma db
   await changePassword(
     setup.organizationURL,
     setup.temporaryOrganizationPassword,
@@ -103,16 +89,16 @@ const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
     undefined,
     setup.newOrganizationPassword,
     undefined,
-    personalPassword ?? undefined,
+    props.personalUser.password ?? undefined,
   );
 
-  // 5) Initialize user store
+  // 3) Initialize user store
   await user.refetchOrganizations();
   if (user.organizations[0]) {
     await user.selectOrganization(user.organizations[0]);
   }
 
-  // 6) Wait a little to avoid flash effect and help user identify what's happening
+  // 4) Wait a little to avoid flash effect and help user identify what's happening
   await eyePersistence;
 };
 
