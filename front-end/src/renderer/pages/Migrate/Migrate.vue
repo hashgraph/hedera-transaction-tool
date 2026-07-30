@@ -236,7 +236,6 @@ const initializeUserStore = async () => {
             :recovery-phrase-password="recoveryPhrasePassword"
             :selected-keys="selectedKeysToRecover"
             @didPerformSetup="didPerformSetup"
-            @didCancelSetup="handleStopMigration"
           />
         </template>
 

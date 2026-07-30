@@ -36,7 +36,6 @@ const props = defineProps<{
 /* Emits */
 const emit = defineEmits<{
   (event: 'didPerformSetup', importedKeyCount: number, error: unknown): void;
-  (event: 'didCancelSetup'): void;
 }>();
 
 /* Stores */
