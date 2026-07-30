@@ -2,13 +2,13 @@ import { mockDeep } from 'vitest-mock-extended';
 
 vi.mock('bcrypt', () => mockDeep());
 vi.mock('crypto', () => mockDeep());
-vi.mock('electron', () => {
-  const actualElectron = vi.importActual('electron');
+vi.mock('electron', async () => {
+  const actualElectron = await vi.importActual('electron');
   return {
     ...actualElectron,
-    ipcMain: { on: vi.fn(), removeListener: vi.fn(), ...actualElectron.ipcMain },
+    ipcMain: { on: vi.fn(), removeListener: vi.fn(), ...actualElectron.ipcMain as any },
     BrowserWindow: {
-      ...actualElectron.BrowserWindow,
+      ...actualElectron.BrowserWindow as any,
       getAllWindows: vi.fn(), // add a stub for getAllWindows
     },
     app: actualElectron.app,
@@ -32,6 +32,7 @@ import { getNumberArrayFromString } from '@main/utils';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 import fs from 'fs';
 import { createHash, X509Certificate } from 'crypto';
+import { Mock, vi } from 'vitest';
 
 describe('createChannelName', () => {
   test('Should create correct channel name', () => {
@@ -544,7 +545,7 @@ describe('setDockBounce listener', () => {
     vi.resetAllMocks();
 
     registerUtilsListeners();
-    const calls = (ipcMain.on as vi.Mock).mock.calls;
+    const calls = (ipcMain.on as Mock).mock.calls;
     const call = calls.find(([channel]) => channel === 'utils:setDockBounce');
     if (call) {
       listenerCallback = call[1];

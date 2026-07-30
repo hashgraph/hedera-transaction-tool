@@ -15,7 +15,7 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 vi.mock('path', () => mockDeep());
 vi.mock('@electron-toolkit/utils', () => mockDeep());
 vi.mock('electron', () => {
-  const mocked = mockDeep();
+  const mocked = mockDeep<typeof Electron>();
   mocked.app.requestSingleInstanceLock.mockReturnValue(true);
   mocked.app.whenReady.mockResolvedValue();
   return mocked;
@@ -208,12 +208,11 @@ describe('Electron entry file', async () => {
     // Re-trigger ready so mainWindow is set
     //@ts-expect-error Incorrect type definition
     const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
-    readyHandler && (await readyHandler[1]());
+    readyHandler && readyHandler[1]();
 
-    //@ts-expect-error Incorrect type definition
     const secondInstanceHandler = vi
       .mocked(app)
-      .on.mock.calls.find(([event]) => event === 'second-instance');
+      .on.mock.calls.find(([event]) => event === 'second-instance' as any);
     expect(secondInstanceHandler).toBeDefined();
 
     vi.mocked(mainWindow.isMinimized).mockReturnValue(true);
@@ -232,10 +231,9 @@ describe('Electron entry file', async () => {
     const readyHandler = vi.mocked(app).on.mock.calls.find(([event]) => event === 'ready');
     readyHandler && (await readyHandler[1]());
 
-    //@ts-expect-error Incorrect type definition
     const secondInstanceHandler = vi
       .mocked(app)
-      .on.mock.calls.find(([event]) => event === 'second-instance');
+      .on.mock.calls.find(([event]) => event === 'second-instance' as any);
     expect(secondInstanceHandler).toBeDefined();
 
     vi.mocked(mainWindow.isMinimized).mockReturnValue(false);
@@ -264,10 +262,9 @@ describe('Electron entry file', async () => {
     vi.mocked(restoreOrCreateWindow).mockClear();
     vi.mocked(mainWindow.focus).mockClear();
 
-    //@ts-expect-error Incorrect type definition
     const secondInstanceHandler = vi
       .mocked(app)
-      .on.mock.calls.find(([event]) => event === 'second-instance');
+      .on.mock.calls.find(([event]) => event === 'second-instance' as any);
     expect(secondInstanceHandler).toBeDefined();
 
     secondInstanceHandler && (await secondInstanceHandler[1]());

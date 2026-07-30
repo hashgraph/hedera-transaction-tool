@@ -226,8 +226,8 @@ export const updateOrganizationCredentials = async (
       where: { id: credentials.id },
       data: {
         email: email || credentials.email,
-        password: password !== undefined ? password : credentials.password,
-        jwtToken: jwtToken !== undefined ? jwtToken : credentials.jwtToken,
+        password: password ?? credentials.password,
+        jwtToken: jwtToken ?? credentials.jwtToken,
       },
     });
 

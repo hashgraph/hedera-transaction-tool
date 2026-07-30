@@ -33,7 +33,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
-import { AppCache } from '@renderer/caches/AppCache.ts';
+import { AppCache } from '@renderer/caches/AppCache';
 
 /* Stores */
 const user = useUserStore();
