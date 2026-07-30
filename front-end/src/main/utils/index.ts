@@ -31,7 +31,7 @@ export const deleteDirectory = async (directoryPath: string) => {
     const pathStat = await fs.stat(directoryPath);
 
     if (pathStat.isDirectory()) {
-      await fs.rmdir(directoryPath, { recursive: true });
+      await fs.rm(directoryPath, { recursive: true, force: true });
     }
 
     return true;

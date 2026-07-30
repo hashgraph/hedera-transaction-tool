@@ -601,7 +601,7 @@ describe('Services Local User Organization Credentials', () => {
 
       prisma.organizationCredentials.findFirst.mockResolvedValue(null);
 
-      expect(() => updateOrganizationCredentials('123', '321', email, password)).rejects.toThrow(
+      await expect(() => updateOrganizationCredentials('123', '321', email, password)).rejects.toThrow(
         'Failed to update organization credentials',
       );
     });
@@ -897,7 +897,7 @@ describe('Services Local User Organization Credentials', () => {
 
       prisma.organizationCredentials.create.mockRejectedValue('Database Error');
 
-      expect(() =>
+      await expect(() =>
         addOrganizationCredentials(email, password, '123', '321', 'token', encryptPassword, true),
       ).rejects.toThrow('Failed to add organization credentials');
     });
@@ -932,7 +932,7 @@ describe('Services Local User Organization Credentials', () => {
     test('Should throw error if there is a database error', async () => {
       prisma.organizationCredentials.deleteMany.mockRejectedValue('Database error');
 
-      expect(() => deleteOrganizationCredentials('123', '321')).rejects.toThrow(
+      await expect(() => deleteOrganizationCredentials('123', '321')).rejects.toThrow(
         'Failed to delete organization credentials',
       );
     });
@@ -985,7 +985,7 @@ describe('Services Local User Organization Credentials', () => {
       });
       vi.mocked(login).mockRejectedValue('Failed login in server');
 
-      expect(() => tryAutoSignIn('123', '321')).rejects.toThrow('Incorrect decryption password');
+      await expect(() => tryAutoSignIn('123', '321')).rejects.toThrow('Incorrect decryption password');
     });
   });
 

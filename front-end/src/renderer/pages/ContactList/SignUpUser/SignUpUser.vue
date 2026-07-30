@@ -25,7 +25,7 @@ const logger = createLogger('renderer.component.signUpUser');
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
-import useContactsStore from '@renderer/stores/storeContacts.ts';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 /* Injected */
 const toastManager = ToastManager.inject();

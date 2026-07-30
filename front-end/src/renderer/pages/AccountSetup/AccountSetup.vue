@@ -19,7 +19,7 @@ import GenerateOrImport from './components/GenerateOrImport.vue';
 import KeyPairs from './components/KeyPairs.vue';
 import NewPassword from './components/NewPassword.vue';
 import useVersionCheck from '@renderer/composables/useVersionCheck';
-import useAccountSetupStore from '@renderer/stores/storeAccountSetup.ts';
+import useAccountSetupStore from '@renderer/stores/storeAccountSetup';
 
 /* Types */
 type StepName = 'newPassword' | 'recoveryPhrase' | 'keyPairs';

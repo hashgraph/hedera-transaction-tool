@@ -93,7 +93,7 @@ describe('IPC handlers transaction groups', () => {
       atomic: true,
     };
     const drafts: Prisma.TransactionDraftUncheckedCreateInput[] = [
-      { user_id: userId, transactionBytes: 'a', type: 'Transfer' },
+      { user_id: userId, transactionBytes: 'a', type: 'Transfer', description: '' },
     ];
 
     await invokeIPCHandler('transactionGroups:updateGroupWithItems', groupId, group, drafts);

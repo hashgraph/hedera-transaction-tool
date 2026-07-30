@@ -7,7 +7,7 @@ import { readTransactionFile, writeTransactionFile } from '@renderer/services/tr
 import {
   collectMissingSignerKeys,
   filterTransactionFileItemsToBeSigned,
-} from '@shared/utils/transactionFile.ts';
+} from '@renderer/utils/transactionFileSigning.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AppCache } from '@renderer/caches/AppCache.ts';

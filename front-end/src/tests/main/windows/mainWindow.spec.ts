@@ -37,7 +37,7 @@ vi.mock('electron', () => {
     callbacks.close && callbacks.close();
     callbacks.closed && callbacks.closed();
   });
-  bw.prototype.emit = vi.fn((e: string, ...args: any): boolean => {
+  bw.prototype.emit = vi.fn((e: string | symbol, ...args: any[]): boolean => {
     callbacks[e] && callbacks[e](args);
     return false;
   });

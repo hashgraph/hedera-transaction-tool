@@ -10,7 +10,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter, useRoute, onBeforeRouteLeave, type _RouterClassic } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
@@ -36,7 +36,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import ImportCSVController from '@renderer/pages/CreateTransactionGroup/ImportCSVController.vue';
 import useNextTransactionV2, {
   type TransactionNodeId,
-} from '@renderer/stores/storeNextTransactionV2.ts';
+} from '@renderer/stores/storeNextTransactionV2';
 import { MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH } from '@shared/interfaces';
 
 /* Injected */
