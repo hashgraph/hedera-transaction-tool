@@ -146,9 +146,6 @@ export class AuthService {
 
   /* Sets the OTP jwt */
   private getOtpToken(otpPayload: OtpPayload) {
-    const expires = new Date();
-    expires.setSeconds(expires.getSeconds() + totp.options.step * (totp.options.window as number));
-
     return this.jwtService.sign(otpPayload, {
       expiresIn: `${this.configService.get('OTP_EXPIRATION')}m`,
     });
