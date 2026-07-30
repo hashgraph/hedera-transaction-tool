@@ -15,7 +15,6 @@ import {
 } from '@renderer/utils';
 import {
   addOrganizationCredentials,
-  encryptOrganizationPassword,
   updateOrganizationCredentials,
 } from '@renderer/services/organizationCredentials.ts';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
@@ -73,10 +72,6 @@ const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
     emit('didCancelSetup');
     return;
   }
-  const encryptedNewPassword = await encryptOrganizationPassword(
-    setup.newOrganizationPassword,
-    personalPassword || undefined,
-  );
 
   // 2) Add organization and credentials to prisma db
   const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
@@ -105,9 +100,9 @@ const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
     organizationId,
     props.personalUser.personalId,
     undefined,
+    setup.newOrganizationPassword,
     undefined,
-    undefined,
-    encryptedNewPassword,
+    personalPassword ?? undefined,
   );
 
   // 5) Initialize user store
