@@ -60,6 +60,7 @@ export default withVueTs(
       '@typescript-eslint/no-unsafe-enum-comparison': 'off',
       '@typescript-eslint/restrict-template-expressions': 'off',
       '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/prefer-promise-reject-errors': 'off',
     },
   },
   {
