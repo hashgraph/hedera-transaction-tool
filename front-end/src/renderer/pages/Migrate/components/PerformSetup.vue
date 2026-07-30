@@ -87,6 +87,7 @@ const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
     props.personalUser.personalId,
     jwtToken,
     null,
+    false
   );
   await user.refetchOrganizations();
 
