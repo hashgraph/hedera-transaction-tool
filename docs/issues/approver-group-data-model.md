@@ -38,6 +38,7 @@ The existing `TransactionApprover` entity is fully retired by this sub-issue. It
 | `id` | PK | |
 | `group_id` | FK → `reviewer_group` | |
 | `user_id` | FK → `user` | |
+| `user_key_id` | FK → `user_key` | the specific key this member will use to sign reviews for this group |
 | `created_at` | timestamp | |
 
 Unique constraint: (`group_id`, `user_id`)
@@ -100,10 +101,10 @@ Combines assignment and activity into a single row. Created at transaction creat
 | `id` | PK | |
 | `list_id` | FK → `transaction_reviewer_list` | |
 | `user_id` | FK → `user` | |
-| `user_key_id` | FK → `user_key`, nullable | set on action; stored for cryptographic audit only |
+| `user_key_id` | FK → `user_key`, nullable | snapshotted from `reviewer_group_member.user_key_id` at creation time for group members; set on action for ad-hoc members |
 | `signature` | bytes, nullable | set on action; stored for cryptographic audit only |
 | `accepted` | boolean, nullable | null = pending, true = accepted, false = rejected |
-| `note` | string, nullable | reviewer's note; visible to all parties; typically set on rejection but allowed on acceptance |
+| `note` | string, nullable | reviewer's note; visible to all parties; required on rejection, optional on acceptance |
 | `actioned_at` | timestamp, nullable | set on action |
 | `created_at` | timestamp | |
 
@@ -113,7 +114,7 @@ Unique constraint: (`list_id`, `user_id`)
 
 Reviewer groups and member public keys are stored locally on each client machine and are not trusted from the backend at runtime.
 
-**Local snapshot store.** Each client maintains a local store of the most recent verified snapshot for each `reviewer_group`: name, description, threshold, member list, and each member's public key(s). This local store is the authoritative source the client uses to verify incoming review activity.
+**Local snapshot store.** Each client maintains a local store of: (a) the most recent verified snapshot for each `reviewer_group` — name, description, threshold, member list, and each member's designated public key (from `user_key_id`); and (b) all `entity_reviewer_group` mappings — which entities are associated with which groups. This local store is the authoritative source the client uses both to determine review requirements at transaction creation time and to verify incoming review activity. No API query is needed at transaction creation time — the client resolves entity-to-group matches entirely from its local store.
 
 **Backend as review record.** The backend is the source of recorded reviews (`transaction_reviewer_list` and `transaction_reviewer_list_member` rows). The frontend fetches these rows and verifies them locally — matching signatures against the locally-stored public keys for the group members at the time of the snapshot — before treating them as valid.
 
@@ -125,10 +126,10 @@ Reviewer groups and member public keys are stored locally on each client machine
 
 ## Retirement of TransactionApprover
 
-The existing `TransactionApprover` entity is fully replaced by `transaction_reviewer_list_member`. The old table conflated policy (tree structure, listId, threshold) and activity (signature, accepted) and was key-based rather than user-based. The new design separates predefined group configuration from per-transaction assignment, and unifies assignment and activity into a single row per member per list.
+The existing `TransactionApprover` entity is fully replaced by `transaction_reviewer_list_member`. The old table conflated policy (tree structure, listId, threshold) and activity (signature, accepted) and was key-only — there was no user concept. The new design is user-based for UX and threshold evaluation, while still tracking each member's specific designated key (`user_key_id`) in both `reviewer_group_member` and `transaction_reviewer_list_member` for cryptographic verification.
 
 **Threshold evaluation** is straightforward: for each `transaction_reviewer_list` on the transaction, count `transaction_reviewer_list_member` rows where `accepted = true`. If that count meets or exceeds `threshold`, the list is satisfied. All lists must be satisfied for the transaction to advance. Evaluation is user-based — `user_id`, not `user_key_id`.
 
-**Key selection** happens automatically at action time: the system selects the user's first valid (non-deleted, active) org key, signs the transaction bytes, and writes `user_key_id`, `signature`, `accepted`, `note`, and `actioned_at` onto the member row. `user_key_id` and `signature` are stored for cryptographic audit only and are not surfaced in the UI; `note` is visible to all parties when set.
+**Key selection** is determined at snapshot time for group members: the key stored in `reviewer_group_member.user_key_id` is copied into `transaction_reviewer_list_member.user_key_id` when the transaction is created. For ad-hoc reviewers (additionally added by the creator), the system selects the reviewer's first valid (non-deleted, active) org key at action time. In both cases, the key is never exposed or selectable in the UI. When the reviewer acts, the system signs the transaction bytes with the pre-determined (or newly selected) key and writes `signature`, `accepted`, `note`, and `actioned_at` onto the member row. `user_key_id` and `signature` are stored for cryptographic verification and audit; `note` is visible to all parties when set.
 
 **Multi-list membership:** a user who appears in more than one list on the same transaction (e.g., they were a member of two auto-matched groups at snapshot time) has a separate `transaction_reviewer_list_member` row in each list. When they act, all their pending rows across all lists are updated in the same operation — they sign once, and all lists they belong to are credited.

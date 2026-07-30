@@ -31,7 +31,10 @@ Introduces new back-end database tables: `reviewer_group`, `reviewer_group_membe
 ### 2. `approver-group-workflow.md` — Transaction review behavior
 Builds on the schema to implement: admin UI for creating groups and assigning them to entities, automatic reviewer group resolution at transaction creation time, client-side verification of review records against locally stored group state, and conditional signer visibility based on review status. Reviewers can accept or reject a transaction — rejection does not block signing but is prominently displayed and triggers a creator notification. This is about reviewing **individual transactions**, not app upgrades.
 
-### 3. `hcs-upgrade-approval.md` — App upgrade governance
+### 3. `approver-group-rules.md` — Rule matching, local store, and attestation
+Specifies how entity-to-group mappings are stored on the client, how rule changes are synced and authorized (including the open attestation question), matching and precedence semantics, and the framework for future rule types (transaction-type-based, conditional). Depends on the schema in issue 1 and the workflow in issue 2.
+
+### 4. `hcs-upgrade-approval.md` — App upgrade governance
 Entirely separate concern from issues 1 and 2. Uses a Hedera Consensus Service (HCS) topic to create a trustless, on-chain record of which app versions an org has approved. The frontend reads this directly from the mirror node — the backend is not in the verification path. This issue stands alone and can be implemented independently of 1 and 2.
 
 ## Closed Design Decisions
@@ -45,7 +48,7 @@ The existing `TransactionApprover` supports arbitrary nested threshold trees. Fo
 One group can be assigned to multiple entities. One entity can have multiple groups assigned. This avoids duplicating group definitions and is implemented via the `entity_approver_group` join table.
 
 **Snapshot at creation time, not live link.**
-When a transaction is created, each matched `reviewer_group` is snapshotted into a `transaction_reviewer_list` row — threshold, name, description, and current membership are copied at that moment. Subsequent changes to the predefined group have no effect on the transaction. This preserves a complete, immutable audit record and prevents a group change from affecting in-flight transactions.
+When a transaction is created, each matched `reviewer_group` is snapshotted into a `transaction_reviewer_list` row — threshold, name, description, and current membership (including each member's designated `user_key_id`) are copied at that moment. Subsequent changes to the predefined group have no effect on the transaction. This preserves a complete, immutable audit record and prevents a group change from affecting in-flight transactions.
 
 **HCS topic over Hedera File for upgrade approval.**
 A Hedera File was the first candidate. Rejected because: (a) reading file contents requires a paid `FileContentsQuery` — the mirror node does not expose file contents for free, and (b) there is no free way to verify what was written to the file via mirror node. HCS topics are free to read from mirror node and the network-enforced `submitKey` provides trustless access control without any backend involvement.
