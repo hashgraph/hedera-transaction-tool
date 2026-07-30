@@ -101,7 +101,7 @@ describe('Services Local User Files', () => {
     test('Should throw error if file already exists', async () => {
       prisma.hederaFile.count.mockResolvedValueOnce(1);
 
-      expect(addFile(file)).rejects.toThrowError('File ID or Nickname already exists!');
+      await expect(addFile(file)).rejects.toThrowError('File ID or Nickname already exists!');
     });
   });
 

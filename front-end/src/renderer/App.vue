@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription.ts';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import {
   provideDynamicLayout,
@@ -22,7 +22,7 @@ import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 import { ToastManager } from './utils/ToastManager';
 import { createLogger, getErrorMessage, isLoggedInOrganization } from '@renderer/utils';
 import { AppCache } from './caches/AppCache';
-import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload.ts';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { TRANSACTION_ACTION } from '@shared/constants';
 
 /* Composables */

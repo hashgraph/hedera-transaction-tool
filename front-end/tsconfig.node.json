@@ -13,17 +13,16 @@
     "../shared/src/**/*.ts"
   ],
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "composite": true,
     "noImplicitAny": false,
     "forceConsistentCasingInFileNames": true,
     "types": ["vitest/globals"],
     "strict": true,
-    "baseUrl": ".",
     "paths": {
-      "@main/*": ["src/main/*"],
-      "@renderer/*": ["src/renderer/*"],
-      "@shared/*": ["src/shared/*"],
-      "@prisma/client": ["src/generated/prisma/client.ts"]
+      "@main/*": ["./src/main/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@prisma/client": ["./src/generated/prisma/client.ts"]
     }
   }
 }

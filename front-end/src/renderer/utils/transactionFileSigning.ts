@@ -1,5 +1,5 @@
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
+import { hexToUint8Array, type SignatureAudit } from '@renderer/utils/index.ts';
 import type { ITransaction, TransactionFileItem } from '@shared/interfaces';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
