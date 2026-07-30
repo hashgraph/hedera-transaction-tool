@@ -227,7 +227,7 @@ const initializeUserStore = async () => {
         </template>
 
         <!-- Perform Migration Step -->
-        <template v-if="stepIs('performSetup') && personalUser !== null && jwtToken !== null">
+        <template v-if="stepIs('performSetup') && personalUser !== null">
           <PerformSetup
             :personal-user="personalUser"
             :organization-setup="organizationSetup"

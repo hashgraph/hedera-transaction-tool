@@ -29,7 +29,7 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword.ts';
 const props = defineProps<{
   personalUser: PersonalUser;
   organizationSetup: ModelValue | null;
-  jwtToken: string;
+  jwtToken: string | null;
   recoveryPhrase: RecoveryPhrase | null;
   recoveryPhrasePassword: string | null;
   selectedKeys: KeyPathWithName[];
@@ -63,7 +63,7 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
   emit('didPerformSetup', importedKeyCount, error);
 };
 
-const setupOrganization = async (setup: ModelValue) => {
+const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
   // 1) Encrypt new password
   const personalPassword = await getPasswordAsync({
     subHeading: 'Enter your application password to encrypt your organization credentials',
@@ -90,7 +90,7 @@ const setupOrganization = async (setup: ModelValue) => {
     setup.temporaryOrganizationPassword,
     organizationId,
     props.personalUser.personalId,
-    props.jwtToken,
+    jwtToken,
     null,
   );
   await user.refetchOrganizations();
@@ -212,8 +212,8 @@ const restoreExistingKeys = async () => {
 /* Hooks */
 onMounted(async () => {
   try {
-    if (props.organizationSetup !== null) {
-      await setupOrganization(props.organizationSetup);
+    if (props.organizationSetup !== null && props.jwtToken !== null) {
+      await setupOrganization(props.organizationSetup, props.jwtToken);
     }
     if (props.selectedKeys.length > 0) {
       await startKeyImport(); // Will call concludeSetup()
