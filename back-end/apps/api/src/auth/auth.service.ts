@@ -77,11 +77,9 @@ export class AuthService {
     const payload: JwtPayload = { userId: user.id, email: user.email };
     const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d` as StringValue;
 
-    const accessToken: string = this.jwtService.sign(payload, {
+    return this.jwtService.sign(payload, {
       expiresIn,
     });
-
-    return accessToken;
   }
 
   /* Change the password for the given user */
