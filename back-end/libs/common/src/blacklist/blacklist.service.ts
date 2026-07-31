@@ -15,14 +15,16 @@ export class BlacklistService {
   }
 
   async blacklistToken(jwt: string) {
-    const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
-    const expirationSeconds = Number(expirationDays) * 24 * 60 * 60;
-
-    await this.client.set(jwt, this.BLACKLISTED, 'EX', expirationSeconds);
+    await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
   }
 
   async isTokenBlacklisted(jwt: string) {
     const data = await this.client.get(jwt);
     return data === this.BLACKLISTED;
+  }
+
+  private getJwtExpirationSeconds(): number {
+    const expirationDays = this.configService.get<number>('JWT_EXPIRATION');
+    return Number(expirationDays) * 24 * 60 * 60;
   }
 }
