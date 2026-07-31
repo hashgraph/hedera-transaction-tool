@@ -5,7 +5,7 @@ import type { RecoveryPhrase } from '@renderer/types';
 import type { PersonalUser } from './SetupPersonal.vue';
 import type { ModelValue } from './SetupOrganizationForm.vue';
 import { addOrganization } from '@renderer/services/organizationsService.ts';
-import { changePassword, getUserState, login } from '@renderer/services/organization';
+import { changePassword, getUserState } from '@renderer/services/organization';
 import {
   isLoggedInOrganization,
   isUserLoggedIn,
@@ -13,7 +13,10 @@ import {
   safeDuplicateUploadKey,
   userKeyHasMnemonic,
 } from '@renderer/utils';
-import { addOrganizationCredentials } from '@renderer/services/organizationCredentials.ts';
+import {
+  addOrganizationCredentials,
+  updateOrganizationCredentials,
+} from '@renderer/services/organizationCredentials.ts';
 import DecryptKeys from '@renderer/components/KeyPair/ImportEncrypted/components/DecryptKeys.vue';
 import { compareHash } from '@renderer/services/electronUtilsService.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
@@ -24,6 +27,7 @@ import type { Prisma } from '@prisma/client';
 const props = defineProps<{
   personalUser: PersonalUser;
   organizationSetup: ModelValue | null;
+  jwtToken: string | null;
   recoveryPhrase: RecoveryPhrase | null;
   recoveryPhrasePassword: string | null;
   selectedKeys: KeyPathWithName[];
@@ -53,47 +57,47 @@ const concludeSetup = async (importedKeyCount: number, error: unknown) => {
   emit('didPerformSetup', importedKeyCount, error);
 };
 
-const setupOrganization = async (setup: ModelValue) => {
-  // 1) Add organization
+const setupOrganization = async (setup: ModelValue, jwtToken: string) => {
+  // 1) Add organization and credentials to prisma db
+  const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
   const { id: organizationId } = await addOrganization({
     nickname: setup.organizationNickname,
     serverUrl: setup.organizationURL,
     key: '',
   });
-
-  // 2) Login to organization
-  const email = setup.organizationEmail!; // Checked by SetupOrganization.checkLoginInOrganization()
-  const { jwtToken } = await login(
-    setup.organizationURL,
+  await addOrganizationCredentials(
     email,
     setup.temporaryOrganizationPassword,
+    organizationId,
+    props.personalUser.personalId,
+    jwtToken,
+    props.personalUser.password,
+    false,
   );
+  await user.refetchOrganizations();
 
-  // 3) Set new password
+  // 2) Set new password and update prisma db
   await changePassword(
     setup.organizationURL,
     setup.temporaryOrganizationPassword,
     setup.newOrganizationPassword,
   );
-
-  // 4) Add Organization Credentials
-  await addOrganizationCredentials(
-    email,
-    setup.newOrganizationPassword,
+  await updateOrganizationCredentials(
     organizationId,
     props.personalUser.personalId,
-    jwtToken,
-    props.personalUser.password,
-    true,
+    undefined,
+    setup.newOrganizationPassword,
+    undefined,
+    props.personalUser.password ?? undefined,
   );
 
-  // 5) Initialize user store
+  // 3) Initialize user store
   await user.refetchOrganizations();
   if (user.organizations[0]) {
     await user.selectOrganization(user.organizations[0]);
   }
 
-  // 6) Wait a little to avoid flash effect and help user identify what's happening
+  // 4) Wait a little to avoid flash effect and help user identify what's happening
   await eyePersistence;
 };
 
@@ -189,8 +193,8 @@ const restoreExistingKeys = async () => {
 /* Hooks */
 onMounted(async () => {
   try {
-    if (props.organizationSetup !== null) {
-      await setupOrganization(props.organizationSetup);
+    if (props.organizationSetup !== null && props.jwtToken !== null) {
+      await setupOrganization(props.organizationSetup, props.jwtToken);
     }
     if (props.selectedKeys.length > 0) {
       await startKeyImport(); // Will call concludeSetup()
