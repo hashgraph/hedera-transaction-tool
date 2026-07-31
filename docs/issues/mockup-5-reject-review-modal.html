@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mockup 5 — Reject Review Modal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --page-bg: #f9fafe;
+      --card-bg: #ffffff;
+      --panel-bg: #edefff;
+      --border: #dddeee;
+      --border-dark: #bbbddd;
+      --text: #1a1a1a;
+      --text-secondary: #333666;
+      --text-muted: #777abb;
+      --primary: #6600cc;
+      --danger: #cd0000;
+      --tag-auto-bg: #f2e5ff;
+      --tag-auto-text: #4c0099;
+      --input-bg: #edefff;
+      --input-border: #bbbddd;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #d8daf0;
+      padding: 32px;
+      font-size: 14px;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    /* ── App window ── */
+    .app-window {
+      background: var(--page-bg);
+      border-radius: 12px;
+      box-shadow: 0 8px 40px rgba(9, 10, 20, 0.18);
+      overflow: hidden;
+      width: 960px;
+      position: relative;
+    }
+
+    /* ── Overlay wrapper ── */
+    .scene-bg {
+      filter: blur(2px) brightness(0.88);
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ── Top bar ── */
+    .app-topbar {
+      background: #15162a;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .dot.red    { background: #ff5f57; }
+    .dot.yellow { background: #febc2e; }
+    .dot.green  { background: #28c840; }
+
+    .topbar-title {
+      color: #9b9ec8;
+      font-size: 12px;
+      margin-left: 8px;
+      font-family: 'Noto Sans Mono', monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ── App body (sidebar + main) ── */
+    .app-body {
+      display: flex;
+      height: 580px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      background: #15162a;
+      width: 200px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 16px 0;
+      gap: 2px;
+    }
+
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      color: #555880;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 8px 16px 4px;
+      margin-top: 8px;
+    }
+
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      color: #9b9ec8;
+      font-size: 13px;
+      border-radius: 0;
+      cursor: default;
+    }
+
+    .sidebar-item.active {
+      background: #222444;
+      color: #ffffff;
+    }
+
+    .sidebar-item .icon {
+      width: 16px;
+      height: 16px;
+      opacity: 0.6;
+      flex-shrink: 0;
+    }
+
+    .sidebar-item.active .icon { opacity: 1; }
+
+    /* ── Main content ── */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 24px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ── Page header ── */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .page-header-left { display: flex; flex-direction: column; gap: 6px; }
+
+    .page-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .badge-review {
+      background: #fff5d6;
+      color: #8a6000;
+      border: 1px solid #f0d070;
+    }
+
+    .page-header-actions {
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+      align-items: center;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary  { background: var(--primary); color: #fff; }
+    .btn-danger   { background: var(--danger);  color: #fff; }
+    .btn-outline  { border: 1px solid var(--border-dark); color: var(--text-secondary); background: transparent; }
+
+    /* ── Info card ── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 18px 20px;
+    }
+
+    .card-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 14px 20px;
+    }
+
+    .info-field { display: flex; flex-direction: column; gap: 3px; }
+    .info-field-label { font-size: 11px; color: var(--text-muted); }
+    .info-field-value {
+      font-size: 13px;
+      color: var(--text);
+      font-weight: 500;
+      font-family: 'Noto Sans Mono', monospace;
+    }
+    .info-field-value.plain { font-family: 'Inter', sans-serif; }
+
+    /* ── Reviewer group card ── */
+    .group-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 14px 18px;
+    }
+
+    .group-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .group-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .group-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .reviewer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .reviewer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: var(--card-bg);
+      border-radius: 5px;
+      border: 1px solid var(--border);
+    }
+
+    .reviewer-name { font-size: 13px; color: var(--text); }
+    .reviewer-status {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+    .rs-pending  { background: #fff5d6; color: #8a6000; }
+    .rs-approved { background: #dff5e8; color: #1a6636; }
+
+    /* ── Truncation hint ── */
+    .fade-out {
+      height: 32px;
+      background: linear-gradient(to bottom, transparent, var(--page-bg));
+      margin-top: -4px;
+    }
+
+    /* ═══════════════════════════════════════════
+       MODAL OVERLAY
+    ═══════════════════════════════════════════ */
+    .modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 24, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+
+    .modal {
+      background: var(--card-bg);
+      border-radius: 10px;
+      width: 480px;
+      box-shadow: 0 16px 56px rgba(9, 10, 20, 0.32);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Modal header */
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .modal-close {
+      width: 28px;
+      height: 28px;
+      border-radius: 5px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+
+    .modal-close:hover { background: var(--panel-bg); color: var(--text); }
+
+    /* Modal body */
+    .modal-body {
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .modal-description {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+
+    .modal-textarea {
+      width: 100%;
+      min-height: 96px;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'Inter', sans-serif;
+      font-size: 13px;
+      color: var(--text);
+      resize: vertical;
+      line-height: 1.5;
+      outline: none;
+    }
+
+    .modal-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(102, 0, 204, 0.10);
+    }
+
+    /* Modal footer */
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 12px 24px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-window">
+
+    <!-- ── Blurred background content ── -->
+    <div class="scene-bg">
+
+      <!-- Top bar -->
+      <div class="app-topbar">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+        <span class="topbar-title">Transaction Details — Awaiting Review — 0.0.12345@1720000000.000000000</span>
+      </div>
+
+      <!-- Body -->
+      <div class="app-body">
+
+        <!-- Sidebar -->
+        <nav class="sidebar">
+          <div class="sidebar-section-label">Transactions</div>
+          <div class="sidebar-item">
+            <!-- draft icon -->
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+              <rect x="2" y="2" width="12" height="12" rx="2"/>
+              <line x1="5" y1="5" x2="11" y2="5"/><line x1="5" y1="8" x2="11" y2="8"/><line x1="5" y1="11" x2="8" y2="11"/>
+            </svg>
+            Drafts
+          </div>
+          <div class="sidebar-item active">
+            <!-- clock icon -->
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+              <circle cx="8" cy="8" r="6"/><polyline points="8,5 8,8 10.5,10"/>
+            </svg>
+            Ready for Review
+          </div>
+          <div class="sidebar-item">
+            <!-- check icon -->
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+              <polyline points="3,8 6.5,11.5 13,5"/>
+            </svg>
+            Approved
+          </div>
+          <div class="sidebar-item">
+            <!-- upload icon -->
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+              <path d="M8 11V5m0 0L5.5 7.5M8 5l2.5 2.5"/><path d="M3 13h10"/>
+            </svg>
+            Submitted
+          </div>
+          <div class="sidebar-section-label">Settings</div>
+          <div class="sidebar-item">
+            <!-- settings icon -->
+            <svg class="icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4">
+              <circle cx="8" cy="8" r="2"/>
+              <path d="M8 2v1.5M8 12.5V14M2 8h1.5M12.5 8H14M3.5 3.5l1.1 1.1M11.4 11.4l1.1 1.1M3.5 12.5l1.1-1.1M11.4 4.6l1.1-1.1"/>
+            </svg>
+            Organization
+          </div>
+        </nav>
+
+        <!-- Main area -->
+        <main class="main">
+
+          <!-- Page header -->
+          <div class="page-header">
+            <div class="page-header-left">
+              <div class="page-title">Transfer Transaction</div>
+              <span class="status-badge badge-review">
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="currentColor"><circle cx="4.5" cy="4.5" r="4.5"/></svg>
+                Ready for Review
+              </span>
+            </div>
+            <div class="page-header-actions">
+              <button class="btn btn-outline">Reject</button>
+              <button class="btn btn-primary">Accept</button>
+            </div>
+          </div>
+
+          <!-- Transaction info card -->
+          <div class="card">
+            <div class="card-label">Transaction Details</div>
+            <div class="info-grid">
+              <div class="info-field">
+                <span class="info-field-label">Transaction ID</span>
+                <span class="info-field-value">0.0.12345@1720000000</span>
+              </div>
+              <div class="info-field">
+                <span class="info-field-label">Type</span>
+                <span class="info-field-value plain">CryptoTransfer</span>
+              </div>
+              <div class="info-field">
+                <span class="info-field-label">Created</span>
+                <span class="info-field-value plain">2024-07-03 14:22 UTC</span>
+              </div>
+              <div class="info-field">
+                <span class="info-field-label">From</span>
+                <span class="info-field-value">0.0.98765</span>
+              </div>
+              <div class="info-field">
+                <span class="info-field-label">To</span>
+                <span class="info-field-value">0.0.54321</span>
+              </div>
+              <div class="info-field">
+                <span class="info-field-label">Amount</span>
+                <span class="info-field-value plain">500 HBAR</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Reviewer group card (partially visible) -->
+          <div class="group-card">
+            <div class="group-card-header">
+              <span class="group-title">Treasury Board</span>
+              <span class="group-meta">2 of 3 required</span>
+            </div>
+            <div class="reviewer-list">
+              <div class="reviewer-row">
+                <span class="reviewer-name">Alice Chen</span>
+                <span class="reviewer-status rs-approved">Approved</span>
+              </div>
+              <div class="reviewer-row">
+                <span class="reviewer-name">Bob Martinez</span>
+                <span class="reviewer-status rs-pending">Pending</span>
+              </div>
+              <div class="reviewer-row">
+                <span class="reviewer-name">Carol Singh</span>
+                <span class="reviewer-status rs-pending">Pending</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="fade-out"></div>
+        </main>
+      </div><!-- /app-body -->
+    </div><!-- /scene-bg -->
+
+    <!-- ═══════════════════════════════════════════
+         MODAL OVERLAY
+    ═══════════════════════════════════════════ -->
+    <div class="modal-overlay">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+
+        <!-- Header -->
+        <div class="modal-header">
+          <span class="modal-title" id="modal-title">Reject Review</span>
+          <button class="modal-close" aria-label="Close">&#x2715;</button>
+        </div>
+
+        <!-- Body -->
+        <div class="modal-body">
+          <p class="modal-description">
+            Please explain your concern. This note is required and will be visible to the transaction creator, all reviewers, and all signers.
+          </p>
+          <textarea class="modal-textarea" rows="5" aria-label="Rejection note">The budget for this transfer has not been approved by the board. Please resubmit after the October budget meeting.</textarea>
+        </div>
+
+        <!-- Footer -->
+        <div class="modal-footer">
+          <button class="btn btn-outline">Cancel</button>
+          <button class="btn btn-danger">Submit Rejection</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /app-window -->
+</body>
+</html>

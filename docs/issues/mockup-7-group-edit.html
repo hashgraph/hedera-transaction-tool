@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 7 — Org Settings: Create / Edit Reviewer Group</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --page-bg: #f9fafe; --card-bg: #ffffff; --panel-bg: #edefff;
+    --border: #dddeee; --border-dark: #bbbddd;
+    --text: #1a1a1a; --text-secondary: #333666; --text-muted: #777abb;
+    --primary: #6600cc; --danger: #cd0000;
+    --input-bg: #edefff; --input-border: #bbbddd;
+  }
+  body { font-family: 'Inter', sans-serif; background: #d8daf0; color: var(--text); font-size: 14px; line-height: 1.5; padding: 32px; }
+  .app-window { background: var(--page-bg); border-radius: 12px; box-shadow: 0 8px 40px rgba(9,10,20,0.18); overflow: hidden; width: 960px; }
+
+  /* Topbar */
+  .app-topbar { background: #15162a; height: 40px; display: flex; align-items: center; padding: 0 16px; gap: 8px; }
+  .app-topbar .dot { width: 12px; height: 12px; border-radius: 50%; }
+  .app-topbar .dot.red   { background: #ff5f57; }
+  .app-topbar .dot.yellow { background: #febc2e; }
+  .app-topbar .dot.green  { background: #28c840; }
+  .app-topbar .title { flex: 1; text-align: center; color: #777abb; font-size: 12px; }
+
+  /* App body */
+  .app-body { display: flex; min-height: 620px; }
+
+  /* Settings nav */
+  .settings-nav { width: 200px; border-right: 1px solid var(--border); padding: 20px 0; flex-shrink: 0; background: #fff; }
+  .settings-nav-item { padding: 9px 20px; font-size: 13px; color: var(--text-secondary); cursor: pointer; border-left: 3px solid transparent; }
+  .settings-nav-item.active { color: var(--primary); border-left-color: var(--primary); background: #f2e5ff; font-weight: 600; }
+
+  /* Main content */
+  .main-content { flex: 1; padding: 28px 32px; overflow-y: auto; }
+
+  /* Breadcrumb */
+  .breadcrumb { font-size: 12px; color: var(--text-muted); margin-bottom: 16px; }
+  .breadcrumb .bc-link { color: var(--primary); cursor: pointer; }
+  .breadcrumb .bc-link:hover { text-decoration: underline; }
+
+  /* Page header */
+  .page-header { margin-bottom: 24px; }
+  .page-header h2 { font-size: 20px; font-weight: 300; color: var(--text); }
+  .page-header .subtitle { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Section label */
+  .section-label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 12px; }
+
+  /* Field row */
+  .field-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .field-label { width: 140px; flex-shrink: 0; font-size: 13px; color: var(--text-secondary); }
+  .field-value { flex: 1; }
+
+  /* Inputs */
+  .form-input {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    width: 100%;
+    outline: none;
+  }
+  .form-input-number {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 6px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    width: 52px;
+    text-align: center;
+    outline: none;
+  }
+  .threshold-row { display: flex; align-items: center; gap: 8px; }
+  .threshold-suffix { font-size: 13px; color: var(--text-muted); }
+
+  /* Entity chip area */
+  .chip-area { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .entity-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    font-size: 12px;
+    border: 1px solid #858dff;
+    border-radius: 6px;
+    padding: 0 8px;
+    background: #fff;
+    color: var(--text);
+    font-family: 'Noto Sans Mono', monospace;
+  }
+  .chip-remove {
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 13px;
+    line-height: 1;
+    padding: 0;
+    border: none;
+    background: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .chip-remove:hover { color: var(--danger); }
+  .btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: none;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-link:hover { text-decoration: underline; }
+
+  /* Member table */
+  .member-table-wrap { border: 1px solid var(--border); border-radius: 8px; overflow: hidden; width: 100%; }
+  .member-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .member-table th {
+    background: var(--panel-bg);
+    color: var(--text-secondary);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .member-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .member-table tr:last-child td { border-bottom: none; }
+  .member-row-active td { background: #f5f0ff; }
+
+  /* Avatar */
+  .avatar { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; color: #fff; }
+  .av-purple { background: #6600cc; }
+  .av-blue   { background: #444788; }
+  .av-teal   { background: #1896b2; }
+
+  /* Member cell */
+  .member-cell { display: flex; align-items: center; gap: 8px; }
+  .member-info { display: flex; flex-direction: column; }
+  .member-name { font-size: 13px; color: var(--text); font-weight: 500; }
+  .member-email { font-size: 11px; color: var(--text-muted); }
+
+  /* Key select */
+  .key-select {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    padding: 5px 10px;
+    font-size: 12px;
+    font-family: 'Inter', sans-serif;
+    color: var(--text);
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+  .key-select.placeholder { color: var(--text-muted); }
+
+  /* Remove button */
+  .btn-remove {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 5px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    padding: 0;
+  }
+  .btn-remove:hover { background: #f0eeff; color: var(--danger); }
+
+  /* Buttons */
+  .btn { display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 6px; padding: 7px 16px; font-size: 14px; font-weight: 500; cursor: pointer; line-height: 24px; font-family: 'Inter', sans-serif; }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-outline { background: transparent; border: 1px solid var(--border-dark); color: var(--text-secondary); }
+  .btn-danger-outline { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+
+  /* Form footer */
+  .form-footer { margin-top: 32px; display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding-top: 20px; border-top: 1px solid var(--border); }
+  .form-footer .spacer { flex: 1; }
+</style>
+</head>
+<body>
+<div class="app-window">
+
+  <!-- Topbar -->
+  <div class="app-topbar">
+    <span class="dot red"></span>
+    <span class="dot yellow"></span>
+    <span class="dot green"></span>
+    <span class="title">Organization Settings — Acme Corp</span>
+  </div>
+
+  <div class="app-body">
+
+    <!-- Settings nav -->
+    <div class="settings-nav">
+      <div class="settings-nav-item">General</div>
+      <div class="settings-nav-item">Members</div>
+      <div class="settings-nav-item">Keys</div>
+      <div class="settings-nav-item active">Reviewer Groups</div>
+      <div class="settings-nav-item">Notifications</div>
+      <div class="settings-nav-item">Billing</div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+
+      <!-- Breadcrumb -->
+      <div class="breadcrumb">
+        <span class="bc-link">← Reviewer Groups</span>
+        <span> / Edit Group</span>
+      </div>
+
+      <!-- Page header -->
+      <div class="page-header">
+        <h2>Treasury Board</h2>
+        <div class="subtitle">Reviewer group</div>
+      </div>
+
+      <!-- GROUP DETAILS -->
+      <div class="section-label">Group Details</div>
+
+      <div class="field-row">
+        <div class="field-label">Name</div>
+        <div class="field-value">
+          <input class="form-input" type="text" value="Treasury Board">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-label">Description</div>
+        <div class="field-value">
+          <input class="form-input" type="text" value="Approves all treasury operations" placeholder="Optional">
+        </div>
+      </div>
+
+      <div class="field-row">
+        <div class="field-label">Threshold</div>
+        <div class="field-value">
+          <div class="threshold-row">
+            <input class="form-input-number" type="number" min="1" value="2">
+            <span class="threshold-suffix">of 3 members required</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ASSIGNED ENTITIES -->
+      <div class="section-label" style="margin-top: 24px;">Assigned Entities</div>
+
+      <div class="chip-area">
+        <span class="entity-chip">0.0.12345 <button class="chip-remove" title="Remove">✕</button></span>
+        <span class="entity-chip">0.0.23456 <button class="chip-remove" title="Remove">✕</button></span>
+        <span class="entity-chip">0.0.55000 <button class="chip-remove" title="Remove">✕</button></span>
+        <button class="btn-link">+ Add Entity</button>
+      </div>
+
+      <!-- MEMBERS -->
+      <div class="section-label" style="margin-top: 24px;">Members</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+        Select each member and the specific key they will use to sign reviews for this group.
+      </div>
+
+      <div class="member-table-wrap">
+        <table class="member-table">
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Signing Key</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Row 1: Alice Johnson (completed) -->
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="avatar av-purple">AJ</div>
+                  <div class="member-info">
+                    <span class="member-name">Alice Johnson</span>
+                    <span class="member-email">alice@company.com</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="key-select">
+                  <option selected>Alice's Primary Key · ED25519</option>
+                </select>
+              </td>
+              <td style="width: 40px; text-align: center;">
+                <button class="btn-remove" title="Remove member">✕</button>
+              </td>
+            </tr>
+
+            <!-- Row 2: Bob Smith (completed) -->
+            <tr>
+              <td>
+                <div class="member-cell">
+                  <div class="avatar av-blue">BS</div>
+                  <div class="member-info">
+                    <span class="member-name">Bob Smith</span>
+                    <span class="member-email">bob@company.com</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="key-select">
+                  <option selected>Bob's Work Key · ED25519</option>
+                </select>
+              </td>
+              <td style="width: 40px; text-align: center;">
+                <button class="btn-remove" title="Remove member">✕</button>
+              </td>
+            </tr>
+
+            <!-- Row 3: Carol White (active / key not yet selected) -->
+            <tr class="member-row-active">
+              <td>
+                <div class="member-cell">
+                  <div class="avatar av-teal">CW</div>
+                  <div class="member-info">
+                    <span class="member-name">Carol White</span>
+                    <span class="member-email">carol@company.com</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <select class="key-select placeholder">
+                  <option value="" selected style="color: var(--text-muted);">Select a key…</option>
+                  <option>Carol's Key 1 · ED25519</option>
+                  <option>Carol's Key 2 · ED25519</option>
+                </select>
+              </td>
+              <td style="width: 40px; text-align: center;">
+                <button class="btn-remove" title="Remove member">✕</button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Add Member link -->
+      <div style="margin-top: 10px;">
+        <button class="btn-link">+ Add Member</button>
+      </div>
+
+      <!-- Form footer -->
+      <div class="form-footer">
+        <button class="btn btn-danger-outline">Delete Group</button>
+        <div class="spacer"></div>
+        <button class="btn btn-outline">Cancel</button>
+        <button class="btn btn-primary">Save Changes</button>
+      </div>
+
+    </div><!-- /.main-content -->
+  </div><!-- /.app-body -->
+</div><!-- /.app-window -->
+</body>
+</html>

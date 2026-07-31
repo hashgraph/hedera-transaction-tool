@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mockup 1 — Transaction Creation: Approvers & Observers</title>
+<title>Mockup 1 — Transaction Creation: Reviewers & Observers</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,11 +115,11 @@
       <hr class="separator">
 
       <div class="form-section-label" style="display:flex; align-items:center; justify-content:space-between;">
-        <span>Approvers</span>
-        <button class="btn-add">+ Add Approver</button>
+        <span>Reviewers</span>
+        <button class="btn-add">+ Add Reviewer</button>
       </div>
       <div class="info-note">
-        ✦ Groups marked AUTO were automatically added based on transaction entities and cannot be removed.
+        ✦ Groups marked AUTO were automatically added based on transaction entities and cannot be removed. Additional reviewers can be added but not removed from AUTO groups.
       </div>
 
       <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin:12px 0 6px;">Groups</div>
@@ -175,7 +175,7 @@
 
       <div class="group-card">
         <div class="group-card-header">
-          <div class="group-card-name">Additional Approvers</div>
+          <div class="group-card-name">Additional Reviewers</div>
           <div class="group-card-meta" style="align-items:center; gap:6px;">
             <input type="number" aria-label="Approvals required" min="1" max="2" value="1" style="width:38px; text-align:center; background:#fff; border:1px solid var(--border-dark); border-radius:5px; padding:2px 4px; font-size:12px; font-family:'Inter',sans-serif; color:var(--text);">
             <span style="font-size:11px; color:var(--text-muted);">of 2 required</span>

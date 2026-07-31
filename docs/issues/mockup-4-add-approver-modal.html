@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mockup 4 — Add Approver Modal</title>
+<title>Mockup 4 — Add Reviewer Modal</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&family=Noto+Sans+Mono&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -81,7 +81,7 @@
 <div class="app-window">
   <div class="app-topbar">
     <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
-    <span class="title">Transfer Transaction — Add Approver</span>
+    <span class="title">Transfer Transaction — Add Reviewer</span>
   </div>
   <div class="app-body">
     <div class="sidebar">
@@ -106,16 +106,16 @@
     <div class="modal-overlay">
       <div class="modal">
         <div class="modal-header">
-          <h3>Add Approver</h3>
+          <h3>Add Reviewer</h3>
           <button class="modal-close">✕</button>
         </div>
 
         <div class="tab-bar">
-          <div class="tab active" onclick="switchTab('groups', this)">Approver Groups</div>
+          <div class="tab active" onclick="switchTab('groups', this)">Reviewer Groups</div>
           <div class="tab" onclick="switchTab('contacts', this)">Individual Contacts</div>
         </div>
 
-        <!-- Approver Groups tab -->
+        <!-- Reviewer Groups tab -->
         <div id="pane-groups" class="tab-pane active">
           <div class="pane-scroll">
 
