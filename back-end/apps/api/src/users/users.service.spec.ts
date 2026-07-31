@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
+import { BlacklistService, ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
 import { Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
@@ -26,6 +26,7 @@ describe('UsersService', () => {
   const userRepository = mockDeep<Repository<User>>();
   const clientRepository = mockDeep<Repository<Client>>();
   const configService = mockDeep<ConfigService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -50,6 +51,10 @@ describe('UsersService', () => {
         {
           provide: ConfigService,
           useValue: configService,
+        },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
         },
       ],
     }).compile();
@@ -541,6 +546,8 @@ describe('UsersService', () => {
     expect(userRepository.manager.softDelete).toHaveBeenCalledWith(UserKey, { userId: 1 });
     // Then user is soft-deleted
     expect(userRepository.softRemove).toHaveBeenCalledWith(user);
+    // Every JWT issued before removal is invalidated
+    expect(blacklistService.blacklistPreviousUserTokens).toHaveBeenCalledWith(1);
   });
 
   it('should throw if the user is not found', async () => {
