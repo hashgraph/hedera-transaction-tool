@@ -54,10 +54,10 @@ describe('BlacklistService', () => {
       const expirationDays = 7;
       const expirationSeconds = expirationDays * 24 * 60 * 60;
       jest.spyOn(configService, 'get').mockReturnValue(expirationDays);
-      jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
 
       await service.blacklistPreviousUserTokens(42);
-
+      nowSpy.mockRestore();
       expect(client.set).toHaveBeenCalledWith(
         'blacklisted:user:42',
         '1700000000',
