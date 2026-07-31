@@ -1,8 +1,9 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import * as request from 'supertest';
+import request from 'supertest';
 
-import { totp } from 'otplib';
+import { generate } from '@otplib/totp';
+import { crypto } from '@otplib/plugin-crypto-node';
 
 import { API_SERVICE } from '@app/common';
 import { User, UserStatus } from '@entities';
@@ -362,7 +363,12 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should verify OTP', async () => {
-      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+      const token = await generate({
+        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
+        crypto,
+        digits: 8,
+        period: 60,
+      });
 
       const { body } = await request(server)
         .post('/auth/verify-reset')
@@ -376,7 +382,12 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should blacklist OTP token after verification', async () => {
-      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+      const token = await generate({
+        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
+        crypto,
+        digits: 8,
+        period: 60,
+      });
 
       await request(server)
         .post('/auth/verify-reset')
