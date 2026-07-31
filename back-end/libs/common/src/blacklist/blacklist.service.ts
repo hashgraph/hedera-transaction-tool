@@ -44,8 +44,17 @@ export class BlacklistService {
       return false;
     }
 
-    const cutoffTimestamp = await this.client.get(this.getUserInvalidationKey(payload.userId));
-    return cutoffTimestamp !== null && payload.iat <= Number(cutoffTimestamp);
+    const cutoffTimestampStr = await this.client.get(this.getUserInvalidationKey(payload.userId));
+    if (cutoffTimestampStr === null) {
+      return false;
+    }
+
+    const cutoffTimestamp = Number(cutoffTimestampStr);
+    if (!Number.isFinite(cutoffTimestamp)) {
+      return true;
+    }
+
+    return payload.iat <= cutoffTimestamp;
   }
 
   private getJwtExpirationSeconds(): number {
