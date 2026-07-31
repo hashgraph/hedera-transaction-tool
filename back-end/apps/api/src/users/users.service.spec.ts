@@ -550,6 +550,16 @@ describe('UsersService', () => {
     expect(blacklistService.blacklistPreviousUserTokens).toHaveBeenCalledWith(1);
   });
 
+  it('should not remove the user if JWT invalidation fails', async () => {
+    userRepository.findOne.mockResolvedValue(user as User);
+    blacklistService.blacklistPreviousUserTokens.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    await expect(service.removeUser(1)).rejects.toThrow('Redis unavailable');
+
+    expect(userRepository.manager.softDelete).not.toHaveBeenCalled();
+    expect(userRepository.softRemove).not.toHaveBeenCalled();
+  });
+
   it('should throw if the user is not found', async () => {
     userRepository.findOne.mockResolvedValue(null);
 

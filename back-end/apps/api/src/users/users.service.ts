@@ -168,14 +168,16 @@ export class UsersService {
       throw new BadRequestException(ErrorCodes.UNF);
     }
 
+    // Revoke existing JWTs before changing the account state. If Redis is
+    // unavailable, fail the removal rather than deleting the user while the
+    // revocation record cannot be written.
+    await this.blacklistService.blacklistPreviousUserTokens(id);
+
     // Soft-delete all user keys first
     await this.repo.manager.softDelete(UserKey, { userId: id });
 
     // Then soft-delete the user
     await this.repo.softRemove(user);
-
-    // Invalidate every JWT issued for this user until now.
-    await this.blacklistService.blacklistPreviousUserTokens(id);
 
     return true;
   }
