@@ -15,7 +15,13 @@ import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes, checkFrontendVersion, isUpdateAvailable, VersionCheckResult } from '@app/common';
+import {
+  BlacklistService,
+  checkFrontendVersion,
+  ErrorCodes,
+  isUpdateAvailable,
+  VersionCheckResult,
+} from '@app/common';
 import { Client, User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
@@ -26,6 +32,7 @@ export class UsersService {
     @InjectRepository(User) private repo: Repository<User>,
     @InjectRepository(Client) private clientRepo: Repository<Client>,
     private readonly configService: ConfigService,
+    private readonly blacklistService: BlacklistService,
   ) {}
 
   /* Creates a user with a given email and password. */
@@ -110,6 +117,7 @@ export class UsersService {
       return user;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { clients: _clients, ...userWithoutClients }: User = user;
     // Type assertion needed: serialization interceptor handles the actual shape
     return userWithoutClients as User;
@@ -165,6 +173,9 @@ export class UsersService {
 
     // Then soft-delete the user
     await this.repo.softRemove(user);
+
+    // Invalidate every JWT issued for this user until now.
+    await this.blacklistService.blacklistPreviousUserTokens(id);
 
     return true;
   }
