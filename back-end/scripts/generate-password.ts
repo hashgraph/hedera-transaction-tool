@@ -19,7 +19,7 @@ async function hash(data: string, usePseudoSalt = false): Promise<string> {
 }
 
 async function main() {
-  const password = generatePassword();
+  const password = process.argv[2] ?? generatePassword();
   const hashed = await hash(password);
 
   console.log('Password:', password);
