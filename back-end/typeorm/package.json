@@ -1,6 +1,6 @@
 {
   "name": "typeorm",
-  "version": "0.35.0",
+  "version": "0.35.1-beta.1",
   "private": true,
   "scripts": {
     "build": "tsc",
