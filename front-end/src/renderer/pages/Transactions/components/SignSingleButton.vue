@@ -40,7 +40,9 @@ const handleClick = async () => {
   signStarted.value = true;
 };
 
-const didSign = async () => {
+const didSign = async (signed: boolean) => {
+  if (!signed) return;
+
   if (props.refreshTransaction) {
     assertIsLoggedInOrganization(user.selectedOrganization);
 

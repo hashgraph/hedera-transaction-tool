@@ -21,7 +21,9 @@ const handleClick = () => {
   signAllStarted.value = true;
 };
 
-const didSignAll = async (groupId: number , signed: boolean) => {
+const didSignAll = async (groupId: number, signed: boolean) => {
+  if (!signed) return;
+
   emit('transactionGroupSigned', { groupId, signed });
 };
 </script>
