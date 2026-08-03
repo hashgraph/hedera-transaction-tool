@@ -16,6 +16,7 @@ import {
 import { ApproversService } from '../approvers';
 
 import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../dto';
+import { AxiosError } from 'axios';
 
 @Injectable()
 export class ObserversService {
@@ -65,8 +66,10 @@ export class ObserversService {
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to save transaction observers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
-      throw new BadRequestException(error.message);
+      const errorStack = error instanceof AxiosError ? error.stack : null;
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      this.logger.error('Failed to save transaction observers', errorStack ?? errorMessage);
+      throw new BadRequestException((error as Error).message);
     }
   }
 
