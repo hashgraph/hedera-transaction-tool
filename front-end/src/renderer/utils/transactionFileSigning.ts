@@ -5,7 +5,7 @@ import { AppCache } from '@renderer/caches/AppCache.ts';
 import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
-import type { ITransactionNode } from '../../../../shared/src/ITransactionNode.ts';
+import type { ITransactionNode } from '@shared/interfaces/ITransactionNode.ts';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.transactionFile');

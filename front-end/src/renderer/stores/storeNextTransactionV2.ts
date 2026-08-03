@@ -2,7 +2,7 @@ import { computed, type ComputedRef, type Ref, ref } from 'vue';
 import { type _RouterClassic } from 'vue-router';
 import { defineStore } from 'pinia';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { TransactionNodeCollection } from '../../../../shared/src/ITransactionNode.ts';
+import { TransactionNodeCollection } from '@shared/interfaces/ITransactionNode.ts';
 import { createLogger } from '@renderer/utils/logger';
 import {
   historyTitle,
