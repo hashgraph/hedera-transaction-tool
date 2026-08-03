@@ -4,6 +4,7 @@
   "description": "",
   "author": "",
   "private": true,
+  "type": "module",
   "scripts": {
     "build": "nest build",
     "build:all": "pnpm build:api && pnpm build:chain && pnpm build:notifications",
