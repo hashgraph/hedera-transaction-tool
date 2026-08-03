@@ -1,7 +1,13 @@
-import { AxiosError } from 'axios';
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import { RetentionPolicy, StorageType } from 'nats';
+import {
+  JetStreamManager,
+  RetentionPolicy,
+  StorageType,
+  StreamConfig,
+} from 'nats';
 import { NatsJetStreamService } from './nats-jetstream.service';
+import { NatsError } from 'nats/lib/nats-base-client/core';
+import { DiscardPolicy } from 'nats/lib/jetstream/jsapi_types';
 
 const MAX_RETRY_DELAY_MS = 30_000;
 const INITIAL_RETRY_DELAY_MS = 2_000;
@@ -98,7 +104,7 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
       max_age: 5 * 60 * 1_000_000_000, // 5 minutes in nanoseconds
       max_msgs: -1,
       max_bytes: 1024 * 1024 * 1024, // 1 GB
-      discard: 'old',
+      discard: DiscardPolicy.Old,
     });
 
     // Create NOTIFICATIONS_FAN_OUT stream
@@ -110,13 +116,13 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
       max_age: 5 * 60 * 1_000_000_000,
       max_msgs: -1,
       max_bytes: 1024 * 1024 * 1024,
-      discard: 'old',
+      discard: DiscardPolicy.Old,
     });
 
     this.logger.log('All streams initialized successfully');
   }
 
-  private async createOrUpdateStream(jsm: any, config: any) {
+  private async createOrUpdateStream(jsm: JetStreamManager, config: Partial<StreamConfig>) {
     try {
       await jsm.streams.info(config.name);
       this.logger.log(`Stream ${config.name} already exists`);
@@ -126,7 +132,7 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
       this.logger.log(`Stream ${config.name} updated`);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
-      const errorCode = err instanceof AxiosError ? err.code : 0;
+      const errorCode = err instanceof NatsError ? err.code : 0;
       if (errorMessage.includes('stream not found') || errorCode === '404') {
         await jsm.streams.add(config);
         this.logger.log(`Stream ${config.name} created`);
