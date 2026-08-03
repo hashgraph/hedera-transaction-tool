@@ -126,7 +126,6 @@ const extractUnzipperFile = (file: unzipper.File, dist: string, abortSignal?: Ab
       .on('data', () => {
         if (abortSignal?.aborted) {
           stream.destroy();
-          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
           reject('File extraction aborted');
         }
       })
@@ -144,7 +143,7 @@ export const extractUnzipperFileToBuffer = (file: unzipper.File, abortSignal?: A
       .on('data', (d: Buffer) => {
         if (abortSignal?.aborted) {
           stream.destroy();
-          // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+
           reject('File extraction aborted');
         } else {
           result.push(d);
@@ -165,7 +164,7 @@ export const copyFile = (filePath: string, fileDist: string, signal?: AbortSigna
     readStream.on('data', () => {
       if (signal?.aborted) {
         readStream.destroy();
-        // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors
+
         reject('File copying aborted');
       }
     });

@@ -39,7 +39,7 @@ import useLoader from '@renderer/composables/useLoader';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../shared/src/ITransactionNode.ts';
+} from '@shared/interfaces/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';

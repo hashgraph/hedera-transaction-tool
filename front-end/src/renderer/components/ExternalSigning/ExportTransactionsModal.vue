@@ -18,7 +18,7 @@ import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../shared/src/ITransactionNode.ts';
+} from '@shared/interfaces/ITransactionNode.ts';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
