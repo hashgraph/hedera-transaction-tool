@@ -1,14 +1,14 @@
 import TransactionFactory from './transaction-factory';
-import { Transaction } from '@hiero-ledger/sdk';
+import { TokenBurnTransaction, TransferTransaction } from '@hiero-ledger/sdk';
 import * as Models from '.';
-import { getTransactionType } from '@app/common';
+import { TransferTransactionModel } from '.';
 
 // Mock getTransactionType so we can control it
 jest.mock('@app/common', () => ({
   getTransactionType: jest.fn(),
 }));
 
-const mockedGetTransactionType = getTransactionType as jest.Mock;
+// const mockedGetTransactionType = getTransactionType as jest.Mock;
 
 describe('TransactionFactory', () => {
   it('should have all models with a TRANSACTION_TYPE', () => {
@@ -19,30 +19,18 @@ describe('TransactionFactory', () => {
   });
 
   it('should throw if transaction type is not registered', () => {
-    const fakeTx = {} as Transaction;
-    mockedGetTransactionType.mockReturnValue('NON_EXISTENT_TYPE');
+    const unregisteredTx = new TokenBurnTransaction();
 
-    expect(() => TransactionFactory.fromTransaction(fakeTx)).toThrow(
-      'No transaction model registered for type: NON_EXISTENT_TYPE'
+    expect(() => TransactionFactory.fromTransaction(unregisteredTx)).toThrow(
+      'No transaction model registered for type: TokenBurnTransaction',
     );
   });
 
   it('fromBytes should delegate to fromTransaction', () => {
-    const fakeTx = {} as Transaction;
-    const fakeBytes = Buffer.from([]);
+    const sampleTx = new TransferTransaction();
+    const sampleBytes = sampleTx.toBytes();
 
-    // Mock Transaction.fromBytes to return our fake transaction
-    const fromBytesSpy = jest
-      .spyOn(Transaction, 'fromBytes')
-      .mockReturnValue(fakeTx);
-
-    // Pick a real model
-    const [Model] = Object.values(Models) as any[];
-    mockedGetTransactionType.mockReturnValue(Model.TRANSACTION_TYPE);
-
-    const instance = TransactionFactory.fromBytes(fakeBytes);
-    expect(instance).toBeInstanceOf(Model);
-
-    fromBytesSpy.mockRestore();
+    const instance = TransactionFactory.fromBytes(Buffer.from(sampleBytes));
+    expect(instance).toBeInstanceOf(TransferTransactionModel);
   });
 });
