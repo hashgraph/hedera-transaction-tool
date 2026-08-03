@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { RetentionPolicy, StorageType } from 'nats';
 import { NatsJetStreamService } from './nats-jetstream.service';
@@ -56,9 +57,8 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
         await this.initializeStreams();
         return;
       } catch (err) {
-        this.logger.error(
-          `Stream initialization failed (attempt ${attempt}): ${err.message}`,
-        );
+        const errorMessage = err instanceof AxiosError ? err.message : String(err);
+        this.logger.error(`Stream initialization failed (attempt ${attempt}): ${errorMessage}`);
         await this.sleep(retryDelay);
         retryDelay = Math.min(retryDelay * 2, MAX_RETRY_DELAY_MS);
       }
@@ -125,7 +125,9 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
       await jsm.streams.update(config.name, config);
       this.logger.log(`Stream ${config.name} updated`);
     } catch (err) {
-      if (err.message?.includes('stream not found') || err.code === '404') {
+      const errorMessage = err instanceof AxiosError ? err.message : String(err);
+      const errorCode = err instanceof AxiosError ? err.code : 0;
+      if (errorMessage.includes('stream not found') || errorCode === '404') {
         await jsm.streams.add(config);
         this.logger.log(`Stream ${config.name} created`);
       } else {
