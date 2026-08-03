@@ -19,7 +19,7 @@ const makeOrg = (overrides: Record<string, unknown> = {}) => ({
 const mocks = vi.hoisted(() => ({
   userStore: {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as {
+    personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as null | {
       id: string,
       useKeychain: boolean,
       email?: string
