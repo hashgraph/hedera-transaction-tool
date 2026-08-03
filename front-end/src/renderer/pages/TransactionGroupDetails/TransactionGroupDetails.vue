@@ -238,7 +238,9 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
+const didSignAll = async (groupId: number | null, signed: boolean) => {
+  if (!signed) return;
+
   if (goNextAfterSignAll.value) {
     // We route to the next transaction
     if (nextTransaction.hasNext) {

@@ -37,13 +37,13 @@ const progressText = ref<string>('');
 
 /* Handlers */
 const handleSignAll = async (userPersonalPassword: string | null): Promise<ActionReport | null> => {
-  let result: ActionReport | null;
+  let result: ActionReport | null = null;
   if (props.groupOrId !== null) {
     const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
     try {
       result = await performSignAll(userPersonalPassword);
     } finally {
-      await props.callback(groupId, true);
+      await props.callback(groupId, result === null);
     }
   } else {
     result = makeBugReport('Sign All', 'Failed to sign transactions');
