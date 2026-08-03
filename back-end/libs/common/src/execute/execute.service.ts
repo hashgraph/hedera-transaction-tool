@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
@@ -77,8 +78,9 @@ export class ExecuteService {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
         transactions.push({ sdkTransaction, transaction });
       } catch (error) {
+        const errorMessage = error instanceof AxiosError ? error.message : String(error);
         throw new Error(
-          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
+          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${errorMessage}`,
         );
       }
     }

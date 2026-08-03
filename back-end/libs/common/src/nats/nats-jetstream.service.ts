@@ -1,3 +1,4 @@
+import { AxiosError } from 'axios';
 import { Injectable, Logger, OnModuleDestroy } from '@nestjs/common';
 import { connect, NatsConnection, JetStreamClient, JetStreamManager } from 'nats';
 
@@ -47,8 +48,9 @@ export class NatsJetStreamService implements OnModuleDestroy {
         clearTimeout(timeoutId);
       }
     } catch (err) {
+      const errorMessage = err instanceof AxiosError ? err.message : String(err);
       this.logger.error(
-        `Failed to connect to NATS on startup: ${err.message}. ` +
+        `Failed to connect to NATS on startup: ${errorMessage}. ` +
           'Service will continue in degraded mode and retry in the background.',
       );
     }

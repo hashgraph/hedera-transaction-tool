@@ -14,6 +14,7 @@ import {
   RegisteredNodeInfoParsed,
   RegisteredNodesResponse,
 } from '@app/common';
+import { AxiosError } from 'axios';
 
 const HTTP_STATUS = {
   OK: 200,
@@ -65,7 +66,8 @@ export class MirrorNodeClient {
 
       return { data: accountInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch account ${accountId}: ${error.message}`);
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      this.logger.error(`Failed to fetch account ${accountId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -98,7 +100,8 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch node ${nodeId}: ${error.message}`);
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      this.logger.error(`Failed to fetch node ${nodeId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -131,7 +134,8 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch node ${registeredNodeId}: ${error.message}`);
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      this.logger.error(`Failed to fetch node ${registeredNodeId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -143,22 +147,20 @@ export class MirrorNodeClient {
     try {
       return await this.getMirrorNodeData<T>(url, etag);
     } catch (error) {
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
       const shouldRetry = this.isRetryableError(error);
 
       if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
-        this.logger.error(
-          `Request failed after ${attempt} attempt(s) for ${url}: ${error.message}`
-        );
-        throw new HttpException(
-          `Mirror node request failed: ${error.message}`,
-          error.response?.status || HttpStatus.SERVICE_UNAVAILABLE,
-        );
+        const errorStatus =
+          error instanceof AxiosError ? error.response?.status : HttpStatus.SERVICE_UNAVAILABLE;
+        this.logger.error(`Request failed after ${attempt} attempt(s) for ${url}: ${errorMessage}`);
+        throw new HttpException(`Mirror node request failed: ${errorMessage}`, errorStatus);
       }
 
       const delay = this.calculateBackoffDelay(attempt);
       this.logger.warn(
         `Request failed (attempt ${attempt}/${RETRY_CONFIG.MAX_RETRIES}), ` +
-        `retrying in ${delay}ms: ${error.message}`
+          `retrying in ${delay}ms: ${errorMessage}`,
       );
 
       await this.delay(delay);
@@ -238,7 +240,8 @@ export class MirrorNodeClient {
         etag: response.headers?.etag,
       };
     } catch (error) {
-      this.logger.error(`HTTP request failed for ${url}: ${error.message}`);
+      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      this.logger.error(`HTTP request failed for ${url}: ${errorMessage}`);
       throw error;
     }
   }
