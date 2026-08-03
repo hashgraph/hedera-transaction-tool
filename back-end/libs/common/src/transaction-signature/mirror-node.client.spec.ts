@@ -11,6 +11,7 @@ import {
   parseRegisteredNodeInfo,
   MirrorNodeREST,
 } from '@app/common';
+import { AxiosError, AxiosResponse } from 'axios';
 
 jest.mock('@app/common', () => ({
   parseAccountInfo: jest.fn(),
@@ -475,10 +476,9 @@ describe('MirrorNodeClient', () => {
 
   describe('HTTP exception wrapping', () => {
     it('should wrap errors in HttpException', async () => {
-      axiosGet.mockRejectedValue({
-        message: 'axios failed',
-        response: { status: 503 },
-      });
+      axiosGet.mockRejectedValue(new AxiosError('axios failed', undefined, undefined, undefined, {
+        status: 503,
+      } as AxiosResponse));
 
       const promise = client.fetchAccountInfo('0.0.1', 'testnet');
 
