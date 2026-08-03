@@ -8,7 +8,7 @@ import { login } from '@main/services/organization/auth';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 import { createLogger } from '@main/modules/logger';
-import { decrypt, encrypt } from '@main/utils/crypto';
+import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
 
 const logger = createLogger('main.organizationCredentials');
 
@@ -120,7 +120,7 @@ export const getOrganizationCredentials = async (
 
     if (!credentials) return null;
 
-    const password = await decryptData(credentials.password, decryptPassword);
+    const password = await decryptData(credentials.password, decryptPassword, credentials.id);
 
     return {
       ...credentials,
@@ -267,7 +267,7 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
 
     let password = '';
     try {
-      password = await decryptData(invalidCredential.password, decryptPassword);
+      password = await decryptData(invalidCredential.password, decryptPassword, invalidCredential.id);
     } catch {
       throw new Error('Incorrect decryption password');
     }
@@ -321,7 +321,7 @@ export const encryptOrganizationPassword = async (
       const buffer = safeStorage.encryptString(password);
       return buffer.toString('base64');
     }
-    return encrypt(password, encryptPassword as string);
+    return await encrypt(password, encryptPassword as string);
   } catch (error) {
     logger.error('Failed to encrypt organization password', { error, useKeychain });
     if (useKeychain) {
@@ -339,14 +339,18 @@ async function encryptData(data: string, encryptPassword?: string | null) {
     const passwordBuffer = safeStorage.encryptString(data);
     return passwordBuffer.toString('base64');
   } else if (encryptPassword) {
-    return encrypt(data, encryptPassword);
+    return await encrypt(data, encryptPassword);
   } else {
     throw new Error('Password is required to store sensitive data');
   }
 }
 
 /* Decrypt data */
-export async function decryptData(data: string, decryptPassword?: string | null) {
+export async function decryptData(
+  data: string,
+  decryptPassword?: string | null,
+  credentialId?: string,
+) {
   // if no data was stored (password cleared), just return empty string
   if (data.length === 0) {
     return '';
@@ -357,7 +361,18 @@ export async function decryptData(data: string, decryptPassword?: string | null)
     const buffer = Buffer.from(data, 'base64');
     return safeStorage.decryptString(buffer);
   } else if (decryptPassword) {
-    return decrypt(data, decryptPassword);
+    const decrypted = await decrypt(data, decryptPassword);
+    if (isLegacyBlob(data) && credentialId) {
+      try {
+        await getPrismaClient().organizationCredentials.update({
+          where: { id: credentialId },
+          data: { password: await encrypt(decrypted, decryptPassword) },
+        });
+      } catch {
+        // migration failure is non-fatal
+      }
+    }
+    return decrypted;
   } else {
     throw new Error('Password is required to decrypt sensitive');
   }
