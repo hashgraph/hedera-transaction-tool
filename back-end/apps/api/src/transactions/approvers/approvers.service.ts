@@ -35,7 +35,6 @@ import {
   CreateTransactionApproversArrayDto,
   UpdateTransactionApproverDto,
 } from '../dto';
-import { AxiosError } from 'axios';
 
 @Injectable()
 export class ApproversService {
@@ -351,8 +350,8 @@ export class ApproversService {
 
       await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
-      const errorStack = error instanceof AxiosError ? error.stack : undefined;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       this.logger.error('Failed to save transaction approvers', errorStack ?? errorMessage);
       throw new BadRequestException(errorMessage);
     }

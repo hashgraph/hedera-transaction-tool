@@ -66,7 +66,7 @@ export class MirrorNodeClient {
 
       return { data: accountInfoParsed, etag: newEtag };
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to fetch account ${accountId}: ${errorMessage}`);
       throw error;
     }
@@ -100,7 +100,7 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to fetch node ${nodeId}: ${errorMessage}`);
       throw error;
     }
@@ -134,7 +134,7 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`Failed to fetch node ${registeredNodeId}: ${errorMessage}`);
       throw error;
     }
@@ -147,7 +147,7 @@ export class MirrorNodeClient {
     try {
       return await this.getMirrorNodeData<T>(url, etag);
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       const shouldRetry = this.isRetryableError(error);
 
       if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
@@ -240,7 +240,7 @@ export class MirrorNodeClient {
         etag: response.headers?.etag,
       };
     } catch (error) {
-      const errorMessage = error instanceof AxiosError ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error(`HTTP request failed for ${url}: ${errorMessage}`);
       throw error;
     }
