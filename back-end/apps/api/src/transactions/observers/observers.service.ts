@@ -62,7 +62,7 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
+      await emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
 
       return result;
     } catch (error) {

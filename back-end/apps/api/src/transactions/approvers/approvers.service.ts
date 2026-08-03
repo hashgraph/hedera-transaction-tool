@@ -349,7 +349,7 @@ export class ApproversService {
         }
       });
 
-      emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
       const errorMessage = error instanceof AxiosError ? error.message : String(error);
       const errorStack = error instanceof AxiosError ? error.stack : undefined;
