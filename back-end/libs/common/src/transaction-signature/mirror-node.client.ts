@@ -152,7 +152,7 @@ export class MirrorNodeClient {
 
       if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
         const errorStatus =
-          error instanceof AxiosError ? error.response?.status : HttpStatus.SERVICE_UNAVAILABLE;
+          error instanceof HttpException ? error.getStatus() : HttpStatus.SERVICE_UNAVAILABLE;
         this.logger.error(`Request failed after ${attempt} attempt(s) for ${url}: ${errorMessage}`);
         throw new HttpException(`Mirror node request failed: ${errorMessage}`, errorStatus);
       }
