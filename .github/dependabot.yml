@@ -12,6 +12,33 @@ updates:
       interval: weekly
     versioning-strategy: increase
     open-pull-requests-limit: 15
+    ignore:
+      # Shai-Hulud supply chain attack (2026-08-04): malicious versions published.
+      # Remove these ignores once clean patched versions are confirmed safe.
+      - dependency-name: "keyv"
+        versions: ["6.0.0"]
+      - dependency-name: "@keyv/*"
+        versions: ["6.0.0"]
+      - dependency-name: "cache-manager"
+        versions: [">= 7.2.10"]
+      - dependency-name: "@cacheable/utils"
+        versions: [">= 2.5.1"]
+      - dependency-name: "cacheable"
+        versions: [">= 2.5.1"]
+      - dependency-name: "@cacheable/memory"
+        versions: [">= 2.2.1"]
+      - dependency-name: "@cacheable/node-cache"
+        versions: [">= 3.1.2"]
+      - dependency-name: "@cacheable/net"
+        versions: [">= 2.1.1"]
+      - dependency-name: "flat-cache"
+        versions: ["6.1.24"]
+      - dependency-name: "file-entry-cache"
+        versions: ["11.1.6"]
+      - dependency-name: "cacheable-request"
+        versions: ["13.0.20"]
+      - dependency-name: "ecto"
+        versions: [">= 5.0.1"]
     groups:
       hiero-sdk:
         patterns:

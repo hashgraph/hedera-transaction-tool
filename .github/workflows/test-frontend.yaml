@@ -120,7 +120,9 @@ jobs:
           docker compose version
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          pnpm install --frozen-lockfile
+          echo "${GITHUB_WORKSPACE}/node_modules/.bin" >> "$GITHUB_PATH"
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
@@ -133,11 +135,10 @@ jobs:
           verbosity: 3
           wait: 120s
 
-      - name: Install Solo CLI
+      - name: Verify Solo CLI
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npm install -g @hashgraph/solo@0.64.0
           solo --version
           kind --version
 

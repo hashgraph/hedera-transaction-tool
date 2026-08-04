@@ -65,6 +65,7 @@
     "uuid": "14.0.1"
   },
   "devDependencies": {
+    "@hashgraph/solo": "0.64.0",
     "@types/async-retry": "1.4.9",
     "@types/bcrypt": "catalog:",
     "@types/deep-diff": "1.0.5",
