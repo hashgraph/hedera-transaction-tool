@@ -49,9 +49,9 @@ export async function encrypt(data: string, password: string): Promise<string> {
 }
 
 export async function decrypt(data: string, password: string): Promise<string> {
-  const isNew = data.startsWith(BLOB_V2_PREFIX);
-  const blob = isNew ? data.slice(BLOB_V2_PREFIX.length) : data;
-  const iterations = isNew ? PBKDF2_ITERATIONS : PBKDF2_LEGACY_ITERATIONS;
+  const isLegacy = isLegacyBlob(data);
+  const blob = isLegacy ? data : data.slice(BLOB_V2_PREFIX.length);
+  const iterations = isLegacy ? PBKDF2_LEGACY_ITERATIONS : PBKDF2_ITERATIONS;
 
   const { salt, iv, tag, text } = parseBlobParts(blob);
 
