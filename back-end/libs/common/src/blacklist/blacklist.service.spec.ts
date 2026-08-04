@@ -49,6 +49,24 @@ describe('BlacklistService', () => {
     });
   });
 
+  describe('blacklistPreviousUserTokens', () => {
+    it('should store a per-user invalidation cutoff for the JWT lifetime', async () => {
+      const expirationDays = 7;
+      const expirationSeconds = expirationDays * 24 * 60 * 60;
+      jest.spyOn(configService, 'get').mockReturnValue(expirationDays);
+      const nowSpy = jest.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+
+      await service.blacklistPreviousUserTokens(42);
+      nowSpy.mockRestore();
+      expect(client.set).toHaveBeenCalledWith(
+        'blacklisted:user:42',
+        '1700000000',
+        'EX',
+        expirationSeconds,
+      );
+    });
+  });
+
   describe('isTokenBlacklisted', () => {
     it('should return true if the token is blacklisted', async () => {
       const jwt = 'testToken';
@@ -71,5 +89,36 @@ describe('BlacklistService', () => {
       expect(result).toBe(false);
       expect(client.get).toHaveBeenCalledWith(jwt);
     });
+
+    it('should reject a JWT issued before the user was removed', async () => {
+      const jwt = createJwt({ userId: 42, iat: 1_700_000_000 });
+      client.get.mockImplementation(async key =>
+        key === 'blacklisted:user:42' ? '1700000001' : null,
+      );
+
+      await expect(service.isTokenBlacklisted(jwt)).resolves.toBe(true);
+      expect(client.get).toHaveBeenCalledWith('blacklisted:user:42');
+    });
+
+    it('should not reject another user JWT', async () => {
+      const jwt = createJwt({ userId: 43, iat: 1_700_000_000 });
+      client.get.mockResolvedValue(null);
+
+      await expect(service.isTokenBlacklisted(jwt)).resolves.toBe(false);
+      expect(client.get).toHaveBeenCalledWith('blacklisted:user:43');
+    });
+
+    it('should allow a JWT issued after the invalidation cutoff', async () => {
+      const jwt = createJwt({ userId: 42, iat: 1_700_000_002 });
+      client.get.mockImplementation(async key =>
+        key === 'blacklisted:user:42' ? '1700000001' : null,
+      );
+
+      await expect(service.isTokenBlacklisted(jwt)).resolves.toBe(false);
+    });
   });
 });
+
+function createJwt(payload: object): string {
+  return `header.${Buffer.from(JSON.stringify(payload)).toString('base64url')}.signature`;
+}
