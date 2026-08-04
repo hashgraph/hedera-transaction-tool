@@ -537,7 +537,7 @@ export class ApproversService {
 
     const result = await this.removeNode(approver.id);
 
-    emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
+    await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
 
     return result;
   }
@@ -611,9 +611,9 @@ export class ApproversService {
     const notificationEvent = [{ entityId: transaction.id }];
 
     if (!dto.approved || userApprovers.every(a => a.approved)) {
-      emitTransactionStatusUpdate(this.notificationsPublisher, notificationEvent);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, notificationEvent);
     } else {
-      emitTransactionUpdate(this.notificationsPublisher, notificationEvent);
+      await emitTransactionUpdate(this.notificationsPublisher, notificationEvent);
     }
 
     return true;
@@ -680,11 +680,9 @@ export class ApproversService {
       }
     });
 
-    const rootApprovers = Array.from(approverMap.values()).filter(
+    return Array.from(approverMap.values()).filter(
       approver => approver.listId === null,
     );
-
-    return rootApprovers;
   }
 
   /* Validates the approver DTO */
