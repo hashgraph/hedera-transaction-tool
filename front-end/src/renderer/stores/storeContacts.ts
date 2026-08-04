@@ -1,4 +1,4 @@
-import type { Contact, IUserKey } from '@shared/interfaces';
+import type { Contact } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
@@ -7,7 +7,7 @@ import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from './storeUser';
 
-import { getAllUserKeys, getUserKeys, getUsers } from '@renderer/services/organization';
+import { getUserKeys, getUsers } from '@renderer/services/organization';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -115,18 +115,10 @@ async function loadContacts(
     );
     result = [];
 
-    const allKeys = await getAllUserKeys(serverUrl);
-    const userToKeys = new Map<number, IUserKey[]>();
-    allKeys.forEach(k => {
-      if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);
-      userToKeys.get(k.userId)?.push(k);
-    });
-
     users.forEach(u => {
-      const keys = userToKeys.get(u.id) || [];
       result.push({
         user: u,
-        userKeys: keys,
+        userKeys: u.keys ?? [],
         nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
         nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
       });

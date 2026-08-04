@@ -16,7 +16,7 @@ import { signUp } from '@renderer/services/organization';
 
 import {
   extractIdentifier,
-  formatPublicKeyContactList,
+  getAllPublicKeyMappings,
   getErrorMessage,
   getPublicKeyMapping,
   isLoggedInOrganization,
@@ -148,25 +148,32 @@ const handleResend = async () => {
 };
 
 const handleContactChange = async () => {
-  await contacts.fetchUserKeys(props.contact.user.id);
-  await handleAccountsLookup();
-  await handleFetchMapping();
+  contacts.fetchUserKeys(props.contact.user.id);
+  await Promise.all([handleAccountsLookup(), handleFetchMapping()]);
 };
 
 const handleFetchMapping = async () => {
   const contactPublicKeys = props.contact.userKeys.map(key => key.publicKey);
-  const formatPromises = contactPublicKeys.map(async key => {
-    return { [key]: await formatPublicKeyContactList(key) };
-  });
+  if (contactPublicKeys.length === 0) return;
 
-  const results: Record<string, string>[] = await Promise.all(formatPromises);
-  publicKeysMapping.value = Object.assign({}, ...results);
+  const allMappings = await getAllPublicKeyMappings();
+  const mappingByKey = new Map(allMappings.map(m => [m.public_key, m]));
+
+  publicKeysMapping.value = Object.fromEntries(
+    contactPublicKeys.map(key => {
+      const mapping = mappingByKey.get(PublicKey.fromString(key).toStringRaw());
+      return [key, mapping ? `${mapping.nickname} (${mapping.public_key})` : key];
+    }),
+  );
 };
 
 /* Hooks */
 onBeforeMount(handleContactChange);
 /* Watchers */
 watch(() => props.contact, handleContactChange);
+watch(() => props.contact.userKeys, async () => {
+  await Promise.all([handleAccountsLookup(), handleFetchMapping()]);
+});
 </script>
 <template>
   <div class="flex-between-centered flex-wrap gap-3">
@@ -255,7 +262,6 @@ watch(() => props.contact, handleContactChange);
   </div>
   <hr class="separator my-4" />
   <div
-    v-if="contact.userKeys.length === Object.keys(publicKeysMapping).length"
     class="fill-remaining overflow-x-hidden pe-3"
   >
     <template

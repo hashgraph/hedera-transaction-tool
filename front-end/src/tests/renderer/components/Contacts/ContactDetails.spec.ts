@@ -21,7 +21,6 @@ const mocks = vi.hoisted(() => ({
     fetchUserKeys: vi.fn().mockResolvedValue(undefined),
   },
   accountLookup: vi.fn().mockResolvedValue({}),
-  formatPublicKey: vi.fn(async (key: string) => key),
 }));
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
@@ -101,7 +100,7 @@ vi.mock('@renderer/utils/ToastManager', () => ({
 
 vi.mock('@renderer/utils', () => ({
   extractIdentifier: vi.fn((value: string) => ({ identifier: value })),
-  formatPublicKeyContactList: mocks.formatPublicKey,
+  getAllPublicKeyMappings: vi.fn().mockResolvedValue([]),
   getErrorMessage: vi.fn((error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
   ),
@@ -137,7 +136,6 @@ describe('ContactDetails.vue', () => {
     mocks.contactsStore.fetch.mockReset();
     mocks.contactsStore.fetchUserKeys.mockResolvedValue(undefined);
     mocks.accountLookup.mockResolvedValue({});
-    mocks.formatPublicKey.mockImplementation(async (key: string) => key);
   });
 
   function mountContactDetails() {

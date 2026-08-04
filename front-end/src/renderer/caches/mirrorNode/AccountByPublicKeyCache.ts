@@ -12,13 +12,10 @@ export class AccountByPublicKeyCache extends EntityCache<string, AccountInfo[]> 
     mirrorNodeUrl: string,
     forceLoad = false,
   ): Promise<{ [key: string]: AccountInfo[] }> {
-    const result: { [key: string]: AccountInfo[] } = {};
-
-    for (const key of publicKeys) {
-      result[key] = await this.lookup(key, mirrorNodeUrl, forceLoad);
-    }
-
-    return Promise.resolve(result);
+    const entries = await Promise.all(
+      publicKeys.map(async key => [key, await this.lookup(key, mirrorNodeUrl, forceLoad)] as const),
+    );
+    return Object.fromEntries(entries);
   }
 
   //
