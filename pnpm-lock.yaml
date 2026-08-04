@@ -64,8 +64,8 @@ catalogs:
       specifier: 29.4.12
       version: 29.4.12
     ts-loader:
-      specifier: 9.5.7
-      version: 9.5.7
+      specifier: 9.6.2
+      version: 9.6.2
     ts-node:
       specifier: 10.9.2
       version: 10.9.2
@@ -271,7 +271,7 @@ importers:
         version: 13.0.6
       ts-loader:
         specifier: 'catalog:'
-        version: 9.5.7(typescript@6.0.3)(webpack@5.109.0)
+        version: 9.6.2(typescript@6.0.3)(webpack@5.109.0)
       tsx:
         specifier: 4.23.1
         version: 4.23.1
@@ -506,7 +506,7 @@ importers:
         version: 29.4.12(@babel/core@7.29.6(supports-color@8.1.1))(@jest/transform@30.4.1(supports-color@8.1.1))(@jest/types@30.4.1)(babel-jest@30.4.1(@babel/core@7.29.6(supports-color@8.1.1))(supports-color@8.1.1))(esbuild@0.28.1)(jest-util@30.4.1)(jest@30.4.2(@types/node@26.1.1)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.1.1)(typescript@6.0.3)))(typescript@6.0.3)
       ts-loader:
         specifier: 'catalog:'
-        version: 9.5.7(typescript@6.0.3)(webpack@5.109.0)
+        version: 9.6.2(typescript@6.0.3)(webpack@5.109.0)
       ts-node:
         specifier: 'catalog:'
         version: 10.9.2(@types/node@26.1.1)(typescript@6.0.3)
@@ -8210,12 +8210,16 @@ packages:
       jest-util:
         optional: true
 
-  ts-loader@9.5.7:
-    resolution: {integrity: sha512-/ZNrKgA3K3PtpMYOC71EeMWIloGw3IYEa5/t1cyz2r5/PyUwTXGzYJvcD3kfUvmhlfpz1rhV8B2O6IVTQ0avsg==}
+  ts-loader@9.6.2:
+    resolution: {integrity: sha512-R4iuczmtgxvtuI556s+hTZ6/7Ee03VCAk/l/M8LY1OAsUgB7YydsCxkgq9D9pKRaD7GJqUi2u8fp9zZP/ufjKA==}
     engines: {node: '>=12.0.0'}
     peerDependencies:
+      loader-utils: '*'
       typescript: '*'
-      webpack: ^5.0.0
+      webpack: ^4.0.0 || ^5.0.0
+    peerDependenciesMeta:
+      loader-utils:
+        optional: true
 
   ts-mocha@11.1.0:
     resolution: {integrity: sha512-yT7FfzNRCu8ZKkYvAOiH01xNma/vLq6Vit7yINKYFNVP8e5UyrYXSOMIipERTpzVKJQ4Qcos5bQo1tNERNZevQ==}
@@ -17670,12 +17674,10 @@ snapshots:
       esbuild: 0.28.1
       jest-util: 30.4.1
 
-  ts-loader@9.5.7(typescript@6.0.3)(webpack@5.109.0):
+  ts-loader@9.6.2(typescript@6.0.3)(webpack@5.109.0):
     dependencies:
       chalk: 4.1.2
-      enhanced-resolve: 5.24.3
-      micromatch: 4.0.8
-      semver: 7.8.5
+      picomatch: 4.0.4
       source-map: 0.7.6
       typescript: 6.0.3
       webpack: 5.109.0(esbuild@0.28.1)(lightningcss@1.32.0)(postcss@8.5.25)(uglify-js@3.19.3)(webpack-cli@7.2.1)
