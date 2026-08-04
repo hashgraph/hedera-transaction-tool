@@ -12,7 +12,7 @@ import { UserKey } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 
-import { UserKeyDto } from './dtos';
+import { UserKeyPublicDto } from './dtos';
 import { UserKeysService } from './user-keys.service';
 
 @ApiTags('User Keys All')
@@ -22,15 +22,16 @@ export class UserKeysAllController {
   constructor(private userKeysService: UserKeysService) {}
 
   @ApiOperation({
-    summary: 'Get all user keys for user',
-    description: 'Get all the user keys for the provided user id.',
+    summary: 'Get all user keys',
+    description: 'Deprecated. Use keys embedded in GET /users instead.',
+    deprecated: true,
   })
   @ApiResponse({
     status: 200,
-    type: PaginatedResourceDto<UserKeyDto>,
+    type: PaginatedResourceDto<UserKeyPublicDto>,
   })
   @Get()
-  @Serialize(withPaginatedResponse(UserKeyDto))
+  @Serialize(withPaginatedResponse(UserKeyPublicDto))
   getUserKeys(
     @PaginationParams() paginationParams: Pagination,
   ): Promise<PaginatedResourceDto<UserKey>> {
