@@ -3,7 +3,8 @@
   "compilerOptions": {
     "rootDir": "../..",
     "declaration": false,
-    "outDir": "../../dist/apps/api"
+    "outDir": "../../dist/apps/api",
+    "ignoreDeprecations": "6.0"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "test", "**/*spec.ts"]
