@@ -517,12 +517,14 @@ export class ApproversService {
       });
 
       if (updated) {
-        emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
+        await emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
       }
 
       return approver;
     } catch (error) {
-      this.logger.error('Failed to update transaction approver', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : null;
+      this.logger.error('Failed to update transaction approver', errorStack ?? errorMessage);
       throw new BadRequestException((error as Error).message);
     }
   }
