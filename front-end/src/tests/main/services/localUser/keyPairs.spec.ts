@@ -23,7 +23,7 @@ import { getOrganization } from '@main/services/localUser/organizations';
 import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
-import { decrypt, encrypt } from '@main/utils/crypto';
+import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
 
 vi.mock('@main/db/prisma');
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -39,6 +39,7 @@ vi.mock('@main/services/localUser/claim', () => ({ getUseKeychainClaim: vi.fn() 
 vi.mock('@main/utils/crypto', () => ({
   encrypt: vi.fn(),
   decrypt: vi.fn(),
+  isLegacyBlob: vi.fn().mockReturnValue(false),
 }));
 
 describe('Services Local User Key Pairs', () => {
@@ -266,6 +267,39 @@ describe('Services Local User Key Pairs', () => {
       await expect(decryptPrivateKey(keyPair.user_id, null, keyPair.public_key)).rejects.toThrow(
         'Password is required to decrypt private key',
       );
+    });
+
+    test('Should re-encrypt and save when decrypting a legacy blob', async () => {
+      const password = 'password1';
+
+      prisma.keyPair.findFirst.mockResolvedValue(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
+      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
+      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(isLegacyBlob).mockReturnValueOnce(true);
+
+      const result = await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
+
+      expect(prisma.keyPair.updateMany).toHaveBeenCalledWith({
+        where: { user_id: keyPair.user_id, public_key: keyPair.public_key },
+        data: { private_key: 'v2:reEncrypted' },
+      });
+      expect(result).toBe('decryptedPrivateKey');
+    });
+
+    test('Should still return decrypted key if migration save fails', async () => {
+      const password = 'password1';
+
+      prisma.keyPair.findFirst.mockResolvedValue(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
+      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
+      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(isLegacyBlob).mockReturnValueOnce(true);
+      prisma.keyPair.updateMany.mockRejectedValueOnce(new Error('DB error'));
+
+      const result = await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
+
+      expect(result).toBe('decryptedPrivateKey');
     });
   });
 

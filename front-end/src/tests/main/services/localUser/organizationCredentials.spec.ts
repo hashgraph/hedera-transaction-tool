@@ -23,7 +23,7 @@ import {
 
 import { safeStorage, session } from 'electron';
 import { jwtDecode } from 'jwt-decode';
-import { decrypt, encrypt } from '@main/utils/crypto';
+import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
@@ -1039,6 +1039,56 @@ describe('Services Local User Organization Credentials', () => {
       await expect(decryptData(encryptedData)).rejects.toThrow(
         'Password is required to decrypt sensitive',
       );
+    });
+
+    test('Should re-encrypt and save when decrypting a legacy blob with credentialId', async () => {
+      const encryptedData = 'encryptedData';
+      const decryptedData = 'decryptedData';
+      const decryptPassword = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockReturnValue(decryptedData);
+      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(isLegacyBlob).mockReturnValue(true);
+
+      const result = await decryptData(encryptedData, decryptPassword, '1');
+
+      expect(prisma.organizationCredentials.update).toHaveBeenCalledWith({
+        where: { id: '1' },
+        data: { password: 'v2:reEncrypted' },
+      });
+      expect(result).toBe(decryptedData);
+    });
+
+    test('Should still return decrypted data if migration save fails', async () => {
+      const encryptedData = 'encryptedData';
+      const decryptedData = 'decryptedData';
+      const decryptPassword = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockReturnValue(decryptedData);
+      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(isLegacyBlob).mockReturnValue(true);
+      prisma.organizationCredentials.update.mockRejectedValueOnce(new Error('DB error'));
+
+      const result = await decryptData(encryptedData, decryptPassword, '1');
+
+      expect(result).toBe(decryptedData);
+    });
+
+    test('Should not migrate when no credentialId is provided', async () => {
+      const encryptedData = 'encryptedData';
+      const decryptedData = 'decryptedData';
+      const decryptPassword = 'password';
+
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+      vi.mocked(decrypt).mockReturnValue(decryptedData);
+      vi.mocked(isLegacyBlob).mockReturnValue(true);
+
+      const result = await decryptData(encryptedData, decryptPassword);
+
+      expect(prisma.organizationCredentials.update).not.toHaveBeenCalled();
+      expect(result).toBe(decryptedData);
     });
   });
 
