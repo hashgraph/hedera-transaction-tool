@@ -55,7 +55,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build Linux executable
-        run: pnpm run build:linux:e2e
+        run: getconf GNU_LIBC_VERSION && pnpm run build:linux:e2e
         working-directory: front-end
 
       - name: Cache Build Artifacts
