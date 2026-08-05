@@ -137,8 +137,9 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npm install -g @hashgraph/solo@0.64.0
-          solo --version
+          npm ci --ignore-scripts --prefix .github/solo
+          echo "${GITHUB_WORKSPACE}/.github/solo/node_modules/.bin" >> "$GITHUB_PATH"
+          "${GITHUB_WORKSPACE}/.github/solo/node_modules/.bin/solo" --version
           kind --version
 
       - name: Deploy Solo
