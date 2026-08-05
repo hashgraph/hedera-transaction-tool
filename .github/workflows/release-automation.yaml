@@ -503,6 +503,23 @@ jobs:
             --prerelease \
             --repo ${{ github.repository }}
 
+  # ----------------------------
+  # Run k6 load tests against staging after the release is published.
+  # Results are uploaded as artifacts (k6-reports-<version>).
+  # This runs in parallel with create_snapshot_pr and does not gate the release.
+  # To make it a hard gate (block image builds if staging is unhealthy), move
+  # this job to depend on `prepare` and add it to build_and_push_images.needs.
+  # ----------------------------
+  performance_tests:
+    name: Performance Tests (k6)
+    needs: [prepare, github_release]
+    if: ${{ needs.prepare.outputs.prerelease != '' }}
+    uses: ./.github/workflows/performance-tests.yaml
+    secrets: inherit
+    with:
+      version: ${{ needs.prepare.outputs.version }}
+      vus: 20
+
   create_snapshot_pr:
     name: Create Snapshot Bump PR
     runs-on: transaction-tools-linux-medium
@@ -576,7 +593,7 @@ jobs:
   create_or_update_tracking_issue:
     name: Create or Update Release Tracking Issue
     runs-on: transaction-tools-linux-medium
-    needs: [prepare, cut_release, github_release, create_snapshot_pr]
+    needs: [prepare, cut_release, github_release, create_snapshot_pr, performance_tests]
     if: ${{ always() && needs.github_release.result == 'success' && needs.create_snapshot_pr.result != 'failure' }}
 
     steps:

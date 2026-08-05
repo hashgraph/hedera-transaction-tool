@@ -1,0 +1,340 @@
+# SPDX-License-Identifier: Apache-2.0
+
+name: Performance Tests (k6)
+
+# Reusable workflow — called from release-automation.yaml.
+# Can also be triggered manually for ad-hoc runs against staging.
+on:
+  # TODO: remove before merging — only here to allow testing from this branch
+  push:
+    branches:
+      - feat/add-k6-ci
+
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        required: false
+        default: ''
+        description: Release version label (used only for artifact naming)
+      vus:
+        type: number
+        required: false
+        default: 20
+        description: Virtual users for load tests
+    secrets:
+      STAGING_BASE_URL:
+        required: true
+      K6_USER_EMAIL:
+        required: false
+      K6_USER_PASSWORD:
+        required: false
+      # ---------------------------------------------------------------------------
+      # Grafana / InfluxDB output (optional).
+      # Populate this secret to stream results to InfluxDB/Grafana automatically.
+      # Format: http://<host>:8086/k6  (InfluxDB v1 line protocol)
+      # ---------------------------------------------------------------------------
+      # K6_INFLUXDB_URL:
+      #   required: false
+
+  workflow_dispatch:
+    inputs:
+      version:
+        type: string
+        required: false
+        default: ''
+        description: Release version label (for artifact naming only)
+      vus:
+        type: number
+        required: false
+        default: 20
+        description: Virtual users for load tests
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  LC_ALL: C.UTF-8
+
+jobs:
+  k6_tests:
+    name: k6 Load Tests (staging)
+    runs-on: transaction-tools-linux-medium
+    # Full suite at 20 VUs runs ~35 min; allow 60 min to be safe.
+    timeout-minutes: 60
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@bf7454d06d71f1098171f2acdf0cd4708d7b5920 # v2.20.0
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring \
+            --keyring /usr/share/keyrings/k6-archive-keyring.gpg \
+            --keyserver hkp://keyserver.ubuntu.com:80 \
+            --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" \
+            | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Install pnpm
+        uses: step-security/action-setup@7734f5522f614a4cf2820ad19aa26717c7abfd96 # v6.0.9
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
+
+      - name: Install automation dependencies
+        working-directory: automation
+        run: pnpm install --frozen-lockfile
+
+      - name: Build k6 scripts
+        working-directory: automation
+        run: pnpm run k6:build
+
+      # ---------------------------------------------------------------------------
+      # Seed staging test data (requires Teleport Machine ID with GitHub OIDC join).
+      #
+      # Setup steps for DevOps:
+      #   1. Create a Teleport bot (e.g. "github-actions-k6") with the GitHub
+      #      Actions join method scoped to this repo.
+      #   2. Grant the bot role access to gcp-tt-staging-postgres.
+      #   3. Add TELEPORT_PROXY and TELEPORT_TOKEN to this workflow's secrets.
+      #   See: https://goteleport.com/docs/machine-id/deployment/github-actions/
+      #
+      # Uncomment when ready:
+      # ---------------------------------------------------------------------------
+      # - name: Authenticate to Teleport
+      #   uses: teleport-actions/auth@...  # pin to a specific SHA
+      #   with:
+      #     proxy: ${{ secrets.TELEPORT_PROXY }}
+      #     token: github-actions-k6
+      #
+      # - name: Open Postgres tunnel
+      #   run: |
+      #     tsh proxy db --tunnel gcp-tt-staging-postgres \
+      #       --db-user=teleport-cloudsql-user@transaction-tool-dev.iam \
+      #       --db-name=staging \
+      #       --port 54320 &
+      #     # Give the tunnel a moment to establish before seeding starts.
+      #     sleep 5
+      #
+      # - name: Seed test users and performance data
+      #   working-directory: automation
+      #   env:
+      #     POSTGRES_HOST: localhost
+      #     POSTGRES_PORT: 54320
+      #     POSTGRES_DATABASE: staging
+      #     POSTGRES_USERNAME: teleport-cloudsql-user@transaction-tool-dev.iam
+      #   run: pnpm run k6:seed:all
+
+      # ---------------------------------------------------------------------------
+      # Determine optional --out flag for Grafana/InfluxDB.
+      # Outputs "has_out=true" if K6_INFLUXDB_URL secret is populated so the run
+      # steps can append "--out influxdb=$K6_INFLUXDB_URL" to each k6 invocation.
+      # ---------------------------------------------------------------------------
+      - name: Resolve Grafana output flag
+        id: grafana
+        env:
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          if [ -n "$K6_INFLUXDB_URL" ]; then
+            echo "has_out=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_out=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ---------------------------------------------------------------------------
+      # Run each k6 script in sequence. continue-on-error lets all scripts finish
+      # and produce reports even if one hits a threshold failure. The upload step
+      # at the end collects everything. Remove continue-on-error if you want a
+      # threshold failure to abort the run immediately.
+      # ---------------------------------------------------------------------------
+      - name: smoke-test
+        id: smoke
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/smoke-test.js
+
+      - name: tab-load-times
+        id: tab_load
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/tab-load-times.js
+
+      - name: all-transactions
+        id: all_transactions
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/all-transactions.js
+
+      - name: history
+        id: history
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/history.js
+
+      - name: in-progress
+        id: in_progress
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/in-progress.js
+
+      - name: ready-to-sign
+        id: ready_to_sign
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/ready-to-sign.js
+
+      - name: notifications
+        id: notifications
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/notifications.js
+
+      - name: sign-all
+        id: sign_all
+        continue-on-error: true
+        working-directory: automation
+        env:
+          BASE_URL: ${{ secrets.STAGING_BASE_URL }}
+          USER_EMAIL: ${{ secrets.K6_USER_EMAIL }}
+          USER_PASSWORD: ${{ secrets.K6_USER_PASSWORD }}
+          K6_INFLUXDB_URL: ${{ secrets.K6_INFLUXDB_URL }}
+        run: |
+          K6_OUT_FLAG=""
+          [ "${{ steps.grafana.outputs.has_out }}" = "true" ] && K6_OUT_FLAG="--out influxdb=$K6_INFLUXDB_URL"
+          k6 run \
+            -e ENV=staging \
+            -e BASE_URL="$BASE_URL" \
+            -e VUS="${{ inputs.vus }}" \
+            -e USER_EMAIL="$USER_EMAIL" \
+            -e USER_PASSWORD="$USER_PASSWORD" \
+            $K6_OUT_FLAG \
+            k6/dist/sign-all.js
+
+      # Collect all HTML/JSON reports regardless of test outcome.
+      - name: Upload k6 reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: k6-reports${{ inputs.version != '' && format('-{0}', inputs.version) || '' }}
+          path: automation/reports/k6/
+          if-no-files-found: warn
+          retention-days: 30
