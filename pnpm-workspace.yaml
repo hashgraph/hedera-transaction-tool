@@ -141,6 +141,8 @@ overrides:
   "immutable": "5.1.8"
   "find-my-way": "9.7.0"
   "valibot": "1.4.2"
+  "baseline-browser-mapping": "2.11.8"
+  "undici@<7.0.0": "6.28.0"
 
 minimumReleaseAgeExclude:
   - '@vue/language-core@3.3.8'
