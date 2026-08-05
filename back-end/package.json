@@ -116,7 +116,7 @@
     "tsconfig-paths": "4.2.0",
     "typescript": "catalog:"
   },
-  "peerDependencies": {
+  "overrides": {
     "@cacheable/utils": "2.5.0",
     "@keyv/redis": "5.1.6",
     "cache-manager": "7.2.9",
