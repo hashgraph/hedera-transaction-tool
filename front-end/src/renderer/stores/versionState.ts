@@ -7,6 +7,7 @@ import { LOCAL_STORAGE_ORG_VERSION_DATA } from '@shared/constants';
 import useUserStore from '@renderer/stores/storeUser';
 import {
   checkCompatibilityAcrossOrganizations,
+  isNewerVersionAvailable,
   isVersionBelowMinimum,
 } from '@renderer/services/organization/versionCompatibility';
 
@@ -117,7 +118,7 @@ export const organizationVersionStatus = computed<{ [serverUrl: string]: Version
     if (!data) continue;
     if (isVersionBelowMinimum(data)) {
       result[serverUrl] = 'belowMinimum';
-    } else if (data.updateUrl) {
+    } else if (data.updateUrl && isNewerVersionAvailable(data)) {
       result[serverUrl] = 'updateAvailable';
     } else {
       result[serverUrl] = 'current';

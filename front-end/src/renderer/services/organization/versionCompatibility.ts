@@ -76,6 +76,15 @@ export function checkCompatibilityAcrossOrganizations(
   };
 }
 
+export function isNewerVersionAvailable(versionData: IVersionCheckResponse): boolean {
+  const cleanCurrentVersion = semver.clean(FRONTEND_VERSION);
+  const cleanLatestVersion = semver.clean(versionData.latestSupportedVersion);
+
+  if (!cleanCurrentVersion || !cleanLatestVersion) return !!versionData.updateUrl;
+
+  return semver.gt(cleanLatestVersion, cleanCurrentVersion);
+}
+
 export function isVersionBelowMinimum(versionData: IVersionCheckResponse): boolean {
   if (!versionData.minimumSupportedVersion) {
     return false;
