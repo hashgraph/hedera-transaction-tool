@@ -42,7 +42,7 @@
     "@prisma/adapter-better-sqlite3": "7.9.0",
     "@prisma/client": "7.9.0",
     "@vuepic/vue-datepicker": "14.0.0",
-    "@vueuse/core": "14.3.0",
+    "@vueuse/core": "14.4.0",
     "argon2": "catalog:",
     "axios": "catalog:",
     "bcrypt": "catalog:",
@@ -101,7 +101,7 @@
     "vitest": "catalog:vitest",
     "vitest-mock-extended": "5.1.0",
     "vue": "3.5.40",
-    "vue-tsc": "3.3.8"
+    "vue-tsc": "3.3.9"
   },
   "engines": {
     "node": ">=24.0.0"
