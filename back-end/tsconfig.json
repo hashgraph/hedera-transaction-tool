@@ -23,7 +23,8 @@
       "@app/common/*": ["./libs/common/src/*"],
       "@transactionModels/*": ["./libs/common/src/models/*"],
       "@entities": ["./libs/common/src/database/entities"]
-    }
+    },
+    "ignoreDeprecations": "6.0"
   },
   "exclude": [
     "node_modules",
