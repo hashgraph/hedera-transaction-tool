@@ -136,9 +136,9 @@ jobs:
       - name: Install Solo CLI
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
-          npm ci --ignore-scripts --prefix .github/solo
-          echo "${GITHUB_WORKSPACE}/.github/solo/node_modules/.bin" >> "$GITHUB_PATH"
-          "${GITHUB_WORKSPACE}/.github/solo/node_modules/.bin/solo" --version
+          set -euo pipefail
+          npm install -g @hashgraph/solo@0.64.2
+          solo --version
           kind --version
 
       - name: Deploy Solo
