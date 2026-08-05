@@ -287,9 +287,6 @@ importers:
 
   back-end:
     dependencies:
-      '@cacheable/utils':
-        specifier: 2.5.0
-        version: 2.5.0
       '@hiero-ledger/proto':
         specifier: 'catalog:'
         version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1(supports-color@8.1.1))(protobufjs@8.7.1)(strip-ansi@7.1.2)
