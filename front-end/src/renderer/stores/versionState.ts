@@ -115,6 +115,12 @@ export const organizationVersionStatus = computed<{ [serverUrl: string]: Version
   for (const serverUrl of Object.keys(organizationVersionData.value)) {
     const data = organizationVersionData.value[serverUrl];
     if (!data) continue;
+    // Only produce a status for orgs whose data arrived from a live check this
+    // session (i.e. setVersionDataForOrg recorded a timestamp). Cache-only
+    // entries — rehydrated from localStorage with no timestamp — are used by
+    // display components (OrganizationsTab) but must not drive the update
+    // prompt; stale pre-upgrade data would otherwise trigger a false banner.
+    if (!organizationUpdateTimestamps.value[serverUrl]) continue;
     if (isVersionBelowMinimum(data)) {
       result[serverUrl] = 'belowMinimum';
     } else if (data.updateUrl) {
