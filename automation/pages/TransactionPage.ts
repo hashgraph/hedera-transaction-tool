@@ -72,6 +72,7 @@ export class TransactionPage extends BasePage {
   fileContentAppendTextFieldSelector = 'textarea-file-content';
   fileMemoInputSelector = 'input-file-memo';
   fileCreateExpirationDateInputSelector = 'input-expiration-time-for-file';
+  expirationDatePickerInputSelector = '[data-testid="input-expiration-time-for-file"] [data-test-id="dp-input"]';
   fileCreateNameInputSelector = 'input-file-name-for-file-create';
   fileCreateDescriptionInputSelector = 'input-file-description-for-file-create';
   maxTransactionFeeInputSelector = 'input-max-transaction-fee';
@@ -410,6 +411,21 @@ export class TransactionPage extends BasePage {
 
   async clickOnSystemUndeleteTransaction(): Promise<void> {
     await this.click(this.systemUndeleteSublinkSelector);
+  }
+
+  /**
+   * Types a date N days from now into the System Delete expiration date picker.
+   * The expiration must be between 30 and 92 days from now (enforced by minDate/maxDate).
+   */
+  async setSystemDeleteExpirationDate(daysFromNow: number): Promise<void> {
+    const date = new Date();
+    date.setDate(date.getDate() + daysFromNow);
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const year = date.getFullYear();
+    const formatted = `${month}/${day}/${year} 12:00:00`;
+    await this.fill(this.expirationDatePickerInputSelector, formatted);
+    await this.pressKey('Enter');
   }
 
   private async logPayerOnFirstCreateTransactionScreen() {

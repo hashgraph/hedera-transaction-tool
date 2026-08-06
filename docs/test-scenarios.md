@@ -420,8 +420,8 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ------ | ------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ |
 | 5.11.1 | User can update a system file (e.g., fee schedules, exchange rates) | Yes       | Verify that system account can be updated without account key using a superUser as the fee payer |
 | 5.11.2 | System file update with superuser (0.0.100) as fee payer            | Yes       | Verify that system account can be updated without account key using a superUser as the fee payer |
-| 5.11.3 | System Delete transaction                                           | Yes       | Verify user can open the System Delete transaction form                                          |
-| 5.11.4 | System Undelete transaction                                         | Yes       | Verify user can open the System Undelete transaction form                                        |
+| 5.11.3 | System Delete transaction                                           | Yes       | Verify user can create a System Delete transaction                                               |
+| 5.11.4 | System Undelete transaction                                         | Yes       | Verify user can create a System Undelete transaction                                             |
 
 ### 5.12 Node Transactions
 
