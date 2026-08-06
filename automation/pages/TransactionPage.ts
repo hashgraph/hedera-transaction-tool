@@ -92,6 +92,7 @@ export class TransactionPage extends BasePage {
   updateFileSublinkSelector = 'menu-sub-link-fileupdatetransaction';
   readFileSublinkSelector = 'menu-sub-link-filecontentsquery';
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
+  freezeSublinkSelector = 'menu-sub-link-freezetransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   singleTabSelector = 'tab-single';
@@ -395,6 +396,10 @@ export class TransactionPage extends BasePage {
   async clickOnAppendFileSublink() {
     await this.click(this.appendFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
+  }
+
+  async clickOnFreezeTransaction(): Promise<void> {
+    await this.click(this.freezeSublinkSelector);
   }
 
   private async logPayerOnFirstCreateTransactionScreen() {
