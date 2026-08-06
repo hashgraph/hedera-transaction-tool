@@ -342,6 +342,32 @@ export async function insertKeyPair(
 }
 
 /**
+ * Inserts a new Organization row into the local Organization table.
+ *
+ * Used in tests to satisfy the foreign-key constraint on KeyPair.organization_id when
+ * injecting a fake connected-organization state into the Vue store.
+ *
+ * @param id        - The UUID to use as the Organization primary key.
+ * @param nickname  - A human-readable nickname.
+ * @param serverUrl - The organization server URL (can be a dummy value in test contexts).
+ * @param key       - The organization key (can be a dummy value in test contexts).
+ */
+export async function insertLocalOrganization(
+  id: string,
+  nickname: string,
+  serverUrl: string,
+  key: string,
+): Promise<void> {
+  const query = `INSERT INTO Organization (id, nickname, serverUrl, key) VALUES (?, ?, ?, ?)`;
+  try {
+    await executeDatabase(query, [id, nickname, serverUrl, key]);
+    console.log('Organization record inserted successfully');
+  } catch (error) {
+    console.error('Error inserting Organization record:', error);
+  }
+}
+
+/**
  * Verifies if an organization with the given nickname exists in the local Organization table.
  *
  * @param nickname - The organization nickname to verify.

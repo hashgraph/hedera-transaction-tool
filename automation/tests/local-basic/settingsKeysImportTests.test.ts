@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
+import { PrivateKey } from '@hiero-ledger/sdk';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
+import { insertLocalOrganization } from '../../utils/db/databaseQueries.js';
 import { setupSettingsKeysSuite } from '../helpers/fixtures/settingsKeysSuite.js';
 
 test.describe('Settings keys import tests @local-basic', () => {
@@ -76,5 +78,53 @@ test.describe('Settings keys import tests @local-basic', () => {
     await suite.settingsPage.clickOnAllKeysFilterTab();
     const allRows = await suite.settingsPage.getKeyRowCount();
     expect(allRows).toBeGreaterThan(privateKeyRows);
+  });
+
+  test('Verify user can import encrypted private key (3.2.15)', async () => {
+    await suite.settingsPage.clickOnKeysTab();
+    await suite.settingsPage.clickOnImportButton();
+    await suite.settingsPage.clickOnEncryptedKeysDropDown();
+
+    // Assert the modal opens with the correct heading before stopping
+    const heading = await suite.settingsPage.getEncryptedKeysModalHeading();
+    expect(heading).toBe('Import encrypted keys');
+
+    // The next step requires clicking "Browse" (button-encrypted-keys-folder-import) which
+    // triggers a native OS file-picker dialog that Playwright cannot drive.
+    test.skip(true, 'Selecting a file or folder uses a native OS dialog that cannot be automated with Playwright');
+  });
+
+  test('Verify user can import external private key for missing key (3.2.18)', async () => {
+    // Generate a fresh ED25519 key pair whose public key will be seeded as a "missing" key
+    const newKey = PrivateKey.generateED25519();
+    const newPublicKey = newKey.publicKey.toStringRaw();
+    const newPrivateKey = newKey.toStringRaw();
+
+    // Insert a real Organization row so the FK constraint on KeyPair.organization_id is
+    // satisfied when the key is stored after the restore flow completes.
+    const orgId = `test-org-restore-${Date.now()}`;
+    await insertLocalOrganization(orgId, 'Test Restore Org', 'http://localhost:19999', 'test-key');
+
+    // Navigate to the Keys tab (Settings is already open from beforeEach)
+    await suite.settingsPage.clickOnKeysTab();
+
+    // Inject a fake connected-org state that includes the new public key as a userKey with
+    // no corresponding local keyPair.  This makes the restore button visible for that row.
+    await suite.settingsPage.injectFakeOrgWithUserKey(orgId, newPublicKey);
+
+    // Wait for the restore button to become visible for the first row (the new key sorts
+    // before the seeded key because it has only a userKey, not a keyPair).
+    await suite.settingsPage.waitForElementToBeVisible('button-restore-key-0');
+
+    // Click the restore button — this opens ImportExternalPrivateKeyModal with the public
+    // key pre-filled.
+    await suite.settingsPage.clickOnRestoreKeyButtonAtIndex(0);
+
+    // Enter the matching private key and a nickname, then submit.
+    await suite.loginPage.waitForToastToDisappear();
+    await suite.settingsPage.importED25519PrivateKey(newPrivateKey, 'Test-Missing-Key-Restore');
+
+    const toastMessage = await suite.registrationPage.getToastMessage();
+    expect(toastMessage).toBe('ED25519 private key imported successfully');
   });
 });

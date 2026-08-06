@@ -56,7 +56,9 @@ export class SettingsPage extends BasePage {
   importButtonSelector = 'button-restore-dropdown';
   ed25519ImportLinkSelector = 'link-import-ed25519-key';
   ecdsaImportLinkSelector = 'link-import-ecdsa-key';
+  encryptedKeysImportLinkSelector = 'link-import-encrypted-key';
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
+  restoreKeyButtonPrefix = 'button-restore-key-';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
   decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
   deleteKeyPairButton = 'button-delete-keypair-confirm';
@@ -437,6 +439,65 @@ export class SettingsPage extends BasePage {
 
   async clickOnED25519DropDown(): Promise<void> {
     await this.click(this.ed25519ImportLinkSelector);
+  }
+
+  async clickOnEncryptedKeysDropDown(): Promise<void> {
+    await this.click(this.encryptedKeysImportLinkSelector);
+  }
+
+  async clickOnRestoreKeyButtonAtIndex(rowIndex: number): Promise<void> {
+    await this.click(this.restoreKeyButtonPrefix + rowIndex);
+  }
+
+  async getEncryptedKeysModalHeading(): Promise<string> {
+    const locator = this.window.locator('h3:has-text("Import encrypted keys")');
+    return ((await locator.textContent()) ?? '').trim();
+  }
+
+  /**
+   * Injects a minimal connected-organization state into the Vue user store so that
+   * the "restore missing key" button becomes visible in the Keys tab for the given
+   * public key.  The caller is responsible for inserting a matching Organization row
+   * in the local DB before calling this method (to satisfy the FK constraint when the
+   * key is later stored).
+   */
+  async injectFakeOrgWithUserKey(orgId: string, publicKey: string): Promise<void> {
+    await this.window.evaluate(
+      ({ orgId, publicKey }) => {
+        type VueAppContainer = HTMLElement & {
+          __vue_app__?: {
+            config?: {
+              globalProperties?: {
+                $pinia?: {
+                  _s?: Map<string, Record<string, unknown>>;
+                };
+              };
+            };
+          };
+        };
+
+        const appRoot = document.querySelector('#app') as VueAppContainer | null;
+        const userStore = appRoot?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('user');
+        if (!userStore) throw new Error('User store not found');
+
+        userStore.selectedOrganization = {
+          id: orgId,
+          nickname: 'Test Org',
+          serverUrl: 'http://localhost:19999',
+          key: 'test-key',
+          isLoading: false,
+          isServerActive: true,
+          loginRequired: false,
+          userId: 1,
+          email: 'test@example.com',
+          admin: false,
+          isPasswordTemporary: false,
+          userKeys: [{ id: 1, userId: 1, publicKey }],
+          secretHashes: [],
+        };
+      },
+      { orgId, publicKey },
+    );
   }
 
   async clickOnSelectAllKeys(): Promise<void> {
