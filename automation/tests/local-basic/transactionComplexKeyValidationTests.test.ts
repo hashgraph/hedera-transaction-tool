@@ -1,4 +1,4 @@
-import { Page, test } from '@playwright/test';
+import { Page, expect, test } from '@playwright/test';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { RegistrationPage } from '../../pages/RegistrationPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
@@ -37,6 +37,26 @@ test.describe('Transaction complex key validation tests @local-basic', () => {
     seededPublicKey = seededUser.publicKey;
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
+  });
+
+  // 5.13.3: Adding an account-based key at root depth succeeds silently.
+  test('Verify user can add an account-based key at root depth', async () => {
+    await transactionPage.openComplexKeyBuilderFromAccountCreate();
+    await transactionPage.addAccountAtDepth(ROOT_THRESHOLD_DEPTH, '0.0.2');
+    await expect(
+      transactionPage.getElement(transactionPage.doneComplexKeyButtonSelector),
+    ).toBeVisible();
+  });
+
+  // 5.13.3: Adding account-based keys inside a nested threshold group succeeds silently.
+  test('Verify user can add account-based keys at nested threshold depths', async () => {
+    await transactionPage.openComplexKeyBuilderFromAccountCreate();
+    await transactionPage.addThresholdKeyAtDepth(ROOT_THRESHOLD_DEPTH);
+    await transactionPage.addAccountAtDepth(`${ROOT_THRESHOLD_DEPTH}-0`, '0.0.3');
+    await transactionPage.addAccountAtDepth(`${ROOT_THRESHOLD_DEPTH}-0`, '0.0.4');
+    await expect(
+      transactionPage.getElement(transactionPage.doneComplexKeyButtonSelector),
+    ).toBeVisible();
   });
 
   // 5.13.6: Adding the same public key twice at the same threshold level surfaces a toast.
