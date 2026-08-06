@@ -103,7 +103,7 @@ describe('useWebsocketConnection', () => {
   // ── existing disconnect tests + Gap 2 ───────────────────────────────────────
 
   describe('listenConnection — disconnect event', () => {
-    test('sets state to connecting when socket.active is true (will auto-reconnect)', () => {
+    test('does not broadcast a permanent disconnect when socket will auto-reconnect', () => {
       mockSocket.active = true;
       store.connect(SERVER_URL, SERVER_URL);
 
@@ -178,7 +178,7 @@ describe('useWebsocketConnection', () => {
       );
     });
 
-    test('sets state to connecting when socket.active is true', () => {
+    test('does not call setConnectionStatus when socket will auto-reconnect', () => {
       mockSocket.active = true;
       store.connect(SERVER_URL, SERVER_URL);
 
