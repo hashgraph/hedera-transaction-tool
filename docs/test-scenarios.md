@@ -870,12 +870,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 ### 14.4 Network/Connection Errors
 
-| #      | Scenario                                                       | Automated | Covered By |
-| ------ | -------------------------------------------------------------- | --------- | ---------- |
-| 14.4.1 | Graceful handling when organization server is unreachable      | No        |            |
-| 14.4.2 | WebSocket reconnection after disconnect                        | No        |            |
-| 14.4.3 | Error displayed when Mirror Node is unavailable                | No        |            |
-| 14.4.4 | Transaction fails gracefully when Hedera network returns error | No        |            |
+| #      | Scenario                                                       | Automated  | Covered By |
+| ------ | -------------------------------------------------------------- | ---------- | ---------- |
+| 14.4.1 | Graceful handling when organization server is unreachable      | No         |            |
+| 14.4.2 | WebSocket reconnection after disconnect                        | Yes (Unit) | `storeWebsocketConnection.spec.ts` — reconnection cycle (disconnect + connect_error retry paths), listenConnection handlers |
+| 14.4.3 | Error displayed when Mirror Node is unavailable                | No         |            |
+| 14.4.4 | Transaction fails gracefully when Hedera network returns error | No         |            |
 
 ### 14.5 Form Validation Edge Cases
 
@@ -927,18 +927,18 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
-| 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
+| 14. Error Handling / Edge Cases | 17              | 10            | 1                        | 3       | 0       | 3        | 0       | 82%        | 82%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **70**                   | **3**   | **5**   | **27**   | **2**   | **93%**    | **94%**                 |
+| **Total**                       | **472**         | **365**       | **71**                   | **3**   | **5**   | **26**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
-The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
+The migrated frontend package coverage currently comes from 88 Vitest component test cases across 17 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 472 = 92.79%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 71 + 3) / 472 = 92.99%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 472 = 93.85%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 71 + 3 + 5) / 472 = 94.07%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -996,17 +996,16 @@ These scenarios cover secondary workflows and infrequently used transaction type
 
 These scenarios cover edge cases and error handling. Verify periodically or after infrastructure changes.
 
-| Area              | Scenario #     | Description                                                     | When to Test                                       |
-| ----------------- | -------------- | --------------------------------------------------------------- |----------------------------------------------------|
-| **Route Guards**  | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
-| **Network Errors** | 14.4.1        | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
-| **Network Errors** | 14.4.2        | WebSocket reconnection after disconnect                         | After WebSocket or real-time system changes        |
-| **Network Errors** | 14.4.3        | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
-| **Network Errors** | 14.4.4        | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
+| Area               | Scenario #     | Description                                                     | When to Test                                       |
+| ------------------ | -------------- | --------------------------------------------------------------- | -------------------------------------------------- |
+| **Route Guards**   | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
+| **Network Errors** | 14.4.1         | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
+| **Network Errors** | 14.4.3         | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
+| **Network Errors** | 14.4.4         | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
 
 ### Priority Areas for Additional Automation
 
-1. **Error Handling / Edge Cases (76%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+1. **Error Handling / Edge Cases (82%)** - Remaining network failures (14.4.1, 14.4.3, 14.4.4), loading-state coverage. Note: 14.4.2 is now covered by unit tests (`storeWebsocketConnection.spec.ts`). 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
 2. **Transactions List (94%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
 3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
 4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)
