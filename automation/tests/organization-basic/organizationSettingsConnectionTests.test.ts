@@ -6,6 +6,9 @@ import {
   deleteLocalOrganizationConnectionForTesting,
 } from '../helpers/support/localOrganizationConnectionSupport.js';
 
+// Unreachable server URL used for test 14.4.1.
+const UNREACHABLE_SERVER_URL = 'http://127.0.0.1:19999/';
+
 test.describe('Organization Settings connection tests @organization-basic', () => {
   const suite = setupOrganizationSettingsGeneralSuite();
 
@@ -61,6 +64,50 @@ test.describe('Organization Settings connection tests @organization-basic', () =
     expect(toastMessage).toBe('Organization does not exist. Please check the server URL');
     await suite.organizationPage.clickOnCancelAddingOrganizationButton();
     await suite.loginPage.waitForToastToDisappear();
+  });
+
+  test('14.4.1: Verify graceful handling when organization server is unreachable', async () => {
+    await suite.loginPage.waitForToastToDisappear();
+    await suite.settingsPage.clickOnSettingsButton();
+    await suite.settingsPage.clickOnOrganisationsTab();
+
+    // Seed an org whose server URL will always refuse connections.
+    // Using createLocalOrganizationConnectionForTesting bypasses the add-org
+    // modal so we can observe the status-badge behaviour directly in the table.
+    await createLocalOrganizationConnectionForTesting(
+      suite.window,
+      'Unreachable Server Org',
+      UNREACHABLE_SERVER_URL,
+    );
+
+    // Wait for the second row's status badge to render.
+    await suite.settingsPage.waitForElementToBeVisible(
+      suite.settingsPage.organizationConnectionStatusBadgeSelector,
+      suite.settingsPage.getVeryLongTimeout(),
+      1,
+    );
+
+    try {
+      // Poll until the badge settles on "Disconnected". A refused-connection
+      // attempt resolves quickly; VERY_LONG_TIMEOUT covers slower CI environments.
+      // "Disconnected" proves the app attempted the connection, received the
+      // failure, and did NOT hang or crash.
+      await expect
+        .poll(
+          async () => await suite.settingsPage.getOrganizationConnectionStatusBadgeText(1),
+          { timeout: suite.settingsPage.getVeryLongTimeout() },
+        )
+        .toBe('Disconnected');
+
+      // The app must still be interactive after the failed connection attempt.
+      expect(
+        await suite.settingsPage.isElementVisible(
+          suite.settingsPage.organisationsTabButtonSelector,
+        ),
+      ).toBe(true);
+    } finally {
+      await deleteLocalOrganizationConnectionForTesting(suite.window, UNREACHABLE_SERVER_URL);
+    }
   });
 
   test('Verify user can delete an organization', async () => {
