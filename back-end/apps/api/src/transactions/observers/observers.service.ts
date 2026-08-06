@@ -68,7 +68,7 @@ export class ObserversService {
       const errorStack = error instanceof Error ? error.stack : null;
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.logger.error('Failed to save transaction observers', errorStack ?? errorMessage);
-      throw new BadRequestException((error as Error).message);
+      throw new BadRequestException(errorMessage);
     }
   }
 

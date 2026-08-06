@@ -525,7 +525,7 @@ export class ApproversService {
       const errorMessage = error instanceof Error ? error.message : String(error);
       const errorStack = error instanceof Error ? error.stack : null;
       this.logger.error('Failed to update transaction approver', errorStack ?? errorMessage);
-      throw new BadRequestException((error as Error).message);
+      throw new BadRequestException(errorMessage);
     }
   }
 
