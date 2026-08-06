@@ -39,6 +39,9 @@ export function setupGroupTransactionSuite() {
   });
 
   return {
+    get window() {
+      return window;
+    },
     get transactionPage() {
       return transactionPage;
     },
