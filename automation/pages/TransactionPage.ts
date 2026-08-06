@@ -96,6 +96,15 @@ export class TransactionPage extends BasePage {
   nodeCreateSublinkSelector = 'menu-sub-link-nodecreatetransaction';
   nodeUpdateSublinkSelector = 'menu-sub-link-nodeupdatetransaction';
   nodeDeleteSublinkSelector = 'menu-sub-link-nodedeletetransaction';
+  nodeIdInputSelector = 'input-node-id';
+  nodeAccountIdInputSelector = 'input-node-account-id';
+  nodeDescriptionInputSelector = 'input-node-description';
+  gossipIpOrDomainSelector = 'input-gossip-ip-or-domain';
+  gossipPortSelector = 'input-gossip-port';
+  addGossipEndpointButtonSelector = 'button-add-gossip-endpoint';
+  serviceIpOrDomainSelector = 'input-service-ip-or-domain';
+  servicePortSelector = 'input-service-port';
+  addServiceEndpointButtonSelector = 'button-add-service-endpoint';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   singleTabSelector = 'tab-single';
@@ -1490,6 +1499,34 @@ export class TransactionPage extends BasePage {
 
   async clickOnNodeServiceLink() {
     await this.click(this.nodeServiceLinkSelector);
+  }
+
+  async fillNodeId(nodeId: string): Promise<void> {
+    await this.fill(this.nodeIdInputSelector, nodeId);
+  }
+
+  async fillNodeAccountId(accountId: string): Promise<void> {
+    await this.fill(this.nodeAccountIdInputSelector, accountId);
+  }
+
+  async fillNodeDescription(description: string): Promise<void> {
+    await this.fill(this.nodeDescriptionInputSelector, description);
+  }
+
+  async waitForNodeInfoToLoad(): Promise<void> {
+    await this.waitForInputFieldToBeFilled(this.nodeAccountIdInputSelector);
+  }
+
+  async addGossipEndpoint(ipOrDomain: string, port: string): Promise<void> {
+    await this.fill(this.gossipIpOrDomainSelector, ipOrDomain);
+    await this.fill(this.gossipPortSelector, port);
+    await this.click(this.addGossipEndpointButtonSelector);
+  }
+
+  async addServiceEndpoint(ipOrDomain: string, port: string): Promise<void> {
+    await this.fill(this.serviceIpOrDomainSelector, ipOrDomain);
+    await this.fill(this.servicePortSelector, port);
+    await this.click(this.addServiceEndpointButtonSelector);
   }
 
   async fillInFileIdForRead(fileId: string) {

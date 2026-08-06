@@ -30,6 +30,7 @@ const columnClass = 'col-4 col-xxxl-3';
       maxlength="2"
       class="form-control is-fill"
       placeholder="Enter Node ID"
+      data-testid="input-node-id"
     />
   </div>
 </template>

@@ -428,9 +428,9 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #      | Scenario                                  | Automated | Covered By |
 | ------ | ----------------------------------------- | --------- | ---------- |
 | 5.12.1 | User can create a Freeze transaction      | No        |            |
-| 5.12.2 | User can create a Node Create transaction | Yes       | Verify user can open the Node Create transaction form |
-| 5.12.3 | User can create a Node Update transaction | Yes       | Verify user can open the Node Update transaction form |
-| 5.12.4 | User can create a Node Delete transaction | Yes       | Verify user can open the Node Delete transaction form |
+| 5.12.2 | User can create a Node Create transaction | Yes       | Verify user can create a Node Create transaction |
+| 5.12.3 | User can create a Node Update transaction | Yes       | Verify user can create a Node Update transaction |
+| 5.12.4 | User can create a Node Delete transaction | Yes       | Verify user can create a Node Delete transaction |
 
 ### 5.13 Complex Key Structure
 
