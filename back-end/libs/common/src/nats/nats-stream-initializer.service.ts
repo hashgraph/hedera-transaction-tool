@@ -1,13 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
-import {
-  JetStreamManager,
-  RetentionPolicy,
-  StorageType,
-  StreamConfig,
-} from 'nats';
+import { DiscardPolicy, JetStreamManager, NatsError, RetentionPolicy, StorageType, StreamConfig } from 'nats';
 import { NatsJetStreamService } from './nats-jetstream.service';
-import { NatsError } from 'nats/lib/nats-base-client/core';
-import { DiscardPolicy } from 'nats/lib/jetstream/jsapi_types';
 
 const MAX_RETRY_DELAY_MS = 30_000;
 const INITIAL_RETRY_DELAY_MS = 2_000;
