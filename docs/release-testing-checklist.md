@@ -11,7 +11,6 @@ Failures in any of these will block the release.
 
 **3. Settings**
 - [ ] 3.2.15 User can import encrypted private key
-- [ ] 3.2.18 User can import external private key for missing key
 
 ## Tier 2 — High Priority (Should Pass)
 

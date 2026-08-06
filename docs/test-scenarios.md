@@ -141,10 +141,10 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 3.2.12 | User can import ECDSA private key with nickname                                                | Yes       | Verify user can import ECDSA key                                       |
 | 3.2.13 | User can import ED25519 private key with nickname                                              | Yes       | Verify user can import ED25519 keys                                    |
 | 3.2.14 | Imported key shows correct key type                                                            | Yes       | Verify user can import ECDSA key / Verify user can import ED25519 keys |
-| 3.2.15 | User can import encrypted private key                                                          | No        |                                                                        |
+| 3.2.15 | User can import encrypted private key                                                          | Skipped   | Verify user can import encrypted private key (3.2.15)                  |
 | 3.2.16 | Missing keys (org only) show restore button                                                    | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.17 | User can restore missing key from recovery phrase                                              | Yes       | Verify user can restore missing keys when doing account recovery       |
-| 3.2.18 | User can import external private key for missing key                                           | No        |                                                                        |
+| 3.2.18 | User can import external private key for missing key                                           | Yes       | Verify user can import external private key for missing key (3.2.18)  |
 | 3.2.19 | Importing a private key that already exists in key store shows `Key pair already exists` error | Yes       | Verify duplicate private key import shows an error                     |
 | 3.2.20 | Importing a private key that doesn't match the expected public key shows error                 | N/A       | Not reachable via UI — the renderer error path lives in `ImportExternalPrivateKeyModal.vue:62`, which is only opened from `KeysTab.handleRestoreMissingKey` when `keyPair.index === undefined`. The org backend stores `UserKey.index` as `nullable: true`, so external missing keys come back over the wire as `index: null`, and the renderer's strict `!== undefined` check sends them to `RESTORE_MISSING_KEYS` (mnemonic flow) instead of the import modal |
 | 3.2.21 | Wrong app password when viewing private key shows `Failed to decrypt private key` error        | Yes       | Verify wrong app password blocks private key decryption                |
@@ -916,7 +916,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ------------------------------- | --------------- | ------------- | ------------------------ | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
 | 1. Registration                 | 22              | 14            | 6                        | 0       | 0       | 2        | 0       | 91%        | 91%                     |
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 3. Settings                     | 78              | 60            | 14                       | 0       | 0       | 3        | 1       | 95%        | 95%                     |
+| 3. Settings                     | 78              | 61            | 14                       | 0       | 1       | 1        | 1       | 96%        | 97%                     |
 | 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
 | 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
 | 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
@@ -929,16 +929,16 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **70**                   | **3**   | **5**   | **27**   | **2**   | **93%**    | **94%**                 |
+| **Total**                       | **472**         | **366**       | **70**                   | **3**   | **6**   | **25**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 472 = 92.79%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3) / 472 = 93.01%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 472 = 93.85%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3 + 6) / 472 = 94.28%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -961,8 +961,7 @@ These scenarios are security-critical. A failure in any of these should block th
 
 | Area               | Scenario # | Description                                            | Why Critical                                               |
 | ------------------ | ---------- | ------------------------------------------------------ |------------------------------------------------------------|
-| **Key Management** | 3.2.15     | Import encrypted private key                           | Security-critical key operation with no automated coverage |
-| **Key Management** | 3.2.18     | Import external private key for a missing key          | Security-critical key operation with no automated coverage |
+| **Key Management** | 3.2.15     | Import encrypted private key                           | Security-critical key operation; test exists but is skipped (native OS file-picker cannot be driven by Playwright) |
 
 #### Tier 2 - High Priority (Should Pass)
 
