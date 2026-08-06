@@ -327,8 +327,8 @@ export class CacheManagementService {
   private extractAffectedCount(result: any): number {
     if (result == null) return 0;
     if (typeof result === 'number') return result;
-    if (result.affectedRows) return result.affectedRows;
-    if (result.rowCount) return result.rowCount;
+    if (typeof result.affectedRows === 'number') return result.affectedRows;
+    if (typeof result.rowCount === 'number') return result.rowCount;
     if (Array.isArray(result) && typeof result[1] === 'number') return result[1];
     if (Array.isArray(result) && typeof result[1]?.affectedRows === 'number')
       return result[1].affectedRows;
