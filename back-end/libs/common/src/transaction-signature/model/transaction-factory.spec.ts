@@ -3,13 +3,6 @@ import { TokenBurnTransaction, TransferTransaction } from '@hiero-ledger/sdk';
 import * as Models from '.';
 import { TransferTransactionModel } from '.';
 
-// Mock getTransactionType so we can control it
-jest.mock('@app/common', () => ({
-  getTransactionType: jest.fn(),
-}));
-
-// const mockedGetTransactionType = getTransactionType as jest.Mock;
-
 describe('TransactionFactory', () => {
   it('should have all models with a TRANSACTION_TYPE', () => {
     Object.values(Models).forEach((Model: any) => {
