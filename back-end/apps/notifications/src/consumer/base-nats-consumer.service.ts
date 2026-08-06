@@ -1,9 +1,8 @@
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { NatsJetStreamService } from '@app/common/nats/nats-jetstream.service';
-import { AckPolicy, Consumer, ConsumerMessages, DeliverPolicy, JsMsg } from 'nats';
+import { AckPolicy, Consumer, ConsumerMessages, DeliverPolicy, JsMsg, NatsError } from 'nats';
 import { ClassConstructor } from 'class-transformer';
 import { MessageValidator } from './message-validator.util';
-import { AxiosError } from 'axios';
 
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const INITIAL_RECONNECT_DELAY_MS = 1_000;
@@ -20,7 +19,7 @@ export interface ConsumerConfig {
   maxMessages?: number;
 }
 
-export interface MessageHandler<T = any> {
+export interface MessageHandler<T = never> {
   subject: string;
   handler: (data: T | T[]) => Promise<void>;
   dtoClass: ClassConstructor<T>;
@@ -216,7 +215,7 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       this.logger.log(`Consumer ${consumerConfig.durable_name} updated`);
     } catch (err) {
       const errMessage = err instanceof Error ? err.message : null;
-      const errCode = err instanceof AxiosError ? err.code : null;
+      const errCode = err instanceof NatsError ? err.code : null;
       if (errMessage?.includes('consumer not found') || errCode === '404') {
         await jsm.consumers.add(streamName, consumerConfig);
         this.logger.log(`Consumer ${consumerConfig.durable_name} created`);
