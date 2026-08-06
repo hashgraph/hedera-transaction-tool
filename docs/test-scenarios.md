@@ -141,7 +141,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 3.2.12 | User can import ECDSA private key with nickname                                                | Yes       | Verify user can import ECDSA key                                       |
 | 3.2.13 | User can import ED25519 private key with nickname                                              | Yes       | Verify user can import ED25519 keys                                    |
 | 3.2.14 | Imported key shows correct key type                                                            | Yes       | Verify user can import ECDSA key / Verify user can import ED25519 keys |
-| 3.2.15 | User can import encrypted private key                                                          | Skipped   | Verify user can import encrypted private key (3.2.15)                  |
+| 3.2.15 | User can import encrypted private key                                                          | Yes       | Verify user can import encrypted private key (3.2.15)                  |
 | 3.2.16 | Missing keys (org only) show restore button                                                    | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.17 | User can restore missing key from recovery phrase                                              | Yes       | Verify user can restore missing keys when doing account recovery       |
 | 3.2.18 | User can import external private key for missing key                                           | Yes       | Verify user can import external private key for missing key (3.2.18)  |
@@ -916,7 +916,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | ------------------------------- | --------------- | ------------- | ------------------------ | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
 | 1. Registration                 | 22              | 14            | 6                        | 0       | 0       | 2        | 0       | 91%        | 91%                     |
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 3. Settings                     | 78              | 61            | 14                       | 0       | 1       | 1        | 1       | 96%        | 97%                     |
+| 3. Settings                     | 78              | 62            | 14                       | 0       | 0       | 1        | 1       | 97%        | 97%                     |
 | 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
 | 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
 | 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
@@ -929,16 +929,16 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **366**       | **70**                   | **3**   | **6**   | **25**   | **2**   | **93%**    | **94%**                 |
+| **Total**                       | **472**         | **367**       | **70**                   | **3**   | **5**   | **25**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3) / 472 = 93.01%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(367 + 70 + 3) / 472 = 93.22%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3 + 6) / 472 = 94.28%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(367 + 70 + 3 + 5) / 472 = 94.28%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -954,14 +954,6 @@ These scenarios must be verified for every release and cannot be automated in CI
 | ---------------- | ---------- | ----------------------------------------------------- | ------------------------------------------------------------------- |
 | **Installation** | 15.2.1     | Install app from signed .pkg artifact                 | Validates the installer and code signing are functional             |
 | **Installation** | 15.2.2     | Upgrade from previous version using in-app update     | Validates the auto-updater and zip-based update flow end-to-end     |
-
-#### Tier 1 - Release Blockers (Must Pass)
-
-These scenarios are security-critical. A failure in any of these should block the release.
-
-| Area               | Scenario # | Description                                            | Why Critical                                               |
-| ------------------ | ---------- | ------------------------------------------------------ |------------------------------------------------------------|
-| **Key Management** | 3.2.15     | Import encrypted private key                           | Security-critical key operation; test exists but is skipped (native OS file-picker cannot be driven by Playwright) |
 
 #### Tier 2 - High Priority (Should Pass)
 

@@ -1,8 +1,15 @@
+import * as path from 'path';
+import * as url from 'url';
 import { expect, test } from '@playwright/test';
 import { PrivateKey } from '@hiero-ledger/sdk';
 import { generateECDSAKeyPair, generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
 import { insertLocalOrganization } from '../../utils/db/databaseQueries.js';
+import { setDialogMockState } from '../../utils/runtime/dialogMocks.js';
 import { setupSettingsKeysSuite } from '../helpers/fixtures/settingsKeysSuite.js';
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+const ENCRYPTED_TEST_KEY_PATH = path.resolve(__dirname, '../../data/encrypted-test-key.pem');
+const ENCRYPTED_TEST_KEY_PASSWORD = 'TestPassword123!';
 
 test.describe('Settings keys import tests @local-basic', () => {
   const suite = setupSettingsKeysSuite();
@@ -81,17 +88,32 @@ test.describe('Settings keys import tests @local-basic', () => {
   });
 
   test('Verify user can import encrypted private key (3.2.15)', async () => {
+    // Pre-load the dialog mock so that clicking "Browse" returns our test PEM
+    // instead of opening the native OS file picker.
+    await setDialogMockState(suite.settingsPage.window, {
+      openPaths: [ENCRYPTED_TEST_KEY_PATH],
+    });
+
     await suite.settingsPage.clickOnKeysTab();
     await suite.settingsPage.clickOnImportButton();
     await suite.settingsPage.clickOnEncryptedKeysDropDown();
 
-    // Assert the modal opens with the correct heading before stopping
     const heading = await suite.settingsPage.getEncryptedKeysModalHeading();
     expect(heading).toBe('Import encrypted keys');
 
-    // The next step requires clicking "Browse" (button-encrypted-keys-folder-import) which
-    // triggers a native OS file-picker dialog that Playwright cannot drive.
-    test.skip(true, 'Selecting a file or folder uses a native OS dialog that cannot be automated with Playwright');
+    // Click Browse — the IPC handler returns the mocked path, triggering the file
+    // search which discovers the .pem fixture and populates the key list.
+    await suite.settingsPage.clickBrowseForEncryptedKeys();
+
+    // Wait for the Import button to become active (search complete, key selected).
+    await suite.settingsPage.clickImportEncryptedKeysButton();
+
+    // DecryptKeyModal appears — enter the known password and submit.
+    await suite.settingsPage.enterDecryptPassword(ENCRYPTED_TEST_KEY_PASSWORD);
+    await suite.settingsPage.clickDecryptButton();
+
+    const toastMessage = await suite.registrationPage.getToastMessage();
+    expect(toastMessage).toBe('Keys imported successfully');
   });
 
   test('Verify user can import external private key for missing key (3.2.18)', async () => {

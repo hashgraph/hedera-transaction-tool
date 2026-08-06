@@ -272,6 +272,7 @@ watch(
               color="primary"
               type="submit"
               class="min-w-unset"
+              data-testid="button-decrypt-key"
               :disabled="decryptPassword.trim().length === 0 || decrypting"
               :loading="decrypting"
               loading-text="Decrypting..."

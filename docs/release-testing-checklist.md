@@ -9,9 +9,6 @@ Failures in any of these will block the release.
 - [ ] Upgrade app from a previous version using the in-app upgrade process
 - [ ] Install app on signing laptop and verify basic signing workflow
 
-**3. Settings**
-- [ ] 3.2.15 User can import encrypted private key
-
 ## Tier 2 — High Priority (Should Pass)
 
 **1. Registration**

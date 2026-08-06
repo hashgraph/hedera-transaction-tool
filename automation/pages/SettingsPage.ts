@@ -57,6 +57,10 @@ export class SettingsPage extends BasePage {
   ed25519ImportLinkSelector = 'link-import-ed25519-key';
   ecdsaImportLinkSelector = 'link-import-ecdsa-key';
   encryptedKeysImportLinkSelector = 'link-import-encrypted-key';
+  browseFolderImportButtonSelector = 'button-encrypted-keys-folder-import';
+  importEncryptedKeysButtonSelector = 'button-import-encrypted-keys';
+  decryptKeyPasswordInputSelector = 'input-decrypt-keys-password';
+  decryptKeyButtonSelector = 'button-decrypt-key';
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
   restoreKeyButtonPrefix = 'button-restore-key-';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
@@ -452,6 +456,23 @@ export class SettingsPage extends BasePage {
   async getEncryptedKeysModalHeading(): Promise<string> {
     const locator = this.window.locator('h3:has-text("Import encrypted keys")');
     return ((await locator.textContent()) ?? '').trim();
+  }
+
+  async clickBrowseForEncryptedKeys(): Promise<void> {
+    await this.click(this.browseFolderImportButtonSelector);
+  }
+
+  async clickImportEncryptedKeysButton(): Promise<void> {
+    await this.clickButtonWhenEnabled(this.importEncryptedKeysButtonSelector);
+  }
+
+  async enterDecryptPassword(password: string): Promise<void> {
+    await this.waitForElementToBeVisible(this.decryptKeyPasswordInputSelector);
+    await this.fill(this.decryptKeyPasswordInputSelector, password);
+  }
+
+  async clickDecryptButton(): Promise<void> {
+    await this.clickButtonWhenEnabled(this.decryptKeyButtonSelector);
   }
 
   /**
