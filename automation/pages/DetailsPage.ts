@@ -367,6 +367,37 @@ export class DetailsPage extends BasePage {
     return this.getElement(`${this.breadCrumbItemSelector}${index}`);
   }
 
+  // Signature status panel
+  signaturesCollectedHeadingSelector = 'text=Signatures Collected';
+
+  keyCheckmarkSelector(depth: number, index: number): string {
+    return `span-checkmark-public-key-${depth}-${index}`;
+  }
+
+  async isSignaturesCollectedPanelVisible() {
+    return await this.isElementVisible(
+      this.signaturesCollectedHeadingSelector,
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async isKeySignedAtPosition(depth: number, index: number) {
+    return await this.isElementVisible(
+      this.keyCheckmarkSelector(depth, index),
+      null,
+      this.LONG_TIMEOUT,
+    );
+  }
+
+  async isKeyNotSignedAtPosition(depth: number, index: number) {
+    return await this.isElementHidden(
+      this.keyCheckmarkSelector(depth, index),
+      null,
+      this.SHORT_TIMEOUT,
+    );
+  }
+
   private async getHistoryRowCount() {
     return await this.getElement(this.historyRowsSelector).count();
   }

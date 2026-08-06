@@ -2,6 +2,8 @@ import { expect, Page, test } from '@playwright/test';
 import { OrganizationPage, UserDetails } from '../../pages/OrganizationPage.js';
 import { LoginPage } from '../../pages/LoginPage.js';
 import { TransactionPage } from '../../pages/TransactionPage.js';
+import { DetailsPage } from '../../pages/DetailsPage.js';
+import { signTransactionByAllUsersViaApi } from '../../utils/api/signByAllUsersViaApi.js';
 import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
 import { registerOrganizationAdvancedSuiteHooks } from '../helpers/bootstrap/organizationAdvancedSuiteHooks.js';
 
@@ -11,6 +13,7 @@ let globalCredentials = { email: '', password: '' };
 let transactionPage: TransactionPage;
 let organizationPage: OrganizationPage;
 let loginPage: LoginPage;
+let detailsPage: DetailsPage;
 
 let firstUser: UserDetails;
 let complexKeyAccountId: string;
@@ -22,6 +25,7 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     resolveOrganizationNickname,
     onSuiteReady: suite => {
       ({ window, loginPage, transactionPage, organizationPage } = suite);
+      detailsPage = new DetailsPage(window);
     },
     getPages: () => ({ window, loginPage, transactionPage, organizationPage }),
     onFixtureReady: fixture => {
@@ -168,5 +172,40 @@ test.describe('Organization Transaction status/signing lifecycle tests @organiza
     await organizationPage.waitForSuccessfulHistoryTransaction(secondTxId ?? '', validStart);
     await organizationPage.clickOnHistoryDetailsButtonByTransactionId(txId ?? '');
     expect(await organizationPage.isNextTransactionButtonVisible()).toBe(true);
+  });
+
+  test('Verify signature status panel shows required vs completed signatures (6.3.4)', async () => {
+    // Create an account-update transaction without the creator providing their key signature.
+    // The complex account key requires all three org users to sign (users[0] at depth 0-0,
+    // plus threshold-2-of-2 at depth 1: users[1] at 1-0 and users[2] at 1-1), so the
+    // transaction lands in "Ready to Sign" for the current user.
+    const { txId } = await organizationPage.updateAccount(
+      complexKeyAccountId,
+      'sig-status',
+      600,
+      false,
+    );
+
+    // Navigate to transaction details — no signatures submitted yet.
+    await organizationPage.openReadyToSignDetailsForTransaction(txId ?? '');
+
+    // The "Signatures Collected" panel must be visible for org transactions.
+    expect(await detailsPage.isSignaturesCollectedPanelVisible()).toBe(true);
+
+    // Before anyone signs, the first threshold-group checkmark (depth=1, index=0) must be absent.
+    expect(await detailsPage.isKeyNotSignedAtPosition(1, 0)).toBe(true);
+
+    // Sign with one threshold member (users[1]) via API only — users[0] and users[2] have not signed.
+    await signTransactionByAllUsersViaApi(
+      [organizationPage.users[0], organizationPage.users[1]],
+      txId ?? '',
+    );
+
+    // Navigate back to transaction details to pick up the updated signature state.
+    // The transaction is still in "Ready to Sign" for the current user (users[0] has not signed yet).
+    await organizationPage.openReadyToSignDetailsForTransaction(txId ?? '');
+
+    // After users[1] signed, their checkmark at depth=1, index=0 must now be visible.
+    expect(await detailsPage.isKeySignedAtPosition(1, 0)).toBe(true);
   });
 });
