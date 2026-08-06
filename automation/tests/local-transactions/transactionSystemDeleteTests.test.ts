@@ -36,6 +36,7 @@ test.describe('Transaction system delete and undelete tests @local-transactions'
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
     await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnSystemLink();
     await transactionPage.clickOnSystemDeleteTransaction();
 
     await expect(
@@ -57,6 +58,7 @@ test.describe('Transaction system delete and undelete tests @local-transactions'
     await transactionPage.clickOnTransactionsMenuButton();
     await transactionPage.closeDraftModal();
     await transactionPage.clickOnCreateNewTransactionButton();
+    await transactionPage.clickOnSystemLink();
     await transactionPage.clickOnSystemUndeleteTransaction();
 
     await expect(

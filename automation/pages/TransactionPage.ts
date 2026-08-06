@@ -83,6 +83,7 @@ export class TransactionPage extends BasePage {
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
   fileServiceLinkSelector = 'menu-link-file';
+  systemLinkSelector = 'menu-link-system';
   createAccountSublinkSelector = 'menu-sub-link-accountcreatetransaction';
   updateAccountSublinkSelector = 'menu-sub-link-accountupdatetransaction';
   deleteAccountSublinkSelector = 'menu-sub-link-accountdeletetransaction';
@@ -397,6 +398,10 @@ export class TransactionPage extends BasePage {
   async clickOnAppendFileSublink() {
     await this.click(this.appendFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
+  }
+
+  async clickOnSystemLink(): Promise<void> {
+    await this.click(this.systemLinkSelector);
   }
 
   async clickOnSystemDeleteTransaction(): Promise<void> {
