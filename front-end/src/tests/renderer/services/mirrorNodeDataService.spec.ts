@@ -23,7 +23,12 @@ vi.mock('@renderer/utils/logger', () => ({
   }),
 }));
 
-import { getNodeInfo } from '@renderer/services/mirrorNodeDataService';
+import {
+  getNodeInfo,
+  getAccountsByPublicKey,
+  getExchangeRateSet,
+  getNetworkNodes,
+} from '@renderer/services/mirrorNodeDataService';
 
 // A minimal node payload from the mirror node — only the fields getNodeInfo
 // reads explicitly. Any field this test doesn't override is null so the parser
@@ -84,5 +89,37 @@ describe('mirrorNodeDataService.getNodeInfo — associated_registered_nodes', ()
     mockNodesResponse(nodePayload({ associated_registered_nodes: [] }));
     const info = await getNodeInfo(3, 'https://mirror.example');
     expect(info?.associated_registered_nodes).toEqual([]);
+  });
+});
+
+describe('mirrorNodeDataService — network errors (14.4.3)', () => {
+  const NETWORK_ERROR = new Error('connect ECONNREFUSED 127.0.0.1:443');
+
+  beforeEach(() => {
+    axiosGet.mockReset();
+  });
+
+  test('getAccountsByPublicKey returns empty array when Mirror Node is unreachable', async () => {
+    axiosGet.mockRejectedValueOnce(NETWORK_ERROR);
+    const result = await getAccountsByPublicKey('https://mirror.example', 'somepublickey');
+    expect(result).toEqual([]);
+  });
+
+  test('getExchangeRateSet returns null when Mirror Node is unreachable', async () => {
+    axiosGet.mockRejectedValueOnce(NETWORK_ERROR);
+    const result = await getExchangeRateSet('https://mirror.example');
+    expect(result).toBeNull();
+  });
+
+  test('getNetworkNodes returns empty array when Mirror Node is unreachable', async () => {
+    axiosGet.mockRejectedValueOnce(NETWORK_ERROR);
+    const result = await getNetworkNodes('https://mirror.example');
+    expect(result).toEqual([]);
+  });
+
+  test('getNodeInfo returns null when Mirror Node is unreachable', async () => {
+    axiosGet.mockRejectedValueOnce(NETWORK_ERROR);
+    const result = await getNodeInfo(3, 'https://mirror.example');
+    expect(result).toBeNull();
   });
 });
