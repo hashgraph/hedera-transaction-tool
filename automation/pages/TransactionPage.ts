@@ -92,6 +92,8 @@ export class TransactionPage extends BasePage {
   updateFileSublinkSelector = 'menu-sub-link-fileupdatetransaction';
   readFileSublinkSelector = 'menu-sub-link-filecontentsquery';
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
+  systemDeleteSublinkSelector = 'menu-sub-link-systemdeletetransaction';
+  systemUndeleteSublinkSelector = 'menu-sub-link-systemundeletetransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   singleTabSelector = 'tab-single';
@@ -395,6 +397,14 @@ export class TransactionPage extends BasePage {
   async clickOnAppendFileSublink() {
     await this.click(this.appendFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
+  }
+
+  async clickOnSystemDeleteTransaction(): Promise<void> {
+    await this.click(this.systemDeleteSublinkSelector);
+  }
+
+  async clickOnSystemUndeleteTransaction(): Promise<void> {
+    await this.click(this.systemUndeleteSublinkSelector);
   }
 
   private async logPayerOnFirstCreateTransactionScreen() {
