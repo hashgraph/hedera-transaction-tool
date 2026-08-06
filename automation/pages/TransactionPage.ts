@@ -93,6 +93,8 @@ export class TransactionPage extends BasePage {
   readFileSublinkSelector = 'menu-sub-link-filecontentsquery';
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
   freezeSublinkSelector = 'menu-sub-link-freezetransaction';
+  nodeLinkSelector = 'menu-link-node';
+  freezeTypeSelectSelector = 'select-freeze-type';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   singleTabSelector = 'tab-single';
@@ -398,8 +400,17 @@ export class TransactionPage extends BasePage {
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
+  async clickOnNodeLink(): Promise<void> {
+    await this.click(this.nodeLinkSelector);
+  }
+
   async clickOnFreezeTransaction(): Promise<void> {
+    await this.clickOnNodeLink();
     await this.click(this.freezeSublinkSelector);
+  }
+
+  async selectFreezeType(value: string): Promise<void> {
+    await this.selectOptionByValue(this.freezeTypeSelectSelector, value);
   }
 
   private async logPayerOnFirstCreateTransactionScreen() {

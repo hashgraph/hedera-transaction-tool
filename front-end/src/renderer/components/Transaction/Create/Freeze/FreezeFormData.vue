@@ -40,6 +40,7 @@ const columnClass = 'col-4 col-xxxl-3';
       <label class="form-label">Freeze Type<span class="text-danger">*</span></label>
       <select
         class="form-select is-fill"
+        data-testid="select-freeze-type"
         :value="data.freezeType"
         @change="
           $emit('update:data', {

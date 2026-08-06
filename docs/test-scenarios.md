@@ -427,7 +427,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                  | Automated | Covered By |
 | ------ | ----------------------------------------- | --------- | ---------- |
-| 5.12.1 | User can create a Freeze transaction      | No        |            |
+| 5.12.1 | User can create a Freeze transaction      | Yes       | Verify user can create a Freeze transaction |
 | 5.12.2 | User can create a Node Create transaction | No        |            |
 | 5.12.3 | User can create a Node Update transaction | No        |            |
 | 5.12.4 | User can create a Node Delete transaction | No        |            |
@@ -918,7 +918,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 3. Settings                     | 78              | 60            | 14                       | 0       | 0       | 3        | 1       | 95%        | 95%                     |
 | 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
-| 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
+| 5. Transaction Creation         | 101             | 93            | 0                        | 0       | 1       | 6        | 1       | 92%        | 93%                     |
 | 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
 | 7. Transaction Groups           | 39              | 29            | 5                        | 0       | 0       | 5        | 0       | 87%        | 87%                     |
 | 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
@@ -929,16 +929,16 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **70**                   | **3**   | **5**   | **27**   | **2**   | **93%**    | **94%**                 |
+| **Total**                       | **472**         | **366**       | **70**                   | **3**   | **5**   | **26**   | **2**   | **93%**    | **94%**                 |
 
 The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
 The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3) / 472 = 92.79%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3) / 472 = 93.01%`, rounded to `93%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 70 + 3 + 5) / 472 = 93.85%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(366 + 70 + 3 + 5) / 472 = 94.07%`, rounded to `94%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
