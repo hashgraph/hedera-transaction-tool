@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core';
 import { ExtractJwt } from 'passport-jwt';
 
-import { IGNORE_CONTROLLER_GUARD } from '../decorators/ignore-controller-guard.decorator';
+import { IGNORE_CONTROLLER_GUARD } from '../decorators';
 
 import { BlacklistService } from '@app/common';
 
