@@ -35,8 +35,6 @@ Failures in any of these will block the release.
 ## Tier 3 — Medium Priority (Verify When Changed)
 
 **5. Transaction Creation**
-- [ ] 5.11.3 System Delete transaction
-- [ ] 5.11.4 System Undelete transaction
 - [ ] 5.12.1 User can create a Freeze transaction
 - [ ] 5.12.2 User can create a Node Create transaction
 - [ ] 5.12.3 User can create a Node Update transaction
