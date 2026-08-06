@@ -83,6 +83,7 @@ export class TransactionPage extends BasePage {
   accountsMenuButtonSelector = 'button-menu-accounts';
   createNewTransactionButtonSelector = 'button-create-new';
   fileServiceLinkSelector = 'menu-link-file';
+  nodeServiceLinkSelector = 'menu-link-node';
   createAccountSublinkSelector = 'menu-sub-link-accountcreatetransaction';
   updateAccountSublinkSelector = 'menu-sub-link-accountupdatetransaction';
   deleteAccountSublinkSelector = 'menu-sub-link-accountdeletetransaction';
@@ -92,6 +93,9 @@ export class TransactionPage extends BasePage {
   updateFileSublinkSelector = 'menu-sub-link-fileupdatetransaction';
   readFileSublinkSelector = 'menu-sub-link-filecontentsquery';
   appendFileSublinkSelector = 'menu-sub-link-fileappendtransaction';
+  nodeCreateSublinkSelector = 'menu-sub-link-nodecreatetransaction';
+  nodeUpdateSublinkSelector = 'menu-sub-link-nodeupdatetransaction';
+  nodeDeleteSublinkSelector = 'menu-sub-link-nodedeletetransaction';
   saveDraftButtonSelector = 'button-save-draft';
   signAndSubmitButtonSelector = 'button-header-create';
   singleTabSelector = 'tab-single';
@@ -395,6 +399,18 @@ export class TransactionPage extends BasePage {
   async clickOnAppendFileSublink() {
     await this.click(this.appendFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
+  }
+
+  async clickOnNodeCreateTransaction(): Promise<void> {
+    await this.click(this.nodeCreateSublinkSelector);
+  }
+
+  async clickOnNodeUpdateTransaction(): Promise<void> {
+    await this.click(this.nodeUpdateSublinkSelector);
+  }
+
+  async clickOnNodeDeleteTransaction(): Promise<void> {
+    await this.click(this.nodeDeleteSublinkSelector);
   }
 
   private async logPayerOnFirstCreateTransactionScreen() {
@@ -1470,6 +1486,10 @@ export class TransactionPage extends BasePage {
 
   async clickOnFileServiceLink() {
     await this.click(this.fileServiceLinkSelector);
+  }
+
+  async clickOnNodeServiceLink() {
+    await this.click(this.nodeServiceLinkSelector);
   }
 
   async fillInFileIdForRead(fileId: string) {
