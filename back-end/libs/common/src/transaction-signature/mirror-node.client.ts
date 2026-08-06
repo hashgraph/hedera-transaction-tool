@@ -152,7 +152,9 @@ export class MirrorNodeClient {
 
       if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
         const errorStatus =
-          error instanceof HttpException ? error.getStatus() : HttpStatus.SERVICE_UNAVAILABLE;
+          error instanceof AxiosError && typeof error.response?.status === 'number'
+            ? error.response.status
+            : HttpStatus.SERVICE_UNAVAILABLE;
         this.logger.error(`Request failed after ${attempt} attempt(s) for ${url}: ${errorMessage}`);
         throw new HttpException(`Mirror node request failed: ${errorMessage}`, errorStatus);
       }
@@ -174,7 +176,7 @@ export class MirrorNodeClient {
   private calculateBackoffDelay(attempt: number): number {
     const exponentialDelay = Math.min(
       RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1),
-      RETRY_CONFIG.MAX_DELAY_MS
+      RETRY_CONFIG.MAX_DELAY_MS,
     );
 
     // Add jitter (±25% randomization) to prevent thundering herd
@@ -202,9 +204,7 @@ export class MirrorNodeClient {
     }
 
     // Retry on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
-    if (error.code === 'ECONNREFUSED' ||
-      error.code === 'ETIMEDOUT' ||
-      error.code === 'ENOTFOUND') {
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
       return true;
     }
 
@@ -216,10 +216,7 @@ export class MirrorNodeClient {
     return `${MirrorNodeREST.fromBaseURL(mirrorNetwork)}${this.endpointPrefix}`;
   }
 
-  private async getMirrorNodeData<T>(
-    url: string,
-    etag?: string,
-  ): Promise<HttpResult<T>> {
+  private async getMirrorNodeData<T>(url: string, etag?: string): Promise<HttpResult<T>> {
     const headers: Record<string, string> = {};
     if (etag) {
       headers['If-None-Match'] = etag;
@@ -228,7 +225,7 @@ export class MirrorNodeClient {
     try {
       const response = await this.httpService.axiosRef.get<T>(url, {
         headers,
-        validateStatus: (status) =>
+        validateStatus: status =>
           status === HTTP_STATUS.OK ||
           // only accept NOT_MODIFIED if we actually sent an ETag
           (etag != null && status === HTTP_STATUS.NOT_MODIFIED),
