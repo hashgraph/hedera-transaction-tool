@@ -105,9 +105,10 @@ describe('Services Local User Key Pairs', () => {
       const password = 'password';
       const encrypted = false;
 
-      vi.mocked(encrypt).mockReturnValue('encrypted');
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('encrypted'));
 
       await storeKeyPair(keyPair, password, encrypted);
+
 
       expect(prisma.keyPair.create).toHaveBeenCalledWith({
         data: {
@@ -162,7 +163,7 @@ describe('Services Local User Key Pairs', () => {
       const password = 'password';
       const encrypted = false;
 
-      vi.mocked(encrypt).mockReturnValue('encrypted');
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('encrypted'));
 
       await expect(storeKeyPair(keyPair, password, encrypted)).rejects.toThrow('Error');
 
@@ -182,8 +183,8 @@ describe('Services Local User Key Pairs', () => {
       const newPassword = 'password2';
       const keyPairs: KeyPair[] = [{ ...keyPair }];
 
-      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
-      vi.mocked(encrypt).mockReturnValue('encryptedPrivateKey2');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve('decryptedPrivateKey'));
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('encryptedPrivateKey2'));
       prisma.keyPair.findMany.mockResolvedValue(keyPairs);
 
       await changeDecryptionPassword(userId, oldPassword, newPassword);
@@ -206,7 +207,7 @@ describe('Services Local User Key Pairs', () => {
       const password = 'password1';
 
       prisma.keyPair.findFirst.mockResolvedValue(keyPair);
-      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve('decryptedPrivateKey'));
 
       const result = await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
 
@@ -274,8 +275,8 @@ describe('Services Local User Key Pairs', () => {
 
       prisma.keyPair.findFirst.mockResolvedValue(keyPair);
       vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
-      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
-      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve('decryptedPrivateKey'));
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('v2:reEncrypted'));
       vi.mocked(isLegacyBlob).mockReturnValueOnce(true);
 
       const result = await decryptPrivateKey(keyPair.user_id, password, keyPair.public_key);
@@ -292,8 +293,8 @@ describe('Services Local User Key Pairs', () => {
 
       prisma.keyPair.findFirst.mockResolvedValue(keyPair);
       vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
-      vi.mocked(decrypt).mockReturnValue('decryptedPrivateKey');
-      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve('decryptedPrivateKey'));
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('v2:reEncrypted'));
       vi.mocked(isLegacyBlob).mockReturnValueOnce(true);
       prisma.keyPair.updateMany.mockRejectedValueOnce(new Error('DB error'));
 

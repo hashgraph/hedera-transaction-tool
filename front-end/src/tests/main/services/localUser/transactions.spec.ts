@@ -214,7 +214,7 @@ describe('Services Local User Transactions', () => {
       );
       vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
       vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
-      vi.mocked(decrypt).mockImplementation((_privateKey, password) => {
+      vi.mocked(decrypt).mockImplementation(async (_privateKey, password) => {
         expect(password).toBe(userPassword);
         return decryptedPrivateKeys[count++];
       });
@@ -338,7 +338,7 @@ describe('Services Local User Transactions', () => {
         () => 'ED25519' as unknown as SDK.PrivateKey,
       );
       vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
-      vi.mocked(decrypt).mockImplementation((privateKey, password) => {
+      vi.mocked(decrypt).mockImplementation(async (privateKey, password) => {
         expect(password).toBe(userPassword);
         return decryptedPrivateKeys[keyPairs.findIndex(kp => kp.private_key === privateKey)];
       });

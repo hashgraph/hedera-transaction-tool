@@ -1,6 +1,24 @@
-import { Transaction } from '@hiero-ledger/sdk';
+import {
+  AccountAllowanceApproveTransaction,
+  AccountCreateTransaction,
+  AccountDeleteTransaction,
+  AccountUpdateTransaction,
+  FileAppendTransaction,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  FreezeTransaction,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
+  RegisteredNodeCreateTransaction,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
+  SystemDeleteTransaction,
+  SystemUndeleteTransaction,
+  Transaction,
+  TransferTransaction,
+} from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
-import { getTransactionType } from '@app/common';
 import { AccountAllowanceApproveTransactionModel } from './account-allowance-approve-transaction.model';
 import { AccountCreateTransactionModel } from './account-create-transaction.model';
 import { AccountDeleteTransactionModel } from './account-delete-transaction.model';
@@ -19,41 +37,48 @@ import { SystemDeleteTransactionModel } from './system-delete-transaction.model'
 import { SystemUndeleteTransactionModel } from './system-undelete-transaction.model';
 import { TransferTransactionModel } from './transfer-transaction.model';
 
-type TxModelCtor = new (tx: Transaction) => TransactionBaseModel<any>;
-
-const TRANSACTION_MODEL_MAP = new Map<string, TxModelCtor>([
-  ['AccountAllowanceApproveTransaction', AccountAllowanceApproveTransactionModel],
-  ['AccountCreateTransaction', AccountCreateTransactionModel],
-  ['AccountDeleteTransaction', AccountDeleteTransactionModel],
-  ['AccountUpdateTransaction', AccountUpdateTransactionModel],
-  ['FileAppendTransaction', FileAppendTransactionModel],
-  ['FileCreateTransaction', FileCreateTransactionModel],
-  ['FileUpdateTransaction', FileUpdateTransactionModel],
-  ['FreezeTransaction', FreezeTransactionModel],
-  ['NodeCreateTransaction', NodeCreateTransactionModel],
-  ['NodeDeleteTransaction', NodeDeleteTransactionModel],
-  ['NodeUpdateTransaction', NodeUpdateTransactionModel],
-  ['RegisteredNodeCreateTransaction', RegisteredNodeCreateTransactionModel],
-  ['RegisteredNodeUpdateTransaction', RegisteredNodeUpdateTransactionModel],
-  ['RegisteredNodeDeleteTransaction', RegisteredNodeDeleteTransactionModel],
-  ['SystemDeleteTransaction', SystemDeleteTransactionModel],
-  ['SystemUndeleteTransaction', SystemUndeleteTransactionModel],
-  ['TransferTransaction', TransferTransactionModel],
-]);
-
 export default class TransactionFactory {
-  static fromTransaction(tx: Transaction): TransactionBaseModel<any> {
-    const type = getTransactionType(tx, true);
-    const Model = TRANSACTION_MODEL_MAP.get(type);
-
-    if (!Model) {
-      throw new Error(`No transaction model registered for type: ${type}`);
+  static fromTransaction(tx: Transaction): TransactionBaseModel<Transaction> {
+    if (tx instanceof AccountCreateTransaction) {
+      return new AccountCreateTransactionModel(tx);
+    } else if (tx instanceof AccountUpdateTransaction) {
+      return new AccountUpdateTransactionModel(tx);
+    } else if (tx instanceof AccountDeleteTransaction) {
+      return new AccountDeleteTransactionModel(tx);
+    } else if (tx instanceof TransferTransaction) {
+      return new TransferTransactionModel(tx);
+    } else if (tx instanceof AccountAllowanceApproveTransaction) {
+      return new AccountAllowanceApproveTransactionModel(tx);
+    } else if (tx instanceof FileCreateTransaction) {
+      return new FileCreateTransactionModel(tx);
+    } else if (tx instanceof FileUpdateTransaction) {
+      return new FileUpdateTransactionModel(tx);
+    } else if (tx instanceof FileAppendTransaction) {
+      return new FileAppendTransactionModel(tx);
+    } else if (tx instanceof FreezeTransaction) {
+      return new FreezeTransactionModel(tx);
+    } else if (tx instanceof NodeCreateTransaction) {
+      return new NodeCreateTransactionModel(tx);
+    } else if (tx instanceof NodeUpdateTransaction) {
+      return new NodeUpdateTransactionModel(tx);
+    } else if (tx instanceof NodeDeleteTransaction) {
+      return new NodeDeleteTransactionModel(tx);
+    } else if (tx instanceof RegisteredNodeCreateTransaction) {
+      return new RegisteredNodeCreateTransactionModel(tx);
+    } else if (tx instanceof RegisteredNodeUpdateTransaction) {
+      return new RegisteredNodeUpdateTransactionModel(tx);
+    } else if (tx instanceof RegisteredNodeDeleteTransaction) {
+      return new RegisteredNodeDeleteTransactionModel(tx);
+    } else if (tx instanceof SystemDeleteTransaction) {
+      return new SystemDeleteTransactionModel(tx);
+    } else if (tx instanceof SystemUndeleteTransaction) {
+      return new SystemUndeleteTransactionModel(tx);
+    } else {
+      throw new Error(`No transaction model registered for type: ${tx.constructor.name}`);
     }
-
-    return new Model(tx);
   }
 
-  static fromBytes(bytes: Buffer): TransactionBaseModel<any> {
+  static fromBytes(bytes: Buffer): TransactionBaseModel<Transaction> {
     return this.fromTransaction(Transaction.fromBytes(bytes));
   }
 }
