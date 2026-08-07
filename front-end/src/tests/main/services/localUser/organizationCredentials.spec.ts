@@ -1028,7 +1028,7 @@ describe('Services Local User Organization Credentials', () => {
       const result = await decryptData(encryptedData, decryptPassword);
 
       expect(decrypt).toHaveBeenCalledWith(encryptedData, decryptPassword);
-      expect(result).toEqual(Promise.resolve(decryptedData));
+      expect(result).toEqual(decryptedData);
     });
 
     test('Should throw error if no decryption method is available', async () => {
