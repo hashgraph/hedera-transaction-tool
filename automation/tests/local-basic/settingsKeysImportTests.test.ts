@@ -1,15 +1,13 @@
-import * as path from 'path';
-import * as url from 'url';
 import { expect, test } from '@playwright/test';
 import { PrivateKey } from '@hiero-ledger/sdk';
-import { generateECDSAKeyPair, generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
+import {
+  generateECDSAKeyPair,
+  generateEd25519KeyPair,
+  generateEncryptedPemFixture,
+} from '../../utils/crypto/keyUtil.js';
 import { insertLocalOrganization } from '../../utils/db/databaseQueries.js';
 import { setDialogMockState } from '../../utils/runtime/dialogMocks.js';
 import { setupSettingsKeysSuite } from '../helpers/fixtures/settingsKeysSuite.js';
-
-const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const ENCRYPTED_TEST_KEY_PATH = path.resolve(__dirname, '../../data/encrypted-test-key.pem');
-const ENCRYPTED_TEST_KEY_PASSWORD = 'TestPassword123!';
 
 test.describe('Settings keys import tests @local-basic', () => {
   const suite = setupSettingsKeysSuite();
@@ -88,32 +86,38 @@ test.describe('Settings keys import tests @local-basic', () => {
   });
 
   test('Verify user can import encrypted private key (3.2.15)', async () => {
-    // Pre-load the dialog mock so that clicking "Browse" returns our test PEM
-    // instead of opening the native OS file picker.
-    await setDialogMockState(suite.settingsPage.window, {
-      openPaths: [ENCRYPTED_TEST_KEY_PATH],
-    });
+    // Generate a fresh encrypted PEM on disk so no private-key material is
+    // committed to the repository.  The fixture is removed after the test.
+    const password = crypto.randomUUID();
+    const { pemPath, cleanup } = await generateEncryptedPemFixture(password);
+    try {
+      // Pre-load the dialog mock so that clicking "Browse" returns our test PEM
+      // instead of opening the native OS file picker.
+      await setDialogMockState(suite.settingsPage.window, { openPaths: [pemPath] });
 
-    await suite.settingsPage.clickOnKeysTab();
-    await suite.settingsPage.clickOnImportButton();
-    await suite.settingsPage.clickOnEncryptedKeysDropDown();
+      await suite.settingsPage.clickOnKeysTab();
+      await suite.settingsPage.clickOnImportButton();
+      await suite.settingsPage.clickOnEncryptedKeysDropDown();
 
-    const heading = await suite.settingsPage.getEncryptedKeysModalHeading();
-    expect(heading).toBe('Import encrypted keys');
+      const heading = await suite.settingsPage.getEncryptedKeysModalHeading();
+      expect(heading).toBe('Import encrypted keys');
 
-    // Click Browse — the IPC handler returns the mocked path, triggering the file
-    // search which discovers the .pem fixture and populates the key list.
-    await suite.settingsPage.clickBrowseForEncryptedKeys();
+      // Click Browse — the IPC handler returns the mocked path, triggering the file
+      // search which discovers the .pem fixture and populates the key list.
+      await suite.settingsPage.clickBrowseForEncryptedKeys();
 
-    // Wait for the Import button to become active (search complete, key selected).
-    await suite.settingsPage.clickImportEncryptedKeysButton();
+      // Wait for the Import button to become active (search complete, key selected).
+      await suite.settingsPage.clickImportEncryptedKeysButton();
 
-    // DecryptKeyModal appears — enter the known password and submit.
-    await suite.settingsPage.enterDecryptPassword(ENCRYPTED_TEST_KEY_PASSWORD);
-    await suite.settingsPage.clickDecryptButton();
+      // DecryptKeyModal appears — enter the generated password and submit.
+      await suite.settingsPage.enterDecryptPassword(password);
+      await suite.settingsPage.clickDecryptButton();
 
-    const toastMessage = await suite.registrationPage.getToastMessage();
-    expect(toastMessage).toBe('Keys imported successfully');
+      const toastMessage = await suite.registrationPage.getToastMessage();
+      expect(toastMessage).toBe('Keys imported successfully');
+    } finally {
+      await cleanup();
+    }
   });
 
   test('Verify user can import external private key for missing key (3.2.18)', async () => {
@@ -124,7 +128,7 @@ test.describe('Settings keys import tests @local-basic', () => {
 
     // Insert a real Organization row so the FK constraint on KeyPair.organization_id is
     // satisfied when the key is stored after the restore flow completes.
-    const orgId = `test-org-restore-${Date.now()}`;
+    const orgId = crypto.randomUUID();
     await insertLocalOrganization(orgId, 'Test Restore Org', 'http://localhost:19999', 'test-key');
 
     // Navigate to the Keys tab (Settings is already open from beforeEach)

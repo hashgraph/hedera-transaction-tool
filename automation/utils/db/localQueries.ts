@@ -359,12 +359,7 @@ export async function insertLocalOrganization(
   key: string,
 ): Promise<void> {
   const query = `INSERT INTO Organization (id, nickname, serverUrl, key) VALUES (?, ?, ?, ?)`;
-  try {
-    await executeDatabase(query, [id, nickname, serverUrl, key]);
-    console.log('Organization record inserted successfully');
-  } catch (error) {
-    console.error('Error inserting Organization record:', error);
-  }
+  await executeDatabase(query, [id, nickname, serverUrl, key]);
 }
 
 /**

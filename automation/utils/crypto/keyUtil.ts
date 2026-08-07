@@ -1,4 +1,7 @@
 import * as crypto from 'node:crypto';
+import * as fsp from 'node:fs/promises';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as bip39 from 'bip39';
 import { proto } from '@hiero-ledger/proto';
 import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
@@ -36,6 +39,37 @@ export function generateEd25519KeyPair() {
   return {
     publicKey: publicKey.toString('hex'),
     privateKey: privateKey.toString('hex')
+  };
+}
+
+/**
+ * Generates a fresh encrypted PKCS#8 PEM fixture on disk and returns its path
+ * together with a cleanup function.  Use this in tests instead of committing a
+ * static PEM file, so secret-scanning / compliance tooling never sees real (even
+ * encrypted) private-key material in the repo.
+ *
+ * @param password - Passphrase to encrypt the private key with.
+ * @returns `{ pemPath, cleanup }` — `pemPath` is the absolute path to the
+ *   temporary `.pem` file; call `cleanup()` in `afterEach`/`finally` to remove it.
+ */
+export async function generateEncryptedPemFixture(
+  password: string,
+): Promise<{ pemPath: string; cleanup: () => Promise<void> }> {
+  const { privateKey: pem } = crypto.generateKeyPairSync('ed25519', {
+    privateKeyEncoding: {
+      type: 'pkcs8',
+      format: 'pem',
+      cipher: 'aes-256-cbc',
+      passphrase: password,
+    },
+  });
+
+  const pemPath = path.join(os.tmpdir(), `test-key-${crypto.randomUUID()}.pem`);
+  await fsp.writeFile(pemPath, pem, 'utf-8');
+
+  return {
+    pemPath,
+    cleanup: () => fsp.unlink(pemPath).catch(() => {}),
   };
 }
 

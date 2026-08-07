@@ -308,3 +308,14 @@ const useUserStore = defineStore('user', () => {
 });
 
 export default useUserStore;
+
+/**
+ * Sets `selectedOrganization` directly on the user store.
+ *
+ * Exported for use by the `__testHooks__` window global only — do not call
+ * from production code.  The hook lets Playwright tests seed a fake
+ * connected-organization state without reaching into Pinia internals.
+ */
+export function setSelectedOrganizationForTesting(org: ConnectedOrganization | null) {
+  useUserStore().selectedOrganization = org;
+}
