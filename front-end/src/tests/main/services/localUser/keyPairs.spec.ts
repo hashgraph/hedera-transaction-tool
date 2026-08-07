@@ -109,6 +109,7 @@ describe('Services Local User Key Pairs', () => {
 
       await storeKeyPair(keyPair, password, encrypted);
 
+
       expect(prisma.keyPair.create).toHaveBeenCalledWith({
         data: {
           ...keyPair,
