@@ -1,3 +1,5 @@
+/* eslint-disable */
+
 import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { ReceiverService } from './receiver.service';
@@ -1395,26 +1397,25 @@ describe('ReceiverService', () => {
       (keysRequiredToSign as jest.Mock).mockResolvedValue([]);
 
       // Common default implementation used by createNotificationWithReceivers
-      jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockImplementation(
-        async (
-          _entityManager: any,
-          _notificationType: NotificationType,
-          userIds: Set<number>,
-          cache: Map<number, User>,
-        ) => {
-          for (const id of Array.from(userIds)) {
-            cache.set(id, {
-              id,
-              email: `user${id}@example.com`,
-              notificationPreferences: [
-                { type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE, inApp: true, email: false },
-                { type: NotificationType.TRANSACTION_READY_FOR_EXECUTION, inApp: false, email: true },
-              ],
-            } as any);
-          }
-          return Array.from(userIds);
-        },
-      );
+      const cb = async (
+        _entityManager: any,
+        _notificationType: NotificationType,
+        userIds: Set<number>,
+        cache: Map<number, User>,
+      ) => {
+        for (const id of Array.from(userIds)) {
+          cache.set(id, {
+            id,
+            email: `user${id}@example.com`,
+            notificationPreferences: [
+              { type: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE, inApp: true, email: false },
+              { type: NotificationType.TRANSACTION_READY_FOR_EXECUTION, inApp: false, email: true },
+            ],
+          } as any);
+        }
+        return Array.from(userIds);
+      };
+      jest.spyOn(service as any, 'filterReceiversByPreferenceForType').mockImplementation(cb as any);
 
       // Common: make emitEmailNotifications call onSuccess so sendEmailNotifications updates flags
       (emitEmailNotifications as jest.Mock).mockImplementation(async (_pub, _dtos, onSuccess, _onError) => {

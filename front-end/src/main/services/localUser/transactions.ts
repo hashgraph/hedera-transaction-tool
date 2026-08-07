@@ -116,7 +116,7 @@ export const signTransaction = async (
       const buffer = Buffer.from(keyPair.private_key, 'base64');
       decryptedPrivateKey = safeStorage.decryptString(buffer);
     } else if (userPassword) {
-      decryptedPrivateKey = decrypt(keyPair.private_key, userPassword);
+      decryptedPrivateKey = await decrypt(keyPair.private_key, userPassword);
     } else {
       throw new Error('Password is required to decrypt private key');
     }

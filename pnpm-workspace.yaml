@@ -31,29 +31,34 @@ allowBuilds:
   vue-demi: true
 
 catalog:
+  '@eslint/eslintrc': 3.3.6
+  '@eslint/js': 10.0.1
+  '@typescript-eslint/eslint-plugin': 8.66.0
+  '@typescript-eslint/parser': 8.66.0
   '@hiero-ledger/proto': 2.31.0
   '@hiero-ledger/sdk': 2.86.2
   '@types/bcrypt': 6.0.0
   '@types/jest': 30.0.0
-  '@types/node': 26.1.1
-  '@types/semver': 7.7.1
+  '@types/node': 26.1.2
+  '@types/semver': 7.8.0
   argon2: 0.45.1
   axios: 1.18.1
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
   dotenv: 17.4.2
+  eslint: 10.8.0
   jest: 30.4.2
   jszip: 3.10.1
   long: 5.3.2
   pg: 8.22.0
-  prettier: 3.8.3
+  prettier: 3.9.6
   reflect-metadata: 0.2.2
   semver: 7.8.5
   ts-jest: 29.4.12
-  ts-loader: 9.5.7
+  ts-loader: 9.6.2
   ts-node: 10.9.2
   typeorm: 0.3.31
-  typescript: 5.9.3
+  typescript: 6.0.3
 
 catalogs:
   # @nestjs/* packages from the nest monorepo (nestjs/nest) ship together and
@@ -98,7 +103,7 @@ overrides:
   "brace-expansion@>=3.0.0": "5.0.9"
   "picomatch@>=4.0.0": "4.0.4"
   "flatted": "3.4.2"
-  "socket.io-parser": "4.2.6"
+  "socket.io-parser": "4.2.7"
   "js-yaml": "5.2.2"
   "hono": "4.12.27"
   "@hono/node-server": "2.0.10"
@@ -106,23 +111,43 @@ overrides:
   "@xmldom/xmldom": "0.8.13"
   "ajv@>=8.0.0": "8.20.0"
   "tar": "7.5.21"
-  "fast-uri": "3.1.4"
+  "fast-uri": "3.1.5"
   "diff@<5.2.2": "5.2.2"
   "diff@>=6.0.0": "8.0.3"
   "@tootallnate/once@<2.0.1": "2.0.1"
   "form-data": "4.0.6"
   "ws@>=8.0.0": "8.21.0"
-  "undici@>=7.0.0": "7.28.0"
+  "undici@>=7.0.0": "7.29.0"
   "@grpc/grpc-js@<1.12.7": "1.12.7"
   "qs@>=6.11.1": "6.15.2"
   "uuid@<11.1.1": "11.1.1"
   "@babel/core": "7.29.6"
   "esbuild@>=0.27.3": "0.28.1"
+  "cache-manager@>=7.2.10": "7.2.9"
+  "@cacheable/utils@>=2.5.1": "2.5.0"
+  "cacheable@>=2.5.1": "2.5.0"
+  "@cacheable/memory@>=2.2.1": "2.2.0"
+  "@cacheable/node-cache@>=3.1.2": "3.1.1"
+  "@cacheable/net@>=2.1.1": "2.1.0"
+  "ecto@>=5.0.1": "5.0.0"
+  "keyv@6.0.0": "5.6.0"
+  "@keyv/redis@6.0.0": "5.1.6"
+  "@keyv/etcd@6.0.0": "2.1.1"
+  "@keyv/memcache@6.0.0": "2.0.2"
+  "@keyv/mongo@6.0.0": "3.1.0"
+  "@keyv/postgres@6.0.0": "2.2.3"
+  "@keyv/sqlite@6.0.0": "4.0.8"
+  "@keyv/valkey@6.0.0": "1.0.11"
+  "flat-cache@6.1.24": "4.0.1"
+  "file-entry-cache@11.1.6": "8.0.0"
+  "cacheable-request@13.0.20": "13.0.19"
   "postcss": "8.5.25"
   "body-parser": "2.3.0"
   "immutable": "5.1.8"
   "find-my-way": "9.7.0"
   "valibot": "1.4.2"
+  "baseline-browser-mapping": "2.11.8"
+  "undici@<7.0.0": "6.28.0"
 
 minimumReleaseAgeExclude:
   - '@vue/language-core@3.3.8'

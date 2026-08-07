@@ -1,6 +1,6 @@
 {
   "name": "back-end",
-  "version": "0.36.0-SNAPSHOT",
+  "version": "0.37.0-SNAPSHOT",
   "description": "",
   "author": "",
   "private": true,
@@ -80,8 +80,8 @@
     "winston": "3.19.0"
   },
   "devDependencies": {
-    "@eslint/eslintrc": "3.3.6",
-    "@eslint/js": "10.0.1",
+    "@eslint/eslintrc": "catalog:",
+    "@eslint/js": "catalog:",
     "@hashgraph/hedera-local": "2.40.2",
     "@nestjs/cli": "11.0.24",
     "@nestjs/schematics": "11.1.0",
@@ -97,12 +97,12 @@
     "@types/readline-sync": "1.4.8",
     "@types/semver": "catalog:",
     "@types/supertest": "7.2.1",
-    "@typescript-eslint/eslint-plugin": "8.65.0",
-    "@typescript-eslint/parser": "8.65.0",
-    "eslint": "10.7.0",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "eslint": "catalog:",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-prettier": "5.5.6",
-    "globals": "17.7.0",
+    "globals": "17.9.0",
     "jest": "catalog:",
     "jest-mock-extended": "4.0.1",
     "picocolors": "1.1.1",
@@ -116,7 +116,13 @@
     "tsconfig-paths": "4.2.0",
     "typescript": "catalog:"
   },
+  "overrides": {
+    "@cacheable/utils": "2.5.0",
+    "@keyv/redis": "5.1.6",
+    "cache-manager": "7.2.9",
+    "keyv": "5.6.0"
+  },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.19.0 <25"
   }
 }

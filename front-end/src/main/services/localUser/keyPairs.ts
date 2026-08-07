@@ -2,7 +2,7 @@ import { safeStorage } from 'electron';
 
 import { KeyPair, Prisma } from '@prisma/client';
 
-import { encrypt, decrypt } from '@main/utils/crypto';
+import { encrypt, decrypt, isLegacyBlob } from '@main/utils/crypto';
 
 import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
@@ -73,7 +73,7 @@ export const storeKeyPair = async (
         const buffer = safeStorage.encryptString(keyPair.private_key);
         keyPair.private_key = buffer.toString('base64');
       } else if (password) {
-        keyPair.private_key = encrypt(keyPair.private_key, password);
+        keyPair.private_key = await encrypt(keyPair.private_key, password);
       } else {
         throw new Error('Password is required to store unencrypted key pair');
       }
@@ -99,8 +99,8 @@ export const changeDecryptionPassword = async (
 
   for (let i = 0; i < keyPairs.length; i++) {
     const keyPair = keyPairs[i];
-    const decryptedPrivateKey = decrypt(keyPair.private_key, oldPassword);
-    const encryptedPrivateKey = encrypt(decryptedPrivateKey, newPassword);
+    const decryptedPrivateKey = await decrypt(keyPair.private_key, oldPassword);
+    const encryptedPrivateKey = await encrypt(decryptedPrivateKey, newPassword);
 
     await prisma.keyPair.update({
       where: {
@@ -145,7 +145,21 @@ export const decryptPrivateKey = async (
     throw new Error('Password is required to decrypt private key');
   }
 
-  return decrypt(keyPair?.private_key || '', password);
+  const encrypted = keyPair?.private_key || '';
+  const decrypted = await decrypt(encrypted, password);
+
+  if (encrypted && isLegacyBlob(encrypted)) {
+    try {
+      await prisma.keyPair.updateMany({
+        where: { user_id, public_key },
+        data: { private_key: await encrypt(decrypted, password) },
+      });
+    } catch {
+      // migration failure is non-fatal
+    }
+  }
+
+  return decrypted;
 };
 
 // Delete encrypted private keys
