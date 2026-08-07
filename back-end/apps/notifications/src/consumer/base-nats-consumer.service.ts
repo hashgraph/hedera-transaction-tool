@@ -19,7 +19,7 @@ export interface ConsumerConfig {
   maxMessages?: number;
 }
 
-export interface MessageHandler<T = never> {
+export interface MessageHandler<T = any> {
   subject: string;
   handler: (data: T | T[]) => Promise<void>;
   dtoClass: ClassConstructor<T>;
