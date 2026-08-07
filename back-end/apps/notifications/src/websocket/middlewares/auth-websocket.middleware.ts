@@ -53,7 +53,7 @@ export const AuthWebsocketMiddleware = (
     attempts.delete(ip);
   };
 
-  return async (socket: AuthWebsocket, next) => {
+  return async (socket: Socket, next) => {
     const ip = socket.handshake.address;
 
     try {
@@ -105,7 +105,7 @@ export const AuthWebsocketMiddleware = (
 
       // Success - reset rate limit counter
       resetAttempts(ip);
-      socket.user = user;
+      (socket as AuthWebsocket).user = user;
       next();
     } catch (err) {
       const e = err as any;
