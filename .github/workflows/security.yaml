@@ -84,10 +84,7 @@ jobs:
           node-version-file: package.json
 
       - name: Audit Dependencies
-        # --ignore-unfixable skips image-size (GHSA-w3rx-r6r6-pgpr, GHSA-5p2g-fcmc-qvqq)
-        # which has no published patch (fix requires image-size>=2.0.3, not yet released).
-        # Remove this flag once image-size@2.0.3 ships and add an override instead.
-        run: pnpm audit --audit-level=high --ignore-unfixable
+        run: pnpm audit --audit-level=high
 
   semgrep:
     if: github.ref == 'refs/heads/main'
