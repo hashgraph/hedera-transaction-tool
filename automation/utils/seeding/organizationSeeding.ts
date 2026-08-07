@@ -54,7 +54,7 @@ export async function seedOrganizationUserKey({
   const privateKey = standardPrivateKey.toStringRaw();
   const publicKey = standardPrivateKey.publicKey.toStringRaw();
   const mnemonicHash = await argonHash(resolvedRecoveryPhraseWords.toString(), true);
-  const encryptedPrivateKey = encrypt(privateKey, localPassword);
+  const encryptedPrivateKey = await encrypt(privateKey, localPassword);
   const userId = await getUserIdByEmail(email);
 
   if (userId === null) {

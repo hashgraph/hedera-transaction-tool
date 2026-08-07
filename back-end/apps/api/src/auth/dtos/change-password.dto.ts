@@ -7,14 +7,14 @@ export class ChangePasswordDto {
 
   @IsStrongPassword(
     {
-      minLength: 8,
+      minLength: 10,
       minLowercase: 0,
       minNumbers: 0,
       minSymbols: 0,
       minUppercase: 0,
     },
     {
-      message: 'Password is too weak, must contain at least 8 characters.',
+      message: 'Password is too weak, must contain at least 10 characters.',
     },
   )
   newPassword: string;
