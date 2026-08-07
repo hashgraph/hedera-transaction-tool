@@ -61,6 +61,7 @@ export class SettingsPage extends BasePage {
   importEncryptedKeysButtonSelector = 'button-import-encrypted-keys';
   decryptKeyPasswordInputSelector = 'input-decrypt-keys-password';
   decryptKeyButtonSelector = 'button-decrypt-key';
+  skipRecoveryPhraseButtonSelector = 'button-skip-recovery-phrase';
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
   restoreKeyButtonPrefix = 'button-restore-key-';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
@@ -473,6 +474,21 @@ export class SettingsPage extends BasePage {
 
   async clickDecryptButton(): Promise<void> {
     await this.clickButtonWhenEnabled(this.decryptKeyButtonSelector);
+  }
+
+  /** Dismiss the optional recovery-phrase modal that appears before DecryptKeyModal. */
+  async skipRecoveryPhrase(): Promise<void> {
+    await this.waitForElementToBeVisible(this.skipRecoveryPhraseButtonSelector);
+    await this.click(this.skipRecoveryPhraseButtonSelector);
+  }
+
+  /** Reset the Pinia selectedOrganization to null so the next key-import runs in local-only mode. */
+  async clearSelectedOrganization(): Promise<void> {
+    await this.window.evaluate(() => {
+      type TestHooks = { setSelectedOrganizationForTesting: (org: null) => void };
+      const hooks = (window as unknown as { __testHooks__?: TestHooks }).__testHooks__;
+      hooks?.setSelectedOrganizationForTesting(null);
+    });
   }
 
   /**

@@ -109,6 +109,10 @@ test.describe('Settings keys import tests @local-basic', () => {
       // Wait for the Import button to become active (search complete, key selected).
       await suite.settingsPage.clickImportEncryptedKeysButton();
 
+      // After Import is clicked the optional RecoveryPhraseModal appears first.
+      // Skip it so the DecryptKeyModal can appear.
+      await suite.settingsPage.skipRecoveryPhrase();
+
       // DecryptKeyModal appears — enter the generated password and submit.
       await suite.settingsPage.enterDecryptPassword(password);
       await suite.settingsPage.clickDecryptButton();
@@ -145,6 +149,11 @@ test.describe('Settings keys import tests @local-basic', () => {
     // Click the restore button — this opens ImportExternalPrivateKeyModal with the public
     // key pre-filled.
     await suite.settingsPage.clickOnRestoreKeyButtonAtIndex(0);
+
+    // Wait for the modal's private-key input to be ready, then clear the fake org
+    // state so the import runs in local-only mode (no network call to the test server).
+    await suite.settingsPage.waitForElementToBeVisible('input-ed25519-private-key');
+    await suite.settingsPage.clearSelectedOrganization();
 
     // Enter the matching private key and a nickname, then submit.
     await suite.loginPage.waitForToastToDisappear();
