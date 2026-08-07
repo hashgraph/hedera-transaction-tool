@@ -383,7 +383,7 @@ describe('Services Local User Organization Credentials', () => {
       const decryptedPassword = 'decryptedPassword';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedPassword));
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       const result = await getOrganizationCredentials('123', '321', decryptPassword);
@@ -495,7 +495,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
       const encryptedPassword = `the encrption of password with encryptPassword`;
 
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       await updateOrganizationCredentials(
@@ -556,7 +556,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
       const encryptedPassword = `the encrption of password with encryptPassword`;
 
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       await updateOrganizationCredentials(
@@ -642,7 +642,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
       const encryptedPassword = 'the encryption of password with encryptPassword';
 
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
       await updateOrganizationCredentials(
@@ -709,7 +709,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptedPassword = 'aes-encrypted-blob';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
 
       const result = await encryptOrganizationPassword(password, personalPassword);
 
@@ -816,7 +816,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
       const encryptedPassword = `the encrption of password with encryptPassword`;
 
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
       prisma.organizationCredentials.create.mockResolvedValue(organizationCredentials);
 
       const result = await addOrganizationCredentials(
@@ -869,7 +869,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptPassword = 'password for encryption';
       const encryptedPassword = `the encrption of password with encryptPassword`;
 
-      vi.mocked(encrypt).mockReturnValue(encryptedPassword);
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve(encryptedPassword));
       prisma.organizationCredentials.count.mockResolvedValue(1);
       prisma.organizationCredentials.findFirst.mockResolvedValue(organizationCredentials);
 
@@ -958,7 +958,7 @@ describe('Services Local User Organization Credentials', () => {
       const decryptedPassword = 'password';
 
       prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedPassword));
       vi.mocked(login).mockResolvedValue({ id: 2, accessToken: 'token' });
 
       const result = await tryAutoSignIn('123', '321');
@@ -970,7 +970,7 @@ describe('Services Local User Organization Credentials', () => {
       const decryptedPassword = 'password';
 
       prisma.organizationCredentials.findMany.mockResolvedValue(credentials);
-      vi.mocked(decrypt).mockReturnValue(decryptedPassword);
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedPassword));
       vi.mocked(login).mockRejectedValue('Failed login in server');
 
       const result = await tryAutoSignIn('123', '321');
@@ -1023,12 +1023,12 @@ describe('Services Local User Organization Credentials', () => {
       const decryptPassword = 'password';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(decrypt).mockReturnValue(decryptedData);
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedData));
 
       const result = await decryptData(encryptedData, decryptPassword);
 
       expect(decrypt).toHaveBeenCalledWith(encryptedData, decryptPassword);
-      expect(result).toEqual(decryptedData);
+      expect(result).toEqual(Promise.resolve(decryptedData));
     });
 
     test('Should throw error if no decryption method is available', async () => {
@@ -1047,8 +1047,8 @@ describe('Services Local User Organization Credentials', () => {
       const decryptPassword = 'password';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(decrypt).mockReturnValue(decryptedData);
-      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedData));
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('v2:reEncrypted'));
       vi.mocked(isLegacyBlob).mockReturnValue(true);
 
       const result = await decryptData(encryptedData, decryptPassword, '1');
@@ -1066,8 +1066,8 @@ describe('Services Local User Organization Credentials', () => {
       const decryptPassword = 'password';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(decrypt).mockReturnValue(decryptedData);
-      vi.mocked(encrypt).mockReturnValue('v2:reEncrypted');
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedData));
+      vi.mocked(encrypt).mockReturnValue(Promise.resolve('v2:reEncrypted'));
       vi.mocked(isLegacyBlob).mockReturnValue(true);
       prisma.organizationCredentials.update.mockRejectedValueOnce(new Error('DB error'));
 
@@ -1082,7 +1082,7 @@ describe('Services Local User Organization Credentials', () => {
       const decryptPassword = 'password';
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
-      vi.mocked(decrypt).mockReturnValue(decryptedData);
+      vi.mocked(decrypt).mockReturnValue(Promise.resolve(decryptedData));
       vi.mocked(isLegacyBlob).mockReturnValue(true);
 
       const result = await decryptData(encryptedData, decryptPassword);
