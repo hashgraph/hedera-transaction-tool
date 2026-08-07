@@ -485,9 +485,9 @@ export class SettingsPage extends BasePage {
   /** Reset the Pinia selectedOrganization to null so the next key-import runs in local-only mode. */
   async clearSelectedOrganization(): Promise<void> {
     await this.window.evaluate(() => {
-      type TestHooks = { setSelectedOrganizationForTesting: (org: null) => void };
-      const hooks = (window as unknown as { __testHooks__?: TestHooks }).__testHooks__;
-      hooks?.setSelectedOrganizationForTesting(null);
+      const appRoot = document.querySelector('#app') as any;
+      const userStore = appRoot?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('user');
+      if (userStore) userStore.selectedOrganization = null;
     });
   }
 
@@ -501,26 +501,11 @@ export class SettingsPage extends BasePage {
   async injectFakeOrgWithUserKey(orgId: string, publicKey: string): Promise<void> {
     await this.window.evaluate(
       ({ orgId, publicKey }) => {
-        type IUserKey = { id: number; userId: number; publicKey: string };
-        type FakeConnectedOrg = {
-          id: string; nickname: string; serverUrl: string; key: string;
-          isLoading: false; isServerActive: true; loginRequired: false;
-          userId: number; email: string; admin: false; isPasswordTemporary: false;
-          userKeys: IUserKey[]; secretHashes: string[];
-        };
-        type TestHooks = {
-          setSelectedOrganizationForTesting: (org: FakeConnectedOrg | null) => void;
-        };
+        const appRoot = document.querySelector('#app') as any;
+        const userStore = appRoot?.__vue_app__?.config?.globalProperties?.$pinia?._s?.get('user');
+        if (!userStore) throw new Error('Could not find user Pinia store via $pinia._s');
 
-        const hooks = (window as unknown as { __testHooks__?: TestHooks }).__testHooks__;
-        if (!hooks?.setSelectedOrganizationForTesting) {
-          throw new Error(
-            'setSelectedOrganizationForTesting test hook is not available — ' +
-            'ensure the app is built with VITE_EXPOSE_TEST_HOOKS=true or in DEV mode',
-          );
-        }
-
-        hooks.setSelectedOrganizationForTesting({
+        userStore.selectedOrganization = {
           id: orgId,
           nickname: 'Test Org',
           serverUrl: 'http://localhost:19999',
@@ -534,7 +519,7 @@ export class SettingsPage extends BasePage {
           isPasswordTemporary: false,
           userKeys: [{ id: 1, userId: 1, publicKey }],
           secretHashes: [],
-        });
+        };
       },
       { orgId, publicKey },
     );

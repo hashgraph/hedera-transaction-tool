@@ -19,7 +19,6 @@ import {
   resetVersionStatusForOrg,
   setVersionDataForOrg,
 } from '@renderer/stores/versionState';
-import { setSelectedOrganizationForTesting } from '@renderer/stores/storeUser';
 
 setupRendererLogging();
 
@@ -51,6 +50,5 @@ if (import.meta.env.DEV || import.meta.env.VITE_EXPOSE_TEST_HOOKS === 'true') {
     ...(w.__testHooks__ ?? {}),
     setVersionDataForOrg,
     resetVersionStatusForOrg,
-    setSelectedOrganizationForTesting,
   };
 }
