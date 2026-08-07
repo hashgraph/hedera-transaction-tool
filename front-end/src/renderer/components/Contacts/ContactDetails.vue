@@ -148,8 +148,11 @@ const handleResend = async () => {
 };
 
 const handleContactChange = async () => {
-  contacts.fetchUserKeys(props.contact.user.id);
-  await Promise.all([handleAccountsLookup(), handleFetchMapping()]);
+  await Promise.allSettled([
+    contacts.fetchUserKeys(props.contact.user.id),
+    handleAccountsLookup(),
+    handleFetchMapping(),
+  ]);
 };
 
 const handleFetchMapping = async () => {
@@ -157,12 +160,17 @@ const handleFetchMapping = async () => {
   if (contactPublicKeys.length === 0) return;
 
   const allMappings = await getAllPublicKeyMappings();
-  const mappingByKey = new Map(allMappings.map(m => [m.public_key, m]));
+  // Canonicalize stored keys to raw so DER-imported mappings are still found
+  const mappingByKey = new Map(
+    allMappings.map(m => [PublicKey.fromString(m.public_key).toStringRaw(), m]),
+  );
 
   publicKeysMapping.value = Object.fromEntries(
     contactPublicKeys.map(key => {
-      const mapping = mappingByKey.get(PublicKey.fromString(key).toStringRaw());
-      return [key, mapping ? `${mapping.nickname} (${mapping.public_key})` : key];
+      const rawKey = PublicKey.fromString(key).toStringRaw();
+      const mapping = mappingByKey.get(rawKey);
+      // Key by raw form to match the template's toStringRaw() lookup
+      return [rawKey, mapping ? `${mapping.nickname} (${mapping.public_key})` : key];
     }),
   );
 };
