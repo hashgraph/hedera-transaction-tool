@@ -148,6 +148,7 @@ overrides:
   "valibot": "1.4.2"
   "baseline-browser-mapping": "2.11.8"
   "undici@<7.0.0": "6.28.0"
+  "nanoid": "3.3.18"
 
 minimumReleaseAgeExclude:
   - '@vue/language-core@3.3.8'
