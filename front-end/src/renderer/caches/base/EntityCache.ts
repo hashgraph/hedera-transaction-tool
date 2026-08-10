@@ -22,6 +22,8 @@ export abstract class EntityCache<K extends string | number, E> {
       // cache miss or reload
       const newPromise = this.load(key, mirrorNodeUrl);
       this.mutate(key, mirrorNodeUrl, newPromise);
+      // Evict on failure so the next lookup retries rather than replaying the error
+      newPromise.catch(() => this.records.delete(this.makeRecordKey(key, mirrorNodeUrl)));
       result = newPromise;
     }
 
