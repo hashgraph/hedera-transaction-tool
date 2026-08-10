@@ -102,32 +102,20 @@ async function loadContacts(
   user: LoggedInUser,
   organization: (ConnectedOrganization & LoggedInOrganization) | null,
 ): Promise<Contact[]> {
-  let result: Contact[];
+  if (organization === null) return [];
 
-  if (organization !== null) {
-    const serverUrl = organization.serverUrl;
-    const users = await getUsers(serverUrl);
+  const serverUrl = organization.serverUrl;
+  const [users, orgContacts] = await Promise.all([
+    getUsers(serverUrl),
+    getOrganizationContacts(user.id, organization.id, organization.userId),
+  ]);
 
-    const orgContacts = await getOrganizationContacts(
-      user.id,
-      organization.id,
-      organization.userId,
-    );
-    result = [];
-
-    users.forEach(u => {
-      result.push({
-        user: u,
-        userKeys: u.keys ?? [],
-        nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
-        nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
-      });
-    });
-  } else {
-    result = [];
-  }
-
-  return Promise.resolve(result);
+  return users.map(u => ({
+    user: u,
+    userKeys: u.keys ?? [],
+    nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
+    nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
+  }));
 }
 
 export default useContactsStore;
