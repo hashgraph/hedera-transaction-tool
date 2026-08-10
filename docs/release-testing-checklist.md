@@ -55,6 +55,4 @@ Failures in any of these will block the release.
 
 **14. Error Handling / Edge Cases**
 - [ ] 14.4.1 Graceful handling when organization server is unreachable
-- [ ] 14.4.2 WebSocket reconnection after disconnect
 - [ ] 14.4.3 Error displayed when Mirror Node is unavailable
-- [ ] 14.4.4 Transaction fails gracefully when Hedera network returns error
