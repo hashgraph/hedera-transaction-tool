@@ -84,7 +84,17 @@ jobs:
           node-version-file: package.json
 
       - name: Audit Dependencies
-        run: pnpm audit --audit-level=high
+        run: |
+          # --ignore-unfixable silences advisories whose patched version does not exist on
+          # npm yet (nothing to install even if we wanted to fix it).
+          #
+          # For supply-chain attacks where a fix version EXISTS but is itself malicious,
+          # suppress the advisory by GHSA ID.  Keep each entry in sync with the matching
+          # override in pnpm-workspace.yaml and the ignore rule in .github/dependabot.yml.
+          # Remove the flag once a clean patched version is confirmed safe.
+          # Template (add one --ignore per affected advisory):
+          #   --ignore GHSA-xxxx-xxxx-xxxx  # pkg >=bad.ver — attack date, brief note
+          pnpm audit --audit-level=high --ignore-unfixable
 
   semgrep:
     if: github.ref == 'refs/heads/main'
