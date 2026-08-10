@@ -96,7 +96,8 @@ export async function createUser(
   try {
     return await userRepo.save(user);
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -113,7 +114,8 @@ export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>)
   try {
     return await userKeyRepo.save(userKey);
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -212,7 +214,8 @@ export async function resetUsersState() {
 
     console.log(pc.green('Users state reset successfully \n'));
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -222,7 +225,8 @@ export async function getUsers() {
   try {
     return userRepo.find();
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -240,7 +244,8 @@ export async function getUserKeys(id?: number) {
         : undefined,
     );
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -257,7 +262,8 @@ export async function getUserKey(userId: number, publicKey: string) {
       },
     });
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -271,7 +277,8 @@ export async function getUser(type: 'admin' | 'user' | 'userNew') {
       },
     });
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -284,7 +291,8 @@ export async function clearUsers() {
     await userRepo.delete({});
     console.log(pc.green('Users cleared successfully \n'));
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -411,7 +419,8 @@ export async function getTransactions() {
   try {
     return await transactionRepo.find();
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -444,7 +453,8 @@ export async function addNotifications() {
     await notificationsRepo.save(notification3);
     console.log(pc.green('Notifications added successfully \n'));
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
     return;
   }
 
@@ -478,7 +488,8 @@ export async function addNotifications() {
     await notificationReceiverRepo.save(notificationReceiver3);
     console.log(pc.green('Notification receivers added successfully \n'));
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -492,7 +503,8 @@ export async function resetDatabase() {
 
     console.log(pc.green('Database reset successfully \n'));
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 }
 
@@ -507,7 +519,8 @@ export async function withDisposableDataSource<T>(
   try {
     return await callback(dataSource, ...args);
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 
   await dataSource.destroy();
