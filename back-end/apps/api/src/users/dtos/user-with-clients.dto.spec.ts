@@ -3,10 +3,11 @@ import { plainToInstance } from 'class-transformer'
 
 import { UserWithClientsDto } from './user-with-clients.dto'
 import { ClientDto } from './client.dto'
+import { UserKeyPublicDto } from '../../user-keys/dtos'
 import { UserStatus } from '@entities'
 
 const toDto = (plain: Record<string, unknown>) =>
-  plainToInstance(UserWithClientsDto, plain)
+  plainToInstance(UserWithClientsDto, plain, { excludeExtraneousValues: true, exposeUnsetFields: false })
 
 describe('UserWithClientsDto', () => {
   test('maps plain object with clients array and converts nested ClientDto instances', () => {
@@ -31,5 +32,28 @@ describe('UserWithClientsDto', () => {
     expect(dto.clients[1]).toBeInstanceOf(ClientDto)
     expect(dto.clients[0].version).toBe('1.0.0')
     expect(dto.clients[1].updateAvailable).toBe(true)
+  })
+
+  test('keys are serialized as UserKeyPublicDto — no mnemonicHash or index', () => {
+    const plain = {
+      id: 1,
+      email: 'alice@example.com',
+      admin: false,
+      status: UserStatus.NONE,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      keys: [
+        { id: 10, userId: 1, publicKey: 'abc123', mnemonicHash: 'secret', index: 3 },
+        { id: 11, userId: 1, publicKey: 'def456', mnemonicHash: null, index: null },
+      ],
+    }
+
+    const dto = toDto(plain)
+    expect(dto.keys).toHaveLength(2)
+    expect(dto.keys[0]).toBeInstanceOf(UserKeyPublicDto)
+    expect(dto.keys[0].id).toBe(10)
+    expect(dto.keys[0].publicKey).toBe('abc123')
+    expect(dto.keys[0]).not.toHaveProperty('mnemonicHash')
+    expect(dto.keys[0]).not.toHaveProperty('index')
   })
 })

@@ -870,12 +870,12 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 ### 14.4 Network/Connection Errors
 
-| #      | Scenario                                                       | Automated | Covered By |
-| ------ | -------------------------------------------------------------- | --------- | ---------- |
-| 14.4.1 | Graceful handling when organization server is unreachable      | No        |            |
-| 14.4.2 | WebSocket reconnection after disconnect                        | No        |            |
-| 14.4.3 | Error displayed when Mirror Node is unavailable                | No        |            |
-| 14.4.4 | Transaction fails gracefully when Hedera network returns error | No        |            |
+| #      | Scenario                                                       | Automated  | Covered By |
+| ------ | -------------------------------------------------------------- | ---------- | ---------- |
+| 14.4.1 | Graceful handling when organization server is unreachable      | No         |            |
+| 14.4.2 | WebSocket reconnection after disconnect                        | Yes (Unit) | `front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts` — reconnection cycle (disconnect + connect_error retry paths), listenConnection handlers |
+| 14.4.3 | Error displayed when Mirror Node is unavailable                | No         |            |
+| 14.4.4 | Transaction fails gracefully when Hedera network returns error | Yes (Unit) | `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts` — executeTransaction handler propagates structured error when Hedera network returns a StatusError |
 
 ### 14.5 Form Validation Edge Cases
 
@@ -912,33 +912,33 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 ### Coverage by Area
 
-| Area                            | Total Scenarios | Automated E2E | Automated Component Test | Backend | Skipped | Manual   | N/A     | Coverage % | Coverage % with Skipped |
-| ------------------------------- | --------------- | ------------- | ------------------------ | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
-| 1. Registration                 | 22              | 14            | 6                        | 0       | 0       | 2        | 0       | 91%        | 91%                     |
-| 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 3. Settings                     | 78              | 62            | 14                       | 0       | 0       | 1        | 1       | 97%        | 97%                     |
-| 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
-| 5. Transaction Creation         | 101             | 92            | 0                        | 0       | 1       | 7        | 1       | 91%        | 92%                     |
-| 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
-| 7. Transaction Groups           | 39              | 29            | 5                        | 0       | 0       | 5        | 0       | 87%        | 87%                     |
-| 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
-| 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
-| 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
-| 14. Error Handling / Edge Cases | 17              | 10            | 0                        | 3       | 0       | 4        | 0       | 76%        | 76%                     |
-| 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **367**       | **70**                   | **3**   | **5**   | **25**   | **2**   | **93%**    | **94%**                 |
+| Area                            | Total Scenarios | Automated E2E | Automated Renderer Test | Backend | Skipped | Manual   | N/A     | Coverage % | Coverage % with Skipped |
+| ------------------------------- | --------------- | ------------- |-------------------------| ------- | ------- | -------- | ------- |------------|-------------------------|
+| 1. Registration                 | 22              | 14            | 6                       | 0       | 0       | 2        | 0       | 91%        | 91%                     |
+| 2. Login                        | 17              | 13            | 4                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 3. Settings                     | 78              | 62            | 14                      | 0       | 0       | 1        | 1       | 97%        | 97%                     |
+| 4. Transactions List            | 34              | 22            | 10                      | 0       | 1       | 1        | 0       | 94%        | 97%                     |
+| 5. Transaction Creation         | 101             | 92            | 0                       | 0       | 1       | 7        | 1       | 91%        | 92%                     |
+| 6. Transaction Details          | 26              | 24            | 0                       | 0       | 0       | 2        | 0       | 92%        | 92%                     |
+| 7. Transaction Groups           | 39              | 29            | 5                       | 0       | 0       | 5        | 0       | 87%        | 87%                     |
+| 8. Accounts                     | 35              | 22            | 13                      | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 9. Files                        | 29              | 20            | 9                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 10. Contact List                | 23              | 13            | 9                       | 0       | 1       | 0        | 0       | 96%        | 100%                    |
+| 11. Org Transaction Workflows   | 24              | 22            | 0                       | 0       | 2       | 0        | 0       | 92%        | 100%                    |
+| 12. Notifications               | 10              | 10            | 0                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
+| 13. Navigation and Layout       | 12              | 11            | 0                       | 0       | 0       | 1        | 0       | 92%        | 92%                     |
+| 14. Error Handling / Edge Cases | 17              | 10            | 2                       | 3       | 0       | 2        | 0       | 88%        | 88%                     |
+| 15. Upgrade                     | 5               | 3             | 0                       | 0       | 0       | 2        | 0       | 60%        | 60%                     |
+| **Total**                       | **472**         | **367**       | **72**                  | **3**   | **5**   | **25**   | **2**   | **94%**    | **95%**                 |
 
-The `Automated Component Test` column counts scenarios covered by frontend renderer/component tests.
-The migrated frontend package coverage currently comes from 63 Vitest component test cases across 16 spec files.
+The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
+The migrated frontend package coverage currently comes from 88 Vitest renderer test cases (unit + component) across 17 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Component Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(367 + 70 + 3) / 472 = 93.22%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(367 + 72 + 3) / 472 = 93.64%`, rounded to `94%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Component Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(367 + 70 + 3 + 5) / 472 = 94.28%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(367 + 72 + 3 + 5) / 472 = 94.70%`, rounded to `95%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -987,17 +987,16 @@ These scenarios cover secondary workflows and infrequently used transaction type
 
 These scenarios cover edge cases and error handling. Verify periodically or after infrastructure changes.
 
-| Area              | Scenario #     | Description                                                     | When to Test                                       |
-| ----------------- | -------------- | --------------------------------------------------------------- |----------------------------------------------------|
-| **Route Guards**  | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
-| **Network Errors** | 14.4.1        | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
-| **Network Errors** | 14.4.2        | WebSocket reconnection after disconnect                         | After WebSocket or real-time system changes        |
-| **Network Errors** | 14.4.3        | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
-| **Network Errors** | 14.4.4        | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
+| Area               | Scenario #     | Description                                                     | When to Test                                       |
+| ------------------ | -------------- | --------------------------------------------------------------- | -------------------------------------------------- |
+| **Route Guards**   | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
+| **Network Errors** | 14.4.1         | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
+| **Network Errors** | 14.4.3         | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
+| **Network Errors** | 14.4.4         | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
 
 ### Priority Areas for Additional Automation
 
-1. **Error Handling / Edge Cases (76%)** - Network failures (14.4.1-14.4.4), loading-state coverage. Note: 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+1. **Error Handling / Edge Cases (88%)** - Remaining network failures (14.4.1, 14.4.3), loading-state coverage. Note: 14.4.2 is covered by unit tests (`front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts`) and 14.4.4 by `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts`. 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
 2. **Transactions List (94%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
 3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
 4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)

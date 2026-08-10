@@ -61,12 +61,14 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
+      await emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to save transaction observers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
-      throw new BadRequestException(error.message);
+      const errorStack = error instanceof Error ? error.stack : null;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to save transaction observers', errorStack ?? errorMessage);
+      throw new BadRequestException(errorMessage);
     }
   }
 

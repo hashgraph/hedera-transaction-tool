@@ -348,10 +348,12 @@ export class ApproversService {
         }
       });
 
-      emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: transactionId  }]);
     } catch (error) {
-      this.logger.error('Failed to save transaction approvers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
-      throw new BadRequestException(error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      this.logger.error('Failed to save transaction approvers', errorStack ?? errorMessage);
+      throw new BadRequestException(errorMessage);
     }
 
     return approvers;
@@ -515,13 +517,15 @@ export class ApproversService {
       });
 
       if (updated) {
-        emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
+        await emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
       }
 
       return approver;
     } catch (error) {
-      this.logger.error('Failed to update transaction approver', (error as any)?.stack ?? (error as any)?.message ?? String(error));
-      throw new BadRequestException(error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : null;
+      this.logger.error('Failed to update transaction approver', errorStack ?? errorMessage);
+      throw new BadRequestException(errorMessage);
     }
   }
 
@@ -533,7 +537,7 @@ export class ApproversService {
 
     const result = await this.removeNode(approver.id);
 
-    emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
+    await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
 
     return result;
   }
@@ -607,9 +611,9 @@ export class ApproversService {
     const notificationEvent = [{ entityId: transaction.id }];
 
     if (!dto.approved || userApprovers.every(a => a.approved)) {
-      emitTransactionStatusUpdate(this.notificationsPublisher, notificationEvent);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, notificationEvent);
     } else {
-      emitTransactionUpdate(this.notificationsPublisher, notificationEvent);
+      await emitTransactionUpdate(this.notificationsPublisher, notificationEvent);
     }
 
     return true;
@@ -676,11 +680,9 @@ export class ApproversService {
       }
     });
 
-    const rootApprovers = Array.from(approverMap.values()).filter(
+    return Array.from(approverMap.values()).filter(
       approver => approver.listId === null,
     );
-
-    return rootApprovers;
   }
 
   /* Validates the approver DTO */
