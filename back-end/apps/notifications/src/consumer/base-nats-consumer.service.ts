@@ -1,6 +1,6 @@
 import { Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { NatsJetStreamService } from '@app/common/nats/nats-jetstream.service';
-import { AckPolicy, Consumer, ConsumerMessages, DeliverPolicy, JsMsg } from 'nats';
+import { AckPolicy, Consumer, ConsumerMessages, DeliverPolicy, JsMsg, NatsError } from 'nats';
 import { ClassConstructor } from 'class-transformer';
 import { MessageValidator } from './message-validator.util';
 
@@ -105,10 +105,11 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
         await this.sleep(INITIAL_RECONNECT_DELAY_MS);
       } catch (error) {
         if (!this.running) break;
-
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : null;
         this.logger.error(
-          `Consumer error, reconnecting in ${reconnectDelay}ms: ${error.message}`,
-          error.stack,
+          `Consumer error, reconnecting in ${reconnectDelay}ms: ${errorMessage}`,
+          errorStack,
         );
 
         await this.sleep(reconnectDelay);
@@ -171,7 +172,9 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       await handler.handler(data);
       msg.ack();
     } catch (error) {
-      this.logger.error(`Error processing message: ${error.message}`, error.stack);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : null;
+      this.logger.error(`Error processing message: ${errorMessage}`, errorStack);
       msg.ack(); // Still ack to avoid redelivery loops
     }
   }
@@ -211,7 +214,9 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
       await jsm.consumers.update(streamName, consumerConfig.durable_name, consumerConfig);
       this.logger.log(`Consumer ${consumerConfig.durable_name} updated`);
     } catch (err) {
-      if (err.message?.includes('consumer not found') || err.code === '404') {
+      const errMessage = err instanceof Error ? err.message : null;
+      const errCode = err instanceof NatsError ? err.code : null;
+      if (errMessage?.includes('consumer not found') || errCode === '404') {
         await jsm.consumers.add(streamName, consumerConfig);
         this.logger.log(`Consumer ${consumerConfig.durable_name} created`);
       } else {
@@ -222,7 +227,8 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
     try {
       return await js.consumers.get(streamName, consumerConfig.durable_name);
     } catch (err) {
-      this.logger.error(`Failed to get runtime consumer ${consumerConfig.durable_name}`, err?.stack);
+      const errStack = err instanceof Error ? err.stack : null;
+      this.logger.error(`Failed to get runtime consumer ${consumerConfig.durable_name}`, errStack);
       throw err;
     }
   }

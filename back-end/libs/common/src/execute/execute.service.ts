@@ -77,8 +77,9 @@ export class ExecuteService {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
         transactions.push({ sdkTransaction, transaction });
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
         throw new Error(
-          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
+          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${errorMessage}`,
         );
       }
     }

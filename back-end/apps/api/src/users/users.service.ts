@@ -9,8 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
-import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+import { Repository, FindOptionsWhere } from 'typeorm';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';

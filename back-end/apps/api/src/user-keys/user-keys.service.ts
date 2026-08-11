@@ -6,8 +6,8 @@ import {
   attachKeys,
   ErrorCodes,
   MAX_USER_KEYS,
-  PaginatedResourceDto,
   Pagination,
+  PaginatedResourceDto,
 } from '@app/common';
 
 import { User, UserKey } from '@entities';
@@ -19,6 +19,12 @@ export class UserKeysService {
   private readonly logger = new Logger(UserKeysService.name);
 
   constructor(@InjectRepository(UserKey) private repo: Repository<UserKey>) {}
+
+  /** @deprecated Use keys embedded in GET /users instead. Kept for backwards compatibility with older frontend versions. */
+  async getUserKeys({ page, limit, size, offset }: Pagination): Promise<PaginatedResourceDto<UserKey>> {
+    const [items, total] = await this.repo.findAndCount({ take: limit, skip: offset });
+    return { totalItems: total, items, page, size };
+  }
 
   // Get the user key for the provided where clause.
   getUserKey(
@@ -144,22 +150,4 @@ export class UserKeysService {
     return userKey;
   }
 
-  async getUserKeys({
-    page,
-    limit,
-    size,
-    offset,
-  }: Pagination): Promise<PaginatedResourceDto<UserKey>> {
-    const [items, total] = await this.repo.findAndCount({
-      take: limit,
-      skip: offset,
-    });
-
-    return {
-      totalItems: total,
-      items,
-      page,
-      size,
-    };
-  }
 }

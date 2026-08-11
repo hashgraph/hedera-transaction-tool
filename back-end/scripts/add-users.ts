@@ -99,7 +99,8 @@ async function main() {
       console.log(`Password hash: ${pc.cyan(newUser.password)}`);
       console.log(`Admin: ${pc.cyan(newUser.admin.toString())}`);
     } catch (error) {
-      console.log(pc.red(error.message));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(pc.red(errorMessage));
     }
   }
 
