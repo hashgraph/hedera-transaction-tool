@@ -150,6 +150,11 @@ overrides:
   "undici@<7.0.0": "6.28.0"
   "nanoid": "3.3.18"
 
+# Refuse to resolve packages published fewer than 3 days ago.
+# This blocks supply-chain attacks that race to publish malicious versions.
+# Add a specific package@version to minimumReleaseAgeExclude only after
+# confirming it is safe (e.g. a trusted patch that is legitimately new).
+minimumReleaseAge: 3
 minimumReleaseAgeExclude:
   - '@vue/language-core@3.3.8'
   - vue-tsc@3.3.8

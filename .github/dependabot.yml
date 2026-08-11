@@ -13,8 +13,13 @@ updates:
     versioning-strategy: increase
     open-pull-requests-limit: 15
     ignore:
+      # Supply-chain attack blocklist — keep in sync with:
+      #   pnpm-workspace.yaml  `overrides` section (pins transitive deps to safe versions)
+      #   .github/workflows/security.yaml  `pnpm audit --ignore` flags (silences advisories
+      #     whose only fix version is itself malicious)
+      # Remove entries once clean patched versions are confirmed safe.
+      #
       # Shai-Hulud supply chain attack (2026-08-04): malicious versions published.
-      # Remove these ignores once clean patched versions are confirmed safe.
       - dependency-name: "keyv"
         versions: ["6.0.0"]
       - dependency-name: "@keyv/*"
