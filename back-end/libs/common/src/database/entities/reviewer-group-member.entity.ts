@@ -14,6 +14,7 @@ import { UserKey } from './user-key.entity';
 
 @Entity()
 @Index(['groupId', 'userId'], { unique: true })
+@Index(['userId'])
 export class ReviewerGroupMember {
   @PrimaryGeneratedColumn()
   id: number;
@@ -39,9 +40,9 @@ export class ReviewerGroupMember {
   @Column()
   userKeyId: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deletedAt: Date;
 }

@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -11,6 +12,8 @@ import { ReviewerRule } from './reviewer-rule.entity';
 import { ReviewerAction } from './reviewer-action.enum';
 
 @Entity()
+@Index(['ruleId'])
+@Index(['groupId'])
 export class RuleChangeRecord {
   @PrimaryGeneratedColumn()
   id: number;
@@ -58,6 +61,6 @@ export class RuleChangeRecord {
   @Column({ type: 'bytea', nullable: true })
   attestationSignatures: Buffer | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

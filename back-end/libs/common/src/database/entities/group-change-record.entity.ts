@@ -2,6 +2,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
@@ -31,6 +32,7 @@ import { ReviewerGroup } from './reviewer-group.entity';
 // created by an admin with no prior members to attest it; the client must receive it
 // over a trusted channel (e.g. initial app setup or admin-verified import).
 @Entity()
+@Index(['groupId'])
 export class GroupChangeRecord {
   @PrimaryGeneratedColumn()
   id: number;
@@ -72,6 +74,6 @@ export class GroupChangeRecord {
   @Column({ type: 'bytea' })
   attestationSignatures: Buffer;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 }

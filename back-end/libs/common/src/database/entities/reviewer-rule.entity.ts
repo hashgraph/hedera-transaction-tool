@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   OneToMany,
@@ -22,6 +23,7 @@ import { RuleChangeRecord } from './rule-change-record.entity';
 // rule; remove the old one and add a new one. Once conditions land, an update action
 // will be added to RuleChangeRecord to handle in-place condition changes.
 @Entity()
+@Index(['groupId'])
 export class ReviewerRule {
   @PrimaryGeneratedColumn()
   id: number;
@@ -45,10 +47,10 @@ export class ReviewerRule {
   @Column({ nullable: true })
   transactionType: string | null;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
-  @DeleteDateColumn()
+  @DeleteDateColumn({ type: 'timestamptz' })
   deletedAt: Date;
 
   @OneToMany(() => RuleChangeRecord, record => record.rule)
