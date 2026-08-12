@@ -58,6 +58,10 @@ export class ContactListPage extends BasePage {
 
   async fillInContactNickname(nickname: string) {
     await this.fill(this.inputChangeNicknameSelector, nickname);
+    // Tab away from the input so the blur event fires reliably in Electron.
+    // Clicking a non-focusable element does not guarantee blur dispatch.
+    const input = this.getElement(this.inputChangeNicknameSelector);
+    await input.press('Tab');
   }
 
   async waitForContactNicknameVisible(

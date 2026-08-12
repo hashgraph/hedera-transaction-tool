@@ -1,4 +1,4 @@
-import type { Contact, IUserKey } from '@shared/interfaces';
+import type { Contact } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
 import { defineStore } from 'pinia';
@@ -7,7 +7,7 @@ import { PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from './storeUser';
 
-import { getAllUserKeys, getUserKeys, getUsers } from '@renderer/services/organization';
+import { getUserKeys, getUsers } from '@renderer/services/organization';
 import { getOrganizationContacts } from '@renderer/services/contactsService';
 
 import { isLoggedInOrganization, isUserLoggedIn } from '@renderer/utils';
@@ -102,40 +102,20 @@ async function loadContacts(
   user: LoggedInUser,
   organization: (ConnectedOrganization & LoggedInOrganization) | null,
 ): Promise<Contact[]> {
-  let result: Contact[];
+  if (organization === null) return [];
 
-  if (organization !== null) {
-    const serverUrl = organization.serverUrl;
-    const users = await getUsers(serverUrl);
+  const serverUrl = organization.serverUrl;
+  const [users, orgContacts] = await Promise.all([
+    getUsers(serverUrl),
+    getOrganizationContacts(user.id, organization.id, organization.userId),
+  ]);
 
-    const orgContacts = await getOrganizationContacts(
-      user.id,
-      organization.id,
-      organization.userId,
-    );
-    result = [];
-
-    const allKeys = await getAllUserKeys(serverUrl);
-    const userToKeys = new Map<number, IUserKey[]>();
-    allKeys.forEach(k => {
-      if (!userToKeys.has(k.userId)) userToKeys.set(k.userId, []);
-      userToKeys.get(k.userId)?.push(k);
-    });
-
-    users.forEach(u => {
-      const keys = userToKeys.get(u.id) || [];
-      result.push({
-        user: u,
-        userKeys: keys,
-        nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
-        nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
-      });
-    });
-  } else {
-    result = [];
-  }
-
-  return Promise.resolve(result);
+  return users.map(u => ({
+    user: u,
+    userKeys: u.keys ?? [],
+    nickname: orgContacts.find(c => c.organization_user_id === u.id)?.nickname || '',
+    nicknameId: orgContacts.find(c => c.organization_user_id === u.id)?.id || null,
+  }));
 }
 
 export default useContactsStore;

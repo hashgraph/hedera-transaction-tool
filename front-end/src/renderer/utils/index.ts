@@ -353,14 +353,6 @@ export const findIdentifier = async (publicKey: string, publicKeyOwnerCache: Pub
   return null;
 };
 
-export const formatPublicKeyContactList = async (publicKey: string) => {
-  const mapping = await getPublicKeyMapping(publicKey);
-  if (mapping) {
-    return `${mapping.nickname} (${mapping.public_key})`;
-  }
-  return publicKey;
-};
-
 export const extractIdentifier = (formattedString: string) => {
   if (!formattedString) {
     return null;

@@ -1,9 +1,10 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import type { Contact } from '@shared/interfaces';
 
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
+import { getAllPublicKeyMappings } from '@renderer/utils';
 
 const mocks = vi.hoisted(() => ({
   userStore: {
@@ -21,16 +22,19 @@ const mocks = vi.hoisted(() => ({
     fetchUserKeys: vi.fn().mockResolvedValue(undefined),
   },
   accountLookup: vi.fn().mockResolvedValue({}),
-  formatPublicKey: vi.fn(async (key: string) => key),
 }));
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
   const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
+  // Strip the standard ED25519 DER prefix so toStringRaw() returns the raw hex key,
+  // matching real SDK behaviour and making DER vs raw mismatches visible in tests.
+  const ED25519_DER_PREFIX = '302a300506032b6570032100';
   return {
     ...actual,
     PublicKey: {
       fromString: vi.fn((key: string) => ({
-        toStringRaw: () => key,
+        toStringRaw: () =>
+          key.startsWith(ED25519_DER_PREFIX) ? key.slice(ED25519_DER_PREFIX.length) : key,
         _key: {
           _type: 'ED25519',
         },
@@ -101,7 +105,7 @@ vi.mock('@renderer/utils/ToastManager', () => ({
 
 vi.mock('@renderer/utils', () => ({
   extractIdentifier: vi.fn((value: string) => ({ identifier: value })),
-  formatPublicKeyContactList: mocks.formatPublicKey,
+  getAllPublicKeyMappings: vi.fn().mockResolvedValue([]),
   getErrorMessage: vi.fn((error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback,
   ),
@@ -137,7 +141,6 @@ describe('ContactDetails.vue', () => {
     mocks.contactsStore.fetch.mockReset();
     mocks.contactsStore.fetchUserKeys.mockResolvedValue(undefined);
     mocks.accountLookup.mockResolvedValue({});
-    mocks.formatPublicKey.mockImplementation(async (key: string) => key);
   });
 
   function mountContactDetails() {
@@ -176,6 +179,21 @@ describe('ContactDetails.vue', () => {
     expect(wrapper.find('[data-testid="p-contact-public-key-0"]').text()).toContain(
       contact.userKeys[0].publicKey,
     );
+  });
+
+  test('renders stored nickname when the mapping is keyed by a DER-formatted key', async () => {
+    // The mapping is stored exactly as the user imported it — DER format.
+    // handleFetchMapping must canonicalize both the stored key and the contact key
+    // to raw before comparing; otherwise DER-stored nicknames are silently lost.
+    vi.mocked(getAllPublicKeyMappings).mockResolvedValueOnce([
+      { public_key: contact.userKeys[0].publicKey, nickname: 'Alice Key' } as any,
+    ]);
+
+    const wrapper = mountContactDetails();
+    await vi.dynamicImportSettled();
+    await flushPromises();
+
+    expect(wrapper.html()).toContain('Alice Key');
   });
 
   test('shows admin contact actions only for organization admins', () => {
