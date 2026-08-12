@@ -12,30 +12,6 @@ import { getUseKeychainClaim } from './claim';
 
 const logger = createLogger('main.localUser.keyPairs');
 
-//Get all stored secret hash objects
-export const getSecretHashes = async (
-  user_id: string,
-  organization_id?: string | null,
-): Promise<string[]> => {
-  const prisma = getPrismaClient();
-
-  const where: Prisma.KeyPairWhereInput = {
-    user_id,
-    secret_hash: {
-      not: null,
-    },
-  };
-
-  await extendWhere(where, organization_id);
-
-  const groups = await prisma.keyPair.groupBy({
-    by: ['secret_hash'],
-    where,
-  });
-
-  return groups.map(gr => gr.secret_hash).filter(sh => sh !== null);
-};
-
 //Get stored key pairs
 export const getKeyPairs = async (
   user_id: string,

@@ -13,7 +13,6 @@ import {
   deleteKeyPair,
   deleteSecretHashes,
   getKeyPairs,
-  getSecretHashes,
   storeKeyPair,
   updateMnemonicHash,
   updateNickname,
@@ -59,25 +58,6 @@ describe('Services Local User Key Pairs', () => {
     nickname: 'nickname',
     type: 'ecdsa',
   };
-
-  describe('getSecretHashes', () => {
-    beforeEach(() => {
-      vi.resetAllMocks();
-    });
-
-    test('Should get the secret hashes for a user in organization', async () => {
-      const groups: Prisma.PickEnumerable<Prisma.KeyPairGroupByOutputType, 'secret_hash'[]>[] = [
-        { secret_hash: keyPair.secret_hash },
-      ];
-
-      //@ts-expect-error Incorrect typing of groupBy
-      prisma.keyPair.groupBy.mockResolvedValue(groups);
-
-      const secretHashes = await getSecretHashes(keyPair.user_id, keyPair.organization_id);
-
-      expect(secretHashes).toEqual([keyPair.secret_hash]);
-    });
-  });
 
   describe('getKeyPairs', () => {
     beforeEach(() => {
