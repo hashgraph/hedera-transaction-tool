@@ -9,6 +9,19 @@ import {
 } from 'typeorm';
 import { ReviewerGroup } from './reviewer-group.entity';
 
+export interface GroupSnapshotMember {
+  userId: number;
+  userKeyId: number;
+  publicKey: string;
+}
+
+export interface GroupSnapshot {
+  name: string;
+  description: string | null;
+  threshold: number;
+  members: GroupSnapshotMember[];
+}
+
 // Append-only audit log of every group mutation. Never deleted.
 //
 // Chain-walking: to bring a local group state up to date, the client fetches all
@@ -56,7 +69,7 @@ export class GroupChangeRecord {
   // with { userId, userKeyId, publicKey } per member. Public keys are embedded so the
   // client can verify the next record's attestation without trusting the backend.
   @Column({ type: 'jsonb' })
-  snapshotPayload: object;
+  snapshotPayload: GroupSnapshot;
 
   // Serialized list of { userKeyId, signature } pairs. Each signature is a
   // cryptographic signature over snapshotPayload made by that member's private key.
