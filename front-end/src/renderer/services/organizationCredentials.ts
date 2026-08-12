@@ -3,17 +3,25 @@ import { commonIPCHandler } from '@renderer/utils';
 /* Organizations Service */
 
 /* Get the organization ids with tokens */
-export const getOrganizationTokens = async (user_id: string) =>
+export const getOrganizationTokens = async (user_id: string, decryptPassword: string | null) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.organizationCredentials.getOrganizationTokens(user_id);
+    return await window.electronAPI.local.organizationCredentials.getOrganizationTokens(
+      user_id,
+      decryptPassword,
+    );
   }, 'Failed to fetch organization tokens');
 
 /* Returns whether the user should sign in a specific organization */
-export const shouldSignInOrganization = async (user_id: string, organization_id: string) =>
+export const shouldSignInOrganization = async (
+  user_id: string,
+  organization_id: string,
+  decryptPassword: string | null,
+) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizationCredentials.shouldSignInOrganization(
       user_id,
       organization_id,
+      decryptPassword,
     );
   }, 'Failed to determine whether user should sign in organization');
 
