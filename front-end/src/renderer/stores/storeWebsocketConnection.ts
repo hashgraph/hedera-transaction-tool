@@ -4,6 +4,9 @@ import { Socket, io } from 'socket.io-client';
 
 import useUserStore from './storeUser';
 import useOrganizationConnection from './storeOrganizationConnection';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+
+import { organizationUpdateTimestamps } from '@renderer/stores/versionState';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
@@ -26,6 +29,9 @@ const useWebsocketConnection = defineStore(
     const user = useUserStore();
     const orgConnection = useOrganizationConnection();
     const logger = createLogger('renderer.websocket');
+
+    /* Composables */
+    const { performVersionCheck } = useVersionCheck();
 
     /* State */
     const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
@@ -153,6 +159,28 @@ const useWebsocketConnection = defineStore(
         });
         connectionStates.value[serverUrl] = 'connected';
         orgConnection.setConnectionStatus(serverUrl, 'connected');
+
+        // Clear stale disconnect metadata from the raw org object.
+        // orgConnection.setConnectionStatus already cleared the store-side
+        // disconnect reason; this keeps the org object in sync so the
+        // OrganizationsTab fallback (org?.disconnectReason) doesn't show
+        // stale "Update required to reconnect" text after an auto-reconnect.
+        const org = user.organizations.find(o => o.serverUrl === serverUrl);
+        if (org) {
+          delete org.disconnectReason;
+          delete org.lastDisconnectedAt;
+        }
+
+        // Only run a version check if this session hasn't already gotten
+        // fresh data for this org. reconnectOrganization calls
+        // performVersionCheck before ws.connect(), so the timestamp is
+        // already set when 'connect' fires for explicit reconnects — no need
+        // to duplicate that call. For socket.io auto-reconnects and startup
+        // checks that failed (org temporarily unreachable), there is no
+        // timestamp yet, so we check now.
+        if (!organizationUpdateTimestamps.value[serverUrl]) {
+          void performVersionCheck(serverUrl);
+        }
       });
 
       socket.on('connect_error', error => {
