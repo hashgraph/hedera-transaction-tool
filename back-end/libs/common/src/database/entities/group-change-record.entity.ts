@@ -22,6 +22,13 @@ export interface GroupSnapshot {
   members: GroupSnapshotMember[];
 }
 
+// One entry per signing member. signature is the hex-encoded Ed25519 signature
+// bytes produced by PrivateKey.sign() over the attested payload.
+export interface AttestationSignature {
+  userKeyId: number;
+  signature: string;
+}
+
 // Append-only audit log of every group mutation. Never deleted.
 //
 // Chain-walking: to bring a local group state up to date, the client fetches all
@@ -71,21 +78,21 @@ export class GroupChangeRecord {
   @Column({ type: 'jsonb' })
   snapshotPayload: GroupSnapshot;
 
-  // Serialized list of { userKeyId, signature } pairs. Each signature is a
-  // cryptographic signature over snapshotPayload made by that member's private key.
+  // List of { userKeyId, signature } pairs. Each signature is the hex-encoded
+  // Ed25519 signature over snapshotPayload made by that member's private key.
   // The list must contain enough valid signatures to meet the threshold from the
   // previous version.
   //
   // Client verification:
   //   1. For each { userKeyId, signature } entry: look up the publicKey for that
   //      userKeyId from the locally-held previous-version member list.
-  //   2. Verify the signature over snapshotPayload using that publicKey.
+  //   2. Verify: PublicKey.fromString(publicKey).verify(payload, Buffer.from(signature, 'hex'))
   //   3. Reject any entry whose userKeyId is not in the local member list — signatures
   //      from unknown keys do not count toward the threshold.
   //   4. If the number of valid signatures >= previous version's threshold, accept the
   //      new state. Never fetch public keys from the backend for this check.
-  @Column({ type: 'bytea' })
-  attestationSignatures: Buffer;
+  @Column({ type: 'jsonb' })
+  attestationSignatures: AttestationSignature[];
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;

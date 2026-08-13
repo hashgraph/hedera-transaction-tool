@@ -7,6 +7,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { AttestationSignature } from './group-change-record.entity';
 import { ReviewerGroup } from './reviewer-group.entity';
 import { ReviewerRule } from './reviewer-rule.entity';
 import { ReviewerAction } from './reviewer-action.enum';
@@ -68,19 +69,19 @@ export class RuleChangeRecord {
   // Null for ADD actions — adding a rule only increases coverage and requires no
   // attestation. Required for REMOVE actions.
   //
-  // For REMOVE: serialized list of { userKeyId, signature } pairs. Each signature is
-  // a cryptographic signature over rulePayload made by a group member's private key.
+  // For REMOVE: list of { userKeyId, signature } pairs. Each signature is the
+  // hex-encoded Ed25519 signature over rulePayload made by a group member's private key.
   //
   // Client verification:
   //   1. From the locally-held group chain, find the snapshot at groupSnapshotVersion.
   //   2. For each { userKeyId, signature } entry: find the matching member in that
   //      snapshot and use their embedded publicKey to verify the signature over
-  //      rulePayload.
+  //      rulePayload: PublicKey.fromString(publicKey).verify(payload, Buffer.from(signature, 'hex'))
   //   3. Reject any entry whose userKeyId is not in that snapshot's member list.
   //   4. If the number of valid signatures >= that snapshot's threshold, accept the
   //      change. Never fetch keys or group state from the backend for this check.
-  @Column({ type: 'bytea', nullable: true })
-  attestationSignatures: Buffer | null;
+  @Column({ type: 'jsonb', nullable: true })
+  attestationSignatures: AttestationSignature[] | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
