@@ -6,8 +6,9 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
-import { AttestationSignature } from './group-change-record.entity';
+import { AttestationSignature, ChangeRequestStatus } from './group-change-record.entity';
 import { ReviewerGroup } from './reviewer-group.entity';
 import { ReviewerRule } from './reviewer-rule.entity';
 import { ReviewerAction } from './reviewer-action.enum';
@@ -22,6 +23,13 @@ export interface RulePayload {
   [key: string]: unknown;
 }
 
+// Audit log of rule mutations; rows start PENDING (for REMOVE actions) and transition
+// to APPLIED. ADD actions require no attestation and are written directly as APPLIED.
+// Cancelled REMOVE requests are deleted outright — they never appear here.
+//
+// At most one PENDING record may exist per ruleId at any time (enforced by a partial
+// unique index — see the migration). TypeORM cannot express partial indexes via
+// decorators, so the constraint lives only in the DB.
 @Entity()
 @Index(['ruleId'])
 @Index(['groupId'])
@@ -49,40 +57,50 @@ export class RuleChangeRecord {
   @Column()
   action: ReviewerAction;
 
+  // ChangeRequestStatus — ADD actions are written directly as APPLIED (no attestation
+  // required). REMOVE actions start as PENDING while signatures accumulate, then
+  // transition to APPLIED once the group threshold is met.
+  @Column()
+  status: ChangeRequestStatus;
+
   // Full rule definition at the time of this change: hederaEntityId, network,
   // entityRole, transactionType, and any future fields (e.g. conditions). Stored as
   // jsonb so the schema can grow without a migration when conditions are added.
-  // This is the exact payload that attestationSignatures are computed over.
+  // For REMOVE actions this is the exact payload that attestationSignatures are
+  // computed over.
   @Column({ type: 'jsonb' })
   rulePayload: RulePayload;
 
-  // The snapshotVersion of the reviewer_group at the time this change was attested.
+  // The snapshotVersion of the reviewer_group when this record was created.
   // Null for ADD actions (no attestation required). For REMOVE actions, the client
   // uses this to find the right group snapshot in its locally-held, already-verified
-  // group chain — never fetch the group from the backend to perform this lookup, as a
+  // group chain — never fetch the group from the backend for this lookup, as a
   // compromised backend could supply a different member list. Walk all group changes
   // first so the required snapshot version is already trusted locally before any rule
   // changes are processed.
   @Column({ nullable: true })
   groupSnapshotVersion: number | null;
 
-  // Null for ADD actions — adding a rule only increases coverage and requires no
-  // attestation. Required for REMOVE actions.
+  // Null for ADD actions. For REMOVE actions: accumulated { userKeyId, signature }
+  // pairs, starting as [] and appended to as each member signs. Once length >=
+  // group threshold, the change is applied.
   //
-  // For REMOVE: list of { userKeyId, signature } pairs. Each signature is the
-  // hex-encoded Ed25519 signature over rulePayload made by a group member's private key.
-  //
-  // Client verification:
+  // Client verification (APPLIED REMOVE records only):
   //   1. From the locally-held group chain, find the snapshot at groupSnapshotVersion.
   //   2. For each { userKeyId, signature } entry: find the matching member in that
   //      snapshot and use their embedded publicKey to verify the signature over
   //      rulePayload: PublicKey.fromString(publicKey).verify(payload, Buffer.from(signature, 'hex'))
   //   3. Reject any entry whose userKeyId is not in that snapshot's member list.
-  //   4. If the number of valid signatures >= that snapshot's threshold, accept the
+  //   4. If the count of valid signatures >= that snapshot's threshold, accept the
   //      change. Never fetch keys or group state from the backend for this check.
   @Column({ type: 'jsonb', nullable: true })
   attestationSignatures: AttestationSignature[] | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
+
+  // For APPLIED records this is the moment the change was committed — the row is
+  // immutable after that point, so updatedAt doubles as appliedAt.
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updatedAt: Date;
 }
