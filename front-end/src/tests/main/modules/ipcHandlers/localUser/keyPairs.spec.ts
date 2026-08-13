@@ -12,7 +12,6 @@ import {
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   getKeyPairs,
-  getSecretHashes,
   deleteKeyPair,
   updateNickname,
   updateMnemonicHash,
@@ -41,7 +40,6 @@ describe('IPC handlers Key Pairs', () => {
     const events = [
       'store',
       'getAll',
-      'getSecretHashes',
       'changeDecryptionPassword',
       'updateNickname',
       'updateMnemonicHash',
@@ -83,11 +81,6 @@ describe('IPC handlers Key Pairs', () => {
   test('Should set up getAll handler', async () => {
     await invokeIPCHandler('keyPairs:getAll', userId, organizationId);
     expect(getKeyPairs).toHaveBeenCalledWith(userId, organizationId);
-  });
-
-  test('Should set up getSecretHashes handler', async () => {
-    await invokeIPCHandler('keyPairs:getSecretHashes', userId, organizationId);
-    expect(getSecretHashes).toHaveBeenCalledWith(userId, organizationId);
   });
 
   test('Should set up deleteEncryptedPrivateKeys handler', async () => {

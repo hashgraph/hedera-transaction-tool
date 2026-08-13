@@ -7,7 +7,6 @@ import {
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   getKeyPairs,
-  getSecretHashes,
   deleteKeyPair,
   updateNickname,
   updateMnemonicHash,
@@ -22,7 +21,6 @@ export default () => {
   createIPCChannel('keyPairs', [
     renameFunc(storeKeyPair, 'store'),
     renameFunc(getKeyPairs, 'getAll'),
-    renameFunc(getSecretHashes, 'getSecretHashes'),
     renameFunc(changeDecryptionPassword, 'changeDecryptionPassword'),
     renameFunc(updateNickname, 'updateNickname'),
     renameFunc(updateMnemonicHash, 'updateMnemonicHash'),

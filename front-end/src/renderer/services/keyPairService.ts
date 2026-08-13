@@ -18,12 +18,6 @@ export const getKeyPairs = async (userId: string, organizationId?: string | null
     return await window.electronAPI.local.keyPairs.getAll(userId, organizationId);
   }, 'Failed to fetch key pairs');
 
-/* Get stored secret hashes */
-export const getSecretHashes = async (userId: string, organizationId?: string | null) =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.keyPairs.getSecretHashes(userId, organizationId);
-  }, 'Failed to fetch secret hashes');
-
 /* Store key pair*/
 export const storeKeyPair = async (
   keyPair: Prisma.KeyPairUncheckedCreateInput,
