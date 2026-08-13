@@ -110,8 +110,8 @@ describe('Reviewer Groups Schema', () => {
     const groupId = await insertGroup('change-record-group');
 
     const [record] = await dataSource.query(
-      `INSERT INTO "group_change_record" ("groupId", "snapshotVersion", "snapshotPayload", "attestationSignatures")
-       VALUES ($1, 1, '{"name":"g"}', '[{"userKeyId":1,"signature":"deadbeef"}]') RETURNING id`,
+      `INSERT INTO "group_change_record" ("groupId", "type", "status", "snapshotVersion", "snapshotPayload", "attestationSignatures")
+       VALUES ($1, 'UPDATE', 'APPLIED', 1, '{"name":"g"}', '[{"userKeyId":1,"signature":"deadbeef"}]') RETURNING id`,
       [groupId],
     );
 
@@ -132,8 +132,8 @@ describe('Reviewer Groups Schema', () => {
       [groupId],
     );
     const [record] = await dataSource.query(
-      `INSERT INTO "rule_change_record" ("ruleId", "groupId", "action", "rulePayload")
-       VALUES ($1, $2, 'add', '{"hederaEntityId":"0.0.5","network":"testnet"}') RETURNING id`,
+      `INSERT INTO "rule_change_record" ("ruleId", "groupId", "action", "status", "rulePayload")
+       VALUES ($1, $2, 'add', 'APPLIED', '{"hederaEntityId":"0.0.5","network":"testnet"}') RETURNING id`,
       [rule.id, groupId],
     );
 
@@ -205,8 +205,8 @@ describe('Reviewer Groups Schema', () => {
     const groupId = await insertGroup('rule-record-group-null');
 
     const [record] = await dataSource.query(
-      `INSERT INTO "rule_change_record" ("groupId", "action", "rulePayload")
-       VALUES ($1, 'add', '{"hederaEntityId":"0.0.6","network":"testnet"}') RETURNING id`,
+      `INSERT INTO "rule_change_record" ("groupId", "action", "status", "rulePayload")
+       VALUES ($1, 'add', 'APPLIED', '{"hederaEntityId":"0.0.6","network":"testnet"}') RETURNING id`,
       [groupId],
     );
 

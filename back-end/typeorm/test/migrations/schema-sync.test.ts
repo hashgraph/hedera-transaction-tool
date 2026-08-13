@@ -48,7 +48,11 @@ describe('Schema Synchronization', () => {
 
     // Functional indexes created in migrations cannot be expressed via TypeORM
     // entity decorators, so we exclude them from the schema-sync check.
-    const migrationManagedIndexes = ['UQ_reviewer_rule_entity_network_group_role_type'];
+    const migrationManagedIndexes = [
+      'UQ_reviewer_rule_entity_network_group_role_type',
+      'IDX_group_change_record_pending_groupId',
+      'IDX_rule_change_record_pending_ruleId',
+    ];
     const isKnown = (q: { query: string }) =>
       migrationManagedIndexes.some(name => q.query.includes(name));
 
