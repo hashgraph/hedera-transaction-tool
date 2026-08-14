@@ -12,6 +12,8 @@ import { AttestationSignature, ChangeRequestStatus } from './group-change-record
 import { ReviewerGroup } from './reviewer-group.entity';
 import { ReviewerRule } from './reviewer-rule.entity';
 import { ReviewerAction } from './reviewer-action.enum';
+import { User } from './user.entity';
+import { UserKey } from './user-key.entity';
 
 // The known fields at time of writing — intentionally open-ended as conditions
 // will be added here in a future migration without requiring a schema change.
@@ -24,8 +26,8 @@ export interface RulePayload {
 }
 
 // Audit log of rule mutations; rows start PENDING (for REMOVE actions) and transition
-// to APPLIED. ADD actions require no attestation and are written directly as APPLIED.
-// Cancelled REMOVE requests are deleted outright — they never appear here.
+// to APPLIED or REJECTED. ADD actions require no attestation and are written directly
+// as APPLIED. Cancelled REMOVE requests are deleted outright — they never appear here.
 //
 // At most one PENDING record may exist per ruleId at any time (enforced by a partial
 // unique index — see the migration). TypeORM cannot express partial indexes via
@@ -54,6 +56,31 @@ export class RuleChangeRecord {
   @Column({ nullable: true })
   groupId: number | null;
 
+  // The admin who proposed this change. Shown to group members so they know who is
+  // requesting their approval. Nullable so the audit record survives user deletion —
+  // SET NULL on delete preserves the row while dropping the FK reference.
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userId' })
+  user: User | null;
+
+  @Column({ nullable: true })
+  userId: number | null;
+
+  // Which of the proposer's registered keys they used to sign the proposal. Nullable
+  // for the same reason as userId — the signature is retained even after key removal.
+  @ManyToOne(() => UserKey, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'userKeyId' })
+  userKey: UserKey | null;
+
+  @Column({ nullable: true })
+  userKeyId: number | null;
+
+  // Hex-encoded Ed25519 signature over rulePayload, produced by the proposer's private
+  // key. Proves the proposer created this specific request — the backend cannot forge it
+  // without access to their private key. Retained even after userId/userKeyId are nulled.
+  @Column({ nullable: true })
+  userSignature: string | null;
+
   @Column()
   action: ReviewerAction;
 
@@ -81,18 +108,20 @@ export class RuleChangeRecord {
   @Column({ nullable: true })
   groupSnapshotVersion: number | null;
 
-  // Null for ADD actions. For REMOVE actions: accumulated { userKeyId, signature }
-  // pairs, starting as [] and appended to as each member signs. Once length >=
-  // group threshold, the change is applied.
+  // Null for ADD actions. For REMOVE actions: accumulated member votes starting as [].
+  // Each entry's signature covers { vote, rulePayload } so neither the vote nor the
+  // content can be tampered with by the backend. The first 'reject' entry moves status
+  // to REJECTED immediately. Once 'approve' count >= group threshold, status moves to
+  // APPLIED.
   //
   // Client verification (APPLIED REMOVE records only):
   //   1. From the locally-held group chain, find the snapshot at groupSnapshotVersion.
-  //   2. For each { userKeyId, signature } entry: find the matching member in that
-  //      snapshot and use their embedded publicKey to verify the signature over
-  //      rulePayload: PublicKey.fromString(publicKey).verify(payload, Buffer.from(signature, 'hex'))
+  //   2. For each entry: find the matching member in that snapshot and use their
+  //      embedded publicKey to verify the signature over { vote, rulePayload }:
+  //      PublicKey.fromString(publicKey).verify({ vote, rulePayload }, Buffer.from(signature, 'hex'))
   //   3. Reject any entry whose userKeyId is not in that snapshot's member list.
-  //   4. If the count of valid signatures >= that snapshot's threshold, accept the
-  //      change. Never fetch keys or group state from the backend for this check.
+  //   4. If 'approve' count >= that snapshot's threshold, accept the change.
+  //      Never fetch keys or group state from the backend for this check.
   @Column({ type: 'jsonb', nullable: true })
   attestationSignatures: AttestationSignature[] | null;
 
