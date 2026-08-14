@@ -108,11 +108,12 @@ describe('Reviewer Groups Schema', () => {
 
   it('should set groupId to null on group_change_record when group is deleted', async () => {
     const groupId = await insertGroup('change-record-group');
+    const userId = await insertUser('change-record@test.com');
 
     const [record] = await dataSource.query(
-      `INSERT INTO "group_change_record" ("groupId", "type", "status", "snapshotVersion", "snapshotPayload", "attestationSignatures")
-       VALUES ($1, 'UPDATE', 'APPLIED', 1, '{"name":"g"}', '[{"userKeyId":1,"vote":"approve","signature":"deadbeef"}]') RETURNING id`,
-      [groupId],
+      `INSERT INTO "group_change_record" ("groupId", "userId", "type", "status", "snapshotVersion", "snapshotPayload", "attestationSignatures")
+       VALUES ($1, $2, 'UPDATE', 'APPLIED', 1, '{"name":"g"}', '[{"userKeyId":1,"vote":"approve","signature":"deadbeef"}]') RETURNING id`,
+      [groupId, userId],
     );
 
     await dataSource.query(`DELETE FROM "reviewer_group" WHERE id = $1`, [groupId]);
@@ -126,15 +127,16 @@ describe('Reviewer Groups Schema', () => {
 
   it('should set ruleId to null on rule_change_record when rule is deleted', async () => {
     const groupId = await insertGroup('rule-record-group');
+    const userId = await insertUser('rule-record@test.com');
 
     const [rule] = await dataSource.query(
       `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network) VALUES ($1, '0.0.5', 'testnet') RETURNING id`,
       [groupId],
     );
     const [record] = await dataSource.query(
-      `INSERT INTO "rule_change_record" ("ruleId", "groupId", "action", "status", "rulePayload")
-       VALUES ($1, $2, 'add', 'APPLIED', '{"hederaEntityId":"0.0.5","network":"testnet"}') RETURNING id`,
-      [rule.id, groupId],
+      `INSERT INTO "rule_change_record" ("ruleId", "groupId", "userId", "action", "status", "rulePayload")
+       VALUES ($1, $2, $3, 'add', 'APPLIED', '{"hederaEntityId":"0.0.5","network":"testnet"}') RETURNING id`,
+      [rule.id, groupId, userId],
     );
 
     await dataSource.query(`DELETE FROM "reviewer_rule" WHERE id = $1`, [rule.id]);
@@ -203,11 +205,12 @@ describe('Reviewer Groups Schema', () => {
 
   it('should set groupId to null on rule_change_record when group is deleted', async () => {
     const groupId = await insertGroup('rule-record-group-null');
+    const userId = await insertUser('rule-record-null@test.com');
 
     const [record] = await dataSource.query(
-      `INSERT INTO "rule_change_record" ("groupId", "action", "status", "rulePayload")
-       VALUES ($1, 'add', 'APPLIED', '{"hederaEntityId":"0.0.6","network":"testnet"}') RETURNING id`,
-      [groupId],
+      `INSERT INTO "rule_change_record" ("groupId", "userId", "action", "status", "rulePayload")
+       VALUES ($1, $2, 'add', 'APPLIED', '{"hederaEntityId":"0.0.6","network":"testnet"}') RETURNING id`,
+      [groupId, userId],
     );
 
     await dataSource.query(`DELETE FROM "reviewer_group" WHERE id = $1`, [groupId]);

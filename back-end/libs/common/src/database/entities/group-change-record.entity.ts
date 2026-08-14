@@ -98,14 +98,14 @@ export class GroupChangeRecord {
   groupId: number | null;
 
   // The admin who proposed this change. Shown to group members so they know who is
-  // requesting their approval. Nullable so the audit record survives user deletion —
-  // SET NULL on delete preserves the row while dropping the FK reference.
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  // requesting their approval. Non-nullable — users are soft-deleted, so this reference
+  // is always valid.
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
-  user: User | null;
+  user: User;
 
-  @Column({ nullable: true })
-  userId: number | null;
+  @Column()
+  userId: number;
 
   // Which of the proposer's registered keys they used to sign the proposal. Nullable
   // for the same reason as userId — the signature itself is retained even after the
