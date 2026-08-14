@@ -111,7 +111,7 @@ describe('Reviewer Groups Schema', () => {
 
     const [record] = await dataSource.query(
       `INSERT INTO "group_change_record" ("groupId", "type", "status", "snapshotVersion", "snapshotPayload", "attestationSignatures")
-       VALUES ($1, 'UPDATE', 'APPLIED', 1, '{"name":"g"}', '[{"userKeyId":1,"signature":"deadbeef"}]') RETURNING id`,
+       VALUES ($1, 'UPDATE', 'APPLIED', 1, '{"name":"g"}', '[{"userKeyId":1,"vote":"approve","signature":"deadbeef"}]') RETURNING id`,
       [groupId],
     );
 
