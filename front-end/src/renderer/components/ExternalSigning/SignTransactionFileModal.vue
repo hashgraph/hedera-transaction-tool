@@ -92,20 +92,21 @@ async function handleSignAll() {
             signatureCountAfter: sigMapAfter.getFlatSignatureList().length,
           });
         } catch (error) {
-          logger.error('Failed to sign transaction file entry', {
-            error,
-          });
+          logger.error('Failed to sign transaction file entry', { error });
+          toastManager.error(
+            'Failed to sign transaction. Please delete the private key and re-add it. For more help, contact your administrator.',
+          );
+          return;
         }
       }
       updatedFile.items.push(updatedItem);
     }
+
     try {
       await writeTransactionFile(updatedFile, props.filePath!);
       showSuccessModal.value = true;
     } catch (error) {
-      logger.error('Failed to update transaction file', {
-        error,
-      });
+      logger.error('Failed to update transaction file', { error });
       toastManager.error('Failed to update file');
     }
   }
