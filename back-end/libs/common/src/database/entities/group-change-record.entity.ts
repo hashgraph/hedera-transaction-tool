@@ -11,16 +11,11 @@ import {
 import { ReviewerGroup } from './reviewer-group.entity';
 import { User } from './user.entity';
 import { UserKey } from './user-key.entity';
+import { AttestationSignature, ChangeRequestStatus } from './change-record.types';
 
 export enum GroupChangeType {
   UPDATE = 'UPDATE',
   DELETE = 'DELETE',
-}
-
-export enum ChangeRequestStatus {
-  PENDING = 'PENDING',
-  APPLIED = 'APPLIED',
-  REJECTED = 'REJECTED',
 }
 
 export interface GroupSnapshotMember {
@@ -34,15 +29,6 @@ export interface GroupSnapshot {
   description: string | null;
   threshold: number;
   members: GroupSnapshotMember[];
-}
-
-// One entry per member response. vote and signature together are what the member
-// produces — the signature is computed over { vote, snapshotPayload } so the backend
-// cannot flip a reject to an approve without invalidating the signature.
-export interface AttestationSignature {
-  userKeyId: number;
-  vote: 'approve' | 'reject';
-  signature: string;
 }
 
 // Audit log of every group mutation; rows start PENDING and transition to APPLIED or

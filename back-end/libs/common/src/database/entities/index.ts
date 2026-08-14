@@ -15,6 +15,7 @@ export * from './reviewer-action.enum';
 export * from './reviewer-group.entity';
 export * from './reviewer-group-member.entity';
 export * from './reviewer-rule.entity';
+export * from './change-record.types';
 export * from './group-change-record.entity';
 export * from './rule-change-record.entity';
 export * from './transaction-entity.entity';

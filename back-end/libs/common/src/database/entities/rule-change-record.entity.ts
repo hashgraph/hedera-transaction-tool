@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { AttestationSignature, ChangeRequestStatus } from './group-change-record.entity';
+import { AttestationSignature, ChangeRequestStatus } from './change-record.types';
 import { ReviewerGroup } from './reviewer-group.entity';
 import { ReviewerRule } from './reviewer-rule.entity';
 import { ReviewerAction } from './reviewer-action.enum';
