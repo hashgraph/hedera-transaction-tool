@@ -8,12 +8,6 @@ export const getOrganizationTokens = async (user_id: string) =>
     return await window.electronAPI.local.organizationCredentials.getOrganizationTokens(user_id);
   }, 'Failed to fetch organization tokens');
 
-/* Returns the organizations that the user should sign into */
-export const getOrganizationsToSignIn = async (user_id: string) =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.organizationCredentials.organizationsToSignIn(user_id);
-  }, 'Failed to fetch organizations that user should sign in');
-
 /* Returns whether the user should sign in a specific organization */
 export const shouldSignInOrganization = async (user_id: string, organization_id: string) =>
   commonIPCHandler(async () => {

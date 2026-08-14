@@ -8,10 +8,6 @@ export default {
       user_id: string,
     ): Promise<{ organization_id: string; jwtToken: string | null }[]> =>
       ipcRenderer.invoke('organizationCredentials:getOrganizationTokens', user_id),
-    organizationsToSignIn: (
-      user_id: string,
-    ): Promise<{ credential_id?: string; email?: string; organization: Organization }[]> =>
-      ipcRenderer.invoke('organizationCredentials:organizationsToSignIn', user_id),
     shouldSignInOrganization: (user_id: string, organization_id: string): Promise<boolean> =>
       ipcRenderer.invoke(
         'organizationCredentials:shouldSignInOrganization',

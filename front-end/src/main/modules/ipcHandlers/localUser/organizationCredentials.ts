@@ -1,6 +1,5 @@
 import {
   getOrganizationTokens,
-  organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
   updateOrganizationCredentials,
@@ -15,7 +14,6 @@ export default () => {
   /* Organization Credentials */
   createIPCChannel('organizationCredentials', [
     renameFunc(getOrganizationTokens, 'getOrganizationTokens'),
-    renameFunc(organizationsToSignIn, 'organizationsToSignIn'),
     renameFunc(shouldSignInOrganization, 'shouldSignInOrganization'),
     renameFunc(addOrganizationCredentials, 'addOrganizationCredentials'),
     renameFunc(updateOrganizationCredentials, 'updateOrganizationCredentials'),
