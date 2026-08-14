@@ -107,15 +107,14 @@ export class GroupChangeRecord {
   @Column()
   userId: number;
 
-  // Which of the proposer's registered keys they used to sign the proposal. Nullable
-  // for the same reason as userId — the signature itself is retained even after the
-  // key is removed, so callers can still prove who initiated the change.
-  @ManyToOne(() => UserKey, { nullable: true, onDelete: 'SET NULL' })
+  // Which of the proposer's registered keys they used to sign the proposal.
+  // Non-nullable — user keys are soft-deleted, so this reference is always valid.
+  @ManyToOne(() => UserKey)
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey | null;
+  userKey: UserKey;
 
-  @Column({ nullable: true })
-  userKeyId: number | null;
+  @Column()
+  userKeyId: number;
 
   // Hex-encoded Ed25519 signature over snapshotPayload, produced by the proposer's
   // private key. Proves the proposer created this specific request — the backend cannot
