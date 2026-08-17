@@ -223,7 +223,7 @@ describe('Services Local User Transactions', () => {
 
       expect(SDK.Transaction.fromBytes).toHaveBeenCalledWith(transactionBytes);
       expect(transactionMock.freezeWith).toHaveBeenCalled();
-      expect(getKeyPairs).toHaveBeenCalledWith(userId);
+      expect(getKeyPairs).toHaveBeenCalledWith(userId, userPassword);
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
     });
@@ -271,7 +271,7 @@ describe('Services Local User Transactions', () => {
 
       expect(SDK.Transaction.fromBytes).toHaveBeenCalledWith(transactionBytes);
       expect(transactionMock.freezeWith).toHaveBeenCalled();
-      expect(getKeyPairs).toHaveBeenCalledWith(userId);
+      expect(getKeyPairs).toHaveBeenCalledWith(userId, userPassword);
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
     });

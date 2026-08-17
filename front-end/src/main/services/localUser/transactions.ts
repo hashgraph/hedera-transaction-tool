@@ -101,7 +101,7 @@ export const signTransaction = async (
     transaction.freezeWith(client);
   }
 
-  const keyPairs = await getKeyPairs(userId);
+  const keyPairs = await getKeyPairs(userId, userPassword);
 
   const useKeychain = await getUseKeychainClaim();
 
