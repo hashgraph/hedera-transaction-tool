@@ -200,6 +200,14 @@ describe('ReviewerGroupsService', () => {
       await expect(service.updateGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGNF);
     });
 
+    it('throws RGNF if latest applied record is a DELETE (group soft-deleted)', async () => {
+      groupChangeRecordRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAppliedRecord({ type: GroupChangeType.DELETE }));
+
+      await expect(service.updateGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGNF);
+    });
+
     it('throws RGMT if proposed threshold exceeds proposed member count', async () => {
       const snapshot = { ...mockSnapshot(), members: [] };
       groupChangeRecordRepo.findOne
@@ -279,6 +287,14 @@ describe('ReviewerGroupsService', () => {
       groupChangeRecordRepo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce(null);
+
+      await expect(service.deleteGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGNF);
+    });
+
+    it('throws RGNF if latest applied record is a DELETE (group already deleted)', async () => {
+      groupChangeRecordRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAppliedRecord({ type: GroupChangeType.DELETE }));
 
       await expect(service.deleteGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGNF);
     });

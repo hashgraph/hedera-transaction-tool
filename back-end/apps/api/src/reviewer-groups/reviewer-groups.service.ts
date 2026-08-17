@@ -115,7 +115,7 @@ export class ReviewerGroupsService {
     await this.assertNoPendingRequest(id);
 
     const latest = await this.getLatestAppliedRecord(id);
-    if (!latest) throw new NotFoundException(ErrorCodes.RGNF);
+    if (!latest || latest.type === GroupChangeType.DELETE) throw new NotFoundException(ErrorCodes.RGNF);
 
     const current = latest.snapshotPayload;
     const proposedName = dto.name ?? current.name;
@@ -166,7 +166,7 @@ export class ReviewerGroupsService {
     await this.assertNoPendingRequest(id);
 
     const latest = await this.getLatestAppliedRecord(id);
-    if (!latest) throw new NotFoundException(ErrorCodes.RGNF);
+    if (!latest || latest.type === GroupChangeType.DELETE) throw new NotFoundException(ErrorCodes.RGNF);
 
     try {
       return await this.dataSource.transaction(async manager => {
