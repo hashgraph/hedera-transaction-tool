@@ -8,6 +8,7 @@ import {
   registerDecorator,
   ValidationOptions,
 } from 'class-validator';
+import { ApiHideProperty } from '@nestjs/swagger';
 
 import { EntityRole } from '@entities';
 
@@ -46,6 +47,7 @@ export class CreateReviewerRuleDto {
   // condition is reserved for future use; submitting it is an error.
   // The @MustBeAbsent decorator keeps the property whitelisted (so ValidationPipe doesn't
   // strip it silently) while failing validation if any value is present.
+  @ApiHideProperty()
   @MustBeAbsent()
   condition?: never;
 
