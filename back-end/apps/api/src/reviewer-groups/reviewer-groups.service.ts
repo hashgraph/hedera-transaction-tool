@@ -59,6 +59,7 @@ export class ReviewerGroupsService {
     if (dto.threshold > dto.members.length) {
       throw new BadRequestException(ErrorCodes.RGMT);
     }
+    this.assertUniqueMembers(dto.members);
 
     const keyMap = await this.loadUserKeys(dto.members.map(m => m.userKeyId));
 
@@ -126,6 +127,7 @@ export class ReviewerGroupsService {
     if (proposedThreshold > proposedMembers.length) {
       throw new BadRequestException(ErrorCodes.RGMT);
     }
+    this.assertUniqueMembers(proposedMembers);
 
     const keyMap = await this.loadUserKeys(proposedMembers.map(m => m.userKeyId));
     const snapshotPayload = this.buildSnapshot(
@@ -187,6 +189,13 @@ export class ReviewerGroupsService {
         throw new ConflictException(ErrorCodes.RGCP);
       }
       throw err;
+    }
+  }
+
+  private assertUniqueMembers(members: GroupMemberInputDto[]): void {
+    const userIds = members.map(m => m.userId);
+    if (new Set(userIds).size !== userIds.length) {
+      throw new BadRequestException(ErrorCodes.RGDM);
     }
   }
 

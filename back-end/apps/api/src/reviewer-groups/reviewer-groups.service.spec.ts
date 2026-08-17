@@ -145,6 +145,12 @@ describe('ReviewerGroupsService', () => {
       await expect(service.createGroup(badDto, 5)).rejects.toThrow(ErrorCodes.RGMT);
     });
 
+    it('throws RGDM if the same userId appears twice in members', async () => {
+      const badDto = { ...dto, members: [{ userId: 10, userKeyId: 20 }, { userId: 10, userKeyId: 21 }], threshold: 1 };
+
+      await expect(service.createGroup(badDto, 5)).rejects.toThrow(ErrorCodes.RGDM);
+    });
+
     it('throws KNF if a member userKeyId does not exist', async () => {
       userKeyRepo.findBy.mockResolvedValueOnce([]);
 
@@ -201,6 +207,17 @@ describe('ReviewerGroupsService', () => {
         .mockResolvedValueOnce(mockAppliedRecord({ snapshotPayload: snapshot }));
 
       await expect(service.updateGroup(1, { ...dto, threshold: 1 }, 5)).rejects.toThrow(ErrorCodes.RGMT);
+    });
+
+    it('throws RGDM if the proposed member list contains duplicate userIds', async () => {
+      const snapshot = { ...mockSnapshot(), members: [] };
+      groupChangeRecordRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAppliedRecord({ snapshotPayload: snapshot }));
+
+      const dupeDto = { ...dto, members: [{ userId: 10, userKeyId: 20 }, { userId: 10, userKeyId: 21 }], threshold: 1 };
+
+      await expect(service.updateGroup(1, dupeDto, 5)).rejects.toThrow(ErrorCodes.RGDM);
     });
 
     it('throws KNF if a proposed userKeyId does not exist', async () => {

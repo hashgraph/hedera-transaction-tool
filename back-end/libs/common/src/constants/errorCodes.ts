@@ -51,6 +51,7 @@ export enum ErrorCodes {
   RGMC = 'RGMC',
   RGSV = 'RGSV',
   RGCP = 'RGCP',
+  RGDM = 'RGDM',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -105,4 +106,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.RGMC]: 'Attestation signatures are required when changing membership or threshold',
   [ErrorCodes.RGSV]: 'Group has changed since attestation was collected; re-collect signatures',
   [ErrorCodes.RGCP]: 'A pending change request already exists for this group or rule',
+  [ErrorCodes.RGDM]: 'Duplicate member: the same user cannot appear twice in a group',
 };
