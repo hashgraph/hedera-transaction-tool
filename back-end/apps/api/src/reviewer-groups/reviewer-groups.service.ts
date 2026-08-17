@@ -227,7 +227,7 @@ export class ReviewerGroupsService {
       members: members.map(m => ({
         userId: m.userId,
         userKeyId: m.userKeyId,
-        publicKey: keyMap.get(m.userKeyId) ?? '',
+        publicKey: keyMap.get(m.userKeyId)!,
       })),
     };
   }
