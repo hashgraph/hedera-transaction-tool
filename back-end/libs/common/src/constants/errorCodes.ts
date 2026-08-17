@@ -43,6 +43,14 @@ export enum ErrorCodes {
   FSTC = 'FSTC',
   FSUK = 'FSUK',
   FSTG = 'FSTG',
+  RGNF = 'RGNF',
+  RRNF = 'RRNF',
+  RGAT = 'RGAT',
+  RGDR = 'RGDR',
+  RGMT = 'RGMT',
+  RGMC = 'RGMC',
+  RGSV = 'RGSV',
+  RGCP = 'RGCP',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -89,4 +97,12 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.FSTC]: 'Failed to save transaction comment',
   [ErrorCodes.FSUK]: 'Failed to save user key',
   [ErrorCodes.FSTG]: 'Failed to save transaction group',
+  [ErrorCodes.RGNF]: 'Reviewer group not found',
+  [ErrorCodes.RRNF]: 'Reviewer rule not found',
+  [ErrorCodes.RGAT]: 'Attestation verification failed: insufficient valid signatures',
+  [ErrorCodes.RGDR]: 'Duplicate reviewer rule: an identical active rule already exists for this group',
+  [ErrorCodes.RGMT]: 'Threshold must not exceed member count',
+  [ErrorCodes.RGMC]: 'Attestation signatures are required when changing membership or threshold',
+  [ErrorCodes.RGSV]: 'Group has changed since attestation was collected; re-collect signatures',
+  [ErrorCodes.RGCP]: 'A pending change request already exists for this group or rule',
 };

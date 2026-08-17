@@ -27,6 +27,7 @@ import { UsersModule } from './users/users.module';
 import { NotificationPreferencesModule } from './notification-preferences/notification-preferences.module';
 import { NotificationReceiverModule } from './notification-receiver/notification-receiver.module';
 import { ReportsModule } from './reports/reports.module';
+import { ReviewerGroupsModule } from './reviewer-groups/reviewer-groups.module';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -66,6 +67,7 @@ export const config = ConfigModule.forRoot({
     NotificationPreferencesModule,
     NotificationReceiverModule,
     ReportsModule,
+    ReviewerGroupsModule,
     HealthModule,
     ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),

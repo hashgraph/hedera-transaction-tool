@@ -5,8 +5,6 @@ export class ReviewerGroupSummaryDto {
   @Expose() name: string;
   @Expose() description: string | null;
   @Expose() threshold: number;
-  @Expose() memberCount: number;
-  @Expose() ruleCount: number;
   @Expose() createdAt: Date;
   @Expose() updatedAt: Date;
 }
