@@ -197,6 +197,31 @@ describe('ReviewerRulesService', () => {
         expect.objectContaining({ action: ReviewerAction.ADD, status: ChangeRequestStatus.APPLIED }),
       );
     });
+
+    it('filters by non-null entityRole and transactionType in soft-delete lookup', async () => {
+      const dto = { ...createDto, entityRole: 'PAYER' as any, transactionType: 'CRYPTO_TRANSFER' };
+      const newRule = mockRule();
+      const changeRecord = mockRuleChangeRecord();
+      groupRepo.findOne.mockResolvedValueOnce({ id: 1 } as ReviewerGroup);
+      manager.createQueryBuilder.mockReturnValueOnce(mockQb(null) as any);
+      manager.create
+        .mockReturnValueOnce(newRule as any)
+        .mockReturnValueOnce(changeRecord as any);
+      manager.save
+        .mockResolvedValueOnce(newRule as any)
+        .mockResolvedValueOnce(changeRecord as any);
+
+      await service.createRule(dto, 5);
+    });
+
+    it('rethrows non-database errors', async () => {
+      groupRepo.findOne.mockResolvedValueOnce({ id: 1 } as ReviewerGroup);
+      manager.createQueryBuilder.mockReturnValueOnce(mockQb(null) as any);
+      manager.create.mockReturnValueOnce({} as any);
+      manager.save.mockRejectedValueOnce(new Error('unexpected'));
+
+      await expect(service.createRule(createDto, 5)).rejects.toThrow('unexpected');
+    });
   });
 
   describe('deleteRule', () => {
@@ -263,6 +288,16 @@ describe('ReviewerRulesService', () => {
       manager.save.mockRejectedValueOnce(dbError);
 
       await expect(service.deleteRule(1, deleteDto, 5)).rejects.toThrow(ErrorCodes.RGCP);
+    });
+
+    it('rethrows non-database errors', async () => {
+      ruleRepo.findOne.mockResolvedValueOnce(mockRule());
+      ruleChangeRecordRepo.findOne.mockResolvedValueOnce(null);
+      groupChangeRecordRepo.findOne.mockResolvedValueOnce(mockAppliedGroupRecord());
+      manager.create.mockReturnValueOnce({} as any);
+      manager.save.mockRejectedValueOnce(new Error('unexpected'));
+
+      await expect(service.deleteRule(1, deleteDto, 5)).rejects.toThrow('unexpected');
     });
   });
 });

@@ -272,6 +272,17 @@ describe('ReviewerGroupsService', () => {
 
       await expect(service.updateGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGCP);
     });
+
+    it('rethrows non-database errors', async () => {
+      groupChangeRecordRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAppliedRecord());
+      userKeyRepo.findBy.mockResolvedValueOnce([{ id: 20, publicKey: 'pubkey' } as UserKey]);
+      manager.create.mockReturnValueOnce({} as any);
+      manager.save.mockRejectedValueOnce(new Error('unexpected'));
+
+      await expect(service.updateGroup(1, dto, 5)).rejects.toThrow('unexpected');
+    });
   });
 
   describe('deleteGroup', () => {
@@ -333,6 +344,16 @@ describe('ReviewerGroupsService', () => {
       manager.save.mockRejectedValueOnce(dbError);
 
       await expect(service.deleteGroup(1, dto, 5)).rejects.toThrow(ErrorCodes.RGCP);
+    });
+
+    it('rethrows non-database errors', async () => {
+      groupChangeRecordRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce(mockAppliedRecord());
+      manager.create.mockReturnValueOnce({} as any);
+      manager.save.mockRejectedValueOnce(new Error('unexpected'));
+
+      await expect(service.deleteGroup(1, dto, 5)).rejects.toThrow('unexpected');
     });
   });
 });
