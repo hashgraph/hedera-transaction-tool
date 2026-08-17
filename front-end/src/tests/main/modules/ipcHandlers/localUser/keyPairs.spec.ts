@@ -94,8 +94,8 @@ describe('IPC handlers Key Pairs', () => {
   });
 
   test('Should set up clear handler', async () => {
-    await invokeIPCHandler('keyPairs:clear', userId, organizationId);
-    expect(deleteSecretHashes).toHaveBeenCalledWith(userId, organizationId);
+    await invokeIPCHandler('keyPairs:clear', userId, null, organizationId);
+    expect(deleteSecretHashes).toHaveBeenCalledWith(userId, null, organizationId);
 
     vi.mocked(deleteSecretHashes).mockRejectedValueOnce(new Error('Error'));
     const result = await invokeIPCHandler('keyPairs:clear', userId, organizationId);
