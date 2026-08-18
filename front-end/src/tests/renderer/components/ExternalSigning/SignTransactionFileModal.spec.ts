@@ -137,7 +137,7 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     await flushPromises();
 
     expect(mocks.toastError).toHaveBeenCalledWith(
-      'Failed to sign transaction. Please delete the private key and re-add it. For more help, contact your administrator.',
+      'Decryption failed Please delete the private key and re-add it. For more help, contact your administrator.',
     );
     expect(mocks.writeTransactionFile).not.toHaveBeenCalled();
     expect(mocks.loggerError).toHaveBeenCalledWith(

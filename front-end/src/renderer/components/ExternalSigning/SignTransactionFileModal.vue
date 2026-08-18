@@ -93,8 +93,9 @@ async function handleSignAll() {
           });
         } catch (error) {
           logger.error('Failed to sign transaction file entry', { error });
+          const reason = error instanceof Error ? `${error.message} ` : '';
           toastManager.error(
-            'Failed to sign transaction. Please delete the private key and re-add it. For more help, contact your administrator.',
+            `${reason}Please delete the private key and re-add it. For more help, contact your administrator.`,
           );
           return;
         }
