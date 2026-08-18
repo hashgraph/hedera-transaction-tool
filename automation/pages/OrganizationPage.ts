@@ -1524,6 +1524,13 @@ export class OrganizationPage extends BasePage {
         outputFile: 'data/exchange-rates.bin',
         binFile: 'exchange-rates.bin',
       },
+      '0.0.113': {
+        encodeFunction: encodeFeeSchedule,
+        inputFile: 'data/feeSchedules.json',
+        outputFile: 'data/fee-schedules.bin',
+        binFile: 'fee-schedules.bin',
+        specialProcessing: true, // This is a huge file, so we need to handle it differently due to transaction group
+      },
       '0.0.121': {
         encodeFunction: encodeServicesConfigurationList,
         inputFile: 'data/application.properties',
@@ -1610,6 +1617,12 @@ export class OrganizationPage extends BasePage {
         type: 'json',
         keysToIgnore: ['exchangeRateInCents'],
         normalizer: normalizeExchangeRateData,
+      },
+      '0.0.113': {
+        path: 'data/feeSchedules.json',
+        type: 'json',
+        keysToIgnore: [],
+        normalizer: normalizeFeeScheduleData,
       },
       '0.0.121': { path: 'data/application.properties', type: 'properties', keysToIgnore: [] },
       '0.0.122': { path: 'data/api-permission.properties', type: 'properties', keysToIgnore: [] },
