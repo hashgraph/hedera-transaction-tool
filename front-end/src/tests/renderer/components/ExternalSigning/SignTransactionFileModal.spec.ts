@@ -76,7 +76,12 @@ vi.mock('@renderer/utils', () => ({
 
 /* ── Fixtures ────────────────────────────────────────────────────────────── */
 
-const ITEM = { transactionBytes: 'aabbcc' };
+// Deliberately distinct from the SIGNED_HEX returned by the uint8ToHex mock so
+// tests can tell whether the written file contains original or updated bytes.
+const ORIGINAL_HEX = '001122';
+const SIGNED_HEX = 'aabbcc';
+
+const ITEM = { transactionBytes: ORIGINAL_HEX };
 const FILE = { network: 'testnet', items: [ITEM] };
 
 /* ── Mount helper ────────────────────────────────────────────────────────── */
@@ -143,7 +148,7 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(false);
   });
 
-  test('writes file, shows success modal, and does not show error when signing succeeds', async () => {
+  test('writes file with signed bytes, shows success modal, and does not show error when signing succeeds', async () => {
     mocks.signTransaction.mockResolvedValue(new Uint8Array([0xde, 0xad]));
 
     const wrapper = mountModal();
@@ -153,7 +158,14 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     await flushPromises();
 
     expect(mocks.toastError).not.toHaveBeenCalled();
+    // File must be written with the updated (signed) bytes, not the original ones
     expect(mocks.writeTransactionFile).toHaveBeenCalledTimes(1);
+    expect(mocks.writeTransactionFile).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [expect.objectContaining({ transactionBytes: SIGNED_HEX })],
+      }),
+      '/path/to/file.json',
+    );
     // Success modal must appear
     expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(true);
   });
