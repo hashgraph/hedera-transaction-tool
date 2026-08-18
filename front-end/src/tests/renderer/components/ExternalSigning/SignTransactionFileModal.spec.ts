@@ -81,6 +81,18 @@ const FILE = { network: 'testnet', items: [ITEM] };
 
 /* ── Mount helper ────────────────────────────────────────────────────────── */
 
+// AppModal stub respects the `show` prop so tests can assert on whether the
+// success modal is actually rendered, which is the core behaviour this PR fixes.
+const AppModalStub = {
+  props: ['show'],
+  template: '<div v-if="show"><slot /></div>',
+};
+
+// AppButton stub forwards attributes so data-testid selectors work.
+const AppButtonStub = {
+  template: '<button v-bind="$attrs" type="submit"><slot /></button>',
+};
+
 function mountModal() {
   return mount(SignTransactionFileModal, {
     props: {
@@ -90,8 +102,8 @@ function mountModal() {
     },
     global: {
       stubs: {
-        AppModal: { template: '<div><slot /></div>' },
-        AppButton: { template: '<button type="submit"><slot /></button>' },
+        AppModal: AppModalStub,
+        AppButton: AppButtonStub,
         TransactionBrowser: { template: '<div />' },
         AppCustomIcon: { template: '<div />' },
       },
@@ -110,7 +122,7 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     mocks.writeTransactionFile.mockResolvedValue(undefined);
   });
 
-  test('shows error toast and does not write file when signing fails', async () => {
+  test('shows error toast, does not write file, and does not show success modal when signing fails', async () => {
     mocks.signTransaction.mockRejectedValue(new Error('Decryption failed'));
 
     const wrapper = mountModal();
@@ -127,9 +139,11 @@ describe('SignTransactionFileModal – handleSignAll', () => {
       'Failed to sign transaction file entry',
       expect.objectContaining({ error: expect.any(Error) }),
     );
+    // Success modal must not appear
+    expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(false);
   });
 
-  test('writes file and does not show error when signing succeeds', async () => {
+  test('writes file, shows success modal, and does not show error when signing succeeds', async () => {
     mocks.signTransaction.mockResolvedValue(new Uint8Array([0xde, 0xad]));
 
     const wrapper = mountModal();
@@ -140,6 +154,8 @@ describe('SignTransactionFileModal – handleSignAll', () => {
 
     expect(mocks.toastError).not.toHaveBeenCalled();
     expect(mocks.writeTransactionFile).toHaveBeenCalledTimes(1);
+    // Success modal must appear
+    expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(true);
   });
 
   test('stops at first failure and does not sign subsequent items', async () => {
