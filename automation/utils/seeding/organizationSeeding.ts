@@ -165,7 +165,11 @@ export async function createSeededOrganizationSession(
     );
 
     if (signInUserIndex === 0 && shouldSetupOrganizationTransactions && payerPrivateKey) {
-      await setupEnvironmentForTransactions(page, payerPrivateKey);
+      try {
+        await setupEnvironmentForTransactions(page, payerPrivateKey);
+      } catch {
+        // In some it fails because payerPrivateKey is already imported (?)
+      }
       organizationPage.users[0].privateKey = payerPrivateKey;
     }
 
