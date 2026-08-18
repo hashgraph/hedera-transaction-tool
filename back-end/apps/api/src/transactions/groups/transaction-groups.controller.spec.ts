@@ -92,14 +92,6 @@ describe('TransactionGroupsController', () => {
     });
   });
 
-  describe('removeTransactionGroup', () => {
-    it('should return void', async () => {
-      transactionGroupsService.removeTransactionGroup.mockReturnValue(undefined);
-
-      expect(await controller.removeTransactionGroup(user, 1)).toBeUndefined();
-    });
-  });
-
   describe('cancelTransactionGroup', () => {
     const cancelResult: CancelGroupResultDto = {
       canceled: [1],

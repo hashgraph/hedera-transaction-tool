@@ -9,7 +9,6 @@ import { DataSource, In } from 'typeorm';
 
 import {
   emitTransactionStatusUpdate,
-  emitTransactionUpdate,
   ErrorCodes,
   getTransactionGroupItemsQuery,
   NatsPublisherService,
@@ -173,34 +172,6 @@ export class TransactionGroupsService {
     }
 
     return group;
-  }
-
-  async removeTransactionGroup(user: User, id: number): Promise<boolean> {
-    const group = await this.dataSource.manager.findOneBy(TransactionGroup, { id });
-    if (!group) {
-      throw new Error('group not found');
-    }
-    const groupItems = await this.dataSource.manager.find(TransactionGroupItem, {
-      relations: {
-        group: true,
-      },
-      where: {
-        group: {
-          id: group.id,
-        },
-      },
-    });
-    for (const groupItem of groupItems) {
-      const transactionId = groupItem.transactionId;
-      await this.dataSource.manager.remove(TransactionGroupItem, groupItem);
-      await this.transactionsService.removeTransaction(transactionId, user, false);
-    }
-
-    await this.dataSource.manager.remove(TransactionGroup, group);
-
-    emitTransactionUpdate(this.notificationsPublisher, groupItems.map(gi => ({ entityId: gi.transactionId })));
-
-    return true;
   }
 
   async cancelTransactionGroup(

@@ -858,32 +858,6 @@ export class TransactionsService {
     return Array.from(results.values());
   }
 
-  async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
-    const transaction = await this.getTransactionForCreator(id, user);
-
-    if (softRemove) {
-      const executedAt = new Date();
-      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt });
-      await this.transactionSnapshotService.captureForTransaction(transaction.id, executedAt);
-      await this.repo.softRemove(transaction);
-    } else {
-      await this.repo.remove(transaction);
-    }
-
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      [{
-        entityId: transaction.id,
-        additionalData: {
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        },
-      }],
-    );
-
-    return true;
-  }
-
   /* Cancel the transaction if the valid start has not come yet. */
   async cancelTransaction(id: number, user: User): Promise<boolean> {
     await this.cancelTransactionWithOutcome(id, user);
