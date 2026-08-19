@@ -80,13 +80,11 @@ describe('ReviewerRulesService', () => {
     groupId: 1,
     hederaEntityId: '0.0.1234',
     network: 'testnet',
-    entityRole: null,
-    transactionType: null,
     userKeyId: 99,
-    userSignature: null,
+    userSignature: 'deadbeef',
   };
 
-  const deleteDto: DeleteReviewerRuleDto = { userKeyId: 99, userSignature: null };
+  const deleteDto: DeleteReviewerRuleDto = { userKeyId: 99, userSignature: 'deadbeef' };
 
   const mockQb = (returnValue: ReviewerRule | null) => ({
     withDeleted: jest.fn().mockReturnThis(),
@@ -198,7 +196,7 @@ describe('ReviewerRulesService', () => {
       );
     });
 
-    it('filters by non-null entityRole and transactionType in soft-delete lookup', async () => {
+    it('filters by defined entityRole and transactionType in soft-delete lookup', async () => {
       const dto = { ...createDto, entityRole: 'PAYER' as any, transactionType: 'CRYPTO_TRANSFER' };
       const newRule = mockRule();
       const changeRecord = mockRuleChangeRecord();

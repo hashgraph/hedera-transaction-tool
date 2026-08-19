@@ -1,5 +1,5 @@
 import { Transform } from 'class-transformer';
-import { IsInt, IsOptional, IsString } from 'class-validator';
+import { IsInt, IsString } from 'class-validator';
 
 export class DeleteReviewerRuleDto {
   @IsInt()
@@ -7,6 +7,5 @@ export class DeleteReviewerRuleDto {
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  @IsOptional()
-  userSignature?: string | null;
+  userSignature: string;
 }

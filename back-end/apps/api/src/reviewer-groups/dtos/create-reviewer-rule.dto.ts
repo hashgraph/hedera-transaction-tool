@@ -38,11 +38,11 @@ export class CreateReviewerRuleDto {
 
   @IsEnum(EntityRole)
   @IsOptional()
-  entityRole?: EntityRole | null;
+  entityRole?: EntityRole;
 
   @IsString()
   @IsOptional()
-  transactionType?: string | null;
+  transactionType?: string;
 
   // condition is reserved for future use; submitting it is an error.
   // The @MustBeAbsent decorator keeps the property whitelisted (so ValidationPipe doesn't
@@ -56,6 +56,5 @@ export class CreateReviewerRuleDto {
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  @IsOptional()
-  userSignature?: string | null;
+  userSignature: string;
 }

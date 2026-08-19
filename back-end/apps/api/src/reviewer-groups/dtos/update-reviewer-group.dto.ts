@@ -10,7 +10,7 @@ export class UpdateReviewerGroupDto {
 
   @IsString()
   @IsOptional()
-  description?: string | null;
+  description?: string;
 
   @IsInt()
   @Min(1)
@@ -28,6 +28,5 @@ export class UpdateReviewerGroupDto {
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  @IsOptional()
-  userSignature?: string | null;
+  userSignature: string;
 }

@@ -132,11 +132,10 @@ describe('ReviewerGroupsService', () => {
   describe('createGroup', () => {
     const dto: CreateReviewerGroupDto = {
       name: 'Test Group',
-      description: null,
       threshold: 1,
       members: [{ userId: 10, userKeyId: 20 }],
       userKeyId: 99,
-      userSignature: null,
+      userSignature: 'deadbeef',
     };
 
     it('throws RGMT if threshold exceeds member count', async () => {
@@ -183,7 +182,7 @@ describe('ReviewerGroupsService', () => {
     const dto: UpdateReviewerGroupDto = {
       name: 'Updated Group',
       userKeyId: 99,
-      userSignature: null,
+      userSignature: 'deadbeef',
     };
 
     it('throws RGCP if a pending request already exists', async () => {
@@ -286,7 +285,7 @@ describe('ReviewerGroupsService', () => {
   });
 
   describe('deleteGroup', () => {
-    const dto: DeleteReviewerGroupDto = { userKeyId: 99, userSignature: null };
+    const dto: DeleteReviewerGroupDto = { userKeyId: 99, userSignature: 'deadbeef' };
 
     it('throws RGCP if a pending request already exists', async () => {
       groupChangeRecordRepo.findOne.mockResolvedValueOnce(mockAppliedRecord({ status: ChangeRequestStatus.PENDING }));
