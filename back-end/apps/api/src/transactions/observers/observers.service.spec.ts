@@ -94,7 +94,7 @@ describe('ObserversService', () => {
 
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: transactionId },
-        relations: ['creatorKey', 'creatorKey.user', 'observers'],
+        relations: { creatorKey: { user: true }, observers: true },
       });
       expect(observersRepo.create).toHaveBeenCalledWith(observer);
       expect(observersRepo.save).toHaveBeenCalledWith([observer]);
@@ -112,7 +112,7 @@ describe('ObserversService', () => {
       expect(result).toEqual([]);
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: transactionId },
-        relations: ['creatorKey', 'creatorKey.user', 'observers'],
+        relations: { creatorKey: { user: true }, observers: true },
       });
       expect(observersRepo.create).not.toHaveBeenCalled();
       expect(observersRepo.save).not.toHaveBeenCalled();
@@ -173,7 +173,7 @@ describe('ObserversService', () => {
 
       expect(entityManager.findOne).toHaveBeenCalledWith(Transaction, {
         where: { id: transactionId },
-        relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
+        relations: { creatorKey: true, observers: true, signers: { userKey: true }},
       });
     });
 

@@ -236,7 +236,7 @@ describe('SignersService', () => {
       });
       expect(dataSource.manager.find).toHaveBeenNthCalledWith(2, TransactionSigner, {
         where: { transactionId: In([1, 2]) },
-        select: ['transactionId', 'userKeyId'],
+        select: { transactionId: true, userKeyId: true },
       });
 
       expect(result.transactionMap.size).toBe(2);
