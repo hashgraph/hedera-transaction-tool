@@ -10,7 +10,7 @@ import electron from 'vite-plugin-electron/simple';
 import eslint from 'vite-plugin-eslint';
 import vueDevTools from 'vite-plugin-vue-devtools';
 
-import pkg from './package.json';
+import pkg from './package.json' with { type: 'json' };
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command }) => {
@@ -50,11 +50,11 @@ export default defineConfig(({ command }) => {
               sourcemap,
               minify: isBuild,
               outDir: 'dist-electron/main',
-              rollupOptions: {
+              rolldownOptions: {
                 // Exclude @prisma/client from externals so the alias can resolve to generated client
-                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}).filter(
-                  dep => dep !== '@prisma/client',
-                ),
+                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {})
+                  .filter(dep => dep !== '@prisma/client')
+                  .concat(['@aws-sdk/client-s3']),
               },
             },
             resolve: {
@@ -78,11 +78,11 @@ export default defineConfig(({ command }) => {
               sourcemap: sourcemap ? 'inline' : undefined,
               minify: isBuild,
               outDir: 'dist-electron/preload',
-              rollupOptions: {
+              rolldownOptions: {
                 // Exclude @prisma/client from externals so the alias can resolve to generated client
-                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {}).filter(
-                  dep => dep !== '@prisma/client',
-                ),
+                external: Object.keys('dependencies' in pkg ? pkg.dependencies : {})
+                  .filter(dep => dep !== '@prisma/client')
+                  .concat(['@aws-sdk/client-s3']),
               },
             },
             resolve: {

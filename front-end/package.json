@@ -6,6 +6,7 @@
     "name": "Hedera",
     "url": "https://github.com/hashgraph"
   },
+  "type": "module",
   "repository": "https://github.com/hashgraph/hedera-transaction-tool",
   "main": "dist-electron/main/index.js",
   "scripts": {
