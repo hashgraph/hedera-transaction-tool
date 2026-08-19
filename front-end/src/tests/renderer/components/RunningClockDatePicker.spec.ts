@@ -167,14 +167,16 @@ describe('RunningClockDatePicker', () => {
     expect((stub.props('modelValue') as Date).getTime()).toBe(userPicked.getTime());
   });
 
-  test('interval is cleared on unmount — no error is thrown after time advances', async () => {
+  test('interval is cleared on unmount', () => {
     const past = new Date(Date.now() - 5_000);
     const wrapper = mountPicker(past);
 
+    // At least one interval must be running while the component is mounted.
+    expect(vi.getTimerCount()).toBeGreaterThanOrEqual(1);
+
     wrapper.unmount();
 
-    // Advance time after unmount — the interval should already be cleared so
-    // no stale callback fires or throws.
-    vi.advanceTimersByTime(5_000);
+    // After unmount the interval must be cleared — no pending timers remain.
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
