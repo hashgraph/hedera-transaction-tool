@@ -58,7 +58,7 @@
     "long": "catalog:",
     "node-forge": "1.4.0",
     "p-limit": "7.3.1",
-    "pinia": "4.0.2",
+    "pinia": "4.0.3",
     "semver": "catalog:",
     "socket.io-client": "4.8.3",
     "unzipper": "0.12.5",
@@ -101,7 +101,7 @@
     "vitest": "catalog:vitest",
     "vitest-mock-extended": "5.1.1",
     "vue": "3.5.41",
-    "vue-tsc": "3.3.9"
+    "vue-tsc": "3.3.10"
   },
   "engines": {
     "node": ">=24.19.0 <25"
