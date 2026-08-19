@@ -30,7 +30,7 @@ concurrency:
 jobs:
   build:
     name: Build | Front-end
-    runs-on: transaction-tools-linux-medium
+    runs-on: ubuntu-latest
 
     steps:
       - name: Harden Runner
@@ -66,7 +66,7 @@ jobs:
 
   test:
     name: Automation | ${{ matrix.test-suite.name }}
-    runs-on: transaction-tools-linux-medium
+    runs-on: ubuntu-latest
     needs: build
     strategy:
       fail-fast: false
@@ -458,7 +458,7 @@ jobs:
 
   cleanup:
     name: Cleanup | Build Cache
-    runs-on: transaction-tools-linux-medium
+    runs-on: ubuntu-latest
     needs: [test]
     permissions:
       actions: write
@@ -480,7 +480,7 @@ jobs:
 
   unit-test:
     name: Unit Tests | ${{ matrix.test-suite.name }}
-    runs-on: transaction-tools-linux-medium
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
