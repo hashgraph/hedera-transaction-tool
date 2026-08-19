@@ -73,7 +73,7 @@
     "@types/pg": "8.20.3",
     "glob": "13.0.6",
     "ts-loader": "catalog:",
-    "tsx": "4.23.11",
+    "tsx": "4.23.12",
     "typescript": "catalog:",
     "webpack": "5.109.2",
     "webpack-cli": "7.2.2"
