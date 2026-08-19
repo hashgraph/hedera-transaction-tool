@@ -233,7 +233,7 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ matrix.image }}
           tags: |
             type=raw,value=${{ env.VERSION }}
-            type=raw,value=latest,enable=${{ needs.prepare.outputs.prerelease == '' }}
+            type=raw,value=latest
 
       - name: Build and Push Docker Image
         id: push
