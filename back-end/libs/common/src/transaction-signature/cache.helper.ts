@@ -109,11 +109,11 @@ export class CacheHelper {
    * Save data and release refresh claim.
    * Returns the entity ID if successful, null if claim was lost.
    */
-  async saveAndReleaseClaim<T>(
+  async saveAndReleaseClaim<T extends { refreshToken?: string | null; updatedAt?: Date }>(
     entity: EntityTarget<T>,
     where: Record<string, any>,
     refreshToken: string,
-    updates: Record<string, any>,
+    updates: Partial<T>,
   ): Promise<number | null> {
     const result = await this.dataSource
       .createQueryBuilder()
@@ -122,7 +122,7 @@ export class CacheHelper {
         ...updates,
         refreshToken: null, // release claim
         updatedAt: () => 'NOW()',
-      })
+      } as any)
       .where(where)
       .andWhere('refreshToken = :refreshToken', { refreshToken })
       .returning(['id'])

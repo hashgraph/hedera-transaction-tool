@@ -35,7 +35,7 @@ export class CommentsService {
 
   // Get the transaction comment for the given id, scoped to the transaction.
   getTransactionCommentById(transactionId: number, id: number) {
-    return this.repo.findOne({ where: { id, transaction: { id: transactionId } }, relations: ['user'] });
+    return this.repo.findOne({ where: { id, transaction: { id: transactionId } }, relations: { user: true } });
   }
 
   // Get the transaction comments for the given transaction id.

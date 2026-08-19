@@ -77,7 +77,7 @@ export const keysRequiredToSign = async (
         try {
           fetchedKeys = await entityManager.find(UserKey, {
             where: { publicKey: In([...missingPublicKeys]) },
-            relations: ['user'],
+            relations:{ user: true },
           });
           // Store fetched keys in cache
           for (const key of fetchedKeys) {
@@ -93,7 +93,7 @@ export const keysRequiredToSign = async (
     } else {
       results = await entityManager.find(UserKey, {
         where: { publicKey: In(flatPublicKeys) },
-        relations: ['user'],
+        relations: { user: true },
       });
     }
   }

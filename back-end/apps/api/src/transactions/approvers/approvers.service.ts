@@ -71,7 +71,9 @@ export class ApproversService {
     if (!id) return null;
 
     const find: FindOneOptions<TransactionApprover> = {
-      relations: ['approvers'],
+      relations: {
+        approvers: true,
+      },
       where: { id },
     };
 
@@ -115,7 +117,15 @@ export class ApproversService {
   ): Promise<TransactionApprover[]> {
     const transaction = await this.dataSource.manager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers', 'signers', 'signers.userKey'],
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+        observers: true,
+        signers: {
+          userKey: true,
+        },
+      },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -397,7 +407,9 @@ export class ApproversService {
 
             /* Get the parent approver */
             const parent = await transactionalEntityManager.findOne(TransactionApprover, {
-              relations: ['approvers'],
+              relations: {
+                approvers: true,
+              },
               where: { id: approver.listId },
             });
 
@@ -429,7 +441,9 @@ export class ApproversService {
 
           /* Get the new parent */
           const newParent = await transactionalEntityManager.findOne(TransactionApprover, {
-            relations: ['approvers'],
+            relations: {
+              approvers: true,
+            },
             where: { id: dto.listId },
           });
 
@@ -627,7 +641,11 @@ export class ApproversService {
   ): Promise<Transaction> {
     const find: FindOneOptions<Transaction> = {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user'],
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+      },
     };
 
     const transaction = await (entityManager
