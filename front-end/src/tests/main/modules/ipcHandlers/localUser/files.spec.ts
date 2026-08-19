@@ -25,7 +25,7 @@ describe('IPC handlers Files', () => {
   });
 
   const userId = 'user1';
-  const fileId = '0.0.111';
+  const fileId = '0.0.113';
   const fileIds = ['filed1'];
 
   test('Should register handlers for each event', () => {

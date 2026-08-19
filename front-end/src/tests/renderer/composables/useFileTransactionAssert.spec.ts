@@ -60,7 +60,7 @@ describe('useFileTransactionAssert', () => {
   test('passes through already-valid protobuf Uint8Array content unchanged', async () => {
     const contents = Uint8Array.from([1, 2, 3]);
     const data = {
-      fileId: '0.0.111',
+      fileId: '0.0.113',
       contents,
     };
 
@@ -70,7 +70,7 @@ describe('useFileTransactionAssert', () => {
 
     await useFileTransactionAssert(data, ref({} as Key))();
 
-    expect(mocks.decodeProto).toHaveBeenCalledWith('0.0.111', contents);
+    expect(mocks.decodeProto).toHaveBeenCalledWith('0.0.113', contents);
     expect(mocks.encodeSpecialFileContent).toHaveBeenCalledTimes(1);
     expect(data.contents).toBe(contents);
   });
@@ -140,7 +140,7 @@ describe('useFileTransactionAssert', () => {
 
   test('throws when signature key is missing and user is not in an organization', async () => {
     mocks.isLoggedInOrganization.mockReturnValue(false);
-    const data = { fileId: '0.0.111', contents: null };
+    const data = { fileId: '0.0.113', contents: null };
 
     await expect(useFileTransactionAssert(data, ref(null))()).rejects.toThrow(
       'Signature key is required',
