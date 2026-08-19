@@ -122,7 +122,7 @@ export class CacheHelper {
         ...updates,
         refreshToken: null, // release claim
         updatedAt: () => 'NOW()',
-      })
+      } as any)
       .where(where)
       .andWhere('refreshToken = :refreshToken', { refreshToken })
       .returning(['id'])
