@@ -946,7 +946,7 @@ describe('TransactionsService', () => {
       client.close();
     });
 
-    it('should log error and still create transaction when reviewer assignment throws', async () => {
+    it('should fail transaction creation when reviewer assignment throws', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
       );
@@ -972,10 +972,7 @@ describe('TransactionsService', () => {
       );
       reviewerAssignmentService.assign.mockRejectedValueOnce(new Error('assignment failure'));
 
-      const result = await service.createTransaction(dto, user as User);
-
-      expect(result).toBeDefined();
-      expect(result.status).not.toBe(TransactionStatus.READY_FOR_REVIEW);
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow();
 
       client.close();
     });
