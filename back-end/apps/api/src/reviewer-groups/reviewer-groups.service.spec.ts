@@ -124,7 +124,7 @@ describe('ReviewerGroupsService', () => {
 
       expect(result).toBe(group);
       expect(groupRepo.findOne).toHaveBeenCalledWith(
-        expect.objectContaining({ relations: ['members', 'rules'] }),
+        expect.objectContaining({ relations: { members: true, rules: true } }),
       );
     });
   });

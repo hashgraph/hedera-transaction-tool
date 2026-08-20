@@ -380,7 +380,7 @@ describe('CacheHelper', () => {
         entity,
         { id: 10 },
         'token',
-        { foo: 'bar' },
+        {},
       );
 
       expect(result).toBe(10);
@@ -396,7 +396,7 @@ describe('CacheHelper', () => {
         entity,
         { id: 10 },
         'token',
-        { foo: 'bar' },
+        {},
       );
 
       expect(result).toBeNull();
