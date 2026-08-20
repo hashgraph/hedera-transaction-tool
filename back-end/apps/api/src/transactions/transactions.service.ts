@@ -544,22 +544,15 @@ export class TransactionsService {
             );
           }
 
-          try {
-            const hasReviewers = await this.reviewerAssignmentService.assign(
-              tx.id,
-              data.type,
-              data.mirrorNetwork,
-              entityManager,
-            );
-            if (hasReviewers) {
-              tx.status = TransactionStatus.READY_FOR_REVIEW;
-              await entityManager.save(Transaction, tx);
-            }
-          } catch (error) {
-            this.logger.error(
-              `Reviewer assignment failed for transaction ${tx.id}; proceeding without reviewers`,
-              (error as any)?.stack ?? (error as any)?.message ?? String(error),
-            );
+          const hasReviewers = await this.reviewerAssignmentService.assign(
+            tx.id,
+            data.type,
+            data.mirrorNetwork,
+            entityManager,
+          );
+          if (hasReviewers) {
+            tx.status = TransactionStatus.READY_FOR_REVIEW;
+            await entityManager.save(Transaction, tx);
           }
         }
 
