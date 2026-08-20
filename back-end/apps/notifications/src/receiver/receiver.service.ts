@@ -302,7 +302,8 @@ export class ReceiverService {
       );
 
       const ch = NOTIFICATION_CHANNELS[notificationType];
-      const emailAllowed = !ch.email || !preference || preference.email !== false;
+      // Email requires an explicit opt-in preference row — no row means no email.
+      const emailAllowed = !ch.email || preference?.email === true;
       const inAppAllowed = !ch.inApp || !preference || preference.inApp !== false;
 
       const passes =
