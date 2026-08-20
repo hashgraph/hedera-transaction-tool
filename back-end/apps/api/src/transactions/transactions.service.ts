@@ -74,6 +74,7 @@ import TransactionFactory from '@app/common/transaction-signature/model/transact
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
 import { ApproversService } from './approvers';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 
 export enum CancelTransactionOutcome {
   CANCELED = 'CANCELED',
@@ -94,12 +95,14 @@ export class TransactionsService {
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionSnapshotService: TransactionSnapshotService,
+    private readonly reviewerAssignmentService: ReviewerAssignmentService,
   ) {
   }
 
   private readonly cancelableStatuses = [
     TransactionStatus.NEW,
     TransactionStatus.WAITING_FOR_SIGNATURES,
+    TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_EXECUTION,
   ];
 
@@ -508,12 +511,40 @@ export class TransactionsService {
           }),
         );
 
+        let saved: Transaction[];
         try {
-          return await entityManager.save(Transaction, transactions);
+          saved = await entityManager.save(Transaction, transactions);
         } catch (error) {
           this.logger.error('Failed to save transactions', (error as any)?.stack ?? (error as any)?.message ?? String(error));
           throw new BadRequestException(ErrorCodes.FST);
         }
+
+        // Assign reviewers for each saved transaction; update status if lists were created
+        for (let i = 0; i < saved.length; i++) {
+          const tx = saved[i];
+          const data = validatedData[i];
+          try {
+            const hasReviewers = await this.reviewerAssignmentService.assign(
+              tx.id,
+              data.sdkTransaction,
+              data.type,
+              data.mirrorNetwork,
+              user.id,
+              entityManager,
+            );
+            if (hasReviewers) {
+              tx.status = TransactionStatus.READY_FOR_REVIEW;
+              await entityManager.save(Transaction, tx);
+            }
+          } catch (error) {
+            this.logger.error(
+              `Reviewer assignment failed for transaction ${tx.id}; proceeding without reviewers`,
+              (error as any)?.stack ?? (error as any)?.message ?? String(error),
+            );
+          }
+        }
+
+        return saved;
       });
 
       // Batch schedule reminders
@@ -1205,6 +1236,7 @@ export class TransactionsService {
       isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
       publicKeys,
+      sdkTransaction,
     };
   }
 

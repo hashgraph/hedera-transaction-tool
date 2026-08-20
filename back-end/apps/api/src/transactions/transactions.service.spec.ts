@@ -67,6 +67,7 @@ import {
 
 import { CancelTransactionOutcome, TransactionsService } from './transactions.service';
 import { ApproversService } from './approvers';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 import { CreateTransactionDto } from './dto';
 
 jest.mock(`@app/common/utils`, () => {
@@ -99,6 +100,7 @@ describe('TransactionsService', () => {
   let service: TransactionsService;
 
   const transactionSnapshotService = mock<TransactionSnapshotService>();
+  const reviewerAssignmentService = mock<ReviewerAssignmentService>();
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
@@ -172,6 +174,10 @@ describe('TransactionsService', () => {
         {
           provide: TransactionSnapshotService,
           useValue: transactionSnapshotService,
+        },
+        {
+          provide: ReviewerAssignmentService,
+          useValue: reviewerAssignmentService,
         },
       ],
     }).compile();
