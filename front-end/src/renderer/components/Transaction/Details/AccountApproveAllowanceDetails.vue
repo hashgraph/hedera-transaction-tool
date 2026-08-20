@@ -125,7 +125,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
           </p>
         </div>
       </div>
-      <hr v-if="i !== transaction.hbarApprovals.length - 1" class="separator" />
+      <hr v-if="i !== transaction.tokenApprovals.length - 1" class="separator" />
     </template>
     <h3 v-if="transaction.tokenNftApprovals.length > 0" :class="approvalHeadingClass">
       Token NFT approvals
