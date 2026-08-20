@@ -49,7 +49,7 @@ export class ReviewerGroupsService {
   async getGroup(id: number): Promise<ReviewerGroup> {
     const group = await this.groupRepo.findOne({
       where: { id },
-      relations: { members: true, rules: true},
+      relations: { members: true, rules: true },
     });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
     return group;

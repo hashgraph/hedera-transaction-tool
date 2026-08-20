@@ -1,4 +1,4 @@
-import { DataSource, EntityTarget, FindOptionsWhere } from 'typeorm';
+import { DataSource, EntityTarget, FindOptionsWhere, QueryDeepPartialEntity } from 'typeorm';
 import { PublicKey } from '@hiero-ledger/sdk';
 import { randomUUID } from 'node:crypto';
 import { CacheKey, getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '../sql';
@@ -42,7 +42,7 @@ export class CacheHelper {
     entity: EntityTarget<T>,
     key: CacheKey,
     reclaimAfterMs: number,
-  ): Promise<{ data: T, claimed: boolean }> {
+  ): Promise<{ data: T; claimed: boolean }> {
     const pollIntervalMs = 500;
     const uuid = randomUUID();
 
@@ -113,7 +113,7 @@ export class CacheHelper {
     entity: EntityTarget<T>,
     where: Record<string, any>,
     refreshToken: string,
-    updates: Partial<T>,
+    updates: QueryDeepPartialEntity<T>,
   ): Promise<number | null> {
     const result = await this.dataSource
       .createQueryBuilder()
@@ -122,7 +122,7 @@ export class CacheHelper {
         ...updates,
         refreshToken: null, // release claim
         updatedAt: () => 'NOW()',
-      } as any)
+      })
       .where(where)
       .andWhere('refreshToken = :refreshToken', { refreshToken })
       .returning(['id'])
