@@ -58,7 +58,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<AccountInfo>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const accountInfoParsed = parseAccountInfo(response.data);
@@ -86,7 +86,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<NetworkNodesResponse>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag: etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const nodeResponse = response.data;
@@ -120,7 +120,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<RegisteredNodesResponse>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag: etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const nodeResponse = response.data;

@@ -27,15 +27,15 @@ export class UserKeysService {
   }
 
   // Get the user key for the provided where clause.
-  getUserKey(
+  async getUserKey(
     where: FindOptionsWhere<UserKey>,
     relations?: FindOptionsRelations<UserKey>,
     withDeleted: boolean = false,
-  ): Promise<UserKey> {
+  ): Promise<UserKey | null> {
     if (!where) {
       return null;
     }
-    return this.repo.findOne({ where, relations, withDeleted });
+    return await this.repo.findOne({ where, relations, withDeleted });
   }
 
   // Upload the provided user key for the provided user.

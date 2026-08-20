@@ -26,7 +26,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   await app.startAllMicroservices();
-  await app.listen(configService.get<string>('HTTP_PORT'));
+  await app.listen(configService.get<string>('HTTP_PORT') ?? 3000);
 }
 
 async function createApp(): Promise<NestExpressApplication> {

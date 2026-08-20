@@ -97,20 +97,21 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string }> {
+  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string } | null> {
     const user = await this.usersService.getUser({ email });
 
-    if (!user) return;
+    if (!user) return null;
 
     // A legitimate new request always gets a clean slate of attempts, and
     // replaces whatever code (if any) was previously pending.
     await this.otpStoreService.resetFailedAttempts(user.email);
+    if (!secret) return null;
 
     const otp = this.generateOtp();
     await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
 
     const serverUrl = this.resolveServerUrl(fallbackUrl);
-    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
+    await emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
 
     // @deprecated This JWT proves nothing on its own (see OtpJwtStrategy) - it's
     // only issued so pre-existing clients that still send it back as the `otp`
@@ -139,6 +140,9 @@ export class AuthService {
     // Atomically checks-and-deletes so the same code can never be redeemed twice,
     // even by two requests racing each other.
     const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash);
+    if (secret === null) {
+      throw new UnauthorizedException('No secret found');
+    }
 
     if (!matched) {
       const attempts = await this.otpStoreService.registerFailedAttempt(email, windowSeconds);
@@ -253,7 +257,12 @@ export class AuthService {
   /* Attempt to authenticate the token. */
   async authenticateWebsocketToken(accessToken: string): Promise<User> {
     const { userId } = await this.jwtService.verifyAsync(accessToken);
-    return this.usersService.getUser({ id: userId });
+    const result = await this.usersService.getUser({ id: userId });
+    if (result !== null) {
+      return result;
+    } else {
+      throw new UnauthorizedException('Cannot find user matching access token');
+    }
   }
 
   /* Elevate user to admin */

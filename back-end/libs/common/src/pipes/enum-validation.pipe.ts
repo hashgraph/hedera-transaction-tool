@@ -2,13 +2,13 @@ import { BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { isDefined, isEnum } from 'class-validator';
 
 @Injectable()
-export class EnumValidationPipe<T> implements PipeTransform<string, Promise<T>> {
+export class EnumValidationPipe<T> implements PipeTransform<string, Promise<T|undefined>> {
   constructor(
     private enumEntity,
     private optional = false,
   ) {}
 
-  transform(value: string): Promise<T> {
+  transform(value: string): Promise<T|undefined> {
     if (this.optional && !isDefined(value)) {
       return Promise.resolve(undefined);
     }

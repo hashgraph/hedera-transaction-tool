@@ -31,11 +31,6 @@ describe('keysRequiredToSign', () => {
     transaction = { id: 1, transactionBytes: accountCreateTx.toBytes(), network: 'testnet' };
   });
 
-  it('should return an empty array if transaction is not provided', async () => {
-    const result = await keysRequiredToSign(null, transactionSignatureService, entityManager);
-    expect(result).toEqual([]);
-  });
-
   it('should return user key IDs required to sign the transaction', async () => {
     const pk = PrivateKey.generateED25519();
     const keys = [{ id: 1, publicKey: pk.publicKey.toStringRaw() }];

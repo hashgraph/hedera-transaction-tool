@@ -95,8 +95,8 @@ export function computeShortenedPublicKeyList(
   publicKeys: Set<string>,
   keyList: KeyList,
 ): PublicKey[] | null {
-  const result = [];
-  const secondary = [];
+  const result: PublicKey[] = [];
+  const secondary: PublicKey[][] = [];
   const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;
 
   // Iterates through the key list, prioritizing PublicKeys over KeyLists

@@ -81,7 +81,7 @@ describe('ExecuteService', () => {
       signers: [],
       approvers: [],
       observers: [],
-      creatorKey: null,
+      creatorKey: undefined,
       mirrorNetwork: 'testnet',
       validStart: new Date(),
     };
@@ -255,7 +255,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
     });
@@ -280,7 +280,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
@@ -349,11 +349,6 @@ describe('ExecuteService', () => {
       await expect(service.executeTransaction(transaction)).rejects.toThrow(
         'Transaction is archived.',
       );
-    });
-
-    it('should throw if transaction is null or undefined', async () => {
-      await expect(service.executeTransaction(null)).rejects.toThrow('Transaction not found');
-      await expect(service.executeTransaction(undefined)).rejects.toThrow('Transaction not found');
     });
 
     it('should execute a transaction without signature validation when computeSignatureKey throws', async () => {
@@ -492,7 +487,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();

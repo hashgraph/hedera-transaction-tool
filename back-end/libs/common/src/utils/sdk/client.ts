@@ -7,7 +7,7 @@ export const TESTNET = 'testnet';
 export const PREVIEWNET = 'previewnet';
 export const LOCAL_NODE = 'local-node';
 
-export const getLocalClientNetwork = (env: string) => {
+export const getLocalClientNetwork = (env: string|undefined): Record<string, string> => {
   switch (env) {
     case 'test':
       return { '127.0.0.1:50211': '0.0.3' };

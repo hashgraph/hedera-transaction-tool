@@ -76,8 +76,12 @@ export class TransactionSignatureService {
   private extractSignatureRequirements(
     transactionModel: TransactionBaseModel<any>
   ): SignatureRequirements {
+    const feePayerAccountId = transactionModel.getFeePayerAccountId();
+    if (feePayerAccountId === null) {
+      throw new Error("No fee payer account id")
+    }
     return {
-      feePayerAccount: transactionModel.getFeePayerAccountId().toString(),
+      feePayerAccount: feePayerAccountId.toString(),
       signingAccounts: transactionModel.getSigningAccounts(),
       receiverAccounts: transactionModel.getReceiverAccounts(),
       newKeys: transactionModel.getNewKeys() ?? [],

@@ -115,10 +115,10 @@ export class ExecuteService {
           },
         };
       })
-      .filter(Boolean);
+      .filter(e => e !== null);
 
     if (successfulEvents.length > 0) {
-      emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
     }
 
     // Return only successful results — filter out nulls from pods that lost the race
@@ -137,7 +137,7 @@ export class ExecuteService {
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
-    let transactionStatusCode = null;
+    let transactionStatusCode: number | null = null;
     let isDuplicate = false;
 
     const result: TransactionExecutedDto = {
@@ -154,7 +154,7 @@ export class ExecuteService {
       transactionStatusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
       let message = 'Unknown error';
-      let statusCode = null;
+      let statusCode: number | null = null;
 
       if (error instanceof Error) {
         message = error.message;
@@ -191,7 +191,7 @@ export class ExecuteService {
     const updateResult = await this.transactionsRepo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
+      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode ?? undefined})
       .where('id = :id AND status = :currentStatus', {
         id: transaction.id,
         currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,

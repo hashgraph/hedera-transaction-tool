@@ -107,8 +107,10 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 
     if (bodyBytes) {
       const body = proto.TransactionBody.decode(bodyBytes);
-      const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
-      transactionIdCol[transactionId] = col;
+      if (body.transactionID != null) {
+        const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
+        transactionIdCol[transactionId] = col;
+      }
     }
   }
 
@@ -169,7 +171,7 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
   return { newPublicKeys, allPublicKeys };
 };
 
-export const getStatusCodeFromMessage = (message: string) => {
+export const getStatusCodeFromMessage = (message: string): number | null => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
@@ -224,8 +226,10 @@ export async function smartCollate(
     const signatureMap = sdkTransaction.getSignatures();
     sdkTransaction.removeAllSignatures();
 
-    for (const key of publicKeys) {
-      sdkTransaction.addSignature(key, signatureMap);
+    if (publicKeys !== null) {
+      for (const key of publicKeys) {
+        sdkTransaction.addSignature(key, signatureMap);
+      }
     }
 
     // If the transaction is still too large,
@@ -254,18 +258,11 @@ export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
   return bodyBytes.length > maxSize;
 }
 
-export const transactionIs = <T extends SDKTransaction>(
-  type: new (...args) => T,
-  transaction: SDKTransaction,
-): transaction is T => {
-  return transaction instanceof type;
-};
-
 export const isTransactionValidForNodes = (
   sdkTransaction: SDKTransaction,
   allowedNodeAccountIds: Set<string>
 ): boolean  => {
-  const nodeAccountIds = (sdkTransaction as any)._nodeAccountIds;
+  const nodeAccountIds = sdkTransaction._nodeAccountIds;
   const txNodeIds: string[] = [];
   if (
     nodeAccountIds &&

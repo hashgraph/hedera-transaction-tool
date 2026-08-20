@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -41,7 +40,7 @@ export class UsersService {
 
     if (user) {
       if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
-      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: null });
+      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: undefined });
     }
 
     user = this.repo.create({
@@ -54,13 +53,7 @@ export class UsersService {
 
   /* Returns the user for the given email and password. The returned user is valid and verified. */
   async getVerifiedUser(email: string, password: string): Promise<User> {
-    let user: User;
-
-    try {
-      user = await this.getUser({ email });
-    } catch {
-      throw new InternalServerErrorException('Failed to retrieve user.');
-    }
+    const user = await this.getUser({ email });
 
     if (!user) {
       throw new UnauthorizedException('Please check your login credentials');
@@ -80,12 +73,12 @@ export class UsersService {
   }
 
   // Return a user for given values
-  getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User> {
+  async getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User | null> {
     // If where is null, or all values in where are null, return null
     if (!where || Object.values(where).every(value => !value)) {
       return null;
     }
-    return this.repo.findOne({ where, withDeleted });
+    return await this.repo.findOne({ where, withDeleted });
   }
 
   // Return an array of users, containing all current users of the organization.

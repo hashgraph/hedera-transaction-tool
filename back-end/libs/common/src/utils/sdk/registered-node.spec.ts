@@ -4,17 +4,18 @@ import { BlockNodeApi, BlockNodeServiceEndpoint, PublicKey } from '@hiero-ledger
 describe('parseRegisteredNodeInfo()', () => {
   it('decode sample registered node', () => {
     const nodeInfo = parseRegisteredNodeInfo(SAMPLE_REGISTERED_NODE as any);
-    expect(nodeInfo.admin_key).not.toBeNull();
-    expect(nodeInfo.admin_key instanceof PublicKey).toBe(true);
-    expect(nodeInfo.created_timestamp).toBe(SAMPLE_REGISTERED_NODE.created_timestamp);
-    expect(nodeInfo.description).toBe(SAMPLE_REGISTERED_NODE.description);
-    expect(nodeInfo.registered_node_id).toBe(SAMPLE_REGISTERED_NODE.registered_node_id);
-    expect(nodeInfo.timestamp).toStrictEqual(SAMPLE_REGISTERED_NODE.timestamp);
-    expect(nodeInfo.service_endpoints.length).toStrictEqual(
+    expect(nodeInfo).not.toBeNull();
+    expect(nodeInfo!.admin_key).not.toBeNull();
+    expect(nodeInfo!.admin_key instanceof PublicKey).toBe(true);
+    expect(nodeInfo!.created_timestamp).toBe(SAMPLE_REGISTERED_NODE.created_timestamp);
+    expect(nodeInfo!.description).toBe(SAMPLE_REGISTERED_NODE.description);
+    expect(nodeInfo!.registered_node_id).toBe(SAMPLE_REGISTERED_NODE.registered_node_id);
+    expect(nodeInfo!.timestamp).toStrictEqual(SAMPLE_REGISTERED_NODE.timestamp);
+    expect(nodeInfo!.service_endpoints.length).toStrictEqual(
       SAMPLE_REGISTERED_NODE.service_endpoints.length,
     );
 
-    const ep0 = nodeInfo.service_endpoints[0];
+    const ep0 = nodeInfo!.service_endpoints[0];
     const sampleEP0 = SAMPLE_REGISTERED_NODE.service_endpoints[0];
     expect(ep0.type).toBe('blockNode');
     expect(ep0.ipAddress).toBe(sampleEP0.ip_address);

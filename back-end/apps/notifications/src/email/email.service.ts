@@ -31,10 +31,10 @@ export class EmailService implements OnModuleDestroy {
 
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      this.configService.get<number>('EMAIL_DEBOUNCE_DELAY_MS'),
+      this.configService.get<number>('EMAIL_DEBOUNCE_DELAY_MS')!,
       200,
-      this.configService.get<number>('EMAIL_DEBOUNCE_MAX_FLUSH_MS'),
-      this.configService.get('REDIS_URL'),
+      this.configService.get<number>('EMAIL_DEBOUNCE_MAX_FLUSH_MS')!,
+      this.configService.get('REDIS_URL')!,
       'emails',
     );
   }
@@ -163,8 +163,8 @@ export class EmailService implements OnModuleDestroy {
         from: `"Transaction Tool" <${this.sender}>`,
         to: groupKey,
         subject: NotificationTypeEmailSubjects[type],
-        text: htmlContent.replace(/<\/?[^>]+(>|$)/g, ''),
-        html: htmlContent,
+        text: htmlContent!.replace(/<\/?[^>]+(>|$)/g, ''),
+        html: htmlContent!,
       };
 
       try {

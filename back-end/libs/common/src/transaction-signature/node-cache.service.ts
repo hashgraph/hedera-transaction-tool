@@ -83,10 +83,10 @@ export class NodeCacheService {
       where: { nodeId, mirrorNetwork },
     });
 
-    if (this.hasCompleteData(cached) && isFresh(cached.updatedAt, this.cacheTtlMs)) {
+    if (this.hasCompleteData(cached) && isFresh(cached!.updatedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
-      await this.linkTransactionToNode(transaction.id, cached.id);
-      return this.parseCachedNode(cached);
+      await this.linkTransactionToNode(transaction.id, cached!.id);
+      return this.parseCachedNode(cached!);
     }
 
     // Cache is stale or doesn't exist - fetch new data
@@ -138,12 +138,12 @@ export class NodeCacheService {
   private async saveNodeData(
     nodeId: number,
     mirrorNetwork: string,
-    refreshToken: string,
+    refreshToken: string | null,
     nodeData?: NodeInfoParsed,
     etag?: string,
     transactionId?: number,
   ): Promise<{ id: number; nodeData?: NodeInfoParsed } | null> {
-    const updates = nodeData
+    const updates = nodeData?.node_account_id && nodeData?.admin_key
       ? {
         nodeAccountId: nodeData.node_account_id.toString(),
         encodedKey: serializeKey(nodeData.admin_key),
@@ -163,7 +163,7 @@ export class NodeCacheService {
     }
 
     // Persist admin keys if present (ignore duplicates)
-    if (nodeData) {
+    if (nodeData?.admin_key) {
       const keys = flattenKeyList(nodeData.admin_key);
 
       if (keys.length > 0) {
@@ -189,7 +189,7 @@ export class NodeCacheService {
   private async fetchAndSaveNodeInfo(
     nodeId: number,
     mirrorNetwork: string,
-    refreshToken: string,
+    refreshToken: string | null,
     etag?: string,
     transactionId?: number,
   ): Promise<NodeInfoParsed | null> {
@@ -219,7 +219,7 @@ export class NodeCacheService {
       mirrorNetwork,
       refreshToken,
       fetchedNode.data,
-      fetchedNode.etag,
+      fetchedNode.etag ?? undefined,
       transactionId,
     );
 
@@ -242,7 +242,7 @@ export class NodeCacheService {
         nodeId,
         mirrorNetwork,
         claimedNode.refreshToken,
-        claimedNode?.etag,
+        claimedNode?.etag ?? undefined,
         transactionId,
       );
 
@@ -330,10 +330,8 @@ export class NodeCacheService {
    */
   private parseCachedNode(cached: CachedNode): NodeInfoParsed {
     return {
-      admin_key: deserializeKey(cached.encodedKey),
-      node_account_id: cached.nodeAccountId
-        ? AccountId.fromString(cached.nodeAccountId)
-        : null,
+      admin_key: cached.encodedKey ? deserializeKey(cached.encodedKey) : null,
+      node_account_id: cached.nodeAccountId ? AccountId.fromString(cached.nodeAccountId) : null,
     } as NodeInfoParsed;
   }
 
@@ -346,9 +344,9 @@ export class NodeCacheService {
       return true;
     }
 
-    const serializedKey = serializeKey(fetchedData.admin_key);
+    const serializedKey = fetchedData.admin_key !== null ? serializeKey(fetchedData.admin_key) : null;
     const keysEqual =
-      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
+      serializedKey !== null && cached.encodedKey !== null
         ? Buffer.compare(serializedKey, cached.encodedKey) === 0
         : serializedKey === cached.encodedKey;
 

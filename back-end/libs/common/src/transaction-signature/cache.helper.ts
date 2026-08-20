@@ -112,7 +112,7 @@ export class CacheHelper {
   async saveAndReleaseClaim<T extends { refreshToken?: string | null; updatedAt?: Date }>(
     entity: EntityTarget<T>,
     where: Record<string, any>,
-    refreshToken: string,
+    refreshToken: string | null,
     updates: QueryDeepPartialEntity<T>,
   ): Promise<number | null> {
     const result = await this.dataSource

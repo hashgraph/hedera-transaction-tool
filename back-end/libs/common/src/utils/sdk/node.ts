@@ -12,6 +12,10 @@ import {
 import { AccountId, FileId, Hbar, HbarUnit, Key, PublicKey, ServiceEndpoint } from '@hiero-ledger/sdk';
 
 export const parseNodeInfo = (nodeInfo: NetworkNode) => {
+  const service_endpoints = parseNodeProperty(nodeInfo, 'service_endpoints');
+  if (service_endpoints === null) {
+    return null;
+  }
   const nodeInfoParsed: NodeInfoParsed = {
     admin_key: parseNodeProperty(nodeInfo, 'admin_key'),
     description: parseNodeProperty(nodeInfo, 'description'),
@@ -21,7 +25,7 @@ export const parseNodeInfo = (nodeInfo: NetworkNode) => {
     node_account_id: parseNodeProperty(nodeInfo, 'node_account_id'),
     node_cert_hash: parseNodeProperty(nodeInfo, 'node_cert_hash'),
     public_key: parseNodeProperty(nodeInfo, 'public_key'),
-    service_endpoints: parseNodeProperty(nodeInfo, 'service_endpoints'),
+    service_endpoints: service_endpoints,
     timestamp: parseNodeProperty(nodeInfo, 'timestamp'),
     max_stake: parseNodeProperty(nodeInfo, 'max_stake'),
     min_stake: parseNodeProperty(nodeInfo, 'min_stake'),
@@ -71,11 +75,13 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: 'grpc_web_pro
 export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof NetworkNode) {
   switch (property) {
     case 'file_id':
-      return isFileId(nodeInfo.file_id) ? FileId.fromString(nodeInfo.file_id) : null;
+      return nodeInfo.file_id && isFileId(nodeInfo.file_id)
+        ? FileId.fromString(nodeInfo.file_id)
+        : null;
     case 'node_id':
       return nodeInfo.node_id || null;
     case 'node_account_id':
-      return isAccountId(nodeInfo.node_account_id)
+      return nodeInfo.node_account_id && isAccountId(nodeInfo.node_account_id)
         ? AccountId.fromString(nodeInfo.node_account_id)
         : null;
     case 'node_cert_hash':
@@ -87,14 +93,14 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof Network
     case 'timestamp':
       return nodeInfo.timestamp || null;
     case 'admin_key':
-      if (!nodeInfo.admin_key) return null;
+      if (!nodeInfo.admin_key?.key) return null;
       switch (nodeInfo.admin_key._type) {
         case KeyType.ProtobufEncoded:
-          return decodeProtobufKey(nodeInfo.admin_key?.key);
+          return decodeProtobufKey(nodeInfo.admin_key.key);
         case KeyType.ED25519:
-          return PublicKey.fromStringED25519(nodeInfo.admin_key?.key);
+          return PublicKey.fromStringED25519(nodeInfo.admin_key.key);
         case KeyType.ECDSA_SECP256K1:
-          return PublicKey.fromStringECDSA(nodeInfo.admin_key?.key);
+          return PublicKey.fromStringECDSA(nodeInfo.admin_key.key);
         default:
           return null;
       }
@@ -119,7 +125,7 @@ export function parseNodeProperty(nodeInfo: NetworkNode, property: keyof Network
     case 'decline_reward':
       return nodeInfo.decline_reward ?? null;
     case 'grpc_web_proxy_endpoint':
-      return getServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
+      return getServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint ?? undefined);
     default:
       throw new Error(`Unknown account info  property: ${property}`);
   }

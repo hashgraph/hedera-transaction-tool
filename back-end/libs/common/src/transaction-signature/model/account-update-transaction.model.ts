@@ -18,6 +18,7 @@ export class AccountUpdateTransactionModel
   getNewKeys(): Key[] {
     if (
       this.transaction.key != null &&
+      this.transaction.accountId != null &&
       !this.shouldWaiveSigningRequirements(this.transaction.accountId)
     ) {
       return [this.transaction.key];
@@ -45,7 +46,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isSystemAccount(accountId: AccountId): boolean {
+  private isSystemAccount(accountId: AccountId | null): boolean {
     return (
       accountId != null &&
       accountId.compare(this.MINIMUM_SYSTEM_ACCOUNT) >= 0 &&
@@ -53,7 +54,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isPrivilegedFeePayer(feePayer?: AccountId): boolean {
+  private isPrivilegedFeePayer(feePayer: AccountId | null): boolean {
     return (
       feePayer != null &&
       (feePayer.equals(this.TREASURY_ACCOUNT) || feePayer.equals(this.ADMIN_ACCOUNT))

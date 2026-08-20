@@ -55,7 +55,7 @@ export class SqlBuilderService {
   /**
    * Gets entity metadata with caching and error handling
    */
-  private getMeta(entity: EntityTarget<any>): EntityMetadata {
+  private getMeta(entity: EntityTarget<any> | null | undefined): EntityMetadata {
     // Validate entity parameter
     if (entity === null || entity === undefined) {
       throw new SqlBuilderError('Entity cannot be null or undefined');
@@ -94,7 +94,7 @@ export class SqlBuilderService {
    * @returns The table name in the database
    * @throws {EntityNotFoundError} If entity is not registered
    */
-  table(entity: EntityTarget<any>): string {
+  table(entity: EntityTarget<any> | null | undefined): string {
     try {
       const metadata = this.getMeta(entity);
 

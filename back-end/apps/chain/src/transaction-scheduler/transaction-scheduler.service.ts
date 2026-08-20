@@ -162,7 +162,7 @@ export class TransactionSchedulerService {
     // Apply status changes to in-memory objects so prepareTransactions sees current state
     for (const transaction of transactions) {
       if (results.has(transaction.id)) {
-        transaction.status = results.get(transaction.id);
+        transaction.status = results.get(transaction.id)!;
       }
     }
 
@@ -205,7 +205,7 @@ export class TransactionSchedulerService {
             });
             // All the transactions for the group are now pulled. If there is an issue validating for even one
             // transaction, the group will not be executed. This is handled in executeTransactionGroup
-            this.collateGroupAndExecute(transactionGroup);
+            this.collateGroupAndExecute(transactionGroup!);
           }
         } else {
           this.collateAndExecute(transaction);

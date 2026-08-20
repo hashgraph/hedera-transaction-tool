@@ -151,37 +151,43 @@ export class ReceiverService {
     entityManager: EntityManager,
     transaction: Transaction,
     approvers: TransactionApprover[],
-    keyCache: Map<string, UserKey>,
+    keyCache?: Map<string, UserKey>,
   ) {
     // If the creatorKey is deleted, it will not be included
-    const creatorId = transaction.creatorKey?.userId;
-    const signerUserIds = transaction.signers.map(s => s.userId);
-    const observerUserIds = transaction.observers.map(o => o.userId);
-    const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction, keyCache);
+    const creatorId = transaction.creatorKey.userId;
+    const signerUserIds = transaction.signers?.map(s => s.userId) ?? [];
+    const observerUserIds = transaction.observers?.map(o => o.userId) ?? [];
+    const requiredUserIds = await this.getUsersIdsRequiredToSign(
+      entityManager,
+      transaction,
+      keyCache,
+    );
 
-    const approversUserIds = approvers.map(a => a.userId);
+    const approversUserIds = approvers.map(a => a.userId).filter(userId => userId !== undefined);
     const approversGaveChoiceUserIds = approvers
       .filter(a => a.approved !== null)
       .map(a => a.userId)
-      .filter(Boolean);
+      .filter(a => a !== undefined);
     const approversShouldChooseUserIds = [
       TransactionStatus.WAITING_FOR_EXECUTION,
       TransactionStatus.WAITING_FOR_SIGNATURES,
     ].includes(transaction.status)
       ? approvers
-        .filter(a => a.approved === null)
-        .map(a => a.userId)
-        .filter(Boolean)
+          .filter(a => a.approved === null)
+          .map(a => a.userId)
+          .filter(a => a !== undefined)
       : [];
 
     const participants = [
-      ...new Set([
-        creatorId,
-        ...signerUserIds,
-        ...observerUserIds,
-        ...approversUserIds,
-        ...requiredUserIds,
-      ].filter(Boolean)),
+      ...new Set(
+        [
+          creatorId,
+          ...signerUserIds,
+          ...observerUserIds,
+          ...approversUserIds,
+          ...requiredUserIds,
+        ].filter(Boolean),
+      ),
     ];
 
     return {
@@ -247,7 +253,7 @@ export class ReceiverService {
         return this.getPendingReviewerUserIds(entityManager, transaction.id);
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
       case NotificationType.TRANSACTION_INDICATOR_REJECTED:
-        return [creatorId, ...approversUserIds, ...observerUserIds];
+        return [creatorId!, ...approversUserIds, ...observerUserIds];
 
       case NotificationType.TRANSACTION_APPROVED:
       case NotificationType.TRANSACTION_INDICATOR_APPROVE:
@@ -267,7 +273,7 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_ARCHIVED:
-        return [creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds];
+        return [creatorId!, ...approversUserIds, ...observerUserIds, ...requiredUserIds];
 
       case NotificationType.TRANSACTION_CANCELLED:
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
@@ -338,21 +344,24 @@ export class ReceiverService {
     entityManager: EntityManager,
     notification: Notification,
     newReceiverIds: number[],
-  ) {
+  ): Promise<NotificationReceiver[]> {
     if (newReceiverIds.length === 0) return [];
 
     const type = NOTIFICATION_CHANNELS[notification.type];
 
     return entityManager.save(
       NotificationReceiver,
-      newReceiverIds.map(userId => ({
-        notificationId: notification.id,
-        userId,
-        isRead: false,
-        isInAppNotified: type.inApp ? false : null,
-        isEmailSent: type.email ? false : null,
-        notification,
-      })),
+      newReceiverIds.map(
+        userId =>
+          ({
+            notificationId: notification.id,
+            userId,
+            isRead: false,
+            isInAppNotified: type.inApp ? false : null,
+            isEmailSent: type.email ? false : null,
+            notification,
+          }) as NotificationReceiver,
+      ),
     );
   }
 
@@ -580,7 +589,8 @@ export class ReceiverService {
   private collectNotifications<TKey extends string | number>(
     newReceivers: NotificationReceiver[],
     updatedReceivers: NotificationReceiver[],
-    notificationMap: { [key: string]: any[] },
+    notificationMap:
+      { [userId: number]: NotificationReceiver[] } | { [email: string]: Notification[] },
     receiverIds: number[],
     options: {
       keyExtractor: (receiver: NotificationReceiver, cache?: Map<number, User>) => TKey | null;
@@ -988,8 +998,8 @@ export class ReceiverService {
         notificationId: notification.id,
         userId: adminUserId,
         isRead: false,
-        isInAppNotified: inAppReceiverUserIds.includes(adminUserId) ? false : null,
-        isEmailSent: emailReceiverUserIds.includes(adminUserId) ? false : null,
+        isInAppNotified: inAppReceiverUserIds.includes(adminUserId) ? false : undefined,
+        isEmailSent: emailReceiverUserIds.includes(adminUserId) ? false : undefined,
         notification,
       })),
     );

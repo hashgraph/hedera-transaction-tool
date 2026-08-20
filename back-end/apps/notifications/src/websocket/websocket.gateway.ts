@@ -45,7 +45,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       500,
       200,
       2000,
-      this.configService.get('REDIS_URL'),
+      this.configService.get('REDIS_URL')!,
       'inapp-notifications',
     );
   }
