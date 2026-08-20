@@ -127,9 +127,53 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       </div>
       <hr v-if="i !== transaction.hbarApprovals.length - 1" class="separator" />
     </template>
-    <!-- TO IMPLEMENT TOKEN NFT APPROVALS IF NEEDED -->
-    <h3 v-if="transaction.tokenApprovals.length > 0" :class="approvalHeadingClass">
-      Token Nft approvals
+    <h3 v-if="transaction.tokenNftApprovals.length > 0" :class="approvalHeadingClass">
+      Token NFT approvals
     </h3>
+    <template
+      v-for="(approval, i) in transaction.tokenNftApprovals"
+      :key="`${i}${approval.ownerAccountId?.toString()}${approval.spenderAccountId?.toString()}${approval.tokenId.toString()}`"
+    >
+      <div class="row flex-wrap my-3" :class="{ 'mt-0': i === 0 }">
+        <div v-if="approval.ownerAccountId" :class="commonColClass">
+          <h4 :class="detailItemLabelClass">Owner ID</h4>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-nft-details-owner-id">
+            {{ getAccountIdWithChecksum(approval.ownerAccountId?.toString()) }}
+          </p>
+        </div>
+        <div v-if="approval.spenderAccountId" :class="commonColClass">
+          <h4 :class="detailItemLabelClass">Spender ID</h4>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-nft-details-spender-id">
+            {{ getAccountIdWithChecksum(approval.spenderAccountId?.toString()) }}
+          </p>
+        </div>
+        <div v-if="approval.tokenId" :class="commonColClass">
+          <h4 :class="detailItemLabelClass">Token ID</h4>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-nft-details-token-id">
+            {{ approval.tokenId?.toString() }}
+          </p>
+        </div>
+        <div :class="commonColClass">
+          <h4 :class="detailItemLabelClass">Serial Numbers</h4>
+          <p :class="detailItemValueClass" data-testid="p-account-approve-nft-details-serials">
+            <span v-if="approval.allSerials">All serials</span>
+            <span v-else-if="approval.serialNumbers && approval.serialNumbers.length > 0">
+              {{ approval.serialNumbers.map(s => s.toString()).join(', ') }}
+            </span>
+            <span v-else>—</span>
+          </p>
+        </div>
+        <div v-if="approval.delegatingSpender" :class="commonColClass">
+          <h4 :class="detailItemLabelClass">Delegating Spender</h4>
+          <p
+            :class="detailItemValueClass"
+            data-testid="p-account-approve-nft-details-delegating-spender"
+          >
+            {{ getAccountIdWithChecksum(approval.delegatingSpender?.toString()) }}
+          </p>
+        </div>
+      </div>
+      <hr v-if="i !== transaction.tokenNftApprovals.length - 1" class="separator" />
+    </template>
   </div>
 </template>
