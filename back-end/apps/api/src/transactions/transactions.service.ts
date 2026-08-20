@@ -8,10 +8,21 @@ import {
 import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
+  AccountDeleteTransaction,
+  AccountUpdateTransaction,
   Client,
+  FileAppendTransaction,
+  FileDeleteTransaction,
+  FileUpdateTransaction,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
   PublicKey,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   Transaction as SDKTransaction,
   TransactionId,
+  TransferTransaction,
 } from '@hiero-ledger/sdk';
 
 import {
@@ -28,8 +39,10 @@ import {
 
 import {
   type NewSignerRow,
+  EntityRole,
   Transaction,
   TransactionApprover,
+  TransactionEntity,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -519,14 +532,20 @@ export class TransactionsService {
           throw new BadRequestException(ErrorCodes.FST);
         }
 
-        // Assign reviewers for each saved transaction; update status if lists were created
+        // Extract entities and assign reviewers for each saved transaction
         for (let i = 0; i < saved.length; i++) {
           const tx = saved[i];
           const data = validatedData[i];
           try {
+            const entityRows = this.extractTransactionEntities(data.sdkTransaction, data.mirrorNetwork);
+            if (entityRows.length > 0) {
+              await entityManager.save(
+                TransactionEntity,
+                entityRows.map(e => entityManager.create(TransactionEntity, { transactionId: tx.id, ...e })),
+              );
+            }
             const hasReviewers = await this.reviewerAssignmentService.assign(
               tx.id,
-              data.sdkTransaction,
               data.type,
               data.mirrorNetwork,
               user.id,
@@ -1153,6 +1172,72 @@ export class TransactionsService {
     }
 
     return transaction;
+  }
+
+  private extractTransactionEntities(
+    sdkTx: SDKTransaction,
+    network: string,
+  ): Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] {
+    const raw: Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] = [];
+
+    const feePayerId = sdkTx.transactionId?.accountId;
+    if (feePayerId) {
+      raw.push({ hederaEntityId: feePayerId.toString(), network, entityRole: EntityRole.FEE_PAYER });
+    }
+
+    if (sdkTx instanceof TransferTransaction) {
+      for (const transfer of sdkTx.hbarTransfersList) {
+        raw.push({
+          hederaEntityId: transfer.accountId.toString(),
+          network,
+          entityRole: transfer.amount.isNegative() ? EntityRole.SENDER : EntityRole.RECEIVER,
+        });
+      }
+    }
+
+    if (sdkTx instanceof AccountUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof AccountDeleteTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeCreateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+
+    if (sdkTx instanceof FileAppendTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileUpdateTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileDeleteTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof NodeDeleteTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeUpdateTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeDeleteTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+
+    const seen = new Set<string>();
+    return raw.filter(e => {
+      const key = `${e.hederaEntityId}|${e.network}|${e.entityRole}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   /**
