@@ -119,7 +119,10 @@ describe('ReviewerAssignmentService', () => {
         makeRule({ id: 2, groupId: 10, hederaEntityId: '0.0.1', entityRole: EntityRole.FEE_PAYER }),
       ]);
 
-      const group: Partial<ReviewerGroup> = { id: 10, name: 'G', description: null, threshold: 1, members: [] };
+      const group: Partial<ReviewerGroup> = {
+        id: 10, name: 'G', description: null, threshold: 1,
+        members: [{ userId: 7, userKeyId: 1, groupId: 10 } as any],
+      };
       em.findOne.mockResolvedValueOnce(group);
 
       const result = await service.assign(1, TransactionType.ACCOUNT_CREATE, NETWORK, em);
@@ -154,6 +157,17 @@ describe('ReviewerAssignmentService', () => {
       );
     });
 
+    it('gracefully skips a group with no members', async () => {
+      em.find.mockResolvedValueOnce([makeEntity()]);
+      em.find.mockResolvedValueOnce([makeRule()]);
+      em.findOne.mockResolvedValueOnce({ id: 10, name: 'G', description: null, threshold: 1, members: [] });
+
+      const result = await service.assign(1, TransactionType.ACCOUNT_CREATE, NETWORK, em);
+
+      expect(result).toBe(false);
+      expect(em.save).not.toHaveBeenCalledWith(TransactionReviewerList, expect.anything());
+    });
+
     it('gracefully skips a group when it no longer exists', async () => {
       em.find.mockResolvedValueOnce([makeEntity()]);
       em.find.mockResolvedValueOnce([makeRule()]);
@@ -161,7 +175,7 @@ describe('ReviewerAssignmentService', () => {
 
       const result = await service.assign(1, TransactionType.ACCOUNT_CREATE, NETWORK, em);
 
-      expect(result).toBe(true);
+      expect(result).toBe(false);
     });
   });
 });

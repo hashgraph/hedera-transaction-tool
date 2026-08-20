@@ -536,14 +536,15 @@ export class TransactionsService {
         for (let i = 0; i < saved.length; i++) {
           const tx = saved[i];
           const data = validatedData[i];
+          const entityRows = this.extractTransactionEntities(data.sdkTransaction, data.mirrorNetwork);
+          if (entityRows.length > 0) {
+            await entityManager.save(
+              TransactionEntity,
+              entityRows.map(e => entityManager.create(TransactionEntity, { transactionId: tx.id, ...e })),
+            );
+          }
+
           try {
-            const entityRows = this.extractTransactionEntities(data.sdkTransaction, data.mirrorNetwork);
-            if (entityRows.length > 0) {
-              await entityManager.save(
-                TransactionEntity,
-                entityRows.map(e => entityManager.create(TransactionEntity, { transactionId: tx.id, ...e })),
-              );
-            }
             const hasReviewers = await this.reviewerAssignmentService.assign(
               tx.id,
               data.type,
@@ -994,7 +995,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (
-      ![TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+      ![TransactionStatus.READY_FOR_REVIEW, TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
         transaction.status,
       ) &&
       !transaction.isManual

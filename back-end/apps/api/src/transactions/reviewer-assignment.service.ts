@@ -53,18 +53,20 @@ export class ReviewerAssignmentService {
 
     if (matchedGroupIds.length === 0) return false;
 
+    let hasReviewers = false;
     for (const groupId of matchedGroupIds) {
-      await this.snapshotGroup(transactionId, groupId, em);
+      if (await this.snapshotGroup(transactionId, groupId, em)) {
+        hasReviewers = true;
+      }
     }
-
-    return true;
+    return hasReviewers;
   }
 
   private async snapshotGroup(
     transactionId: number,
     groupId: number,
     em: EntityManager,
-  ): Promise<void> {
+  ): Promise<boolean> {
     const group = await em.findOne(ReviewerGroup, {
       where: { id: groupId },
       relations: { members: true },
@@ -72,7 +74,12 @@ export class ReviewerAssignmentService {
 
     if (!group) {
       this.logger.warn(`Reviewer group ${groupId} not found during snapshot; skipping`);
-      return;
+      return false;
+    }
+
+    if (group.members.length === 0) {
+      this.logger.warn(`Reviewer group ${groupId} has no members; skipping`);
+      return false;
     }
 
     const list = await em.save(
@@ -93,8 +100,7 @@ export class ReviewerAssignmentService {
       }),
     );
 
-    if (memberRows.length > 0) {
-      await em.save(TransactionReviewerListMember, memberRows);
-    }
+    await em.save(TransactionReviewerListMember, memberRows);
+    return true;
   }
 }

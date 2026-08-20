@@ -573,7 +573,7 @@ describe('TransactionsService', () => {
         return Array.isArray(data) ? items : items[0];
       });
       transactionEntityManger.save = saveMock as any;
-
+      transactionEntityManger.create = jest.fn().mockImplementation((_entity: any, data: any) => ({ ...data })) as any;
 
       entityManager.transaction.mockImplementation(async (arg1?: any, arg2?: any) => {
         const cb = typeof arg1 === 'function' ? arg1 : typeof arg2 === 'function' ? arg2 : undefined;
