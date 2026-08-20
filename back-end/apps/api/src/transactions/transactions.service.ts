@@ -115,7 +115,7 @@ export class TransactionsService {
   /* Get the transaction for the provided id in the DATABASE */
 
   /* id can be number (ie internal id) or string (ie payerId@timestamp) */
-  async getTransactionById(id: number | TransactionId): Promise<Transaction> {
+  async getTransactionById(id: number | TransactionId): Promise<Transaction | null> {
     if (!id) return null;
 
     const transactions = await this.repo.find({
@@ -526,7 +526,9 @@ export class TransactionsService {
         try {
           return await entityManager.save(Transaction, transactions);
         } catch (error) {
-          this.logger.error('Failed to save transactions', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+          const errorStack = error instanceof Error ? error.stack : null;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error('Failed to save transactions', errorStack ?? errorMessage);
           throw new BadRequestException(ErrorCodes.FST);
         }
       });
@@ -630,7 +632,7 @@ export class TransactionsService {
 
     // Two-pass: defer UserKey resolution to a single bulk find below (was N+1).
     for (const { id, signatureMap: map, tool } of dto) {
-      const transaction = transactionMap.get(id);
+      const transaction = transactionMap.get(id)!;
 
       try {
         if (!(await this.verifyAccess(transaction, user))) {
@@ -670,7 +672,12 @@ export class TransactionsService {
         intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? 'api' });
       } catch (error) {
         if (!(error instanceof BadRequestException)) {
-          this.logger.error(`[TX ${id}] Unexpected error during signature import`, (error as any)?.stack ?? (error as any)?.message ?? String(error));
+          const errorStack = error instanceof Error ? error.stack : null;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `[TX ${id}] Unexpected error during signature import`,
+            errorStack ?? errorMessage,
+          );
         }
         results.set(id, {
           id,
@@ -1014,6 +1021,9 @@ export class TransactionsService {
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number | TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
+    if (transaction === null) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
 
     await this.attachTransactionApprovers(transaction);
 
@@ -1189,6 +1199,11 @@ export class TransactionsService {
     // Check size
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TOS);
+    }
+
+    // Check transactionId
+    if (sdkTransaction.transactionId === null || sdkTransaction.transactionId.validStart === null) {
+      throw new BadRequestException(ErrorCodes.UNKWN);
     }
 
     // Check nodes

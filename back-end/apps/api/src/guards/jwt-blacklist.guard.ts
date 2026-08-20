@@ -12,7 +12,7 @@ export const extractJwtOtp = ExtractJwt.fromHeader('otp');
 export const JwtBlackListAuthGuard = createJwtBlacklistGuard(extractJwtAuth);
 export const JwtBlackListOtpGuard = createJwtBlacklistGuard(extractJwtOtp);
 
-export function createJwtBlacklistGuard(extractJwt: (req) => string) {
+export function createJwtBlacklistGuard(extractJwt: (req) => string | null) {
   @Injectable()
   class JwtBlacklistGuard implements CanActivate {
     constructor(

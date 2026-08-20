@@ -34,7 +34,7 @@ export class SignersService {
   ) {}
 
   /* Get the signature for the given signature id */
-  getSignatureById(id: number): Promise<TransactionSigner | null> {
+  async getSignatureById(id: number): Promise<TransactionSigner | null> {
     if (!id) {
       return null;
     }
@@ -50,7 +50,9 @@ export class SignersService {
     { limit, offset, page, size }: Pagination,
     withDeleted: boolean = false,
   ): Promise<PaginatedResourceDto<TransactionSigner>> {
-    if (!user) return null;
+    if (!user) {
+      throw new BadRequestException(ErrorCodes.UNF);
+    }
 
     const [items, totalItems] = await this.repo.findAndCount({
       where: {
@@ -79,13 +81,10 @@ export class SignersService {
   }
 
   /* Get the signatures for the given transaction id */
-  getSignaturesByTransactionId(
+  async getSignaturesByTransactionId(
     transactionId: number,
     withDeleted: boolean = false,
   ): Promise<TransactionSigner[]> {
-    if (!transactionId) {
-      return null;
-    }
     return this.repo.find({
       where: {
         transaction: {
@@ -154,7 +153,7 @@ export class SignersService {
       if (!signersByTransaction.has(signer.transactionId)) {
         signersByTransaction.set(signer.transactionId, new Set());
       }
-      signersByTransaction.get(signer.transactionId).add(signer.userKeyId);
+      signersByTransaction.get(signer.transactionId)!.add(signer.userKeyId);
     }
 
     return { transactionMap, signersByTransaction };

@@ -7,7 +7,7 @@ export class EnumArrayValidationPipe<T> implements PipeTransform<string, T[]> {
 
   transform(value: string): T[] {
     if (!isDefined(value) || value.trim() === '') {
-      return null;
+      return [];
     }
 
     const result = new Set<T>();
@@ -23,6 +23,6 @@ export class EnumArrayValidationPipe<T> implements PipeTransform<string, T[]> {
       }
     }
 
-    return result.size > 0 ? Array.from(result).sort() : null;
+    return result.size > 0 ? Array.from(result).sort() : [];
   }
 }

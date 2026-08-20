@@ -64,10 +64,10 @@ export class ApproversService {
   ) {}
 
   /* Get the approver by id */
-  getTransactionApproverById(
+  async getTransactionApproverById(
     id: number,
     entityManager?: EntityManager,
-  ): Promise<TransactionApprover> {
+  ): Promise<TransactionApprover | null> {
     if (!id) return null;
 
     const find: FindOneOptions<TransactionApprover> = {
@@ -90,7 +90,7 @@ export class ApproversService {
     userId?: number,
     entityManager?: EntityManager,
   ): Promise<TransactionApprover[]> {
-    if (typeof transactionId !== 'number' || (userId && typeof userId !== 'number')) return null;
+    if (typeof transactionId !== 'number' || (userId && typeof userId !== 'number')) return [];
 
     return (entityManager || this.repo).query(
       `
@@ -145,8 +145,8 @@ export class ApproversService {
     if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.userId !== user.id &&
-      !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey?.userId === user.id) &&
+      !(transaction.observers && transaction.observers.some(o => o.userId === user.id)) &&
+      !(transaction.signers && transaction.signers.some(s => s.userKey?.userId === user.id)) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
@@ -206,7 +206,7 @@ export class ApproversService {
 
   /* Soft deletes approvers' tree */
   async removeNode(listId: number): Promise<void> {
-    if (!listId || typeof listId !== 'number') return null;
+    if (!listId || typeof listId !== 'number') return;
 
     await this.repo.query(
       `
@@ -291,7 +291,7 @@ export class ApproversService {
           if (
             dtoApprover.approvers &&
             dtoApprover.approvers.length > 0 &&
-            (dtoApprover.threshold === null || isNaN(dtoApprover.threshold))
+            (dtoApprover.threshold === undefined || isNaN(dtoApprover.threshold))
           )
             throw new Error(this.THRESHOLD_REQUIRED);
 
@@ -305,16 +305,17 @@ export class ApproversService {
           /* Check if the approver threshold is less or equal to the number of approvers */
           if (
             dtoApprover.approvers &&
+            dtoApprover.threshold !== undefined &&
             (dtoApprover.threshold > dtoApprover.approvers.length || dtoApprover.threshold === 0)
           )
             throw new Error(this.THRESHOLD_LESS_OR_EQUAL_APPROVERS(dtoApprover.approvers.length));
 
           const data: DeepPartial<TransactionApprover> = {
             transactionId:
-              dtoApprover.listId === null || isNaN(dtoApprover.listId) ? transactionId : null,
+              dtoApprover.listId === undefined || isNaN(dtoApprover.listId) ? transactionId : undefined,
             listId: dtoApprover.listId,
             threshold:
-              dtoApprover.threshold && dtoApprover.approvers ? dtoApprover.threshold : null,
+              dtoApprover.threshold && dtoApprover.approvers ? dtoApprover.threshold : undefined,
             userId: dtoApprover.userId,
           };
 
@@ -345,7 +346,7 @@ export class ApproversService {
               const nestedApprover = { ...nestedDtoApprover, listId: approver.id };
 
               if (!nestedDtoApprover.approvers || nestedDtoApprover.approvers.length === 0) {
-                nestedApprover.threshold = null;
+                nestedApprover.threshold = undefined;
               }
 
               await createApprover({ ...nestedDtoApprover, listId: approver.id });
@@ -415,10 +416,10 @@ export class ApproversService {
 
             /* Set the list id to null and set the transaction id */
             await transactionalEntityManager.update(TransactionApprover, approver.id, {
-              listId: null,
+              listId: undefined,
               transactionId: rootNode.transactionId,
             });
-            approver.listId = null;
+            approver.listId = undefined;
             approver.transactionId = rootNode.transactionId;
             updated = true;
 
@@ -428,7 +429,7 @@ export class ApproversService {
               /* Soft delete the parent if there are no more children */
               if (newParentApproversLength === 0) {
                 await transactionalEntityManager.softRemove(TransactionApprover, parent);
-              } else if (newParentApproversLength < parent.threshold) {
+              } else if (parent.threshold !== undefined && newParentApproversLength < parent.threshold) {
                 /* Update the parent threshold if the current one is more than the children */
                 await transactionalEntityManager.update(TransactionApprover, parent.id, {
                   threshold: newParentApproversLength,
@@ -467,10 +468,10 @@ export class ApproversService {
           /* Update the list id and sets the transaction id to null */
           await transactionalEntityManager.update(TransactionApprover, approver.id, {
             listId: dto.listId,
-            transactionId: null,
+            transactionId: undefined,
           });
           approver.listId = dto.listId;
-          approver.transactionId = null;
+          approver.transactionId = undefined;
           updated = true;
 
           return approver;
@@ -551,7 +552,8 @@ export class ApproversService {
 
     const result = await this.removeNode(approver.id);
 
-    await emitTransactionStatusUpdate(this.notificationsPublisher, [{ entityId: approver.transactionId }]);
+    const dtos = approver.transactionId !== undefined ? [{ entityId: approver.transactionId }] : []
+    await emitTransactionStatusUpdate(this.notificationsPublisher, dtos);
 
     return result;
   }
@@ -582,7 +584,7 @@ export class ApproversService {
     const signatureKey = user.keys.find(key => key.id === dto.userKeyId);
 
     /* Gets the public key that the signature belongs to */
-    const publicKey = PublicKey.fromString(signatureKey?.publicKey);
+    const publicKey = signatureKey ? PublicKey.fromString(signatureKey.publicKey) : undefined;
 
     /* Get the transaction body */
     const transaction = await this.dataSource.manager.findOne(Transaction, {
@@ -604,6 +606,7 @@ export class ApproversService {
 
     /* Verify the signature matches the transaction */
     if (
+      !publicKey ||
       !verifyTransactionBodyWithoutNodeAccountIdSignature(sdkTransaction, dto.signature, publicKey)
     )
       throw new BadRequestException(ErrorCodes.SNMP);
@@ -668,13 +671,13 @@ export class ApproversService {
   ) {
     const find: FindManyOptions<TransactionApprover> = {
       where: {
-        listId: typeof approver.listId === 'number' ? approver.listId : null,
-        userId: typeof approver.userId === 'number' ? approver.userId : null,
+        listId: typeof approver.listId === 'number' ? approver.listId : undefined,
+        userId: typeof approver.userId === 'number' ? approver.userId : undefined,
         threshold:
           typeof approver.threshold === 'number' && approver.threshold !== 0
             ? approver.threshold
-            : null,
-        transactionId: typeof approver.listId === 'number' ? null : transactionId,
+            : undefined,
+        transactionId: typeof approver.listId === 'number' ? undefined : transactionId,
       },
     };
 
@@ -706,9 +709,9 @@ export class ApproversService {
   /* Validates the approver DTO */
   private validateApprover(approver: CreateTransactionApproverDto): void {
     if (
-      (approver.listId === null || isNaN(approver.listId)) &&
-      (approver.threshold === null || isNaN(approver.threshold) || approver.threshold === 0) &&
-      (approver.userId === null || isNaN(approver.userId)) &&
+      (approver.listId === null || !approver.listId || isNaN(approver.listId)) &&
+      (approver.threshold === null || !approver.threshold || isNaN(approver.threshold) || approver.threshold === 0) &&
+      (approver.userId === null || !approver.userId || isNaN(approver.userId)) &&
       (!approver.approvers || approver.approvers.length === 0)
     )
       throw new BadRequestException(this.CANNOT_CREATE_EMPTY_APPROVER);

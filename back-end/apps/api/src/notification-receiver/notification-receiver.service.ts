@@ -54,7 +54,7 @@ export class NotificationReceiverService {
   }
 
   async getReceivedNotificationsCount(user: User, filter?: Filtering[]): Promise<number> {
-    return await this.repo.count(this.getFindOptionsForNotifications(user, null, null, filter));
+    return await this.repo.count(this.getFindOptionsForNotifications(user, undefined, undefined, filter));
   }
 
   async getReceivedNotification(user: User, id: number) {

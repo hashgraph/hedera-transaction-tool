@@ -51,7 +51,7 @@ export class ReviewerRule {
   createdAt: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => RuleChangeRecord, record => record.rule)
   changeRecords: RuleChangeRecord[];

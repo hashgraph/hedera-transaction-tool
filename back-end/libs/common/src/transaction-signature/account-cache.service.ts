@@ -83,6 +83,9 @@ export class AccountCacheService {
     const cached = await this.dataSource.manager.findOne(CachedAccount, {
       where: { account, mirrorNetwork },
     });
+    if (cached === null) {
+      return null;
+    }
 
     if (this.hasCompleteData(cached) && isFresh(cached.updatedAt, this.cacheTtlMs)) {
       // Link to transaction even if using cache
@@ -139,7 +142,7 @@ export class AccountCacheService {
   private async saveAccountData(
     account: string,
     mirrorNetwork: string,
-    refreshToken: string,
+    refreshToken: string | null,
     accountData?: AccountInfoParsed,
     etag?: string,
     transactionId?: number,
@@ -147,10 +150,10 @@ export class AccountCacheService {
   ): Promise<{ id: number; accountData?: AccountInfoParsed } | null> {
     const updates = accountData
       ? {
-        receiverSignatureRequired: accountData.receiverSignatureRequired,
-        encodedKey: serializeKey(accountData.key),
-        etag,
-      }
+          receiverSignatureRequired: accountData.receiverSignatureRequired,
+          encodedKey: accountData.key !== null ? serializeKey(accountData.key) : [],
+          etag,
+        }
       : {};
 
     const id = await this.cacheHelper.saveAndReleaseClaim(
@@ -166,7 +169,7 @@ export class AccountCacheService {
 
     // Persist account keys if present (ignore duplicates)
     if (accountData) {
-      const keys = flattenKeyList(accountData.key);
+      const keys = accountData.key !== null ? flattenKeyList(accountData.key) : [];
 
       if (keys.length > 0) {
         await this.insertAccountKeys(id, keys);
@@ -191,7 +194,7 @@ export class AccountCacheService {
   private async fetchAndSaveAccountInfo(
     account: string,
     mirrorNetwork: string,
-    refreshToken: string,
+    refreshToken: string | null,
     etag?: string,
     transactionId?: number,
     isReceiver: boolean = false,
@@ -225,7 +228,7 @@ export class AccountCacheService {
       mirrorNetwork,
       refreshToken,
       fetchedAccount.data,
-      fetchedAccount.etag,
+      fetchedAccount.etag ?? undefined,
       transactionId,
       isReceiver,
     );
@@ -250,7 +253,7 @@ export class AccountCacheService {
         account,
         mirrorNetwork,
         claimedAccount.refreshToken,
-        claimedAccount?.etag,
+        claimedAccount?.etag ?? undefined,
         transactionId,
         isReceiver,
       );
@@ -347,7 +350,7 @@ export class AccountCacheService {
    */
   private parseCachedAccount(cached: CachedAccount): AccountInfoParsed {
     return {
-      key: deserializeKey(cached.encodedKey),
+      key: cached.encodedKey !== null ? deserializeKey(cached.encodedKey) : null,
       receiverSignatureRequired: cached.receiverSignatureRequired,
     } as AccountInfoParsed;
   }
@@ -361,9 +364,9 @@ export class AccountCacheService {
       return true;
     }
 
-    const serializedKey = serializeKey(fetchedData.key);
+    const serializedKey = fetchedData.key !== null ? serializeKey(fetchedData.key) : null;
     const keysEqual =
-      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
+      serializedKey !== null && Buffer.isBuffer(cached.encodedKey)
         ? Buffer.compare(serializedKey, cached.encodedKey) === 0
         : serializedKey === cached.encodedKey;
 

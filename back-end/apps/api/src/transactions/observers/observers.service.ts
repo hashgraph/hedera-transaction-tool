@@ -45,6 +45,9 @@ export class ObserversService {
     if (transaction.creatorKey?.userId !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
 
+    if (!transaction.observers) {
+      return [];
+    }
     const observers: TransactionObserver[] = [];
 
     for (const userId of dto.userIds) {
@@ -100,18 +103,18 @@ export class ObserversService {
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
     if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
-      return transaction.observers;
+      return transaction.observers ?? [];
 
     if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.userId !== user.id &&
-      !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey?.userId === user.id) &&
+      !transaction.observers?.some(o => o.userId === user.id) &&
+      !transaction.signers?.some(s => s.userKey?.userId === user.id) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 
-    return transaction.observers;
+    return transaction.observers ?? [];
   }
 
   /* Update a transaction observer with the data provided for the given observer id. */

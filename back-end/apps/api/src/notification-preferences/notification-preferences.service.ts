@@ -30,7 +30,7 @@ export class NotificationPreferencesService {
 
     const preferences = await this.getPreferences(user, dto.type);
 
-    if (!updateTxEmail && !updateTxInApp) return preferences;
+    if (!updateTxEmail && !updateTxInApp && preferences) return preferences;
 
     if (preferences) {
       await this.repo.update(
@@ -40,8 +40,8 @@ export class NotificationPreferencesService {
         updatePreferences,
       );
 
-      preferences.email = updateTxEmail ? dto.email : preferences.email;
-      preferences.inApp = updateTxInApp ? dto.inApp : preferences.inApp;
+      preferences.email = updateTxEmail ? (dto.email ?? false) : preferences.email;
+      preferences.inApp = updateTxInApp ? (dto.inApp ?? false) : preferences.inApp;
 
       return preferences;
     }
@@ -95,7 +95,7 @@ export class NotificationPreferencesService {
     return preferences;
   }
 
-  async getPreferences(user: User, type: NotificationType): Promise<NotificationPreferences> {
+  async getPreferences(user: User, type: NotificationType): Promise<NotificationPreferences | null> {
     return this.repo.findOne({
       where: {
         userId: user.id,

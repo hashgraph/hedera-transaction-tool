@@ -36,7 +36,7 @@ export class UserKey {
   publicKey: string;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => Transaction, transaction => transaction.creatorKey)
   createdTransactions: Transaction[];

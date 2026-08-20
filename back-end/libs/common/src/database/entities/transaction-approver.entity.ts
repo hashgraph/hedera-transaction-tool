@@ -73,5 +73,5 @@ export class TransactionApprover {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt: Date | null;
 }

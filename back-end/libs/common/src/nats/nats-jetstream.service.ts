@@ -33,7 +33,7 @@ export class NatsJetStreamService implements OnModuleDestroy {
         }
       });
 
-      let timeoutId: ReturnType<typeof setTimeout>;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           timedOut = true;
@@ -44,7 +44,9 @@ export class NatsJetStreamService implements OnModuleDestroy {
       try {
         await Promise.race([connectionPromise, timeoutPromise]);
       } finally {
-        clearTimeout(timeoutId);
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : String(err);
@@ -77,6 +79,10 @@ export class NatsJetStreamService implements OnModuleDestroy {
     if (!this.nc) return;
 
     (async () => {
+      if (this.nc === null) {
+        this.connected = false;
+        return;
+      }
       for await (const status of this.nc.status()) {
         this.logger.log(`NATS connection status: ${status.type} - ${status.data}`);
 

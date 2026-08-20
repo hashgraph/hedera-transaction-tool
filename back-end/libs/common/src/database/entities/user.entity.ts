@@ -46,7 +46,7 @@ export class User {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => UserKey, userKey => userKey.user, { eager: true })
   keys: UserKey[];

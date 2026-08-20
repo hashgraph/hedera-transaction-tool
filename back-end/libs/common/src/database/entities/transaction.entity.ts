@@ -152,7 +152,7 @@ export class Transaction {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => TransactionComment, comment => comment.transaction)
   comments?: TransactionComment[];

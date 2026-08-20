@@ -76,7 +76,9 @@ export class TransactionGroupsService {
         );
       });
     } catch (error) {
-      this.logger.error('Failed to save transaction group', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : null;
+      this.logger.error('Failed to save transaction group', errorStack ?? errorMessage);
       throw new BadRequestException(ErrorCodes.FSTG);
     }
 
@@ -271,7 +273,7 @@ export class TransactionGroupsService {
           const currentStatus = latestMap.get(id);
           if (currentStatus === TransactionStatus.CANCELED) {
             canceled.push(id);
-          } else if (cancelableStatuses.includes(currentStatus)) {
+          } else if (currentStatus && cancelableStatuses.includes(currentStatus)) {
             // Still cancelable but wasn't affected — treat as conflict
             failed.push({
               id,
@@ -315,16 +317,18 @@ export class TransactionGroupsService {
 
   private groupBy<T>(
     items: T[],
-    key: (item: T) => string | number,
+    key: (item: T) => string | number | undefined,
   ) {
     const map = new Map<string | number, T[]>();
 
     for (const item of items) {
       const k = key(item);
-      if (!map.has(k)) {
-        map.set(k, []);
+      if (k) {
+        if (!map.has(k)) {
+          map.set(k, []);
+        }
+        map.get(k)!.push(item);
       }
-      map.get(k)!.push(item);
     }
 
     return map;

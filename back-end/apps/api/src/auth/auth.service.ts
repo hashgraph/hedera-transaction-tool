@@ -97,19 +97,21 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string): Promise<{ token: string }> {
+  async createOtp(email: string): Promise<{ token: string } | null> {
     const user = await this.usersService.getUser({ email });
 
-    if (!user) return;
+    if (!user) return null;
 
     const secret = this.getOtpSecret(user.email);
+    if (!secret) return null;
+
     const otp = await otplib.generate({
       secret,
       crypto,
       ...TOTP_OPTIONS,
     });
 
-    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
+    await emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
 
     const token = this.getOtpToken({ email: user.email, verified: false });
     return { token };
@@ -117,6 +119,9 @@ export class AuthService {
 
   async verifyOtp(user: User, { token }: OtpDto): Promise<{ token: string }> {
     const secret = this.getOtpSecret(user.email);
+    if (secret === null) {
+      throw new UnauthorizedException('No secret found');
+    }
 
     const { valid } = await otplib.verify({
       token,
@@ -138,8 +143,9 @@ export class AuthService {
   }
 
   /* Return unique OTP secret for each user */
-  private getOtpSecret(email: string): Uint8Array {
-    return Buffer.from(this.configService.get<string>('OTP_SECRET').concat(email));
+  private getOtpSecret(email: string): Uint8Array | null {
+    const s = this.configService.get<string>('OTP_SECRET');
+    return s ? Buffer.from(s.concat(email)) : null;
   }
 
   /* Sets the OTP jwt */
@@ -165,7 +171,12 @@ export class AuthService {
   /* Attempt to authenticate the token. */
   async authenticateWebsocketToken(accessToken: string): Promise<User> {
     const { userId } = await this.jwtService.verifyAsync(accessToken);
-    return this.usersService.getUser({ id: userId });
+    const result = await this.usersService.getUser({ id: userId });
+    if (result !== null) {
+      return result;
+    } else {
+      throw new UnauthorizedException('Cannot find user matching access token');
+    }
   }
 
   /* Elevate user to admin */

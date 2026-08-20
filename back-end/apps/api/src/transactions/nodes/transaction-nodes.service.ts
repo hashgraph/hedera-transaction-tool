@@ -99,7 +99,7 @@ export class TransactionNodesService {
       }
       case TransactionNodeCollection.HISTORY: {
         statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
-        transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : null;
+        transactionTypeFilter = transactionTypeFilter.length ? transactionTypeFilter : [];
         const query = getTransactionNodesQuery(
           this.sqlBuilder,
           {

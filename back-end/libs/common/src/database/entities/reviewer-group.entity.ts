@@ -32,7 +32,7 @@ export class ReviewerGroup {
   updatedAt: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => ReviewerGroupMember, member => member.group)
   members: ReviewerGroupMember[];

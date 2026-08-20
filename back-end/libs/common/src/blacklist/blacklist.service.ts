@@ -15,8 +15,10 @@ export class BlacklistService {
     this.client = new Redis(redisURL);
   }
 
-  async blacklistToken(jwt: string) {
-    await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
+  async blacklistToken(jwt: string | null) {
+    if (jwt !== null) {
+      await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
+    }
   }
 
   /*
