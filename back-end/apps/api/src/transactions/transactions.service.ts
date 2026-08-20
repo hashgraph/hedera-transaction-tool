@@ -548,7 +548,6 @@ export class TransactionsService {
               tx.id,
               data.type,
               data.mirrorNetwork,
-              user.id,
               entityManager,
             );
             if (hasReviewers) {
