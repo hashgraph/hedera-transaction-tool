@@ -11,6 +11,11 @@ import {
   setVersionDataForOrg,
 } from '@renderer/stores/versionState';
 import useUserStore from '@renderer/stores/storeUser';
+import { updateOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { isUserLoggedIn } from '@renderer/utils';
+
+// Per-org guard so cascading 401s on the same org only trigger one reauth attempt
+const orgReauthInProgress = new Set<string>();
 
 const isValidVersionPayload = (
   data?: Partial<IVersionCheckResponse>,
@@ -83,10 +88,47 @@ export function handleAxiosResponseError(error: {
 
 }
 
+export async function handleUnauthorizedResponse(error: {
+  config?: { url?: string; baseURL?: string };
+}): Promise<void> {
+  try {
+    const requestUrl = error.config?.url || error.config?.baseURL || '';
+    const userStore = useUserStore();
+    const org = userStore.organizations.find(o => requestUrl.startsWith(o.serverUrl));
+    if (!org) return;
+
+    // Only handle 401s where we actually sent a token — if there's no in-memory
+    // token the request was unauthenticated and the 401 is expected.
+    if (!userStore.getJwtToken(org.id)) return;
+
+    // Deduplicate: ignore cascading 401s while reauth is already in progress
+    if (orgReauthInProgress.has(org.serverUrl)) return;
+    orgReauthInProgress.add(org.serverUrl);
+
+    try {
+      userStore.clearJwtToken(org.id);
+
+      const userId = isUserLoggedIn(userStore.personal) ? userStore.personal.id : null;
+      if (userId) {
+        await updateOrganizationCredentials(org.id, userId, undefined, undefined, null);
+      }
+
+      userStore.signalReauth();
+    } finally {
+      orgReauthInProgress.delete(org.serverUrl);
+    }
+  } catch (err) {
+    logger.error('Failed handling 401 response', err);
+  }
+}
+
 axios.interceptors.response.use(
   response => response,
   async error => {
     handleAxiosResponseError(error);
+    if (error.response?.status === 401) {
+      await handleUnauthorizedResponse(error);
+    }
     return Promise.reject(error as Error);
   },
 );

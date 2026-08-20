@@ -84,6 +84,20 @@ watch(
   },
 );
 
+// A server may invalidate a JWT that hasn't expired client-side (e.g. after a
+// restart). The 401 interceptor in axios.ts sets this flag after clearing the
+// stale token so we re-run auto-login without waiting for a visibility change.
+watch(
+  () => user.reauthPending,
+  async pending => {
+    if (!pending) return;
+    user.consumeReauthSignal();
+    await user.refetchOrganizations();
+    checked.value = false;
+    await openPasswordModalIfRequired();
+  },
+);
+
 /* Exposed Methods */
 async function triggerReauthentication() {
   checked.value = false;

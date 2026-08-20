@@ -58,6 +58,7 @@ const useUserStore = defineStore('user', () => {
   const selectedOrganization = ref<ConnectedOrganization | null>(null);
   const organizations = ref<ConnectedOrganization[]>([]);
   const organizationTokens = ref<OrganizationTokens>({});
+  const reauthPending = ref(false);
 
   /** AccountSetup */
   const accountSetupStarted = ref<boolean | null>(null);
@@ -241,6 +242,18 @@ const useUserStore = defineStore('user', () => {
     return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;
   };
 
+  const clearJwtToken = (organizationId: string) => {
+    delete organizationTokens.value[organizationId];
+  };
+
+  const signalReauth = () => {
+    reauthPending.value = true;
+  };
+
+  const consumeReauthSignal = () => {
+    reauthPending.value = false;
+  };
+
   /* AccountSetup */
   const setAccountSetupStarted = (value: boolean) => {
     accountSetupStarted.value = value;
@@ -282,6 +295,10 @@ const useUserStore = defineStore('user', () => {
     mnemonics,
     deleteOrganization,
     getJwtToken,
+    clearJwtToken,
+    signalReauth,
+    consumeReauthSignal,
+    reauthPending,
     getPassword,
     login,
     logout,
