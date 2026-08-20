@@ -93,7 +93,7 @@ describe('CommentsService', () => {
 
       expect(repo.findOne).toHaveBeenCalledWith({
         where: { id: 1, transaction: { id: 10 } },
-        relations: ['user'],
+        relations: { user: true },
       });
       expect(result).toEqual(mockComment);
     });

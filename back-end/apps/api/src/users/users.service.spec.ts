@@ -118,7 +118,7 @@ describe('UsersService', () => {
 
       const result = await service.getUsers(adminUser);
 
-      expect(userRepository.find).toHaveBeenCalledWith({ relations: ['clients'] });
+      expect(userRepository.find).toHaveBeenCalledWith({ relations: { clients: true } });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(1);
@@ -276,7 +276,7 @@ describe('UsersService', () => {
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['clients'],
+        relations: { clients: true },
       });
       expect(result.clients[0]).toHaveProperty('updateAvailable', true);
     });
@@ -576,7 +576,7 @@ describe('UsersService', () => {
 
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     expect(result).toEqual(email);
   });
@@ -590,7 +590,7 @@ describe('UsersService', () => {
 
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     expect(result).toBeNull();
   });

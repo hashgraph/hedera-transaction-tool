@@ -37,7 +37,7 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers'],
+      relations: { creatorKey: { user: true }, observers: true },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -79,7 +79,13 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
+      relations: {
+        creatorKey: true,
+        observers: true,
+        signers: {
+          userKey: true
+        },
+      },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -144,7 +150,11 @@ export class ObserversService {
 
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: observer.transactionId },
-      relations: ['creatorKey', 'creatorKey.user'],
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+      },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);

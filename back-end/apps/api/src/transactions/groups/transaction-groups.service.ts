@@ -263,7 +263,7 @@ export class TransactionGroupsService {
         // Re-query only those IDs to find out what happened.
         const latestStatuses = await this.dataSource.getRepository(Transaction).find({
           where: { id: In(cancelableIds) },
-          select: ['id', 'status'],
+          select: { id: true, status: true },
         });
 
         const latestMap = new Map(latestStatuses.map(t => [t.id, t.status]));

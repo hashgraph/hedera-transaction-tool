@@ -92,7 +92,7 @@ export class UsersService {
   async getUsers(requestingUser: User): Promise<User[]> {
     // Only load clients relation when admin needs update info
     if (requestingUser.admin) {
-      const users = await this.repo.find({ relations: ['clients'] });
+      const users = await this.repo.find({ relations: { clients: true } });
       const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
       this.enrichUsersWithUpdateFlag(users, latestSupported);
       return users;
@@ -102,7 +102,7 @@ export class UsersService {
   }
 
   async getUserWithClients(id: number, requestingUser: User): Promise<User> {
-    const relations = (requestingUser.admin || requestingUser.id === id) ? ['clients'] : [];
+    const relations = (requestingUser.admin || requestingUser.id === id) ? { clients: true } : {};
     const user = await this.repo.findOne({ where: { id }, relations });
 
     if (!user) {
@@ -125,7 +125,7 @@ export class UsersService {
   async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {
     const existingUser = await this.repo.findOne({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     return existingUser ? existingUser.email : null;
   }
