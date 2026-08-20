@@ -910,6 +910,76 @@ describe('TransactionsService', () => {
       client.close();
     });
 
+    it('should set transaction status to READY_FOR_REVIEW when reviewer assignment returns true', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => { usr.keys = userKeys; });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
+      );
+      reviewerAssignmentService.assign.mockResolvedValueOnce(true);
+
+      await service.createTransaction(dto, user as User);
+
+      const readyForReviewSave = (saveMock.mock.calls as any[]).find(
+        ([entity, data]) => entity === Transaction && data?.status === TransactionStatus.READY_FOR_REVIEW,
+      );
+      expect(readyForReviewSave).toBeDefined();
+
+      client.close();
+    });
+
+    it('should log error and still create transaction when reviewer assignment throws', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => { usr.keys = userKeys; });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
+      );
+      reviewerAssignmentService.assign.mockRejectedValueOnce(new Error('assignment failure'));
+
+      const result = await service.createTransaction(dto, user as User);
+
+      expect(result).toBeDefined();
+      expect(result.status).not.toBe(TransactionStatus.READY_FOR_REVIEW);
+
+      client.close();
+    });
+
     it('should extract publicKeys from AccountUpdateTransaction with new key', async () => {
       const newKey = PrivateKey.generateECDSA().publicKey;
       const sdkTransaction = new AccountUpdateTransaction()
@@ -3292,6 +3362,14 @@ describe('TransactionsService.extractTransactionEntities', () => {
     Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
     Object.defineProperty(tx, 'accountId', { get: () => null, configurable: true });
     expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:7', entityRole: EntityRole.NODE }));
+  });
+
+  it('extracts account role from NodeUpdateTransaction when accountId is set', () => {
+    const tx = Object.create(NodeUpdateTransaction.prototype) as NodeUpdateTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
+    Object.defineProperty(tx, 'accountId', { get: () => AccountId.fromString('0.0.50'), configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.50', entityRole: EntityRole.ACCOUNT }));
   });
 
   it('extracts node role from NodeDeleteTransaction', () => {

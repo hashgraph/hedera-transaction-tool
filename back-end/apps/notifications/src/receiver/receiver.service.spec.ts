@@ -421,6 +421,26 @@ describe('ReceiverService', () => {
       expect(res2).toEqual([2, 3, 5, 6, 7]);
     });
 
+    it('returns deduplicated pending reviewer user IDs for TRANSACTION_INDICATOR_REVIEW and TRANSACTION_READY_FOR_REVIEW', async () => {
+      em.find.mockResolvedValue([{ userId: 42 }, { userId: 99 }, { userId: 42 }]);
+
+      const res1 = await (service as any).getNotificationReceiverIds(
+        em as any,
+        { id: 7 } as any,
+        NotificationType.TRANSACTION_INDICATOR_REVIEW,
+        [] as any,
+      );
+      expect(res1).toEqual([42, 99]);
+
+      const res2 = await (service as any).getNotificationReceiverIds(
+        em as any,
+        { id: 7 } as any,
+        NotificationType.TRANSACTION_READY_FOR_REVIEW,
+        [] as any,
+      );
+      expect(res2).toEqual([42, 99]);
+    });
+
     it('logs a warning and returns empty array for unknown types', async () => {
       const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
       const res = await (service as any).getNotificationReceiverIds(
