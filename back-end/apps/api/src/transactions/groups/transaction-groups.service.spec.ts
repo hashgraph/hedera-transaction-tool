@@ -4,7 +4,7 @@ import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
 import { ErrorCodes, TransactionSnapshotService } from '@app/common';
-import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
+import { emitTransactionStatusUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
 import { CancelFailureCode, CreateTransactionGroupDto } from '../dto';
@@ -314,49 +314,6 @@ describe('TransactionGroupsService', () => {
       expect(result.groupItems[0].transaction.signers).toEqual([]);
       expect(result.groupItems[0].transaction.approvers).toEqual([]);
       expect(result.groupItems[0].transaction.observers).toEqual([]);
-    });
-  });
-
-  describe('removeTransactionGroup', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should throw an error if the group is not found', async () => {
-      dataSource.manager.findOneBy.mockResolvedValue(undefined);
-      await expect(service.removeTransactionGroup(user as User, 1)).rejects.toThrow(
-        'group not found',
-      );
-    });
-
-    it('should remove all group items and the group itself', async () => {
-      const mockGroup = { id: 1 };
-      const mockGroupItems = [
-        { id: 1, transactionId: 101 },
-        { id: 2, transactionId: 102 },
-      ];
-
-      dataSource.manager.findOneBy.mockResolvedValue(mockGroup);
-      dataSource.manager.find.mockResolvedValue(mockGroupItems);
-      dataSource.manager.remove
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroupItems[0])
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroupItems[1])
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroup);
-
-      await service.removeTransactionGroup(user as User, 1);
-
-      expect(dataSource.manager.remove).toHaveBeenCalledTimes(3); // Twice for group items, once for the group
-      expect(transactionsService.removeTransaction).toHaveBeenCalledTimes(mockGroupItems.length);
-      expect(emitTransactionUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        expect.arrayContaining([
-          expect.objectContaining({ entityId: 101 }),
-          expect.objectContaining({ entityId: 102 }),
-        ]),
-      );
     });
   });
 

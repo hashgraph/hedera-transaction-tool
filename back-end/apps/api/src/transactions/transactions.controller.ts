@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Headers,
   HttpCode,
@@ -306,16 +305,4 @@ export class TransactionsController {
     return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }
 
-  @ApiOperation({
-    summary: 'Deletes a transaction',
-    description: 'Deletes the transaction for the given transaction id.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Boolean,
-  })
-  @Delete('/:id')
-  deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.transactionsService.removeTransaction(id, user, true);
-  }
 }

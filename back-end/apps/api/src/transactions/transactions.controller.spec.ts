@@ -399,24 +399,6 @@ describe('TransactionsController', () => {
     });
   });
 
-  describe('deleteTransaction', () => {
-    it('should return a boolean indicating if the transaction was deleted successfully', async () => {
-      const result = true;
-
-      transactionService.removeTransaction.mockResolvedValue(result);
-
-      expect(await controller.deleteTransaction(user, 1)).toBe(result);
-    });
-
-    it('should throw an error if the transaction cannot be deleted', async () => {
-      jest
-        .spyOn(controller, 'deleteTransaction')
-        .mockRejectedValue(new BadRequestException('Transaction not found'));
-
-      await expect(controller.deleteTransaction(user, 1)).rejects.toThrow('Transaction not found');
-    });
-  });
-
   describe('cancelTransaction', () => {
     it('should return a boolean indicating if the transaction has been canceled', async () => {
       const result = true;
