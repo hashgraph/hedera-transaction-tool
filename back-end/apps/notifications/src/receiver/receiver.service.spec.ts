@@ -573,8 +573,8 @@ describe('ReceiverService', () => {
       expect(res).toEqual([]);
     });
 
-    it('treats missing preference record as allowed (default true)', async () => {
-      // user has no preference for this type -> allowed by default
+    it('excludes user with no preference row for an email-type notification (opt-in required)', async () => {
+      // user has no preference for this type -> email NOT sent (opt-in required)
       em.find.mockResolvedValueOnce([{ id: 4, notificationPreferences: [] }]);
 
       const cache = new Map<number, User>();
@@ -585,11 +585,11 @@ describe('ReceiverService', () => {
         cache,
       );
 
-      expect(res).toEqual([4]);
+      expect(res).toEqual([]);
     });
 
-    it('treats missing notificationPreferences relation as allowed (default true)', async () => {
-      // user returned without notificationPreferences relation
+    it('excludes user when notificationPreferences relation is absent (opt-in required)', async () => {
+      // user returned without notificationPreferences relation -> email NOT sent
       em.find.mockResolvedValueOnce([{ id: 5 }]);
 
       const cache = new Map<number, User>();
@@ -600,7 +600,24 @@ describe('ReceiverService', () => {
         cache,
       );
 
-      expect(res).toEqual([5]);
+      expect(res).toEqual([]);
+    });
+
+    it('includes user when they have an explicit email=true preference', async () => {
+      em.find.mockResolvedValueOnce([{
+        id: 6,
+        notificationPreferences: [{ type: NotificationType.TRANSACTION_EXECUTED, email: true, inApp: true }],
+      }]);
+
+      const cache = new Map<number, User>();
+      const res = await (service as any).filterReceiversByPreferenceForType(
+        em as any,
+        NotificationType.TRANSACTION_EXECUTED,
+        new Set([6]),
+        cache,
+      );
+
+      expect(res).toEqual([6]);
     });
   });
 
@@ -1933,7 +1950,7 @@ describe('ReceiverService', () => {
       const admin2 = { id: 2, admin: true, notificationPreferences: [{ type: NotificationType.USER_REGISTERED, inApp: false }], email: 'b@example.com' } as any;
 
       em.findOne.mockResolvedValueOnce({ id: 99 }); // registered user
-      em.find.mockResolvedValueOnce([admin1, admin2]); // admin users
+      em.find.mockResolvedValueOnce([admin1, admin2]); // admin users (with relation)
 
       em.save
         .mockResolvedValueOnce({ id: 500 }) // notification
@@ -1953,6 +1970,10 @@ describe('ReceiverService', () => {
 
       await service.processUserRegisteredNotifications(evt);
 
+      expect(em.find).toHaveBeenCalledWith(User, {
+        where: { admin: true },
+        relations: { notificationPreferences: true },
+      });
       expect(emitNewNotifications).toHaveBeenCalled();
       expect(emitEmailNotifications).toHaveBeenCalled();
     });

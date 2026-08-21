@@ -1,6 +1,6 @@
 {
   "name": "hedera-transaction-tool-tests-v2",
-  "version": "0.37.0-SNAPSHOT",
+  "version": "0.38.0-SNAPSHOT",
   "type": "module",
   "scripts": {
     "build": "tsc",
@@ -73,7 +73,7 @@
     "@types/pg": "8.20.3",
     "glob": "13.0.6",
     "ts-loader": "catalog:",
-    "tsx": "4.23.11",
+    "tsx": "4.23.12",
     "typescript": "catalog:",
     "webpack": "5.109.2",
     "webpack-cli": "7.2.2"

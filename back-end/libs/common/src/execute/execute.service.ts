@@ -238,7 +238,7 @@ export class ExecuteService {
   private async validateTransactionStatus(transaction: Transaction) {
     const { status } = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
-      select: ['status'],
+      select: { status: true },
     });
 
     switch (status) {
