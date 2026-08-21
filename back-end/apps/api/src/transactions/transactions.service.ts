@@ -44,6 +44,8 @@ import {
   TransactionApprover,
   TransactionEntity,
   TransactionObserver,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   TransactionSigner,
   TransactionStatus,
   User,
@@ -115,6 +117,7 @@ export class TransactionsService {
 
   private readonly cancelableStatuses = [
     TransactionStatus.NEW,
+    TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_SIGNATURES,
     TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_EXECUTION,
@@ -689,6 +692,7 @@ export class TransactionsService {
         }
 
         if (
+          transaction.status !== TransactionStatus.READY_FOR_REVIEW &&
           transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
           transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
         )
@@ -1092,12 +1096,25 @@ export class TransactionsService {
 
     const requiredKeyIds = await this.getUserKeysToSign(transaction, user, true);
 
-    return (
+    if (
       requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
       !!transaction.observers?.some(o => o.userId === user.id) ||
       !!transaction.approvers?.some(a => a.userId === user.id)
-    );
+    ) return true;
+
+    const reviewerMember = await this.entityManager
+      .createQueryBuilder(TransactionReviewerListMember, 'member')
+      .innerJoin(
+        TransactionReviewerList,
+        'list',
+        'list.id = member.listId AND list.transactionId = :transactionId',
+        { transactionId: transaction.id },
+      )
+      .where('member.userId = :userId', { userId: user.id })
+      .getOne();
+
+    return reviewerMember != null;
   }
 
   async getTransactionSignersForTransactions(
