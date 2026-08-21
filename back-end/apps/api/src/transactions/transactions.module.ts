@@ -37,6 +37,7 @@ import { ApproversController, ApproversService } from './approvers';
 import { TransactionNodesController } from './nodes/transaction-nodes.controller';
 import { TransactionNodesService } from './nodes/transaction-nodes.service';
 import { ReviewerAssignmentService } from './reviewer-assignment.service';
+import { ReviewersController, ReviewersService } from './reviewers';
 
 @Module({
   imports: [
@@ -51,6 +52,8 @@ import { ReviewerAssignmentService } from './reviewer-assignment.service';
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
+      TransactionReviewerList,
+      TransactionReviewerListMember,
       TransactionCachedAccount,
       TransactionCachedNode,
       CachedAccount,
@@ -75,7 +78,8 @@ import { ReviewerAssignmentService } from './reviewer-assignment.service';
     ObserversController,
     ApproversController,
     TransactionGroupsController,
-    TransactionNodesController
+    TransactionNodesController,
+    ReviewersController,
   ],
   providers: [
     TransactionsService,
@@ -86,6 +90,7 @@ import { ReviewerAssignmentService } from './reviewer-assignment.service';
     TransactionGroupsService,
     TransactionNodesService,
     ReviewerAssignmentService,
+    ReviewersService,
   ],
   exports: [TransactionsService],
 })
