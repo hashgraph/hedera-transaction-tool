@@ -40,7 +40,7 @@ describe('Services Local User Files', () => {
   const file: HederaFile = {
     id: '321',
     user_id: '123',
-    file_id: '0.0.111',
+    file_id: '0.0.113',
     nickname: 'special',
     network: CommonNetwork.TESTNET,
     contentBytes: '0x123',

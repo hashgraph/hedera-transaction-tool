@@ -17,6 +17,7 @@ export function isHederaSpecialFileId(value: any): value is HederaSpecialFileId 
     '0.0.102',
     '0.0.111',
     '0.0.112',
+    '0.0.113',
     '0.0.121',
     '0.0.122',
     '0.0.123',
@@ -37,6 +38,9 @@ const specialFilesMapping = {
   },
   '0.0.112': {
     protoType: proto.ExchangeRateSet, //exchangeRates.json
+  },
+  '0.0.113': {
+    protoType: proto.CurrentAndNextFeeSchedule, //feeSchedules.json
   },
   '0.0.121': {
     protoType: proto.ServicesConfigurationList, //application.properties
@@ -258,6 +262,8 @@ export function encodeHederaSpecialFile(content: Uint8Array, fileId: HederaSpeci
       return encodeCurrentAndNextFeeSchedules(content);
     case '0.0.112':
       return encodeExchangeRates(content);
+    case '0.0.113':
+      return encodeCurrentAndNextFeeSchedules(content);
     case '0.0.121':
     case '0.0.122':
       return encodeServicesConfigurationList(content);

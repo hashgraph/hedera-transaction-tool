@@ -31,6 +31,11 @@ import {
   protoInput as protoInput112,
 } from '../_constants_/0.0.112';
 import {
+  buffer as buffer113,
+  decodedString as string113,
+  protoInput as protoInput113,
+} from '../_constants_/0.0.113';
+import {
   buffer as buffer121,
   decodedString as string121,
   protoInput as protoInput121,
@@ -99,6 +104,16 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decoded_112).toBe(string112);
+
+    /* File 113 */
+    const file_113 = new FileId(113);
+
+    const decoded_113 = decodeProto(
+      file_113.toString() as HederaSpecialFileId,
+      Uint8Array.from(buffer113),
+    );
+
+    expect(decoded_113).toBe(string113);
 
     /* File 121 */
     const file_121 = new FileId(121);
@@ -189,6 +204,17 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_112.toString() as HederaSpecialFileId, encoded_112)).toBe(string112);
+
+    /* File 113 */
+    const fileId_113 = new FileId(113);
+    const content_113 = JSONtoUInt8Array(protoInput113);
+
+    const encoded_113 = encodeHederaSpecialFile(
+      content_113,
+      fileId_113.toString() as HederaSpecialFileId,
+    );
+
+    expect(decodeProto(fileId_113.toString() as HederaSpecialFileId, encoded_113)).toBe(string113);
 
     /* File 121 */
     const fileId_121 = new FileId(121);
