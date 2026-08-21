@@ -211,7 +211,7 @@ describe('NotificationPreferencesService', () => {
         userId: user.id,
         type: NotificationType.TRANSACTION_CREATED,
         inApp: dto.inApp,
-        email: true,
+        email: false,
       });
       expect(repo.insert).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
