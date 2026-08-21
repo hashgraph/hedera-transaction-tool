@@ -52,6 +52,9 @@ export enum ErrorCodes {
   RGSV = 'RGSV',
   RGCP = 'RGCP',
   RGDM = 'RGDM',
+  RNPF = 'RNPF',
+  RKNA = 'RKNA',
+  TRPC = 'TRPC',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -107,4 +110,7 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.RGSV]: 'Group has changed since attestation was collected; re-collect signatures',
   [ErrorCodes.RGCP]: 'A pending change request already exists for this group or rule',
   [ErrorCodes.RGDM]: 'Duplicate member: the same user cannot appear twice in a group',
+  [ErrorCodes.RNPF]: 'User is not a pending reviewer on this transaction',
+  [ErrorCodes.RKNA]: 'The key assigned for review is not available on this account',
+  [ErrorCodes.TRPC]: 'Transaction review phase is closed; no further review submissions are accepted',
 };
