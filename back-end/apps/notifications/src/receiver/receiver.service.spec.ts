@@ -1950,7 +1950,7 @@ describe('ReceiverService', () => {
       const admin2 = { id: 2, admin: true, notificationPreferences: [{ type: NotificationType.USER_REGISTERED, inApp: false }], email: 'b@example.com' } as any;
 
       em.findOne.mockResolvedValueOnce({ id: 99 }); // registered user
-      em.find.mockResolvedValueOnce([admin1, admin2]); // admin users
+      em.find.mockResolvedValueOnce([admin1, admin2]); // admin users (with relation)
 
       em.save
         .mockResolvedValueOnce({ id: 500 }) // notification
@@ -1970,6 +1970,10 @@ describe('ReceiverService', () => {
 
       await service.processUserRegisteredNotifications(evt);
 
+      expect(em.find).toHaveBeenCalledWith(User, {
+        where: { admin: true },
+        relations: { notificationPreferences: true },
+      });
       expect(emitNewNotifications).toHaveBeenCalled();
       expect(emitEmailNotifications).toHaveBeenCalled();
     });

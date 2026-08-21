@@ -1364,6 +1364,7 @@ export class ReceiverService {
     // Get all admin users (recipients of the notification)
     const adminUsers = await this.entityManager.find(User, {
       where: { admin: true },
+      relations: { notificationPreferences: true },
     });
 
     if (adminUsers.length === 0) {
