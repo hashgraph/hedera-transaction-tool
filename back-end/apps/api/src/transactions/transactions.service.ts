@@ -136,14 +136,16 @@ export class TransactionsService {
 
     const transactions = await this.repo.find({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'comments',
-        'groupItem',
-        'groupItem.group',
-      ],
+      relations: {
+        creatorKey: {
+          user: true
+        },
+        observers: true,
+        comments: true,
+        groupItem: {
+          group: true
+        },
+      },
       order: { id: 'DESC' },
     });
 
@@ -199,7 +201,12 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
-      relations: ['creatorKey', 'groupItem', 'groupItem.group'],
+      relations: {
+        creatorKey: true,
+        groupItem: {
+          group: true
+        }
+      },
       skip: offset,
       take: limit,
     };
@@ -303,7 +310,11 @@ export class TransactionsService {
     const [transactions, total] = await this.repo.findAndCount({
       where: whereArray,
       order,
-      relations: ['groupItem', 'groupItem.group'],
+      relations: {
+        groupItem: {
+          group: true
+        }
+      },
       skip: offset,
       take: limit,
     });
@@ -363,7 +374,9 @@ export class TransactionsService {
 
     const transactions = await this.repo.find({
       where: whereForUser,
-      relations: ['groupItem'],
+      relations: {
+        groupItem: true
+      },
       order,
     });
 
@@ -492,7 +505,9 @@ export class TransactionsService {
             ]),
           ),
         },
-        select: ['transactionId'],
+        select: {
+          transactionId: true
+        },
       });
 
       if (existing.length > 0) {
@@ -603,7 +618,12 @@ export class TransactionsService {
     // Single batch query for all transactions
     const transactions = await this.entityManager.find(Transaction, {
       where: { id: In(ids) },
-      relations: ['creatorKey', 'approvers', 'signers', 'observers'],
+      relations: {
+        creatorKey: true,
+        approvers: true,
+        signers: true,
+        observers: true,
+      },
     });
 
     if (transactions.length === 0) {
@@ -617,7 +637,10 @@ export class TransactionsService {
 
     const existingSigners = await this.entityManager.find(TransactionSigner, {
       where: { transactionId: In(ids) },
-      select: ['transactionId', 'userKeyId'],
+      select: {
+        transactionId: true,
+        userKeyId: true,
+      },
     });
     const signersByTransaction = new Map<number, Set<number>>();
     for (const s of existingSigners) {
@@ -1052,7 +1075,9 @@ export class TransactionsService {
           id: transaction.id,
         },
       },
-      relations: ['userKey'],
+      relations: {
+        userKey: true,
+      },
       withDeleted: true,
     });
   }
@@ -1094,7 +1119,9 @@ export class TransactionsService {
       where: {
         transactionId: In(transactionIds),
       },
-      relations: ['userKey'],
+      relations: {
+        userKey: true,
+      },
       withDeleted: true,
     });
   }

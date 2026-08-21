@@ -142,7 +142,10 @@ export class SignersService {
     // Batch load all existing signers
     const existingSigners = await this.dataSource.manager.find(TransactionSigner, {
       where: { transactionId: In(transactionIds) },
-      select: ['transactionId', 'userKeyId'],
+      select: {
+        transactionId: true,
+        userKeyId: true,
+      },
     });
 
     // Group by transaction ID

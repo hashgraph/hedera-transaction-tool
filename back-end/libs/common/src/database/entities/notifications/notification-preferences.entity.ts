@@ -17,7 +17,7 @@ export class NotificationPreferences {
   @Column()
   type: NotificationType;
 
-  @Column({ default: true })
+  @Column({ default: false })
   email: boolean;
 
   @Column({ default: true })

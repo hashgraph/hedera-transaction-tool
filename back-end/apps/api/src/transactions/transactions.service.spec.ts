@@ -216,7 +216,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        relations: { creatorKey: { user: true }, observers: true, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -245,7 +245,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { transactionId: transactionId },
-        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        relations: { creatorKey: { user: true }, observers: true, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -274,7 +274,16 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { transactionId: transactionId },
-        relations: ['creatorKey', 'creatorKey.user', 'observers', 'comments', 'groupItem', 'groupItem.group'],
+        relations: {
+          creatorKey: {
+            user: true,
+          },
+          observers: true,
+          comments: true,
+          groupItem: {
+            group: true
+          },
+        },
         order: { id: 'DESC' },
       });
 
@@ -335,7 +344,7 @@ describe('TransactionsService', () => {
       expect(transactionsRepo.createQueryBuilder).toHaveBeenCalled();
       expect(queryBuilder.setFindOptions).toHaveBeenCalledWith(
         expect.objectContaining({
-          relations: ['creatorKey', 'groupItem', 'groupItem.group'],
+          relations: { creatorKey: true, groupItem: { group: true }},
           skip: 0,
           take: 10,
         }),
@@ -381,7 +390,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.findAndCount).toHaveBeenCalledWith(
         expect.objectContaining({
-          relations: ['groupItem', 'groupItem.group'],
+          relations: { groupItem: { group: true }},
           skip: defaultPagination.offset,
           take: defaultPagination.limit,
         }),
@@ -1932,7 +1941,7 @@ describe('TransactionsService', () => {
       expect(emitTransactionStatusUpdate).not.toHaveBeenCalled();
       expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
-    
+
     it('should return error if transaction not found', async () => {
       entityManager.find.mockResolvedValue([]);
 
@@ -2355,7 +2364,7 @@ describe('TransactionsService', () => {
         where: {
           transactionId: In([10, 11]),
         },
-        relations: ['userKey'],
+        relations: { userKey: true },
         withDeleted: true,
       });
       expect(result).toEqual(mockSigners);
@@ -2999,7 +3008,7 @@ describe('TransactionsService', () => {
             id: transaction.id,
           },
         },
-        relations: ['userKey'],
+        relations: { userKey: true },
         withDeleted: true,
       });
     });
