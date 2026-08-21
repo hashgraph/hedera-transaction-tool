@@ -132,7 +132,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     </h3>
     <template
       v-for="(approval, i) in transaction.tokenNftApprovals"
-      :key="`${i}${approval.ownerAccountId?.toString()}${approval.spenderAccountId?.toString()}${approval.tokenId.toString()}`"
+      :key="`${i}${approval.ownerAccountId?.toString()}${approval.spenderAccountId?.toString()}${approval.tokenId?.toString()}`"
     >
       <div class="row flex-wrap my-3" :class="{ 'mt-0': i === 0 }">
         <div v-if="approval.ownerAccountId" :class="commonColClass">
