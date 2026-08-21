@@ -42,7 +42,7 @@ describe('AccountApproveAllowanceDetails.vue', () => {
   describe('NFT allowance display', () => {
     it('renders the NFT section heading when tokenNftApprovals is non-empty', () => {
       const tx = buildTx();
-      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5), null);
+      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5));
 
       const wrapper = mountWith(tx);
 
@@ -69,7 +69,7 @@ describe('AccountApproveAllowanceDetails.vue', () => {
 
     it('renders owner ID, spender ID, and token ID', () => {
       const tx = buildTx();
-      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5), null);
+      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5));
 
       const wrapper = mountWith(tx);
 
@@ -80,8 +80,8 @@ describe('AccountApproveAllowanceDetails.vue', () => {
 
     it('renders specific serial numbers', () => {
       const tx = buildTx();
-      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5), null);
-      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/7'), new AccountId(1), new AccountId(5), null);
+      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/3'), new AccountId(1), new AccountId(5));
+      tx.approveTokenNftAllowance(NftId.fromString('0.0.100/7'), new AccountId(1), new AccountId(5));
 
       const wrapper = mountWith(tx);
 
