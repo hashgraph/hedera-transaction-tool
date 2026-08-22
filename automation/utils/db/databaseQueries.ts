@@ -17,6 +17,7 @@ export {
   getPublicKeyByEmail,
   getTransactionGroupsForTransactionId,
   insertKeyPair,
+  insertLocalOrganization,
   updateLocalFileMetadata,
   updateLocalTransactionStatus,
   verifyAccountExists,
