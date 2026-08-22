@@ -33,9 +33,9 @@ export default () => {
   // Clear keys file
   ipcMain.handle(
     createChannelName('clear'),
-    async (_e, userId: string, organizationId?: string) => {
+    async (_e, userId: string, decryptPassword: string | null, organizationId?: string) => {
       try {
-        await deleteSecretHashes(userId, organizationId);
+        await deleteSecretHashes(userId, decryptPassword, organizationId);
         return true;
       } catch {
         return false;

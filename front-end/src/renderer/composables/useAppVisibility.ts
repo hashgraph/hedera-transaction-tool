@@ -31,7 +31,11 @@ export default function useAppVisibility(options: UseAppVisibilityOptions = {}) 
     const activeOrgs = user.organizations.filter(org => isOrganizationActive(org));
 
     for (const org of activeOrgs) {
-      const shouldSignIn = await shouldSignInOrganization(user.personal.id, org.id);
+      const shouldSignIn = await shouldSignInOrganization(
+        user.personal.id,
+        org.id,
+        user.personal.password,
+      );
       if (shouldSignIn) {
         return false;
       }
