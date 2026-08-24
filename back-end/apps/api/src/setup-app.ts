@@ -36,12 +36,12 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
 
   app.useGlobalFilters(new AllExceptionsFilter(), new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
+  app.use(json({ limit: '2mb' }));
+
   if (addLogger) {
     const loggerMiddleware = app.get(LoggerMiddleware);
     app.use(loggerMiddleware.use.bind(loggerMiddleware));
   }
-
-  app.use(json({ limit: '2mb' }));
   app.enableCors({
     origin: true,
     credentials: true,

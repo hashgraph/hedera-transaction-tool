@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as http from 'http';
 import * as path from 'path';
 
 import { NestFactory } from '@nestjs/core';
@@ -9,11 +10,18 @@ import { NestApplicationOptions } from '@nestjs/common';
 import { ApiModule } from './api.module';
 import { setupApp, setupSwagger } from './setup-app';
 
+// Explicitly cap HTTP header size. Node.js default is 16KB; we match it here
+// so the limit is visible in code rather than relying on an invisible runtime default.
+const MAX_HEADER_SIZE = 16384;
+
 async function bootstrap() {
   const app: NestExpressApplication = await createApp();
 
   setupApp(app);
-  setupSwagger(app);
+
+  if (process.env.NODE_ENV !== 'production') {
+    setupSwagger(app);
+  }
 
   const configService = app.get(ConfigService);
 
@@ -29,9 +37,15 @@ async function createApp(): Promise<NestExpressApplication> {
   }
 }
 
+function applyServerLimits(app: NestExpressApplication): void {
+  // `https.Server` extends `http.Server`, so this works for both HTTP and HTTPS adapters.
+  (app.getHttpAdapter().getHttpServer() as http.Server).maxHeaderSize = MAX_HEADER_SIZE;
+}
+
 async function createAppForDeployment(): Promise<NestExpressApplication> {
   const app = (await NestFactory.create(ApiModule)) as NestExpressApplication;
   app.enable('trust proxy');
+  applyServerLimits(app);
 
   return app;
 }
@@ -46,7 +60,9 @@ async function createAppForDevelopment(): Promise<NestExpressApplication> {
     console.warn('No self-signed SSL certificate found. Running in HTTP mode.');
   }
 
-  return (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
+  const app = (await NestFactory.create(ApiModule, options)) as NestExpressApplication;
+  applyServerLimits(app);
+  return app;
 }
 
 bootstrap();
