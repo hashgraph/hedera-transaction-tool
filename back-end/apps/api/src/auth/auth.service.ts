@@ -97,7 +97,7 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string): Promise<{ token: string }> {
+  async createOtp(email: string, serverUrl: string): Promise<{ token: string }> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return;
@@ -109,7 +109,7 @@ export class AuthService {
       ...TOTP_OPTIONS,
     });
 
-    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
+    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
 
     const token = this.getOtpToken({ email: user.email, verified: false });
     return { token };

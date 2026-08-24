@@ -7,17 +7,21 @@ import {
 } from '@app/common/templates/layout';
 
 export const generateResetPasswordMessage = (additionalData: Record<string, any>) => {
-  const { otp } = additionalData;
+  const { otp, serverUrl } = additionalData;
 
   const content = `
     ${emailHeader("Password Reset", "Hedera Transaction Tool")}
-    ${emailBody(resetPasswordEmailBody(otp))}
+    ${emailBody(resetPasswordEmailBody(otp, serverUrl))}
   `;
 
   return emailWrapper(content);
 }
 
-export function resetPasswordEmailBody(otp: string): string {
+export function resetPasswordEmailBody(otp: string, serverUrl?: string): string {
+  const warningText = serverUrl
+    ? `If you didn't request a password reset from ${serverUrl}, you can safely ignore this email.`
+    : "If you didn't request a password reset, you can safely ignore this email.";
+
   return `
 <p style="margin:0 0 24px;font-size:15px;line-height:26px;color:#444444;">
   To reset your password, use the verification code below:
@@ -32,6 +36,6 @@ export function resetPasswordEmailBody(otp: string): string {
   </tr>
 </table>
 
-${emailWarning("If you didn't request a password reset, you can safely ignore this email.")}
+${emailWarning(warningText)}
 `;
 }

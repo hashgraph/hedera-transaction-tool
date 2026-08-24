@@ -134,8 +134,9 @@ export class AuthController {
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto) {
-    return this.authService.createOtp(email);
+  async createOtp(@Body() { email }: OtpLocalDto, @Req() req: Request) {
+    const url = `${req.protocol}://${req.get('host')}`;
+    return this.authService.createOtp(email, url);
   }
 
   /* Verify OTP for password reset */
