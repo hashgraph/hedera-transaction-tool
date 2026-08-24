@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { extractClientIp } from '@app/common';
-import Redis from 'ioredis';
+import { Redis } from 'ioredis';
 
 const TEN_MINUTES_SECONDS = 600;
 
