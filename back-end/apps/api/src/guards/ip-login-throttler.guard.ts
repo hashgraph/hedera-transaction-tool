@@ -18,12 +18,12 @@ export class IpLoginThrottlerGuard extends ThrottlerGuard {
           {
             name: 'login-ip-minute',
             ttl: seconds(60),
-            limit: Number(configService.get('LOGIN_IP_MINUTE_LIMIT', 10)),
+            limit: Number(configService.get('LOGIN_IP_MINUTE_LIMIT', 20)),
           },
           {
             name: 'login-ip-ten-second',
             ttl: seconds(10),
-            limit: Number(configService.get('LOGIN_IP_TEN_SECOND_LIMIT', 2)),
+            limit: Number(configService.get('LOGIN_IP_TEN_SECOND_LIMIT', 5)),
           },
         ],
       },
