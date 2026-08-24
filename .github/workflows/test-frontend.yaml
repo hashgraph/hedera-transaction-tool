@@ -233,6 +233,11 @@ jobs:
           sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^LOGIN_IP_MINUTE_LIMIT=.*/LOGIN_IP_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^LOGIN_IP_TEN_SECOND_LIMIT=.*/LOGIN_IP_TEN_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_MINUTE_LIMIT=.*/RESET_IP_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_TEN_SECOND_LIMIT=.*/RESET_IP_TEN_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_UNIQUE_EMAIL_LIMIT=.*/RESET_IP_UNIQUE_EMAIL_LIMIT=99999/' apps/api/.env
 
           export COMPOSE_PARALLEL_LIMIT=4
 
