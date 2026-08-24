@@ -83,7 +83,7 @@ export class AuthController {
   })
   @Post('/login')
   @HttpCode(200)
-  @UseGuards(IpLoginThrottlerGuard, LocalAuthGuard, EmailThrottlerGuard)
+  @UseGuards(EmailThrottlerGuard, IpLoginThrottlerGuard, LocalAuthGuard)
   @Serialize(LoginResponseDto)
   async login(@GetUser() user: User) {
     const accessToken = await this.authService.login(user);
@@ -136,7 +136,7 @@ export class AuthController {
   })
   @Post('/reset-password')
   @HttpCode(200)
-  @UseGuards(IpResetPasswordUniqueEmailGuard, IpResetPasswordThrottlerGuard, EmailThrottlerGuard)
+  @UseGuards(EmailThrottlerGuard, IpResetPasswordUniqueEmailGuard, IpResetPasswordThrottlerGuard)
   async createOtp(@Body() { email }: OtpLocalDto) {
     return this.authService.createOtp(email);
   }
