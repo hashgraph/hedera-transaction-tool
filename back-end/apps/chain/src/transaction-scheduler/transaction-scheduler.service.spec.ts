@@ -615,7 +615,7 @@ describe('TransactionStatusService', () => {
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
       jest.spyOn(schedulerRegistry, 'deleteTimeout');
-      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(undefined);
+      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(null);
       jest.spyOn(service, 'addGroupExecutionTimeout').mockImplementationOnce(jest.fn());
     });
 
@@ -649,7 +649,7 @@ describe('TransactionStatusService', () => {
     it('should collate and execute a transaction group signed with 10 different keys, reducing the signatures as needed', async () => {
       // prepare the signatures
       const keyList = new KeyList();
-      const privateKeys = [];
+      const privateKeys: PrivateKey[] = [];
 
       for (let i = 0; i < 10; i++) {
         let transaction = transactions[i];
@@ -696,7 +696,7 @@ describe('TransactionStatusService', () => {
 
     it('should fail to prepare a group of signed transactions, due to key list unable to be sufficiently reduced', async () => {
       const keyList = new KeyList();
-      const privateKeys = [];
+      const privateKeys: PrivateKey[] = [];
 
       for (let i = 0; i < 10; i++) {
         let transaction = transactions[i];
@@ -712,7 +712,7 @@ describe('TransactionStatusService', () => {
       }
 
       // Mock the functions
-      jest.mocked(smartCollate).mockReturnValue(null);
+      jest.mocked(smartCollate).mockResolvedValue(null);
       transactionSignatureService.computeSignatureKey.mockResolvedValue(keyList);
 
       const mockIds = mockTransactionGroup.groupItems.map(gi => ({ id: gi.transaction.id }));
@@ -770,7 +770,7 @@ describe('TransactionStatusService', () => {
     it('should fail to prepare a group of signed transactions, due to some transactions not able to pass smart collating', async () => {
       // prepare the signatures
       const keyList = new KeyList();
-      const privateKeys = [];
+      const privateKeys: PrivateKey[] = [];
 
       for (let i = 0; i < 9; i++) {
         let transaction = transactions[i];
@@ -879,7 +879,7 @@ describe('TransactionStatusService', () => {
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
       jest.spyOn(schedulerRegistry, 'deleteTimeout');
-      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(undefined);
+      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(null);
       jest.spyOn(service, 'addExecutionTimeout').mockImplementationOnce(jest.fn());
     });
 
@@ -913,7 +913,7 @@ describe('TransactionStatusService', () => {
     it('should prepare and execute a transaction signed with 50 different keys, reducing the signatures as needed', async () => {
       // prepare the signatures
       const keyList = new KeyList();
-      const privateKeys = [];
+      const privateKeys: PrivateKey[] = [];
 
       for (let i = 0; i < 50; i++) {
         const privateKey = PrivateKey.generate();
@@ -944,16 +944,14 @@ describe('TransactionStatusService', () => {
     it('should fail to prepare a signed transaction, due to key list unable to be sufficiently reduced', async () => {
       // prepare the signatures
       const keyList = new KeyList();
-      const privateKeys = [];
 
       const privateKey = PrivateKey.generate();
-      privateKeys.push(privateKey);
       keyList.push(privateKey.publicKey);
       transaction = await transaction.sign(privateKey);
       mockTransaction.transactionBytes = Buffer.from(transaction.toBytes());
 
       // Mock the functions
-      jest.mocked(smartCollate).mockReturnValue(null);
+      jest.mocked(smartCollate).mockResolvedValue(null);
       transactionSignatureService.computeSignatureKey.mockResolvedValue(keyList);
 
       setupQueryBuilderMock([{ id: mockTransaction.id }]);
@@ -1037,7 +1035,7 @@ describe('TransactionStatusService', () => {
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
       jest.spyOn(schedulerRegistry, 'deleteTimeout');
-      jest.spyOn(executeService, 'executeTransactionGroup').mockResolvedValue(undefined);
+      jest.spyOn(executeService, 'executeTransactionGroup').mockResolvedValue({ transactions: [] });
     });
 
     afterEach(() => {
@@ -1108,7 +1106,7 @@ describe('TransactionStatusService', () => {
       jest.spyOn(schedulerRegistry, 'doesExist').mockReturnValue(false);
       jest.spyOn(schedulerRegistry, 'addTimeout');
       jest.spyOn(schedulerRegistry, 'deleteTimeout');
-      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(undefined);
+      jest.spyOn(executeService, 'executeTransaction').mockResolvedValue(null);
     });
 
     afterEach(() => {

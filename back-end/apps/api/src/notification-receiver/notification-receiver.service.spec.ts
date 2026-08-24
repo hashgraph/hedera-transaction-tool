@@ -109,7 +109,7 @@ describe('NotificationReceiverService', () => {
           value: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         },
       ];
-      const result = await service.getReceivedNotifications(user, pagination, null, filter);
+      const result = await service.getReceivedNotifications(user, pagination, undefined, filter);
 
       expect(repo.findAndCount).toHaveBeenCalledWith({
         where: {
@@ -272,14 +272,14 @@ describe('NotificationReceiverService', () => {
 
   describe('remindSigners', () => {
     it('should throw BadRequestException if transaction not found', async () => {
-      transactionsService.getTransactionForCreator.mockResolvedValue(null);
+      transactionsService.getTransactionForCreator.mockRejectedValue(new BadRequestException());
 
       await expect(service.remindSigners(user, 1)).rejects.toThrow(BadRequestException);
       expect(transactionsService.getTransactionForCreator).toHaveBeenCalledWith(1, user);
     });
 
     it('should return if transaction is not waiting for signatures', async () => {
-      const transaction = { status: TransactionStatus.EXECUTED } as any;
+      const transaction = { status: TransactionStatus.EXECUTED } as Transaction;
       transactionsService.getTransactionForCreator.mockResolvedValue(transaction);
 
       const result = await service.remindSigners(user, 1);
@@ -297,7 +297,7 @@ describe('NotificationReceiverService', () => {
         transactionBytes: accountCreate.toBytes(),
         validStart: new Date(),
       } as Partial<Transaction>;
-      const keys = [{ userId: 2 }, { userId: 2 }] as Partial<UserKey[]>;
+      const keys = [{ userId: 2 }, { userId: 2 }] as UserKey[];
 
       transactionsService.getTransactionForCreator.mockResolvedValue(transaction as Transaction);
       jest.mocked(keysRequiredToSign).mockResolvedValueOnce(keys);

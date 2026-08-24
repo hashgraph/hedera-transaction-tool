@@ -18,7 +18,6 @@ export class AccountUpdateTransactionModel
   getNewKeys(): Key[] {
     if (
       this.transaction.key != null &&
-      this.transaction.accountId != null &&
       !this.shouldWaiveSigningRequirements(this.transaction.accountId)
     ) {
       return [this.transaction.key];
@@ -38,7 +37,7 @@ export class AccountUpdateTransactionModel
     return set;
   }
 
-  private shouldWaiveSigningRequirements(accountId: AccountId): boolean {
+  private shouldWaiveSigningRequirements(accountId: AccountId | null): boolean {
     const feePayer = this.getFeePayerAccountId();
     return (
       this.isSystemAccount(accountId) &&

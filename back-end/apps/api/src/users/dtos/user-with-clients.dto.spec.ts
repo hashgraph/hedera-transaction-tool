@@ -28,10 +28,10 @@ describe('UserWithClientsDto', () => {
     const dto = toDto(plain)
     expect(dto).toBeInstanceOf(UserWithClientsDto)
     expect(dto.clients).toHaveLength(2)
-    expect(dto.clients[0]).toBeInstanceOf(ClientDto)
-    expect(dto.clients[1]).toBeInstanceOf(ClientDto)
-    expect(dto.clients[0].version).toBe('1.0.0')
-    expect(dto.clients[1].updateAvailable).toBe(true)
+    expect(dto.clients![0]).toBeInstanceOf(ClientDto)
+    expect(dto.clients![1]).toBeInstanceOf(ClientDto)
+    expect(dto.clients![0].version).toBe('1.0.0')
+    expect(dto.clients![1].updateAvailable).toBe(true)
   })
 
   test('keys are serialized as UserKeyPublicDto — no mnemonicHash or index', () => {

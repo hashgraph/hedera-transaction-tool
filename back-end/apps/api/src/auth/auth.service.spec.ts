@@ -321,7 +321,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'getAdmins').mockResolvedValue([{ id: 2 }] as User[]);
 
-    await service.changePassword(user as User, { oldPassword: '', newPassword: 'new' });
+    await service.changePassword(user as unknown as User, { oldPassword: '', newPassword: 'new' });
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith('notifications.queue.user.registered', {
       entityId: user.id,

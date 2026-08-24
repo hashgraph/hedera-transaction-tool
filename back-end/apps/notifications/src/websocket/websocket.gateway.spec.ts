@@ -112,7 +112,7 @@ describe('WebsocketGateway', () => {
 
       //@ts-expect-error - accessing private property for testing
       expect(gateway.logger.log).toHaveBeenCalledWith(
-        `Socket client connected for User ID: ${authWebsocket.user.id}`,
+        `Socket client connected for User ID: ${authWebsocket.user!.id}`,
       );
     });
 
@@ -132,7 +132,7 @@ describe('WebsocketGateway', () => {
     it('should join user room', () => {
       gateway.handleConnection(authWebsocket as AuthWebsocket);
 
-      expect(authWebsocket.join).toHaveBeenCalledWith(roomKeys.USER_KEY(authWebsocket.user.id));
+      expect(authWebsocket.join).toHaveBeenCalledWith(roomKeys.USER_KEY(authWebsocket.user!.id));
     });
   });
 
@@ -142,7 +142,7 @@ describe('WebsocketGateway', () => {
 
       //@ts-expect-error - accessing private property for testing
       expect(gateway.logger.log).toHaveBeenCalledWith(
-        `Socket socket disconnected for User ID: ${authWebsocket.user.id}`,
+        `Socket socket disconnected for User ID: ${authWebsocket.user!.id}`,
       );
     });
   });

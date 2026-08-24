@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DeepPartial } from 'typeorm';
 import {
   CachedAccount,
   CachedAccountKey,
@@ -656,12 +656,12 @@ async function createTestUserWithKeys(
     const userKey = dataSource.getRepository(UserKey).create({
       userId: user.id,
       publicKey: 'test-public-key-' + Math.random().toString(36).slice(2),
-      mnemonicHash: null,
-      index: null,
+      mnemonicHash: undefined,
+      index: undefined,
       createdTransactions: [],
       approvedTransactions: [],
       signedTransactions: [],
-    });
+    } as DeepPartial<UserKey>);
     await dataSource.getRepository(UserKey).save(userKey);
     keys.push(userKey);
   }
@@ -701,25 +701,25 @@ async function createTestTransaction(
     transactionBytes: Buffer.from('tx-bytes'),
     unsignedTransactionBytes: Buffer.from('unsigned-tx-bytes'),
     status: options.status,
-    statusCode: null,
+    statusCode: undefined,
     creatorKeyId: user.keys[0].id,
     signature: Buffer.from('signature'),
     validStart: options.createdAt || new Date(),
     mirrorNetwork: options.mirrorNetwork || 'mainnet',
     isManual: false,
-    cutoffAt: null,
+    cutoffAt: undefined,
     createdAt: options.createdAt || new Date(),
-    executedAt: null,
+    executedAt: undefined,
     updatedAt: options.createdAt || new Date(),
     deletedAt: null,
     comments: [],
     signers: [],
     approvers: [],
     observers: [],
-    groupItem: null,
+    groupItem: undefined,
     transactionCachedAccounts: [],
     transactionCachedNodes: [],
-  });
+  } as DeepPartial<Transaction>);
   await dataSource.getRepository(Transaction).save(transaction);
 
   const cachedAccount = dataSource.getRepository(CachedAccount).create({

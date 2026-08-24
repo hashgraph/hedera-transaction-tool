@@ -3,7 +3,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { SignatureMap } from '@hiero-ledger/sdk';
 
 import { BlacklistService, guardMock } from '@app/common';
-import { TransactionSigner, User, UserStatus } from '@entities';
+import { Transaction, TransactionSigner, User, UserKey, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
 import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
@@ -79,12 +79,12 @@ describe('SignaturesController', () => {
     };
     signer = {
       id: 1,
-      transaction: null,
+      transaction: new Transaction(),
       createdAt: new Date(),
       transactionId: 1,
       user,
       userId: 1,
-      userKey: null,
+      userKey: new UserKey(),
       userKeyId: 0,
       recorder: null,
       recorderId: null,

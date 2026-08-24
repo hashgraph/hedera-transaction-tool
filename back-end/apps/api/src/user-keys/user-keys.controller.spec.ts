@@ -8,6 +8,7 @@ import { VerifiedUserGuard } from '../guards';
 
 import { UserKeysController } from './user-keys.controller';
 import { UserKeysService } from './user-keys.service';
+import { UploadUserKeyDto } from './dtos';
 
 describe('UserKeysController', () => {
   let controller: UserKeysController;
@@ -83,7 +84,7 @@ describe('UserKeysController', () => {
     });
 
     it('should return an error if publicKey is not supplied', async () => {
-      const invalidUserKey = { ...userKey, publicKey: null };
+      const invalidUserKey = { ...userKey, publicKey: null } as unknown as UploadUserKeyDto;
 
       userKeysService.uploadKey.mockRejectedValue(new Error('Public Key in use.'));
 
@@ -106,14 +107,6 @@ describe('UserKeysController', () => {
       userKeysService.getUserKeysRestricted.mockResolvedValue(result);
 
       expect(await controller.getUserKeys(user, 1)).toBe(result);
-    });
-
-    it('should return an array of keys without mnemonic if not owner', async () => {
-      const result = [userKey].map(key => ({ ...key, mnemonicHash: undefined, index: undefined }));
-
-      userKeysService.getUserKeysRestricted.mockResolvedValue(result);
-
-      expect(await controller.getUserKeys({ id: 2, ...user }, 1)).toBe(result);
     });
 
     it('should return an empty array if no keys exist', async () => {

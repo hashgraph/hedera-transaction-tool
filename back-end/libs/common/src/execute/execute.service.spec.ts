@@ -618,7 +618,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
-          statusCode: null,
+          statusCode: undefined,
           executedAt: expect.any(Date),
         }),
       );

@@ -416,10 +416,10 @@ export class ApproversService {
 
             /* Set the list id to null and set the transaction id */
             await transactionalEntityManager.update(TransactionApprover, approver.id, {
-              listId: undefined,
+              listId: null,
               transactionId: rootNode.transactionId,
             });
-            approver.listId = undefined;
+            approver.listId = null;
             approver.transactionId = rootNode.transactionId;
             updated = true;
 
@@ -429,7 +429,7 @@ export class ApproversService {
               /* Soft delete the parent if there are no more children */
               if (newParentApproversLength === 0) {
                 await transactionalEntityManager.softRemove(TransactionApprover, parent);
-              } else if (parent.threshold !== undefined && newParentApproversLength < parent.threshold) {
+              } else if (parent.threshold != null && newParentApproversLength < parent.threshold) {
                 /* Update the parent threshold if the current one is more than the children */
                 await transactionalEntityManager.update(TransactionApprover, parent.id, {
                   threshold: newParentApproversLength,

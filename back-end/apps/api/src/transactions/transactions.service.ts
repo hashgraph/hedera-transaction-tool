@@ -471,7 +471,7 @@ export class TransactionsService {
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
     const [transaction] = await this.createTransactions([dto], user);
 
-    emitTransactionStatusUpdate(
+    await emitTransactionStatusUpdate(
       this.notificationsPublisher,
       [{ entityId: transaction.id }],
     );

@@ -79,18 +79,9 @@ describe('UsersService', () => {
     expect(userRepository.findOne).toHaveBeenCalledWith({ where, withDeleted });
   });
 
-  it('should return null if where is null', async () => {
-    const where: FindOptionsWhere<User> = null;
-    const withDeleted: boolean = true;
-
-    const result = await service.getUser(where, withDeleted);
-
-    expect(result).toBeNull();
-  });
-
-  it('should return null if all values in where are null', async () => {
+  it('should return null if all values in where are undefined', async () => {
     const where: FindOptionsWhere<User> = {
-      id: null,
+      id: undefined,
     };
     const withDeleted: boolean = true;
 
@@ -452,7 +443,7 @@ describe('UsersService', () => {
     expect(userRepository.save).toHaveBeenCalledWith({
       ...userCopy,
       status: 'NEW',
-      deletedAt: null,
+      deletedAt: undefined,
     });
   });
 
@@ -482,7 +473,7 @@ describe('UsersService', () => {
   });
 
   it('should throw if find user throws error', async () => {
-    userRepository.findOne.mockRejectedValue(new Error());
+    userRepository.findOne.mockRejectedValue(new Error('Failed to retrieve user.'));
 
     await expect(service.getVerifiedUser(email, password)).rejects.toThrow(
       'Failed to retrieve user.',

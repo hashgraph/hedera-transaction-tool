@@ -127,7 +127,7 @@ describe('TransactionsController', () => {
       approvers: [],
       observers: [],
       comments: [],
-      groupItem: null,
+      groupItem: undefined,
       transactionCachedAccounts: [],
       transactionCachedNodes: [],
       transactionAccountSnapshots: [],

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mockDeep } from 'jest-mock-extended';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
 
 import {
   AccountSnapshot,
@@ -126,7 +126,7 @@ function makeSigner(transactionId: number, userKeyId: number): TransactionSigner
 }
 
 // QueryBuilder mock where every chain method returns `this`.
-function makeQb<T>(): ReturnType<typeof mockDeep<SelectQueryBuilder<T>>> {
+function makeQb<T extends ObjectLiteral>(): ReturnType<typeof mockDeep<SelectQueryBuilder<T>>> {
   const qb = mockDeep<SelectQueryBuilder<T>>();
   for (const m of [
     'where',

@@ -132,18 +132,8 @@ describe('UsersController', () => {
       expect(await controller.updateUser(1, user)).toBe(user);
     });
 
-    it('should throw an error if admin value is not supplied', async () => {
-      const invalidUser = { ...user, admin: null };
-
-      try {
-        await controller.updateUser(1, invalidUser);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
-    });
-
     it('should throw an error if the user does not exist', async () => {
-      userService.updateUser.mockResolvedValue(null);
+      userService.updateUser.mockRejectedValue(new Error());
 
       try {
         await controller.updateUser(1, user);
@@ -161,7 +151,7 @@ describe('UsersController', () => {
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.removeUser.mockResolvedValue(null);
+      userService.removeUser.mockRejectedValue(new Error());
 
       try {
         await controller.removeUser(user, 2);

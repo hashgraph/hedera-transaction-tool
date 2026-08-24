@@ -57,7 +57,8 @@ describe('DTO @Transform and @Type', () => {
       const dto = plainToInstance(UpdateReviewerGroupDto, {
         members: [{ userId: 10, userKeyId: 20 }],
       });
-      expect(dto.members[0]).toBeInstanceOf(GroupMemberInputDto);
+      expect(dto.members).not.toBeUndefined();
+      expect(dto.members![0]).toBeInstanceOf(GroupMemberInputDto);
     });
 
     it('instantiates nested member and rule DTOs for ReviewerGroupDetailDto', () => {

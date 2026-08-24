@@ -1,7 +1,7 @@
 import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 
-import { User } from '@entities';
+import { Transaction, User } from '@entities';
 
 import { TransactionsService } from '../transactions/transactions.service';
 
@@ -65,7 +65,8 @@ describe('TransactionAccessGuard', () => {
 
   it('should read transactionId from request.params.transactionId', async () => {
     const user = { id: 1 } as User;
-    transactionsService.getTransactionWithVerifiedAccess.mockResolvedValue(undefined);
+    const transaction = { transactionId: '42' } as Transaction;
+    transactionsService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
     const context = mockExecutionContext(user, { transactionId: '42' });
 
     expect(await guard.canActivate(context)).toBe(true);
@@ -74,7 +75,8 @@ describe('TransactionAccessGuard', () => {
 
   it('should allow access when the user has a relationship with the transaction', async () => {
     const user = { id: 1 } as User;
-    transactionsService.getTransactionWithVerifiedAccess.mockResolvedValue(undefined);
+    const transaction = { transactionId: '1' } as Transaction;
+    transactionsService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
     const context = mockExecutionContext(user, { transactionId: '1' });
 
     expect(await guard.canActivate(context)).toBe(true);
