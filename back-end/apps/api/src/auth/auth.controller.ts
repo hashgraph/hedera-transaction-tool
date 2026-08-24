@@ -16,6 +16,7 @@ import {
   extractJwtOtp,
   IpLoginThrottlerGuard,
   IpResetPasswordThrottlerGuard,
+  IpResetPasswordUniqueEmailGuard,
   JwtAuthGuard,
   JwtBlackListAuthGuard,
   JwtBlackListOtpGuard,
@@ -135,7 +136,7 @@ export class AuthController {
   })
   @Post('/reset-password')
   @HttpCode(200)
-  @UseGuards(IpResetPasswordThrottlerGuard, EmailThrottlerGuard)
+  @UseGuards(IpResetPasswordUniqueEmailGuard, IpResetPasswordThrottlerGuard, EmailThrottlerGuard)
   async createOtp(@Body() { email }: OtpLocalDto) {
     return this.authService.createOtp(email);
   }

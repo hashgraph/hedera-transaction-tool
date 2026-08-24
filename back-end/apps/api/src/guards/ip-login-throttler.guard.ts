@@ -3,6 +3,7 @@ import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { seconds, ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
+import { extractClientIp } from '@app/common';
 
 @Injectable()
 export class IpLoginThrottlerGuard extends ThrottlerGuard {
@@ -32,8 +33,7 @@ export class IpLoginThrottlerGuard extends ThrottlerGuard {
   }
 
   protected getTracker(req: Record<string, any>): Promise<string> {
-    const forwarded = req.headers['x-forwarded-for'];
-    const clientIp = forwarded ? (forwarded as string).split(',')[0].trim() : req.ip;
+    const clientIp = extractClientIp(req);
     if (!clientIp) {
       throw new HttpException('Unable to determine client IP', HttpStatus.INTERNAL_SERVER_ERROR);
     }

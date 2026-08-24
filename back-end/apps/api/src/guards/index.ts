@@ -4,6 +4,7 @@ export * from './frontend-version.guard';
 export * from './has-key.guard';
 export * from './ip-login-throttler.guard';
 export * from './ip-reset-password-throttler.guard';
+export * from './ip-reset-password-unique-email.guard';
 export * from './ip-throttler.guard';
 export * from './jwt-auth.guard';
 export * from './jwt-blacklist.guard';
