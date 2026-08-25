@@ -14,6 +14,7 @@ import { User, UserStatus } from '@entities';
 import { UsersService } from '../users/users.service';
 import { OtpStoreService } from './otp-store.service';
 import { SignUpUserDto } from './dtos';
+import { UnauthorizedException } from '@nestjs/common';
 
 jest.mock('bcryptjs');
 jest.mock('argon2');
@@ -412,6 +413,14 @@ describe('AuthService', () => {
     expect(otpStoreService.storeCodeHash).not.toHaveBeenCalled();
   });
 
+  it('should not create otp if opt secret not set', async () => {
+    const email = '';
+
+    configService.get.mockReturnValue(undefined);
+
+    await service.createOtp(email);
+  });
+
   it('should verify otp in dev', async () => {
     const { user } = await invokeVerifyOtp(false);
 
@@ -577,6 +586,15 @@ describe('AuthService', () => {
     await service.authenticateWebsocketToken(token);
 
     expect(userService.getUser).toHaveBeenCalledWith({ id: '2' });
+  });
+
+  it('should not authenticate access token if user is not found', async () => {
+    const token = 'token';
+
+    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({ userId: '2' });
+    jest.spyOn(userService, 'getUser').mockResolvedValue(null);
+
+    await expect(service.authenticateWebsocketToken(token)).rejects.toThrow(UnauthorizedException);
   });
 
   it('should elevate user to admin', async () => {
