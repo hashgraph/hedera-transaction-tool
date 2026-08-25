@@ -45,13 +45,11 @@ export class ObserversService {
     if (transaction.creatorKey?.userId !== user.id)
       throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
 
-    if (!transaction.observers) {
-      return [];
-    }
     const observers: TransactionObserver[] = [];
 
+    const allObservers = transaction.observers ?? [];
     for (const userId of dto.userIds) {
-      if (!transaction.observers.some(o => o.userId === userId)) {
+      if (!allObservers.some(o => o.userId === userId)) {
         const observer = this.repo.create({ userId, transactionId, role: Role.FULL });
         observers.push(observer);
       }
