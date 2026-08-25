@@ -14,35 +14,52 @@ const mockConfigService = mockDeep<ConfigService>();
 describe('JwtStrategy', () => {
   let jwtStrategy: JwtStrategy;
 
-  beforeEach(async () => {
-    jest.resetAllMocks();
+  describe('JwtStrategy without JWT_SECRET',  () => {
 
-    mockConfigService.get.mockReturnValue('secret');
+    it('JwtStrategy module should throw error when JWT_SECRET is unset', async () => {
+      const cb  = async () => await Test.createTestingModule({
+        providers: [
+          JwtStrategy,
+          { provide: UsersService, useValue: mockUsersService },
+          { provide: ConfigService, useValue: mockConfigService },
+        ],
+      }).compile();
+      await expect(cb()).rejects.toThrow(Error);
+    });
 
-    const module = await Test.createTestingModule({
-      providers: [
-        JwtStrategy,
-        { provide: UsersService, useValue: mockUsersService },
-        { provide: ConfigService, useValue: mockConfigService },
-      ],
-    }).compile();
-
-    jwtStrategy = module.get<JwtStrategy>(JwtStrategy);
   });
 
-  it('should return a user when validate is called with a valid userId', async () => {
-    const user = { id: 1, email: 'test@test.com' };
-    mockUsersService.getUser.mockResolvedValue(user as User);
+  describe('JwtStrategy with JWT_SECRET', () => {
+    beforeEach(async () => {
+      jest.resetAllMocks();
 
-    const result = await jwtStrategy.validate({ userId: user.id, email: user.email });
-    expect(result).toEqual(user);
-  });
+      mockConfigService.get.mockReturnValue('secret');
 
-  it('should throw UnauthorizedException when no user is found', async () => {
-    mockUsersService.getUser.mockResolvedValue(null);
+      const module = await Test.createTestingModule({
+        providers: [
+          JwtStrategy,
+          { provide: UsersService, useValue: mockUsersService },
+          { provide: ConfigService, useValue: mockConfigService },
+        ],
+      }).compile();
 
-    await expect(jwtStrategy.validate({ userId: 13213, email: 'sdads' })).rejects.toThrow(
-      UnauthorizedException,
-    );
+      jwtStrategy = module.get<JwtStrategy>(JwtStrategy);
+    });
+
+    it('should return a user when validate is called with a valid userId', async () => {
+      const user = { id: 1, email: 'test@test.com' };
+      mockUsersService.getUser.mockResolvedValue(user as User);
+
+      const result = await jwtStrategy.validate({ userId: user.id, email: user.email });
+      expect(result).toEqual(user);
+    });
+
+    it('should throw UnauthorizedException when no user is found', async () => {
+      mockUsersService.getUser.mockResolvedValue(null);
+
+      await expect(jwtStrategy.validate({ userId: 13213, email: 'sdads' })).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
   });
 });
