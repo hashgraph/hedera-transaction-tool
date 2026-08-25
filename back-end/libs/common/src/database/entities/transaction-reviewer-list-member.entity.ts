@@ -42,10 +42,10 @@ export class TransactionReviewerListMember {
   @Column({ type: 'bytea', nullable: true })
   signature: Buffer | null;
 
-  @Column({ nullable: true })
+  @Column({ type: Boolean, nullable: true })
   accepted: boolean | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   note: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })

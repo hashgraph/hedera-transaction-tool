@@ -54,10 +54,10 @@ export class TransactionSigner {
   @Column({ nullable: true })
   recorderId: number | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   tool: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   version: string | null;
 
   @CreateDateColumn()

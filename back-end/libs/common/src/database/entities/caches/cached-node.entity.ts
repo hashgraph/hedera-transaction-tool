@@ -18,7 +18,7 @@ export class CachedNode {
   @Index()
   nodeId: number;
 
-  @Column({ length: 64, nullable: true })
+  @Column({ type: String, length: 64, nullable: true })
   @Index()
   nodeAccountId: string | null;
 
@@ -28,7 +28,7 @@ export class CachedNode {
   @Column({ type: 'bytea', nullable: true })
   encodedKey: Buffer | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: String, length: 100, nullable: true })
   etag: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedNodeAdminKey, (key) => key.cachedNode)

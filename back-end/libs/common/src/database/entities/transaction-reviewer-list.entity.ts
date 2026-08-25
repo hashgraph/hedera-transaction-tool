@@ -24,10 +24,10 @@ export class TransactionReviewerList {
   @Column()
   transactionId: number;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   name: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   description: string | null;
 
   @Column()

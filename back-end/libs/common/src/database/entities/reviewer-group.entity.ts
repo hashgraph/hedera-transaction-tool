@@ -19,7 +19,7 @@ export class ReviewerGroup {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   description: string | null;
 
   @Column()
