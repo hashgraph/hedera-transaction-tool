@@ -139,10 +139,7 @@ export class AuthService {
 
     // Atomically checks-and-deletes so the same code can never be redeemed twice,
     // even by two requests racing each other.
-    const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash);
-    if (secret === null) {
-      throw new UnauthorizedException('No secret found');
-    }
+    const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash) ?? '';
 
     if (!matched) {
       const attempts = await this.otpStoreService.registerFailedAttempt(email, windowSeconds);
