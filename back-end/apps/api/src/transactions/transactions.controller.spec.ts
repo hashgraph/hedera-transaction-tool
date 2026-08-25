@@ -359,6 +359,11 @@ describe('TransactionsController', () => {
 
       expect(await controller.shouldSignTransaction(user, 1)).toBe(result);
     });
+
+    it('should throw bad request if transaction does not exist', async () => {
+      transactionService.getTransactionById.mockResolvedValue(null);
+      await expect( controller.shouldSignTransaction(user, 1)).rejects.toThrow(BadRequestException);
+    });
   });
 
   describe('getTransactionsToApprove', () => {
