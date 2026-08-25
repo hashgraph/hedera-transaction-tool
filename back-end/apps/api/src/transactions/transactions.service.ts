@@ -1273,6 +1273,8 @@ export class TransactionsService {
     if (!sdkTransaction.isFrozen()) {
       sdkTransaction.freezeWith(client);
     }
+    const transactionId = sdkTransaction.transactionId!;
+    const validStart = transactionId.validStart!;
 
     // Check if expired
     if (isExpired(sdkTransaction)) {
@@ -1282,11 +1284,6 @@ export class TransactionsService {
     // Check size
     if (isTransactionBodyOverMaxSize(sdkTransaction)) {
       throw new BadRequestException(ErrorCodes.TOS);
-    }
-
-    // Check transactionId
-    if (sdkTransaction.transactionId === null || sdkTransaction.transactionId.validStart === null) {
-      throw new BadRequestException(ErrorCodes.UNKWN);
     }
 
     // Check nodes
@@ -1319,14 +1316,14 @@ export class TransactionsService {
       name: dto.name,
       type: transactionType,
       description: dto.description,
-      transactionId: sdkTransaction.transactionId.toString(),
+      transactionId: transactionId.toString(),
       transactionHash: encodeUint8Array(transactionHash),
       transactionBytes: sdkTransaction.toBytes(),
       unsignedTransactionBytes: sdkTransaction.toBytes(),
       creatorKeyId: dto.creatorKeyId,
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
-      validStart: sdkTransaction.transactionId.validStart.toDate(),
+      validStart: validStart.toDate(),
       isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
       publicKeys,
