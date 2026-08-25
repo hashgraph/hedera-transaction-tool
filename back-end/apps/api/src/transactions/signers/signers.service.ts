@@ -50,10 +50,6 @@ export class SignersService {
     { limit, offset, page, size }: Pagination,
     withDeleted: boolean = false,
   ): Promise<PaginatedResourceDto<TransactionSigner>> {
-    if (!user) {
-      throw new BadRequestException(ErrorCodes.UNF);
-    }
-
     const [items, totalItems] = await this.repo.findAndCount({
       where: {
         userId: user.id,
