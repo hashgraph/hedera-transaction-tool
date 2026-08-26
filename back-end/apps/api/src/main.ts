@@ -31,7 +31,18 @@ async function createApp(): Promise<NestExpressApplication> {
 
 async function createAppForDeployment(): Promise<NestExpressApplication> {
   const app = (await NestFactory.create(ApiModule)) as NestExpressApplication;
-  app.enable('trust proxy');
+
+  // This only affects the *fallback* path (req.ip, used when IpResolverService can't
+  // resolve a trustworthy IP) and Express's own internal checks (req.secure, etc) --
+  // it does not make req.ip trustworthy for rate limiting or anything security-
+  // sensitive. That trust comes from the network boundary (Cloudflare mTLS enforced at
+  // the ingress, configured separately in infra) plus IpResolverService reading
+  // CF-Connecting-IP directly; see @app/common's ip-resolution module and @ClientIp().
+  //
+  // 'loopback'/'linklocal'/'uniquelocal' trust only private-network hops (i.e. the
+  // in-cluster ingress), not arbitrary internet hosts, so this stays safe even though
+  // it doesn't know Traefik's exact pod IP.
+  app.set('trust proxy', ['loopback', 'linklocal', 'uniquelocal']);
 
   return app;
 }

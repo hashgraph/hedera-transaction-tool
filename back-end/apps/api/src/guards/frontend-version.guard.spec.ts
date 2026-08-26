@@ -15,7 +15,7 @@ describe('FrontendVersionGuard', () => {
       switchToHttp: () => ({
         getRequest: () => ({
           headers,
-          ip: '127.0.0.1',
+          clientIp: '127.0.0.1',
         }),
       }),
     } as unknown as ExecutionContext;
@@ -245,15 +245,14 @@ describe('FrontendVersionGuard', () => {
       );
     });
 
-    it('should include x-forwarded-for IP in log when present', () => {
+    it('should include the resolved client IP in log when present', () => {
       const context = {
         switchToHttp: () => ({
           getRequest: () => ({
             headers: {
               'x-frontend-version': '0.5.0',
-              'x-forwarded-for': '192.168.1.100',
             },
-            ip: '127.0.0.1',
+            clientIp: '192.168.1.100',
           }),
         }),
       } as unknown as ExecutionContext;
@@ -267,15 +266,15 @@ describe('FrontendVersionGuard', () => {
       expect(loggerWarnSpy).toHaveBeenCalledWith(expect.stringContaining('192.168.1.100'));
     });
 
-    it('should log "unknown" when both x-forwarded-for and ip are missing', () => {
-      // Create context with no x-forwarded-for header and no ip property
+    it('should log "unknown" when the resolved client IP is missing', () => {
+      // Create context with no clientIp property (ClientIpMiddleware didn't run)
       const context = {
         switchToHttp: () => ({
           getRequest: () => ({
             headers: {
               'x-frontend-version': '0.5.0',
             },
-            // No ip property - will fallback to 'unknown'
+            // No clientIp property - will fallback to 'unknown'
           }),
         }),
       } as unknown as ExecutionContext;

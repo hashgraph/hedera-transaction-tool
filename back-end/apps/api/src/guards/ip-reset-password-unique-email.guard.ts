@@ -1,6 +1,6 @@
 import { CanActivate, ExecutionContext, HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { extractClientIp } from '@app/common';
+import { CLIENT_IP_KEY } from '@app/common';
 import { Redis } from 'ioredis';
 
 const TEN_MINUTES_SECONDS = 600;
@@ -12,37 +12,68 @@ export class IpResetPasswordUniqueEmailGuard implements CanActivate {
 
   constructor(@Inject(ConfigService) configService: ConfigService) {
     this.redis = new Redis(configService.getOrThrow('REDIS_URL'));
-    this.limit = Number(configService.get('RESET_IP_UNIQUE_EMAIL_LIMIT', 3));
+
+    const configuredLimit = Number(configService.get('RESET_IP_UNIQUE_EMAIL_LIMIT', 3));
+    if (!Number.isFinite(configuredLimit) || configuredLimit <= 0) {
+      // Fail fast: a non-numeric or non-positive value silently disables this guard
+      // (every count comparison against NaN is false), so surface the misconfiguration
+      // at startup instead of quietly running unprotected.
+      throw new Error(
+        `RESET_IP_UNIQUE_EMAIL_LIMIT must be a positive number, got: ${configService.get('RESET_IP_UNIQUE_EMAIL_LIMIT')}`,
+      );
+    }
+    this.limit = configuredLimit;
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
-    const ip = extractClientIp(req);
-    if (!ip) {
-      throw new HttpException('Unable to determine client IP', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
+    const rawEmail = req.body?.email;
+    // Guards run before the DTO validation pipe, so req.body.email could be anything
+    // JSON allows here -- require a real string before treating it as one. Casing and
+    // surrounding whitespace shouldn't create separate "unique" emails either, so
+    // normalize before using it as the Redis set member.
+    if (typeof rawEmail !== 'string' || !rawEmail.trim()) return true; // let EmailThrottlerGuard/DTO validation handle it
+    const email = rawEmail.trim().toLowerCase();
 
-    const email: string = req.body?.email;
-    if (!email) return true; // let EmailThrottlerGuard handle the missing email case
+    // Set by ClientIpMiddleware; never touch a raw header or req.ip here directly.
+    const key = `reset:ip-unique-email:${req[CLIENT_IP_KEY]}`;
 
-    const key = `reset:ip-unique-email:${ip}`;
-
-    // Check current unique email count before adding
+    // Once this IP has tripped the cap below, the set is deliberately left over the
+    // limit for the rest of the window -- so this cheap check lets us reject outright,
+    // without adding anything, once we're already in that locked-out state. Without
+    // it, a burst of distinct emails after tripping could keep growing the set for
+    // the rest of the window.
     const countBefore = await this.redis.scard(key);
-    if (countBefore >= this.limit) {
+    if (countBefore > this.limit) {
       throw new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS);
     }
 
-    // Add email to the set and set TTL on first entry.
-    // The 'NX' option sets the expiry only if one is not already present, preserving
-    // the fixed 10-minute window. Requires Redis 7.0+.
-    await this.redis.sadd(key, email);
-    await this.redis.expire(key, TEN_MINUTES_SECONDS, 'NX');
+    // SADD + EXPIRE NX + SCARD run as one MULTI/EXEC block, which Redis executes as a
+    // single atomic unit relative to every other client -- no other command for this
+    // key can run in between, so two concurrent requests for the same IP can't both
+    // slip past the count check.
+    const results = await this.redis
+      .multi()
+      .sadd(key, email)
+      .expire(key, TEN_MINUTES_SECONDS, 'NX')
+      .scard(key)
+      .exec();
 
-    // Re-check after adding to handle concurrent requests
-    const countAfter = await this.redis.scard(key);
-    if (countAfter > this.limit) {
+    if (!results) {
+      throw new Error('Redis transaction aborted while checking the reset-password unique-email limit');
+    }
+
+    const [[saddErr], [expireErr], [scardErr, count]] = results;
+    if (saddErr || expireErr || scardErr) {
+      throw saddErr || expireErr || scardErr;
+    }
+
+    // Deliberately don't remove the email that pushed the count over the limit: once
+    // an IP has attempted more than `limit` distinct emails, it stays locked out --
+    // every request, including a repeat of an already-used email -- until the window
+    // (TEN_MINUTES_SECONDS from the first attempt) expires.
+    if ((count as number) > this.limit) {
       throw new HttpException('Too Many Requests', HttpStatus.TOO_MANY_REQUESTS);
     }
 
