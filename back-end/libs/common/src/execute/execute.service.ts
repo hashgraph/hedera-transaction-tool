@@ -236,12 +236,16 @@ export class ExecuteService {
 
   /* Throws if the transaction is not in a valid state */
   private async validateTransactionStatus(transaction: Transaction) {
-    const { status } = await this.transactionsRepo.findOne({
+    const transactionEntity = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
       select: { status: true },
     });
 
-    switch (status) {
+    if (transactionEntity === null) {
+      throw new Error('Transaction does not exist.');
+    }
+
+    switch (transactionEntity.status) {
       case TransactionStatus.NEW:
         throw new Error('Transaction is new and has not been signed yet.');
       case TransactionStatus.READY_FOR_REVIEW:

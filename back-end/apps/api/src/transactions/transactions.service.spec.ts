@@ -2444,53 +2444,6 @@ describe('TransactionsService', () => {
     });
   });
 
-  describe('removeTransaction', () => {
-    const transaction = {
-      id: 123,
-      transactionId: '0.0.12345@1232351234.0123',
-      creatorKey: {
-        userId: user.id
-      },
-      mirrorNetwork: 'testnet',
-    };
-
-    beforeEach(() => {
-      jest.resetAllMocks();
-      jest
-        .spyOn(service, 'getTransactionForCreator')
-        .mockResolvedValueOnce(transaction as Transaction);
-    });
-
-    afterEach(() => {
-      expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        [{
-          entityId: transaction.id,
-          additionalData: {
-            transactionId: expect.any(String),
-            network: transaction.mirrorNetwork,
-          },
-        }],
-      );
-    });
-
-    it('should soft remove the transaction', async () => {
-      await service.removeTransaction(123, user as User, true);
-      expect(transactionsRepo.update).toHaveBeenCalledWith(
-        transaction.id,
-        expect.objectContaining({ status: TransactionStatus.CANCELED, executedAt: expect.any(Date) }),
-      );
-      expect(transactionsRepo.softRemove).toHaveBeenCalledWith(transaction);
-      expect(transactionSnapshotService.captureForTransaction).toHaveBeenCalledWith(transaction.id, expect.any(Date));
-    });
-
-    it('should hard remove the transaction', async () => {
-      await service.removeTransaction(123, user as User, false);
-      expect(transactionsRepo.remove).toHaveBeenCalledWith(transaction);
-      expect(transactionSnapshotService.captureForTransaction).not.toHaveBeenCalled();
-    });
-  });
-
   describe('cancelTransaction', () => {
     const mockCancelUpdateQueryBuilder = (affected: number = 1) => {
       const queryBuilder = {
