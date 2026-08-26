@@ -16,7 +16,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.config.ts --runInBand --detectOpenHandles"
   },
   "dependencies": {
-    "@otplib/plugin-crypto-node": "13.4.1",
+    "@otplib/plugin-crypto-node": "13.5.0",
     "@otplib/totp": "13.4.1",
     "otplib": "13.4.1",
     "passport": "0.7.0",
