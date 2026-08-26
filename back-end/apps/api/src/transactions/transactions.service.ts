@@ -8,10 +8,21 @@ import {
 import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
+  AccountDeleteTransaction,
+  AccountUpdateTransaction,
   Client,
+  FileAppendTransaction,
+  FileDeleteTransaction,
+  FileUpdateTransaction,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
   PublicKey,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   Transaction as SDKTransaction,
   TransactionId,
+  TransferTransaction,
 } from '@hiero-ledger/sdk';
 
 import {
@@ -28,8 +39,10 @@ import {
 
 import {
   type NewSignerRow,
+  EntityRole,
   Transaction,
   TransactionApprover,
+  TransactionEntity,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -74,6 +87,7 @@ import TransactionFactory from '@app/common/transaction-signature/model/transact
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
 import { ApproversService } from './approvers';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 
 export enum CancelTransactionOutcome {
   CANCELED = 'CANCELED',
@@ -94,12 +108,14 @@ export class TransactionsService {
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionSnapshotService: TransactionSnapshotService,
+    private readonly reviewerAssignmentService: ReviewerAssignmentService,
   ) {
   }
 
   private readonly cancelableStatuses = [
     TransactionStatus.NEW,
     TransactionStatus.WAITING_FOR_SIGNATURES,
+    TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_EXECUTION,
   ];
 
@@ -523,12 +539,39 @@ export class TransactionsService {
           }),
         );
 
+        let saved: Transaction[];
         try {
-          return await entityManager.save(Transaction, transactions);
+          saved = await entityManager.save(Transaction, transactions);
         } catch (error) {
           this.logger.error('Failed to save transactions', (error as any)?.stack ?? (error as any)?.message ?? String(error));
           throw new BadRequestException(ErrorCodes.FST);
         }
+
+        // Extract entities and assign reviewers for each saved transaction
+        for (let i = 0; i < saved.length; i++) {
+          const tx = saved[i];
+          const data = validatedData[i];
+          const entityRows = this.extractTransactionEntities(data.sdkTransaction, data.mirrorNetwork);
+          if (entityRows.length > 0) {
+            await entityManager.save(
+              TransactionEntity,
+              entityRows.map(e => entityManager.create(TransactionEntity, { transactionId: tx.id, ...e })),
+            );
+          }
+
+          const hasReviewers = await this.reviewerAssignmentService.assign(
+            tx.id,
+            data.type,
+            data.mirrorNetwork,
+            entityManager,
+          );
+          if (hasReviewers) {
+            tx.status = TransactionStatus.READY_FOR_REVIEW;
+            await entityManager.save(Transaction, tx);
+          }
+        }
+
+        return saved;
       });
 
       // Batch schedule reminders
@@ -942,7 +985,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (
-      ![TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+      ![TransactionStatus.READY_FOR_REVIEW, TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
         transaction.status,
       ) &&
       !transaction.isManual
@@ -1125,6 +1168,72 @@ export class TransactionsService {
     return transaction;
   }
 
+  private extractTransactionEntities(
+    sdkTx: SDKTransaction,
+    network: string,
+  ): Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] {
+    const raw: Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] = [];
+
+    const feePayerId = sdkTx.transactionId?.accountId;
+    if (feePayerId) {
+      raw.push({ hederaEntityId: feePayerId.toString(), network, entityRole: EntityRole.FEE_PAYER });
+    }
+
+    if (sdkTx instanceof TransferTransaction) {
+      for (const transfer of sdkTx.hbarTransfersList) {
+        raw.push({
+          hederaEntityId: transfer.accountId.toString(),
+          network,
+          entityRole: transfer.amount.isNegative() ? EntityRole.SENDER : EntityRole.RECEIVER,
+        });
+      }
+    }
+
+    if (sdkTx instanceof AccountUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof AccountDeleteTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeCreateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+
+    if (sdkTx instanceof FileAppendTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileUpdateTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileDeleteTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof NodeDeleteTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeUpdateTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeDeleteTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+
+    const seen = new Set<string>();
+    return raw.filter(e => {
+      const key = `${e.hederaEntityId}|${e.network}|${e.entityRole}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   /**
    * Validate and prepare a single transaction
    */
@@ -1206,6 +1315,7 @@ export class TransactionsService {
       isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
       publicKeys,
+      sdkTransaction,
     };
   }
 
