@@ -142,7 +142,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should send reminder when transaction is READY_FOR_REVIEW', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce({
         ...transaction,
         status: TransactionStatus.READY_FOR_REVIEW,
