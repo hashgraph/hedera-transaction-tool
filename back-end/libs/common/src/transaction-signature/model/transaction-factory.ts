@@ -13,8 +13,6 @@ import {
   RegisteredNodeCreateTransaction,
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
   Transaction,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
@@ -33,8 +31,6 @@ import { NodeUpdateTransactionModel } from './node-update-transaction.model';
 import { RegisteredNodeCreateTransactionModel } from './registered-node-create-transaction.model';
 import { RegisteredNodeUpdateTransactionModel } from './registered-node-update-transaction.model';
 import { RegisteredNodeDeleteTransactionModel } from './registered-node-delete-transaction.model';
-import { SystemDeleteTransactionModel } from './system-delete-transaction.model';
-import { SystemUndeleteTransactionModel } from './system-undelete-transaction.model';
 import { TransferTransactionModel } from './transfer-transaction.model';
 
 export default class TransactionFactory {
@@ -69,10 +65,6 @@ export default class TransactionFactory {
       return new RegisteredNodeUpdateTransactionModel(tx);
     } else if (tx instanceof RegisteredNodeDeleteTransaction) {
       return new RegisteredNodeDeleteTransactionModel(tx);
-    } else if (tx instanceof SystemDeleteTransaction) {
-      return new SystemDeleteTransactionModel(tx);
-    } else if (tx instanceof SystemUndeleteTransaction) {
-      return new SystemUndeleteTransactionModel(tx);
     } else {
       throw new Error(`No transaction model registered for type: ${tx.constructor.name}`);
     }

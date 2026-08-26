@@ -23,8 +23,6 @@ import {
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
   SignatureMap,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
   Timestamp,
   Transaction,
   TransactionId,
@@ -114,10 +112,6 @@ export const getTransactionTypeEnumValue = (transaction: Transaction): Transacti
     return TransactionType.REGISTERED_NODE_UPDATE;
   } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
     return TransactionType.REGISTERED_NODE_DELETE;
-  } else if (transaction instanceof SystemDeleteTransaction) {
-    return TransactionType.SYSTEM_DELETE;
-  } else if (transaction instanceof SystemUndeleteTransaction) {
-    return TransactionType.SYSTEM_UNDELETE;
   }
 
   throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);

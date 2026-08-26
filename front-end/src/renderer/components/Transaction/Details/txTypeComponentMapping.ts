@@ -5,7 +5,6 @@ import FileDetails from './FileDetails.vue';
 import FreezeDetails from './FreezeDetails.vue';
 import NodeDetails from './NodeDetails.vue';
 import RegisteredNodeDetails from './RegisteredNodeDetails.vue';
-import SystemDetails from './SystemDetails.vue';
 import TransferDetails from './TransferDetails.vue';
 
 export const transactionTypeKeys = {
@@ -20,8 +19,6 @@ export const transactionTypeKeys = {
   transfer: 'TransferTransaction',
   approveAllowance: 'AccountAllowanceApproveTransaction',
   freeze: 'FreezeTransaction',
-  systemDelete: 'SystemDeleteTransaction',
-  systemUndelete: 'SystemUndeleteTransaction',
   nodeCreate: 'NodeCreateTransaction',
   nodeUpdate: 'NodeUpdateTransaction',
   nodeDelete: 'NodeDeleteTransaction',
@@ -40,8 +37,6 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.transfer]: TransferDetails,
   [transactionTypeKeys.approveAllowance]: AccountApproveAllowanceDetails,
   [transactionTypeKeys.freeze]: FreezeDetails,
-  [transactionTypeKeys.systemDelete]: SystemDetails,
-  [transactionTypeKeys.systemUndelete]: SystemDetails,
   [transactionTypeKeys.nodeCreate]: NodeDetails,
   [transactionTypeKeys.nodeUpdate]: NodeDetails,
   [transactionTypeKeys.nodeDelete]: NodeDetails,

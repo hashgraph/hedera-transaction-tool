@@ -28,7 +28,6 @@ describe('TransactionSelectionModal.vue', () => {
     expect(wrapper.find('[data-testid="menu-link-account"]').text()).toBe('Account');
     expect(wrapper.find('[data-testid="menu-link-file"]').text()).toBe('File');
     expect(wrapper.find('[data-testid="menu-link-node"]').text()).toBe('Node');
-    expect(wrapper.find('[data-testid="menu-link-system"]').text()).toBe('System');
     expect(wrapper.text()).toContain('Create Account');
     expect(wrapper.text()).toContain('Update Account');
     expect(wrapper.text()).toContain('Delete Account');

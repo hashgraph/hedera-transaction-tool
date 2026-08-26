@@ -58,7 +58,11 @@ const transactionGroups = computed<MenuGroup[]>(() => {
         { label: 'Node Create', name: transactionTypeKeys.nodeCreate },
         { label: 'Node Delete', name: transactionTypeKeys.nodeDelete },
         { label: 'Node Update', name: transactionTypeKeys.nodeUpdate },
-        { separator: true },
+      ],
+    },
+    {
+      groupTitle: 'Registered Node',
+      items: [
         {
           label: 'Registered Node Create',
           name: transactionTypeKeys.registeredNodeCreate,
@@ -71,13 +75,6 @@ const transactionGroups = computed<MenuGroup[]>(() => {
           label: 'Registered Node Delete',
           name: transactionTypeKeys.registeredNodeDelete,
         },
-      ],
-    },
-    {
-      groupTitle: 'System',
-      items: [
-        { label: 'System Delete', name: transactionTypeKeys.systemDelete },
-        { label: 'System Undelete', name: transactionTypeKeys.systemUndelete },
       ],
     },
     // { groupTitle: 'Token Service', items: [] },

@@ -21,8 +21,6 @@ import {
   type RegisteredServiceEndpoint,
   RpcRelayServiceEndpoint,
   ServiceEndpoint,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
   Timestamp,
   type Transaction,
   TransferTransaction,
@@ -48,9 +46,6 @@ import type {
   RegisteredNodeData,
   RegisteredNodeDeleteData,
   RegisteredNodeUpdateData,
-  SystemData,
-  SystemDeleteData,
-  SystemUndeleteData,
   TransactionCommonData,
   TransferHbarData,
 } from '@renderer/utils';
@@ -72,8 +67,6 @@ export type ExtendedTransactionData = TransactionCommonData &
     | NodeUpdateData
     | NodeDeleteData
     | RegisteredNodeData
-    | SystemDeleteData
-    | SystemUndeleteData
   );
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
@@ -432,28 +425,6 @@ export function getRegisteredNodeDeleteData(transaction: Transaction): Registere
   };
 }
 
-export function getSystemData(
-  transaction: SystemDeleteTransaction | SystemUndeleteTransaction,
-): SystemData {
-  return {
-    fileId: transaction.fileId?.toString() || '',
-    contractId: transaction.contractId?.toString() || '',
-  };
-}
-
-export function getSystemDeleteData(transaction: Transaction): SystemDeleteData {
-  assertTransactionType(transaction, SystemDeleteTransaction);
-  return {
-    ...getSystemData(transaction),
-    expirationTime: transaction.expirationTime?.toDate() || null,
-  };
-}
-
-export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteData {
-  assertTransactionType(transaction, SystemUndeleteTransaction);
-  return getSystemData(transaction);
-}
-
 const transactionHandlers = new Map<
   new (...args: any[]) => Transaction,
   (transaction: Transaction) => Record<string, any>
@@ -579,22 +550,6 @@ const transactionHandlers = new Map<
     tx => ({
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeDeleteData(tx),
-    }),
-  ],
-
-  [
-    SystemDeleteTransaction,
-    tx => ({
-      ...getTransactionCommonData(tx),
-      ...getSystemDeleteData(tx),
-    }),
-  ],
-
-  [
-    SystemUndeleteTransaction,
-    tx => ({
-      ...getTransactionCommonData(tx),
-      ...getSystemUndeleteData(tx),
     }),
   ],
 ]);

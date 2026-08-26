@@ -17,8 +17,6 @@ import {
   RegisteredNodeDeleteTransaction,
   TransferTransaction,
   Transaction as SDKTransaction,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
 } from '@hiero-ledger/sdk';
 import type { ITransactionBrowserItem } from './ITransactionBrowserItem';
 import { hexToUint8Array } from '@renderer/utils';
@@ -36,7 +34,6 @@ import FileDetails from '@renderer/components/Transaction/Details/FileDetails.vu
 import AccountDetails from '@renderer/components/Transaction/Details/AccountDetails.vue';
 import TransferDetails from '@renderer/components/Transaction/Details/TransferDetails.vue';
 import FreezeDetails from '@renderer/components/Transaction/Details/FreezeDetails.vue';
-import SystemDetails from '@renderer/components/Transaction/Details/SystemDetails.vue';
 import NodeDetails from '@renderer/components/Transaction/Details/NodeDetails.vue';
 import RegisteredNodeDetails from '@renderer/components/Transaction/Details/RegisteredNodeDetails.vue';
 
@@ -195,15 +192,6 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
 
               <FreezeDetails
                 v-if="transaction instanceof FreezeTransaction"
-                :transaction="transaction"
-              />
-
-              <SystemDetails
-                v-if="
-                  transaction instanceof SystemDeleteTransaction ||
-                  transaction instanceof SystemUndeleteTransaction
-                "
-                :organization-transaction="null"
                 :transaction="transaction"
               />
 

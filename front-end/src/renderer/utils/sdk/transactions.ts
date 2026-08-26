@@ -16,8 +16,6 @@ import {
   RegisteredNodeCreateTransaction,
   RegisteredNodeDeleteTransaction,
   RegisteredNodeUpdateTransaction,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
   Transaction,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
@@ -109,10 +107,6 @@ export const getTransactionType = (
     transactionType = 'Registered Node Update Transaction';
   } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
     transactionType = 'Registered Node Delete Transaction';
-  } else if (transaction instanceof SystemDeleteTransaction) {
-    transactionType = 'System Delete Transaction';
-  } else if (transaction instanceof SystemUndeleteTransaction) {
-    transactionType = 'System Undelete Transaction';
   }
 
   return formatTransactionType(transactionType, short, removeTransaction);

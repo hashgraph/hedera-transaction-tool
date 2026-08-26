@@ -3,8 +3,6 @@ import { TransactionBaseModel } from './transaction.model';
 import TransferTransactionModel from './transfer-transaction.model';
 import AccountCreateTransactionModel from './account-create-transaction.model';
 import AccountUpdateTransactionModel from './account-update-transaction.model';
-import SystemDeleteTransactionModel from './system-delete-transaction.model';
-import SystemUndeleteTransactionModel from './system-undelete-transaction.model';
 import FileUpdateTransactionModel from './file-update-transaction.model';
 import FreezeTransactionModel from './freeze-transaction.model';
 import FileAppendTransactionModel from './file-append-transaction.model';
@@ -30,8 +28,6 @@ export default class TransactionFactory {
       TransferTransaction: TransferTransactionModel,
       AccountCreateTransaction: AccountCreateTransactionModel,
       AccountUpdateTransaction: AccountUpdateTransactionModel,
-      SystemDeleteTransaction: SystemDeleteTransactionModel,
-      SystemUndeleteTransaction: SystemUndeleteTransactionModel,
       FreezeTransaction: FreezeTransactionModel,
       FileUpdateTransaction: FileUpdateTransactionModel,
       FileAppendTransaction: FileAppendTransactionModel,
