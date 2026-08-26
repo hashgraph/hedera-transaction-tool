@@ -24,7 +24,7 @@ export class EmailService implements OnModuleDestroy {
     secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
     ...this.getAuthConfig()
   });
-  private batcher: DebouncedNotificationBatcher;
+  private batcher: DebouncedNotificationBatcher<Notification>;
 
   constructor(private readonly configService: ConfigService) {
     this.sender = configService.getOrThrow('SENDER_EMAIL');
@@ -161,7 +161,7 @@ export class EmailService implements OnModuleDestroy {
 
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" <${this.sender}>`,
-        to: groupKey,
+        to: groupKey?.toString(),
         subject: NotificationTypeEmailSubjects[type],
         text: htmlContent!.replace(/<\/?[^>]+(>|$)/g, ''),
         html: htmlContent!,
