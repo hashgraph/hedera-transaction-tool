@@ -294,7 +294,7 @@ export class TransactionGroupsService {
 
     for (const item of items) {
       const k = key(item);
-      if (k) {
+      if (k !== undefined) {
         if (!map.has(k)) {
           map.set(k, []);
         }
