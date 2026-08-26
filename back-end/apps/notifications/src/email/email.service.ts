@@ -147,7 +147,7 @@ export class EmailService implements OnModuleDestroy {
     }
   }
 
-  private async processMessages(groupKey: string, notifications: Notification[]) {
+  private async processMessages(groupKey: string | number | null, notifications: Notification[]) {
     const groupedNotifications = notifications.reduce((map, msg) => {
       if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
