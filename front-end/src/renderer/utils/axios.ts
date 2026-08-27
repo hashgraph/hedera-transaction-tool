@@ -126,15 +126,11 @@ export const commonRequestHandler = async <T>(
       throwIfNoResponse(error.response);
 
       status = error.response.status;
-      const errorMessage = error.response.data?.message;
 
       if (statusMessages?.[status]) {
         message = statusMessages[status]!;
-      } else if (status === 401 && messageOn401 !== undefined) {
-        // An empty/whitespace-only messageOn401 is a deliberate "let the backend's
-        // own message through" signal, not "no message provided" - so this can't
-        // use a plain truthiness check, or passing '' would silently do nothing.
-        message = messageOn401.trim() || errorMessage;
+      } else if (status === 401 && messageOn401) {
+        message = messageOn401;
       } else if (status === 400) {
         code = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code!] || ErrorMessages[ErrorCodes.UNKWN];

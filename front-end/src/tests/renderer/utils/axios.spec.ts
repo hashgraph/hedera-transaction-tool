@@ -33,21 +33,7 @@ describe('commonRequestHandler', () => {
     await expect(call).rejects.toThrow('Failed to verify password reset');
   });
 
-  test('passing an empty messageOn401 lets the backend message through on a 401', async () => {
-    const { commonRequestHandler } = await import('@renderer/utils/axios');
-
-    await expect(
-      commonRequestHandler(
-        async () => {
-          throw createAxiosError(401, { message: 'Incorrect token' });
-        },
-        'Failed to verify password reset',
-        '',
-      ),
-    ).rejects.toThrow('Incorrect token');
-  });
-
-  test('a non-empty messageOn401 overrides the backend message on a 401', async () => {
+  test('messageOn401 overrides the backend message on a 401', async () => {
     const { commonRequestHandler } = await import('@renderer/utils/axios');
 
     await expect(
@@ -59,6 +45,21 @@ describe('commonRequestHandler', () => {
         'Invalid email or password',
       ),
     ).rejects.toThrow('Invalid email or password');
+  });
+
+  test('statusMessages overrides the message for a specific status, taking priority over messageOn401', async () => {
+    const { commonRequestHandler } = await import('@renderer/utils/axios');
+
+    await expect(
+      commonRequestHandler(
+        async () => {
+          throw createAxiosError(429, { message: 'from the backend' });
+        },
+        'Failed to verify password reset',
+        'Incorrect code. Please try again.',
+        { 429: 'Too many attempts. Please request a new code.' },
+      ),
+    ).rejects.toThrow('Too many attempts. Please request a new code.');
   });
 });
 

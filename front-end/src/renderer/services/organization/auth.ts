@@ -83,10 +83,8 @@ export const verifyReset = async (
       return response.data.token;
     },
     'Failed to verify password reset',
-    // Empty string lets the backend's actual message ("Incorrect token" /
-    // "Too many attempts. Please request a new code.") through on a 401,
-    // instead of always showing the generic default above.
-    '',
+    'Incorrect code. Please try again.',
+    { 429: 'Too many attempts. Please request a new code.' },
   );
 
 /* Sets new password after being OTP verified */

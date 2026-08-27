@@ -438,11 +438,11 @@ describe('Auth (e2e)', () => {
         .post('/auth/verify-reset')
         .send({ token: 'wrong-token' })
         .set('otp', token)
-        .expect(401)
+        .expect(429)
         .expect(res => {
           expect(res.body).toEqual(
             expect.objectContaining({
-              statusCode: 401,
+              statusCode: 429,
               message: 'Too many attempts. Please request a new code.',
             }),
           );

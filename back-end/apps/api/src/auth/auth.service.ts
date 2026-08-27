@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   UnauthorizedException,
@@ -146,7 +148,13 @@ export class AuthService {
         // subsequent guess is harmless (deleting an already-deleted key is a
         // no-op) and it can never collide with a code requested afterwards.
         await this.otpStoreService.deleteCodeHash(email);
-        throw new UnauthorizedException('Too many attempts. Please request a new code.');
+        // This is a lockout, not a bad-credentials rejection - 429, matching how
+        // every other rate-limit/lockout condition in this app is reported (see
+        // EmailThrottlerGuard, IpUniqueEmailGuard), not 401.
+        throw new HttpException(
+          'Too many attempts. Please request a new code.',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
       }
 
       throw new UnauthorizedException('Incorrect token');
