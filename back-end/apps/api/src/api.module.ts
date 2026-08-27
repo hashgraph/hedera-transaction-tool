@@ -6,6 +6,7 @@ import * as Joi from 'joi';
 
 import {
   DatabaseModule,
+  IpResolutionModule,
   LoggerMiddleware,
   LoggerModule,
   NatsModule,
@@ -69,6 +70,7 @@ export const config = ConfigModule.forRoot({
     ReportsModule,
     ReviewerGroupsModule,
     HealthModule,
+    IpResolutionModule,
     ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),
     SchedulerModule.register({ isGlobal: true }),

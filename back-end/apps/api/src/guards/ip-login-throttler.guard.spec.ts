@@ -2,10 +2,10 @@ import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { ThrottlerStorage } from '@nestjs/throttler';
 import { CLIENT_IP_KEY } from '@app/common';
-import { IpThrottlerGuard } from './ip-throttler.guard';
+import { IpLoginThrottlerGuard } from './ip-login-throttler.guard';
 
-describe('IpThrottlerGuard', () => {
-  let guard: IpThrottlerGuard;
+describe('IpLoginThrottlerGuard', () => {
+  let guard: IpLoginThrottlerGuard;
 
   beforeEach(() => {
     const storageMock: Partial<ThrottlerStorage> = {};
@@ -16,7 +16,7 @@ describe('IpThrottlerGuard', () => {
 
     const reflector = new Reflector();
 
-    guard = new IpThrottlerGuard(configServiceMock, storageMock as ThrottlerStorage, reflector);
+    guard = new IpLoginThrottlerGuard(configServiceMock, storageMock as ThrottlerStorage, reflector);
   });
 
   it('returns the IP resolved by ClientIpMiddleware, never a raw header or req.ip', async () => {

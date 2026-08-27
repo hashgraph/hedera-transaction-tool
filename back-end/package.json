@@ -65,6 +65,7 @@
     "dotenv": "catalog:",
     "express": "5.2.1",
     "ioredis": "5.11.1",
+    "ipaddr.js": "2.5.0",
     "joi": "18.2.5",
     "keyv": "5.6.0",
     "murlock": "5.1.0",

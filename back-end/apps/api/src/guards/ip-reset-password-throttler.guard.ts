@@ -6,7 +6,7 @@ import { seconds, ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
 import { CLIENT_IP_KEY } from '@app/common';
 
 @Injectable()
-export class IpThrottlerGuard extends ThrottlerGuard {
+export class IpResetPasswordThrottlerGuard extends ThrottlerGuard {
   constructor(
     @Inject(ConfigService) configService: ConfigService,
     @Inject(ThrottlerStorage) storageService: ThrottlerStorage,
@@ -16,14 +16,14 @@ export class IpThrottlerGuard extends ThrottlerGuard {
       {
         throttlers: [
           {
-            name: 'global-minute',
+            name: 'reset-ip-minute',
             ttl: seconds(60),
-            limit: Number(configService.get('GLOBAL_MINUTE_LIMIT', 10_000)),
+            limit: Number(configService.get('RESET_IP_MINUTE_LIMIT', 5)),
           },
           {
-            name: 'global-second',
-            ttl: seconds(1),
-            limit: Number(configService.get('GLOBAL_SECOND_LIMIT', 1_000)),
+            name: 'reset-ip-ten-second',
+            ttl: seconds(10),
+            limit: Number(configService.get('RESET_IP_TEN_SECOND_LIMIT', 1)),
           },
         ],
       },
