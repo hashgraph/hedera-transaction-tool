@@ -154,12 +154,13 @@ describe('AuthController', () => {
   });
 
   describe('verify-reset', () => {
-    it('should have no return value', async () => {
+    it('should return the verified jwt', async () => {
       const result = { token: 'newToken' };
       authService.verifyOtp.mockResolvedValue(result);
 
-      expect(await controller.verifyOtp(user, { token: '' }, request)).toEqual(result);
-      expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
+      const dto = { email: 'john@test.com', token: '123456' };
+      expect(await controller.verifyOtp(dto)).toEqual(result);
+      expect(authService.verifyOtp).toHaveBeenCalledWith(dto.email, dto.token);
     });
   });
 

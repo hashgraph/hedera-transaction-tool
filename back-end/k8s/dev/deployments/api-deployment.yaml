@@ -47,10 +47,12 @@ spec:
               value: 'some-secret-value'
             - name: JWT_EXPIRATION
               value: '365'
-            - name: OTP_SECRET
-              value: 'some-secret-otp-value'
             - name: OTP_EXPIRATION
-              value: '20'
+              value: '2'
+            - name: OTP_MAX_ATTEMPTS
+              value: '3'
+            - name: OTP_VERIFIED_EXPIRATION
+              value: '5'
             - name: REDIS_URL
               value: 'redis://redis-service:6379'
             - name: ANONYMOUS_MINUTE_LIMIT

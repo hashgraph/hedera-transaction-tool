@@ -18,7 +18,6 @@ import {
   JwtBlackListAuthGuard,
   JwtBlackListOtpGuard,
   LocalAuthGuard,
-  OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
 } from '../guards';
 
@@ -122,19 +121,19 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned. Once the OTP is verified, a new JWT will be issued and the user will be able to set his new password.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. No token is returned here - the email and the OTP together are submitted to /verify-reset, which is what issues the JWT allowing the user to set a new password.",
   })
   @ApiBody({
-    type: SignUpUserDto,
+    type: OtpLocalDto,
   })
   @ApiResponse({
     status: 200,
-    description: 'OTP created and sent.',
+    description: 'OTP created and sent, if the email belongs to a known user.',
   })
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto) {
+  async createOtp(@Body() { email }: OtpLocalDto): Promise<void> {
     return this.authService.createOtp(email);
   }
 
@@ -142,20 +141,18 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify password reset',
     description:
-      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid , a new JWT is issued and the user will be able to set his new password',
+      'Verify the user can reset the password by supplying their email together with the OTP that was sent to it. If the OTP is valid, a JWT is issued and the user will be able to set a new password. After too many incorrect attempts the OTP is invalidated and a new one must be requested via /reset-password.',
   })
   @ApiResponse({
     status: 200,
     description:
-      'The OTP verified, new JWT is issued. Now the user is able to set his new password. If the JWT is expired, the user will need to request a new OTP.',
+      'The OTP is verified and a JWT is issued. The user can now set a new password. If the JWT expires, or the OTP is invalidated after too many attempts, the user will need to request a new OTP.',
   })
   @Post('/verify-reset')
   @HttpCode(200)
-  @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
-  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
-    const result = await this.authService.verifyOtp(user, dto);
-    await this.blacklistService.blacklistToken(extractJwtOtp(req));
-    return result;
+  @UseGuards(EmailThrottlerGuard)
+  async verifyOtp(@Body() dto: OtpDto) {
+    return this.authService.verifyOtp(dto.email, dto.token);
   }
 
   /* Set the password for the user if the email has been verified */

@@ -8,10 +8,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
-import { randomInt } from 'crypto';
+import { createHash, randomInt } from 'crypto';
 
-import * as otplib from '@otplib/totp';
-import { crypto } from '@otplib/plugin-crypto-node';
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
@@ -28,14 +26,12 @@ import { JwtPayload, OtpPayload } from '../interfaces';
 
 import { UsersService } from '../users/users.service';
 
-import { ChangePasswordDto, SignUpUserDto, OtpDto } from './dtos';
+import { OtpStoreService } from './otp-store.service';
 
-const TOTP_OPTIONS = {
-  digits: 8,
-  period: 60,
-} as const;
+import { ChangePasswordDto, SignUpUserDto } from './dtos';
 
-const TOTP_EPOCH_TOLERANCE = TOTP_OPTIONS.period * 20;
+const OTP_DIGITS = 8;
+const OTP_MAX_VALUE = 10 ** OTP_DIGITS;
 
 @Injectable()
 export class AuthService {
@@ -46,6 +42,7 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly notificationsPublisher: NatsPublisherService,
+    private readonly otpStoreService: OtpStoreService,
   ) {}
 
   /* Register a new user by admins and send an email with the temporary password */
@@ -97,55 +94,107 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string): Promise<{ token: string }> {
+  async createOtp(email: string): Promise<void> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return;
 
-    const secret = this.getOtpSecret(user.email);
-    const otp = await otplib.generate({
-      secret,
-      crypto,
-      ...TOTP_OPTIONS,
-    });
+    // A legitimate new request always gets a clean slate of attempts, and
+    // replaces whatever code (if any) was previously pending.
+    await this.otpStoreService.resetFailedAttempts(user.email);
+
+    const otp = this.generateOtp();
+    await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
 
     emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
-
-    const token = this.getOtpToken({ email: user.email, verified: false });
-    return { token };
   }
 
-  async verifyOtp(user: User, { token }: OtpDto): Promise<{ token: string }> {
-    const secret = this.getOtpSecret(user.email);
+  /* Verify the OTP for the given email and, if correct, return a JWT proving so. */
+  async verifyOtp(email: string, token: string): Promise<{ token: string }> {
+    const user = await this.usersService.getUser({ email });
+    const windowSeconds = this.getOtpWindowSeconds();
+    const tokenHash = this.hashOtp(token);
 
-    const { valid } = await otplib.verify({
-      token,
-      secret,
-      crypto,
-      ...TOTP_OPTIONS,
-      epochTolerance: TOTP_EPOCH_TOLERANCE,
-    });
+    // Run the same Redis round-trip regardless of whether the email belongs to a
+    // real user, so response time can't be used to enumerate which emails have
+    // accounts (an unknown email can never have a stored code, so this always
+    // comes back false for it, same as it would for a wrong guess).
+    const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash);
 
-    if (!valid) throw new UnauthorizedException('Incorrect token');
+    if (!user || !matched) {
+      const attempts = await this.otpStoreService.registerFailedAttempt(email, windowSeconds);
 
+      if (attempts >= this.getOtpMaxAttempts()) {
+        // Burn the pending code outright so a locked-out attacker can't keep
+        // guessing against it - the user has to request a brand new one. This is
+        // a plain delete, not a time-based marker, so re-running it on every
+        // subsequent guess is harmless (deleting an already-deleted key is a
+        // no-op) and it can never collide with a code requested afterwards.
+        await this.otpStoreService.deleteCodeHash(email);
+        throw new UnauthorizedException('Too many attempts. Please request a new code.');
+      }
+
+      // Same message as an unknown email, so neither can be used to enumerate accounts.
+      throw new UnauthorizedException('Incorrect token');
+    }
+
+    // The code is already consumed at this point - it can't be redeemed again
+    // even by a request racing this one. Only clear the failed-attempt count
+    // once we know the user record actually updated; if that fails, put the
+    // code back so a transient error here doesn't force the user to request an
+    // entirely new one for a code that was genuinely correct.
     try {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
-      const token = this.getOtpToken({ email: user.email, verified: true });
-      return { token };
     } catch {
+      await this.otpStoreService.storeCodeHash(user.email, tokenHash, windowSeconds);
       throw new InternalServerErrorException('Error while updating user status');
     }
+
+    await this.otpStoreService.resetFailedAttempts(user.email);
+
+    // This JWT is the only thing proving the OTP was solved - it's what gates
+    // /set-password, so it gets its own, more generous expiration, independent
+    // of the short OTP guessing window above.
+    const verifiedToken = this.getOtpToken(
+      { email: user.email, verified: true },
+      this.getOtpVerifiedExpirationMinutes(),
+    );
+    return { token: verifiedToken };
   }
 
-  /* Return unique OTP secret for each user */
-  private getOtpSecret(email: string): Uint8Array {
-    return Buffer.from(this.configService.get<string>('OTP_SECRET').concat(email));
+  /* A random numeric code, zero-padded to a fixed width - crypto.randomInt is
+   * CSPRNG-backed and bias-free for a bounded range, unlike Math.random(). */
+  private generateOtp(): string {
+    return randomInt(0, OTP_MAX_VALUE).toString().padStart(OTP_DIGITS, '0');
+  }
+
+  /* Only the hash is ever persisted - never the raw code. */
+  private hashOtp(otp: string): Buffer {
+    return createHash('sha256').update(otp).digest();
+  }
+
+  /* How long a generated code stays valid, in seconds. Also used as the TTL for
+   * the failed-attempt counter, since it doesn't need to outlive the code it's
+   * protecting. */
+  private getOtpWindowSeconds(): number {
+    return this.configService.get<number>('OTP_EXPIRATION') * 60;
+  }
+
+  private getOtpMaxAttempts(): number {
+    return this.configService.get<number>('OTP_MAX_ATTEMPTS');
+  }
+
+  /* How long the verified OTP JWT stays valid, in minutes. Independent of the
+   * guessing window above - by this point the code is already spent, so this is
+   * just giving the user reasonable time to submit their new password. */
+  private getOtpVerifiedExpirationMinutes(): number {
+    return this.configService.get<number>('OTP_VERIFIED_EXPIRATION');
   }
 
   /* Sets the OTP jwt */
-  private getOtpToken(otpPayload: OtpPayload) {
+  private getOtpToken(otpPayload: OtpPayload, expiresInMinutes: number) {
     return this.jwtService.sign(otpPayload, {
-      expiresIn: `${this.configService.get('OTP_EXPIRATION')}m`,
+      expiresIn: `${expiresInMinutes}m`,
     });
   }
 

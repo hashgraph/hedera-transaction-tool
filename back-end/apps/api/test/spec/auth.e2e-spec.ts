@@ -2,10 +2,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import request from 'supertest';
 
-import { generate } from '@otplib/totp';
-import { crypto } from '@otplib/plugin-crypto-node';
-
-import { API_SERVICE } from '@app/common';
+import { API_SERVICE, NatsPublisherService, USER_PASSWORD_RESET } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
@@ -22,8 +19,8 @@ describe('Auth (e2e)', () => {
 
   let adminAuthToken: string;
   let userAuthToken: string;
-  let unverifiedOTPToken: string;
   let verifiedOTPToken: string;
+  let natsPublisherService: NatsPublisherService;
 
   beforeAll(async () => {
     await resetDatabase();
@@ -33,7 +30,23 @@ describe('Auth (e2e)', () => {
 
     client = app.get<ClientProxy>(API_SERVICE);
     await client.connect();
+
+    natsPublisherService = app.get(NatsPublisherService);
   });
+
+  /* Requests an OTP for the given email and returns the code that was emitted,
+   * by spying on the notification publish call rather than any HTTP response -
+   * the OTP is only ever sent by email now, never returned to the caller. */
+  async function requestOtp(email: string): Promise<string> {
+    const publishSpy = jest.spyOn(natsPublisherService, 'publish');
+
+    await new Endpoint(server, '/auth/reset-password').post({ email }).expect(200);
+
+    const call = publishSpy.mock.calls.find(([subject]) => subject === USER_PASSWORD_RESET);
+    publishSpy.mockRestore();
+
+    return call![1][0].additionalData.otp;
+  }
 
   afterAll(async () => {
     try {
@@ -339,11 +352,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should request OTP', async () => {
-      const res = await endpoint.post({ email: dummy.email }).expect(200);
-
-      unverifiedOTPToken = res.body.token;
-
-      expect(unverifiedOTPToken).toBeDefined();
+      await endpoint.post({ email: dummy.email }).expect(200);
     });
 
     it('(POST) should not request OTP for invalid email', async () => {
@@ -363,51 +372,70 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should verify OTP', async () => {
-      const token = await generate({
-        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
-        crypto,
-        digits: 8,
-        period: 60,
-      });
+      const otp = await requestOtp(dummy.email);
 
-      const { body } = await request(server)
-        .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
-        .expect(200);
+      const { body } = await endpoint.post({ email: dummy.email, token: otp }).expect(200);
 
       verifiedOTPToken = body.token;
 
       expect(verifiedOTPToken).toBeDefined();
     });
 
-    it('(POST) should blacklist OTP token after verification', async () => {
-      const token = await generate({
-        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
-        crypto,
-        digits: 8,
-        period: 60,
-      });
+    it('(POST) should not verify the same OTP twice', async () => {
+      const otp = await requestOtp(dummy.email);
 
-      await request(server)
-        .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
+      await endpoint.post({ email: dummy.email, token: otp }).expect(200);
+
+      await endpoint
+        .post({ email: dummy.email, token: otp })
         .expect(401)
-        .expect({ message: 'Unauthorized', statusCode: 401 });
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({ statusCode: 401, message: 'Incorrect token' }),
+          );
+        });
     });
 
     it('(POST) should not verify OTP with invalid token', async () => {
-      await request(server)
-        .post('/auth/verify-reset')
-        .send({ token: 'invalid token' })
-        .set('otp', unverifiedOTPToken)
+      await requestOtp(dummy.email);
+
+      await endpoint
+        .post({ email: dummy.email, token: 'wrong-token' })
         .expect(401)
-        .expect({ message: 'Unauthorized', statusCode: 401 });
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({ statusCode: 401, message: 'Incorrect token' }),
+          );
+        });
     });
 
-    it('(POST) should not verify OTP without OTP token', async () => {
-      await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
+    it('(POST) should lock out after too many failed attempts', async () => {
+      await requestOtp(dummy.email);
+
+      // OTP_MAX_ATTEMPTS is 3 in .env.test - the first two wrong guesses are
+      // ordinary rejections, the third crosses the threshold and locks it out.
+      await endpoint.post({ email: dummy.email, token: 'wrong-token' }).expect(401);
+      await endpoint.post({ email: dummy.email, token: 'wrong-token' }).expect(401);
+
+      await endpoint
+        .post({ email: dummy.email, token: 'wrong-token' })
+        .expect(401)
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              statusCode: 401,
+              message: 'Too many attempts. Please request a new code.',
+            }),
+          );
+        });
+    });
+
+    it('(POST) should not verify OTP for missing email', async () => {
+      await endpoint.post({ token: '12345678' }).expect(400);
+    });
+
+    it('(POST) should not verify OTP for missing token', async () => {
+      await endpoint.post({ email: dummy.email }).expect(400);
     });
   });
 
@@ -455,11 +483,11 @@ describe('Auth (e2e)', () => {
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
-    it('(PATCH) should not set password with invalid OTP', async () => {
+    it('(PATCH) should not set password with an invalid OTP token', async () => {
       await request(server)
         .patch('/auth/set-password')
         .send({ password: 'newPassword' })
-        .set('otp', unverifiedOTPToken)
+        .set('otp', 'invalid-token')
         .expect(401)
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });

@@ -50,37 +50,33 @@ export const changePassword = async (
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
-export const resetPassword = async (
-  organizationServerUrl: string,
-  email: string,
-): Promise<string> =>
+export const resetPassword = async (organizationServerUrl: string, email: string): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
+    await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
       email,
     });
-    return response.data.token;
   }, 'Failed to request passoword reset');
 
 /* Sends the OTP in order to verify the password reset */
 export const verifyReset = async (
   organizationServerUrl: string,
+  email: string,
   otp: string,
-  token: string,
 ): Promise<string> =>
-  commonRequestHandler(async () => {
-    const response = await axios.post(
-      `${organizationServerUrl}/${authController}/verify-reset`,
-      {
+  commonRequestHandler(
+    async () => {
+      const response = await axios.post(`${organizationServerUrl}/${authController}/verify-reset`, {
+        email,
         token: otp,
-      },
-      {
-        headers: {
-          otp: token,
-        },
-      },
-    );
-    return response.data.token;
-  }, 'Failed to verify password reset');
+      });
+      return response.data.token;
+    },
+    'Failed to verify password reset',
+    // Empty string lets the backend's actual message ("Incorrect token" /
+    // "Too many attempts. Please request a new code.") through on a 401,
+    // instead of always showing the generic default above.
+    '',
+  );
 
 /* Sets new password after being OTP verified */
 export const setPassword = async (

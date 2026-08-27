@@ -6,7 +6,6 @@ export * from './ip-throttler.guard';
 export * from './jwt-auth.guard';
 export * from './jwt-blacklist.guard';
 export * from './local-auth.guard';
-export * from './otp-jwt-auth.guard';
 export * from './otp-verified-auth.guard';
 export * from './user-throttler.guard';
 export * from './verified-user.guard';

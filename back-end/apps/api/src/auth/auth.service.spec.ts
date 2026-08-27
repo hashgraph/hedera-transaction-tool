@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { createHash, randomInt } from 'crypto';
 
 import { mock } from 'jest-mock-extended';
 
@@ -10,15 +11,15 @@ import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 import { ErrorCodes, NatsPublisherService } from '@app/common';
 import { User, UserStatus } from '@entities';
-import * as otplib from '@otplib/totp';
 import { UsersService } from '../users/users.service';
+import { OtpStoreService } from './otp-store.service';
 import { SignUpUserDto } from './dtos';
 
 jest.mock('bcryptjs');
 jest.mock('argon2');
-jest.mock('@otplib/totp', () => ({
-  generate: jest.fn(),
-  verify: jest.fn(),
+jest.mock('crypto', () => ({
+  ...jest.requireActual('crypto'),
+  randomInt: jest.fn(),
 }));
 
 describe('AuthService', () => {
@@ -28,6 +29,7 @@ describe('AuthService', () => {
   const configService = mock<ConfigService>();
   const jwtService = mock<JwtService>();
   const notificationsPublisher = mock<NatsPublisherService>();
+  const otpStoreService = mock<OtpStoreService>();
 
   beforeEach(async () => {
     jest.resetAllMocks();
@@ -51,11 +53,19 @@ describe('AuthService', () => {
           provide: NatsPublisherService,
           useValue: notificationsPublisher,
         },
+        {
+          provide: OtpStoreService,
+          useValue: otpStoreService,
+        },
       ],
     }).compile();
 
     service = module.get(AuthService);
   });
+
+  function hashOf(otp: string): Buffer {
+    return createHash('sha256').update(otp).digest();
+  }
 
   async function invokeLogin(production: boolean) {
     const user = { id: 1, email: '' };
@@ -77,56 +87,52 @@ describe('AuthService', () => {
   async function invokeCreateOtp(production: boolean) {
     const email = 'some@email.com';
     const user = { email };
-    const otpSecret = 'my-cool-secret';
-    const totpRes = '123456';
-    const accessToken = 'token';
+    const otp = '00001234';
 
     userService.getUser.mockResolvedValue(user as User);
     configService.get
       //@ts-expect-error - incorrect overload expected
-      .calledWith('OTP_SECRET')
-      .mockReturnValue(otpSecret);
-
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
     configService.get
       //@ts-expect-error - incorrect overload expected
       .calledWith('NODE_ENV')
       .mockReturnValue(production ? 'production' : 'development');
 
-    jwtService.sign.mockReturnValue('token');
-
-    jest.mocked(otplib.generate).mockResolvedValue(totpRes);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(randomInt).mockReturnValue(1234);
 
     await service.createOtp(email);
 
-    return { user, otpSecret, totpRes, accessToken };
+    return { user, otp };
   }
 
   async function invokeVerifyOtp(production: boolean) {
     const email = 'email';
     const user = { email };
-    const otpSecret = 'secret';
+    const otp = '12345678';
     const accessToken = 'token';
 
+    userService.getUser.mockResolvedValue(user as User);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(true);
     configService.get
       //@ts-expect-error - incorrect overload expected
-      .calledWith('OTP_SECRET')
-      .mockReturnValue(otpSecret);
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_VERIFIED_EXPIRATION')
+      .mockReturnValue(5);
     jwtService.sign.mockReturnValue(accessToken);
 
     configService.get
       //@ts-expect-error - incorrect overload expected
       .calledWith('NODE_ENV')
       .mockReturnValue(production ? 'production' : 'development');
-    jest.mocked(otplib.verify).mockResolvedValue({
-      valid: true,
-      delta: 0,
-      epoch: 0,
-      timeStep: 0,
-    });
 
-    await service.verifyOtp(user as User, { token: '123456' });
+    await service.verifyOtp(email, otp);
 
-    return { user, otpSecret, accessToken };
+    return { user, otp, accessToken };
   }
 
   it('should be defined', () => {
@@ -279,44 +285,47 @@ describe('AuthService', () => {
   });
 
   it('should create otp in dev', async () => {
-    const { user, otpSecret, totpRes } = await invokeCreateOtp(false);
+    const { user, otp } = await invokeCreateOtp(false);
 
-    expect(otplib.generate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        secret: Buffer.from(`${otpSecret}${user.email}`),
-        digits: 8,
-        period: 60,
-      }),
-    );
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.password-reset',
       [
         {
           email: user.email,
-          additionalData: { otp: totpRes },
+          additionalData: { otp },
+        },
+      ],
+    );
+    expect(otpStoreService.resetFailedAttempts).toHaveBeenCalledWith(user.email);
+    expect(otpStoreService.storeCodeHash).toHaveBeenCalledWith(user.email, hashOf(otp), 120);
+  });
+
+  it('should create otp in production', async () => {
+    const { user, otp } = await invokeCreateOtp(true);
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [
+        {
+          email: user.email,
+          additionalData: { otp },
         },
       ],
     );
   });
 
-  it('should create otp in production', async () => {
-    const { user, otpSecret, totpRes } = await invokeCreateOtp(true);
+  it('should never store the plaintext otp, only its hash', async () => {
+    const { otp } = await invokeCreateOtp(false);
 
-    expect(otplib.generate).toHaveBeenCalledWith(
-      expect.objectContaining({
-        secret: Buffer.from(`${otpSecret}${user.email}`),
-        digits: 8,
-        period: 60,
-      }),
+    expect(otpStoreService.storeCodeHash).not.toHaveBeenCalledWith(
+      expect.any(String),
+      otp,
+      expect.any(Number),
     );
-    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
-      'notifications.queue.email.password-reset',
-      [
-        {
-          email: user.email,
-          additionalData: { otp: totpRes },
-        },
-      ],
+    expect(otpStoreService.storeCodeHash).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Buffer),
+      expect.any(Number),
     );
   });
 
@@ -326,6 +335,9 @@ describe('AuthService', () => {
     userService.getUser.mockResolvedValue(null);
 
     await service.createOtp(email);
+
+    expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
+    expect(otpStoreService.storeCodeHash).not.toHaveBeenCalled();
   });
 
   it('should verify otp in dev', async () => {
@@ -340,42 +352,185 @@ describe('AuthService', () => {
     expect(userService.updateUser).toHaveBeenCalledWith(user, { status: UserStatus.NEW });
   });
 
-  it('should throw error if token is invalid', async () => {
-    const email = 'email';
-    const user = { email };
+  it("should sign the verified jwt with the verified expiration, not the guessing window's", async () => {
+    await invokeVerifyOtp(false);
 
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { email: 'email', verified: true },
+      { expiresIn: '5m' },
+    );
+  });
+
+  it('should consume the code atomically and clear attempts on success', async () => {
+    const { user, otp } = await invokeVerifyOtp(false);
+
+    expect(otpStoreService.consumeCodeHashIfMatch).toHaveBeenCalledWith(user.email, hashOf(otp));
+    expect(otpStoreService.resetFailedAttempts).toHaveBeenCalledWith(user.email);
+  });
+
+  it('should reject an unknown email with the same message as a wrong code', async () => {
+    userService.getUser.mockResolvedValue(null);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(false);
     configService.get
       //@ts-expect-error - incorrect overload expected
-      .calledWith('OTP_SECRET')
-      .mockReturnValue('');
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
 
-    jest.mocked(otplib.verify).mockResolvedValue({ valid: false });
+    otpStoreService.registerFailedAttempt.mockResolvedValue(1);
 
-    await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
+    await expect(service.verifyOtp('unknown@email.com', '12345678')).rejects.toThrow(
       'Incorrect token',
     );
   });
 
-  it('should throw error if update user fails', async () => {
+  it('should do the same Redis lookup for an unknown email as for a real one, so timing cannot enumerate accounts', async () => {
+    userService.getUser.mockResolvedValue(null);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(false);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
+
+    otpStoreService.registerFailedAttempt.mockResolvedValue(1);
+
+    await expect(service.verifyOtp('unknown@email.com', '12345678')).rejects.toThrow();
+
+    expect(otpStoreService.consumeCodeHashIfMatch).toHaveBeenCalledWith(
+      'unknown@email.com',
+      hashOf('12345678'),
+    );
+  });
+
+  it('should throw error if token is invalid', async () => {
     const email = 'email';
     const user = { email };
 
+    userService.getUser.mockResolvedValue(user as User);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(false);
     configService.get
       //@ts-expect-error - incorrect overload expected
-      .calledWith('OTP_SECRET')
-      .mockReturnValue('');
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
 
-    jest.mocked(otplib.verify).mockResolvedValue({
-      valid: true,
-      delta: 0,
-      epoch: 0,
-      timeStep: 0,
-    });
+    otpStoreService.registerFailedAttempt.mockResolvedValue(1);
+
+    await expect(service.verifyOtp(email, '12345678')).rejects.toThrow('Incorrect token');
+    expect(otpStoreService.registerFailedAttempt).toHaveBeenCalledWith(email, 120);
+    expect(otpStoreService.deleteCodeHash).not.toHaveBeenCalled();
+  });
+
+  it('should lock out and delete the pending code after too many failed attempts', async () => {
+    const email = 'email';
+    const user = { email };
+
+    userService.getUser.mockResolvedValue(user as User);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(false);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
+
+    otpStoreService.registerFailedAttempt.mockResolvedValue(3);
+
+    await expect(service.verifyOtp(email, '12345678')).rejects.toThrow(
+      'Too many attempts. Please request a new code.',
+    );
+    expect(otpStoreService.deleteCodeHash).toHaveBeenCalledWith(email);
+  });
+
+  it('should keep deleting (a harmless no-op) on guesses after lockout, unlike a time-based burn', async () => {
+    const email = 'email';
+    const user = { email };
+
+    userService.getUser.mockResolvedValue(user as User);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(false);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
+
+    // e.g. the attacker's 5th guess, well past the threshold.
+    otpStoreService.registerFailedAttempt.mockResolvedValue(5);
+
+    await expect(service.verifyOtp(email, '12345678')).rejects.toThrow(
+      'Too many attempts. Please request a new code.',
+    );
+    // Deleting an already-deleted key is a no-op, so unlike the old time-step burn
+    // there's no need to guard against re-triggering this on every later guess -
+    // it can never invalidate a code requested afterwards.
+    expect(otpStoreService.deleteCodeHash).toHaveBeenCalledWith(email);
+  });
+
+  it('should not consume the code twice even if two requests race - modeled by consumeCodeHashIfMatch being atomic', async () => {
+    const email = 'email';
+    const user = { email };
+
+    userService.getUser.mockResolvedValue(user as User);
+    // The store's atomic script is what actually prevents the race - this just
+    // confirms the service relies on its result rather than a separate read.
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValueOnce(true).mockResolvedValueOnce(false);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_VERIFIED_EXPIRATION')
+      .mockReturnValue(5);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_MAX_ATTEMPTS')
+      .mockReturnValue(3);
+    otpStoreService.registerFailedAttempt.mockResolvedValue(1);
+
+    const [first, second] = await Promise.allSettled([
+      service.verifyOtp(email, '12345678'),
+      service.verifyOtp(email, '12345678'),
+    ]);
+
+    expect(first.status).toBe('fulfilled');
+    expect(second.status).toBe('rejected');
+  });
+
+  it('should throw error if update user fails, and put the code back so it can still be used', async () => {
+    const email = 'email';
+    const user = { email };
+    const otp = '12345678';
+
+    userService.getUser.mockResolvedValue(user as User);
+    otpStoreService.consumeCodeHashIfMatch.mockResolvedValue(true);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('OTP_EXPIRATION')
+      .mockReturnValue(2);
+
     userService.updateUser.mockRejectedValue(new Error());
 
-    await expect(service.verifyOtp(user as User, { token: '123456' })).rejects.toThrow(
+    await expect(service.verifyOtp(email, otp)).rejects.toThrow(
       'Error while updating user status',
     );
+    expect(otpStoreService.storeCodeHash).toHaveBeenCalledWith(email, hashOf(otp), 120);
+    expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
   });
 
   it('should set password', async () => {

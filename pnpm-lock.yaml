@@ -537,15 +537,6 @@ importers:
 
   back-end/apps/api:
     dependencies:
-      '@otplib/plugin-crypto-node':
-        specifier: 13.4.1
-        version: 13.4.1
-      '@otplib/totp':
-        specifier: 13.4.1
-        version: 13.4.1
-      otplib:
-        specifier: 13.4.1
-        version: 13.4.1
       passport:
         specifier: 0.7.0
         version: 0.7.0
@@ -2200,27 +2191,6 @@ packages:
   '@one-ini/wasm@0.1.1':
     resolution: {integrity: sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==}
 
-  '@otplib/core@13.4.1':
-    resolution: {integrity: sha512-KIXgK1hNtWJEBMTastbe1bpmuais+3f+ATeO8TkMs2rNkfGO1FbQy8+/UWVEu3TR/iTJerU0idkPudaPmLP2BA==}
-
-  '@otplib/hotp@13.4.1':
-    resolution: {integrity: sha512-g9q04SwpG5ZtMnVkUcgcoAlwCH4YLROZN1qhyBwgkBzqYYVSYhpP6gSGaxGHwePLt1c+e6NqDlgIZN+e1/XPuA==}
-
-  '@otplib/plugin-base32-scure@13.4.1':
-    resolution: {integrity: sha512-Fs/r5qisC05SRhT6xWXaypB6PVC0vgWf6zztmi0J5RnQ09OJiPDWCJFH6cDm6ANsrdvB9di7X+Jb7L13BoEbUA==}
-
-  '@otplib/plugin-crypto-noble@13.4.1':
-    resolution: {integrity: sha512-PJfVW8/1hdS6CfxLheKPZSLTwDq4TijZbN4yRjxlv0ODdzmxpM+wGwWr1JXMdy0xJPxLziydQD5gdVqrR4/gAg==}
-
-  '@otplib/plugin-crypto-node@13.4.1':
-    resolution: {integrity: sha512-ce4Y+6Al+NI8rlyVcOCrTQh/LxQamdAlJCDVTDSYnxApT2dDyK7ADsxVjuDmnh6giZ//vhgMipu1S9NBt7aEzQ==}
-
-  '@otplib/totp@13.4.1':
-    resolution: {integrity: sha512-QOkBVPrf6AM4qZaReZPSk9/I8ATVdZpIISJz115MqeVtcrbcr5llPZ0J7804tpnjnp1vCRkI5Qjd47HhgVteBQ==}
-
-  '@otplib/uri@13.4.1':
-    resolution: {integrity: sha512-xaIm7bvICMhoB2rZIR5luiaMdssWR5nY5nXnR1fdezUgZuEO58D6zrGzLp7pQuBmlpmL0HagnscDQFoskp9yiA==}
-
   '@oxc-project/types@0.144.0':
     resolution: {integrity: sha512-nuhZIOLuI6TFQ32I/WnUx+SCPY7SdSKwgnFHydAuoS1+Z4BRcaP+RRJmGzl9lw+0OFF7UmaESf7KQRXaNLHypg==}
 
@@ -2897,9 +2867,6 @@ packages:
 
   '@scure/base@1.2.4':
     resolution: {integrity: sha512-5Yy9czTO47mqz+/J8GM6GIId4umdCk1wc1q8rKERQulIoc8VP9pzDcghv10Tl2E7R96ZUx/PhND3ESYUQX8NuQ==}
-
-  '@scure/base@2.2.0':
-    resolution: {integrity: sha512-b8XEupJibegiXV+tDUseI8oLQc8ei3d/4Jkb2RpbHh3MfE054ov3uIz2dhFkB3FI8iwYkEh0gGCApkrYggkPNg==}
 
   '@scure/bip32@1.6.2':
     resolution: {integrity: sha512-t96EPDMbtGgtb7onKKqxRLfE5g05k7uHnHRM2xdE6BP/ZmxaLtPek4J4KfVn/90IQNrU1IOAqMgiDtUdtbe3nw==}
@@ -7078,9 +7045,6 @@ packages:
     resolution: {integrity: sha512-5b6Y85tPxZZ7QytO+BQzysW31HJku27cRIlkbAXaNx+BdcVi+LlRFmVXzeF6a7JCwJpyw5c4b+YSVImQIrBpuQ==}
     engines: {node: '>=10'}
 
-  otplib@13.4.1:
-    resolution: {integrity: sha512-o5CxfDw6bh7hoDv0NUUIcc0RqzJ9ipfUrzeKheKJ+vs4rXZnDlA9n4a/7R1cDjpmLjKLix4BgNVRmoDkm5rLSQ==}
-
   p-cancelable@2.1.1:
     resolution: {integrity: sha512-BZOr3nRQHOntUjTrH8+Lh54smKHoHyur8We1V8DSMVrl5A2malOOwuJRnKRDjSnkoeBh4at6BwEnb5I7Jl31wg==}
     engines: {node: '>=8'}
@@ -10886,37 +10850,6 @@ snapshots:
 
   '@one-ini/wasm@0.1.1': {}
 
-  '@otplib/core@13.4.1': {}
-
-  '@otplib/hotp@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@otplib/uri': 13.4.1
-
-  '@otplib/plugin-base32-scure@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@scure/base': 2.2.0
-
-  '@otplib/plugin-crypto-noble@13.4.1':
-    dependencies:
-      '@noble/hashes': 2.2.0
-      '@otplib/core': 13.4.1
-
-  '@otplib/plugin-crypto-node@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-
-  '@otplib/totp@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@otplib/hotp': 13.4.1
-      '@otplib/uri': 13.4.1
-
-  '@otplib/uri@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-
   '@oxc-project/types@0.144.0': {}
 
   '@paralleldrive/cuid2@2.3.1':
@@ -11451,8 +11384,6 @@ snapshots:
   '@scarf/scarf@1.4.0': {}
 
   '@scure/base@1.2.4': {}
-
-  '@scure/base@2.2.0': {}
 
   '@scure/bip32@1.6.2':
     dependencies:
@@ -16339,15 +16270,6 @@ snapshots:
       log-symbols: 4.1.0
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
-
-  otplib@13.4.1:
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@otplib/hotp': 13.4.1
-      '@otplib/plugin-base32-scure': 13.4.1
-      '@otplib/plugin-crypto-noble': 13.4.1
-      '@otplib/totp': 13.4.1
-      '@otplib/uri': 13.4.1
 
   p-cancelable@2.1.1: {}
 
