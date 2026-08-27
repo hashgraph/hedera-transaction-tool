@@ -541,8 +541,8 @@ importers:
         specifier: 13.5.0
         version: 13.5.0
       '@otplib/totp':
-        specifier: 13.4.1
-        version: 13.4.1
+        specifier: 13.5.0
+        version: 13.5.0
       otplib:
         specifier: 13.5.0
         version: 13.5.0
@@ -2200,14 +2200,8 @@ packages:
   '@one-ini/wasm@0.1.1':
     resolution: {integrity: sha512-XuySG1E38YScSJoMlqovLru4KTUNSjgVTIjyh7qMX6aNN5HY5Ct5LhRJdxO79JtTzKfzV/bnWpz+zquYrISsvw==}
 
-  '@otplib/core@13.4.1':
-    resolution: {integrity: sha512-KIXgK1hNtWJEBMTastbe1bpmuais+3f+ATeO8TkMs2rNkfGO1FbQy8+/UWVEu3TR/iTJerU0idkPudaPmLP2BA==}
-
   '@otplib/core@13.5.0':
     resolution: {integrity: sha512-2rURdkYkb3BDhMs3j/oCCPTve1ybJ6ruLfLfSe1ZSPV+y6RFTbLfAuT0m0ZCnps88ogkIq9t/+Li/kg5RofQwQ==}
-
-  '@otplib/hotp@13.4.1':
-    resolution: {integrity: sha512-g9q04SwpG5ZtMnVkUcgcoAlwCH4YLROZN1qhyBwgkBzqYYVSYhpP6gSGaxGHwePLt1c+e6NqDlgIZN+e1/XPuA==}
 
   '@otplib/hotp@13.5.0':
     resolution: {integrity: sha512-1EwwAti05CeWJn4xXOVMBK9N6dIJlJw/cQkQyiL9OVlkeS452wAve3ffodi+5IUZdWoF1wxVug38RisdxDqDWw==}
@@ -2221,14 +2215,8 @@ packages:
   '@otplib/plugin-crypto-node@13.5.0':
     resolution: {integrity: sha512-xSw6FllLco26dtd2tbTIDwKhYXeca/tnOvYdTdLpmZai+C35LfX0U3C5D793c9BPv7Mtt7YSkeD2yrhY1HBuhg==}
 
-  '@otplib/totp@13.4.1':
-    resolution: {integrity: sha512-QOkBVPrf6AM4qZaReZPSk9/I8ATVdZpIISJz115MqeVtcrbcr5llPZ0J7804tpnjnp1vCRkI5Qjd47HhgVteBQ==}
-
   '@otplib/totp@13.5.0':
     resolution: {integrity: sha512-GD9LzQnbHDwXCp79s8AaiA5cJR6luX5fEr9AN32AWx4ooRvllPbMkG80gHSA0jbGCnAIX/ChyOtTZ8tgJHMkSg==}
-
-  '@otplib/uri@13.4.1':
-    resolution: {integrity: sha512-xaIm7bvICMhoB2rZIR5luiaMdssWR5nY5nXnR1fdezUgZuEO58D6zrGzLp7pQuBmlpmL0HagnscDQFoskp9yiA==}
 
   '@otplib/uri@13.5.0':
     resolution: {integrity: sha512-LsL1hqTEgJHY40U2eb/Qp6OR1tKkNGwHQTrqqjIuJj0cawGWkLEmeUFK1MHzWBQ4bgy5IdeB5Et7gIDSAH/CRw==}
@@ -10898,14 +10886,7 @@ snapshots:
 
   '@one-ini/wasm@0.1.1': {}
 
-  '@otplib/core@13.4.1': {}
-
   '@otplib/core@13.5.0': {}
-
-  '@otplib/hotp@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@otplib/uri': 13.4.1
 
   '@otplib/hotp@13.5.0':
     dependencies:
@@ -10926,21 +10907,11 @@ snapshots:
     dependencies:
       '@otplib/core': 13.5.0
 
-  '@otplib/totp@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
-      '@otplib/hotp': 13.4.1
-      '@otplib/uri': 13.4.1
-
   '@otplib/totp@13.5.0':
     dependencies:
       '@otplib/core': 13.5.0
       '@otplib/hotp': 13.5.0
       '@otplib/uri': 13.5.0
-
-  '@otplib/uri@13.4.1':
-    dependencies:
-      '@otplib/core': 13.4.1
 
   '@otplib/uri@13.5.0':
     dependencies:
