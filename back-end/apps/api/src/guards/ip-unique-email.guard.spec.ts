@@ -1,7 +1,7 @@
 import { ExecutionContext, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-import { IpResetPasswordUniqueEmailGuard } from './ip-reset-password-unique-email.guard';
+import { IpUniqueEmailGuard } from './ip-unique-email.guard';
 
 let mockMultiChain: {
   sadd: jest.Mock;
@@ -19,8 +19,8 @@ jest.mock('ioredis', () => ({
   Redis: jest.fn().mockImplementation(() => mockRedisInstance),
 }));
 
-describe('IpResetPasswordUniqueEmailGuard', () => {
-  let guard: IpResetPasswordUniqueEmailGuard;
+describe('IpUniqueEmailGuard', () => {
+  let guard: IpUniqueEmailGuard;
 
   const buildContext = (req: Record<string, unknown>): ExecutionContext =>
     ({
@@ -47,7 +47,7 @@ describe('IpResetPasswordUniqueEmailGuard', () => {
       get: jest.fn().mockReturnValue(3),
     } as unknown as ConfigService;
 
-    guard = new IpResetPasswordUniqueEmailGuard(configServiceMock);
+    guard = new IpUniqueEmailGuard(configServiceMock);
   });
 
   describe('RESET_IP_UNIQUE_EMAIL_LIMIT validation', () => {
@@ -62,14 +62,14 @@ describe('IpResetPasswordUniqueEmailGuard', () => {
     it.each([['abc'], [''], [undefined], [null], ['0'], [0], [-1], [NaN]])(
       'throws at construction time for an invalid limit (%s)',
       (limitValue) => {
-        expect(() => new IpResetPasswordUniqueEmailGuard(buildConfig(limitValue))).toThrow(
+        expect(() => new IpUniqueEmailGuard(buildConfig(limitValue))).toThrow(
           'RESET_IP_UNIQUE_EMAIL_LIMIT must be a positive number',
         );
       },
     );
 
     it('accepts a valid positive numeric string', () => {
-      expect(() => new IpResetPasswordUniqueEmailGuard(buildConfig('5'))).not.toThrow();
+      expect(() => new IpUniqueEmailGuard(buildConfig('5'))).not.toThrow();
     });
   });
 
@@ -91,6 +91,38 @@ describe('IpResetPasswordUniqueEmailGuard', () => {
       expect(mockRedisInstance.multi).not.toHaveBeenCalled();
     },
   );
+
+  it('falls back to the authenticated user email when the body has none', async () => {
+    const req = { clientIp: '127.0.0.1', body: {}, user: { email: 'a@test.com' } };
+    mockRedisInstance.scard.mockResolvedValueOnce(0);
+    mockMultiChain.exec.mockResolvedValueOnce([
+      [null, 1],
+      [null, 1],
+      [null, 1],
+    ]);
+
+    await expect(guard.canActivate(buildContext(req))).resolves.toBe(true);
+
+    expect(mockMultiChain.sadd).toHaveBeenCalledWith('reset:ip-unique-email:127.0.0.1', 'a@test.com');
+  });
+
+  it('prefers the body email over the authenticated user email when both are present', async () => {
+    const req = {
+      clientIp: '127.0.0.1',
+      body: { email: 'body@test.com' },
+      user: { email: 'user@test.com' },
+    };
+    mockRedisInstance.scard.mockResolvedValueOnce(0);
+    mockMultiChain.exec.mockResolvedValueOnce([
+      [null, 1],
+      [null, 1],
+      [null, 1],
+    ]);
+
+    await expect(guard.canActivate(buildContext(req))).resolves.toBe(true);
+
+    expect(mockMultiChain.sadd).toHaveBeenCalledWith('reset:ip-unique-email:127.0.0.1', 'body@test.com');
+  });
 
   it('normalizes email casing and surrounding whitespace before using it as the set member', async () => {
     const req = { clientIp: '127.0.0.1', body: { email: '  Test@Example.COM  ' } };
@@ -156,7 +188,7 @@ describe('IpResetPasswordUniqueEmailGuard', () => {
     mockMultiChain.exec.mockResolvedValueOnce(null);
 
     await expect(guard.canActivate(buildContext(req))).rejects.toThrow(
-      'Redis transaction aborted while checking the reset-password unique-email limit',
+      'Redis transaction aborted while checking the unique-email limit',
     );
   });
 

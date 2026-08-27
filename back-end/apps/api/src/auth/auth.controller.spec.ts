@@ -14,7 +14,7 @@ import {
   EmailThrottlerGuard,
   IpLoginThrottlerGuard,
   IpResetPasswordThrottlerGuard,
-  IpResetPasswordUniqueEmailGuard,
+  IpUniqueEmailGuard,
 } from '../guards';
 
 jest.mock('passport-jwt', () => ({
@@ -56,7 +56,7 @@ describe('AuthController', () => {
       .useValue(guardMock())
       .overrideGuard(IpResetPasswordThrottlerGuard)
       .useValue(guardMock())
-      .overrideGuard(IpResetPasswordUniqueEmailGuard)
+      .overrideGuard(IpUniqueEmailGuard)
       .useValue(guardMock())
       .compile();
 
