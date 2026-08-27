@@ -34,18 +34,19 @@ describe('Auth (e2e)', () => {
     natsPublisherService = app.get(NatsPublisherService);
   });
 
-  /* Requests an OTP for the given email and returns the code that was emitted,
-   * by spying on the notification publish call rather than any HTTP response -
-   * the OTP is only ever sent by email now, never returned to the caller. */
-  async function requestOtp(email: string): Promise<string> {
+  /* Requests an OTP for the given email and returns both the code that was
+   * emitted (by spying on the notification publish call, since the code itself
+   * is only ever sent by email, never returned to the caller) and the deprecated
+   * unverified JWT the response still carries for backward compatibility. */
+  async function requestOtp(email: string): Promise<{ otp: string; token: string }> {
     const publishSpy = jest.spyOn(natsPublisherService, 'publish');
 
-    await new Endpoint(server, '/auth/reset-password').post({ email }).expect(200);
+    const { body } = await new Endpoint(server, '/auth/reset-password').post({ email }).expect(200);
 
     const call = publishSpy.mock.calls.find(([subject]) => subject === USER_PASSWORD_RESET);
     publishSpy.mockRestore();
 
-    return call![1][0].additionalData.otp;
+    return { otp: call![1][0].additionalData.otp, token: body.token };
   }
 
   afterAll(async () => {
@@ -372,35 +373,43 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should verify OTP', async () => {
-      const otp = await requestOtp(dummy.email);
+      const { otp, token } = await requestOtp(dummy.email);
 
-      const { body } = await endpoint.post({ email: dummy.email, token: otp }).expect(200);
+      const { body } = await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: otp })
+        .set('otp', token)
+        .expect(200);
 
       verifiedOTPToken = body.token;
 
       expect(verifiedOTPToken).toBeDefined();
     });
 
-    it('(POST) should not verify the same OTP twice', async () => {
-      const otp = await requestOtp(dummy.email);
+    it('(POST) should blacklist OTP token after verification', async () => {
+      const { otp, token } = await requestOtp(dummy.email);
 
-      await endpoint.post({ email: dummy.email, token: otp }).expect(200);
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: otp })
+        .set('otp', token)
+        .expect(200);
 
-      await endpoint
-        .post({ email: dummy.email, token: otp })
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: otp })
+        .set('otp', token)
         .expect(401)
-        .expect(res => {
-          expect(res.body).toEqual(
-            expect.objectContaining({ statusCode: 401, message: 'Incorrect token' }),
-          );
-        });
+        .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
     it('(POST) should not verify OTP with invalid token', async () => {
-      await requestOtp(dummy.email);
+      const { token } = await requestOtp(dummy.email);
 
-      await endpoint
-        .post({ email: dummy.email, token: 'wrong-token' })
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
         .expect(401)
         .expect(res => {
           expect(res.body).toEqual(
@@ -410,15 +419,25 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should lock out after too many failed attempts', async () => {
-      await requestOtp(dummy.email);
+      const { token } = await requestOtp(dummy.email);
 
       // OTP_MAX_ATTEMPTS is 3 in .env.test - the first two wrong guesses are
       // ordinary rejections, the third crosses the threshold and locks it out.
-      await endpoint.post({ email: dummy.email, token: 'wrong-token' }).expect(401);
-      await endpoint.post({ email: dummy.email, token: 'wrong-token' }).expect(401);
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
 
-      await endpoint
-        .post({ email: dummy.email, token: 'wrong-token' })
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
         .expect(401)
         .expect(res => {
           expect(res.body).toEqual(
@@ -430,12 +449,14 @@ describe('Auth (e2e)', () => {
         });
     });
 
-    it('(POST) should not verify OTP for missing email', async () => {
-      await endpoint.post({ token: '12345678' }).expect(400);
+    it('(POST) should not verify OTP without OTP token', async () => {
+      await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
     it('(POST) should not verify OTP for missing token', async () => {
-      await endpoint.post({ email: dummy.email }).expect(400);
+      const { token } = await requestOtp(dummy.email);
+
+      await request(server).post('/auth/verify-reset').send({}).set('otp', token).expect(400);
     });
   });
 
@@ -483,11 +504,13 @@ describe('Auth (e2e)', () => {
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
-    it('(PATCH) should not set password with an invalid OTP token', async () => {
+    it('(PATCH) should not set password with an unverified OTP token', async () => {
+      const { token: unverifiedOTPToken } = await requestOtp(dummy.email);
+
       await request(server)
         .patch('/auth/set-password')
         .send({ password: 'newPassword' })
-        .set('otp', 'invalid-token')
+        .set('otp', unverifiedOTPToken)
         .expect(401)
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });

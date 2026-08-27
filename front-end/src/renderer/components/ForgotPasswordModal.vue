@@ -94,7 +94,7 @@ async function handleEmailEnter() {
   if (!user.selectedOrganization) throw new Error('Please select organization');
 
   try {
-    await resetPassword(user.selectedOrganization.serverUrl, email.value);
+    token.value = await resetPassword(user.selectedOrganization.serverUrl, email.value);
 
     shouldEnterToken.value = true;
     setTimeout(() => otpInputRef.value?.focus(), 100);
@@ -106,12 +106,13 @@ async function handleEmailEnter() {
 async function handleTokenEnter() {
   if (!otp.value?.value || !otp.value.isValid) throw new Error('Invalid OTP');
   if (!user.selectedOrganization) throw new Error('Please select organization');
+  if (!token.value) throw new Error('OTP token is not set');
 
   try {
     token.value = await verifyReset(
       user.selectedOrganization.serverUrl,
-      email.value,
       otp.value.value,
+      token.value,
     );
 
     shouldEnterToken.value = false;

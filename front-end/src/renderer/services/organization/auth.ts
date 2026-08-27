@@ -50,25 +50,36 @@ export const changePassword = async (
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
-export const resetPassword = async (organizationServerUrl: string, email: string): Promise<void> =>
+export const resetPassword = async (
+  organizationServerUrl: string,
+  email: string,
+): Promise<string> =>
   commonRequestHandler(async () => {
-    await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
+    const response = await axios.post(`${organizationServerUrl}/${authController}/reset-password`, {
       email,
     });
+    return response.data.token;
   }, 'Failed to request passoword reset');
 
 /* Sends the OTP in order to verify the password reset */
 export const verifyReset = async (
   organizationServerUrl: string,
-  email: string,
   otp: string,
+  token: string,
 ): Promise<string> =>
   commonRequestHandler(
     async () => {
-      const response = await axios.post(`${organizationServerUrl}/${authController}/verify-reset`, {
-        email,
-        token: otp,
-      });
+      const response = await axios.post(
+        `${organizationServerUrl}/${authController}/verify-reset`,
+        {
+          token: otp,
+        },
+        {
+          headers: {
+            otp: token,
+          },
+        },
+      );
       return response.data.token;
     },
     'Failed to verify password reset',

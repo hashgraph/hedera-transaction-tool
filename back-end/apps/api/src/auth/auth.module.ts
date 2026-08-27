@@ -9,7 +9,7 @@ import { User, Client } from '@entities';
 
 import { UsersModule } from '../users/users.module';
 
-import { JwtStrategy, LocalStrategy, OtpVerifiedStrategy } from './strategies';
+import { JwtStrategy, LocalStrategy, OtpJwtStrategy, OtpVerifiedStrategy } from './strategies';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { OtpStoreService } from './otp-store.service';
@@ -32,6 +32,7 @@ import { OtpStoreService } from './otp-store.service';
     AuthService,
     LocalStrategy,
     JwtStrategy,
+    OtpJwtStrategy,
     OtpVerifiedStrategy,
     OtpStoreService,
     Reflector,

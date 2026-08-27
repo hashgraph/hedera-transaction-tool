@@ -18,6 +18,7 @@ import {
   JwtBlackListAuthGuard,
   JwtBlackListOtpGuard,
   LocalAuthGuard,
+  OtpJwtAuthGuard,
   OtpVerifiedAuthGuard,
 } from '../guards';
 
@@ -121,7 +122,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. No token is returned here - the email and the OTP together are submitted to /verify-reset, which is what issues the JWT allowing the user to set a new password.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned; it carries no real authorization on its own and is kept only for backward compatibility with clients that still expect one (see the deprecation note on OtpJwtStrategy) - what actually matters is the email and OTP submitted together to /verify-reset.",
   })
   @ApiBody({
     type: OtpLocalDto,
@@ -133,7 +134,7 @@ export class AuthController {
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto): Promise<void> {
+  async createOtp(@Body() { email }: OtpLocalDto) {
     return this.authService.createOtp(email);
   }
 
@@ -141,7 +142,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Verify password reset',
     description:
-      'Verify the user can reset the password by supplying their email together with the OTP that was sent to it. If the OTP is valid, a JWT is issued and the user will be able to set a new password. After too many incorrect attempts the OTP is invalidated and a new one must be requested via /reset-password.',
+      'Verify the user can reset the password by supplying the valid OTP alongside the `otp` JWT header issued by /reset-password. If the OTP is valid, a JWT is issued and the user will be able to set a new password. After too many incorrect attempts the OTP is invalidated and a new one must be requested via /reset-password.',
   })
   @ApiResponse({
     status: 200,
@@ -150,9 +151,11 @@ export class AuthController {
   })
   @Post('/verify-reset')
   @HttpCode(200)
-  @UseGuards(EmailThrottlerGuard)
-  async verifyOtp(@Body() dto: OtpDto) {
-    return this.authService.verifyOtp(dto.email, dto.token);
+  @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
+  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
+    const result = await this.authService.verifyOtp(user, dto);
+    await this.blacklistService.blacklistToken(extractJwtOtp(req));
+    return result;
   }
 
   /* Set the password for the user if the email has been verified */

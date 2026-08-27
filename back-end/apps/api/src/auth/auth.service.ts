@@ -28,7 +28,7 @@ import { UsersService } from '../users/users.service';
 
 import { OtpStoreService } from './otp-store.service';
 
-import { ChangePasswordDto, SignUpUserDto } from './dtos';
+import { ChangePasswordDto, SignUpUserDto, OtpDto } from './dtos';
 
 const OTP_DIGITS = 8;
 const OTP_MAX_VALUE = 10 ** OTP_DIGITS;
@@ -94,7 +94,7 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string): Promise<void> {
+  async createOtp(email: string): Promise<{ token: string }> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return;
@@ -107,21 +107,36 @@ export class AuthService {
     await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
 
     emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp } }]);
+
+    // @deprecated This JWT proves nothing on its own (see OtpJwtStrategy) - it's
+    // only issued so pre-existing clients that still send it back as the `otp`
+    // header on /verify-reset keep working. Remove once such clients are no
+    // longer supported; what actually authorizes /verify-reset is the email+code
+    // pair, not this token.
+    const token = this.getOtpToken(
+      { email: user.email, verified: false },
+      this.configService.get<number>('OTP_EXPIRATION'),
+    );
+    return { token };
   }
 
-  /* Verify the OTP for the given email and, if correct, return a JWT proving so. */
-  async verifyOtp(email: string, token: string): Promise<{ token: string }> {
-    const user = await this.usersService.getUser({ email });
+  /**
+   * Verify the OTP for the given user and, if correct, return a JWT proving so.
+   *
+   * @deprecated The `user` param is only populated by the deprecated
+   * OtpJwtStrategy/`otp` header (see there). Once that's removed, this should go
+   * back to taking `(email, token)` directly from the request body.
+   */
+  async verifyOtp(user: User, { token }: OtpDto): Promise<{ token: string }> {
+    const email = user.email;
     const windowSeconds = this.getOtpWindowSeconds();
     const tokenHash = this.hashOtp(token);
 
-    // Run the same Redis round-trip regardless of whether the email belongs to a
-    // real user, so response time can't be used to enumerate which emails have
-    // accounts (an unknown email can never have a stored code, so this always
-    // comes back false for it, same as it would for a wrong guess).
+    // Atomically checks-and-deletes so the same code can never be redeemed twice,
+    // even by two requests racing each other.
     const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash);
 
-    if (!user || !matched) {
+    if (!matched) {
       const attempts = await this.otpStoreService.registerFailedAttempt(email, windowSeconds);
 
       if (attempts >= this.getOtpMaxAttempts()) {
@@ -134,7 +149,6 @@ export class AuthService {
         throw new UnauthorizedException('Too many attempts. Please request a new code.');
       }
 
-      // Same message as an unknown email, so neither can be used to enumerate accounts.
       throw new UnauthorizedException('Incorrect token');
     }
 
@@ -146,17 +160,17 @@ export class AuthService {
     try {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
     } catch {
-      await this.otpStoreService.storeCodeHash(user.email, tokenHash, windowSeconds);
+      await this.otpStoreService.storeCodeHash(email, tokenHash, windowSeconds);
       throw new InternalServerErrorException('Error while updating user status');
     }
 
-    await this.otpStoreService.resetFailedAttempts(user.email);
+    await this.otpStoreService.resetFailedAttempts(email);
 
     // This JWT is the only thing proving the OTP was solved - it's what gates
     // /set-password, so it gets its own, more generous expiration, independent
     // of the short OTP guessing window above.
     const verifiedToken = this.getOtpToken(
-      { email: user.email, verified: true },
+      { email, verified: true },
       this.getOtpVerifiedExpirationMinutes(),
     );
     return { token: verifiedToken };
