@@ -21,6 +21,8 @@ export enum NotificationType {
   TRANSACTION_REJECTED = 'TRANSACTION_REJECTED',
   TRANSACTION_EXPIRED = 'TRANSACTION_EXPIRED',
   TRANSACTION_CANCELLED = 'TRANSACTION_CANCELLED',
+  TRANSACTION_READY_FOR_REVIEW = 'TRANSACTION_READY_FOR_REVIEW',
+  TRANSACTION_INDICATOR_REVIEW = 'TRANSACTION_INDICATOR_REVIEW',
   TRANSACTION_APPROVED = 'TRANSACTION_APPROVED',
   TRANSACTION_APPROVAL_REJECTION = 'TRANSACTION_APPROVAL_REJECTION',
   TRANSACTION_INDICATOR_APPROVE = 'TRANSACTION_INDICATOR_APPROVE',
@@ -40,6 +42,10 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
   inApp: boolean;
 }> = {
   // Indicator types - UI notification center only, deletable when status changes
+  [NotificationType.TRANSACTION_INDICATOR_REVIEW]: {
+    email: false,
+    inApp: true,
+  },
   [NotificationType.TRANSACTION_INDICATOR_APPROVE]: {
     email: false,
     inApp: true,
@@ -121,6 +127,11 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: false,
   },
   [NotificationType.TRANSACTION_CANCELLED]: {
+    email: true,
+    inApp: false,
+  },
+
+  [NotificationType.TRANSACTION_READY_FOR_REVIEW]: {
     email: true,
     inApp: false,
   },

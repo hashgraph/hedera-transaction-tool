@@ -14,18 +14,27 @@ import {
 } from 'typeorm';
 import {
   AccountCreateTransaction,
+  AccountDeleteTransaction,
   AccountId,
   AccountUpdateTransaction,
   Client,
+  FileAppendTransaction,
+  FileDeleteTransaction,
+  FileId,
+  FileUpdateTransaction,
   Long,
   NodeCreateTransaction,
+  NodeDeleteTransaction,
   NodeUpdateTransaction,
   PrivateKey,
   PublicKey,
   RegisteredNodeCreateTransaction,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   SignatureMap,
   Timestamp,
   TransactionId,
+  TransferTransaction,
 } from '@hiero-ledger/sdk';
 
 import {
@@ -54,8 +63,10 @@ import {
   userKeysRequiredToSign,
 } from '@app/common/utils';
 import {
+  EntityRole,
   Transaction,
   TransactionApprover,
+  TransactionEntity,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -67,6 +78,7 @@ import {
 
 import { CancelTransactionOutcome, TransactionsService } from './transactions.service';
 import { ApproversService } from './approvers';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 import { CreateTransactionDto } from './dto';
 
 jest.mock(`@app/common/utils`, () => {
@@ -99,6 +111,7 @@ describe('TransactionsService', () => {
   let service: TransactionsService;
 
   const transactionSnapshotService = mock<TransactionSnapshotService>();
+  const reviewerAssignmentService = mock<ReviewerAssignmentService>();
   const transactionsRepo = mockDeep<Repository<Transaction>>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const approversService = mock<ApproversService>();
@@ -172,6 +185,10 @@ describe('TransactionsService', () => {
         {
           provide: TransactionSnapshotService,
           useValue: transactionSnapshotService,
+        },
+        {
+          provide: ReviewerAssignmentService,
+          useValue: reviewerAssignmentService,
         },
       ],
     }).compile();
@@ -565,7 +582,7 @@ describe('TransactionsService', () => {
         return Array.isArray(data) ? items : items[0];
       });
       transactionEntityManger.save = saveMock as any;
-
+      transactionEntityManger.create = jest.fn().mockImplementation((_entity: any, data: any) => ({ ...data })) as any;
 
       entityManager.transaction.mockImplementation(async (arg1?: any, arg2?: any) => {
         const cb = typeof arg1 === 'function' ? arg1 : typeof arg2 === 'function' ? arg2 : undefined;
@@ -898,6 +915,73 @@ describe('TransactionsService', () => {
       await expect(service.createTransaction(dto as CreateTransactionDto, user as User)).rejects.toThrow(
         `Creator key ${dto.creatorKeyId} not found`,
       );
+
+      client.close();
+    });
+
+    it('should set transaction status to READY_FOR_REVIEW when reviewer assignment returns true', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => { usr.keys = userKeys; });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
+      );
+      reviewerAssignmentService.assign.mockResolvedValueOnce(true);
+
+      await service.createTransaction(dto, user as User);
+
+      const readyForReviewSave = (saveMock.mock.calls as any[]).find(
+        ([entity, data]) => entity === Transaction && data?.status === TransactionStatus.READY_FOR_REVIEW,
+      );
+      expect(readyForReviewSave).toBeDefined();
+
+      client.close();
+    });
+
+    it('should fail transaction creation when reviewer assignment throws', async () => {
+      const sdkTransaction = new AccountCreateTransaction().setTransactionId(
+        new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+      );
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+      const client = Client.forTestnet();
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => { usr.keys = userKeys; });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
+      );
+      reviewerAssignmentService.assign.mockRejectedValueOnce(new Error('assignment failure'));
+
+      await expect(service.createTransaction(dto, user as User)).rejects.toThrow();
 
       client.close();
     });
@@ -3155,5 +3239,145 @@ describe('TransactionsService', () => {
 
       expect(result).toEqual(transaction);
     });
+  });
+});
+
+describe('TransactionsService.extractTransactionEntities', () => {
+  const NETWORK = 'testnet';
+  const TX_ID = new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date()));
+
+  let service: TransactionsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        TransactionsService,
+        { provide: getRepositoryToken(Transaction), useValue: mock<Repository<Transaction>>() },
+        { provide: DataSource, useValue: mock<DataSource>() },
+        { provide: EntityManager, useValue: mock<EntityManager>() },
+        { provide: ReviewerAssignmentService, useValue: mock<ReviewerAssignmentService>() },
+        { provide: ApproversService, useValue: mock<ApproversService>() },
+        { provide: NatsPublisherService, useValue: mock<NatsPublisherService>() },
+        { provide: TransactionSignatureService, useValue: mock<TransactionSignatureService>() },
+        { provide: ExecuteService, useValue: mock<ExecuteService>() },
+        { provide: SchedulerService, useValue: mock<SchedulerService>() },
+        { provide: TransactionSnapshotService, useValue: mock<TransactionSnapshotService>() },
+        { provide: SqlBuilderService, useValue: mock<SqlBuilderService>() },
+      ],
+    }).compile();
+    service = module.get(TransactionsService);
+  });
+
+  function extract(sdkTx: any) {
+    return (service as any).extractTransactionEntities(sdkTx, NETWORK);
+  }
+
+  it('extracts fee_payer from every transaction', () => {
+    const tx = new AccountCreateTransaction().setTransactionId(TX_ID);
+    const entities: TransactionEntity[] = extract(tx);
+    expect(entities).toContainEqual(expect.objectContaining({
+      hederaEntityId: '0.0.1', network: NETWORK, entityRole: EntityRole.FEE_PAYER,
+    }));
+  });
+
+  it('extracts sender and receiver from TransferTransaction', () => {
+    const tx = new TransferTransaction()
+      .setTransactionId(TX_ID)
+      .addHbarTransfer(AccountId.fromString('0.0.2'), -1)
+      .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
+    const entities: TransactionEntity[] = extract(tx);
+    expect(entities).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.2', entityRole: EntityRole.SENDER }));
+    expect(entities).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.3', entityRole: EntityRole.RECEIVER }));
+  });
+
+  it('extracts account role from AccountUpdateTransaction', () => {
+    const tx = new AccountUpdateTransaction().setTransactionId(TX_ID).setAccountId(AccountId.fromString('0.0.5'));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.5', entityRole: EntityRole.ACCOUNT }));
+  });
+
+  it('extracts account role from AccountDeleteTransaction', () => {
+    const tx = new AccountDeleteTransaction().setTransactionId(TX_ID).setAccountId(AccountId.fromString('0.0.6'));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.6', entityRole: EntityRole.ACCOUNT }));
+  });
+
+  it('extracts file role from FileAppendTransaction', () => {
+    const tx = new FileAppendTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.100'));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.100', entityRole: EntityRole.FILE }));
+  });
+
+  it('extracts file role from FileUpdateTransaction', () => {
+    const tx = new FileUpdateTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.101'));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.101', entityRole: EntityRole.FILE }));
+  });
+
+  it('extracts file role from FileDeleteTransaction', () => {
+    const tx = new FileDeleteTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.102'));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.102', entityRole: EntityRole.FILE }));
+  });
+
+  it('extracts node role from NodeUpdateTransaction', () => {
+    const tx = Object.create(NodeUpdateTransaction.prototype) as NodeUpdateTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
+    Object.defineProperty(tx, 'accountId', { get: () => null, configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:7', entityRole: EntityRole.NODE }));
+  });
+
+  it('extracts account role from NodeUpdateTransaction when accountId is set', () => {
+    const tx = Object.create(NodeUpdateTransaction.prototype) as NodeUpdateTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
+    Object.defineProperty(tx, 'accountId', { get: () => AccountId.fromString('0.0.50'), configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.50', entityRole: EntityRole.ACCOUNT }));
+  });
+
+  it('extracts node role from NodeDeleteTransaction', () => {
+    const tx = Object.create(NodeDeleteTransaction.prototype) as NodeDeleteTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(8), configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:8', entityRole: EntityRole.NODE }));
+  });
+
+  it('extracts node role from RegisteredNodeUpdateTransaction', () => {
+    const tx = Object.create(RegisteredNodeUpdateTransaction.prototype) as RegisteredNodeUpdateTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'registeredNodeId', { get: () => Long.fromNumber(9), configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:9', entityRole: EntityRole.NODE }));
+  });
+
+  it('extracts node role from RegisteredNodeDeleteTransaction', () => {
+    const tx = Object.create(RegisteredNodeDeleteTransaction.prototype) as RegisteredNodeDeleteTransaction;
+    Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
+    Object.defineProperty(tx, 'registeredNodeId', { get: () => Long.fromNumber(10), configurable: true });
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:10', entityRole: EntityRole.NODE }));
+  });
+
+  it('extracts account from NodeCreateTransaction', () => {
+    const adminKey = PrivateKey.generateED25519().publicKey;
+    const tx = new NodeCreateTransaction()
+      .setTransactionId(TX_ID)
+      .setAccountId(AccountId.fromString('0.0.9'))
+      .setAdminKey(adminKey);
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.9', entityRole: EntityRole.ACCOUNT }));
+  });
+
+  it('stores the same entity in multiple roles as separate entries', () => {
+    const tx = new TransferTransaction()
+      .setTransactionId(TX_ID)
+      .addHbarTransfer(AccountId.fromString('0.0.1'), -1)
+      .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
+    const entities: TransactionEntity[] = extract(tx);
+    expect(entities.filter(e => e.hederaEntityId === '0.0.1' && e.entityRole === EntityRole.FEE_PAYER)).toHaveLength(1);
+    expect(entities.filter(e => e.hederaEntityId === '0.0.1' && e.entityRole === EntityRole.SENDER)).toHaveLength(1);
+  });
+
+  it('deduplicates identical entity+role combinations', () => {
+    const tx = new TransferTransaction()
+      .setTransactionId(TX_ID)
+      .addHbarTransfer(AccountId.fromString('0.0.2'), -2)
+      .addHbarTransfer(AccountId.fromString('0.0.3'), 1)
+      .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
+    const entities: TransactionEntity[] = extract(tx);
+    expect(entities.filter(e => e.hederaEntityId === '0.0.3' && e.entityRole === EntityRole.RECEIVER)).toHaveLength(1);
   });
 });

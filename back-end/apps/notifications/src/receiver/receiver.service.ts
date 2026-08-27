@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectEntityManager } from '@nestjs/typeorm';
-import { EntityManager, In } from 'typeorm';
+import { EntityManager, In, IsNull } from 'typeorm';
 
 import {
   filterActiveUserKeys,
@@ -19,6 +19,7 @@ import {
   NotificationType,
   Transaction,
   TransactionApprover,
+  TransactionReviewerListMember,
   TransactionStatus,
   User,
   UserKey,
@@ -36,6 +37,7 @@ import {
 export class ReceiverService {
   // Mapping from transaction status to the in-app indicator notification type
   private static readonly IN_APP_NOTIFICATION_TYPES: Partial<Record<TransactionStatus, NotificationType>> = {
+    [TransactionStatus.READY_FOR_REVIEW]: NotificationType.TRANSACTION_INDICATOR_REVIEW,
     [TransactionStatus.WAITING_FOR_SIGNATURES]: NotificationType.TRANSACTION_INDICATOR_SIGN,
     [TransactionStatus.WAITING_FOR_EXECUTION]: NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
     [TransactionStatus.EXECUTED]: NotificationType.TRANSACTION_INDICATOR_EXECUTED,
@@ -47,6 +49,7 @@ export class ReceiverService {
 
   // Mapping from transaction status to the email notification type
   private static readonly EMAIL_NOTIFICATION_TYPES: Partial<Record<TransactionStatus, NotificationType>> = {
+    [TransactionStatus.READY_FOR_REVIEW]: NotificationType.TRANSACTION_READY_FOR_REVIEW,
     [TransactionStatus.WAITING_FOR_SIGNATURES]: NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES,
     [TransactionStatus.WAITING_FOR_EXECUTION]: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
     [TransactionStatus.EXECUTED]: NotificationType.TRANSACTION_EXECUTED,
@@ -211,6 +214,17 @@ export class ReceiverService {
     return [...new Set(activeKeys.map((k) => k.userId).filter(Boolean))];
   }
 
+  private async getPendingReviewerUserIds(
+    entityManager: EntityManager,
+    transactionId: number,
+  ): Promise<number[]> {
+    const members = await entityManager.find(TransactionReviewerListMember, {
+      where: { list: { transactionId }, actionedAt: IsNull() },
+      select: { userId: true },
+    });
+    return [...new Set(members.map(m => m.userId))];
+  }
+
   private async getNotificationReceiverIds(
     entityManager: EntityManager,
     transaction: Transaction,
@@ -228,6 +242,9 @@ export class ReceiverService {
     } = await this.getTransactionParticipants(entityManager, transaction, approvers, keyCache);
 
     switch (newIndicatorType) {
+      case NotificationType.TRANSACTION_INDICATOR_REVIEW:
+      case NotificationType.TRANSACTION_READY_FOR_REVIEW:
+        return this.getPendingReviewerUserIds(entityManager, transaction.id);
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
       case NotificationType.TRANSACTION_INDICATOR_REJECTED:
         return [creatorId, ...approversUserIds, ...observerUserIds];
