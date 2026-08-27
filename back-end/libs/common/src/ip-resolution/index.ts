@@ -1,6 +1,4 @@
 export * from './ip-resolution-strategy.interface';
-export * from './internal-address';
-export * from './normalize-ip';
 export * from './strategies/cloudflare.strategy';
 export * from './client-ip.types';
 export * from './ip-resolver.service';

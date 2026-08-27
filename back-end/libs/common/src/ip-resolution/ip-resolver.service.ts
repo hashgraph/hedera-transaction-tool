@@ -1,13 +1,16 @@
-import * as net from 'net';
+import * as ipaddr from 'ipaddr.js';
 
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 
 import { IpResolutionStrategy } from './ip-resolution-strategy.interface';
-import { isInternalAddress } from './internal-address';
-import { normalizeIp } from './normalize-ip';
 import { CloudflareIpStrategy } from './strategies/cloudflare.strategy';
+
+// ipaddr.js splits what Express's 'trust proxy' presets call 'uniquelocal' into two
+// range names: 'private' (RFC 1918 IPv4) and 'uniqueLocal' (IPv6 ULA, fc00::/7). Same
+// address space, just named differently on each side.
+const INTERNAL_RANGES: ReadonlySet<string> = new Set(['loopback', 'private', 'linkLocal', 'uniqueLocal']);
 
 /**
  * Single source of truth for "the client's real IP". Every consumer -- rate limiters,
@@ -40,11 +43,11 @@ export class IpResolverService {
   resolve(req: Request): string {
     const resolved = this.strategy.resolve(req);
 
-    if (resolved && net.isIP(resolved)) {
-      return normalizeIp(resolved);
+    if (resolved && ipaddr.isValid(resolved)) {
+      return this.canonicalize(resolved);
     }
 
-    const fallback = normalizeIp(req.ip || '0.0.0.0');
+    const fallback = this.canonicalize(req.ip || '0.0.0.0');
     const where = `${req.method} ${req.originalUrl}`;
 
     if (resolved) {
@@ -54,7 +57,7 @@ export class IpResolverService {
       this.logger.warn(
         `Strategy "${this.strategy.name}" resolved a malformed IP ("${resolved}") for ${where}; falling back to req.ip (${fallback})`,
       );
-    } else if (!isInternalAddress(fallback)) {
+    } else if (!this.isInternal(fallback)) {
       // Header was simply absent. Traffic that never passes through the edge --
       // health checks, other in-cluster callers -- always arrives from a private
       // address and is expected to be missing it; only warn when the connecting
@@ -65,5 +68,25 @@ export class IpResolverService {
     }
 
     return fallback;
+  }
+
+  // Canonicalizes via ipaddr.js (collapses IPv4-mapped IPv6, fully normalizes IPv6 per
+  // RFC 5952) so different representations of the same address produce the same
+  // rate-limit/Redis key. Guards its own input rather than trusting the caller already
+  // validated it -- req.ip is expected to always be valid, but this is the one thing
+  // standing between that assumption and resolve()'s "never throws" guarantee.
+  private canonicalize(ip: string): string {
+    return ipaddr.isValid(ip) ? ipaddr.process(ip).toString() : ip;
+  }
+
+  // True for a private/loopback/link-local address -- the kind used for traffic that
+  // never passes through the public edge: Kubernetes health probes, other in-cluster
+  // callers, direct connections in local dev. Deliberately the same scope as the
+  // 'loopback' | 'linklocal' | 'uniquelocal' presets already trusted for Express's
+  // `trust proxy` setting in main.ts, so "internal" means the same thing in both
+  // places. A heuristic for deciding whether a missing header is expected, not a
+  // security boundary.
+  private isInternal(ip: string): boolean {
+    return ipaddr.isValid(ip) && INTERNAL_RANGES.has(ipaddr.process(ip).range());
   }
 }
