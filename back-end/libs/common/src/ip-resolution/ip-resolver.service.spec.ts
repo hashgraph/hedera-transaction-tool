@@ -133,11 +133,13 @@ describe('IpResolverService', () => {
     expect(resolver.resolve(req)).toBe('10.0.0.1');
   });
 
-  it('never throws, even if req.ip itself is somehow malformed (violates Express\'s own contract)', () => {
+  it('never throws and falls back to "0.0.0.0", even if req.ip itself is somehow malformed (violates Express\'s own contract)', () => {
     const resolver = new IpResolverService(buildConfig({}));
     const req = buildReq({}, 'not-a-real-ip');
 
     expect(() => resolver.resolve(req)).not.toThrow();
-    expect(resolver.resolve(req)).toBe('not-a-real-ip');
+    // Never let an unvalidated, unbounded string reach the rate-limit/Redis key this
+    // becomes -- collapse to the same fixed bucket used when req.ip is missing entirely.
+    expect(resolver.resolve(req)).toBe('0.0.0.0');
   });
 });

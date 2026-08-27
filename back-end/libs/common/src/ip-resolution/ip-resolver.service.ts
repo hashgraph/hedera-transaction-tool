@@ -19,8 +19,8 @@ const INTERNAL_RANGES: ReadonlySet<string> = new Set(['loopback', 'private', 'li
  * is a config change (IP_TRUST_PROVIDER) plus, if needed, a new strategy class -- not a
  * rewrite scattered across the codebase.
  *
- * Never throws: worst case, resolve() falls back to req.ip, and worst case beyond that,
- * '0.0.0.0'.
+ * Never throws: worst case, resolve() falls back to req.ip, and worst case beyond that
+ * (req.ip missing or, despite Express's own contract, not actually valid), '0.0.0.0'.
  */
 @Injectable()
 export class IpResolverService {
@@ -44,10 +44,10 @@ export class IpResolverService {
     const resolved = this.strategy.resolve(req);
 
     if (resolved && ipaddr.isValid(resolved)) {
-      return this.canonicalize(resolved);
+      return ipaddr.process(resolved).toString();
     }
 
-    const fallback = this.canonicalize(req.ip || '0.0.0.0');
+    const fallback = this.toSafeFallback(req.ip);
     const where = `${req.method} ${req.originalUrl}`;
 
     if (resolved) {
@@ -70,13 +70,14 @@ export class IpResolverService {
     return fallback;
   }
 
-  // Canonicalizes via ipaddr.js (collapses IPv4-mapped IPv6, fully normalizes IPv6 per
-  // RFC 5952) so different representations of the same address produce the same
-  // rate-limit/Redis key. Guards its own input rather than trusting the caller already
-  // validated it -- req.ip is expected to always be valid, but this is the one thing
-  // standing between that assumption and resolve()'s "never throws" guarantee.
-  private canonicalize(ip: string): string {
-    return ipaddr.isValid(ip) ? ipaddr.process(ip).toString() : ip;
+  // Canonicalizes req.ip via ipaddr.js (collapses IPv4-mapped IPv6, fully normalizes
+  // IPv6 per RFC 5952) so different representations of the same address produce the
+  // same rate-limit/Redis key. Collapses missing *and* invalid req.ip to the same
+  // single, fixed '0.0.0.0' bucket -- req.ip is expected to always be valid when
+  // present, but if that assumption is ever wrong, an arbitrary unvalidated string
+  // must never become part of a Redis key. Never throws.
+  private toSafeFallback(ip: string | undefined): string {
+    return ip && ipaddr.isValid(ip) ? ipaddr.process(ip).toString() : '0.0.0.0';
   }
 
   // True for a private/loopback/link-local address -- the kind used for traffic that
