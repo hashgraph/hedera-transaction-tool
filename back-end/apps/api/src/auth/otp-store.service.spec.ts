@@ -35,6 +35,14 @@ describe('OtpStoreService', () => {
     jest.clearAllMocks();
   });
 
+  describe('onModuleDestroy', () => {
+    it('should quit the redis client', () => {
+      service.onModuleDestroy();
+
+      expect(client.quit).toHaveBeenCalled();
+    });
+  });
+
   describe('registerFailedAttempt', () => {
     it('should increment the counter and set the TTL on the first attempt', async () => {
       client.incr.mockResolvedValue(1);
