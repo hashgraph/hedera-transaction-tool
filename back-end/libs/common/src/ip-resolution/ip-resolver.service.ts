@@ -47,7 +47,7 @@ export class IpResolverService {
       return ipaddr.process(resolved).toString();
     }
 
-    const fallback = this.toSafeFallback(req.ip);
+    const { value: fallback, internal } = this.resolveFallback(req.ip);
     const where = `${req.method} ${req.originalUrl}`;
 
     if (resolved) {
@@ -57,7 +57,7 @@ export class IpResolverService {
       this.logger.warn(
         `Strategy "${this.strategy.name}" resolved a malformed IP ("${resolved}") for ${where}; falling back to req.ip (${fallback})`,
       );
-    } else if (!this.isInternal(fallback)) {
+    } else if (!internal) {
       // Header was simply absent. Traffic that never passes through the edge --
       // health checks, other in-cluster callers -- always arrives from a private
       // address and is expected to be missing it; only warn when the connecting
@@ -70,24 +70,22 @@ export class IpResolverService {
     return fallback;
   }
 
-  // Canonicalizes req.ip via ipaddr.js (collapses IPv4-mapped IPv6, fully normalizes
-  // IPv6 per RFC 5952) so different representations of the same address produce the
-  // same rate-limit/Redis key. Collapses missing *and* invalid req.ip to the same
-  // single, fixed '0.0.0.0' bucket -- req.ip is expected to always be valid when
-  // present, but if that assumption is ever wrong, an arbitrary unvalidated string
-  // must never become part of a Redis key. Never throws.
-  private toSafeFallback(ip: string | undefined): string {
-    return ip && ipaddr.isValid(ip) ? ipaddr.process(ip).toString() : '0.0.0.0';
-  }
+  // Canonicalizes req.ip (collapses IPv4-mapped IPv6, fully normalizes IPv6 per RFC
+  // 5952) and classifies whether it's a private/loopback/link-local address --
+  // deliberately the same scope as the 'loopback' | 'linklocal' | 'uniquelocal'
+  // presets already trusted for Express's `trust proxy` setting in main.ts, so
+  // "internal" means the same thing in both places. Both come from a single ipaddr.js
+  // parse rather than two separate validity checks.
+  //
+  // Falls back to '0.0.0.0' (never internal, so it always warns) if req.ip is missing
+  // or, despite Express's own contract, not actually valid -- an arbitrary unvalidated
+  // string must never become part of a Redis key. Never throws.
+  private resolveFallback(ip: string | undefined): { value: string; internal: boolean } {
+    if (!ip || !ipaddr.isValid(ip)) {
+      return { value: '0.0.0.0', internal: false };
+    }
 
-  // True for a private/loopback/link-local address -- the kind used for traffic that
-  // never passes through the public edge: Kubernetes health probes, other in-cluster
-  // callers, direct connections in local dev. Deliberately the same scope as the
-  // 'loopback' | 'linklocal' | 'uniquelocal' presets already trusted for Express's
-  // `trust proxy` setting in main.ts, so "internal" means the same thing in both
-  // places. A heuristic for deciding whether a missing header is expected, not a
-  // security boundary.
-  private isInternal(ip: string): boolean {
-    return ipaddr.isValid(ip) && INTERNAL_RANGES.has(ipaddr.process(ip).range());
+    const parsed = ipaddr.process(ip);
+    return { value: parsed.toString(), internal: INTERNAL_RANGES.has(parsed.range()) };
   }
 }
