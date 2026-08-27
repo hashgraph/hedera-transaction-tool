@@ -33,8 +33,10 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
 
   protected getTracker(req: Record<string, any>): Promise<string> {
     // Falls back to the authenticated user's email for routes that don't carry it
-    // in the body (e.g. /verify-reset, gated by the deprecated OTP JWT) - keeps
-    // working unchanged once such a route's body carries the email directly.
+    // in the body (e.g. /verify-reset, gated by the deprecated OTP JWT). Once that
+    // JWT flow is removed (see the @deprecated note on OtpJwtStrategy) every such
+    // route's body will carry the email directly, and `?? req.user?.email` here
+    // can be deleted along with it.
     const email = req.body?.email ?? req.user?.email;
     if (!email) {
       throw new HttpException('No email specified.', HttpStatus.BAD_REQUEST);

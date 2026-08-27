@@ -34,8 +34,10 @@ export class IpUniqueEmailGuard implements CanActivate {
     const req = context.switchToHttp().getRequest();
 
     // Falls back to the authenticated user's email for routes that don't carry it
-    // in the body (e.g. /verify-reset, gated by the deprecated OTP JWT) - keeps
-    // working unchanged once such a route's body carries the email directly.
+    // in the body (e.g. /verify-reset, gated by the deprecated OTP JWT). Once that
+    // JWT flow is removed (see the @deprecated note on OtpJwtStrategy) every such
+    // route's body will carry the email directly, and `?? req.user?.email` here
+    // can be deleted along with it.
     const rawEmail = req.body?.email ?? req.user?.email;
     // Guards run before the DTO validation pipe, so req.body.email could be anything
     // JSON allows here -- require a real string before treating it as one. Casing and
