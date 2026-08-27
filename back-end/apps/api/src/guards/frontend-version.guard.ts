@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CLIENT_IP_KEY } from '@app/common';
 import * as semver from 'semver';
 
 @Injectable()
@@ -38,7 +39,7 @@ export class FrontendVersionGuard implements CanActivate {
     const frontendVersion = request.headers['x-frontend-version'];
     const minimumVersion = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
     const latestVersion = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    const clientIp = request.headers['x-forwarded-for'] || request.ip || 'unknown';
+    const clientIp = request[CLIENT_IP_KEY] || 'unknown';
 
     const UPGRADE_REQUIRED = 426;
     const updateUrl = this.getUpdateUrl();
