@@ -21,9 +21,8 @@ import {
 
 export const parseRegisteredNodeInfo = (nodeInfo: RegisteredNode) => {
   const registeredNodeId = parseRegisteredNodeProperty(nodeInfo, 'registered_node_id');
-  const service_endpoints = parseRegisteredNodeProperty(nodeInfo, 'service_endpoints');
   const timestamp = parseRegisteredNodeProperty(nodeInfo, 'timestamp');
-  if (registeredNodeId === null || service_endpoints === null || timestamp === null) {
+  if (registeredNodeId === null || timestamp === null) {
     return null;
   }
   const registerdNodeInfoParsed: RegisteredNodeInfoParsed = {
@@ -31,7 +30,7 @@ export const parseRegisteredNodeInfo = (nodeInfo: RegisteredNode) => {
     created_timestamp: parseRegisteredNodeProperty(nodeInfo, 'created_timestamp'),
     description: parseRegisteredNodeProperty(nodeInfo, 'description'),
     registered_node_id: registeredNodeId,
-    service_endpoints: service_endpoints,
+    service_endpoints: parseRegisteredNodeProperty(nodeInfo, 'service_endpoints') ?? [],
     timestamp: timestamp,
   };
 
