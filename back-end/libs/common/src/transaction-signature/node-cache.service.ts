@@ -143,10 +143,10 @@ export class NodeCacheService {
     etag?: string,
     transactionId?: number,
   ): Promise<{ id: number; nodeData?: NodeInfoParsed } | null> {
-    const updates = nodeData?.node_account_id && nodeData?.admin_key
+    const updates = nodeData
       ? {
-        nodeAccountId: nodeData.node_account_id.toString(),
-        encodedKey: serializeKey(nodeData.admin_key),
+        nodeAccountId: nodeData?.node_account_id?.toString() ?? null,
+        encodedKey: nodeData?.admin_key ? serializeKey(nodeData.admin_key) : null,
         etag,
       }
       : {};
@@ -330,7 +330,7 @@ export class NodeCacheService {
    */
   private parseCachedNode(cached: CachedNode): NodeInfoParsed {
     return {
-      admin_key: cached.encodedKey ? deserializeKey(cached.encodedKey) : null,
+      admin_key: cached.encodedKey !== null ? deserializeKey(cached.encodedKey) : null,
       node_account_id: cached.nodeAccountId ? AccountId.fromString(cached.nodeAccountId) : null,
     } as NodeInfoParsed;
   }
@@ -346,7 +346,7 @@ export class NodeCacheService {
 
     const serializedKey = fetchedData.admin_key !== null ? serializeKey(fetchedData.admin_key) : null;
     const keysEqual =
-      serializedKey !== null && cached.encodedKey !== null
+      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
         ? Buffer.compare(serializedKey, cached.encodedKey) === 0
         : serializedKey === cached.encodedKey;
 
