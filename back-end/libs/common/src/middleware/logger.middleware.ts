@@ -37,7 +37,15 @@ export class LoggerMiddleware implements NestMiddleware {
             : serialized;
         payload = ` - Payload: ${truncated}`;
       }
-      this.logger.info(sanitizeForLog(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`));
+      const message = sanitizeForLog(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`);
+      // 404s get bumped to WARN (covers both unmatched routes and services throwing
+      // NotFoundException for a missing resource) so they stand out from routine traffic
+      // without needing a second, separate log line for the same request.
+      if (statusCode === 404) {
+        this.logger.warn(message);
+      } else {
+        this.logger.info(message);
+      }
     });
 
     next();
