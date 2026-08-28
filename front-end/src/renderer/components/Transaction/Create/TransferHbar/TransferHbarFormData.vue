@@ -201,7 +201,7 @@ onMounted(async () => {
     <div class="row mt-3">
       <div class="col-5 flex-1">
         <div class="mt-3">
-          <template v-for="(debit, i) in data.transfers" :key="debit.accountId">
+          <template v-for="(debit, i) in data.transfers" :key="debit.accountId.toString()">
             <div v-if="debit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
                 <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
@@ -270,7 +270,7 @@ onMounted(async () => {
       <div class="col-1"></div>
       <div class="col-5 flex-1">
         <div class="mt-3">
-          <template v-for="(credit, i) in data.transfers" :key="credit.accountId">
+          <template v-for="(credit, i) in data.transfers" :key="credit.accountId.toString()">
             <div v-if="!credit.amount.isNegative()" class="mt-3">
               <div class="row align-items-center px-3">
                 <div class="col-5 flex-centered justify-content-start flex-wrap overflow-hidden">
