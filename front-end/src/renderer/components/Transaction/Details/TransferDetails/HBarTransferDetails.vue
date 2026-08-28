@@ -62,7 +62,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
   <template v-if="transferParsingComplete">
     <div class="col-6">
       <div class="mt-3">
-        <template v-for="debit in props.hbarTransfers" :key="debit.accountId">
+        <template v-for="debit in props.hbarTransfers" :key="debit.accountId.toString()">
           <div v-if="debit.amount.isNegative()" class="mt-3">
             <div class="row align-items-center px-3">
               <div
@@ -136,7 +136,7 @@ const balanceExceeded = (transfer: Transfer): boolean => {
     </div>
     <div class="col-6">
       <div class="mt-3">
-        <template v-for="credit in props.hbarTransfers" :key="credit.accountId">
+        <template v-for="credit in props.hbarTransfers" :key="credit.accountId.toString()">
           <div v-if="!credit.amount.isNegative()" class="mt-3">
             <div class="row align-items-center px-3">
               <div
