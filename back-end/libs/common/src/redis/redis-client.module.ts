@@ -33,6 +33,6 @@ export class RedisClientModule implements OnModuleDestroy {
   constructor(@Inject(REDIS_CLIENT) private readonly client: Redis) {}
 
   onModuleDestroy() {
-    this.client.quit();
+    return this.client.quit();
   }
 }
