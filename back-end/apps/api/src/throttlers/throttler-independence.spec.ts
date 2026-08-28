@@ -4,7 +4,15 @@ import { Reflector } from '@nestjs/core';
 import { Test } from '@nestjs/testing';
 import { ThrottlerGuard, ThrottlerStorage, ThrottlerStorageService } from '@nestjs/throttler';
 
-import { EmailThrottlerGuard, IpThrottlerGuard, UserThrottlerGuard } from '../guards';
+import { CLIENT_IP_KEY } from '@app/common';
+
+import {
+  EmailThrottlerGuard,
+  IpLoginThrottlerGuard,
+  IpResetPasswordThrottlerGuard,
+  IpThrottlerGuard,
+  UserThrottlerGuard,
+} from '../guards';
 
 // Fake HTTP context whose request satisfies every guard's getTracker.
 const makeContext = (): ExecutionContext =>
@@ -12,6 +20,7 @@ const makeContext = (): ExecutionContext =>
     switchToHttp: () => ({
       getRequest: () => ({
         ip: '1.2.3.4',
+        [CLIENT_IP_KEY]: '1.2.3.4',
         headers: {},
         body: { email: 'user@example.com' },
         user: { id: 'user-1' },
@@ -46,6 +55,8 @@ describe('throttler guard independence', () => {
     new IpThrottlerGuard(config, storage, reflector);
     new EmailThrottlerGuard(config, storage, reflector);
     new UserThrottlerGuard(config, storage, reflector);
+    new IpLoginThrottlerGuard(config, storage, reflector);
+    new IpResetPasswordThrottlerGuard(config, storage, reflector);
 
     expect(get.mock.calls).toEqual([
       ['GLOBAL_MINUTE_LIMIT', 10_000],
@@ -54,6 +65,10 @@ describe('throttler guard independence', () => {
       ['ANONYMOUS_FIVE_SECOND_LIMIT', 1],
       ['USER_MINUTE_LIMIT', 100],
       ['USER_SECOND_LIMIT', 10],
+      ['LOGIN_IP_MINUTE_LIMIT', 20],
+      ['LOGIN_IP_TEN_SECOND_LIMIT', 5],
+      ['RESET_IP_MINUTE_LIMIT', 5],
+      ['RESET_IP_TEN_SECOND_LIMIT', 1],
     ]);
   });
 
@@ -63,6 +78,8 @@ describe('throttler guard independence', () => {
         IpThrottlerGuard,
         EmailThrottlerGuard,
         UserThrottlerGuard,
+        IpLoginThrottlerGuard,
+        IpResetPasswordThrottlerGuard,
         Reflector,
         {
           provide: ConfigService,
@@ -78,6 +95,8 @@ describe('throttler guard independence', () => {
     expect(module.get(IpThrottlerGuard)).toBeInstanceOf(IpThrottlerGuard);
     expect(module.get(EmailThrottlerGuard)).toBeInstanceOf(EmailThrottlerGuard);
     expect(module.get(UserThrottlerGuard)).toBeInstanceOf(UserThrottlerGuard);
+    expect(module.get(IpLoginThrottlerGuard)).toBeInstanceOf(IpLoginThrottlerGuard);
+    expect(module.get(IpResetPasswordThrottlerGuard)).toBeInstanceOf(IpResetPasswordThrottlerGuard);
 
     await module.close();
   });
@@ -97,17 +116,27 @@ describe('throttler guard independence', () => {
     const userConfig = {
       get: jest.fn((key: string) => (key === 'USER_SECOND_LIMIT' ? 10 : 100)),
     } as unknown as ConfigService;
+    // Login-IP guard: both throttlers limited to 4 -> allows 4 in a burst.
+    const loginConfig = { get: jest.fn().mockReturnValue(4) } as unknown as ConfigService;
+    // Reset-password-IP guard: both throttlers limited to 1 -> allows 1 in a burst.
+    const resetConfig = { get: jest.fn().mockReturnValue(1) } as unknown as ConfigService;
 
     const ipGuard = new IpThrottlerGuard(ipConfig, storage, reflector);
     const emailGuard = new EmailThrottlerGuard(emailConfig, storage, reflector);
     const userGuard = new UserThrottlerGuard(userConfig, storage, reflector);
+    const loginGuard = new IpLoginThrottlerGuard(loginConfig, storage, reflector);
+    const resetGuard = new IpResetPasswordThrottlerGuard(resetConfig, storage, reflector);
 
     await ipGuard.onModuleInit();
     await emailGuard.onModuleInit();
     await userGuard.onModuleInit();
+    await loginGuard.onModuleInit();
+    await resetGuard.onModuleInit();
 
     expect(await countAllowed(ipGuard)).toBe(2);
     expect(await countAllowed(emailGuard)).toBe(3);
     expect(await countAllowed(userGuard)).toBe(10);
+    expect(await countAllowed(loginGuard)).toBe(4);
+    expect(await countAllowed(resetGuard)).toBe(1);
   });
 });

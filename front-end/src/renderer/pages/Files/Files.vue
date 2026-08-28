@@ -365,7 +365,7 @@ watch(files, newFiles => {
             <AppButton
               color="primary"
               size="large"
-              class="w-100"
+              class="w-100 d-flex align-items-center justify-content-center"
               data-testid="button-add-new-file"
               data-bs-toggle="dropdown"
               >Add New</AppButton

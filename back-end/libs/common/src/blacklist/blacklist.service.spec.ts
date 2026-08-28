@@ -4,12 +4,7 @@ import { Redis } from 'ioredis';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService } from './blacklist.service';
-
-jest.mock('ioredis', () => {
-  return {
-    Redis: jest.fn().mockImplementation(() => ({})),
-  };
-});
+import { REDIS_CLIENT } from '../redis/redis-client.module';
 
 describe('BlacklistService', () => {
   let service: BlacklistService;
@@ -24,11 +19,14 @@ describe('BlacklistService', () => {
           provide: ConfigService,
           useValue: configService,
         },
+        {
+          provide: REDIS_CLIENT,
+          useValue: client,
+        },
       ],
     }).compile();
 
     service = module.get<BlacklistService>(BlacklistService);
-    service.client = client;
   });
 
   afterEach(() => {

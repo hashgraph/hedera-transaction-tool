@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { AxiosError, type AxiosResponse } from 'axios';
 
 const mockOrgs: Array<{ serverUrl: string; nickname?: string }> = [];
 
@@ -10,6 +11,57 @@ vi.mock('@renderer/stores/storeUser', () => ({
 vi.mock('@renderer/utils/version', () => ({
   FRONTEND_VERSION: '1.0.0',
 }));
+
+const createAxiosError = (status: number, data: Record<string, unknown> = {}): AxiosError =>
+  new AxiosError('request failed', 'ERR', undefined, undefined, {
+    status,
+    data,
+    statusText: 'error',
+    headers: {},
+    config: {} as any,
+  } as AxiosResponse);
+
+describe('commonRequestHandler', () => {
+  test('uses the default message on a 401 when messageOn401 is not provided', async () => {
+    const { commonRequestHandler, RequestError } = await import('@renderer/utils/axios');
+
+    const call = commonRequestHandler(async () => {
+      throw createAxiosError(401, { message: 'Incorrect token' });
+    }, 'Failed to verify password reset');
+
+    await expect(call).rejects.toThrow(RequestError);
+    await expect(call).rejects.toThrow('Failed to verify password reset');
+  });
+
+  test('messageOn401 overrides the backend message on a 401', async () => {
+    const { commonRequestHandler } = await import('@renderer/utils/axios');
+
+    await expect(
+      commonRequestHandler(
+        async () => {
+          throw createAxiosError(401, { message: 'from the backend' });
+        },
+        'Failed to sign in',
+        'Invalid email or password',
+      ),
+    ).rejects.toThrow('Invalid email or password');
+  });
+
+  test('statusMessages overrides the message for a specific status, taking priority over messageOn401', async () => {
+    const { commonRequestHandler } = await import('@renderer/utils/axios');
+
+    await expect(
+      commonRequestHandler(
+        async () => {
+          throw createAxiosError(429, { message: 'from the backend' });
+        },
+        'Failed to verify password reset',
+        'Incorrect code. Please try again.',
+        { 429: 'Too many attempts. Please request a new code.' },
+      ),
+    ).rejects.toThrow('Too many attempts. Please request a new code.');
+  });
+});
 
 describe('handleAxiosResponseError (426 interceptor handler)', () => {
   beforeEach(() => {

@@ -112,6 +112,7 @@ export class TransactionSchedulerService {
         statuses: [
           TransactionStatus.NEW,
           TransactionStatus.REJECTED,
+          TransactionStatus.READY_FOR_REVIEW,
           TransactionStatus.WAITING_FOR_EXECUTION,
           TransactionStatus.WAITING_FOR_SIGNATURES,
         ],

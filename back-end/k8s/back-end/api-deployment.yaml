@@ -62,13 +62,17 @@ spec:
                   key: key
             - name: JWT_EXPIRATION
               value: '365'
-            - name: OTP_SECRET
+            - name: OTP_HASH_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: otp-secret
+                  name: otp-hash-secret
                   key: key
             - name: OTP_EXPIRATION
-              value: '20'
+              value: '2'
+            - name: OTP_MAX_ATTEMPTS
+              value: '3'
+            - name: OTP_VERIFIED_EXPIRATION
+              value: '5'
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
             - name: ANONYMOUS_MINUTE_LIMIT

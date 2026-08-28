@@ -125,7 +125,7 @@ describe('ReminderHandlerService', () => {
       expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
     });
 
-    it('should not proceed if transaction is not waiting for signatures', async () => {
+    it('should not proceed if transaction is in a terminal status', async () => {
       jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
       entityManager.findOne.mockResolvedValueOnce({
         ...transaction,
@@ -139,6 +139,22 @@ describe('ReminderHandlerService', () => {
         relations: { creatorKey: true },
       });
       expect(emitTransactionRemindSigners).not.toHaveBeenCalled();
+    });
+
+    it('should send reminder when transaction is READY_FOR_REVIEW', async () => {
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      entityManager.findOne.mockResolvedValueOnce({
+        ...transaction,
+        status: TransactionStatus.READY_FOR_REVIEW,
+      });
+      entityManager.findOne.mockResolvedValueOnce(null);
+      jest
+        .mocked(keysRequiredToSign)
+        .mockResolvedValueOnce([{ userId: 1 } as UserKey, { userId: 2 } as UserKey]);
+
+      await service.handleTransactionReminder(key);
+
+      expect(emitTransactionRemindSigners).toHaveBeenCalled();
     });
 
     it('should not proceed if reminder notification already exists', async () => {

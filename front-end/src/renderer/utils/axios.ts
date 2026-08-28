@@ -126,12 +126,11 @@ export const commonRequestHandler = async <T>(
       throwIfNoResponse(error.response);
 
       status = error.response.status;
-      const errorMessage = error.response.data?.message;
 
       if (statusMessages?.[status]) {
         message = statusMessages[status]!;
       } else if (status === 401 && messageOn401) {
-        message = messageOn401.trim() || errorMessage;
+        message = messageOn401;
       } else if (status === 400) {
         code = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code!] || ErrorMessages[ErrorCodes.UNKWN];
