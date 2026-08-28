@@ -11,11 +11,7 @@ import {
 } from '@app/common';
 import { AccountId, FileId, Hbar, HbarUnit, Key, PublicKey, ServiceEndpoint } from '@hiero-ledger/sdk';
 
-export const parseNodeInfo = (nodeInfo: NetworkNode) => {
-  const service_endpoints = parseNodeProperty(nodeInfo, 'service_endpoints');
-  if (service_endpoints === null) {
-    return null;
-  }
+export const parseNodeInfo = (nodeInfo: NetworkNode): NodeInfoParsed => {
   const nodeInfoParsed: NodeInfoParsed = {
     admin_key: parseNodeProperty(nodeInfo, 'admin_key'),
     description: parseNodeProperty(nodeInfo, 'description'),
@@ -25,7 +21,7 @@ export const parseNodeInfo = (nodeInfo: NetworkNode) => {
     node_account_id: parseNodeProperty(nodeInfo, 'node_account_id'),
     node_cert_hash: parseNodeProperty(nodeInfo, 'node_cert_hash'),
     public_key: parseNodeProperty(nodeInfo, 'public_key'),
-    service_endpoints: service_endpoints,
+    service_endpoints: parseNodeProperty(nodeInfo, 'service_endpoints') ?? [],
     timestamp: parseNodeProperty(nodeInfo, 'timestamp'),
     max_stake: parseNodeProperty(nodeInfo, 'max_stake'),
     min_stake: parseNodeProperty(nodeInfo, 'min_stake'),
