@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { CLIENT_IP_KEY, maskSensitiveData } from '@app/common';
+import { CLIENT_IP_KEY, maskSensitiveData, sanitizeForLog } from '@app/common';
 
 const MAX_URL_LOG_LENGTH = 2048;
 
@@ -37,7 +37,7 @@ export class LoggerMiddleware implements NestMiddleware {
             : serialized;
         payload = ` - Payload: ${truncated}`;
       }
-      this.logger.info(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`);
+      this.logger.info(sanitizeForLog(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`));
     });
 
     next();

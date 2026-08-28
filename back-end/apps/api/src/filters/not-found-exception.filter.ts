@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger, NotFoundException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { CLIENT_IP_KEY } from '@app/common';
+import { CLIENT_IP_KEY, sanitizeForLog } from '@app/common';
 
 const MAX_URL_LOG_LENGTH = 2048;
 
@@ -20,7 +20,7 @@ export class NotFoundExceptionFilter implements ExceptionFilter {
         ? `${request.originalUrl.slice(0, MAX_URL_LOG_LENGTH)}... [truncated]`
         : request.originalUrl;
 
-    this.logger.warn(`UNMATCHED_ROUTE ${ip} ${request.method} ${logUrl}`);
+    this.logger.warn(sanitizeForLog(`UNMATCHED_ROUTE ${ip} ${request.method} ${logUrl}`));
 
     response.status(status).json({
       statusCode: status,
