@@ -134,7 +134,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(201)
@@ -152,12 +152,12 @@ describe('Auth (e2e)', () => {
       const usersEndpoint = new Endpoint(server, '/users');
       const loginEndpoint = new Endpoint(server, '/auth/login');
 
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
       await usersEndpoint.delete(`${user.id}`, adminAuthToken).expect(200);
 
       await endpoint
-        .post({ email: user.email }, null, adminAuthToken)
+        .post({ email: user.email }, undefined, adminAuthToken)
         .expect(201)
         .then(res => {
           expect(res.body).toEqual({
@@ -176,10 +176,10 @@ describe('Auth (e2e)', () => {
     it('(POST) should update password and resend email if users status is NEW and the sender is an admin', async () => {
       const userRepo = await getRepository(User);
 
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
       await endpoint
-        .post({ email: user.email }, null, adminAuthToken)
+        .post({ email: user.email }, undefined, adminAuthToken)
         .expect(201)
         .then(res => {
           expect(res.body).toEqual({
@@ -197,13 +197,13 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should not register new user if already exists', async () => {
-      const user = await getUser('user');
+      const user = (await getUser('user'))!;
       await endpoint
         .post(
           {
             email: user.email,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(422);
@@ -223,7 +223,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(403);
@@ -235,7 +235,7 @@ describe('Auth (e2e)', () => {
           {
             email: invalidEmail,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(400);
@@ -243,7 +243,7 @@ describe('Auth (e2e)', () => {
 
     it('(POST) should throw on missing email', async () => {
       await endpoint
-        .post({}, null, adminAuthToken)
+        .post({}, undefined, adminAuthToken)
         .expect(400)
         .expect({ statusCode: 400, message: 'No email specified.' });
     });
@@ -267,7 +267,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: 'newPassword',
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(200);
@@ -284,7 +284,7 @@ describe('Auth (e2e)', () => {
             oldPassword: 'invalid',
             newPassword: 'newPassword',
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(400);
@@ -297,7 +297,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: dummy.password,
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(400);
@@ -312,19 +312,19 @@ describe('Auth (e2e)', () => {
     });
 
     it('(PATCH) should register new user if sender is admin', async () => {
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
-      return endpoint.patch({ id: user.id }, null, adminAuthToken).expect(200);
+      return endpoint.patch({ id: user.id }, undefined, adminAuthToken).expect(200);
     });
 
     it('(PATCH) should not register new user if sender is NOT admin', async () => {
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
-      return endpoint.patch({ id: user.id }, null, userAuthToken).expect(403);
+      return endpoint.patch({ id: user.id }, undefined, userAuthToken).expect(403);
     });
 
     it('(PATCH) should throw on invalid user id', async () => {
-      await endpoint.patch({ id: 333333 }, null, adminAuthToken).expect(400);
+      await endpoint.patch({ id: 333333 }, undefined, adminAuthToken).expect(400);
     });
   });
 
@@ -336,7 +336,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should mark the token as blacklisted', async () => {
-      await endpoint.post({}, null, userAuthToken).expect(200);
+      await endpoint.post({}, undefined, userAuthToken).expect(200);
       await request(server).get('/transactions/history?page=1&size=99').expect(401);
     });
 

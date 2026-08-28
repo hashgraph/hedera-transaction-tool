@@ -28,8 +28,8 @@ describe('User Keys (e2e)', () => {
     userAuthToken = await login(app, 'user');
     userNewAuthToken = await login(app, 'userNew');
 
-    admin = await getUser('admin');
-    user = await getUser('user');
+    admin = (await getUser('admin'))!;
+    user = (await getUser('user'))!;
   });
 
   afterAll(async () => {
@@ -46,7 +46,7 @@ describe('User Keys (e2e)', () => {
     it('(GET) should get keys of other user if verified', async () => {
       const res = await endpoint.get(`/${admin.id}/keys`, userAuthToken).expect(200);
 
-      const actualUserKeys = await getUserKeys(1);
+      const actualUserKeys = (await getUserKeys(1))!;
 
       expect(res.body).toHaveLength(actualUserKeys.length);
       res.body.forEach(key => {
@@ -58,7 +58,7 @@ describe('User Keys (e2e)', () => {
     it('(GET) should get users keys if verified', async () => {
       const res = await endpoint.get('/2/keys', userAuthToken).expect(200);
 
-      const actualUserKeys = await getUserKeys(2);
+      const actualUserKeys = (await getUserKeys(2))!;
 
       expect(res.body).toHaveLength(actualUserKeys.length);
       res.body.forEach(key => {
@@ -136,7 +136,7 @@ describe('User Keys (e2e)', () => {
         .post({ mnemonicHash, publicKey: publicKeyRaw, index: newIndex }, '/2/keys', userAuthToken)
         .expect(400);
 
-      const actualUserKeys = await getUserKeys(user.id);
+      const actualUserKeys = (await getUserKeys(user.id))!;
 
       expect(actualUserKeys[actualUserKeys.length - 1].index).toEqual(index);
     });
@@ -157,7 +157,7 @@ describe('User Keys (e2e)', () => {
         )
         .expect(201);
 
-      const actualUserKeys = await getUserKeys(user.id);
+      const actualUserKeys = (await getUserKeys(user.id))!;
 
       expect(actualUserKeys[actualUserKeys.length - 1].mnemonicHash).toEqual(newMnemonic);
     });
@@ -171,7 +171,7 @@ describe('User Keys (e2e)', () => {
         .post({ mnemonicHash, publicKey: publicKeyRaw, index }, '/2/keys', userAuthToken)
         .expect(201);
 
-      const actualUserKeys = await getUserKeys(user.id);
+      const actualUserKeys = (await getUserKeys(user.id))!;
 
       expect(actualUserKeys[actualUserKeys.length - 1].mnemonicHash).toEqual(mnemonicHash);
       expect(actualUserKeys[actualUserKeys.length - 1].index).toEqual(index);
@@ -194,7 +194,7 @@ describe('User Keys (e2e)', () => {
       async () => {
         let userKeys = await getUserKeys(user.id);
 
-        const keysToAdd = MAX_USER_KEYS - userKeys.length;
+        const keysToAdd = MAX_USER_KEYS - userKeys!.length;
 
         const keysPromises = Array.from({ length: keysToAdd }, async () => generatePrivateKey());
         const keys = await Promise.all(keysPromises);
@@ -211,7 +211,7 @@ describe('User Keys (e2e)', () => {
 
         userKeys = await getUserKeys(user.id);
 
-        for (const key of userKeys.slice(2, userKeys.length)) {
+        for (const key of userKeys!.slice(2, userKeys!.length)) {
           await endpoint.delete(`/2/keys/${key.id}`, userAuthToken);
         }
       },
@@ -219,7 +219,7 @@ describe('User Keys (e2e)', () => {
     );
 
     it('(POST) should recover key WITH mnemonic if key is deleted', async () => {
-      const [{ id, publicKey, mnemonicHash, index }] = await getUserKeys(user.id);
+      const [{ id, publicKey, mnemonicHash, index }] = (await getUserKeys(user.id))!;
 
       await endpoint.delete(`/2/keys/${id}`, userAuthToken).expect(200);
 
@@ -240,14 +240,14 @@ describe('User Keys (e2e)', () => {
       expect(userKeys).not.toHaveLength(0);
 
       await endpoint
-        .delete(`/2/keys/${userKeys[userKeys.length - 1].id}`, userAuthToken)
+        .delete(`/2/keys/${userKeys![userKeys!.length - 1].id}`, userAuthToken)
         .expect(200);
 
       await endpoint.post({ publicKey: publicKeyRaw }, '/2/keys', userAuthToken).expect(201);
 
       userKeys = await getUserKeys(user.id);
       await endpoint
-        .delete(`/2/keys/${userKeys[userKeys.length - 1].id}`, userAuthToken)
+        .delete(`/2/keys/${userKeys![userKeys!.length - 1].id}`, userAuthToken)
         .expect(200);
 
       await endpoint.post({ publicKey: publicKeyRaw }, '/2/keys', userAuthToken).expect(201);
@@ -258,11 +258,11 @@ describe('User Keys (e2e)', () => {
 
       expect(userKeys).not.toHaveLength(0);
 
-      await endpoint.delete(`/2/keys/${userKeys[0].id}`, userAuthToken).expect(200);
+      await endpoint.delete(`/2/keys/${userKeys![0].id}`, userAuthToken).expect(200);
 
       const actualUserKeys = await getUserKeys(user.id);
 
-      expect(actualUserKeys).toHaveLength(userKeys.length - 1);
+      expect(actualUserKeys).toHaveLength(userKeys!.length - 1);
     });
 
     it("(DELETE) should not delete user's key if not verified", async () => {
@@ -270,7 +270,7 @@ describe('User Keys (e2e)', () => {
 
       expect(userKeys).not.toHaveLength(0);
 
-      await endpoint.delete(`/2/keys/${userKeys[0].id}`, userNewAuthToken).expect(403);
+      await endpoint.delete(`/2/keys/${userKeys![0].id}`, userNewAuthToken).expect(403);
     });
 
     it("(DELETE) should not delete user's key if not logged in", async () => {
@@ -278,7 +278,7 @@ describe('User Keys (e2e)', () => {
 
       expect(userKeys).not.toHaveLength(0);
 
-      await endpoint.delete(`/2/keys/${userKeys[0].id}`).expect(401);
+      await endpoint.delete(`/2/keys/${userKeys![0].id}`).expect(401);
     });
 
     it('(DELETE) should not delete user key if invalid id', async () => {
@@ -290,16 +290,16 @@ describe('User Keys (e2e)', () => {
 
       expect(userKeys).not.toHaveLength(0);
 
-      await endpoint.delete(`/2/keys/${userKeys[0].id}`, userAuthToken).expect(400);
+      await endpoint.delete(`/2/keys/${userKeys![0].id}`, userAuthToken).expect(400);
     });
 
     it('(PATCH) should update mnemonic hash', async () => {
       let userKeys = await getUserKeys(user.id);
       expect(userKeys).not.toHaveLength(0);
 
-      const firstKeyId = userKeys[0].id;
-      let key = userKeys.find(k => k.id === firstKeyId);
-      const oldIndex = key.index;
+      const firstKeyId = userKeys![0].id;
+      let key = userKeys!.find(k => k.id === firstKeyId);
+      const oldIndex = key!.index;
 
       const newMnemonicHash = '0xabcd';
 
@@ -308,12 +308,12 @@ describe('User Keys (e2e)', () => {
         .expect(200);
 
       userKeys = await getUserKeys(user.id);
-      key = userKeys.find(k => k.id === firstKeyId);
+      key = userKeys?.find(k => k.id === firstKeyId);
 
       expect(body.mnemonicHash).toEqual(newMnemonicHash);
       expect(body.index).toEqual(oldIndex);
-      expect(key.mnemonicHash).toEqual(body.mnemonicHash);
-      expect(key.index).toEqual(oldIndex);
+      expect(key?.mnemonicHash).toEqual(body.mnemonicHash);
+      expect(key?.index).toEqual(oldIndex);
     });
 
     it('(PATCH) should not update mnemonic hash if key not yours', async () => {
@@ -323,7 +323,7 @@ describe('User Keys (e2e)', () => {
       const newMnemonicHash = '0xabcd';
 
       await endpoint
-        .patch({ mnemonicHash: newMnemonicHash }, `/2/keys/${userKeys[0].id}`, userAuthToken)
+        .patch({ mnemonicHash: newMnemonicHash }, `/2/keys/${userKeys![0].id}`, userAuthToken)
         .expect(400);
     });
 
@@ -331,8 +331,7 @@ describe('User Keys (e2e)', () => {
       let userKeys = await getUserKeys(user.id);
       expect(userKeys).not.toHaveLength(0);
 
-      const firstKeyId = userKeys[0].id;
-      let key = userKeys.find(k => k.id === firstKeyId);
+      const firstKeyId = userKeys![0].id;
 
       const newMnemonicHash = '0xabcd';
       const newIndex = 123;
@@ -346,13 +345,13 @@ describe('User Keys (e2e)', () => {
         .expect(200);
 
       userKeys = await getUserKeys(user.id);
-      key = userKeys.find(k => k.id === firstKeyId);
+      const key = userKeys!.find(k => k.id === firstKeyId);
 
       expect(body.mnemonicHash).toEqual(newMnemonicHash);
       expect(body.index).toEqual(newIndex);
 
-      expect(key.mnemonicHash).toEqual(body.mnemonicHash);
-      expect(key.index).toEqual(body.index);
+      expect(key?.mnemonicHash).toEqual(body.mnemonicHash);
+      expect(key?.index).toEqual(body.index);
     });
   });
 });

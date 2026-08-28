@@ -59,8 +59,8 @@ describe('Transactions (e2e)', () => {
     adminAuthToken = await login(app, 'admin');
     userAuthToken = await login(app, 'user');
 
-    user = await getUser('user');
-    userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
+    user = (await getUser('user'))!;
+    userKey1003 = (await getUserKey(user.id, localnet1003.publicKeyRaw))!;
   });
 
   afterAll(async () => {
@@ -75,7 +75,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(POST) should upload a signature map for a transaction', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       await sdkTransaction.sign(localnet1003.privateKey);
       const signatureMap = getSignatureMapForPublicKeys(
@@ -113,7 +113,7 @@ describe('Transactions (e2e)', () => {
         .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
       const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
 
-      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
+      const userKey1004 = (await getUserKey(user.id, localnet1004.publicKeyRaw))!;
 
       if (userKey1004 === null) {
         throw new Error('User key not found');
@@ -171,7 +171,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(POST) should NOT upload a signature for a transaction with a key that does not belong to the user', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
       await sdkTransaction.sign(localnet1002.privateKey);
       const signatureMap = getSignatureMapForPublicKeys(
@@ -220,7 +220,7 @@ describe('Transactions (e2e)', () => {
       let sdkTransaction: SDKTransaction;
 
       beforeAll(async () => {
-        transaction = addedTransactions.userTransactions[0];
+        transaction = addedTransactions!.userTransactions[0];
         sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
         await sdkTransaction.sign(localnet1003.privateKey);
         signatureMap = getSignatureMapForPublicKeys([localnet1003.publicKeyRaw], sdkTransaction);
@@ -270,7 +270,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(POST) should NOT upload invalid body', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
       const signatureMap = {
         asd: 'invalid-signature',
       };
@@ -352,7 +352,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should return all signatures for a transaction', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
 
       const { status, body } = await endpoint.get(`${transaction.id}/signers`, userAuthToken);
 
@@ -369,7 +369,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should return all signatures for a transaction requested by a user that is not part of the transaction', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
 
       const { status, body } = await endpoint.get(`${transaction.id}/signers`, adminAuthToken);
 
@@ -394,7 +394,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should return all signatures for a transaction requested by a user', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
 
       const { status, body } = await endpoint.get(
         `${transaction.id}/signers/user`,
@@ -413,7 +413,7 @@ describe('Transactions (e2e)', () => {
     });
 
     it('(GET) should return all signatures for a transaction requested by a user that is not part of the transaction', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
 
       const { status, body } = await endpoint.get(
         `${transaction.id}/signers/user`,
