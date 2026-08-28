@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { createHash, randomInt } from 'crypto';
+import { createHmac, randomInt } from 'crypto';
 
 import { mock } from 'jest-mock-extended';
 
@@ -31,8 +31,13 @@ describe('AuthService', () => {
   const notificationsPublisher = mock<NatsPublisherService>();
   const otpStoreService = mock<OtpStoreService>();
 
+  const OTP_HASH_SECRET = 'test-otp-hash-secret';
+
   beforeEach(async () => {
     jest.resetAllMocks();
+
+    //@ts-expect-error - incorrect overload expected
+    configService.getOrThrow.calledWith('OTP_HASH_SECRET').mockReturnValue(OTP_HASH_SECRET);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -64,7 +69,7 @@ describe('AuthService', () => {
   });
 
   function hashOf(otp: string): Buffer {
-    return createHash('sha256').update(otp).digest();
+    return createHmac('sha256', OTP_HASH_SECRET).update(otp).digest();
   }
 
   async function invokeLogin(production: boolean) {

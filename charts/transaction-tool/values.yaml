@@ -115,6 +115,10 @@ jwt:
   createSecrets: true
   secretName: jwt-development
 
+# OTP hash secret configuration - used to HMAC-hash OTP codes before storing
+otpHash:
+  createSecrets: true
+  secretName: otp-hash-development
 
 # Email API configuration
 emailApi:

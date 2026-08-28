@@ -95,6 +95,11 @@ spec:
                   key: jwt_key
             - name: JWT_EXPIRATION
               value: {{ .Values.api.env.JWT_EXPIRATION | squote }}
+            - name: OTP_HASH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.otpHash.secretName }}
+                  key: otp_hash_key
             - name: OTP_EXPIRATION
               value: {{ .Values.api.env.OTP_EXPIRATION | squote }}
             - name: OTP_MAX_ATTEMPTS

@@ -10,7 +10,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import type { StringValue } from 'ms';
-import { createHash, randomInt } from 'crypto';
+import { createHmac, randomInt } from 'crypto';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
@@ -190,9 +190,15 @@ export class AuthService {
     return randomInt(0, OTP_MAX_VALUE).toString().padStart(OTP_DIGITS, '0');
   }
 
-  /* Only the hash is ever persisted - never the raw code. */
+  /* Only the hash is ever persisted - never the raw code. Keyed with
+   * OTP_HASH_SECRET (HMAC, not plain SHA-256) so that leaking the stored hash
+   * alone - e.g. a Redis backup or misconfigured ACL - isn't enough to recover
+   * the code: an 8-digit space is trivially brute-forced offline against an
+   * unkeyed hash, but not without also knowing the secret. */
   private hashOtp(otp: string): Buffer {
-    return createHash('sha256').update(otp).digest();
+    return createHmac('sha256', this.configService.getOrThrow<string>('OTP_HASH_SECRET'))
+      .update(otp)
+      .digest();
   }
 
   /* How long a generated code stays valid, in seconds. Also used as the TTL for

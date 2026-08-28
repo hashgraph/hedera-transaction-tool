@@ -47,6 +47,8 @@ spec:
               value: 'some-secret-value'
             - name: JWT_EXPIRATION
               value: '365'
+            - name: OTP_HASH_SECRET
+              value: 'some-secret-otp-hash-value'
             - name: OTP_EXPIRATION
               value: '2'
             - name: OTP_MAX_ATTEMPTS

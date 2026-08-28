@@ -32,10 +32,13 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
   }
 
   protected getTracker(req: Record<string, any>): Promise<string> {
-    const email = req.body?.email;
-    if (!email) {
+    const rawEmail = req.body?.email;
+    if (typeof rawEmail !== 'string' || !rawEmail.trim()) {
       throw new HttpException('No email specified.', HttpStatus.BAD_REQUEST);
     }
-    return Promise.resolve(email);
+    // Casing and surrounding whitespace shouldn't let the same email split
+    // across separate throttle buckets - normalize the same way IpUniqueEmailGuard
+    // does before using it as the tracker key.
+    return Promise.resolve(rawEmail.trim().toLowerCase());
   }
 }
