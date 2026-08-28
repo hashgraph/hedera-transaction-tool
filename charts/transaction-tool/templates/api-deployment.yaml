@@ -95,13 +95,17 @@ spec:
                   key: jwt_key
             - name: JWT_EXPIRATION
               value: {{ .Values.api.env.JWT_EXPIRATION | squote }}
-            - name: OTP_SECRET
+            - name: OTP_HASH_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.otp.secretName }}
-                  key: otp_key
+                  name: {{ .Values.otpHash.secretName }}
+                  key: otp_hash_key
             - name: OTP_EXPIRATION
               value: {{ .Values.api.env.OTP_EXPIRATION | squote }}
+            - name: OTP_MAX_ATTEMPTS
+              value: {{ .Values.api.env.OTP_MAX_ATTEMPTS | squote }}
+            - name: OTP_VERIFIED_EXPIRATION
+              value: {{ .Values.api.env.OTP_VERIFIED_EXPIRATION | squote }}
             - name: REDIS_URL
               value: {{ include "transactiontool.redisUrl" .  }}
             - name: ANONYMOUS_MINUTE_LIMIT

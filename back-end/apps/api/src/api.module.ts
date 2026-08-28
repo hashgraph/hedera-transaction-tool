@@ -12,6 +12,7 @@ import {
   NatsModule,
   HealthModule,
   BlacklistModule,
+  RedisClientModule,
   SchedulerModule,
 } from '@app/common';
 
@@ -45,8 +46,13 @@ export const config = ConfigModule.forRoot({
     NATS_URL: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRATION: Joi.number().required(),
-    OTP_SECRET: Joi.string().required(),
+    OTP_HASH_SECRET: Joi.string().required(),
     OTP_EXPIRATION: Joi.number().required(),
+    // A non-positive value would lock every user out on their very first wrong
+    // guess (attempts >= 0 is immediately true), so fail fast at startup instead
+    // of silently shipping that.
+    OTP_MAX_ATTEMPTS: Joi.number().positive().required(),
+    OTP_VERIFIED_EXPIRATION: Joi.number().required(),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
@@ -71,6 +77,7 @@ export const config = ConfigModule.forRoot({
     ReviewerGroupsModule,
     HealthModule,
     IpResolutionModule,
+    RedisClientModule,
     ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),
     SchedulerModule.register({ isGlobal: true }),

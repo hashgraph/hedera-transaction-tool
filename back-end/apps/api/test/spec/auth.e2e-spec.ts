@@ -2,10 +2,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
 import request from 'supertest';
 
-import { generate } from '@otplib/totp';
-import { crypto } from '@otplib/plugin-crypto-node';
-
-import { API_SERVICE } from '@app/common';
+import { API_SERVICE, NatsPublisherService, USER_PASSWORD_RESET } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
@@ -22,8 +19,8 @@ describe('Auth (e2e)', () => {
 
   let adminAuthToken: string;
   let userAuthToken: string;
-  let unverifiedOTPToken: string;
   let verifiedOTPToken: string;
+  let natsPublisherService: NatsPublisherService;
 
   beforeAll(async () => {
     await resetDatabase();
@@ -33,7 +30,24 @@ describe('Auth (e2e)', () => {
 
     client = app.get<ClientProxy>(API_SERVICE);
     await client.connect();
+
+    natsPublisherService = app.get(NatsPublisherService);
   });
+
+  /* Requests an OTP for the given email and returns both the code that was
+   * emitted (by spying on the notification publish call, since the code itself
+   * is only ever sent by email, never returned to the caller) and the deprecated
+   * unverified JWT the response still carries for backward compatibility. */
+  async function requestOtp(email: string): Promise<{ otp: string; token: string }> {
+    const publishSpy = jest.spyOn(natsPublisherService, 'publish');
+
+    const { body } = await new Endpoint(server, '/auth/reset-password').post({ email }).expect(200);
+
+    const call = publishSpy.mock.calls.find(([subject]) => subject === USER_PASSWORD_RESET);
+    publishSpy.mockRestore();
+
+    return { otp: call![1][0].additionalData.otp, token: body.token };
+  }
 
   afterAll(async () => {
     try {
@@ -339,11 +353,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should request OTP', async () => {
-      const res = await endpoint.post({ email: dummy.email }).expect(200);
-
-      unverifiedOTPToken = res.body.token;
-
-      expect(unverifiedOTPToken).toBeDefined();
+      await endpoint.post({ email: dummy.email }).expect(200);
     });
 
     it('(POST) should not request OTP for invalid email', async () => {
@@ -363,17 +373,12 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should verify OTP', async () => {
-      const token = await generate({
-        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
-        crypto,
-        digits: 8,
-        period: 60,
-      });
+      const { otp, token } = await requestOtp(dummy.email);
 
       const { body } = await request(server)
         .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: otp })
+        .set('otp', token)
         .expect(200);
 
       verifiedOTPToken = body.token;
@@ -382,32 +387,76 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should blacklist OTP token after verification', async () => {
-      const token = await generate({
-        secret: Buffer.from(`${process.env.OTP_SECRET}${dummy.email}`),
-        crypto,
-        digits: 8,
-        period: 60,
-      });
+      const { otp, token } = await requestOtp(dummy.email);
 
       await request(server)
         .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: otp })
+        .set('otp', token)
+        .expect(200);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: otp })
+        .set('otp', token)
         .expect(401)
         .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
     it('(POST) should not verify OTP with invalid token', async () => {
+      const { token } = await requestOtp(dummy.email);
+
       await request(server)
         .post('/auth/verify-reset')
-        .send({ token: 'invalid token' })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
         .expect(401)
-        .expect({ message: 'Unauthorized', statusCode: 401 });
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({ statusCode: 401, message: 'Incorrect token' }),
+          );
+        });
+    });
+
+    it('(POST) should lock out after too many failed attempts', async () => {
+      const { token } = await requestOtp(dummy.email);
+
+      // OTP_MAX_ATTEMPTS is 3 in .env.test - the first two wrong guesses are
+      // ordinary rejections, the third crosses the threshold and locks it out.
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(429)
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              statusCode: 429,
+              message: 'Too many attempts. Please request a new code.',
+            }),
+          );
+        });
     });
 
     it('(POST) should not verify OTP without OTP token', async () => {
       await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
+    });
+
+    it('(POST) should not verify OTP for missing token', async () => {
+      const { token } = await requestOtp(dummy.email);
+
+      await request(server).post('/auth/verify-reset').send({}).set('otp', token).expect(400);
     });
   });
 
@@ -455,7 +504,9 @@ describe('Auth (e2e)', () => {
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
-    it('(PATCH) should not set password with invalid OTP', async () => {
+    it('(PATCH) should not set password with an unverified OTP token', async () => {
+      const { token: unverifiedOTPToken } = await requestOtp(dummy.email);
+
       await request(server)
         .patch('/auth/set-password')
         .send({ password: 'newPassword' })

@@ -3,16 +3,23 @@ import { ConfigService } from '@nestjs/config';
 import { CLIENT_IP_KEY } from '@app/common';
 import { Redis } from 'ioredis';
 
+import { REDIS_CLIENT } from '@app/common';
+
 const TEN_MINUTES_SECONDS = 600;
 
+/*
+ * Caps how many distinct emails a single IP can target across the whole password
+ * reset flow (/reset-password and /verify-reset share this guard, and the Redis
+ * key isn't route-scoped, so an attacker can't get a separate budget per route).
+ */
 @Injectable()
-export class IpResetPasswordUniqueEmailGuard implements CanActivate {
-  private readonly redis: Redis;
+export class IpUniqueEmailGuard implements CanActivate {
   private readonly limit: number;
 
-  constructor(@Inject(ConfigService) configService: ConfigService) {
-    this.redis = new Redis(configService.getOrThrow('REDIS_URL'));
-
+  constructor(
+    @Inject(ConfigService) configService: ConfigService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+  ) {
     const configuredLimit = Number(configService.get('RESET_IP_UNIQUE_EMAIL_LIMIT', 3));
     if (!Number.isFinite(configuredLimit) || configuredLimit <= 0) {
       // Fail fast: a non-numeric or non-positive value silently disables this guard
@@ -28,7 +35,12 @@ export class IpResetPasswordUniqueEmailGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const req = context.switchToHttp().getRequest();
 
-    const rawEmail = req.body?.email;
+    // Falls back to the authenticated user's email for routes that don't carry it
+    // in the body (e.g. /verify-reset, gated by the deprecated OTP JWT). Once that
+    // JWT flow is removed (see the @deprecated note on OtpJwtStrategy) every such
+    // route's body will carry the email directly, and `?? req.user?.email` here
+    // can be deleted along with it.
+    const rawEmail = req.body?.email ?? req.user?.email;
     // Guards run before the DTO validation pipe, so req.body.email could be anything
     // JSON allows here -- require a real string before treating it as one. Casing and
     // surrounding whitespace shouldn't create separate "unique" emails either, so
@@ -61,7 +73,7 @@ export class IpResetPasswordUniqueEmailGuard implements CanActivate {
       .exec();
 
     if (!results) {
-      throw new Error('Redis transaction aborted while checking the reset-password unique-email limit');
+      throw new Error('Redis transaction aborted while checking the unique-email limit');
     }
 
     const [[saddErr], [expireErr], [scardErr, count]] = results;
