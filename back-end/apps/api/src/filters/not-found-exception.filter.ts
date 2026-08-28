@@ -1,6 +1,6 @@
 import { ExceptionFilter, Catch, ArgumentsHost, Logger, NotFoundException } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { extractClientIp } from '@app/common';
+import { CLIENT_IP_KEY } from '@app/common';
 
 const MAX_URL_LOG_LENGTH = 2048;
 
@@ -14,7 +14,7 @@ export class NotFoundExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
-    const ip = extractClientIp(request);
+    const ip = request[CLIENT_IP_KEY];
     const logUrl =
       request.originalUrl.length > MAX_URL_LOG_LENGTH
         ? `${request.originalUrl.slice(0, MAX_URL_LOG_LENGTH)}... [truncated]`

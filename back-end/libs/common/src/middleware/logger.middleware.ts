@@ -1,7 +1,7 @@
 import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { extractClientIp, maskSensitiveData } from '@app/common';
+import { CLIENT_IP_KEY, maskSensitiveData } from '@app/common';
 
 const MAX_URL_LOG_LENGTH = 2048;
 
@@ -13,7 +13,7 @@ export class LoggerMiddleware implements NestMiddleware {
     const { method, originalUrl, body = {}, query = {} } = req;
     const start = Date.now();
 
-    const ip = extractClientIp(req);
+    const ip = req[CLIENT_IP_KEY];
 
     const maskedBody = maskSensitiveData(body, ['password', 'newPassword', 'email', 'token', 'otp']);
     const maskedQuery = maskSensitiveData(query, ['token']);

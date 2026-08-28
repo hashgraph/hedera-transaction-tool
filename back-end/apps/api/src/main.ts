@@ -39,7 +39,11 @@ async function createApp(): Promise<NestExpressApplication> {
 
 function applyServerLimits(app: NestExpressApplication): void {
   // `https.Server` extends `http.Server`, so this works for both HTTP and HTTPS adapters.
-  (app.getHttpAdapter().getHttpServer() as http.Server).maxHeaderSize = MAX_HEADER_SIZE;
+  // `maxHeaderSize` is a real, mutable property Node's HTTP parser reads per-connection
+  // (see https.ServerOptions/http.ServerOptions), but @types/node only types it as a
+  // constructor option, not an instance property -- hence the extra cast.
+  (app.getHttpAdapter().getHttpServer() as http.Server & { maxHeaderSize: number }).maxHeaderSize =
+    MAX_HEADER_SIZE;
 }
 
 async function createAppForDeployment(): Promise<NestExpressApplication> {
