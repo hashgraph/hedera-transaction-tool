@@ -67,7 +67,9 @@ export class AuthService {
 
     this.logger.log(`User ${user.id} registered and temporary password generated.`);
 
-    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }]);
+    emitUserRegistrationEmail(this.notificationsPublisher, [
+      { email: user.email, additionalData: { url, tempPassword, downloadUrl } },
+    ]);
 
     return user;
   }
@@ -90,7 +92,10 @@ export class AuthService {
     if (!correct) throw new BadRequestException(ErrorCodes.INOP);
 
     if (user.status === UserStatus.NEW && user.keys.length === 0) {
-      emitUserStatusUpdateNotifications(this.notificationsPublisher, { entityId: user.id, additionalData: { username: user.email } });
+      emitUserStatusUpdateNotifications(this.notificationsPublisher, {
+        entityId: user.id,
+        additionalData: { username: user.email },
+      });
     }
 
     await this.usersService.setPassword(user, newPassword);
@@ -105,13 +110,18 @@ export class AuthService {
     // A legitimate new request always gets a clean slate of attempts, and
     // replaces whatever code (if any) was previously pending.
     await this.otpStoreService.resetFailedAttempts(user.email);
-    if (!secret) return null;
 
     const otp = this.generateOtp();
-    await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
+    await this.otpStoreService.storeCodeHash(
+      user.email,
+      this.hashOtp(otp),
+      this.getOtpWindowSeconds(),
+    );
 
     const serverUrl = this.resolveServerUrl(fallbackUrl);
-    await emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
+    await emitUserPasswordResetEmail(this.notificationsPublisher, [
+      { email: user.email, additionalData: { otp, serverUrl } },
+    ]);
 
     // @deprecated This JWT proves nothing on its own (see OtpJwtStrategy) - it's
     // only issued so pre-existing clients that still send it back as the `otp`
@@ -120,7 +130,7 @@ export class AuthService {
     // pair, not this token.
     const token = this.getOtpToken(
       { email: user.email, verified: false },
-      this.configService.get<number>('OTP_EXPIRATION'),
+      this.configService.get<number>('OTP_EXPIRATION') ?? 2,
     );
     return { token };
   }
@@ -139,7 +149,7 @@ export class AuthService {
 
     // Atomically checks-and-deletes so the same code can never be redeemed twice,
     // even by two requests racing each other.
-    const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash) ?? '';
+    const matched = await this.otpStoreService.consumeCodeHashIfMatch(email, tokenHash);
 
     if (!matched) {
       const attempts = await this.otpStoreService.registerFailedAttempt(email, windowSeconds);
@@ -217,18 +227,18 @@ export class AuthService {
    * the failed-attempt counter, since it doesn't need to outlive the code it's
    * protecting. */
   private getOtpWindowSeconds(): number {
-    return this.configService.get<number>('OTP_EXPIRATION') * 60;
+    return this.configService.get<number>('OTP_EXPIRATION')! * 60;
   }
 
   private getOtpMaxAttempts(): number {
-    return this.configService.get<number>('OTP_MAX_ATTEMPTS');
+    return this.configService.get<number>('OTP_MAX_ATTEMPTS')!;
   }
 
   /* How long the verified OTP JWT stays valid, in minutes. Independent of the
    * guessing window above - by this point the code is already spent, so this is
    * just giving the user reasonable time to submit their new password. */
   private getOtpVerifiedExpirationMinutes(): number {
-    return this.configService.get<number>('OTP_VERIFIED_EXPIRATION');
+    return this.configService.get<number>('OTP_VERIFIED_EXPIRATION')!;
   }
 
   /* Sets the OTP jwt */
