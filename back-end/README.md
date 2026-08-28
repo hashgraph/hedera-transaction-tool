@@ -55,6 +55,9 @@ To setup the frontend application, Follow the complete setup process below..
     python -m setuptools --version
     ```
 
+- **Redis 7.0+**
+  - Required for IP-based rate limiting on sensitive endpoints. The `IpResetPasswordUniqueEmailGuard` uses the `EXPIRE ... NX` option introduced in Redis 7.0. Earlier versions don't support this syntax and will return an error, so this guard requires Redis 7.0+ to function correctly.
+
 - **Docker Desktop with Kubernetes enabled**
   - Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.
 

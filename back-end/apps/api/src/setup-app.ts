@@ -7,7 +7,7 @@ import { json } from 'express';
 
 import { version } from '../package.json';
 
-import { ErrorCodes, LoggerMiddleware } from '@app/common';
+import { ClientIpMiddleware, ErrorCodes, LoggerMiddleware } from '@app/common';
 
 import { AllExceptionsFilter } from './filters/all-exceptions.filter';
 import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
@@ -15,6 +15,11 @@ import { BadRequestExceptionFilter } from './filters/bad-request-exception.filte
 
 export function setupApp(app: NestExpressApplication, addLogger: boolean = true) {
   connectMicroservices(app);
+
+  // Resolve the client IP first, before anything else touches the request -- guards,
+  // pipes, and the logger below all rely on req[CLIENT_IP_KEY] being set.
+  const clientIpMiddleware = app.get(ClientIpMiddleware);
+  app.use(clientIpMiddleware.use.bind(clientIpMiddleware));
 
   app.useGlobalPipes(
     new ValidationPipe({

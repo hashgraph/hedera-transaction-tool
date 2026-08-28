@@ -34,10 +34,35 @@ describe('EmailThrottlerGuard', () => {
     }
   });
 
+  it.each([[123], [['a@test.com']], [{ address: 'a@test.com' }], [null], ['   ']])(
+    'throws HttpException when email is %p, not a real string',
+    async (badEmail) => {
+      const req = { body: { email: badEmail } };
+
+      try {
+        await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
+        fail('Expected getTracker to throw HttpException');
+      } catch (err) {
+        expect(err).toBeInstanceOf(HttpException);
+        if (err instanceof HttpException) {
+          expect(err.getStatus()).toBe(HttpStatus.BAD_REQUEST);
+          expect(err.message).toBe('No email specified.');
+        }
+      }
+    },
+  );
+
   it('returns the email string when provided in request body', async () => {
     const req = { body: { email: 'user@example.com' } };
 
     const result = await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
     expect(result).toBe('user@example.com');
+  });
+
+  it('normalizes email casing and surrounding whitespace before using it as the tracker', async () => {
+    const req = { body: { email: '  Test@Example.COM  ' } };
+
+    const result = await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
+    expect(result).toBe('test@example.com');
   });
 });

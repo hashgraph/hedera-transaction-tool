@@ -10,7 +10,12 @@ import { AuthController } from './auth.controller';
 
 import { AuthService } from './auth.service';
 
-import { EmailThrottlerGuard } from '../guards';
+import {
+  EmailThrottlerGuard,
+  IpLoginThrottlerGuard,
+  IpResetPasswordThrottlerGuard,
+  IpUniqueEmailGuard,
+} from '../guards';
 
 jest.mock('passport-jwt', () => ({
   ExtractJwt: {
@@ -46,6 +51,12 @@ describe('AuthController', () => {
       ],
     })
       .overrideGuard(EmailThrottlerGuard)
+      .useValue(guardMock())
+      .overrideGuard(IpLoginThrottlerGuard)
+      .useValue(guardMock())
+      .overrideGuard(IpResetPasswordThrottlerGuard)
+      .useValue(guardMock())
+      .overrideGuard(IpUniqueEmailGuard)
       .useValue(guardMock())
       .compile();
 
@@ -154,11 +165,13 @@ describe('AuthController', () => {
   });
 
   describe('verify-reset', () => {
-    it('should have no return value', async () => {
+    it('should return the verified jwt and blacklist the used otp token', async () => {
       const result = { token: 'newToken' };
       authService.verifyOtp.mockResolvedValue(result);
 
-      expect(await controller.verifyOtp(user, { token: '' }, request)).toEqual(result);
+      const dto = { token: '123456' };
+      expect(await controller.verifyOtp(user, dto, request)).toEqual(result);
+      expect(authService.verifyOtp).toHaveBeenCalledWith(user, dto);
       expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });

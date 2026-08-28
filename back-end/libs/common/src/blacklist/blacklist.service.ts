@@ -1,19 +1,21 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { Redis } from 'ioredis';
+
+import { REDIS_CLIENT } from '../redis/redis-client.module';
 
 @Injectable()
 export class BlacklistService {
   private BLACKLISTED = 'blacklisted';
   private USER_INVALID_BEFORE_PREFIX = 'blacklisted:user:';
 
-  client: Redis;
-
-  constructor(private readonly configService: ConfigService) {
-    const redisURL = this.configService.get('REDIS_URL');
-    this.client = new Redis(redisURL);
-  }
+  // The shared connection's lifecycle (including closing it on shutdown) is
+  // owned by RedisClientModule, not this service.
+  constructor(
+    @Inject(REDIS_CLIENT) private readonly client: Redis,
+    private readonly configService: ConfigService,
+  ) {}
 
   async blacklistToken(jwt: string) {
     await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());

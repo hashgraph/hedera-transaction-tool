@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { seconds, ThrottlerGuard, ThrottlerStorage } from '@nestjs/throttler';
+import { CLIENT_IP_KEY } from '@app/common';
 
 @Injectable()
 export class IpThrottlerGuard extends ThrottlerGuard {
@@ -32,10 +33,7 @@ export class IpThrottlerGuard extends ThrottlerGuard {
   }
 
   protected getTracker(req: Record<string, any>): Promise<string> {
-    const clientIp = req.headers['x-forwarded-for'] || req.ip;
-    if (!clientIp) {
-      throw new HttpException('Unable to determine client IP', HttpStatus.INTERNAL_SERVER_ERROR);
-    }
-    return Promise.resolve(clientIp);
+    // Set by ClientIpMiddleware; never touch a raw header or req.ip here directly.
+    return Promise.resolve(req[CLIENT_IP_KEY]);
   }
 }

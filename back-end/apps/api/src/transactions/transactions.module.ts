@@ -7,9 +7,12 @@ import {
   Transaction,
   TransactionApprover,
   TransactionComment,
+  TransactionEntity,
   TransactionGroup,
   TransactionGroupItem,
   TransactionObserver,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   TransactionSigner,
   NotificationReceiver,
   TransactionCachedAccount,
@@ -18,6 +21,9 @@ import {
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  ReviewerGroup,
+  ReviewerGroupMember,
+  ReviewerRule,
 } from '@entities';
 
 import { ExecuteModule, SqlBuilderModule, TransactionSignatureModule } from '@app/common';
@@ -30,14 +36,18 @@ import { ObserversController, ObserversService } from './observers';
 import { ApproversController, ApproversService } from './approvers';
 import { TransactionNodesController } from './nodes/transaction-nodes.controller';
 import { TransactionNodesService } from './nodes/transaction-nodes.service';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       Transaction,
       TransactionComment,
+      TransactionEntity,
       TransactionGroup,
       TransactionGroupItem,
+      TransactionReviewerList,
+      TransactionReviewerListMember,
       TransactionSigner,
       TransactionApprover,
       TransactionObserver,
@@ -49,6 +59,9 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
       CachedNodeAdminKey,
       Notification,
       NotificationReceiver,
+      ReviewerGroup,
+      ReviewerGroupMember,
+      ReviewerRule,
     ]),
     TransactionSignatureModule,
     UserKeysModule,
@@ -71,7 +84,8 @@ import { TransactionNodesService } from './nodes/transaction-nodes.service';
     ObserversService,
     ApproversService,
     TransactionGroupsService,
-    TransactionNodesService
+    TransactionNodesService,
+    ReviewerAssignmentService,
   ],
   exports: [TransactionsService],
 })

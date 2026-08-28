@@ -8,4 +8,5 @@ export enum NotificationTypeEmailSubjects {
   TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER = 'Approaching Transaction valid start',
   TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL = 'Action Required | Approaching Transaction valid start',
   USER_REGISTERED = 'A new user has finished registration',
+  TRANSACTION_READY_FOR_REVIEW = 'Action Required | Review Transaction',
 }
