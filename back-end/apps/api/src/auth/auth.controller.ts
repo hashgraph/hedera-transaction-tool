@@ -156,17 +156,15 @@ export class AuthController {
   @HttpCode(200)
   // IpResetPasswordThrottlerGuard is reused as-is here - its key includes the handler
   // name, so this tracks verify-reset attempts independently from reset-password ones,
-  // under the same limits. EmailThrottlerGuard/IpUniqueEmailGuard need req.user, which
-  // JwtBlackListOtpGuard/OtpJwtAuthGuard populate - so those two run first. None of
-  // this depends on the OTP JWT being kept around: once it's removed and the email
-  // moves into the request body directly, these same guards keep working unchanged.
-  @UseGuards(
-    IpResetPasswordThrottlerGuard,
-    JwtBlackListOtpGuard,
-    OtpJwtAuthGuard,
-    EmailThrottlerGuard,
-    IpUniqueEmailGuard,
-  )
+  // under the same limits. IpUniqueEmailGuard needs req.user, which JwtBlackListOtpGuard/
+  // OtpJwtAuthGuard populate - so those two run first. EmailThrottlerGuard is
+  // deliberately not reused here: its per-email request-rate cap conflicts with
+  // OTP_MAX_ATTEMPTS's own, more precise, per-email lockout (enforced in
+  // AuthService.verifyOtp), which already covers this route's per-email abuse case
+  // regardless of source IP. None of this depends on the OTP JWT being kept around:
+  // once it's removed and the email moves into the request body directly,
+  // IpUniqueEmailGuard keeps working unchanged.
+  @UseGuards(IpResetPasswordThrottlerGuard, JwtBlackListOtpGuard, OtpJwtAuthGuard, IpUniqueEmailGuard)
   async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
     const result = await this.authService.verifyOtp(user, dto);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));

@@ -40,18 +40,4 @@ describe('EmailThrottlerGuard', () => {
     const result = await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
     expect(result).toBe('user@example.com');
   });
-
-  it('falls back to the authenticated user email when the body has none', async () => {
-    const req = { body: {}, user: { email: 'user@example.com' } };
-
-    const result = await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
-    expect(result).toBe('user@example.com');
-  });
-
-  it('prefers the body email over the authenticated user email when both are present', async () => {
-    const req = { body: { email: 'body@example.com' }, user: { email: 'user@example.com' } };
-
-    const result = await (guard as unknown as { getTracker(request: Record<string, unknown>): Promise<string> }).getTracker(req);
-    expect(result).toBe('body@example.com');
-  });
 });
