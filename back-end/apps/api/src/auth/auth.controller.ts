@@ -125,7 +125,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned; it carries no real authorization on its own and is kept only for backward compatibility with clients that still expect one (see the deprecation note on OtpJwtStrategy) - what actually matters is the email and OTP submitted together to /verify-reset.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned; it carries no real authorization on its own and is kept only for backward compatibility with clients that still expect one (see the deprecation note on OtpJwtStrategy). /verify-reset validates the OTP code from the request body against the email carried in that JWT.",
   })
   @ApiBody({
     type: OtpLocalDto,
