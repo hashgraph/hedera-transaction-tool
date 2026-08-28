@@ -84,15 +84,14 @@ watch(
           <span class="text-small">No options available</span>
         </li>
       </template>
-      <template v-for="item of items" :key="item.value">
+      <template v-for="item of items" :key="item.label">
         <li
           class="dropdown-item text-body"
           :class="{
-            active: item.value === value,
+            active: item.value === model,
           }"
           @click="handleSelect(item.value)"
           :data-testid="`select-item-${item.value}`"
-          :selected="item.value === value ? true : undefined"
         >
           <span class="text-small">{{ item.label }}</span>
         </li>
