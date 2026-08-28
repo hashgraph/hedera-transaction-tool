@@ -12,6 +12,7 @@ import {
   NatsModule,
   HealthModule,
   BlacklistModule,
+  RedisClientModule,
   SchedulerModule,
 } from '@app/common';
 
@@ -76,6 +77,7 @@ export const config = ConfigModule.forRoot({
     ReviewerGroupsModule,
     HealthModule,
     IpResolutionModule,
+    RedisClientModule,
     ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),
     SchedulerModule.register({ isGlobal: true }),

@@ -1,7 +1,8 @@
-import { Injectable, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Inject, Injectable } from '@nestjs/common';
 
 import { Redis } from 'ioredis';
+
+import { REDIS_CLIENT } from '@app/common';
 
 /* Atomically check-and-delete: only removes the key if its value still matches
  * the given hash, and reports whether it did. Doing the compare and the delete
@@ -25,20 +26,13 @@ end
  * and "burning" it is just deleting the key.
  */
 @Injectable()
-export class OtpStoreService implements OnModuleDestroy {
+export class OtpStoreService {
   private readonly FAILED_ATTEMPTS_PREFIX = 'otp:failed-attempts:';
   private readonly CODE_PREFIX = 'otp:code:';
 
-  client: Redis;
-
-  constructor(private readonly configService: ConfigService) {
-    const redisURL = this.configService.get('REDIS_URL');
-    this.client = new Redis(redisURL);
-  }
-
-  onModuleDestroy() {
-    this.client.quit();
-  }
+  // The shared connection's lifecycle (including closing it on shutdown) is
+  // owned by RedisClientModule, not this service.
+  constructor(@Inject(REDIS_CLIENT) private readonly client: Redis) {}
 
   /* Increment the failed attempt count for the email, returning the new count. */
   async registerFailedAttempt(email: string, ttlSeconds: number): Promise<number> {

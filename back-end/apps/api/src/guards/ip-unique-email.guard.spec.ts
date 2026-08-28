@@ -1,5 +1,6 @@
 import { ExecutionContext, HttpStatus } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Redis } from 'ioredis';
 
 import { IpUniqueEmailGuard } from './ip-unique-email.guard';
 
@@ -14,10 +15,6 @@ let mockRedisInstance: {
   scard: jest.Mock;
   multi: jest.Mock;
 };
-
-jest.mock('ioredis', () => ({
-  Redis: jest.fn().mockImplementation(() => mockRedisInstance),
-}));
 
 describe('IpUniqueEmailGuard', () => {
   let guard: IpUniqueEmailGuard;
@@ -47,7 +44,7 @@ describe('IpUniqueEmailGuard', () => {
       get: jest.fn().mockReturnValue(3),
     } as unknown as ConfigService;
 
-    guard = new IpUniqueEmailGuard(configServiceMock);
+    guard = new IpUniqueEmailGuard(configServiceMock, mockRedisInstance as unknown as Redis);
   });
 
   describe('RESET_IP_UNIQUE_EMAIL_LIMIT validation', () => {
@@ -62,14 +59,16 @@ describe('IpUniqueEmailGuard', () => {
     it.each([['abc'], [''], [undefined], [null], ['0'], [0], [-1], [NaN]])(
       'throws at construction time for an invalid limit (%s)',
       (limitValue) => {
-        expect(() => new IpUniqueEmailGuard(buildConfig(limitValue))).toThrow(
-          'RESET_IP_UNIQUE_EMAIL_LIMIT must be a positive number',
-        );
+        expect(
+          () => new IpUniqueEmailGuard(buildConfig(limitValue), mockRedisInstance as unknown as Redis),
+        ).toThrow('RESET_IP_UNIQUE_EMAIL_LIMIT must be a positive number');
       },
     );
 
     it('accepts a valid positive numeric string', () => {
-      expect(() => new IpUniqueEmailGuard(buildConfig('5'))).not.toThrow();
+      expect(
+        () => new IpUniqueEmailGuard(buildConfig('5'), mockRedisInstance as unknown as Redis),
+      ).not.toThrow();
     });
   });
 

@@ -1,19 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { mockDeep } from 'jest-mock-extended';
 
 import { OtpStoreService } from './otp-store.service';
-
-jest.mock('ioredis', () => {
-  return {
-    Redis: jest.fn().mockImplementation(() => ({})),
-  };
-});
+import { REDIS_CLIENT } from '@app/common';
 
 describe('OtpStoreService', () => {
   let service: OtpStoreService;
-  const configService = mockDeep<ConfigService>();
   const client = mockDeep<Redis>();
 
   beforeEach(async () => {
@@ -21,26 +14,17 @@ describe('OtpStoreService', () => {
       providers: [
         OtpStoreService,
         {
-          provide: ConfigService,
-          useValue: configService,
+          provide: REDIS_CLIENT,
+          useValue: client,
         },
       ],
     }).compile();
 
     service = module.get<OtpStoreService>(OtpStoreService);
-    service.client = client;
   });
 
   afterEach(() => {
     jest.clearAllMocks();
-  });
-
-  describe('onModuleDestroy', () => {
-    it('should quit the redis client', () => {
-      service.onModuleDestroy();
-
-      expect(client.quit).toHaveBeenCalled();
-    });
   });
 
   describe('registerFailedAttempt', () => {

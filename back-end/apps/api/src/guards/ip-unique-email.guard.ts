@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { CLIENT_IP_KEY } from '@app/common';
 import { Redis } from 'ioredis';
 
+import { REDIS_CLIENT } from '@app/common';
+
 const TEN_MINUTES_SECONDS = 600;
 
 /*
@@ -12,12 +14,12 @@ const TEN_MINUTES_SECONDS = 600;
  */
 @Injectable()
 export class IpUniqueEmailGuard implements CanActivate {
-  private readonly redis: Redis;
   private readonly limit: number;
 
-  constructor(@Inject(ConfigService) configService: ConfigService) {
-    this.redis = new Redis(configService.getOrThrow('REDIS_URL'));
-
+  constructor(
+    @Inject(ConfigService) configService: ConfigService,
+    @Inject(REDIS_CLIENT) private readonly redis: Redis,
+  ) {
     const configuredLimit = Number(configService.get('RESET_IP_UNIQUE_EMAIL_LIMIT', 3));
     if (!Number.isFinite(configuredLimit) || configuredLimit <= 0) {
       // Fail fast: a non-numeric or non-positive value silently disables this guard
