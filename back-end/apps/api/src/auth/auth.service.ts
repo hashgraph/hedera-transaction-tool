@@ -160,16 +160,17 @@ export class AuthService {
       throw new UnauthorizedException('Incorrect token');
     }
 
-    // The code is already consumed at this point - it can't be redeemed again
-    // even by a request racing this one. Only clear the failed-attempt count
-    // once we know the user record actually updated; if that fails, put the
-    // code back so a transient error here doesn't force the user to request an
-    // entirely new one for a code that was genuinely correct.
+    // The code is already consumed at this point and stays that way even if
+    // what follows fails - updateUser failing here should be rare (a single
+    // status field), and it's simpler and safer to make the user request a
+    // fresh code than to try to put this one back and risk racing a newer
+    // code a concurrent /reset-password call may have stored in the meantime.
     try {
       await this.usersService.updateUser(user, { status: UserStatus.NEW });
     } catch {
-      await this.otpStoreService.storeCodeHash(email, tokenHash, windowSeconds);
-      throw new InternalServerErrorException('Error while updating user status');
+      throw new InternalServerErrorException(
+        'Error while updating user status. Please request a new code and try again.',
+      );
     }
 
     await this.otpStoreService.resetFailedAttempts(email);

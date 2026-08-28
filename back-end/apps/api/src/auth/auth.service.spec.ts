@@ -477,7 +477,7 @@ describe('AuthService', () => {
     expect(second.status).toBe('rejected');
   });
 
-  it('should throw error if update user fails, and put the code back so it can still be used', async () => {
+  it('should throw error if update user fails, leaving the already-consumed code burned', async () => {
     const email = 'email';
     const user = { email };
     const otp = '12345678';
@@ -493,7 +493,6 @@ describe('AuthService', () => {
     await expect(service.verifyOtp(user as User, { token: otp })).rejects.toThrow(
       'Error while updating user status',
     );
-    expect(otpStoreService.storeCodeHash).toHaveBeenCalledWith(email, hashOf(otp), 120);
     expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
   });
 
