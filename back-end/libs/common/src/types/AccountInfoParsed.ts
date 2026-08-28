@@ -6,7 +6,7 @@ export interface AccountInfoParsed {
   balance: Hbar;
   declineReward: boolean;
   deleted: boolean;
-  ethereumNonce: number;
+  ethereumNonce: number | null;
   evmAddress: EvmAddress;
   createdTimestamp: Timestamp | null;
   expiryTimestamp: Timestamp | null;

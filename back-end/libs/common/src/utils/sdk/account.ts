@@ -2,17 +2,13 @@ import { AccountInfo, AccountInfoParsed, KeyType, decodeProtobufKey } from '@app
 import { AccountId, EvmAddress, Hbar, HbarUnit, Key, PublicKey, Timestamp } from '@hiero-ledger/sdk';
 
 export const parseAccountInfo = (accountInfo: AccountInfo) => {
-  const ethereumNonce = parseAccountProperty(accountInfo, 'ethereum_nonce');
-  if (ethereumNonce === null) {
-    return null;
-  }
   const accountInfoParsed: AccountInfoParsed = {
     accountId: parseAccountProperty(accountInfo, 'account'),
     alias: accountInfo.alias,
     balance: parseAccountProperty(accountInfo, 'balance'),
     declineReward: parseAccountProperty(accountInfo, 'decline_reward'),
     deleted: parseAccountProperty(accountInfo, 'deleted'),
-    ethereumNonce: ethereumNonce,
+    ethereumNonce: parseAccountProperty(accountInfo, 'ethereum_nonce'),
     evmAddress: parseAccountProperty(accountInfo, 'evm_address'),
     createdTimestamp: parseAccountProperty(accountInfo, 'created_timestamp'),
     expiryTimestamp: parseAccountProperty(accountInfo, 'expiry_timestamp'),
