@@ -48,7 +48,8 @@ export class AuthService {
   ) {}
 
   /* Register a new user by admins and send an email with the temporary password */
-  async signUpByAdmin(dto: SignUpUserDto, url: string): Promise<User> {
+  async signUpByAdmin(dto: SignUpUserDto, fallbackUrl: string): Promise<User> {
+    const url = this.resolveServerUrl(fallbackUrl);
     const rawRepoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
     const repoUrl = rawRepoUrl ? rawRepoUrl.replace(/\/+$/, '') : '';
     const downloadUrl = `${repoUrl}/latest`;
@@ -96,7 +97,7 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string, serverUrl: string): Promise<{ token: string }> {
+  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string }> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return;
@@ -108,6 +109,7 @@ export class AuthService {
     const otp = this.generateOtp();
     await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
 
+    const serverUrl = this.resolveServerUrl(fallbackUrl);
     emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
 
     // @deprecated This JWT proves nothing on its own (see OtpJwtStrategy) - it's
@@ -183,6 +185,14 @@ export class AuthService {
       this.getOtpVerifiedExpirationMinutes(),
     );
     return { token: verifiedToken };
+  }
+
+  /* Prefer the configured APP_URL for the base URL embedded in outbound emails.
+   * `fallbackUrl` - derived by the controller from the client-controlled `Host`
+   * header (@deprecated, see AuthController) - is only used until APP_URL is
+   * set on every deployment (#3332). */
+  private resolveServerUrl(fallbackUrl: string): string {
+    return this.configService.get<string>('APP_URL') || fallbackUrl;
   }
 
   /* A random numeric code, zero-padded to a fixed width - crypto.randomInt is

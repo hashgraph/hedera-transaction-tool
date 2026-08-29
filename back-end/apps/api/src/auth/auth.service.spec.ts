@@ -191,6 +191,45 @@ describe('AuthService', () => {
     );
   });
 
+  it('should prefer APP_URL over the Host-header-derived fallback URL', async () => {
+    const dto: SignUpUserDto = { email: 'test@email.com' };
+
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('APP_URL')
+      .mockReturnValue('https://tool.example.com');
+
+    jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ url: 'https://tool.example.com' }),
+        }),
+      ]),
+    );
+  });
+
+  it('should fall back to the Host-header-derived URL when APP_URL is not set', async () => {
+    const dto: SignUpUserDto = { email: 'test@email.com' };
+
+    jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ url: 'http://localhost' }),
+        }),
+      ]),
+    );
+  });
+
   it('should update the password and resend an email for an existing user with status NEW', async () => {
     const dto: SignUpUserDto = { email: 'test@test.com' };
 
@@ -319,6 +358,30 @@ describe('AuthService', () => {
           email: user.email,
           additionalData: { otp, serverUrl },
         },
+      ],
+    );
+  });
+
+  it('should prefer APP_URL over the Host-header-derived fallback URL', async () => {
+    const email = 'some@email.com';
+    const user = { email };
+
+    userService.getUser.mockResolvedValue(user as User);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('APP_URL')
+      .mockReturnValue('https://tool.example.com');
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(randomInt).mockReturnValue(1234);
+
+    await service.createOtp(email, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ serverUrl: 'https://tool.example.com' }),
+        }),
       ],
     );
   });
