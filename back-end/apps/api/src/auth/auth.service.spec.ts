@@ -415,10 +415,11 @@ describe('AuthService', () => {
 
   it('should not create otp if opt secret not set', async () => {
     const email = '';
+    const fallbackUrl = '';
 
     configService.get.mockReturnValue(undefined);
 
-    await service.createOtp(email);
+    await service.createOtp(email, fallbackUrl);
   });
 
   it('should verify otp in dev', async () => {
