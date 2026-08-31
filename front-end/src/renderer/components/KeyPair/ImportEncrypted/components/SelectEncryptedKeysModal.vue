@@ -133,7 +133,7 @@ watch(
             :disable-on-loading="false"
             loading-text="Abort Search"
             @click="handleSelect"
-            data-testid="button-encrypted-keys-folder-import"
+            data-testid="button-browse-encrypted-keys"
             >Browse</AppButton
           >
           <AppButton
