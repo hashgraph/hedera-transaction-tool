@@ -91,6 +91,7 @@ describe('AuthService', () => {
 
   async function invokeCreateOtp(production: boolean) {
     const email = 'some@email.com';
+    const serverUrl = 'https://tool.example.com';
     const user = { email };
     const otp = '00001234';
 
@@ -108,9 +109,9 @@ describe('AuthService', () => {
     //@ts-expect-error - incorrect overload expected
     jest.mocked(randomInt).mockReturnValue(1234);
 
-    const result = await service.createOtp(email);
+    const result = await service.createOtp(email, serverUrl);
 
-    return { user, otp, result };
+    return { user, otp, serverUrl, result };
   }
 
   async function invokeVerifyOtp(production: boolean) {
@@ -185,6 +186,45 @@ describe('AuthService', () => {
           additionalData: expect.objectContaining({
             downloadUrl: 'https://example.com/releases/latest',
           }),
+        }),
+      ]),
+    );
+  });
+
+  it('should prefer APP_URL over the Host-header-derived fallback URL', async () => {
+    const dto: SignUpUserDto = { email: 'test@email.com' };
+
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('APP_URL')
+      .mockReturnValue('https://tool.example.com');
+
+    jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ url: 'https://tool.example.com' }),
+        }),
+      ]),
+    );
+  });
+
+  it('should fall back to the Host-header-derived URL when APP_URL is not set', async () => {
+    const dto: SignUpUserDto = { email: 'test@email.com' };
+
+    jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
+
+    await service.signUpByAdmin(dto, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.invite',
+      expect.arrayContaining([
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ url: 'http://localhost' }),
         }),
       ]),
     );
@@ -290,14 +330,14 @@ describe('AuthService', () => {
   });
 
   it('should create otp in dev', async () => {
-    const { user, otp, result } = await invokeCreateOtp(false);
+    const { user, otp, serverUrl, result } = await invokeCreateOtp(false);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.password-reset',
       [
         {
           email: user.email,
-          additionalData: { otp },
+          additionalData: { otp, serverUrl },
         },
       ],
     );
@@ -309,15 +349,39 @@ describe('AuthService', () => {
   });
 
   it('should create otp in production', async () => {
-    const { user, otp } = await invokeCreateOtp(true);
+    const { user, otp, serverUrl } = await invokeCreateOtp(true);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.password-reset',
       [
         {
           email: user.email,
-          additionalData: { otp },
+          additionalData: { otp, serverUrl },
         },
+      ],
+    );
+  });
+
+  it('should prefer APP_URL over the Host-header-derived fallback URL', async () => {
+    const email = 'some@email.com';
+    const user = { email };
+
+    userService.getUser.mockResolvedValue(user as User);
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('APP_URL')
+      .mockReturnValue('https://tool.example.com');
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(randomInt).mockReturnValue(1234);
+
+    await service.createOtp(email, 'http://localhost');
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [
+        expect.objectContaining({
+          additionalData: expect.objectContaining({ serverUrl: 'https://tool.example.com' }),
+        }),
       ],
     );
   });
@@ -342,7 +406,7 @@ describe('AuthService', () => {
 
     userService.getUser.mockResolvedValue(null);
 
-    await service.createOtp(email);
+    await service.createOtp(email, 'https://tool.example.com');
 
     expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
     expect(otpStoreService.storeCodeHash).not.toHaveBeenCalled();

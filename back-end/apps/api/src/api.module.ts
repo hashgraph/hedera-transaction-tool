@@ -58,6 +58,9 @@ export const config = ConfigModule.forRoot({
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     MINIMUM_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     FRONTEND_REPO_URL: Joi.string().required(),
+    // Not required yet - not every deployment has it set (see #3332). Once it
+    // is, outbound emails should stop falling back to the Host header.
+    APP_URL: Joi.string().uri().optional(),
   }),
 });
 

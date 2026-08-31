@@ -42,6 +42,16 @@ import {
   SignUpUserDto,
 } from './dtos';
 
+/**
+ * @deprecated Derived from the client-controlled `Host` header, so it's not
+ * trustworthy on its own - a request can set `Host` to whatever it wants.
+ * AuthService only falls back to this when `APP_URL` isn't configured; remove
+ * once `APP_URL` is set on every deployment (#3332).
+ */
+function hostHeaderUrl(req: Request): string {
+  return `${req.protocol}://${req.get('host')}`;
+}
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -64,8 +74,7 @@ export class AuthController {
   @Serialize(AuthDto)
   @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
-    const url = `${req.protocol}://${req.get('host')}`;
-    return this.authService.signUpByAdmin(dto, url);
+    return this.authService.signUpByAdmin(dto, hostHeaderUrl(req));
   }
 
   /* User login */
@@ -137,8 +146,8 @@ export class AuthController {
   @Post('/reset-password')
   @HttpCode(200)
   @UseGuards(EmailThrottlerGuard, IpResetPasswordThrottlerGuard, IpUniqueEmailGuard)
-  async createOtp(@Body() { email }: OtpLocalDto) {
-    return this.authService.createOtp(email);
+  async createOtp(@Body() { email }: OtpLocalDto, @Req() req: Request) {
+    return this.authService.createOtp(email, hostHeaderUrl(req));
   }
 
   /* Verify OTP for password reset */

@@ -158,9 +158,10 @@ describe('AuthController', () => {
 
   describe('reset-password', () => {
     it('should have no return value', async () => {
+      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       authService.createOtp.mockResolvedValue(undefined);
 
-      expect(await controller.createOtp({ email: 'john@test.com' })).toBeUndefined();
+      expect(await controller.createOtp({ email: 'john@test.com' }, request)).toBeUndefined();
     });
   });
 
