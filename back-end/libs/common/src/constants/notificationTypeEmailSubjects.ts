@@ -10,3 +10,9 @@ export enum NotificationTypeEmailSubjects {
   USER_REGISTERED = 'A new user has finished registration',
   TRANSACTION_READY_FOR_REVIEW = 'Action Required | Review Transaction',
 }
+
+export function findEmailSubject(value: unknown): string {
+  const subjects = Object.values(NotificationTypeEmailSubjects);
+  const candidate = value as NotificationTypeEmailSubjects;
+  return subjects.includes(candidate) ? candidate : String(value);
+}

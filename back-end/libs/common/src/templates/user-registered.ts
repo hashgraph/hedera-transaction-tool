@@ -9,7 +9,7 @@ import {
   escapeHtml,
 } from '@app/common/templates/layout';
 
-export const generateUserRegisteredMessage = (additionalData: Record<string, any>) => {
+export const generateUserRegisteredMessage = (additionalData: Record<string, unknown>) => {
   const { url, tempPassword, downloadUrl } = additionalData;
   const content = `
     ${emailHeader("Welcome to the Transaction Tool!", "Hedera Transaction Tool")}

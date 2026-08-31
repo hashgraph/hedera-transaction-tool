@@ -126,12 +126,12 @@ export class TransactionSchedulerService {
     if (result.raw.length > 0) {
       emitTransactionStatusUpdate(
         this.notificationsPublisher,
-        result.raw.map(t => ({
+        result.raw.map((t: { id: number }) => ({
           entityId: t.id,
         })),
       );
       await Promise.all(
-        result.raw.map(t =>
+        result.raw.map((t: { id: number }) =>
           this.transactionSnapshotService.captureForTransaction(t.id, executedAt),
         ),
       );
@@ -300,10 +300,10 @@ export class TransactionSchedulerService {
           if (result.raw.length > 0) {
             emitTransactionStatusUpdate(
               this.notificationsPublisher,
-              result.raw.map(row => ({ entityId: row.id })),
+              result.raw.map((row: { id: number }) => ({ entityId: row.id })),
             );
             await Promise.all(
-              result.raw.map(row =>
+              result.raw.map((row: { id: number }) =>
                 this.transactionSnapshotService.captureForTransaction(row.id, executedAt),
               ),
             );
@@ -369,7 +369,7 @@ export class TransactionSchedulerService {
           if (result.raw.length > 0) {
             emitTransactionStatusUpdate(
               this.notificationsPublisher,
-              result.raw.map(row => ({ entityId: row.id })),
+              result.raw.map((row: { id: number }) => ({ entityId: row.id })),
             );
             await this.transactionSnapshotService.captureForTransaction(
               result.raw[0].id,

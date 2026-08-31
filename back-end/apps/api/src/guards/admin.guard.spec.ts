@@ -4,7 +4,7 @@ import { AdminGuard } from './admin.guard';
 describe('AdminGuard', () => {
   let guard: AdminGuard;
 
-  const mockExecutionContext = user =>
+  const mockExecutionContext = (user: unknown) =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({

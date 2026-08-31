@@ -10,6 +10,7 @@ import {
 import { Transaction } from './transaction.entity';
 import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 export type NewSignerRow = {
   userId: number;
@@ -19,6 +20,17 @@ export type NewSignerRow = {
   tool: string | null;
   version: string | null;
 };
+
+export interface ValidationResult {
+  id: number;
+  transaction?: Transaction;
+  sdkTransaction?: SDKTransaction;
+  userKeys?: UserKey[];
+  isSameBytes?: boolean;
+  tool?: string;
+  error: string | null;
+}
+
 
 @Entity()
 @Index(['transactionId', 'userKeyId'])

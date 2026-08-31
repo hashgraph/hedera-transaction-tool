@@ -36,7 +36,7 @@ jest.mock('murlock', () => {
   return {
     ...original,
     MurLock: function MurLock() {
-      return (target, propertyKey, descriptor) => {
+      return (target: unknown, propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },

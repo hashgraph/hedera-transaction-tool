@@ -17,7 +17,7 @@ export class PaginatedResourceDto<T> {
   size!: number;
 }
 
-type Constructor<T = object> = new (...args) => T;
+type Constructor<T = object> = new (...args: unknown[]) => T;
 
 export function withPaginatedResponse<TBase extends Constructor>(Base: TBase) {
   class ResponseDTO {

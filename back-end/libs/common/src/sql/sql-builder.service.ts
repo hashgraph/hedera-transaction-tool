@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 
 export interface SqlQuery {
   text: string;
-  values: any[];
+  values: unknown[];
 }
 
 /**

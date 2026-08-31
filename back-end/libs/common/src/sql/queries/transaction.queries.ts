@@ -351,6 +351,31 @@ export function getTransactionNodesQuery(
   return { text, values };
 }
 
+export interface TransactionGroupItemsRow {
+  gi_seq: number;
+  tx_id: number;
+  tx_name: string;
+  tx_description: string;
+  sdk_transaction_id: string;
+  tx_transaction_hash: string;
+  tx_transaction_bytes: Buffer;
+  tx_unsigned_transaction_bytes: Buffer;
+  tx_creator_key_id: number;
+  tx_signature: Buffer;
+  tx_mirror_network: string;
+  tx_cutoff_at: Date | undefined;
+  tx_created_at: Date;
+  tx_valid_start: Date;
+  tx_updated_at: Date;
+  tx_executed_at: Date | undefined;
+  tx_status: TransactionStatus;
+  tx_status_code: number | undefined;
+  tx_type: TransactionType;
+  tx_is_manual: boolean;
+  tx_creator_key_user_id: number;
+  tx_creator_email: string;
+}
+
 export function getTransactionGroupItemsQuery(
   sql: SqlBuilderService,
   groupId: number,

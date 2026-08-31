@@ -75,7 +75,7 @@ export class TransactionsController {
   @OnlyOwnerKey<CreateTransactionDto>('creatorKeyId')
   async createTransaction(
     @Body() body: CreateTransactionDto,
-    @GetUser() user,
+    @GetUser() user: User,
   ): Promise<Transaction> {
     return this.transactionsService.createTransaction(body, user);
   }
@@ -255,7 +255,7 @@ export class TransactionsController {
   })
   @Patch('/cancel/:id')
   async cancelTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.cancelTransaction(id, user);
@@ -271,7 +271,7 @@ export class TransactionsController {
   })
   @Patch('/archive/:id')
   async archiveTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.archiveTransaction(id, user);
@@ -287,7 +287,7 @@ export class TransactionsController {
   })
   @Patch('/execute/:id')
   async executeTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.executeTransaction(id, user);
@@ -304,7 +304,7 @@ export class TransactionsController {
   @Get('/:id')
   @Serialize(TransactionFullDto)
   async getTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', TransactionIdPipe) id: number | TransactionId,
   ): Promise<Transaction> {
     return this.transactionsService.getTransactionWithVerifiedAccess(id, user);

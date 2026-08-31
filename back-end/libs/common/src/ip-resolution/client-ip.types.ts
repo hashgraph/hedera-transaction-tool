@@ -7,6 +7,9 @@ declare global {
   namespace Express {
     interface Request {
       [CLIENT_IP_KEY]?: string;
+      user?: {
+        id?: string;
+      };
     }
   }
 }

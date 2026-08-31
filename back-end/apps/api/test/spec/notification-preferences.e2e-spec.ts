@@ -248,7 +248,8 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should return the preferences', async () => {
-      const preferences = (await getPreferences(user.id))!;
+      let preferences = (await getPreferences(user.id))!;
+      preferences = Array.isArray(preferences) ? preferences : [preferences];
 
       const { status, body } = await endpoint.get(undefined, userAuthToken);
 

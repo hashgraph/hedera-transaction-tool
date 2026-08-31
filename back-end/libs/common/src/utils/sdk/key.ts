@@ -63,7 +63,7 @@ export const decodeProtobufKey = (protobuffEncodedKey: string) => {
   return deserializeKey(buffer);
 };
 
-export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
   const keyIsKeyList = key instanceof KeyList;
   const keyIsPublicKey = key instanceof PublicKey;
 
