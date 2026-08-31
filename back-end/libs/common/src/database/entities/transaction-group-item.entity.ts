@@ -13,20 +13,20 @@ import { TransactionGroup, Transaction } from './';
 @Index(['transaction', 'group'])
 export class TransactionGroupItem {
   @Column()
-  seq: number;
+  seq!: number;
 
   // This is required in addition to transaction because it is the primary column
   @PrimaryColumn()
-  transactionId: number;
+  transactionId!: number;
 
   @OneToOne(() => Transaction, transaction => transaction.groupItem)
   @JoinColumn()
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @ManyToOne(() => TransactionGroup, group => group.groupItems)
   @JoinColumn({ name: 'groupId' })
-  group: TransactionGroup;
+  group!: TransactionGroup;
 
   @Column()
-  groupId: number;
+  groupId!: number;
 }

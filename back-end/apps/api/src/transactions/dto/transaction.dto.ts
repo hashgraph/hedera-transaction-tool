@@ -9,63 +9,63 @@ import { TransactionGroupItemDto } from './transaction-group-item.dto';
 
 export class TransactionDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  name: string;
+  name!: string;
 
   @Expose()
-  type: TransactionType;
+  type!: TransactionType;
 
   @Expose()
-  transactionId: string;
+  transactionId!: string;
 
   @Expose()
-  description: string;
+  description!: string;
 
   @Transform(({ obj }) => obj.transactionBytes.toString('hex'))
   @Expose()
-  transactionBytes: Buffer;
+  transactionBytes!: Buffer;
 
   @Expose()
-  status: TransactionStatus;
+  status!: TransactionStatus;
 
   @Expose()
   statusCode?: number;
 
   @Transform(({ obj }) => obj.signature.toString('hex'))
   @Expose()
-  signature: Buffer;
+  signature!: Buffer;
 
   @Expose()
-  validStart: Date;
+  validStart!: Date;
 
   @Expose()
-  isManual: boolean;
+  isManual!: boolean;
 
   @Expose()
   cutoffAt?: Date;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
   executedAt?: Date;
 
   @Expose()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Transform(({ obj }) => (obj.creatorKey ? obj.creatorKey.id : undefined))
   @Expose()
-  creatorKeyId: number;
+  creatorKeyId!: number;
 
   @Transform(({ obj }) => obj.creatorKey?.user?.id)
   @Expose()
-  creatorId: number;
+  creatorId!: number;
 
   @Transform(({ obj }) => obj.creatorKey?.user?.email)
   @Expose()
-  creatorEmail: string;
+  creatorEmail!: string;
 
   @Expose()
   @Type(() => TransactionGroupItemDto)
@@ -79,13 +79,13 @@ export class TransactionFullDto extends TransactionDto {
 
   @Expose()
   @Type(() => TransactionSignerUserKeyDto)
-  signers: TransactionSignerUserKeyDto[];
+  signers!: TransactionSignerUserKeyDto[];
 
   @Expose()
   @Type(() => TransactionApproverDto)
-  approvers: TransactionApproverDto[];
+  approvers!: TransactionApproverDto[];
 
   @Expose()
   @Type(() => TransactionObserverDto)
-  observers: TransactionObserverDto[];
+  observers!: TransactionObserverDto[];
 }

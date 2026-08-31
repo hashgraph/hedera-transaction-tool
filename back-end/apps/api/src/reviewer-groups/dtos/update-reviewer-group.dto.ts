@@ -24,9 +24,9 @@ export class UpdateReviewerGroupDto {
   members?: GroupMemberInputDto[];
 
   @IsInt()
-  userKeyId: number;
+  userKeyId!: number;
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  userSignature: string;
+  userSignature!: string;
 }

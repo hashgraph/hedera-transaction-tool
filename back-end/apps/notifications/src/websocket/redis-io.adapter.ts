@@ -4,7 +4,7 @@ import { createAdapter } from '@socket.io/redis-streams-adapter';
 import { Redis } from 'ioredis';
 
 export class RedisIoAdapter extends IoAdapter {
-  private adapterConstructor: ReturnType<typeof createAdapter>;
+  private adapterConstructor: ReturnType<typeof createAdapter> | undefined;
 
   connectToRedis(url: string) {
     const redisClient = new Redis(url);

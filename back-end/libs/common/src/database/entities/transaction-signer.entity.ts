@@ -24,42 +24,42 @@ export type NewSignerRow = {
 @Index(['transactionId', 'userKeyId'])
 export class TransactionSigner {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction, transaction => transaction.signers)
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @ManyToOne(() => UserKey, userKey => userKey.signedTransactions)
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey;
+  userKey!: UserKey;
 
   @Column()
-  userKeyId: number;
+  userKeyId!: number;
 
   @ManyToOne(() => User, user => user.signerForTransactions)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'recorderId' })
-  recorder: User | null;
+  recorder!: User | null;
 
   @Column({ nullable: true })
-  recorderId: number | null;
+  recorderId!: number | null;
 
   @Column({ type: String, nullable: true })
-  tool: string | null;
+  tool!: string | null;
 
   @Column({ type: String, nullable: true })
-  version: string | null;
+  version!: string | null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

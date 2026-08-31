@@ -15,27 +15,27 @@ import { TransactionReviewerListMember } from './transaction-reviewer-list-membe
 @Index(['transactionId'])
 export class TransactionReviewerList {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction)
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @Column({ type: String, nullable: true })
-  name: string | null;
+  name!: string | null;
 
   @Column({ type: String, nullable: true })
-  description: string | null;
+  description!: string | null;
 
   @Column()
-  threshold: number;
+  threshold!: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => TransactionReviewerListMember, member => member.list)
-  members: TransactionReviewerListMember[];
+  members!: TransactionReviewerListMember[];
 }

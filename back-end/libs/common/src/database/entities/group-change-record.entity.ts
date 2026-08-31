@@ -71,64 +71,64 @@ export interface GroupSnapshot {
 @Index(['groupId'])
 export class GroupChangeRecord {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => ReviewerGroup, group => group.changeRecords, {
     nullable: true,
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'groupId' })
-  group: ReviewerGroup | null;
+  group!: ReviewerGroup | null;
 
   @Column({ nullable: true })
-  groupId: number | null;
+  groupId!: number | null;
 
   // The admin who proposed this change. Shown to group members so they know who is
   // requesting their approval. Non-nullable — users are soft-deleted, so this reference
   // is always valid.
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   // Which of the proposer's registered keys they used to sign the proposal.
   // Non-nullable — user keys are soft-deleted, so this reference is always valid.
   @ManyToOne(() => UserKey)
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey;
+  userKey!: UserKey;
 
   @Column()
-  userKeyId: number;
+  userKeyId!: number;
 
   // Hex-encoded Ed25519 signature over snapshotPayload, produced by the proposer's
   // private key. Proves the proposer created this specific request — the backend cannot
   // forge it without access to their private key. Intentionally not a FK so it is never
   // nulled; the signature remains verifiable even after userId/userKeyId are cleared.
   @Column({ type: String, nullable: true })
-  userSignature: string | null;
+  userSignature!: string | null;
 
   // GroupChangeType — UPDATE or DELETE.
   @Column()
-  type: GroupChangeType;
+  type!: GroupChangeType;
 
   // ChangeRequestStatus — PENDING while votes are being collected; APPLIED once the
   // approve threshold is met; REJECTED as soon as any member votes to reject.
   @Column()
-  status: ChangeRequestStatus;
+  status!: ChangeRequestStatus;
 
   // Pre-assigned as currentVersion + 1 when the request is created. Because at most
   // one PENDING record exists per group at a time, the next version is unambiguous.
   // The prior version (needed for client signature verification) is always
   // snapshotVersion - 1; no separate column is required.
   @Column()
-  snapshotVersion: number;
+  snapshotVersion!: number;
 
   // Full group state at the time of this change (see class comment for UPDATE vs DELETE
   // semantics). Public keys are embedded so the audit chain is self-contained.
   @Column({ type: 'jsonb' })
-  snapshotPayload: GroupSnapshot;
+  snapshotPayload!: GroupSnapshot;
 
   // Accumulated member votes. Starts as [] when the request is created; a new entry is
   // appended each time a member submits their vote. Each entry's signature covers
@@ -145,13 +145,13 @@ export class GroupChangeRecord {
   //   4. If 'approve' count >= that version's threshold, accept the new state.
   //      Never fetch public keys from the backend for this check.
   @Column({ type: 'jsonb' })
-  attestationSignatures: AttestationSignature[];
+  attestationSignatures!: AttestationSignature[];
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   // For APPLIED/REJECTED records this is the moment the status transitioned — the row
   // is immutable after that point, so updatedAt doubles as appliedAt/rejectedAt.
   @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt!: Date;
 }

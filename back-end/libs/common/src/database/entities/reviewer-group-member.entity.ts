@@ -17,32 +17,32 @@ import { UserKey } from './user-key.entity';
 @Index(['userId'])
 export class ReviewerGroupMember {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => ReviewerGroup, group => group.members, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'groupId' })
-  group: ReviewerGroup;
+  group!: ReviewerGroup;
 
   @Column()
-  groupId: number;
+  groupId!: number;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @ManyToOne(() => UserKey)
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey;
+  userKey!: UserKey;
 
   @Column()
-  userKeyId: number;
+  userKeyId!: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 }

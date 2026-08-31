@@ -3,17 +3,17 @@ import { Role } from '@entities';
 
 export class TransactionObserverDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  transactionId: number;
+  transactionId!: number;
 
   @Expose()
-  userId: number;
+  userId!: number;
 
   @Expose()
-  role: Role;
+  role!: Role;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 }

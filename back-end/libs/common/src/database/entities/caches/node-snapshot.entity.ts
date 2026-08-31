@@ -27,25 +27,25 @@ import {
 @Index('IDX_node_snapshot_public_keys_gin', { synchronize: false })
 export class NodeSnapshot {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  nodeId: number;
+  nodeId!: number;
 
   @Column()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Column({ type: 'bytea' })
-  encodedKey: Buffer;
+  encodedKey!: Buffer;
 
   @Column({ length: 64 })
-  keyHash: string;
+  keyHash!: string;
 
   @Column({ type: 'text', array: true })
-  publicKeys: string[];
+  publicKeys!: string[];
 
   // Set to the triggering transaction's executedAt — not DEFAULT now() — so
   // that timestamp-range lookups land on the correct snapshot row.
   @Column({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

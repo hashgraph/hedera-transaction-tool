@@ -2,17 +2,17 @@ import { Expose } from 'class-transformer';
 
 export class ClientDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  version: string;
+  version!: string;
 
   @Expose()
-  updateAvailable: boolean;
+  updateAvailable!: boolean;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

@@ -11,7 +11,7 @@ export class UploadSignatureMapDto {
   })
   @IsDefined()
   @IsNumber()
-  id: number;
+  id!: number;
 
   @ApiProperty({
     type: 'object',
@@ -39,7 +39,7 @@ export class UploadSignatureMapDto {
   })
   @IsNotEmptyObject()
   @IsSignatureMap()
-  signatureMap: SignatureMap;
+  signatureMap!: SignatureMap;
 
   @ApiProperty({ description: 'Signing tool identifier', enum: ['v1', 'v2', 'api'], required: false })
   @IsOptional()

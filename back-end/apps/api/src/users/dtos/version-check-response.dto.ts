@@ -7,14 +7,14 @@ export class VersionCheckResponseDto {
     example: '1.2.0',
   })
   @Expose()
-  latestSupportedVersion: string;
+  latestSupportedVersion!: string;
 
   @ApiProperty({
     description: 'The minimum supported frontend version (from server configuration)',
     example: '1.0.0',
   })
   @Expose()
-  minimumSupportedVersion: string;
+  minimumSupportedVersion!: string;
 
   @ApiProperty({
     description: 'URL to the releases page where the user can download updates. Null if no update is available.',
@@ -22,5 +22,5 @@ export class VersionCheckResponseDto {
     nullable: true,
   })
   @Expose()
-  updateUrl: string | null;
+  updateUrl!: string | null;
 }

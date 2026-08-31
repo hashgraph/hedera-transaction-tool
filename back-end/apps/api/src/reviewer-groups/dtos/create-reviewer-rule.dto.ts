@@ -26,15 +26,15 @@ function MustBeAbsent(options?: ValidationOptions) {
 
 export class CreateReviewerRuleDto {
   @IsInt()
-  groupId: number;
+  groupId!: number;
 
   @IsString()
   @IsNotEmpty()
-  hederaEntityId: string;
+  hederaEntityId!: string;
 
   @IsString()
   @IsNotEmpty()
-  network: string;
+  network!: string;
 
   @IsEnum(EntityRole)
   @IsOptional()
@@ -52,9 +52,9 @@ export class CreateReviewerRuleDto {
   condition?: never;
 
   @IsInt()
-  userKeyId: number;
+  userKeyId!: number;
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  userSignature: string;
+  userSignature!: string;
 }

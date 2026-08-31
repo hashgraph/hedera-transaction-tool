@@ -4,11 +4,11 @@ import { CreateTransactionDto } from './create-transaction.dto';
 
 export class CreateTransactionGroupItemDto {
   @IsNumber()
-  seq: number;
+  seq!: number;
 
   @IsObject()
   @IsNotEmptyObject()
   @ValidateNested()
   @Type(() => CreateTransactionDto)
-  transaction: CreateTransactionDto;
+  transaction!: CreateTransactionDto;
 }

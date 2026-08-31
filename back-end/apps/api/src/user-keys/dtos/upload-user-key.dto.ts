@@ -18,5 +18,5 @@ export class UploadUserKeyDto {
   @IsNotEmpty()
   @IsHederaPublicKey()
   @NormalizePublicKey()
-  publicKey: string;
+  publicKey!: string;
 }

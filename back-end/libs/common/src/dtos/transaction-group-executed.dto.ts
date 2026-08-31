@@ -3,5 +3,5 @@ import { TransactionExecutedDto } from '@app/common';
 
 export class TransactionGroupExecutedDto {
   @Expose()
-  transactions: TransactionExecutedDto[];
+  transactions!: TransactionExecutedDto[];
 }

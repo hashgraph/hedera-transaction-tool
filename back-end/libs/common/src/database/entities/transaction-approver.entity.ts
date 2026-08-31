@@ -19,7 +19,7 @@ import { User } from './user.entity';
 @Index(['userId'])
 export class TransactionApprover {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   /* If the approver has a listId, then transactionId should be null */
   @ManyToOne(() => Transaction, transaction => transaction.approvers, {
@@ -64,14 +64,14 @@ export class TransactionApprover {
   approved?: boolean;
 
   @OneToMany(() => TransactionApprover, approver => approver.list)
-  approvers: TransactionApprover[];
+  approvers!: TransactionApprover[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 }

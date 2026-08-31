@@ -6,8 +6,8 @@ export class TransactionToSignDto {
   @Expose()
   @ApiProperty({ type: TransactionDto })
   @Type(() => TransactionDto)
-  transaction: TransactionDto;
+  transaction!: TransactionDto;
 
   @Expose()
-  keysToSign: number[];
+  keysToSign!: number[];
 }

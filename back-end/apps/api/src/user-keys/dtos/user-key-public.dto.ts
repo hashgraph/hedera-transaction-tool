@@ -2,13 +2,13 @@ import { Expose } from 'class-transformer';
 
 export class UserKeyPublicDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  userId: number;
+  userId!: number;
 
   @Expose()
-  publicKey: string;
+  publicKey!: string;
 
   @Expose()
   deletedAt?: Date;

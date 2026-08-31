@@ -4,7 +4,7 @@ import { TransactionStatus } from '@entities';
 
 export class TransactionExecutedDto {
   @Expose()
-  status: TransactionStatus;
+  status!: TransactionStatus;
 
   @Expose()
   response?: string;

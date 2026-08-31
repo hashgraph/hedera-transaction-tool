@@ -3,7 +3,7 @@ import { IsArray, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-valid
 export class NotifyClientDto {
   @IsNotEmpty()
   @IsNumber()
-  userId: number;
+  userId!: number;
 
   @IsOptional()
   @IsArray()

@@ -13,5 +13,5 @@ export class NewPasswordDto {
       message: 'Password is too weak, must contain at least 10 characters.',
     },
   )
-  password: string;
+  password!: string;
 }

@@ -14,32 +14,32 @@ import { GroupChangeRecord } from './group-change-record.entity';
 @Entity()
 export class ReviewerGroup {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  name: string;
+  name!: string;
 
   @Column({ type: String, nullable: true })
-  description: string | null;
+  description!: string | null;
 
   @Column()
-  threshold: number;
+  threshold!: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 
   @OneToMany(() => ReviewerGroupMember, member => member.group)
-  members: ReviewerGroupMember[];
+  members!: ReviewerGroupMember[];
 
   @OneToMany(() => ReviewerRule, rule => rule.group)
-  rules: ReviewerRule[];
+  rules!: ReviewerRule[];
 
   @OneToMany(() => GroupChangeRecord, record => record.group)
-  changeRecords: GroupChangeRecord[];
+  changeRecords!: GroupChangeRecord[];
 }

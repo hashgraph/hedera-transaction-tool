@@ -3,16 +3,16 @@ import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested }
 
 export class GroupMemberInputDto {
   @IsInt()
-  userId: number;
+  userId!: number;
 
   @IsInt()
-  userKeyId: number;
+  userKeyId!: number;
 }
 
 export class CreateReviewerGroupDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsOptional()
@@ -20,17 +20,17 @@ export class CreateReviewerGroupDto {
 
   @IsInt()
   @Min(1)
-  threshold: number;
+  threshold!: number;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => GroupMemberInputDto)
-  members: GroupMemberInputDto[];
+  members!: GroupMemberInputDto[];
 
   @IsInt()
-  userKeyId: number;
+  userKeyId!: number;
 
   @Transform(({ value }) => (typeof value === 'string' && value.startsWith('0x') ? value.slice(2) : value))
   @IsString()
-  userSignature: string;
+  userSignature!: string;
 }

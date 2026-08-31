@@ -15,24 +15,24 @@ import { EntityRole } from './entity-role.enum';
 @Index(['hederaEntityId', 'network'])
 export class TransactionEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction)
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @Column()
-  hederaEntityId: string;
+  hederaEntityId!: string;
 
   @Column()
-  network: string;
+  network!: string;
 
   @Column()
-  entityRole: EntityRole;
+  entityRole!: EntityRole;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }
