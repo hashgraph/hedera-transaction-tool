@@ -32,9 +32,6 @@ export class UserKeysService {
     relations?: FindOptionsRelations<UserKey>,
     withDeleted: boolean = false,
   ): Promise<UserKey | null> {
-    if (!where) {
-      return null;
-    }
     return await this.repo.findOne({ where, relations, withDeleted });
   }
 
