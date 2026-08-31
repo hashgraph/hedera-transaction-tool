@@ -444,7 +444,7 @@ describe('TransactionNodesService', () => {
         TransactionNodeCollection.HISTORY,
         TEST_NETWORK,
         [],
-        [],
+        undefined,
       );
 
       expect(r).toStrictEqual(allNodes);
@@ -453,7 +453,7 @@ describe('TransactionNodesService', () => {
         sqlBuilderService,
         {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
-          types: [],
+          types: undefined,
           mirrorNetwork: TEST_NETWORK,
         },
         user,
@@ -474,7 +474,7 @@ describe('TransactionNodesService', () => {
         TransactionNodeCollection.HISTORY,
         TEST_NETWORK,
         [TransactionStatus.EXPIRED],
-        [],
+        undefined,
       );
 
       expect(r).toStrictEqual([]);
@@ -483,7 +483,7 @@ describe('TransactionNodesService', () => {
         sqlBuilderService,
         {
           statuses: [TransactionStatus.EXPIRED],
-          types: [],
+          types: undefined,
           mirrorNetwork: TEST_NETWORK,
         },
         user,
