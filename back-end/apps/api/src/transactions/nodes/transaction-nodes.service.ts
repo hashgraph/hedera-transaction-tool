@@ -23,7 +23,7 @@ export class TransactionNodesService {
     collection: TransactionNodeCollection,
     network: string,
     statusFilter: TransactionStatus[],
-    transactionTypeFilter: TransactionType[],
+    transactionTypeFilter?: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
     let rows: any[];
 
@@ -99,7 +99,7 @@ export class TransactionNodesService {
       }
       case TransactionNodeCollection.HISTORY: {
         statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
-        transactionTypeFilter = transactionTypeFilter.length ? transactionTypeFilter : [];
+        transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : undefined;
         const query = getTransactionNodesQuery(
           this.sqlBuilder,
           {
