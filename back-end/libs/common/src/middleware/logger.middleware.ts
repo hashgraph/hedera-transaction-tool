@@ -1,7 +1,9 @@
 import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
-import { maskSensitiveData } from '@app/common';
+import { CLIENT_IP_KEY, maskSensitiveData, sanitizeForLog } from '@app/common';
+
+const MAX_URL_LOG_LENGTH = 2048;
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -11,17 +13,39 @@ export class LoggerMiddleware implements NestMiddleware {
     const { method, originalUrl, body = {}, query = {} } = req;
     const start = Date.now();
 
-    const maskedBody = maskSensitiveData(body, ['password', 'email']);
+    const ip = req[CLIENT_IP_KEY];
+
+    const maskedBody = maskSensitiveData(body, ['password', 'newPassword', 'email', 'token', 'otp']);
     const maskedQuery = maskSensitiveData(query, ['token']);
+
+    const maxPayloadLength = Number(process.env.LOG_PAYLOAD_MAX_LENGTH ?? 2000);
+    const logUrl =
+      originalUrl.length > MAX_URL_LOG_LENGTH
+        ? `${originalUrl.slice(0, MAX_URL_LOG_LENGTH)}... [truncated]`
+        : originalUrl;
 
     res.on('finish', () => {
       const { statusCode } = res;
       const duration = Date.now() - start;
-      const payload =
-        Object.keys(maskedBody).length || Object.keys(maskedQuery).length
-          ? ` - Payload: ${JSON.stringify({ body: maskedBody, query: maskedQuery })}`
-          : '';
-      this.logger.info(`${method} ${originalUrl} ${statusCode} - ${duration}ms${payload}`);
+      const uid = req.user?.id != null ? `uid=${req.user.id}` : 'uid=-';
+      let payload = '';
+      if (Object.keys(maskedBody as object).length || Object.keys(maskedQuery as object).length) {
+        const serialized = JSON.stringify({ body: maskedBody, query: maskedQuery });
+        const truncated =
+          serialized.length > maxPayloadLength
+            ? `${serialized.slice(0, maxPayloadLength)}... [truncated]`
+            : serialized;
+        payload = ` - Payload: ${truncated}`;
+      }
+      const message = sanitizeForLog(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`);
+      // 404s get bumped to WARN (covers both unmatched routes and services throwing
+      // NotFoundException for a missing resource) so they stand out from routine traffic
+      // without needing a second, separate log line for the same request.
+      if (statusCode === 404) {
+        this.logger.warn(message);
+      } else {
+        this.logger.info(message);
+      }
     });
 
     next();

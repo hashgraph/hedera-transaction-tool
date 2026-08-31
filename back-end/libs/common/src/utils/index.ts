@@ -1,4 +1,5 @@
 export * from './buffer';
+export * from './sanitizeForLog';
 export * from './sdk';
 export * from './mirrorNode';
 export * from './typeORM';
@@ -14,17 +15,23 @@ export const asyncFilter = async <T>(list: T[], predicate: (t: T) => Promise<boo
   return list.filter((item, idx) => resolvedPredicates[idx]);
 };
 
-export function maskSensitiveData(data, fieldsToMask: string[]) {
+export function maskSensitiveData(data: unknown, fieldsToMask: string[]): unknown {
+  if (Array.isArray(data)) {
+    return data.map(item => maskSensitiveData(item, fieldsToMask));
+  }
+
   if (!data || typeof data !== 'object') {
     return data;
   }
 
-  const maskedData = { ...data };
-  fieldsToMask.forEach(field => {
-    if (maskedData[field]) {
-      maskedData[field] = '****';
+  const maskedData = { ...(data as Record<string, unknown>) };
+  for (const key of Object.keys(maskedData)) {
+    if (fieldsToMask.includes(key)) {
+      maskedData[key] = '****';
+    } else {
+      maskedData[key] = maskSensitiveData(maskedData[key], fieldsToMask);
     }
-  });
+  }
 
   return maskedData;
 }
