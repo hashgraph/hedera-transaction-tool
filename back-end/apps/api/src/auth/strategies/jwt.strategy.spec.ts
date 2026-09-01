@@ -33,7 +33,7 @@ describe('JwtStrategy', () => {
     beforeEach(async () => {
       jest.resetAllMocks();
 
-      mockConfigService.get.mockReturnValue('secret');
+      mockConfigService.getOrThrow.mockReturnValue('secret');
 
       const module = await Test.createTestingModule({
         providers: [

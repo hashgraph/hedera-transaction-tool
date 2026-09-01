@@ -42,7 +42,7 @@ describe('OtpJwtStrategy', () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn().mockReturnValue('secret'),
+              getOrThrow: jest.fn().mockReturnValue('secret'),
             },
           },
         ],

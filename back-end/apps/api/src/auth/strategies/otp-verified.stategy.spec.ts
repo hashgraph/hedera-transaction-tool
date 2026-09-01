@@ -28,7 +28,7 @@ describe('OtpVerifiedStrategy', () => {
     });
   });
 
-  describe('OtpVerifiedStrategy without JWT_SECRET', () => {
+  describe('OtpVerifiedStrategy with JWT_SECRET', () => {
 
     beforeEach(async () => {
       const module: TestingModule = await Test.createTestingModule({
@@ -43,7 +43,7 @@ describe('OtpVerifiedStrategy', () => {
           {
             provide: ConfigService,
             useValue: {
-              get: jest.fn().mockReturnValue('secret'),
+              getOrThrow: jest.fn().mockReturnValue('secret'),
             },
           },
         ],
