@@ -127,11 +127,8 @@ export class NotificationReceiverService {
   }
 
   async remindSigners(user: User, transactionId: number) {
+    // getTransactionForCreator always returns a transaction or throws — never null/undefined
     const transaction = await this.transactionService.getTransactionForCreator(transactionId, user);
-
-    if (!transaction) {
-      throw new BadRequestException(ErrorCodes.TNF);
-    }
 
     /* Check if transaction is still waiting for signatures */
     if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES) {
