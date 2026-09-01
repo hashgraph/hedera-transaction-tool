@@ -56,6 +56,7 @@ export class SettingsPage extends BasePage {
   importButtonSelector = 'button-restore-dropdown';
   ed25519ImportLinkSelector = 'link-import-ed25519-key';
   ecdsaImportLinkSelector = 'link-import-ecdsa-key';
+  encryptedKeyImportLinkSelector = 'link-import-encrypted-key';
   ed25519ImportButtonSelector = 'button-ed25519-private-key-import';
   ecdsaImportButtonSelector = 'button-ecdsa-private-key-import';
   decryptMainPrivateKeyButtonSelector = 'span-show-modal-0';
@@ -77,6 +78,11 @@ export class SettingsPage extends BasePage {
   importPublicKeyDropdownButtonSelector = 'button-import-public-dropdown';
   importSinglePublicKeyButtonSelector = 'import-single-public-key';
   importPublicKeyButtonSelector = 'button-public-key-import';
+  browseEncryptedKeysButtonSelector = 'button-browse-encrypted-keys';
+  importEncryptedKeysButtonSelector = 'button-import-encrypted-keys';
+  decryptKeysPasswordInputSelector = 'input-decrypt-keys-password';
+  decryptEncryptedKeysButtonSelector = 'button-decrypt-encrypted-keys';
+  skipImportRecoveryPhraseButtonSelector = 'button-skip-import-recovery-phrase';
   deletePublicKeyMappingButtonSelector = 'button-delete-public-key-mapping';
   selectAllPublicKeysCheckboxSelector = 'checkbox-select-all-public-keys';
   deleteAllPublicKeysButtonSelector = 'button-delete-public-all';
@@ -429,6 +435,30 @@ export class SettingsPage extends BasePage {
 
   async clickOnImportButton(): Promise<void> {
     await this.click(this.importButtonSelector);
+  }
+
+  async clickOnEncryptedKeysDropdown(): Promise<void> {
+    await this.click(this.encryptedKeyImportLinkSelector);
+  }
+
+  async clickOnBrowseEncryptedKeyButton(): Promise<void> {
+    await this.click(this.browseEncryptedKeysButtonSelector);
+  }
+
+  async clickOnImportEncryptedKeyButton(): Promise<void> {
+    await this.click(this.importEncryptedKeysButtonSelector);
+  }
+
+  async fillInDecryptKeysPassword(password: string): Promise<void> {
+    await this.fill(this.decryptKeysPasswordInputSelector, password);
+  }
+
+  async clickOnDecryptEncryptedKeyButton(): Promise<void> {
+    await this.click(this.decryptEncryptedKeysButtonSelector);
+  }
+
+  async clickOnSkipImportRecoveryPhraseButton(): Promise<void> {
+    await this.click(this.skipImportRecoveryPhraseButtonSelector);
   }
 
   async clickOnECDSADropDown(): Promise<void> {
