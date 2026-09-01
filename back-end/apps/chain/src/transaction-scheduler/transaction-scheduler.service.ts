@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cron, CronExpression, SchedulerRegistry } from '@nestjs/schedule';
 
@@ -22,6 +22,8 @@ import {
 
 @Injectable()
 export class TransactionSchedulerService {
+  private readonly logger = new Logger(TransactionSchedulerService.name);
+
   constructor(
     @InjectRepository(Transaction) private transactionRepo: Repository<Transaction>,
     @InjectRepository(TransactionGroup) private transactionGroupRepo: Repository<TransactionGroup>,
@@ -129,7 +131,9 @@ export class TransactionSchedulerService {
         })),
       );
       await Promise.all(
-        result.raw.map(t => this.transactionSnapshotService.captureForTransaction(t.id, executedAt)),
+        result.raw.map(t =>
+          this.transactionSnapshotService.captureForTransaction(t.id, executedAt),
+        ),
       );
     }
   }
@@ -157,7 +161,11 @@ export class TransactionSchedulerService {
       },
     });
 
-    const results = await processTransactionStatus(this.transactionRepo, this.transactionSignatureService, transactions);
+    const results = await processTransactionStatus(
+      this.transactionRepo,
+      this.transactionSignatureService,
+      transactions,
+    );
 
     // Apply status changes to in-memory objects so prepareTransactions sees current state
     for (const transaction of transactions) {
@@ -183,7 +191,10 @@ export class TransactionSchedulerService {
         transaction.status === TransactionStatus.WAITING_FOR_SIGNATURES;
 
       if (isExecutionCandidate && this.isValidStartExecutable(transaction.validStart)) {
-        if (transaction.groupItem && (transaction.groupItem.group.atomic || transaction.groupItem.group.sequential)) {
+        if (
+          transaction.groupItem &&
+          (transaction.groupItem.group.atomic || transaction.groupItem.group.sequential)
+        ) {
           if (!processedGroupIds.has(transaction.groupItem.groupId)) {
             processedGroupIds.add(transaction.groupItem.groupId);
             // Now that we are sure this transaction group needs to be processed together, get it
@@ -203,9 +214,15 @@ export class TransactionSchedulerService {
                 },
               },
             });
-            // All the transactions for the group are now pulled. If there is an issue validating for even one
-            // transaction, the group will not be executed. This is handled in executeTransactionGroup
-            this.collateGroupAndExecute(transactionGroup!);
+            if (transactionGroup !== null) {
+              // All the transactions for the group are now pulled. If there is an issue validating for even one
+              // transaction, the group will not be executed. This is handled in executeTransactionGroup
+              this.collateGroupAndExecute(transactionGroup);
+            } else {
+              this.logger.warn(
+                `Failed to retrieve info for group: ${transaction.groupItem.groupId}`,
+              );
+            }
           }
         } else {
           this.collateAndExecute(transaction);
@@ -233,7 +250,10 @@ export class TransactionSchedulerService {
           try {
             requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
           } catch (error) {
-            console.log(`Key resolution failed for transaction ${transaction.id} in group, skipping collation`, error);
+            console.log(
+              `Key resolution failed for transaction ${transaction.id} in group, skipping collation`,
+              error,
+            );
             keyResolutionFailed = true;
             break;
           }
@@ -283,7 +303,9 @@ export class TransactionSchedulerService {
               result.raw.map(row => ({ entityId: row.id })),
             );
             await Promise.all(
-              result.raw.map(row => this.transactionSnapshotService.captureForTransaction(row.id, executedAt)),
+              result.raw.map(row =>
+                this.transactionSnapshotService.captureForTransaction(row.id, executedAt),
+              ),
             );
           }
           return;
@@ -314,7 +336,10 @@ export class TransactionSchedulerService {
         try {
           requiredKeys = await this.transactionSignatureService.computeSignatureKey(transaction);
         } catch (error) {
-          console.log(`Key resolution failed for transaction ${transaction.id}, skipping collation`, error);
+          console.log(
+            `Key resolution failed for transaction ${transaction.id}, skipping collation`,
+            error,
+          );
           this.addExecutionTimeout(transaction);
           return;
         }
@@ -346,7 +371,10 @@ export class TransactionSchedulerService {
               this.notificationsPublisher,
               result.raw.map(row => ({ entityId: row.id })),
             );
-            await this.transactionSnapshotService.captureForTransaction(result.raw[0].id, executedAt);
+            await this.transactionSnapshotService.captureForTransaction(
+              result.raw[0].id,
+              executedAt,
+            );
           }
           return;
         }
