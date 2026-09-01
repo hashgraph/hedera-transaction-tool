@@ -35,6 +35,9 @@ export function setupSettingsKeysSuite() {
   });
 
   return {
+    get window() {
+      return window;
+    },
     get credentials() {
       return credentials;
     },
