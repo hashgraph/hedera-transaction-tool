@@ -12,12 +12,8 @@ export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verifie
     private readonly usersService: UsersService,
     private readonly configService: ConfigService,
   ) {
-    const jwtSecret = configService.get('JWT_SECRET');
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET is not defined');
-    }
     super({
-      secretOrKey: jwtSecret,
+      secretOrKey: configService.getOrThrow('JWT_SECRET'),
       ignoreExpiration: false,
       jwtFromRequest: ExtractJwt.fromHeader('otp'),
     });
