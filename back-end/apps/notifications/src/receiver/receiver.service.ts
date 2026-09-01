@@ -95,16 +95,24 @@ export class ReceiverService {
     transactionIds: number[],
     withDeleted = false,
   ): Promise<Map<number, Transaction>> {
-    const transactions = await this.entityManager.find(Transaction, {
-      where: { id: In(transactionIds) },
-      relations: {
-        creatorKey: true,
-        observers: true,
-        signers: true,
-        groupItem: true,
-      },
-      withDeleted,
-    });
+    // creatorKeyId is NOT NULL and its key is only ever soft-deleted, so creatorKey
+    // must always resolve. Force withDeleted() on the whole query so that join isn't
+    // filtered, then reapply the deletedAt filter to the transaction row only when
+    // the caller wants soft-deleted transactions excluded.
+    const qb = this.entityManager
+      .createQueryBuilder(Transaction, 'transaction')
+      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
+      .leftJoinAndSelect('transaction.observers', 'observers')
+      .leftJoinAndSelect('transaction.signers', 'signers')
+      .leftJoinAndSelect('transaction.groupItem', 'groupItem')
+      .where('transaction.id IN (:...transactionIds)', { transactionIds })
+      .withDeleted();
+
+    if (!withDeleted) {
+      qb.andWhere('transaction.deletedAt IS NULL');
+    }
+
+    const transactions = await qb.getMany();
 
     return new Map(transactions.map(t => [t.id, t]));
   }
@@ -153,7 +161,6 @@ export class ReceiverService {
     approvers: TransactionApprover[],
     keyCache?: Map<string, UserKey>,
   ) {
-    // If the creatorKey is deleted, it will not be included
     const creatorId = transaction.creatorKey.userId;
     const signerUserIds = transaction.signers?.map(s => s.userId) ?? [];
     const observerUserIds = transaction.observers?.map(o => o.userId) ?? [];
@@ -191,7 +198,7 @@ export class ReceiverService {
     ];
 
     return {
-      ...(creatorId != null ? { creatorId } : {}),
+      creatorId,
       signerUserIds,
       observerUserIds,
       approversUserIds,
@@ -253,7 +260,7 @@ export class ReceiverService {
         return this.getPendingReviewerUserIds(entityManager, transaction.id);
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
       case NotificationType.TRANSACTION_INDICATOR_REJECTED:
-        return [creatorId!, ...approversUserIds, ...observerUserIds];
+        return [creatorId, ...approversUserIds, ...observerUserIds];
 
       case NotificationType.TRANSACTION_APPROVED:
       case NotificationType.TRANSACTION_INDICATOR_APPROVE:
@@ -273,7 +280,7 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_ARCHIVED:
-        return [creatorId!, ...approversUserIds, ...observerUserIds, ...requiredUserIds];
+        return [creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds];
 
       case NotificationType.TRANSACTION_CANCELLED:
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
