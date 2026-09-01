@@ -13,6 +13,7 @@
 
 export {
   deleteAccountById,
+  deleteKeyPairByPublicKey,
   getKeyPairByIndexAndEmail,
   getPublicKeyByEmail,
   getTransactionGroupsForTransactionId,
