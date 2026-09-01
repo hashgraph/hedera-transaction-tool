@@ -155,6 +155,7 @@ export const getLocalKeyPairs = async (
 
   let keyPairs = await getKeyPairs(
     user.id,
+    user.password,
     selectedOrganization !== null ? selectedOrganization.id : null,
   );
 
