@@ -474,9 +474,7 @@ export class TransactionsService {
     emitTransactionStatusUpdate(
       this.notificationsPublisher,
       [{ entityId: transaction.id }],
-    ).catch((error) => {
-      this.logger.warn(`Failed to emit status update for transaction: ${dto.name} => ${error}`);
-    });
+    );
 
     return transaction;
   }
