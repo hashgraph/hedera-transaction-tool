@@ -10,7 +10,6 @@
   - [ ] Update `development` overlays to use this version
 - [ ] Open PR for GitOps changes and merge
 - [ ] Update `staging` overlays in the `staging` branch in DevOps-GitOps and commit
-- [ ] Manually delete `api/chain/notifications` pods of `Development` as needed so they redeploy
 - [ ] Verify all services (api/chain/notifications, etc.) are healthy and running this version
 
 ---
@@ -39,6 +38,4 @@
   - [ ] Update `back-end-staff` overlays to use this version
 - [ ] Open PR for Hedera-GitOps changes and merge
 - [ ] Update `staging` overlays in the `staging` branch in DevOps-GitOps and commit
-- [ ] In ArgoCD, refresh `Development` (others should auto-refresh)
-- [ ] Manually delete `api/chain/notifications` pods of `Development` as needed so they redeploy
 - [ ] Verify all services (api/chain/notifications, etc.) are healthy and running this version

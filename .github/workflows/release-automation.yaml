@@ -159,7 +159,12 @@ jobs:
         uses: step-security/git-auto-commit-action@749bc1cc775376092cc4227ba537137f445ca7c3 # v7.1.1
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          commit_message: "chore: bump versions for ${{ env.RELEASE_TAG }} [skip ci]"
+          # No [skip ci]: create_snapshot_pr later resets main to this branch and
+          # pushes a new commit on top for the main-branch PR. If this commit's
+          # message carries [skip ci], GitHub skips the whole push (this commit
+          # included), so the PR's required status checks never run and it can't
+          # be merged.
+          commit_message: "chore: bump versions for ${{ env.RELEASE_TAG }}"
           commit_options: "--no-verify --signoff"
           commit_user_name: ${{ steps.gpg_importer.outputs.name }}
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
@@ -590,7 +595,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.prepare.outputs.release_branch }}
+          # Read the checklist docs from main, not the release branch: the
+          # release branch is a long-lived snapshot from cut time, so doc
+          # updates (e.g. new manual test items) made on main afterward never
+          # reach it and silently drop out of the posted checklist.
+          ref: main
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Create or Update Release Tracking Issue
