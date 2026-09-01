@@ -481,6 +481,12 @@ describe('TransactionStatusService', () => {
         } as Transaction,
       ];
 
+      transactionGroupRepo.findOne.mockResolvedValueOnce(
+        transactionGroups[0].groupItem!.group as TransactionGroup,
+      );
+      transactionGroupRepo.findOne.mockResolvedValueOnce(
+        transactionGroups[2].groupItem!.group as TransactionGroup,
+      );
       jest.spyOn(service, 'collateGroupAndExecute').mockImplementation(jest.fn());
       jest.spyOn(service, 'isValidStartExecutable').mockImplementation(() => true);
 
@@ -547,6 +553,12 @@ describe('TransactionStatusService', () => {
         } as Transaction,
       ];
 
+      transactionGroupRepo.findOne.mockResolvedValueOnce(
+        transactionGroups[0].groupItem!.group as TransactionGroup,
+      );
+      transactionGroupRepo.findOne.mockResolvedValueOnce(
+        transactionGroups[1].groupItem!.group as TransactionGroup,
+      );
       jest.spyOn(service, 'collateGroupAndExecute').mockImplementation(jest.fn());
       jest.spyOn(service, 'isValidStartExecutable').mockImplementation(() => true);
 
