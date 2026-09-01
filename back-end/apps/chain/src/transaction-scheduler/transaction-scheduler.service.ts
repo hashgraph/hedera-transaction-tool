@@ -214,7 +214,7 @@ export class TransactionSchedulerService {
                 },
               },
             });
-            if (transactionGroup !== null) {
+            if (transactionGroup) {
               // All the transactions for the group are now pulled. If there is an issue validating for even one
               // transaction, the group will not be executed. This is handled in executeTransactionGroup
               this.collateGroupAndExecute(transactionGroup);
