@@ -138,6 +138,12 @@ describe('SignersService', () => {
         withDeleted: true,
       });
     });
+
+    it('should return null if id not provided', async () => {
+      const result = await service.getSignatureById(0);
+
+      expect(result).toBeNull();
+    });
   });
 
   describe('getSignaturesByUser', () => {

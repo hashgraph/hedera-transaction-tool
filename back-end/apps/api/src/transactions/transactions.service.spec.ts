@@ -3181,6 +3181,14 @@ describe('TransactionsService', () => {
       jest.resetAllMocks();
     });
 
+    it('should throw TNF if no transaction is found', async () => {
+      transactionsRepo.find.mockResolvedValueOnce([]);
+
+      await expect(service.getTransactionForCreator(1, user as User)).rejects.toThrow(
+        ErrorCodes.TNF,
+      );
+    });
+
     it('should throw if user is not the creator', async () => {
       const transaction = { creatorKey: { userId: 231232 } };
 

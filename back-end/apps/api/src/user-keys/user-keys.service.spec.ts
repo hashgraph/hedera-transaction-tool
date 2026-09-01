@@ -255,6 +255,12 @@ describe('UserKeysService', () => {
   });
 
   describe('removeKey', () => {
+    it('should throw BadRequestException if the key does not exist', async () => {
+      repo.findOne.mockResolvedValue(null);
+
+      await expect(service.removeKey(1)).rejects.toThrow(ErrorCodes.KNF);
+    });
+
     it('should soft remove the user key if it exists', async () => {
       const userKey = { id: 1, publicKey: 'test-public-key' } as UserKey;
       repo.findOne.mockResolvedValue(userKey);
