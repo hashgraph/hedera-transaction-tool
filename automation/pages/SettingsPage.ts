@@ -477,6 +477,21 @@ export class SettingsPage extends BasePage {
     await this.click(this.keyCheckboxPrefixSelector + index);
   }
 
+  async clickOnRestoreKeyButtonAtIndex(index: number): Promise<void> {
+    await this.click(`button-restore-key-${index}`);
+  }
+
+  async clickOnRestoreKeyButtonForPublicKey(publicKey: string): Promise<void> {
+    const rowCount = await this.getKeyRowCount();
+    for (let index = 0; index < rowCount; index++) {
+      if ((await this.getRowDataByIndex(index)).publicKey?.trim() === publicKey) {
+        await this.clickOnRestoreKeyButtonAtIndex(index);
+        return;
+      }
+    }
+    throw new Error(`No key row found for public key ${publicKey}`);
+  }
+
   async fillInMirrorNodeBaseURL(mirrorNodeBaseURL: string): Promise<void> {
     await this.fill(this.mirrorNodeBaseURLInputSelector, mirrorNodeBaseURL);
   }

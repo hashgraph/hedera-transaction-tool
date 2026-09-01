@@ -51,6 +51,8 @@ export interface UserDetails {
   email: string;
   password: string;
   privateKey: string;
+  /** Private key matching the organization user_key public key. */
+  organizationPrivateKey?: string;
 }
 
 export interface Credentials {
