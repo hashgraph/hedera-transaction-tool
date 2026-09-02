@@ -182,7 +182,7 @@ export const updateAccount = async (
 
   transaction.freezeWith(client);
   await transaction.sign(oldAccountPrivateKey);
-  if (options.newKey) {
+  if (options.newKey && options.newKeyPrivateKey) {
     await transaction.sign(options.newKeyPrivateKey);
   }
 

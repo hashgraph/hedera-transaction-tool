@@ -17,8 +17,10 @@ export class BlacklistService {
     private readonly configService: ConfigService,
   ) {}
 
-  async blacklistToken(jwt: string) {
-    await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
+  async blacklistToken(jwt: string | null) {
+    if (jwt !== null) {
+      await this.client.set(jwt, this.BLACKLISTED, 'EX', this.getJwtExpirationSeconds());
+    }
   }
 
   /*

@@ -24,7 +24,7 @@ export class FileUpdateTransactionModel
     // If system file, return empty array
     // any key would be purely ornamental
     // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements
-    if (isHederaSpecialFileId(this.transaction.fileId?.toString())) {
+    if (this.transaction.fileId !== null && isHederaSpecialFileId(this.transaction.fileId.toString())) {
       return [];
     }
     return this.transaction.keys || [];

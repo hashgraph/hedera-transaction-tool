@@ -63,7 +63,7 @@ describe('ApproversController', () => {
     };
     transactionApprover = {
       id: 1,
-      transaction: null,
+      transaction: undefined,
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,

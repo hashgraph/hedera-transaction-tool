@@ -24,17 +24,17 @@ export class EmailService implements OnModuleDestroy {
     secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
     ...this.getAuthConfig()
   });
-  private batcher: DebouncedNotificationBatcher;
+  private batcher: DebouncedNotificationBatcher<Notification>;
 
   constructor(private readonly configService: ConfigService) {
     this.sender = configService.getOrThrow('SENDER_EMAIL');
 
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      this.configService.get<number>('EMAIL_DEBOUNCE_DELAY_MS'),
+      this.configService.get<number>('EMAIL_DEBOUNCE_DELAY_MS')!,
       200,
-      this.configService.get<number>('EMAIL_DEBOUNCE_MAX_FLUSH_MS'),
-      this.configService.get('REDIS_URL'),
+      this.configService.get<number>('EMAIL_DEBOUNCE_MAX_FLUSH_MS')!,
+      this.configService.get('REDIS_URL')!,
       'emails',
     );
   }
@@ -147,7 +147,7 @@ export class EmailService implements OnModuleDestroy {
     }
   }
 
-  private async processMessages(groupKey: string, notifications: Notification[]) {
+  private async processMessages(groupKey: string | number | null, notifications: Notification[]) {
     const groupedNotifications = notifications.reduce((map, msg) => {
       if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
@@ -161,10 +161,10 @@ export class EmailService implements OnModuleDestroy {
 
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" <${this.sender}>`,
-        to: groupKey,
+        to: groupKey?.toString(),
         subject: NotificationTypeEmailSubjects[type],
-        text: htmlContent.replace(/<\/?[^>]+(>|$)/g, ''),
-        html: htmlContent,
+        text: htmlContent!.replace(/<\/?[^>]+(>|$)/g, ''),
+        html: htmlContent!,
       };
 
       try {

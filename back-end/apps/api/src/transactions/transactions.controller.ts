@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -21,6 +22,7 @@ import { TransactionId } from '@hiero-ledger/sdk';
 import * as semver from 'semver';
 
 import {
+  ErrorCodes,
   Filtering,
   FilteringParams,
   OnlyOwnerKey,
@@ -195,6 +197,9 @@ export class TransactionsController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<number[]> {
     const transaction = await this.transactionsService.getTransactionById(transactionId);
+    if (transaction === null) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
     return this.transactionsService.getUserKeysToSign(transaction, user);
   }
 

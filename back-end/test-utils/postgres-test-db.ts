@@ -72,7 +72,7 @@ export async function createTestPostgresDataSource() {
     diag('createTestPostgresDataSource:ready', { totalElapsedMs: Date.now() - overallStart });
 
     return {
-      dataSource,
+      dataSource: dataSource!,
       container,
       async cleanup() {
         const cleanupStart = Date.now();
@@ -86,7 +86,7 @@ export async function createTestPostgresDataSource() {
         let stopErr: Error | undefined;
 
         try {
-          await dataSource.destroy();
+          await dataSource!.destroy();
           diag('cleanup:dataSource.destroy:done', { elapsedMs: Date.now() - cleanupStart });
         } catch (err) {
           destroyErr = err as Error;

@@ -122,17 +122,6 @@ describe('AuthController', () => {
         }),
       );
     });
-
-    it('should throw an error if no email is supplied', async () => {
-      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
-      jest
-        .spyOn(controller, 'signUp')
-        .mockRejectedValue(new UnprocessableEntityException('Email is required.'));
-
-      await expect(controller.signUp({ email: null }, request)).rejects.toThrow(
-        'Email is required.',
-      );
-    });
   });
 
   describe('login', () => {
@@ -159,9 +148,9 @@ describe('AuthController', () => {
   describe('reset-password', () => {
     it('should have no return value', async () => {
       jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
-      authService.createOtp.mockResolvedValue(undefined);
+      authService.createOtp.mockResolvedValue(null);
 
-      expect(await controller.createOtp({ email: 'john@test.com' }, request)).toBeUndefined();
+      expect(await controller.createOtp({ email: 'john@test.com' }, request)).toBeNull();
     });
   });
 

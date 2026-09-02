@@ -20,13 +20,18 @@ import {
 } from '@hiero-ledger/sdk';
 
 export const parseRegisteredNodeInfo = (nodeInfo: RegisteredNode) => {
+  const registeredNodeId = parseRegisteredNodeProperty(nodeInfo, 'registered_node_id');
+  const timestamp = parseRegisteredNodeProperty(nodeInfo, 'timestamp');
+  if (registeredNodeId === null || timestamp === null) {
+    return null;
+  }
   const registerdNodeInfoParsed: RegisteredNodeInfoParsed = {
     admin_key: parseRegisteredNodeProperty(nodeInfo, 'admin_key'),
     created_timestamp: parseRegisteredNodeProperty(nodeInfo, 'created_timestamp'),
     description: parseRegisteredNodeProperty(nodeInfo, 'description'),
-    registered_node_id: parseRegisteredNodeProperty(nodeInfo, 'registered_node_id'),
-    service_endpoints: parseRegisteredNodeProperty(nodeInfo, 'service_endpoints'),
-    timestamp: parseRegisteredNodeProperty(nodeInfo, 'timestamp'),
+    registered_node_id: registeredNodeId,
+    service_endpoints: parseRegisteredNodeProperty(nodeInfo, 'service_endpoints') ?? [],
+    timestamp: timestamp,
   };
 
   return registerdNodeInfoParsed;
@@ -58,14 +63,14 @@ export function parseRegisteredNodeProperty(
 ) {
   switch (property) {
     case 'admin_key':
-      if (!nodeInfo.admin_key) return null;
+      if (!nodeInfo.admin_key?.key) return null;
       switch (nodeInfo.admin_key._type) {
         case KeyType.ProtobufEncoded:
-          return decodeProtobufKey(nodeInfo.admin_key?.key);
+          return decodeProtobufKey(nodeInfo.admin_key.key);
         case KeyType.ED25519:
-          return PublicKey.fromStringED25519(nodeInfo.admin_key?.key);
+          return PublicKey.fromStringED25519(nodeInfo.admin_key.key);
         case KeyType.ECDSA_SECP256K1:
-          return PublicKey.fromStringECDSA(nodeInfo.admin_key?.key);
+          return PublicKey.fromStringECDSA(nodeInfo.admin_key.key);
         default:
           return null;
       }
@@ -103,7 +108,7 @@ export const getRegisteredServiceEndpoint = (endPoint: RegisteredServiceEndpoint
     return null;
   }
 
-  let result: SDKRegisteredServiceEndpoint;
+  let result: SDKRegisteredServiceEndpoint | null;
   switch (endPoint.type) {
     case RegisteredNodeType.BLOCK_NODE:
       result = getRegisteredBlockNodeServiceEndpoint(endPoint);
@@ -118,7 +123,11 @@ export const getRegisteredServiceEndpoint = (endPoint: RegisteredServiceEndpoint
       result = getRegisteredRpcRelayServiceEndpoint(endPoint);
       break;
     default:
-      return null;
+      result = null;
+  }
+
+  if (result === null) {
+    return null;
   }
 
   const ipAddressV4 = endPoint.ip_address?.trim()?.split('.') || [];

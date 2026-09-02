@@ -43,15 +43,15 @@ export class TransactionNodesController {
     @GetUser() user: User,
     @Query('collection', TransactionNodeCollectionPipe) collection: TransactionNodeCollection,
     @Query('network') network: string,
-    @Query('status', TransactionStatusFilterPipe) statusFilter: TransactionStatus[],
-    @Query('transactionType', TransactionTypeFilterPipe) transactionTypeFilter: TransactionType[],
+    @Query('status', TransactionStatusFilterPipe) statusFilter?: TransactionStatus[],
+    @Query('transactionType', TransactionTypeFilterPipe) transactionTypeFilter?: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
     return this.transactionNodesService.getTransactionNodes(
       user,
       collection,
       network,
-      statusFilter,
-      transactionTypeFilter,
+      statusFilter ?? [],
+      transactionTypeFilter ?? [],
     );
   }
 }

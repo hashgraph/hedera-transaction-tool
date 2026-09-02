@@ -7,6 +7,7 @@ import {
   DataSource,
   DeepPartial,
   EntityManager,
+  FindManyOptions,
   FindOptionsWhere,
   In,
   Repository,
@@ -308,11 +309,6 @@ describe('TransactionsService', () => {
       expect(result).toBeNull();
     });
 
-    it('should return null if no id provided', async () => {
-      const result = await service.getTransactionById(null);
-
-      expect(result).toBeNull();
-    });
   });
 
   describe('getTransactions', () => {
@@ -899,7 +895,7 @@ describe('TransactionsService', () => {
         creatorKeyId: 9999, // id that does not exist on the user
         transactionBytes: sdkTransaction.toBytes(),
         signature: Buffer.from('00'),
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
       } as any;
 
       const client = Client.forTestnet();
@@ -1411,7 +1407,7 @@ describe('TransactionsService', () => {
     it('should import signatures atomically and persist new signers', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1488,7 +1484,7 @@ describe('TransactionsService', () => {
     it('should skip inserting a signer row if one already exists for the key', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1527,7 +1523,7 @@ describe('TransactionsService', () => {
     it('should update bytes but skip signer insert when no UserKey matches the imported public key', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1563,7 +1559,7 @@ describe('TransactionsService', () => {
     it('should insert signer rows for every owner when multiple UserKeys match', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1603,7 +1599,7 @@ describe('TransactionsService', () => {
     it('should insert signer rows for every UserKey when two rows share the same publicKey', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1708,7 +1704,7 @@ describe('TransactionsService', () => {
     it('should not insert a signer row when the matching UserKey is soft-deleted', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1750,7 +1746,7 @@ describe('TransactionsService', () => {
     it('should unwrap the [rows, rowCount] tuple from manager.query and emit dismissed notifications', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1791,7 +1787,7 @@ describe('TransactionsService', () => {
     it('should fail all touched ids with FST when the atomic transaction rolls back', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1820,7 +1816,7 @@ describe('TransactionsService', () => {
     it('should still return success and emit an unchanged-status event when processTransactionStatus fails after commit', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -1866,7 +1862,7 @@ describe('TransactionsService', () => {
       const alreadySignedBytes = Buffer.from(sdkTransaction.toBytes());
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: alreadySignedBytes,
         mirrorNetwork: 'testnet',
@@ -1895,7 +1891,7 @@ describe('TransactionsService', () => {
     it('should roll back and mark all ids FST when the signer INSERT fails inside the transaction callback', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -2118,7 +2114,7 @@ describe('TransactionsService', () => {
     it('should set recorderId to the caller (importer) not the key owner', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -2152,7 +2148,7 @@ describe('TransactionsService', () => {
     it('should propagate tool from the DTO item to the signer row', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -2183,7 +2179,7 @@ describe('TransactionsService', () => {
     it('should default tool to api when not present on the DTO item', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -2214,7 +2210,7 @@ describe('TransactionsService', () => {
     it('should propagate version parameter to signer rows', async () => {
       const transaction = {
         id: transactionId,
-        transactionId: sdkTransaction.transactionId.toString(),
+        transactionId: sdkTransaction.transactionId!.toString(),
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
@@ -2248,10 +2244,6 @@ describe('TransactionsService', () => {
   describe('verifyAccess', () => {
     beforeEach(() => {
       jest.resetAllMocks();
-    });
-
-    it('should throw if no transaction provided', async () => {
-      await expect(service.verifyAccess(null, user as User)).rejects.toThrow(ErrorCodes.TNF);
     });
 
     it('should return true for EXECUTED status without user association check', async () => {
@@ -2777,12 +2769,6 @@ describe('TransactionsService', () => {
       jest.resetAllMocks();
     });
 
-    it('should throw if transaction ID is not provided', async () => {
-      await expect(service.getTransactionWithVerifiedAccess(null, user as User)).rejects.toThrow(
-        ErrorCodes.TNF,
-      );
-    });
-
     it('should throw if transaction is not found', async () => {
       transactionsRepo.find.mockResolvedValue([]);
 
@@ -2803,11 +2789,11 @@ describe('TransactionsService', () => {
           },
         },
         observers: []
-      };
+      } as unknown as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+      transactionsRepo.find.mockResolvedValue([transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2826,11 +2812,11 @@ describe('TransactionsService', () => {
           },
         },
         observers: [],
-      };
+      } as unknown as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+      transactionsRepo.find.mockResolvedValue([transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2849,11 +2835,11 @@ describe('TransactionsService', () => {
           },
         },
         observers: [{ userId: user.id }],
-      };
+      } as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
-      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+      transactionsRepo.find.mockResolvedValue([transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2872,14 +2858,14 @@ describe('TransactionsService', () => {
           },
         },
         observers: [],
-      };
+      } as unknown as Transaction;
 
       const approvers: TransactionApprover[] = [{ userId: user.id }] as TransactionApprover[];
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce(approvers);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue(approvers);
-      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+      transactionsRepo.find.mockResolvedValue([transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).resolves.toEqual(
         transaction,
@@ -2903,7 +2889,7 @@ describe('TransactionsService', () => {
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getApproversByTransactionId').mockResolvedValueOnce([]);
       jest.spyOn(approversService, 'getTreeStructure').mockReturnValue([]);
-      transactionsRepo.find.mockResolvedValue([transaction as Transaction]);
+      transactionsRepo.find.mockResolvedValue([transaction as unknown as Transaction]);
 
       await expect(service.getTransactionWithVerifiedAccess(123, user as User)).rejects.toThrow(
         "You don't have permission to view this transaction",
@@ -2964,10 +2950,6 @@ describe('TransactionsService', () => {
         relations: { userKey: true },
         withDeleted: true,
       });
-    });
-
-    it('should throw if not transaction is passed to attachTransactionSigners', async () => {
-      await expect(service.attachTransactionSigners(null)).rejects.toThrow(ErrorCodes.TNF);
     });
   });
 
@@ -3068,7 +3050,7 @@ describe('TransactionsService', () => {
 
     it('should include all history statuses if no filter provided', async () => {
       await service.getHistoryTransactions(user as User, defaultPagination);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
       expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
     });
@@ -3077,7 +3059,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'eq', value: 'EXECUTED' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       const whereArr = where as FindOptionsWhere<Transaction>[];
       expect(whereArr).toEqual(
         expect.arrayContaining([expect.objectContaining({ status: In([TransactionStatus.EXECUTED]) })]),
@@ -3089,7 +3071,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'eq', value: 'WAITING FOR EXECUTION' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
       expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
     });
@@ -3098,7 +3080,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'in', value: 'EXECUTED, WAITING FOR EXECUTION, WAITING FOR SIGNATURES, FAILED' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       expect(where as FindOptionsWhere<Transaction>[]).toEqual(
         expect.arrayContaining([expect.objectContaining({ status: In([TransactionStatus.EXECUTED, TransactionStatus.FAILED]) })]),
       );
@@ -3116,7 +3098,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'neq', value: 'EXECUTED' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       const whereArr = where as FindOptionsWhere<Transaction>[];
       // FAILED is still in bypass, EXPIRED/CANCELED/ARCHIVED in non-bypass
       expect(whereArr).toEqual(
@@ -3131,7 +3113,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'nin', value: 'EXECUTED, FAILED, EXPIRED' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [ FindManyOptions<Transaction> ];
       const whereArr = where as FindOptionsWhere<Transaction>[];
       // Only CANCELED and ARCHIVED remain — no bypass, non-bypass is reduced
       const remaining = [TransactionStatus.CANCELED, TransactionStatus.ARCHIVED];
@@ -3147,7 +3129,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'status', rule: 'geteverythingpossiblerule', value: 'EXECUTED,FAILED,EXPIRED' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [ FindManyOptions<Transaction> ];
       expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
       expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
     });
@@ -3156,7 +3138,7 @@ describe('TransactionsService', () => {
       await service.getHistoryTransactions(user as User, defaultPagination, [
         { property: 'name', rule: 'eq', value: 'some transaction name' },
       ]);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       expectBypassBranch(where as FindOptionsWhere<Transaction>[]);
       expectNonBypassBranches(where as FindOptionsWhere<Transaction>[]);
     });
@@ -3167,7 +3149,7 @@ describe('TransactionsService', () => {
       });
 
       await service.getHistoryTransactions(user as User, defaultPagination);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       const whereArr = where as FindOptionsWhere<Transaction>[];
       expect(whereArr).toEqual(
         expect.arrayContaining([
@@ -3188,7 +3170,7 @@ describe('TransactionsService', () => {
         u.keys = [];
       });
       await service.getHistoryTransactions(user as User, defaultPagination);
-      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0];
+      const [{ where }] = transactionsRepo.findAndCount.mock.calls[0] as [FindManyOptions<Transaction>];
       const whereArr = where as FindOptionsWhere<Transaction>[];
       expect(whereArr.some(w => 'transactionCachedAccounts' in w || 'transactionCachedNodes' in w)).toBe(false);
     });
@@ -3199,24 +3181,11 @@ describe('TransactionsService', () => {
       jest.resetAllMocks();
     });
 
-    it('should return null if no transaction id provided', async () => {
-      await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
+    it('should throw TNF if no transaction is found', async () => {
+      transactionsRepo.find.mockResolvedValueOnce([]);
+
+      await expect(service.getTransactionForCreator(1, user as User)).rejects.toThrow(
         ErrorCodes.TNF,
-      );
-    });
-
-    it('should return null if no transaction found', async () => {
-      await expect(service.getTransactionForCreator(null, user as User)).rejects.toThrow(
-        ErrorCodes.TNF,
-      );
-    });
-
-    it('should throw if no user is provided', async () => {
-      const transaction = { creatorKey: { userId: 2 } };
-      transactionsRepo.find.mockResolvedValueOnce([transaction as Transaction]);
-
-      await expect(service.getTransactionForCreator(1, null)).rejects.toThrow(
-        'Only the creator has access to this transaction',
       );
     });
 

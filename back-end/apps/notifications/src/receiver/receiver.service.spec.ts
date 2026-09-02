@@ -40,15 +40,30 @@ jest.mock('@app/common', () => ({
   keysRequiredToSign: jest.fn(),
 }));
 
-const mockEntityManager = () => ({
-  find: jest.fn(),
-  findOne: jest.fn(),
-  save: jest.fn(),
-  update: jest.fn(),
-  delete: jest.fn(),
-  query: jest.fn(),
-  transaction: jest.fn(),
-});
+const mockQueryBuilder = () => {
+  const qb: any = {};
+  qb.leftJoinAndSelect = jest.fn().mockReturnValue(qb);
+  qb.where = jest.fn().mockReturnValue(qb);
+  qb.andWhere = jest.fn().mockReturnValue(qb);
+  qb.withDeleted = jest.fn().mockReturnValue(qb);
+  qb.getMany = jest.fn().mockResolvedValue([]);
+  return qb;
+};
+
+const mockEntityManager = () => {
+  const qb = mockQueryBuilder();
+  return {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    query: jest.fn(),
+    transaction: jest.fn(),
+    createQueryBuilder: jest.fn().mockReturnValue(qb),
+    qb,
+  };
+};
 
 const mockTransactionSignatureService = () => ({
   someMethod: jest.fn(),
@@ -114,30 +129,32 @@ describe('ReceiverService', () => {
 
   it('fetchTransactionsWithRelations returns map', async () => {
     const tx = { id: 1 } as any;
-    em.find.mockResolvedValue([tx]);
+    em.qb.getMany.mockResolvedValueOnce([tx]);
 
     const result = await (service as any).fetchTransactionsWithRelations([1], false);
-    expect(em.find).toHaveBeenCalledWith(Transaction, expect.any(Object));
+    expect(em.createQueryBuilder).toHaveBeenCalledWith(Transaction, 'transaction');
     expect(result.get(1)).toBe(tx);
   });
 
   it('fetchTransactionsWithRelations uses default withDeleted = false when omitted', async () => {
     const tx = { id: 2 } as any;
-    em.find.mockResolvedValueOnce([tx]);
+    em.qb.getMany.mockResolvedValueOnce([tx]);
 
     const result = await (service as any).fetchTransactionsWithRelations([2]); // omit second arg
 
-    expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({ withDeleted: false }));
+    // withDeleted param false → still reapply the deletedAt filter on the transaction row
+    expect(em.qb.andWhere).toHaveBeenCalledWith('transaction.deletedAt IS NULL');
     expect(result.get(2)).toBe(tx);
   });
 
   it('fetchTransactionsWithRelations forwards withDeleted = true when provided', async () => {
     const tx = { id: 3 } as any;
-    em.find.mockResolvedValueOnce([tx]);
+    em.qb.getMany.mockResolvedValueOnce([tx]);
 
     const result = await (service as any).fetchTransactionsWithRelations([3], true);
 
-    expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({ withDeleted: true }));
+    // withDeleted param true → no extra filter reapplied, creatorKey (and the transaction) can be soft-deleted
+    expect(em.qb.andWhere).not.toHaveBeenCalled();
     expect(result.get(3)).toBe(tx);
   });
 
@@ -239,7 +256,7 @@ describe('ReceiverService', () => {
     };
 
     const approvers = [
-      { userId: 4, approved: null } as TransactionApprover,
+      { userId: 4, approved: null } as unknown as TransactionApprover,
       { userId: 5, approved: true } as TransactionApprover,
     ];
 
@@ -248,25 +265,26 @@ describe('ReceiverService', () => {
     expect(result.requiredUserIds).toEqual([100]);
   });
 
-  it('getTransactionParticipants omits creatorId and does not include it in participants when creatorKey is null', async () => {
+  it('getTransactionParticipants includes creatorId even when the creator key is soft-deleted', async () => {
     (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
 
     const tx: any = {
-      creatorKey: null,
+      // fetchTransactionsWithRelations always fetches creatorKey, even soft-deleted
+      creatorKey: { userId: 1, deletedAt: new Date() },
       signers: [{ userId: 2 }],
       observers: [{ userId: 3 }],
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
     const approvers = [
-      { userId: 4, approved: null } as TransactionApprover,
+      { userId: 4, approved: null } as unknown as TransactionApprover,
       { userId: 5, approved: true } as TransactionApprover,
     ];
 
     const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
 
-    expect('creatorId' in result).toBe(false);
-    expect(result.participants).toEqual(expect.arrayContaining([2, 3, 4, 5, 100]));
+    expect(result.creatorId).toBe(1);
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
     expect(result.participants).not.toContain(null);
     expect(result.participants).not.toContain(undefined);
   });
@@ -1424,8 +1442,8 @@ describe('ReceiverService', () => {
         deletedAt: null,
       };
 
-      // Common: fetchTransactionsWithRelations -> first em.find call returns the transaction
-      em.find.mockResolvedValueOnce([transaction]);
+      // Common: fetchTransactionsWithRelations -> query builder returns the transaction
+      em.qb.getMany.mockResolvedValueOnce([transaction]);
 
       // Common: approvers query
       em.query.mockResolvedValue([]);
@@ -1698,7 +1716,7 @@ describe('ReceiverService', () => {
         status: TransactionStatus.EXECUTED,
       };
 
-      em.find.mockResolvedValueOnce([transaction]);
+      em.qb.getMany.mockResolvedValueOnce([transaction]);
       em.query.mockResolvedValueOnce([]);
       (service as any).getNotificationReceiverIds = jest.fn().mockResolvedValue([2]);
 
@@ -1828,7 +1846,7 @@ describe('ReceiverService', () => {
       };
 
       // fetchTransactionsWithRelations -> returns the transaction
-      em.find.mockResolvedValue([transaction]);
+      em.qb.getMany.mockResolvedValue([transaction]);
 
       // getApproversByTransactionIds/internal approver lookup uses em.query:
       // return an empty array so the code receives [] (iterable) instead of undefined
@@ -1869,7 +1887,7 @@ describe('ReceiverService', () => {
       };
 
       // fetchTransactionsWithRelations -> returns the transaction
-      em.find.mockResolvedValue([transaction]);
+      em.qb.getMany.mockResolvedValue([transaction]);
 
       // approvers query returns empty array
       em.query.mockResolvedValue([]);

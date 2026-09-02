@@ -131,7 +131,7 @@ export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleD
     maxMessages: number,
     handlerMap: Map<string, MessageHandler>,
   ) {
-    this.messages = await this.consumer.consume({ max_messages: maxMessages });
+    this.messages = await this.consumer!.consume({ max_messages: maxMessages });
 
     try {
       for await (const msg of this.messages) {

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, guardMock } from '@app/common';
-import { Role, TransactionObserver, User, UserStatus } from '@entities';
+import { Role, Transaction, TransactionObserver, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
 import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
@@ -60,7 +60,7 @@ describe('ObserversController', () => {
     };
     observer = {
       id: 1,
-      transaction: null,
+      transaction: new Transaction(),
       createdAt: new Date(),
       user: user,
       role: Role.FULL,

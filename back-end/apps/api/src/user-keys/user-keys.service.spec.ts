@@ -2,7 +2,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 
 import { ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { attachKeys } from '@app/common/utils';
@@ -50,10 +50,6 @@ describe('UserKeysService', () => {
   });
 
   describe('getUserKey', () => {
-    it('should return null if where condition is not provided', async () => {
-      expect(await service.getUserKey(undefined)).toBeNull();
-    });
-
     it('should return a UserKey if where condition is provided', async () => {
       await service.getUserKey({ id: 1 });
 
@@ -159,7 +155,7 @@ describe('UserKeysService', () => {
       jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
         user.keys = [];
       });
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
       const newUserKey = { ...dto, user: user } as UserKey;
       repo.create.mockReturnValue(newUserKey);
       repo.save.mockResolvedValue(newUserKey);
@@ -188,7 +184,7 @@ describe('UserKeysService', () => {
       jest.mocked(attachKeys).mockImplementation(async (user: User) => {
         user.keys = [];
       });
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
       repo.create.mockReturnValue({ ...dto, user } as UserKey);
 
       repo.save.mockRejectedValue(new Error('DB error'));
@@ -209,11 +205,6 @@ describe('UserKeysService', () => {
     beforeEach(() => {
       jest.resetAllMocks();
       user = { id: 1 } as unknown as User;
-    });
-
-    it('should return an empty array if userId is not provided', async () => {
-      const result = await service.getUserKeysRestricted(user, undefined);
-      expect(result).toEqual([]);
     });
 
     it('should return user keys for a given userId', async () => {
@@ -265,7 +256,7 @@ describe('UserKeysService', () => {
 
   describe('removeKey', () => {
     it('should throw BadRequestException if the key does not exist', async () => {
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
 
       await expect(service.removeKey(1)).rejects.toThrow(ErrorCodes.KNF);
     });
@@ -305,7 +296,7 @@ describe('UserKeysService', () => {
 
     it('should soft remove the user key if it exists and is owned by the user', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      const softRemoveSpy = jest.spyOn(repo, 'softRemove').mockResolvedValue(undefined);
+      const softRemoveSpy = jest.spyOn(repo, 'softRemove').mockResolvedValue(new UserKey());
 
       const result = await service.removeUserKey(user, 1);
 
@@ -354,7 +345,7 @@ describe('UserKeysService', () => {
 
     it('should update the mnemonic hash and index if the key exists and is owned by the user', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      repo.update.mockResolvedValue(undefined);
+      repo.update.mockResolvedValue(new UpdateResult());
 
       const result = await service.updateMnemonicHash(user, 1, dto);
 
@@ -364,7 +355,7 @@ describe('UserKeysService', () => {
 
     it('should update the mnemonic hash and keep the existing index if not provided', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      repo.update.mockResolvedValue(undefined);
+      repo.update.mockResolvedValue(new UpdateResult());
 
       await service.updateMnemonicHash(user, 1, { mnemonicHash: 'new-hash' });
 

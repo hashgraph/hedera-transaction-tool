@@ -106,7 +106,7 @@ export class GroupChangeRecord {
   // private key. Proves the proposer created this specific request — the backend cannot
   // forge it without access to their private key. Intentionally not a FK so it is never
   // nulled; the signature remains verifiable even after userId/userKeyId are cleared.
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   userSignature: string | null;
 
   // GroupChangeType — UPDATE or DELETE.

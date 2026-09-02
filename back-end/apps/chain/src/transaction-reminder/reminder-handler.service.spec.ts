@@ -113,7 +113,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should not proceed if transaction is not found', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce(null);
 
       await service.handleTransactionReminder(key);
@@ -126,7 +126,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should not proceed if transaction is in a terminal status', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce({
         ...transaction,
         status: TransactionStatus.EXECUTED,
@@ -142,7 +142,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should send reminder when transaction is READY_FOR_REVIEW', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce({
         ...transaction,
         status: TransactionStatus.READY_FOR_REVIEW,
@@ -158,7 +158,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should not proceed if reminder notification already exists', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce(transaction);
       entityManager.findOne.mockResolvedValueOnce(notification);
 
@@ -178,7 +178,7 @@ describe('ReminderHandlerService', () => {
     });
 
     it('should send reminder notification if conditions are met', async () => {
-      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id);
+      jest.mocked(parseTransactionSignKey).mockReturnValueOnce(transaction.id ?? null);
       entityManager.findOne.mockResolvedValueOnce(transaction);
       entityManager.findOne.mockResolvedValueOnce(null);
       jest

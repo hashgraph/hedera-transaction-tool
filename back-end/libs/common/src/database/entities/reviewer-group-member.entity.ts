@@ -44,5 +44,5 @@ export class ReviewerGroupMember {
   createdAt: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 }

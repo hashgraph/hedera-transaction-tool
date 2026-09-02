@@ -64,9 +64,10 @@ describe('EmailConsumerService', () => {
     it('should call processUserInviteNotifications for USER_INVITE', async () => {
       const handlers = service['getMessageHandlers']();
       const handler = handlers.find(h => h.subject === USER_INVITE);
-      const testData = [{ email: 'test@example.com' }];
+      expect(handler).not.toBeUndefined();
 
-      await handler.handler(testData);
+      const testData = [{ email: 'test@example.com' }];
+      await handler!.handler(testData);
 
       expect(emailService.processUserInviteNotifications).toHaveBeenCalledWith(testData);
     });
@@ -74,9 +75,10 @@ describe('EmailConsumerService', () => {
     it('should call processUserPasswordResetNotifications for USER_PASSWORD_RESET', async () => {
       const handlers = service['getMessageHandlers']();
       const handler = handlers.find(h => h.subject === USER_PASSWORD_RESET);
-      const testData = [{ email: 'test@example.com' }];
+      expect(handler).not.toBeUndefined();
 
-      await handler.handler(testData);
+      const testData = [{ email: 'test@example.com' }];
+      await handler!.handler(testData);
 
       expect(emailService.processUserPasswordResetNotifications).toHaveBeenCalledWith(testData);
     });
@@ -84,9 +86,10 @@ describe('EmailConsumerService', () => {
     it('should call processEmails for EMAIL_NOTIFICATIONS with array', async () => {
       const handlers = service['getMessageHandlers']();
       const handler = handlers.find(h => h.subject === EMAIL_NOTIFICATIONS);
-      const testData = [{ id: 1 }, { id: 2 }];
+      expect(handler).not.toBeUndefined();
 
-      await handler.handler(testData);
+      const testData = [{ id: 1 }, { id: 2 }];
+      await handler!.handler(testData);
 
       expect(emailService.processEmails).toHaveBeenCalledWith(testData);
     });
@@ -94,9 +97,10 @@ describe('EmailConsumerService', () => {
     it('should call processEmails for EMAIL_NOTIFICATIONS with single object', async () => {
       const handlers = service['getMessageHandlers']();
       const handler = handlers.find(h => h.subject === EMAIL_NOTIFICATIONS);
-      const testData = { id: 1 };
+      expect(handler).not.toBeUndefined();
 
-      await handler.handler(testData);
+      const testData = { id: 1 };
+      await handler!.handler(testData);
 
       expect(emailService.processEmails).toHaveBeenCalledWith([testData]);
     });

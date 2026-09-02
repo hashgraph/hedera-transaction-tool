@@ -345,6 +345,7 @@ export async function resetPostgresDbState() {
     'transaction_group',
     'transaction_observer',
     'transaction_signer',
+    'transaction_entity',
     'transaction',
     'user_key',
     'notification_preferences',

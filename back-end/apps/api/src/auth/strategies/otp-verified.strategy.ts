@@ -13,7 +13,7 @@ export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verifie
     private readonly configService: ConfigService,
   ) {
     super({
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: configService.getOrThrow('JWT_SECRET'),
       ignoreExpiration: false,
       jwtFromRequest: ExtractJwt.fromHeader('otp'),
     });

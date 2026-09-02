@@ -148,7 +148,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -174,7 +173,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -200,7 +198,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -273,7 +270,6 @@ describe('NotificationPreferencesService', () => {
         inApp: true,
       } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.getPreferenceOrCreate(
         user,
@@ -326,7 +322,6 @@ describe('NotificationPreferencesService', () => {
         inApp: true,
       };
       repo.create.mockImplementation(((data: NotificationPreferences) => data) as any);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.getPreferencesOrCreate(user);
 

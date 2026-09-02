@@ -22,7 +22,7 @@ export class OtpJwtStrategy extends PassportStrategy(Strategy, 'otp-jwt') {
     private readonly configService: ConfigService,
   ) {
     super({
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: configService.getOrThrow('JWT_SECRET'),
       ignoreExpiration: false,
       jwtFromRequest: ExtractJwt.fromHeader('otp'),
     });

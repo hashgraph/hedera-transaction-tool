@@ -58,7 +58,7 @@ export class FrontendVersionGuard implements CanActivate {
     }
 
     const cleanFrontendVersion = semver.clean(frontendVersion);
-    const cleanMinimumVersion = semver.clean(minimumVersion);
+    const cleanMinimumVersion = minimumVersion != null ? semver.clean(minimumVersion) : null;
 
     if (!cleanFrontendVersion) {
       this.logger.warn(

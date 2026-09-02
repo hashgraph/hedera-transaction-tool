@@ -654,7 +654,7 @@ describe('BaseNatsConsumerService', () => {
       mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
 
-      let yieldResolve: () => void;
+      let yieldResolve: (() => void) | null = null;
       const yieldPromise = new Promise<void>(resolve => {
         yieldResolve = resolve;
       });
@@ -668,7 +668,7 @@ describe('BaseNatsConsumerService', () => {
             ack: jest.fn(),
           };
           // Signal that first message was processed
-          yieldResolve();
+          yieldResolve!();
           // Second message should not be processed if shutdown occurred
           yield {
             subject: 'test.message',

@@ -78,7 +78,7 @@ export class RuleChangeRecord {
   // Hex-encoded Ed25519 signature over rulePayload, produced by the proposer's private
   // key. Proves the proposer created this specific request — the backend cannot forge it
   // without access to their private key. Retained even after userId/userKeyId are nulled.
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   userSignature: string | null;
 
   @Column()
@@ -105,7 +105,7 @@ export class RuleChangeRecord {
   // compromised backend could supply a different member list. Walk all group changes
   // first so the required snapshot version is already trusted locally before any rule
   // changes are processed.
-  @Column({ nullable: true })
+  @Column({ type: Number, nullable: true })
   groupSnapshotVersion: number | null;
 
   // Null for ADD actions. For REMOVE actions: accumulated member votes starting as [].

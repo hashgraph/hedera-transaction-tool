@@ -41,17 +41,17 @@ export class ReviewerRule {
   @Column()
   network: string;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   entityRole: EntityRole | null;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   transactionType: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => RuleChangeRecord, record => record.rule)
   changeRecords: RuleChangeRecord[];

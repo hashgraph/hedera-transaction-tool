@@ -11,6 +11,7 @@ import {
   SignatureMap,
   AccountId,
   TransactionId,
+  PublicKey,
 } from '@hiero-ledger/sdk';
 import {
   emitTransactionStatusUpdate,
@@ -57,8 +58,8 @@ describe('SignersService', () => {
   } as User;
 
   const buildValidationResult = (sdkTransaction: any, signatureMap: SignatureMap) => {
-    const allPublicKeys = [];
-    const newPublicKeys = [];
+    const allPublicKeys: PublicKey[] = [];
+    const newPublicKeys: PublicKey[] = [];
     const seen = new Set<string>();
 
     for (const nodeMap of signatureMap.values()) {
@@ -139,7 +140,7 @@ describe('SignersService', () => {
     });
 
     it('should return null if id not provided', async () => {
-      const result = await service.getSignatureById(null);
+      const result = await service.getSignatureById(0);
 
       expect(result).toBeNull();
     });
@@ -176,12 +177,6 @@ describe('SignersService', () => {
         size: 10,
       });
     });
-
-    it('should return null if user not provided', async () => {
-      const result = await service.getSignaturesByUser(null, defaultPagination);
-
-      expect(result).toBeNull();
-    });
   });
 
   describe('getSignaturesByTransactionId', () => {
@@ -204,12 +199,6 @@ describe('SignersService', () => {
         },
         withDeleted: true,
       });
-    });
-
-    it('should return null if transaction id not provided', async () => {
-      const result = await service.getSignaturesByTransactionId(null);
-
-      expect(result).toBeNull();
     });
   });
 

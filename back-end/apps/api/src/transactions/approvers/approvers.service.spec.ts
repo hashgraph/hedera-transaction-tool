@@ -21,6 +21,7 @@ import { Transaction, TransactionApprover, TransactionStatus, User } from '@enti
 import { ApproversService } from './approvers.service';
 import {
   ApproverChoiceDto,
+  CreateTransactionApproverDto,
   CreateTransactionApproversArrayDto,
   UpdateTransactionApproverDto,
 } from '../dto';
@@ -94,12 +95,6 @@ describe('ApproversService', () => {
 
       expect(result).toEqual(approver);
     });
-
-    it('should return null if id is null', async () => {
-      const result = await service.getTransactionApproverById(null);
-
-      expect(result).toBeNull();
-    });
   });
 
   describe('getApproversByTransactionId', () => {
@@ -156,12 +151,6 @@ describe('ApproversService', () => {
 
       expect(approversRepo.query).toHaveBeenCalledWith(expect.anything(), [transactionId]);
       expect(result).toEqual(approvers);
-    });
-
-    it('should return null if transaction id is null', async () => {
-      const result = await service.getApproversByTransactionId(null);
-
-      expect(result).toBeNull();
     });
   });
 
@@ -277,10 +266,6 @@ describe('ApproversService', () => {
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [id]);
       expect(result).toEqual(approvers);
     });
-
-    it('should throw if id is null', async () => {
-      await expect(service.getTransactionApproversById(null)).rejects.toThrow(ErrorCodes.TNF);
-    });
   });
 
   describe('getRootNodeFromNode', () => {
@@ -291,12 +276,6 @@ describe('ApproversService', () => {
 
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [nodeId]);
     });
-
-    it('should return null if id is null', async () => {
-      const result = await service.getRootNodeFromNode(null);
-
-      expect(result).toBeNull();
-    });
   });
 
   describe('removeNode', () => {
@@ -306,12 +285,6 @@ describe('ApproversService', () => {
       await service.removeNode(nodeId);
 
       expect(dataSource.manager.query).toHaveBeenCalledWith(expect.anything(), [nodeId]);
-    });
-
-    it('should return null if id is null', async () => {
-      const result = await service.removeNode(null);
-
-      expect(result).toBeNull();
     });
 
     it('should return null if id is not number', async () => {
@@ -365,7 +338,7 @@ describe('ApproversService', () => {
       expect(dataSource.manager.create).toHaveBeenCalledWith(TransactionApprover, {
         userId: 1,
         transactionId: transaction.id,
-        threshold: null,
+        threshold: undefined,
       });
       expect(dataSource.manager.insert).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: transactionId  }]);
@@ -402,19 +375,19 @@ describe('ApproversService', () => {
       dataSource.manager.count.calledWith(User, expect.anything()).mockResolvedValueOnce(1);
       jest.spyOn(service, 'getApproversByTransactionId').mockResolvedValue([]);
       dataSource.manager.create.mockImplementationOnce(
-        jest.fn((_entity, data) => ({ ...data, id: 1 })),
+        jest.fn((_entity, data) => ({ ...data, id: 1 } as any )),
       );
       dataSource.manager.create.mockImplementationOnce(
-        jest.fn((_entity, data) => ({ ...data, id: 2 })),
+        jest.fn((_entity, data) => ({ ...data, id: 2 }) as any),
       );
       dataSource.manager.create.mockImplementationOnce(
-        jest.fn((_entity, data) => ({ ...data, id: 3 })),
+        jest.fn((_entity, data) => ({ ...data, id: 3 }) as any),
       );
       dataSource.manager.create.mockImplementationOnce(
-        jest.fn((_entity, data) => ({ ...data, id: 4 })),
+        jest.fn((_entity, data) => ({ ...data, id: 4 }) as any),
       );
       dataSource.manager.create.mockImplementationOnce(
-        jest.fn((_entity, data) => ({ ...data, id: 5 })),
+        jest.fn((_entity, data) => ({ ...data, id: 5 }) as any),
       );
       dataSource.manager.findOne.mockResolvedValueOnce({ id: 1, threshold: 2 });
       dataSource.manager.findOne.mockResolvedValueOnce({ id: 2, threshold: 1 });
@@ -443,29 +416,29 @@ describe('ApproversService', () => {
       });
       expect(dataSource.manager.insert).toHaveBeenNthCalledWith(2, TransactionApprover, {
         id: 2,
-        transactionId: null,
+        transactionId: undefined,
         threshold: 1,
         listId: 1,
         userId: undefined,
       });
       expect(dataSource.manager.insert).toHaveBeenNthCalledWith(3, TransactionApprover, {
         id: 3,
-        transactionId: null,
-        threshold: null,
+        transactionId: undefined,
+        threshold: undefined,
         listId: 2,
         userId: 1,
       });
       expect(dataSource.manager.insert).toHaveBeenNthCalledWith(4, TransactionApprover, {
         id: 4,
-        transactionId: null,
-        threshold: null,
+        transactionId: undefined,
+        threshold: undefined,
         listId: 2,
         userId: 2,
       });
       expect(dataSource.manager.insert).toHaveBeenNthCalledWith(5, TransactionApprover, {
         id: 5,
-        transactionId: null,
-        threshold: null,
+        transactionId: undefined,
+        threshold: undefined,
         listId: 1,
         userId: 3,
       });
@@ -690,7 +663,7 @@ describe('ApproversService', () => {
       expect(dataSource.manager.create).toHaveBeenCalledWith(TransactionApprover, {
         userId: 1,
         transactionId: transaction.id,
-        threshold: null,
+        threshold: undefined,
         signature: Buffer.from('0x123'),
         userKeyId: 1,
         approved: true,
@@ -713,19 +686,19 @@ describe('ApproversService', () => {
       transactionId: 1,
       userId: 1,
       listId: undefined,
-      threshold: null,
+      threshold: undefined,
       approvers: [],
       createdAt: new Date(),
       updatedAt: new Date(),
       deletedAt: null,
     };
 
-    const treeChild = {
+    const treeChild: TransactionApprover = {
       id: 3,
-      transactionId: null,
+      transactionId: undefined,
       userId: 1,
       listId: 2,
-      threshold: null,
+      threshold: undefined,
       approvers: [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -735,7 +708,7 @@ describe('ApproversService', () => {
     const treeApprover: TransactionApprover = {
       id: 2,
       transactionId: 1,
-      userId: null,
+      userId: undefined,
       threshold: 2,
       listId: undefined,
       createdAt: new Date(),
@@ -745,10 +718,10 @@ describe('ApproversService', () => {
         { ...treeChild },
         {
           id: 4,
-          transactionId: null,
+          transactionId: undefined,
           userId: 2,
           listId: 2,
-          threshold: null,
+          threshold: undefined,
           approvers: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -760,7 +733,7 @@ describe('ApproversService', () => {
     const treeApprover2: TransactionApprover = {
       id: 5,
       transactionId: 1,
-      userId: null,
+      userId: undefined,
       threshold: 1,
       listId: undefined,
       createdAt: new Date(),
@@ -769,10 +742,10 @@ describe('ApproversService', () => {
       approvers: [
         {
           id: 6,
-          transactionId: null,
+          transactionId: undefined,
           userId: 7,
           listId: 5,
-          threshold: null,
+          threshold: undefined,
           approvers: [],
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -946,7 +919,7 @@ describe('ApproversService', () => {
 
       expect(dataSource.manager.update).toHaveBeenCalledWith(TransactionApprover, 1, {
         listId: 5,
-        transactionId: null,
+        transactionId: undefined,
       });
       expect(emitTransactionUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: transactionId  }]);
     });
@@ -1063,15 +1036,15 @@ describe('ApproversService', () => {
     it('should do nothing if update list id that is null with null', async () => {
       const transactionId = 1;
       const dto: UpdateTransactionApproverDto = {
-        listId: null,
+        listId: undefined,
       };
 
       jest
         .spyOn(service, 'getTransactionApproverById')
-        .mockResolvedValueOnce({ ...basicApprover, listId: null });
+        .mockResolvedValueOnce({ ...basicApprover, listId: undefined });
       jest
         .spyOn(service, 'getRootNodeFromNode')
-        .mockResolvedValueOnce({ ...basicApprover, listId: null });
+        .mockResolvedValueOnce({ ...basicApprover, listId: undefined });
 
       await service.updateTransactionApprover(1, dto, transactionId, user);
 
@@ -1211,7 +1184,7 @@ describe('ApproversService', () => {
     });
 
     it('should soft remove approver', async () => {
-      const approver = { id: 1, transactionId: 2 } as TransactionApprover; 
+      const approver = { id: 1, transactionId: 2 } as TransactionApprover;
       jest
         .spyOn(service, 'getTransactionApproverById')
         .mockResolvedValueOnce(approver);
@@ -1512,10 +1485,10 @@ describe('ApproversService', () => {
 
     const approver1: TransactionApprover = {
       id: 3,
-      transactionId: null,
+      transactionId: undefined,
       userId: 1,
       listId: 2,
-      threshold: null,
+      threshold: undefined,
       approvers: [],
       createdAt: today,
       updatedAt: today,
@@ -1524,20 +1497,20 @@ describe('ApproversService', () => {
 
     const approver2: TransactionApprover = {
       id: 4,
-      transactionId: null,
+      transactionId: undefined,
       userId: 2,
       listId: 2,
-      threshold: null,
+      threshold: undefined,
       approvers: [],
       createdAt: today,
       updatedAt: today,
       deletedAt: null,
     };
 
-    const approver3 = {
+    const approver3: TransactionApprover = {
       id: 2,
       transactionId: 1,
-      userId: null,
+      userId: undefined,
       threshold: 2,
       listId: null,
       createdAt: today,
@@ -1548,7 +1521,7 @@ describe('ApproversService', () => {
     const treeApprover: TransactionApprover = {
       id: 2,
       transactionId: 1,
-      userId: null,
+      userId: undefined,
       threshold: 2,
       listId: null,
       createdAt: today,
@@ -1557,10 +1530,10 @@ describe('ApproversService', () => {
       approvers: [
         {
           id: 3,
-          transactionId: null,
+          transactionId: undefined,
           userId: 1,
           listId: 2,
-          threshold: null,
+          threshold: undefined,
           approvers: [],
           createdAt: today,
           updatedAt: today,
@@ -1568,10 +1541,10 @@ describe('ApproversService', () => {
         },
         {
           id: 4,
-          transactionId: null,
+          transactionId: undefined,
           userId: 2,
           listId: 2,
-          threshold: null,
+          threshold: undefined,
           approvers: [],
           createdAt: today,
           updatedAt: today,
@@ -1596,9 +1569,9 @@ describe('ApproversService', () => {
       const transactionId = 1;
 
       approversRepo.count.mockResolvedValueOnce(1);
-      expect(await service.isNode({ userId: 1 } as TransactionApprover, transactionId)).toEqual(
-        true,
-      );
+      expect(
+        await service.isNode({ userId: 1 } as CreateTransactionApproverDto, transactionId),
+      ).toEqual(true);
     });
   });
 });

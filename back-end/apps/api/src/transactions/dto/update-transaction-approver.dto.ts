@@ -3,7 +3,7 @@ import { IsNumber, IsOptional, Min } from 'class-validator';
 export class UpdateTransactionApproverDto {
   @IsNumber()
   @IsOptional()
-  listId?: number;
+  listId?: number|null;
 
   @IsNumber()
   @Min(1)

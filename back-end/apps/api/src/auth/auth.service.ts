@@ -67,7 +67,9 @@ export class AuthService {
 
     this.logger.log(`User ${user.id} registered and temporary password generated.`);
 
-    emitUserRegistrationEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { url, tempPassword, downloadUrl } }]);
+    emitUserRegistrationEmail(this.notificationsPublisher, [
+      { email: user.email, additionalData: { url, tempPassword, downloadUrl } },
+    ]);
 
     return user;
   }
@@ -90,27 +92,36 @@ export class AuthService {
     if (!correct) throw new BadRequestException(ErrorCodes.INOP);
 
     if (user.status === UserStatus.NEW && user.keys.length === 0) {
-      emitUserStatusUpdateNotifications(this.notificationsPublisher, { entityId: user.id, additionalData: { username: user.email } });
+      emitUserStatusUpdateNotifications(this.notificationsPublisher, {
+        entityId: user.id,
+        additionalData: { username: user.email },
+      });
     }
 
     await this.usersService.setPassword(user, newPassword);
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string }> {
+  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string } | null> {
     const user = await this.usersService.getUser({ email });
 
-    if (!user) return;
+    if (!user) return null;
 
     // A legitimate new request always gets a clean slate of attempts, and
     // replaces whatever code (if any) was previously pending.
     await this.otpStoreService.resetFailedAttempts(user.email);
 
     const otp = this.generateOtp();
-    await this.otpStoreService.storeCodeHash(user.email, this.hashOtp(otp), this.getOtpWindowSeconds());
+    await this.otpStoreService.storeCodeHash(
+      user.email,
+      this.hashOtp(otp),
+      this.getOtpWindowSeconds(),
+    );
 
     const serverUrl = this.resolveServerUrl(fallbackUrl);
-    emitUserPasswordResetEmail(this.notificationsPublisher, [{ email: user.email, additionalData: { otp, serverUrl } }]);
+    await emitUserPasswordResetEmail(this.notificationsPublisher, [
+      { email: user.email, additionalData: { otp, serverUrl } },
+    ]);
 
     // @deprecated This JWT proves nothing on its own (see OtpJwtStrategy) - it's
     // only issued so pre-existing clients that still send it back as the `otp`
@@ -119,7 +130,7 @@ export class AuthService {
     // pair, not this token.
     const token = this.getOtpToken(
       { email: user.email, verified: false },
-      this.configService.get<number>('OTP_EXPIRATION'),
+      this.configService.get<number>('OTP_EXPIRATION') ?? 2,
     );
     return { token };
   }
@@ -216,18 +227,18 @@ export class AuthService {
    * the failed-attempt counter, since it doesn't need to outlive the code it's
    * protecting. */
   private getOtpWindowSeconds(): number {
-    return this.configService.get<number>('OTP_EXPIRATION') * 60;
+    return this.configService.get<number>('OTP_EXPIRATION')! * 60;
   }
 
   private getOtpMaxAttempts(): number {
-    return this.configService.get<number>('OTP_MAX_ATTEMPTS');
+    return this.configService.get<number>('OTP_MAX_ATTEMPTS')!;
   }
 
   /* How long the verified OTP JWT stays valid, in minutes. Independent of the
    * guessing window above - by this point the code is already spent, so this is
    * just giving the user reasonable time to submit their new password. */
   private getOtpVerifiedExpirationMinutes(): number {
-    return this.configService.get<number>('OTP_VERIFIED_EXPIRATION');
+    return this.configService.get<number>('OTP_VERIFIED_EXPIRATION')!;
   }
 
   /* Sets the OTP jwt */
@@ -253,7 +264,12 @@ export class AuthService {
   /* Attempt to authenticate the token. */
   async authenticateWebsocketToken(accessToken: string): Promise<User> {
     const { userId } = await this.jwtService.verifyAsync(accessToken);
-    return this.usersService.getUser({ id: userId });
+    const result = await this.usersService.getUser({ id: userId });
+    if (result !== null) {
+      return result;
+    } else {
+      throw new UnauthorizedException('Cannot find user matching access token');
+    }
   }
 
   /* Elevate user to admin */

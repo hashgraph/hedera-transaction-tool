@@ -322,7 +322,8 @@ describe('userKeysRequiredToSign - Integration', () => {
       em,
     );
 
-    expect(result).not.toContain(deletedKey.id);
+    expect(deletedKey).not.toBeNull();
+    expect(result).not.toContain(deletedKey!.id);
     expect(result).toContain(aliceKey2.id);
   });
 });

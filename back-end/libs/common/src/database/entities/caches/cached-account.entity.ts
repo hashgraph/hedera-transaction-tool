@@ -27,13 +27,13 @@ export class CachedAccount {
   @Column()
   mirrorNetwork: string;
 
-  @Column({ nullable: true })
+  @Column({ type: Boolean, nullable: true })
   receiverSignatureRequired: boolean | null;
 
   @Column({ type: 'bytea', nullable: true })
   encodedKey: Buffer | null;
 
-  @Column({ length: 100, nullable: true })
+  @Column({ type: String, length: 100, nullable: true })
   etag: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedAccountKey, (key) => key.cachedAccount)

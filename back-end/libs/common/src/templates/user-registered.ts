@@ -19,7 +19,7 @@ export const generateUserRegisteredMessage = (additionalData: Record<string, any
   return emailWrapper(content);
 }
 
-export function generateNotifyUserRegisteredContent(...notifications: Notification[]): string {
+export function generateNotifyUserRegisteredContent(...notifications: Notification[]): string | null {
   if (notifications.length === 0) return null;
 
   const emails = notifications.map(n => n.additionalData?.username).filter(Boolean);

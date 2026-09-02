@@ -29,8 +29,8 @@ describe('Notification Preferences (e2e)', () => {
     adminAuthToken = await login(app, 'admin');
     userAuthToken = await login(app, 'user');
 
-    admin = await getUser('admin');
-    user = await getUser('user');
+    admin = (await getUser('admin'))!;
+    user = (await getUser('user'))!;
   });
 
   afterAll(async () => {
@@ -61,7 +61,7 @@ describe('Notification Preferences (e2e)', () => {
           email: false,
           inApp: false,
         },
-        null,
+        undefined,
         userAuthToken,
       );
 
@@ -93,7 +93,7 @@ describe('Notification Preferences (e2e)', () => {
           email: false,
           inApp: false,
         },
-        null,
+        undefined,
         userAuthToken,
       );
 
@@ -124,7 +124,7 @@ describe('Notification Preferences (e2e)', () => {
           type: NotificationType.TRANSACTION_CREATED,
           email: true,
         },
-        null,
+        undefined,
         userAuthToken,
       );
 
@@ -155,7 +155,7 @@ describe('Notification Preferences (e2e)', () => {
           type: NotificationType.TRANSACTION_CREATED,
           inApp: true,
         },
-        null,
+        undefined,
         userAuthToken,
       );
 
@@ -186,7 +186,7 @@ describe('Notification Preferences (e2e)', () => {
           {
             type: NotificationType.TRANSACTION_CREATED,
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(200);
@@ -213,23 +213,22 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(PATCH) should throw if invalid body is passed', async () => {
-      await endpoint.patch({ email: 'sad' }, null, userAuthToken).expect(400);
+      await endpoint.patch({ email: 'sad' }, undefined, userAuthToken).expect(400);
 
-      await endpoint.patch({ inApp: 'sad' }, null, userAuthToken).expect(400);
+      await endpoint.patch({ inApp: 'sad' }, undefined, userAuthToken).expect(400);
 
-      await endpoint.patch({ email: true, inApp: false }, null, userAuthToken).expect(400);
+      await endpoint.patch({ email: true, inApp: false }, undefined, userAuthToken).expect(400);
     });
 
     it('(PATCH) should NOT update the preferences if the user is not authenticated', async () => {
-      await endpoint.patch({ email: true }, null).expect(401);
+      await endpoint.patch({ email: true }, undefined).expect(401);
     });
 
     it('(GET) should create the preferences if they do not exist', async () => {
-      let preferences = await getPreferences(admin.id);
+      const preferences = (await getPreferences(admin.id))!;
       expect(preferences).toEqual([]);
 
-      const { status, body } = await endpoint.get(null, adminAuthToken);
-      preferences = await getPreferences(admin.id);
+      const { status, body } = await endpoint.get(undefined, adminAuthToken);
 
       expect(status).toBe(200);
       expect(body.length).toBe(Object.values(NotificationType).length);
@@ -249,9 +248,9 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should return the preferences', async () => {
-      const preferences = await getPreferences(user.id);
+      const preferences = (await getPreferences(user.id))!;
 
-      const { status, body } = await endpoint.get(null, userAuthToken);
+      const { status, body } = await endpoint.get(undefined, userAuthToken);
 
       expect(status).toBe(200);
       expect(body.length).toBe(Object.values(NotificationType).length);
@@ -266,7 +265,7 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should return the preferences for a given type', async () => {
-      const { status, body } = await endpoint.get(null, userAuthToken, '?type=TRANSACTION_CREATED');
+      const { status, body } = await endpoint.get(undefined, userAuthToken, '?type=TRANSACTION_CREATED');
 
       expect(status).toBe(200);
       expect(body).toEqual([
@@ -280,11 +279,11 @@ describe('Notification Preferences (e2e)', () => {
     });
 
     it('(GET) should throw if invalid query is passed', async () => {
-      await endpoint.get(null, userAuthToken, '?type=INVALID').expect(400);
+      await endpoint.get(undefined, userAuthToken, '?type=INVALID').expect(400);
     });
 
     it('(GET) should not return the preferences if the user is not authenticated', async () => {
-      await endpoint.get(null).expect(401);
+      await endpoint.get(undefined).expect(401);
     });
   });
 });

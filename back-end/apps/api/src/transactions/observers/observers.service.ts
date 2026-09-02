@@ -47,8 +47,9 @@ export class ObserversService {
 
     const observers: TransactionObserver[] = [];
 
+    const allObservers = transaction.observers ?? [];
     for (const userId of dto.userIds) {
-      if (!transaction.observers.some(o => o.userId === userId)) {
+      if (!allObservers.some(o => o.userId === userId)) {
         const observer = this.repo.create({ userId, transactionId, role: Role.FULL });
         observers.push(observer);
       }
@@ -100,18 +101,18 @@ export class ObserversService {
     const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
 
     if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
-      return transaction.observers;
+      return transaction.observers ?? [];
 
     if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.userId !== user.id &&
-      !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey?.userId === user.id) &&
+      !(transaction.observers === undefined || transaction.observers.some(o => o.userId === user.id)) &&
+      !(transaction.signers === undefined || transaction.signers.some(s => s.userKey?.userId === user.id)) &&
       !approvers.some(a => a.userId === user.id)
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 
-    return transaction.observers;
+    return transaction.observers ?? [];
   }
 
   /* Update a transaction observer with the data provided for the given observer id. */

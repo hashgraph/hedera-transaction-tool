@@ -54,7 +54,7 @@ import {
 import { adminEmail, adminPassword, dummyEmail, dummyNewEmail, dummyNewPassword, dummyPassword } from './constants';
 import { hash } from './crypto';
 
-let _dataSource: DataSource;
+let _dataSource: DataSource | null = null;
 
 export async function getDataSource() {
   if (!_dataSource) {
@@ -383,14 +383,14 @@ export async function addTransactions() {
     sdkTransaction.freezeWith(client);
 
     transaction.type = getTransactionTypeEnumValue(sdkTransaction);
-    transaction.transactionId = sdkTransaction.transactionId.toString();
+    transaction.transactionId = sdkTransaction.transactionId!.toString();
     transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
     transaction.unsignedTransactionBytes = Buffer.from(sdkTransaction.toBytes());
     transaction.transactionHash = Buffer.from(await sdkTransaction.getTransactionHash()).toString(
       'hex',
     );
     transaction.status = TransactionStatus.WAITING_FOR_SIGNATURES;
-    transaction.validStart = sdkTransaction.transactionId.validStart.toDate();
+    transaction.validStart = sdkTransaction.transactionId!.validStart!.toDate();
 
     try {
       await transactionRepo.save(transaction);

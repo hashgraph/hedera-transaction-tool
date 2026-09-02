@@ -19,7 +19,7 @@ export class ReviewerGroup {
   @Column()
   name: string;
 
-  @Column({ nullable: true })
+  @Column({ type: String, nullable: true })
   description: string | null;
 
   @Column()
@@ -32,7 +32,7 @@ export class ReviewerGroup {
   updatedAt: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   @OneToMany(() => ReviewerGroupMember, member => member.group)
   members: ReviewerGroupMember[];

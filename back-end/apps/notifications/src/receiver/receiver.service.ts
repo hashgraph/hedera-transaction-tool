@@ -95,16 +95,24 @@ export class ReceiverService {
     transactionIds: number[],
     withDeleted = false,
   ): Promise<Map<number, Transaction>> {
-    const transactions = await this.entityManager.find(Transaction, {
-      where: { id: In(transactionIds) },
-      relations: {
-        creatorKey: true,
-        observers: true,
-        signers: true,
-        groupItem: true,
-      },
-      withDeleted,
-    });
+    // creatorKeyId is NOT NULL and its key is only ever soft-deleted, so creatorKey
+    // must always resolve. Force withDeleted() on the whole query so that join isn't
+    // filtered, then reapply the deletedAt filter to the transaction row only when
+    // the caller wants soft-deleted transactions excluded.
+    const qb = this.entityManager
+      .createQueryBuilder(Transaction, 'transaction')
+      .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
+      .leftJoinAndSelect('transaction.observers', 'observers')
+      .leftJoinAndSelect('transaction.signers', 'signers')
+      .leftJoinAndSelect('transaction.groupItem', 'groupItem')
+      .where('transaction.id IN (:...transactionIds)', { transactionIds })
+      .withDeleted();
+
+    if (!withDeleted) {
+      qb.andWhere('transaction.deletedAt IS NULL');
+    }
+
+    const transactions = await qb.getMany();
 
     return new Map(transactions.map(t => [t.id, t]));
   }
@@ -151,41 +159,46 @@ export class ReceiverService {
     entityManager: EntityManager,
     transaction: Transaction,
     approvers: TransactionApprover[],
-    keyCache: Map<string, UserKey>,
+    keyCache?: Map<string, UserKey>,
   ) {
-    // If the creatorKey is deleted, it will not be included
-    const creatorId = transaction.creatorKey?.userId;
-    const signerUserIds = transaction.signers.map(s => s.userId);
-    const observerUserIds = transaction.observers.map(o => o.userId);
-    const requiredUserIds = await this.getUsersIdsRequiredToSign(entityManager, transaction, keyCache);
+    const creatorId = transaction.creatorKey.userId;
+    const signerUserIds = transaction.signers?.map(s => s.userId) ?? [];
+    const observerUserIds = transaction.observers?.map(o => o.userId) ?? [];
+    const requiredUserIds = await this.getUsersIdsRequiredToSign(
+      entityManager,
+      transaction,
+      keyCache,
+    );
 
-    const approversUserIds = approvers.map(a => a.userId);
+    const approversUserIds = approvers.map(a => a.userId).filter(userId => userId !== undefined);
     const approversGaveChoiceUserIds = approvers
       .filter(a => a.approved !== null)
       .map(a => a.userId)
-      .filter(Boolean);
+      .filter(a => a !== undefined);
     const approversShouldChooseUserIds = [
       TransactionStatus.WAITING_FOR_EXECUTION,
       TransactionStatus.WAITING_FOR_SIGNATURES,
     ].includes(transaction.status)
       ? approvers
-        .filter(a => a.approved === null)
-        .map(a => a.userId)
-        .filter(Boolean)
+          .filter(a => a.approved === null)
+          .map(a => a.userId)
+          .filter(a => a !== undefined)
       : [];
 
     const participants = [
-      ...new Set([
-        creatorId,
-        ...signerUserIds,
-        ...observerUserIds,
-        ...approversUserIds,
-        ...requiredUserIds,
-      ].filter(Boolean)),
+      ...new Set(
+        [
+          creatorId,
+          ...signerUserIds,
+          ...observerUserIds,
+          ...approversUserIds,
+          ...requiredUserIds,
+        ].filter(Boolean),
+      ),
     ];
 
     return {
-      ...(creatorId != null ? { creatorId } : {}),
+      creatorId,
       signerUserIds,
       observerUserIds,
       approversUserIds,
@@ -338,21 +351,24 @@ export class ReceiverService {
     entityManager: EntityManager,
     notification: Notification,
     newReceiverIds: number[],
-  ) {
+  ): Promise<NotificationReceiver[]> {
     if (newReceiverIds.length === 0) return [];
 
     const type = NOTIFICATION_CHANNELS[notification.type];
 
     return entityManager.save(
       NotificationReceiver,
-      newReceiverIds.map(userId => ({
-        notificationId: notification.id,
-        userId,
-        isRead: false,
-        isInAppNotified: type.inApp ? false : null,
-        isEmailSent: type.email ? false : null,
-        notification,
-      })),
+      newReceiverIds.map(
+        userId =>
+          ({
+            notificationId: notification.id,
+            userId,
+            isRead: false,
+            isInAppNotified: type.inApp ? false : null,
+            isEmailSent: type.email ? false : null,
+            notification,
+          }) as NotificationReceiver,
+      ),
     );
   }
 
@@ -580,7 +596,8 @@ export class ReceiverService {
   private collectNotifications<TKey extends string | number>(
     newReceivers: NotificationReceiver[],
     updatedReceivers: NotificationReceiver[],
-    notificationMap: { [key: string]: any[] },
+    notificationMap:
+      { [userId: number]: NotificationReceiver[] } | { [email: string]: Notification[] },
     receiverIds: number[],
     options: {
       keyExtractor: (receiver: NotificationReceiver, cache?: Map<number, User>) => TKey | null;
@@ -988,8 +1005,8 @@ export class ReceiverService {
         notificationId: notification.id,
         userId: adminUserId,
         isRead: false,
-        isInAppNotified: inAppReceiverUserIds.includes(adminUserId) ? false : null,
-        isEmailSent: emailReceiverUserIds.includes(adminUserId) ? false : null,
+        isInAppNotified: inAppReceiverUserIds.includes(adminUserId) ? false : undefined,
+        isEmailSent: emailReceiverUserIds.includes(adminUserId) ? false : undefined,
         notification,
       })),
     );

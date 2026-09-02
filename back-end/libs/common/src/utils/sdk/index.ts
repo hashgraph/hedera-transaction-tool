@@ -8,16 +8,15 @@ export * from './node';
 export * from './registered-node';
 
 export const parseHbar = (hbar: number | null, unit: HbarUnit): Hbar | null => {
-  hbar = parseInt(hbar?.toString());
-  if (!hbar) {
+  if (hbar === null) {
     return null;
   }
-
-  if (hbar < 0) {
+  try {
+    const result = Hbar.from(hbar, unit);
+    return result.isNegative() ? null : result;
+  } catch {
     return null;
   }
-
-  return Hbar.from(hbar, unit);
 };
 
 export const isAccountId = (accountId: string) => {

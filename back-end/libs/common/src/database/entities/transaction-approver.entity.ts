@@ -37,8 +37,8 @@ export class TransactionApprover {
   @JoinColumn({ name: 'listId' })
   list?: TransactionApprover;
 
-  @Column({ nullable: true })
-  listId?: number;
+  @Column({ type: Number, nullable: true })
+  listId?: number | null;
 
   @Column({ nullable: true })
   threshold?: number;
@@ -73,5 +73,5 @@ export class TransactionApprover {
   updatedAt: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt: Date | null;
 }

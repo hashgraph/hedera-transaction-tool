@@ -115,7 +115,7 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
     this.logger.log('All streams initialized successfully');
   }
 
-  private async createOrUpdateStream(jsm: JetStreamManager, config: Partial<StreamConfig>) {
+  private async createOrUpdateStream(jsm: JetStreamManager, config: Partial<StreamConfig> & { name: string }) {
     try {
       await jsm.streams.info(config.name);
       this.logger.log(`Stream ${config.name} already exists`);

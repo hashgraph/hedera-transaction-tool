@@ -127,7 +127,7 @@ describe('TransactionsController', () => {
       approvers: [],
       observers: [],
       comments: [],
-      groupItem: null,
+      groupItem: undefined,
       transactionCachedAccounts: [],
       transactionCachedNodes: [],
       transactionAccountSnapshots: [],
@@ -358,6 +358,11 @@ describe('TransactionsController', () => {
       transactionService.getUserKeysToSign.mockResolvedValue(result);
 
       expect(await controller.shouldSignTransaction(user, 1)).toBe(result);
+    });
+
+    it('should throw bad request if transaction does not exist', async () => {
+      transactionService.getTransactionById.mockResolvedValue(null);
+      await expect( controller.shouldSignTransaction(user, 1)).rejects.toThrow(BadRequestException);
     });
   });
 

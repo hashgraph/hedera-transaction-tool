@@ -37,7 +37,7 @@ export class AccountUpdateTransactionModel
     return set;
   }
 
-  private shouldWaiveSigningRequirements(accountId: AccountId): boolean {
+  private shouldWaiveSigningRequirements(accountId: AccountId | null): boolean {
     const feePayer = this.getFeePayerAccountId();
     return (
       this.isSystemAccount(accountId) &&
@@ -45,7 +45,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isSystemAccount(accountId: AccountId): boolean {
+  private isSystemAccount(accountId: AccountId | null): boolean {
     return (
       accountId != null &&
       accountId.compare(this.MINIMUM_SYSTEM_ACCOUNT) >= 0 &&
@@ -53,7 +53,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isPrivilegedFeePayer(feePayer?: AccountId): boolean {
+  private isPrivilegedFeePayer(feePayer: AccountId | null): boolean {
     return (
       feePayer != null &&
       (feePayer.equals(this.TREASURY_ACCOUNT) || feePayer.equals(this.ADMIN_ACCOUNT))
