@@ -399,6 +399,8 @@ watch(
           color="danger"
           class="col-1"
           @click="handleDeleteEndpoint(index, 'gossipEndpoints')"
+          log-label="delete-gossip-endpoint"
+          :log-metadata="{ index, ipOrDomain: endpoint.ipAddressV4 || endpoint.domainName, port: endpoint.port }"
           >Delete
         </AppButton>
       </div>
@@ -467,6 +469,8 @@ watch(
           color="danger"
           class="col-1"
           @click="handleDeleteEndpoint(index, 'serviceEndpoints')"
+          log-label="delete-service-endpoint"
+          :log-metadata="{ index, ipOrDomain: endpoint.ipAddressV4 || endpoint.domainName, port: endpoint.port }"
           >Delete
         </AppButton>
       </div>

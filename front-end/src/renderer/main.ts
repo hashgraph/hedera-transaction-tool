@@ -12,7 +12,7 @@ import { VueDatePicker } from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
-import { AutoFocusFirstInputDirective } from './utils';
+import { AutoFocusFirstInputDirective, ClickLoggingDirective } from './utils';
 import { setupRendererLogging } from './utils/logger';
 
 import {
@@ -34,6 +34,7 @@ addGuards(router);
 app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
 
 app.directive('focus-first-input', AutoFocusFirstInputDirective);
+app.directive('log-click', ClickLoggingDirective);
 
 /* Custom Components */
 app.component('DatePicker', VueDatePicker);

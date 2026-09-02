@@ -236,6 +236,11 @@ const hasCompatibilityConflict = (serverUrl: string) => {
                       color="danger"
                       @click="handleDeleteConnection(organization.id)"
                       class="min-w-unset"
+                      log-label="delete-organization-connection"
+                      :log-metadata="{
+                        organizationId: organization.id,
+                        serverUrl: organization.serverUrl,
+                      }"
                       ><span class="bi bi-trash"></span
                     ></AppButton>
                   </div>

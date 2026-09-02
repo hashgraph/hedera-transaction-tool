@@ -531,12 +531,16 @@ watch(
                       color="borderless"
                       :data-testid="'button-draft-delete-' + i"
                       @click="handleDeleteDraft(draft)"
+                      log-label="delete-draft"
+                      :log-metadata="{ draftId: draft.id }"
                       >Delete</AppButton
                     >
                     <AppButton
                       color="secondary"
                       :data-testid="'button-draft-continue-' + i"
                       @click="handleContinueDraft(draft)"
+                      log-label="continue-draft"
+                      :log-metadata="{ draftId: draft.id }"
                       >Continue</AppButton
                     >
                   </div>

@@ -497,6 +497,8 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
+                      log-label="view-transaction-details"
+                      :log-metadata="{ transactionId: transaction.id }"
                       >Details</AppButton
                     >
                   </td>
@@ -581,6 +583,8 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
+                      log-label="view-transaction-details"
+                      :log-metadata="{ transactionId: transactionData.transactionRaw.id }"
                       >Details</AppButton
                     >
                   </td>

@@ -224,6 +224,8 @@ const handleShowPrivateKey = async () => {
           @click="emit('restore', props.keyInfo)"
           class="min-w-unset me-2"
           :class="reImportActionEnabled ? null : 'invisible'"
+          log-label="restore-key"
+          :log-metadata="{ rowIndex: props.rowIndex, publicKey: props.keyInfo.publicKey }"
           ><span class="bi bi-arrow-repeat"></span
         ></AppButton>
         <AppButton
@@ -234,6 +236,12 @@ const handleShowPrivateKey = async () => {
           @click="emit('upload', props.keyInfo)"
           class="min-w-unset me-2"
           :class="reUploadActionEnabled ? null : 'invisible'"
+          log-label="upload-key"
+          :log-metadata="{
+            rowIndex: props.rowIndex,
+            publicKey: props.keyInfo.publicKey,
+            keyPairId: props.keyInfo.keyPair?.id,
+          }"
           ><span class="bi bi-upload"></span
         ></AppButton>
         <AppButton
@@ -243,6 +251,12 @@ const handleShowPrivateKey = async () => {
           @click="emit('delete', props.keyInfo)"
           class="min-w-unset"
           :class="props.enableDelete ? null : 'invisible'"
+          log-label="delete-key"
+          :log-metadata="{
+            rowIndex: props.rowIndex,
+            publicKey: props.keyInfo.publicKey,
+            keyPairId: props.keyInfo.keyPair?.id,
+          }"
           ><span class="bi bi-trash"></span
         ></AppButton>
       </div>

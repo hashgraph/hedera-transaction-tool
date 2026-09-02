@@ -142,7 +142,13 @@ watch(
 <template>
   <div class="p-5">
     <div class="d-flex align-items-center">
-      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+      <AppButton
+        type="button"
+        color="secondary"
+        class="btn-icon-only me-4"
+        @click="$router.back()"
+        log-label="back-to-contact-list"
+      >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
@@ -186,7 +192,14 @@ watch(
           placeholder="Enter emails separated by commas"
         />
       </div>
-      <AppButton color="primary" data-testid="button-register-user" type="submit" class="mt-5">
+      <AppButton
+        color="primary"
+        data-testid="button-register-user"
+        type="submit"
+        class="mt-5"
+        log-label="register-organization-user"
+        :log-metadata="{ isMultipleMode }"
+      >
         {{ buttonText }}
       </AppButton>
     </form>

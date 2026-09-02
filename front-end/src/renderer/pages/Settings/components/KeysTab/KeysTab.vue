@@ -201,6 +201,8 @@ watch(selectedKeyInfos, () => (toBeDeletedKeyInfos.value = []));
                   @click="handleDeleteSelectedClick"
                   class="min-w-unset"
                   :class="selectedKeyInfos.length > 0 ? null : 'invisible'"
+                  log-label="delete-selected-keys"
+                  :log-metadata="{ selectedCount: selectedKeyInfos.length }"
                   ><span class="bi bi-trash"></span
                 ></AppButton>
               </div>

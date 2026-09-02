@@ -526,6 +526,8 @@ watch(files, newFiles => {
                 :disabled="selectedFileIds.length < 1"
                 data-testid="button-remove-multiple-files"
                 @click="isUnlinkFileModalShown = true"
+                log-label="remove-selected-files"
+                :log-metadata="{ selectedCount: selectedFileIds.length }"
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </div>
@@ -611,6 +613,8 @@ watch(files, newFiles => {
                     color="danger"
                     @click="isUnlinkFileModalShown = true"
                     data-testid="button-remove-file-card"
+                    log-label="remove-file"
+                    :log-metadata="{ fileId: selectedFile?.file_id }"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div class="border-start ps-3">
@@ -625,6 +629,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="update-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-arrow-repeat"></span> Update</AppButton
                     >
                   </div>
@@ -640,6 +646,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="append-to-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-plus-square-dotted"></span> Append</AppButton
                     >
                   </div>
@@ -655,6 +663,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="read-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-book"></span> Read</AppButton
                     >
                   </div>
@@ -729,6 +739,8 @@ watch(files, newFiles => {
                         isUserLoggedIn(user.personal) &&
                         showStoredFileInTemp(user.personal.id, selectedFile.file_id)
                       "
+                      log-label="view-stored-file"
+                      :log-metadata="{ fileId: selectedFile.file_id }"
                       >View</AppButton
                     >
                   </div>
