@@ -45,8 +45,12 @@ export const getClientFromNetwork = async (mirrorNetwork: string | string[], led
 
   mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
 
-  if ([MAINNET, TESTNET, PREVIEWNET, LOCAL_NODE].includes(mirrorNetwork[0])) {
+  if ([MAINNET, TESTNET, PREVIEWNET].includes(mirrorNetwork[0])) {
     return Client.forName(mirrorNetwork[0]);
+  }
+
+  if (mirrorNetwork[0] === LOCAL_NODE) {
+    return Client.forNetwork({ 'localhost:35211': '0.0.3' });
   }
 
   mirrorNetwork = mirrorNetwork.map(network =>
