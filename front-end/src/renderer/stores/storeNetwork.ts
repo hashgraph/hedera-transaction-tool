@@ -82,7 +82,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
 
     if (newNetwork === CommonNetwork.LOCAL_NODE) {
       client.value = Client.forNetwork({
-        '127.0.0.1:50211': '0.0.3',
+        '127.0.0.1:35211': '0.0.3',
       })
         .setMirrorNetwork('127.0.0.1:38081')
         .setLedgerId('3');
