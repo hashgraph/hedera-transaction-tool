@@ -374,7 +374,7 @@ describe('Services Local User Key Pairs', () => {
       const user_id = '333';
       vi.mocked(getOrganization).mockResolvedValue(org);
 
-      await deleteSecretHashes('333', org.id, null);
+      await deleteSecretHashes('333', null, org.id);
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
         where: { user_id, organization_id: null },

@@ -84,7 +84,7 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   }
 };
 
-/* Returns the (encrypted) access token of a user for an organization */
+/* Returns the access token of a user for an organization */
 export const getAccessToken = async (serverUrl: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
@@ -418,7 +418,7 @@ export async function decryptMigratePassword(
   }
 }
 
-/* Decrypt credentials password. Update its encryption if needed. */
+/* Decrypt credentials JWT token. Update its encryption if needed. */
 export async function decryptMigrateJwtToken(
   credential: { id: string; jwtToken: string | null},
   decryptPassword: string | null,

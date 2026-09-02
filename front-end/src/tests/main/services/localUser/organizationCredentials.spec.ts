@@ -812,7 +812,7 @@ describe('Services Local User Organization Credentials', () => {
         } else if (data === jwtToken) {
           return encryptedJwtToken;
         } else {
-          throw "Unexpected data:" + data;
+          throw new Error(`Unexpected data: ${data}`);
         }
       })
       prisma.organizationCredentials.create.mockResolvedValue({
