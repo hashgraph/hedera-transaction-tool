@@ -84,6 +84,16 @@ function getGroupItemTransactionId(groupItem: RenderedGroupItem): string {
   }
 }
 
+// Computed once per groupItems change rather than being recomputed by each of a row's three
+// buttons on every re-render.
+const groupItemTransactionIds = computed(() => {
+  const ids = new Map<string, string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    ids.set(groupItem.rowKey, getGroupItemTransactionId(groupItem));
+  }
+  return ids;
+});
+
 /* Handlers */
 async function saveTransactionGroup() {
   assertUserLoggedIn(user.personal);
@@ -476,7 +486,7 @@ onBeforeRouteLeave(async to => {
                   :log-metadata="{
                     seq: groupItem.seq,
                     type: groupItem.type,
-                    transactionId: getGroupItemTransactionId(groupItem),
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
                   }"
                 >
                   <span class="bi bi-copy" aria-hidden="true"></span>
@@ -491,7 +501,7 @@ onBeforeRouteLeave(async to => {
                   :log-metadata="{
                     seq: groupItem.seq,
                     type: groupItem.type,
-                    transactionId: getGroupItemTransactionId(groupItem),
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
                   }"
                 >
                   Edit
@@ -511,7 +521,7 @@ onBeforeRouteLeave(async to => {
                   :log-metadata="{
                     seq: groupItem.seq,
                     type: groupItem.type,
-                    transactionId: getGroupItemTransactionId(groupItem),
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
                   }"
                 >
                   <span class="bi bi-trash" aria-hidden="true"></span>

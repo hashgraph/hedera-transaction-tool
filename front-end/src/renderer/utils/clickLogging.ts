@@ -18,7 +18,9 @@ function toLogPayload(el: HTMLElement, value: ClickLogValue | undefined) {
     return { label: el.textContent?.trim() || el.tagName.toLowerCase() };
   }
 
-  return typeof value === 'string' ? { label: value } : { label: value.label, ...value.metadata };
+  return typeof value === 'string'
+    ? { label: value }
+    : { label: value.label, metadata: value.metadata };
 }
 
 /**
