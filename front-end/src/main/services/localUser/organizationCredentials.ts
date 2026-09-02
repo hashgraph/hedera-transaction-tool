@@ -8,7 +8,12 @@ import { login } from '@main/services/organization/auth';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 import { createLogger } from '@main/modules/logger';
-import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
+import {
+  decrypt,
+  encrypt,
+  isClearTextToken,
+  isLegacyBlob,
+} from '@main/utils/crypto';
 
 const logger = createLogger('main.organizationCredentials');
 
@@ -428,7 +433,7 @@ export async function decryptMigrateJwtToken(
     return null;
   }
 
-  if (isLegacyBlob(credential.jwtToken)) {
+  if (isClearTextToken(credential.jwtToken)) {
     // JWT token is not encrypted => we encrypt it
     try {
       await getPrismaClient().organizationCredentials.update({
