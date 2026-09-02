@@ -24,7 +24,7 @@ import {
 
 import { safeStorage } from 'electron';
 import { jwtDecode } from 'jwt-decode';
-import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
+import { decrypt, encrypt, isClearTextToken, isLegacyBlob } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
@@ -1148,7 +1148,7 @@ describe('Services Local User Organization Credentials', () => {
       const clearTextToken = 'token';
       const encryptedToken = 'keychain encryption of token';
 
-      vi.mocked(isLegacyBlob).mockReturnValue(true);
+      vi.mocked(isClearTextToken).mockReturnValue(true);
       vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
       vi.mocked(safeStorage.encryptString).mockReturnValue(Buffer.from(encryptedToken));
 
@@ -1170,7 +1170,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptedToken = 'keychain encryption of token';
       const decryptPassword = 'password';
 
-      vi.mocked(isLegacyBlob).mockReturnValue(true);
+      vi.mocked(isClearTextToken).mockReturnValue(true);
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
       vi.mocked(encrypt).mockResolvedValue(encryptedToken);
 
@@ -1191,7 +1191,7 @@ describe('Services Local User Organization Credentials', () => {
       const clearTextToken = 'token';
       const encryptedToken = 'keychain encryption of token';
 
-      vi.mocked(isLegacyBlob).mockReturnValue(false);
+      vi.mocked(isClearTextToken).mockReturnValue(false);
       vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
       vi.mocked(safeStorage.decryptString).mockReturnValue(clearTextToken);
 
@@ -1210,7 +1210,7 @@ describe('Services Local User Organization Credentials', () => {
       const encryptedToken = 'keychain encryption of token';
       const decryptPassword = 'password';
 
-      vi.mocked(isLegacyBlob).mockReturnValue(false);
+      vi.mocked(isClearTextToken).mockReturnValue(false);
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
       vi.mocked(decrypt).mockResolvedValue(clearTextToken);
 
