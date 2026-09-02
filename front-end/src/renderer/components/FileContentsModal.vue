@@ -35,11 +35,7 @@ const displayContent = computed<string | null>(() => {
 
   try {
     const text = new TextDecoder('utf-8', { fatal: true }).decode(props.contents);
-    if (
-      /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F\u202A-\u202E\u2066-\u2069\u061C\u200E\u200F\u200B\u200C\u200D\u2060\uFEFF]/.test(
-        text,
-      )
-    ) {
+    if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\p{Cf}/u.test(text)) {
       return null;
     }
     return text;
