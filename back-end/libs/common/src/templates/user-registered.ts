@@ -13,7 +13,7 @@ export const generateUserRegisteredMessage = (additionalData: Record<string, unk
   const { url, tempPassword, downloadUrl } = additionalData;
   const content = `
     ${emailHeader("Welcome to the Transaction Tool!", "Hedera Transaction Tool")}
-    ${emailBody(userInvitedEmailBody(url, tempPassword, downloadUrl))}
+    ${emailBody(userInvitedEmailBody(String(url), String(tempPassword), String(downloadUrl)))}
   `;
 
   return emailWrapper(content);
@@ -22,7 +22,7 @@ export const generateUserRegisteredMessage = (additionalData: Record<string, unk
 export function generateNotifyUserRegisteredContent(...notifications: Notification[]): string | null {
   if (notifications.length === 0) return null;
 
-  const emails = notifications.map(n => n.additionalData?.username).filter(Boolean);
+  const emails = notifications.map(n => n.additionalData?.username).filter(u => typeof u === 'string');
 
   const count = emails.length;
   const isPlural = count > 1;

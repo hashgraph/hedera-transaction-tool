@@ -147,7 +147,7 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
   },
 };
 
-export type NotificationAdditionalData = Record<string, any>;
+export type NotificationAdditionalData = Record<string, unknown>;
 
 @Entity()
 export class Notification {

@@ -5,7 +5,7 @@ import { escapeHtml } from '@app/common/templates/layout';
 export const buildNetworkBreakdown = (notifications: Notification[]): string => {
   const counts = new Map<string, number>();
   for (const n of notifications) {
-    const network = getNetworkString(n.additionalData?.network);
+    const network = getNetworkString(String(n.additionalData?.network));
     if (!network) continue;
     counts.set(network, (counts.get(network) ?? 0) + 1);
   }

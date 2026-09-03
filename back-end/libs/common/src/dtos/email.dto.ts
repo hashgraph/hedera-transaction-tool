@@ -6,5 +6,5 @@ export class EmailDto {
   email!: string;
 
   @IsNotEmpty()
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }

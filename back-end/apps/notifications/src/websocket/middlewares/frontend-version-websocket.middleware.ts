@@ -3,7 +3,7 @@ import { Socket } from 'socket.io';
 import * as semver from 'semver';
 
 export type SocketIOMiddleware = {
-  (client: Socket, next: (err?: Error) => void);
+  (client: Socket, next: (err?: Error) => void): void;
 };
 
 const logger = new Logger('FrontendVersionWebsocketMiddleware');

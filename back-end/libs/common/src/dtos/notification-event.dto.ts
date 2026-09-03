@@ -6,5 +6,5 @@ export class NotificationEventDto {
   entityId!: number;
 
   @IsOptional()
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }

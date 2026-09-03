@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { QueryDeepPartialEntity, Repository } from 'typeorm';
 
 import { NotificationPreferences, NotificationType, User } from '@entities';
 
@@ -19,7 +19,7 @@ export class NotificationPreferencesService {
     const updateTxEmail = typeof dto.email === 'boolean';
     const updateTxInApp = typeof dto.inApp === 'boolean';
 
-    const updatePreferences: DeepPartial<NotificationPreferences> = {};
+    const updatePreferences: QueryDeepPartialEntity<NotificationPreferences> = {};
 
     if (updateTxEmail) {
       updatePreferences.email = dto.email;
@@ -53,7 +53,7 @@ export class NotificationPreferencesService {
       inApp: typeof updatePreferences.inApp === 'boolean' ? updatePreferences.inApp : true,
     });
 
-    await this.repo.insert(newPreferences);
+    await this.repo.save(newPreferences);
 
     return newPreferences;
   }
@@ -73,7 +73,7 @@ export class NotificationPreferencesService {
       inApp: true,
     });
 
-    await this.repo.insert(newPreferences);
+    await this.repo.save(newPreferences);
 
     return newPreferences;
   }
