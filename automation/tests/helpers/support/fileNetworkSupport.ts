@@ -34,7 +34,9 @@ export async function deleteFileFromNetwork(
   const operatorKey = PrivateKey.fromStringDer(LOCALNET_OPERATOR_PRIVATE_KEY_DER_HEX);
   const fileAdminKey = PrivateKey.fromStringDer(fileAdminPrivateKeyDerHex);
 
-  const client = Client.forLocalNode();
+  const client = Client.forNetwork({
+    '127.0.0.1:35211': '0.0.3',
+  }).setLedgerId('3');
   client.setOperator(LOCALNET_OPERATOR_ACCOUNT_ID, operatorKey);
 
   const signedTx = await new FileDeleteTransaction()
