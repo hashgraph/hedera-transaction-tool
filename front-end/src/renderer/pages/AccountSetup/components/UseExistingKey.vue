@@ -34,7 +34,7 @@ const handleSelectKeyPair = (keyPair: KeyPair | null) => {
 onBeforeMount(async () => {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
 
-  keyPairs.value = await getKeyPairs(user.personal.id, null);
+  keyPairs.value = await getKeyPairs(user.personal.id, user.personal.password, null);
 });
 </script>
 <template>
