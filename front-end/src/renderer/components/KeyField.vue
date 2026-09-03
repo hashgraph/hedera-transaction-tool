@@ -328,7 +328,14 @@ onMounted(loadSavedComplexKeys);
               <div
                 class="d-flex align-items-center text-secondary border-start border-secondary-subtle ps-4 ms-4"
               >
-                <AppButton type="button" size="small" color="primary" @click="handleEditComplexKey">
+                <AppButton
+                  type="button"
+                  size="small"
+                  color="primary"
+                  @click="handleEditComplexKey"
+                  log-label="edit-complex-key"
+                  :log-metadata="{ complexKeyId: selectedComplexKey?.id }"
+                >
                   <span class="bi bi-pencil"></span>
                   <span class="ms-3">Edit</span>
                 </AppButton>

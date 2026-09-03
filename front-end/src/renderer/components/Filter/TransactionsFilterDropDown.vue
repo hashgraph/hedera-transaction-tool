@@ -26,6 +26,7 @@ defineEmits(['update:filters']);
       type="button"
       data-bs-toggle="dropdown"
       data-bs-auto-close="outside"
+      log-label="open-transactions-filter"
     >
       <slot></slot>
     </AppButton>

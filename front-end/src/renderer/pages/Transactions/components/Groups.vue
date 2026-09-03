@@ -201,10 +201,18 @@ watch([currentPage, pageSize], async () => {
                 </td> -->
                 <td class="text-center">
                   <div class="d-flex justify-content-center flex-wrap gap-3">
-                    <AppButton color="borderless" @click="handleDeleteGroup(group.id)"
+                    <AppButton
+                      color="borderless"
+                      @click="handleDeleteGroup(group.id)"
+                      log-label="delete-group"
+                      :log-metadata="{ groupId: group.id }"
                       >Delete</AppButton
                     >
-                    <AppButton color="secondary" @click="handleContinueGroup(group.id)"
+                    <AppButton
+                      color="secondary"
+                      @click="handleContinueGroup(group.id)"
+                      log-label="continue-group"
+                      :log-metadata="{ groupId: group.id }"
                       >Continue</AppButton
                     >
                   </div>

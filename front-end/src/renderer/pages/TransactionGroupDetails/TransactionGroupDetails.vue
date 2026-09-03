@@ -415,6 +415,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
               color="secondary"
               type="button"
               @click="handleBack"
+              log-label="back-to-transactions"
             >
               <i class="bi bi-arrow-left"></i>
             </AppButton>
@@ -443,6 +444,8 @@ async function fetchGroupOnNotif(groupId: string | number) {
                   :loading-text="loadingStates[visibleButtons[0]] || ''"
                   class="extra-width"
                   type="submit"
+                  log-label="transaction-group-action"
+                  :log-metadata="{ action: visibleButtons[0], groupId }"
                   >{{ visibleButtons[0] }}
                 </AppButton>
               </div>

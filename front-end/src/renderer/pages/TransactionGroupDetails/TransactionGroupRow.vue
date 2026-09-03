@@ -172,6 +172,8 @@ useRevealed(container, () => {
           color="secondary"
           type="button"
           @click.prevent="() => emit('handleDetails', props.groupItem.transactionId)"
+          log-label="view-group-transaction-details"
+          :log-metadata="{ rowIndex: props.rowIndex, transactionId: props.groupItem.transactionId }"
           ><span>Details</span>
         </AppButton>
       </div>

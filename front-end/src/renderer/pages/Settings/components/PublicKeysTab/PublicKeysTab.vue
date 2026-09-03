@@ -178,6 +178,8 @@ onBeforeMount(async () => {
                 @click="handleDeleteSelectedClick"
                 class="min-w-unset"
                 :class="selectedPublicKeysToDelete.length > 0 ? null : 'invisible'"
+                log-label="delete-selected-public-keys"
+                :log-metadata="{ selectedCount: selectedPublicKeysToDelete.length }"
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </th>
@@ -232,6 +234,8 @@ onBeforeMount(async () => {
                   @click="handleDeleteModal(mapping.id)"
                   class="min-w-unset"
                   :class="selectedPublicKeysToDelete.length === 0 ? null : 'invisible'"
+                  log-label="delete-public-key"
+                  :log-metadata="{ index, publicKeyMappingId: mapping.id, publicKey: mapping.public_key }"
                   ><span class="bi bi-trash"></span
                 ></AppButton>
               </td>

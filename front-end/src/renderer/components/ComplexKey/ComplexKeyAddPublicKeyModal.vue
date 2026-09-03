@@ -274,6 +274,8 @@ watch(
             data-testid="button-insert-public-key"
             type="submit"
             :disabled="!isPublicKey(publicKey) && selectedPublicKeys.length === 0"
+            log-label="insert-public-key"
+            :log-metadata="{ multiple, publicKey, selectedCount: selectedPublicKeys.length }"
             >Insert</AppButton
           >
         </div>

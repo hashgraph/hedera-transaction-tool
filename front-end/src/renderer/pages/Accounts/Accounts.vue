@@ -351,6 +351,8 @@ onMounted(async () => {
                 :disabled="selectedAccountIds.length < 1"
                 data-testid="button-remove-multiple-accounts"
                 @click="isUnlinkAccountModalShown = true"
+                log-label="remove-selected-accounts"
+                :log-metadata="{ selectedCount: selectedAccountIds.length }"
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </div>
@@ -438,6 +440,8 @@ onMounted(async () => {
                     :disabled="selectedAccountIds.length < 1"
                     data-testid="button-remove-account-card"
                     @click="isUnlinkAccountModalShown = true"
+                    log-label="remove-account"
+                    :log-metadata="{ accountId: accountData.accountIdFormatted.value }"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div
@@ -450,6 +454,8 @@ onMounted(async () => {
                         color="borderless"
                         data-testid="button-edit-account"
                         data-bs-toggle="dropdown"
+                        log-label="edit-account"
+                        :log-metadata="{ accountId: accountData.accountIdFormatted.value }"
                         ><span class="bi bi-arrow-repeat"></span> Edit</AppButton
                       >
                       <ul class="dropdown-menu mt-3">

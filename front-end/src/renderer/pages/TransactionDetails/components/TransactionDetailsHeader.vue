@@ -297,6 +297,7 @@ const computeVisibleButtons = (
           data-testid="button-back"
           type="button"
           @click="handleBack"
+          log-label="back-to-transactions"
         >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
@@ -323,6 +324,11 @@ const computeVisibleButtons = (
             :loading-text="loadingStates[visibleButtons[0]] || ''"
             class="extra-width"
             type="submit"
+            log-label="transaction-action"
+            :log-metadata="{
+              action: visibleButtons[0],
+              transactionId: props.organizationTransaction?.id,
+            }"
             >{{ visibleButtons[0] }}
           </AppButton>
         </div>
