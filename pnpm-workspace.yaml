@@ -47,7 +47,7 @@ catalog:
   bcryptjs: 3.0.3
   dotenv: 17.4.2
   eslint: 10.9.0
-  jest: 30.4.2
+  jest: 30.5.0
   jszip: 3.10.1
   long: 5.3.2
   pg: 8.23.0
