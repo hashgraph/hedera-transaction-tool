@@ -8,24 +8,37 @@ import { login } from '@main/services/organization/auth';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
 import { createLogger } from '@main/modules/logger';
-import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
+import {
+  decrypt,
+  encrypt,
+  isClearTextToken,
+  isLegacyBlob,
+} from '@main/utils/crypto';
 
 const logger = createLogger('main.organizationCredentials');
 
 /* Returns the organization that the user is connected to */
-export const getOrganizationTokens = async (user_id: string) => {
+export const getOrganizationTokens = async (user_id: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
   try {
     const orgs = await prisma.organizationCredentials.findMany({
       where: { user_id },
       select: {
+        id: true,
         organization_id: true,
         jwtToken: true,
       },
     });
+    const result: { organization_id: string; jwtToken: string | null }[] = [];
+    for (const o of orgs) {
+      result.push({
+        organization_id: o.organization_id,
+        jwtToken: await decryptMigrateJwtToken(o, decryptPassword),
+      });
+    }
+    return result;
 
-    return orgs || [];
   } catch (error) {
     logger.error('Failed to get organization tokens', { error });
     return [];
@@ -33,7 +46,7 @@ export const getOrganizationTokens = async (user_id: string) => {
 };
 
 /* Returns the organizations that the user should sign into */
-export const organizationsToSignIn = async (user_id: string) => {
+export const organizationsToSignIn = async (user_id: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
   try {
@@ -47,7 +60,7 @@ export const organizationsToSignIn = async (user_id: string) => {
     const finalCredentials: typeof credentials = [];
 
     for (let i = 0; i < credentials.length; i++) {
-      if (await organizationCredentialsInvalid(credentials[i]))
+      if (await organizationCredentialsInvalid(credentials[i], decryptPassword))
         finalCredentials.push(credentials[i]);
     }
 
@@ -59,7 +72,7 @@ export const organizationsToSignIn = async (user_id: string) => {
 };
 
 /* Returns whether the user should sign in a specific organization */
-export const shouldSignInOrganization = async (user_id: string, organization_id: string) => {
+export const shouldSignInOrganization = async (user_id: string, organization_id: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
   try {
@@ -70,14 +83,14 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
       },
     });
 
-    return await organizationCredentialsInvalid(org);
+    return await organizationCredentialsInvalid(org, decryptPassword);
   } catch {
     return true;
   }
 };
 
 /* Returns the access token of a user for an organization */
-export const getAccessToken = async (serverUrl: string) => {
+export const getAccessToken = async (serverUrl: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
   try {
@@ -85,7 +98,7 @@ export const getAccessToken = async (serverUrl: string) => {
       where: { organization: { serverUrl } },
     });
     if (!credentials) return null;
-    return credentials.jwtToken || null;
+    return await decryptMigrateJwtToken(credentials, decryptPassword);
   } catch (error) {
     logger.error('Failed to get access token', { error });
     return null;
@@ -93,8 +106,8 @@ export const getAccessToken = async (serverUrl: string) => {
 };
 
 /* Returns the current user of an organization */
-export const getCurrentUser = async (organizationServerUrl: string) => {
-  const token = await getAccessToken(organizationServerUrl);
+export const getCurrentUser = async (organizationServerUrl: string, decryptPassword: string | null) => {
+  const token = await getAccessToken(organizationServerUrl, decryptPassword);
   if (!token) return null;
 
   try {
@@ -104,6 +117,7 @@ export const getCurrentUser = async (organizationServerUrl: string) => {
     return null;
   }
 };
+
 
 /* Returns credentials for organization */
 export const getOrganizationCredentials = async (
@@ -120,11 +134,13 @@ export const getOrganizationCredentials = async (
 
     if (!credentials) return null;
 
-    const password = await decryptData(credentials.password, decryptPassword, credentials.id);
+    const password = await decryptMigratePassword(credentials, decryptPassword);
+    const jwtToken = await decryptMigrateJwtToken(credentials, decryptPassword);
 
     return {
       ...credentials,
       password,
+      jwtToken,
     };
   } catch (error) {
     logger.error('Failed to get organization credentials', { error });
@@ -178,6 +194,7 @@ export const addOrganizationCredentials = async (
 
   try {
     password = await encryptData(password, encryptPassword);
+    jwtToken = await encryptData(jwtToken, encryptPassword);
 
     await prisma.organizationCredentials.create({
       data: {
@@ -211,6 +228,10 @@ export const updateOrganizationCredentials = async (
   try {
     if (password && !passwordIsEncrypted) {
       password = await encryptData(password, encryptPassword);
+    }
+
+    if (jwtToken && !passwordIsEncrypted) {
+      jwtToken = await encryptData(jwtToken, encryptPassword);
     }
 
     const credentials = await prisma.organizationCredentials.findFirst({
@@ -258,7 +279,7 @@ export const deleteOrganizationCredentials = async (organization_id: string, use
 export const tryAutoSignIn = async (user_id: string, decryptPassword: string | null) => {
   const prisma = getPrismaClient();
 
-  const invalidCredentials = await organizationsToSignIn(user_id);
+  const invalidCredentials = await organizationsToSignIn(user_id, decryptPassword);
 
   const failedLogins: Organization[] = [];
 
@@ -267,7 +288,10 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
 
     let password = '';
     try {
-      password = await decryptData(invalidCredential.password, decryptPassword, invalidCredential.id);
+      password = await decryptMigratePassword(
+        invalidCredential,
+        decryptPassword,
+      );
     } catch {
       throw new Error('Incorrect decryption password');
     }
@@ -278,10 +302,11 @@ export const tryAutoSignIn = async (user_id: string, decryptPassword: string | n
         invalidCredential.email,
         password,
       );
+      const encryptedAccessToken = await encryptData(accessToken, decryptPassword);
 
       await prisma.organizationCredentials.update({
         where: { id: invalidCredential.id },
-        data: { jwtToken: accessToken },
+        data: { jwtToken: encryptedAccessToken },
       });
     } catch {
       failedLogins.push(invalidCredential.organization);
@@ -348,8 +373,7 @@ async function encryptData(data: string, encryptPassword?: string | null) {
 /* Decrypt data */
 export async function decryptData(
   data: string,
-  decryptPassword?: string | null,
-  credentialId?: string,
+  decryptPassword: string | null,
 ) {
   // if no data was stored (password cleared), just return empty string
   if (data.length === 0) {
@@ -361,11 +385,32 @@ export async function decryptData(
     const buffer = Buffer.from(data, 'base64');
     return safeStorage.decryptString(buffer);
   } else if (decryptPassword) {
-    const decrypted = await decrypt(data, decryptPassword);
-    if (isLegacyBlob(data) && credentialId) {
+    return decrypt(data, decryptPassword);
+  } else {
+    throw new Error('Password is required to decrypt sensitive');
+  }
+}
+
+/* Decrypt credentials password. Update its encryption if needed. */
+export async function decryptMigratePassword(
+  credential: { id: string, password: string },
+  decryptPassword: string | null,
+) {
+  // if password was cleared, just return empty string
+  if (credential.password.length === 0) {
+    return '';
+  }
+
+  const useKeychain = await getUseKeychainClaim();
+  if (useKeychain) {
+    const buffer = Buffer.from(credential.password, 'base64');
+    return safeStorage.decryptString(buffer);
+  } else if (decryptPassword) {
+    const decrypted = await decrypt(credential.password, decryptPassword);
+    if (isLegacyBlob(credential.password)) {
       try {
         await getPrismaClient().organizationCredentials.update({
-          where: { id: credentialId },
+          where: { id: credential.id },
           data: { password: await encrypt(decrypted, decryptPassword) },
         });
       } catch {
@@ -378,15 +423,42 @@ export async function decryptData(
   }
 }
 
+/* Decrypt credentials JWT token. Update its encryption if needed. */
+export async function decryptMigrateJwtToken(
+  credential: { id: string; jwtToken: string | null},
+  decryptPassword: string | null,
+) {
+  // if token is null, returns null
+  if (credential.jwtToken === null) {
+    return null;
+  }
+
+  if (isClearTextToken(credential.jwtToken)) {
+    // JWT token is not encrypted => we encrypt it
+    try {
+      await getPrismaClient().organizationCredentials.update({
+        where: { id: credential.id },
+        data: { jwtToken: await encryptData(credential.jwtToken, decryptPassword) },
+      });
+    } catch {
+      // migration failure is non-fatal
+    }
+    return credential.jwtToken;
+  } else {
+    return decryptData(credential.jwtToken, decryptPassword);
+  }
+}
+
 /* Validate organization credentials */
 export async function organizationCredentialsInvalid(
-  org?: (OrganizationCredentials & { organization: Organization }) | null,
+  org: (OrganizationCredentials & { organization: Organization }) | null,
+  decryptPassword: string | null,
 ) {
   if (!org) return true;
 
   if (org.password.length === 0 || org.email.length === 0) return true;
 
-  const token = await getAccessToken(org.organization.serverUrl);
+  const token = await getAccessToken(org.organization.serverUrl, decryptPassword);
   if (!token) return true;
 
   try {

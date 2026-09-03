@@ -6,8 +6,8 @@ import { Prisma } from '@prisma/client';
 
 export default {
   keyPairs: {
-    getAll: (userId: string, organizationId?: string | null): Promise<KeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:getAll', userId, organizationId),
+    getAll: (userId: string, decryptPassword: string | null, organizationId?: string | null): Promise<KeyPair[]> =>
+      ipcRenderer.invoke('keyPairs:getAll', userId, decryptPassword, organizationId),
     store: (
       keyPair: Prisma.KeyPairUncheckedCreateInput,
       password: string | null,
@@ -25,10 +25,10 @@ export default {
       publicKey: string,
     ): Promise<string> =>
       ipcRenderer.invoke('keyPairs:decryptPrivateKey', userId, password, publicKey),
-    deleteEncryptedPrivateKeys: (userId: string, organizationId: string): Promise<void> =>
-      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId, organizationId),
-    clear: (userId: string, organizationId?: string): Promise<boolean> =>
-      ipcRenderer.invoke('keyPairs:clear', userId, organizationId),
+    deleteEncryptedPrivateKeys: (userId: string, decryptPassword: string | null, organizationId: string): Promise<void> =>
+      ipcRenderer.invoke('keyPairs:deleteEncryptedPrivateKeys', userId, decryptPassword, organizationId),
+    clear: (userId: string, decryptPassword: string | null, organizationId?: string): Promise<boolean> =>
+      ipcRenderer.invoke('keyPairs:clear', userId, decryptPassword, organizationId),
     deleteKeyPair: (keyPairId: string): Promise<void> =>
       ipcRenderer.invoke('keyPairs:deleteKeyPair', keyPairId),
     updateNickname: (keyPairId: string, nickname: string): Promise<void> =>

@@ -30,6 +30,10 @@ export function isLegacyBlob(data: string) {
   return !data.startsWith(BLOB_V2_PREFIX);
 }
 
+export function isClearTextToken(jwtData: string): boolean {
+  return /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/.test(jwtData);
+}
+
 export async function encrypt(data: string, password: string): Promise<string> {
   const iv = crypto.randomBytes(16);
   const salt = crypto.randomBytes(64);

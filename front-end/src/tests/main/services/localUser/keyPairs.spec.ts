@@ -67,7 +67,7 @@ describe('Services Local User Key Pairs', () => {
     test('getKeyPairs should retrieve the key pairs for the user', async () => {
       prisma.keyPair.findMany.mockResolvedValue([keyPair]);
 
-      const result = await getKeyPairs(keyPair.user_id, keyPair.organization_id);
+      const result = await getKeyPairs(keyPair.user_id, keyPair.organization_id, null);
 
       expect(result).toEqual([keyPair]);
     });
@@ -290,7 +290,7 @@ describe('Services Local User Key Pairs', () => {
     });
 
     test('Should delete the private keys of the user', async () => {
-      await deleteEncryptedPrivateKeys(keyPair.user_id, keyPair.organization_id);
+      await deleteEncryptedPrivateKeys(keyPair.user_id, keyPair.organization_id, null);
 
       expect(prisma.keyPair.updateMany).toHaveBeenCalledOnce();
     });
@@ -302,7 +302,7 @@ describe('Services Local User Key Pairs', () => {
     });
 
     test('Should delete the key pairs of the user', async () => {
-      await deleteSecretHashes(keyPair.user_id, keyPair.organization_id);
+      await deleteSecretHashes(keyPair.user_id, keyPair.organization_id, null);
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledOnce();
     });
@@ -342,7 +342,7 @@ describe('Services Local User Key Pairs', () => {
 
       vi.mocked(getOrganization).mockResolvedValue(org);
 
-      await deleteSecretHashes('333');
+      await deleteSecretHashes('333', null, null);
 
       expect(where).toEqual({ user_id });
     });
@@ -353,7 +353,7 @@ describe('Services Local User Key Pairs', () => {
       vi.mocked(getOrganization).mockResolvedValue(org);
       vi.mocked(getCurrentUser).mockResolvedValue({ userId: organization_user_id });
 
-      await deleteSecretHashes('333', org.id);
+      await deleteSecretHashes('333', null, org.id);
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
         where: { user_id, organization_id: org.id, organization_user_id },
@@ -363,7 +363,7 @@ describe('Services Local User Key Pairs', () => {
     test('Should extend the where clause with organization_id NULL', async () => {
       const user_id = '333';
 
-      await deleteSecretHashes('333', null);
+      await deleteSecretHashes('333', null, null);
 
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
         where: { user_id, organization_id: null },
@@ -374,8 +374,20 @@ describe('Services Local User Key Pairs', () => {
       const user_id = '333';
       vi.mocked(getOrganization).mockResolvedValue(org);
 
-      await deleteSecretHashes('333', org.id);
+      await deleteSecretHashes('333', null, org.id);
 
+      expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
+        where: { user_id, organization_id: null },
+      });
+    });
+
+    test('Should NOT extend the where clause when organization is not found', async () => {
+      const user_id = '333';
+      vi.mocked(getOrganization).mockResolvedValue(null);
+
+      await deleteSecretHashes('333', null, org.id);
+
+      expect(getCurrentUser).not.toHaveBeenCalled();
       expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
         where: { user_id, organization_id: null },
       });

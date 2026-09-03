@@ -13,9 +13,9 @@ const logger = createLogger('renderer.keyPairService');
 /* Key Pairs Service */
 
 /* Get stored key pairs */
-export const getKeyPairs = async (userId: string, organizationId?: string | null) =>
+export const getKeyPairs = async (userId: string, decryptPassword: string | null, organizationId?: string | null) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.keyPairs.getAll(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.getAll(userId, decryptPassword, organizationId);
   }, 'Failed to fetch key pairs');
 
 /* Store key pair*/
@@ -53,16 +53,17 @@ export const decryptPrivateKey = async (
   }, 'Failed to decrypt private key/s');
 
 /* Delete all stored key pairs */
-export const clearKeys = async (userId: string, organizationId?: string) =>
+export const clearKeys = async (userId: string, decryptPassword: string | null, organizationId?: string) =>
   commonIPCHandler(async () => {
-    return await window.electronAPI.local.keyPairs.clear(userId, organizationId);
+    return await window.electronAPI.local.keyPairs.clear(userId, decryptPassword, organizationId);
   }, 'Failed to clear key pairs');
 
 /* Delete the encrypted private keys from user's key pairs */
-export const deleteEncryptedPrivateKeys = async (userId: string, organizationId: string) =>
+export const deleteEncryptedPrivateKeys = async (userId: string, decryptPassword: string | null, organizationId: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.keyPairs.deleteEncryptedPrivateKeys(
       userId,
+      decryptPassword,
       organizationId,
     );
   }, 'Failed to delete encrypted private keys');
