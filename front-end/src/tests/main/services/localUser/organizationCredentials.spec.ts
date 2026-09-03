@@ -317,6 +317,7 @@ describe('Services Local User Organization Credentials', () => {
         ...organizationCredentials,
         jwtToken: 'encryptedToken',
       });
+      vi.mocked(isClearTextToken).mockReturnValue(true);
       vi.mocked(jwtDecode).mockImplementation(() => {
         throw new Error('Invalid token');
       });
@@ -1224,6 +1225,33 @@ describe('Services Local User Organization Credentials', () => {
       expect(prisma.organizationCredentials.update).not.toHaveBeenCalled();
     });
 
+    test('Should return empty string when jwt token is empty and not migrate it', async () => {
+      vi.mocked(isClearTextToken).mockReturnValue(false);
+
+      const credentials = { id: '0', jwtToken: '' };
+      const result = await decryptMigrateJwtToken(credentials, null);
+
+      expect(result).toBe('');
+      expect(getUseKeychainClaim).not.toHaveBeenCalled();
+      expect(decrypt).not.toHaveBeenCalled();
+      expect(prisma.organizationCredentials.update).not.toHaveBeenCalled();
+    });
+
+    test('Should throw when no keychain and no decrypt password is provided', async () => {
+      const encryptedToken = 'keychain encryption of token';
+
+      vi.mocked(isClearTextToken).mockReturnValue(false);
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
+
+      const credentials = { id: '0', jwtToken: encryptedToken };
+
+      await expect(decryptMigrateJwtToken(credentials, null)).rejects.toThrow(
+        'Password is required to decrypt sensitive',
+      );
+      expect(decrypt).not.toHaveBeenCalled();
+      expect(prisma.organizationCredentials.update).not.toHaveBeenCalled();
+    });
+
   });
 
   describe('organizationCredentialsInvalid', () => {
@@ -1277,6 +1305,7 @@ describe('Services Local User Organization Credentials', () => {
       prisma.organizationCredentials.findFirst.mockResolvedValue({
         jwtToken: 'encrypted',
       } as unknown as OrganizationCredentials);
+      vi.mocked(isClearTextToken).mockReturnValue(true);
       vi.mocked(jwtDecode).mockReturnValue({ exp: Date.now() / 1000 - 1000 });
       const result = await organizationCredentialsInvalid(validCredentials, null);
       expect(result).toBe(true);
@@ -1286,6 +1315,7 @@ describe('Services Local User Organization Credentials', () => {
       prisma.organizationCredentials.findFirst.mockResolvedValue({
         jwtToken: 'expired',
       } as unknown as OrganizationCredentials);
+      vi.mocked(isClearTextToken).mockReturnValue(true);
       vi.mocked(jwtDecode).mockImplementationOnce(() => {
         throw new Error('Invalid token');
       });

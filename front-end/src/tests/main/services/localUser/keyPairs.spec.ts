@@ -380,6 +380,18 @@ describe('Services Local User Key Pairs', () => {
         where: { user_id, organization_id: null },
       });
     });
+
+    test('Should NOT extend the where clause when organization is not found', async () => {
+      const user_id = '333';
+      vi.mocked(getOrganization).mockResolvedValue(null);
+
+      await deleteSecretHashes('333', null, org.id);
+
+      expect(getCurrentUser).not.toHaveBeenCalled();
+      expect(prisma.keyPair.deleteMany).toHaveBeenCalledWith({
+        where: { user_id, organization_id: null },
+      });
+    });
   });
 
   describe('updateNickname', () => {
