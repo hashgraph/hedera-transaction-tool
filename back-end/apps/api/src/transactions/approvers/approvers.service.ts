@@ -545,10 +545,19 @@ export class ApproversService {
   }
 
   /* Removes the transaction approver by id */
-  async removeTransactionApprover(id: number): Promise<void> {
+  async removeTransactionApprover(id: number, transactionId: number, user: User): Promise<void> {
     const approver = await this.getTransactionApproverById(id);
 
     if (!approver) throw new BadRequestException(ErrorCodes.ANF);
+
+    /* Authorize against the transaction owning the approver's root node. */
+    const rootNode = await this.getRootNodeFromNode(approver.id);
+    if (!rootNode) throw new BadRequestException(ErrorCodes.RANF);
+
+    if (rootNode.transactionId !== transactionId)
+      throw new UnauthorizedException(this.ROOT_TRANSACTION_NOT_SAME);
+
+    await this.getCreatorsTransaction(rootNode.transactionId, user);
 
     const result = await this.removeNode(approver.id);
 

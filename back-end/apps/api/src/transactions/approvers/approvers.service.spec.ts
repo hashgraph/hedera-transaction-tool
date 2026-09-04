@@ -1188,8 +1188,10 @@ describe('ApproversService', () => {
       jest
         .spyOn(service, 'getTransactionApproverById')
         .mockResolvedValueOnce(approver);
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce(approver);
+      jest.spyOn(service, 'getCreatorsTransaction').mockResolvedValueOnce({} as Transaction);
 
-      await service.removeTransactionApprover(1);
+      await service.removeTransactionApprover(1, 2, user);
 
       expect(approversRepo.query).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: approver.transactionId  }]);
@@ -1198,7 +1200,18 @@ describe('ApproversService', () => {
     it('should fail if approver does not exists', async () => {
       jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(null);
 
-      await expect(service.removeTransactionApprover(1)).rejects.toThrow(ErrorCodes.ANF);
+      await expect(service.removeTransactionApprover(1, 2, user)).rejects.toThrow(ErrorCodes.ANF);
+    });
+
+    it('should reject an approver belonging to a different transaction', async () => {
+      const approver = { id: 1, transactionId: 2 } as TransactionApprover;
+      jest.spyOn(service, 'getTransactionApproverById').mockResolvedValueOnce(approver);
+      jest.spyOn(service, 'getRootNodeFromNode').mockResolvedValueOnce(approver);
+
+      await expect(service.removeTransactionApprover(1, 1, user)).rejects.toThrow(
+        'Root transaction is not the same',
+      );
+      expect(approversRepo.query).not.toHaveBeenCalled();
     });
   });
 

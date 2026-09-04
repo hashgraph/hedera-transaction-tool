@@ -105,8 +105,7 @@ export class ApproversController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
     @Param('id', ParseIntPipe) id: number,
   ) {
-    await this.approversService.getCreatorsTransaction(transactionId, user);
-    await this.approversService.removeTransactionApprover(id);
+    await this.approversService.removeTransactionApprover(id, transactionId, user);
     // await this.approversService.emitSyncIndicators(transactionId);
 
     return true;
