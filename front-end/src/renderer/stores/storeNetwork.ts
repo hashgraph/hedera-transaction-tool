@@ -82,9 +82,9 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
 
     if (newNetwork === CommonNetwork.LOCAL_NODE) {
       client.value = Client.forNetwork({
-        '127.0.0.1:50211': '0.0.3',
+        '127.0.0.1:35211': '0.0.3',
       })
-        .setMirrorNetwork('127.0.0.1:5600')
+        .setMirrorNetwork('127.0.0.1:38081')
         .setLedgerId('3');
       return;
     }
@@ -98,7 +98,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
       [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
       [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
-      [CommonNetwork.LOCAL_NODE]: 'http://localhost:8081',
+      [CommonNetwork.LOCAL_NODE]: 'http://localhost:38081',
     };
 
     if (!networkLink[network]) {
