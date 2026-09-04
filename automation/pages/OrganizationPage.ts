@@ -1727,6 +1727,16 @@ export class OrganizationPage extends BasePage {
   async clickOnConfirmSignAllButton() {
     await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
     await this.click(this.confirmSignAllButtonSelector);
+    // Signing a large batch (e.g. 100 transactions) keeps the confirm modal open while it
+    // processes, so wait for it to actually close before callers move on and interact with
+    // elements underneath it (otherwise the still-open modal intercepts pointer events).
+    // Uses a raw CSS selector instead of getByTestId/isElementHidden because AppModal.vue
+    // hardcodes data-testid="modal-confirm-transaction" on ALL modals, which would trigger a
+    // Playwright strict-mode violation.
+    await this.window.waitForSelector(`[data-testid="${this.confirmTransactionModalSelector}"]`, {
+      state: 'hidden',
+      timeout: this.VERY_LONG_TIMEOUT * 2,
+    });
   }
 
   async clickOnConfirmCancelButton() {
