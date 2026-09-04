@@ -129,6 +129,9 @@ export class OrganizationPage extends BasePage {
   secondSignerCheckmarkSelector = 'span-checkmark-public-key-1-0';
   spanNotificationNumberSelector = 'span-notification-number';
   readyToSignTabBadgeSelector = '[data-testid="tab-2"] [data-testid="span-notification-number"]';
+  readyForReviewTabBadgeSelector = '[data-testid="tab-1"] [data-testid="span-notification-number"]';
+  readyForExecutionTabBadgeSelector = '[data-testid="tab-4"] [data-testid="span-notification-number"]';
+  historyTabBadgeSelector = '[data-testid="tab-5"] [data-testid="span-notification-number"]';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
   toastMessageSelector = 'css=.v-toast__text';
@@ -2185,6 +2188,26 @@ export class OrganizationPage extends BasePage {
     )?.trim();
     const parsed = Number.parseInt(text ?? '', 10);
     return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  private async getTabBadgeCount(selector: string): Promise<number> {
+    const visible = await this.isElementVisible(selector, null, this.SHORT_TIMEOUT);
+    if (!visible) return 0;
+    const text = (await this.getText(selector, null, this.SHORT_TIMEOUT))?.trim();
+    const parsed = Number.parseInt(text ?? '', 10);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  async getReadyForReviewTabBadgeCount(): Promise<number> {
+    return this.getTabBadgeCount(this.readyForReviewTabBadgeSelector);
+  }
+
+  async getReadyForExecutionTabBadgeCount(): Promise<number> {
+    return this.getTabBadgeCount(this.readyForExecutionTabBadgeSelector);
+  }
+
+  async getHistoryTabBadgeCount(): Promise<number> {
+    return this.getTabBadgeCount(this.historyTabBadgeSelector);
   }
 
   async createNotificationForUser(
