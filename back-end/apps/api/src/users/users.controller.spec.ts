@@ -65,6 +65,19 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 
+  it('should deny the public-key owner endpoint to non-verified users', () => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { status: UserStatus.NEW } }),
+      }),
+      getHandler: () => UsersController.prototype.getUserByPublicKey,
+    } as unknown as ExecutionContext;
+
+    const verifiedUserGuard = new VerifiedUserGuard(new Reflector());
+
+    expect(verifiedUserGuard.canActivate(context)).toBe(false);
+  });
+
   describe('getUsers', () => {
     it('should return an array of users', async () => {
       const result = [user];
