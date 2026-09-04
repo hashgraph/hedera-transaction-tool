@@ -605,7 +605,7 @@ importers:
     dependencies:
       '@electron-toolkit/utils':
         specifier: 4.0.0
-        version: 4.0.0(electron@42.5.1(supports-color@8.1.1))
+        version: 4.0.0(electron@43.4.0(supports-color@8.1.1))
       '@hiero-ledger/cryptography':
         specifier: 1.20.1
         version: 1.20.1(supports-color@8.1.1)
@@ -746,8 +746,8 @@ importers:
         specifier: 2.1.0
         version: 2.1.0(axios@1.18.1(debug@4.4.1(supports-color@8.1.1))(supports-color@8.1.1))
       electron:
-        specifier: 42.5.1
-        version: 42.5.1(supports-color@8.1.1)
+        specifier: 43.4.0
+        version: 43.4.0(supports-color@8.1.1)
       electron-builder:
         specifier: 26.15.3
         version: 26.15.3(electron-builder-squirrel-windows@26.15.3)(supports-color@8.1.1)
@@ -4997,8 +4997,8 @@ packages:
     resolution: {integrity: sha512-bO3y10YikuUwUuDUQRM4KfwNkKhnpVO7IPdbsrejwN9/AABJzzTQ4GeHwyzNSrVO+tEH3/Np255a3sVZpZDjvg==}
     engines: {node: '>=8.0.0'}
 
-  electron@42.5.1:
-    resolution: {integrity: sha512-2VFNJcHHbrhIpGsJHdkLoi/nWPZPxN3GHVPe+9At3Oz3/TJRwpr+7JL97ddBDbKyLmHGx3GfI2jvzcEQL28uFw==}
+  electron@43.4.0:
+    resolution: {integrity: sha512-3qxGF0CeQbiox5oWV1JlbWGQ1VerbmDhTFqW4sJ8h7uqTHniFYPObXJcDna0DMh32et0fFyKzz0YY8lJv3t5jg==}
     engines: {node: '>= 22.12.0'}
     hasBin: true
 
@@ -9561,9 +9561,9 @@ snapshots:
     dependencies:
       '@types/node': 26.2.0
 
-  '@electron-toolkit/utils@4.0.0(electron@42.5.1(supports-color@8.1.1))':
+  '@electron-toolkit/utils@4.0.0(electron@43.4.0(supports-color@8.1.1))':
     dependencies:
-      electron: 42.5.1(supports-color@8.1.1)
+      electron: 43.4.0(supports-color@8.1.1)
 
   '@electron/asar@3.4.1':
     dependencies:
@@ -13828,7 +13828,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  electron@42.5.1(supports-color@8.1.1):
+  electron@43.4.0(supports-color@8.1.1):
     dependencies:
       '@electron-internal/extract-zip': 1.0.5
       '@electron/get': 5.1.0(supports-color@8.1.1)

@@ -376,7 +376,37 @@ jobs:
       - name: Install Runtime Shared Libraries
         run: sudo apt-get install --no-install-recommends -y xorg openbox libnss3 libasound2 libatk-adaptor libgtk-3-0
 
-      - name: Run Automation
+      - name: Install glibc build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            bison \
+            gawk \
+            python3 \
+            texinfo \
+            wget
+
+
+      - name: Build glibc 2.41
+        shell: bash
+        run: |
+          wget https://ftp.gnu.org/gnu/glibc/glibc-2.41.tar.xz
+          tar -xf glibc-2.41.tar.xz
+
+          mkdir glibc-build
+
+          cd glibc-build
+          ../glibc-2.41/configure --prefix=/opt/glibc-2.41
+
+          make -j"$(nproc)"
+          sudo make install
+
+      - name: Check glibc
+        run: |
+          /opt/glibc-2.41/bin/ldd --version
+
+      - name: Run Automation (with glibc 2.41)
         env:
           EXECUTABLE_PATH: ../front-end/release/linux-unpacked/hedera-transaction-tool
           ENVIRONMENT: LOCALNET
@@ -388,7 +418,7 @@ jobs:
           POSTGRES_DATABASE: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_USERNAME: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
           POSTGRES_PASSWORD: ${{ matrix.test-suite.backendRequired && 'postgres' || '' }}
-        run: xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.grep }}"
+        run: /opt/glibc-2.41/lib/ld-linux-x86-64.so.2 --library-path /opt/glibc-2.41/lib xvfb-run -a npx playwright test --grep "${{ matrix.test-suite.grep }}"
         working-directory: automation
 
       - name: Upload Playwright Report
