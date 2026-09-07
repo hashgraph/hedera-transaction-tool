@@ -7,6 +7,9 @@ export const TESTNET = 'testnet';
 export const PREVIEWNET = 'previewnet';
 export const LOCAL_NODE = 'local-node';
 
+export const normalizeMirrorNetwork = (mirrorNetwork: string): string =>
+  mirrorNetwork.trim().toLowerCase();
+
 export const getLocalClientNetwork = (env: string|undefined): Record<string, string> => {
   switch (env) {
     case 'test':
@@ -24,7 +27,7 @@ export const getClientFromNetwork = async (
     mirrorNetwork = [mirrorNetwork];
   }
 
-  mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
+  mirrorNetwork = mirrorNetwork.map(normalizeMirrorNetwork);
   if ([MAINNET, TESTNET, PREVIEWNET].includes(mirrorNetwork[0])) {
     return Client.forName(mirrorNetwork[0]);
   }
