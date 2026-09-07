@@ -832,6 +832,7 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
     await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInMaxTransactionFee('10');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 

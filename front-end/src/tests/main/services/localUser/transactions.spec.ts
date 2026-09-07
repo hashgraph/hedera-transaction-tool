@@ -84,6 +84,17 @@ describe('Services Local User Transactions', () => {
       client.close();
     });
 
+    test('Should return client for the local node', async () => {
+      const forNetwork = vi
+        .spyOn(SDK.Client, 'forNetwork')
+        .mockReturnValue({ close: vi.fn() } as any);
+
+      const client = await getClientFromNetwork('local-node');
+
+      expect(forNetwork).toHaveBeenCalledWith({ 'localhost:35211': '0.0.3' });
+      client.close();
+    });
+
     test('Should return client for custom network', async () => {
       const mirrorNetwork = ['http://my-test-url.com'];
 
