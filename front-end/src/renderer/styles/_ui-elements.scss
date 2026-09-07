@@ -633,39 +633,46 @@ td .btn {
   --#{$prefix}tooltip-max-width: 460px;
 }
 
-.v-toast {
-  &__item {
-    border-radius: 16px;
-    padding: 12px 16px;
-    background-color: var(--#{$prefix}toast-bg-color) !important;
-    color: var(--#{$prefix}toast-color) !important;
-  }
+/* Toast */
+
+.toast-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
 }
 
-.v-toast {
-  &__item--warning {
-    background-color: var(--#{$prefix}toast-bg-color-warning) !important;
-    color: var(--#{$prefix}toast-color-warning) !important;
-  }
+.toast {
+  width: initial;
+  border-radius: 16px;
+  padding: 8px 8px;
+  animation-duration: 150ms;
+  background-color: var(--#{$prefix}toast-bg-color-success) !important;
+  color: var(--#{$prefix}toast-color-success) !important;
+  opacity: 0.92;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
 }
 
-.v-toast {
-  &__item--error {
-    background-color: var(--#{$prefix}toast-bg-color-error) !important;
-    color: var(--#{$prefix}toast-color-error) !important;
-    position: relative;
-    padding-right: 30px !important;
+.btn-close {
+  width: 0.5em;
+  height: 0.5em;
+}
 
-    &::after {
-      content: '\00d7';
-      position: absolute;
-      top: 6px;
-      right: 12px;
-      font-size: 24px;
-      line-height: 1;
-      opacity: 0.7;
-    }
-  }
+.toast-warning {
+  background-color: var(--#{$prefix}toast-bg-color-warning) !important;
+  color: var(--#{$prefix}toast-color-warning) !important;
+}
+
+.toast-error {
+  background-color: var(--#{$prefix}toast-bg-color-error) !important;
+  color: var(--#{$prefix}toast-color-error) !important;
+}
+
+.toast-header {
+  border-bottom: unset;
+  color: inherit;
+  background-color: inherit;
+  gap: 0.5em;
 }
 
 /* Tables */
