@@ -9,6 +9,7 @@ import {
   TransactionReviewerListMember,
   TransactionType,
 } from '@entities';
+import { normalizeMirrorNetwork } from '@app/common';
 
 @Injectable()
 export class ReviewerAssignmentService {
@@ -30,6 +31,7 @@ export class ReviewerAssignmentService {
     network: string,
     em: EntityManager,
   ): Promise<boolean> {
+    network = normalizeMirrorNetwork(network);
     const entities = await em.find(TransactionEntity, { where: { transactionId } });
 
     const entityIds = entities.map(e => e.hederaEntityId);
