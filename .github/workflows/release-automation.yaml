@@ -278,7 +278,7 @@ jobs:
   # ----------------------------
   build_mac:
     name: Build macOS Artifacts
-    runs-on: macos-latest
+    runs-on: macos-15
     # Generous: three arches (x64/arm64/universal) are built, then six
     # installers (dmg + pkg per arch) are notarized via the notary service.
     timeout-minutes: 90
