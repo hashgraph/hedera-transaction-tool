@@ -8,12 +8,12 @@ import TransactionDetailsHeader from '@renderer/pages/TransactionDetails/compone
 import { cancelTransaction, executeTransaction } from '@renderer/services/organization';
 import { showSaveDialog } from '@renderer/services/electronUtilsService';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
+
+const toastManager = new ToastManager();
 
 const routeUpMock = vi.fn();
 const routeToNextMock = vi.fn();
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
-const toastWarning = vi.fn();
 
 const userStore = {
   personal: { id: 'user-id' },
@@ -46,14 +46,6 @@ vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
     back: vi.fn(),
     push: vi.fn(),
-  })),
-}));
-
-vi.mock('vue-toast-notification', () => ({
-  useToast: vi.fn(() => ({
-    success: toastSuccess,
-    error: toastError,
-    warning: toastWarning,
   })),
 }));
 
@@ -182,6 +174,9 @@ const mountHeader = (
       onAction: onAction ?? vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     },
     global: {
+      provide: {
+        [ToastManager.injectKey]: toastManager
+      },
       stubs: {
         AppButton: AppButtonStub,
         AppConfirmModal: AppConfirmModalStub,
@@ -197,6 +192,7 @@ const mountHeader = (
 describe('TransactionDetailsHeader.vue', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    toastManager.reset();
   });
 
   test('hides action buttons that are invalid for canceled transactions', async () => {
@@ -234,9 +230,7 @@ describe('TransactionDetailsHeader.vue', () => {
 
     expect(cancelTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(toastSuccess).toHaveBeenCalledWith('Transaction canceled successfully', {
-      duration: 4000,
-    });
+    expect(toastManager.findEntry('Transaction canceled successfully', 'success')).not.toBeNull();
   });
 
   test('refreshes transaction state after a failed cancel attempt', async () => {
@@ -290,9 +284,7 @@ describe('TransactionDetailsHeader.vue', () => {
 
     expect(executeTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(toastSuccess).toHaveBeenCalledWith('Transaction scheduled successfully', {
-      duration: 4000,
-    });
+    expect(toastManager.findEntry('Transaction scheduled successfully', 'success')).not.toBeNull();
   });
 
   test.skip('shows error toast after failed schedule', async () => {
@@ -321,7 +313,7 @@ describe('TransactionDetailsHeader.vue', () => {
 
     expect(executeTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(toastError).toHaveBeenCalled();
+    expect(toastManager.findEntry('Transaction scheduled successfully', 'success')).not.toBeNull();
   });
 
   test('shows error toast when export is triggered without an SDK transaction', async () => {
@@ -335,10 +327,9 @@ describe('TransactionDetailsHeader.vue', () => {
     form.element.dispatchEvent(submitEvent);
     await flushPromises();
 
-    expect(toastError).toHaveBeenCalledWith(
-      'Unable to export: transaction is not available',
-      expect.objectContaining({ duration: 0 }),
-    );
+    expect(
+      toastManager.findEntry('Unable to export: transaction is not available', 'error'),
+    ).not.toBeNull();
   });
 
   test('shows success toast after successful export to tx2 format', async () => {
@@ -362,8 +353,6 @@ describe('TransactionDetailsHeader.vue', () => {
     await flushPromises();
 
     expect(showSaveDialog).toHaveBeenCalledTimes(1);
-    expect(toastSuccess).toHaveBeenCalledWith('Transaction exported successfully', {
-      duration: 4000,
-    });
+    expect(toastManager.findEntry('Transaction exported successfully', 'success')).not.toBeNull();
   });
 });
