@@ -4,7 +4,7 @@ import { createLogger } from '@renderer/utils/logger';
 const logger = createLogger('renderer.toastManager');
 
 export class ToastManager {
-  private static readonly injectKey = Symbol();
+  public static readonly injectKey = Symbol();
 
   public readonly entries = ref<ToastEntry[]>([]);
   private nextToastId = 0;
@@ -30,8 +30,8 @@ export class ToastManager {
 
   public error(message: string) {
     if (
-      this.findEntry(message) !== null ||
-      this.countErrorEntries() > this.maxDisplayedErrorCount
+      this.findEntry(message, 'error') !== null ||
+      this.countErrorEntries() >= this.maxDisplayedErrorCount
     ) {
       // We display message in console
       logger.debug('Hidden error message', { message });
@@ -65,6 +65,26 @@ export class ToastManager {
   }
 
   //
+  // Public (for testing)
+  //
+
+  findEntry(message: string, toastType: ToastType): ToastEntry | null {
+    return this.entries.value.find(e => e.message === message && e.type === toastType) ?? null;
+  }
+
+  countErrorEntries(): number {
+    let result = 0;
+    this.entries.value.forEach(e => {
+      if (e.type === 'error') result += 1;
+    });
+    return result;
+  }
+
+  reset() {
+    this.entries.value.splice(0)
+  }
+
+  //
   // Private
   //
 
@@ -74,18 +94,6 @@ export class ToastManager {
     if (type !== 'error') {
       setTimeout(() => this.removeEntry(newEntry.toastId), this.duration);
     } // else will be removed by ToastRenderer when closed by user
-  }
-
-  private findEntry(message: string): ToastEntry | null {
-    return this.entries.value.find(e => e.message == message) ?? null;
-  }
-
-  private countErrorEntries(): number {
-    let result = 0;
-    this.entries.value.forEach(e => {
-      if (e.type === 'error') result += 1;
-    });
-    return result;
   }
 }
 
