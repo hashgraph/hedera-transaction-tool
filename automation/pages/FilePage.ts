@@ -40,7 +40,7 @@ export class FilePage extends BasePage {
   fileDescriptionTextSelector = 'p-file-description';
   fileDeletedWarningSelector = 'p-file-is-deleted';
   fileIdListPrefixSelector = 'p-file-id-';
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   private readonly unlikedFiles: string[];
   private transactionPage: TransactionPage;
 

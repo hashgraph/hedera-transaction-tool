@@ -71,7 +71,7 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
   });
 
   test('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
-    const visibleToasts = window.locator('.v-toast__text:visible');
+    const visibleToasts = window.locator('.toast-message:visible');
     const waitForToastText = async (text: string) => {
       await expect
         .poll(

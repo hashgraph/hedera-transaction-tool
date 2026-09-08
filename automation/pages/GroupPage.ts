@@ -38,7 +38,7 @@ export class GroupPage extends BasePage {
   cancelAllButtonSelector = 'button-more-dropdown-lg-item-Cancel All';
   firstTransactionDetailsButtonLocator = '[data-testid="button-transaction-node-details-0"]';
   // Text
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   emptyTransactionTextSelector = 'p-empty-transaction-text';
   transactionGroupDetailsIdSelector = 'td-group-transaction-id';
   // Inputs
