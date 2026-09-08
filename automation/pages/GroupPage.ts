@@ -260,7 +260,7 @@ export class GroupPage extends BasePage {
     await this.uploadFile(this.importCsvButtonSelector, filePath);
     // Wait for all transactions to be loaded before proceeding
     const lastTxIndex = numberOfTransactions - 1;
-    await this.waitForElementToBeVisible(this.transactionTypeIndexSelector + lastTxIndex);
+    await this.waitForElementToBeVisible(this.transactionTypeIndexSelector + lastTxIndex, this.VERY_LONG_TIMEOUT);
   }
 
   async importCsvExpectingError(
