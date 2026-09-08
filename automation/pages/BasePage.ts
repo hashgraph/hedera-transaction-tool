@@ -421,6 +421,74 @@ export class BasePage {
   }
 
   /**
+   * Builds a selector matching a modal only while it is displayed.
+   *
+   * AppModal.vue keeps closed modals in the DOM with `display: none`, so a plain testid
+   * selector matches closed modals too - and every modal carries the same testid.
+   *
+   * @param {string} modalTestId - The data-testid rendered on the modal container.
+   * @returns {string} - The selector of the modal while it is displayed.
+   */
+  getVisibleModalSelector(modalTestId: string): string {
+    return `[data-testid="${modalTestId}"][style*="display: block"]`;
+  }
+
+  /**
+   * Waits until no modal carrying the given data-testid is displayed.
+   *
+   * AppModal.vue keeps closed modals in the DOM with `display: none`, so the visible-modal
+   * selector simply stops matching once a modal closes. Actions driven by ActionController
+   * open their progress modal ~400ms (Doherty threshold) after the confirmation modal
+   * closes, so the absence of a visible modal is only trusted once it holds for
+   * `settleTimeout` - otherwise callers navigate into the gap and their click gets
+   * intercepted by the progress modal that opens right after.
+   *
+   * @param {string} modalTestId - The data-testid rendered on the modal container.
+   * @param {number} [timeout=this.VERY_LONG_TIMEOUT] - Overall time budget.
+   * @param {number} [settleTimeout=this.DEFAULT_TIMEOUT] - How long the modal must stay closed.
+   * @returns {Promise<void>}
+   * @throws {Error} - If a modal is still displayed when the budget runs out.
+   */
+  async waitForModalToClose(
+    modalTestId: string,
+    timeout: number = this.VERY_LONG_TIMEOUT,
+    settleTimeout: number = this.DEFAULT_TIMEOUT,
+  ): Promise<void> {
+    const visibleModalSelector = this.getVisibleModalSelector(modalTestId);
+    console.log(`Waiting for modal with selector: ${visibleModalSelector} to close`);
+    const deadline = Date.now() + timeout;
+
+    while (Date.now() < deadline) {
+      const closed = await this.window
+        .waitForSelector(visibleModalSelector, {
+          state: 'hidden',
+          timeout: Math.max(deadline - Date.now(), 1),
+        })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!closed) {
+        break;
+      }
+
+      const reopened = await this.window
+        .waitForSelector(visibleModalSelector, { state: 'visible', timeout: settleTimeout })
+        .then(() => true)
+        .catch(() => false);
+
+      if (!reopened) {
+        console.log(`Modal ${modalTestId} is closed.`);
+        await this.captureStepScreenshot(`wait-modal-closed-${modalTestId}`);
+        return;
+      }
+
+      console.log(`Another ${modalTestId} modal opened; waiting for it to close.`);
+    }
+
+    throw new Error(`Modal ${modalTestId} did not close within ${timeout} ms`);
+  }
+
+  /**
    * Waits for an element with a specified testId to become visible within the DOM.
    * @param selector
    * @param {number} [timeout=this.LONG_TIMEOUT] - Optional timeout to wait for the element to be visible.

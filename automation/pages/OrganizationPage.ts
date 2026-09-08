@@ -61,6 +61,9 @@ export interface Credentials {
 }
 
 export class OrganizationPage extends BasePage {
+  /* Constants */
+  private readonly SIGN_ALL_CLICK_ATTEMPTS = 3;
+
   /* Selectors */
 
   // Buttons
@@ -1697,15 +1700,48 @@ export class OrganizationPage extends BasePage {
 
   async clickOnSignAllTransactionsButton(holdTimeout: number = 600) {
     // Experimental observation: Sign All button becomes visible but clicking is ineffective.
-    // => may be because button appears, disappears and re-appears
+    // => the button is rendered inside the transaction group form, which drops its action
+    //    buttons for a "..." placeholder on every group refetch (each backend transaction
+    //    update triggers one), so a click landing between two renders is silently lost:
+    //    the form never submits, no error is raised and no confirmation modal opens
     // => we wait a little bit before checking button visibility
+    // => and we retry until the click has actually opened the confirmation modal
     // => to be revisited once button state computation has been re-worked in transaction group details.
     await this.window.waitForTimeout(holdTimeout);
-    await this.waitForElementToBeVisible(
-      this.signAllTransactionsButtonSelector,
-      this.LONG_TIMEOUT * 2,
+    const visibleModalSelector = this.getVisibleModalSelector(this.confirmTransactionModalSelector);
+
+    for (let attempt = 1; attempt <= this.SIGN_ALL_CLICK_ATTEMPTS; attempt++) {
+      await this.waitForElementToBeVisible(
+        this.signAllTransactionsButtonSelector,
+        this.LONG_TIMEOUT * 2,
+      );
+      await this.click(this.signAllTransactionsButtonSelector);
+
+      const confirmationOpened = await this.isElementVisible(
+        this.confirmSignAllButtonSelector,
+        null,
+        this.LONG_TIMEOUT,
+      );
+      if (confirmationOpened) {
+        return;
+      }
+
+      // Re-clicking Sign All would be intercepted by whatever modal is open, so stop here
+      // rather than stalling on an unclickable button.
+      if (await this.isElementVisible(visibleModalSelector, null, this.SHORT_TIMEOUT)) {
+        throw new Error(
+          'Sign All opened a modal without the sign all confirmation button; cannot confirm',
+        );
+      }
+
+      console.log(
+        `Sign All click did not open the confirmation modal (attempt ${attempt}/${this.SIGN_ALL_CLICK_ATTEMPTS}).`,
+      );
+    }
+
+    throw new Error(
+      `Sign All confirmation modal did not open after ${this.SIGN_ALL_CLICK_ATTEMPTS} clicks on Sign All`,
     );
-    await this.click(this.signAllTransactionsButtonSelector);
   }
 
   private getConfirmGroupActionButtonSelector(modalTitle?: string) {
@@ -1727,6 +1763,14 @@ export class OrganizationPage extends BasePage {
   async clickOnConfirmSignAllButton() {
     await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
     await this.click(this.confirmSignAllButtonSelector);
+    // Signing runs behind a progress modal that intercepts every click underneath it, and
+    // the success toast only shows up once signing is done - so callers cannot rely on the
+    // toast to know when it is safe to navigate. Large groups (100 transactions) keep the
+    // modal open for well over a minute.
+    await this.waitForModalToClose(
+      this.confirmTransactionModalSelector,
+      this.VERY_LONG_TIMEOUT * 4,
+    );
   }
 
   async clickOnConfirmCancelButton() {
