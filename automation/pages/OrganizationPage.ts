@@ -1726,16 +1726,19 @@ export class OrganizationPage extends BasePage {
   async clickOnConfirmSignAllButton() {
     await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
     await this.click(this.confirmSignAllButtonSelector);
-    // Signing a large batch (e.g. 100 transactions) keeps the confirm modal open while it
-    // processes, so wait for it to actually close before callers move on and interact with
-    // elements underneath it (otherwise the still-open modal intercepts pointer events).
-    // Uses a raw CSS selector instead of getByTestId/isElementHidden because AppModal.vue
-    // hardcodes data-testid="modal-confirm-transaction" on ALL modals, which would trigger a
-    // Playwright strict-mode violation.
-    await this.window.waitForSelector(`[data-testid="${this.confirmTransactionModalSelector}"]`, {
-      state: 'hidden',
-      timeout: this.VERY_LONG_TIMEOUT * 2,
-    });
+    // AppModal.vue is always mounted (never v-if) and hardcodes
+    // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
+    // per-instance. Confirming "Sign all" replaces the confirm dialog with a progress dialog that
+    // stays open while a large batch (e.g. 100 transactions) signs - both carry the same testid.
+    // waitForSelector on the bare testid only ever inspects the first matching element in DOM
+    // order (the confirm dialog), so it was resolving as soon as THAT closed, before the progress
+    // dialog even appeared - letting callers click through to elements it was still covering.
+    // Poll until no instance of the testid is currently visible, instead of trusting one element.
+    await this.window.waitForFunction(
+      (selector: string) => document.querySelector(selector) === null,
+      `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`,
+      { timeout: this.VERY_LONG_TIMEOUT * 4 },
+    );
   }
 
   async clickOnConfirmCancelButton() {
