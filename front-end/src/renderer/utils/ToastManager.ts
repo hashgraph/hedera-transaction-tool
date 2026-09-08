@@ -44,8 +44,8 @@ export class ToastManager {
   // Public (static)
   //
 
-  public static provide(): void {
-    provide(ToastManager.injectKey, new ToastManager());
+  public static provide(toastManager: ToastManager): void {
+    provide(ToastManager.injectKey, toastManager);
   }
 
   public static inject(): ToastManager {

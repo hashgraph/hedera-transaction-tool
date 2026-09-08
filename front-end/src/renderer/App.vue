@@ -67,7 +67,7 @@ onErrorCaptured((err: unknown) => {
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
-ToastManager.provide();
+ToastManager.provide(toastManager);
 
 /* AppCache */
 const appCache = AppCache.inject();
