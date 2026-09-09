@@ -60,7 +60,7 @@ describe('Transactions (e2e)', () => {
     userAuthToken = await login(app, 'user');
 
     user = (await getUser('user'))!;
-    userKey1003 = (await getUserKey(user.id, localnet1003.publicKeyRaw))!;
+    userKey1003 = (await getUserKey(user.id, localnet1003.publicKeyRaw!))!;
   });
 
   afterAll(async () => {
@@ -77,9 +77,9 @@ describe('Transactions (e2e)', () => {
     it('(POST) should upload a signature map for a transaction', async () => {
       const transaction = addedTransactions!.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1003.privateKey);
+      await sdkTransaction.sign(localnet1003.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1003.publicKeyRaw],
+        [localnet1003.publicKeyRaw!],
         sdkTransaction,
       );
 
@@ -109,11 +109,11 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should upload a signature map 2 public keys for a transaction', async () => {
       const sdkTransaction = new AccountUpdateTransaction()
-        .setTransactionId(createTransactionId(localnet1003.accountId))
-        .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
+        .setTransactionId(createTransactionId(localnet1003.accountId!))
+        .setKey(new KeyList([localnet1003.publicKey!, localnet1004.privateKey!]));
       const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
 
-      const userKey1004 = (await getUserKey(user.id, localnet1004.publicKeyRaw))!;
+      const userKey1004 = (await getUserKey(user.id, localnet1004.publicKeyRaw!))!;
 
       if (userKey1004 === null) {
         throw new Error('User key not found');
@@ -124,7 +124,7 @@ describe('Transactions (e2e)', () => {
         description: 'TEST This is a simple account create transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey1003.id,
-        signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
+        signature: Buffer.from(localnet1003.privateKey!.sign(sdkTransaction.toBytes())).toString(
           'hex',
         ),
         mirrorNetwork: localnet1003.mirrorNetwork,
@@ -136,10 +136,10 @@ describe('Transactions (e2e)', () => {
       const frozenSdkTransaction = AccountUpdateTransaction.fromBytes(
         Buffer.from(createTxResponse.body.transactionBytes, 'hex'),
       );
-      await frozenSdkTransaction.sign(localnet1003.privateKey);
-      await frozenSdkTransaction.sign(localnet1004.privateKey);
+      await frozenSdkTransaction.sign(localnet1003.privateKey!);
+      await frozenSdkTransaction.sign(localnet1004.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1003.publicKeyRaw, localnet1004.publicKeyRaw],
+        [localnet1003.publicKeyRaw!, localnet1004.publicKeyRaw!],
         frozenSdkTransaction,
       );
 
@@ -173,9 +173,9 @@ describe('Transactions (e2e)', () => {
     it('(POST) should NOT upload a signature for a transaction with a key that does not belong to the user', async () => {
       const transaction = addedTransactions!.userTransactions[0];
       const sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1002.privateKey);
+      await sdkTransaction.sign(localnet1002.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1002.publicKeyRaw],
+        [localnet1002.publicKeyRaw!],
         sdkTransaction,
       );
 
@@ -222,8 +222,8 @@ describe('Transactions (e2e)', () => {
       beforeAll(async () => {
         transaction = addedTransactions!.userTransactions[0];
         sdkTransaction = AccountCreateTransaction.fromBytes(transaction.transactionBytes);
-        await sdkTransaction.sign(localnet1003.privateKey);
-        signatureMap = getSignatureMapForPublicKeys([localnet1003.publicKeyRaw], sdkTransaction);
+        await sdkTransaction.sign(localnet1003.privateKey!);
+        signatureMap = getSignatureMapForPublicKeys([localnet1003.publicKeyRaw!], sdkTransaction);
       });
 
       it('(POST) should NOT upload a signature for a transaction that has been canceled', async () => {
@@ -294,11 +294,11 @@ describe('Transactions (e2e)', () => {
 
     it('(POST) should NOT upload a signature that is invalid', async () => {
       const sdkTransaction = new AccountUpdateTransaction()
-        .setTransactionId(createTransactionId(localnet1003.accountId))
-        .setKey(new KeyList([localnet1003.publicKey, localnet1004.privateKey]));
+        .setTransactionId(createTransactionId(localnet1003.accountId!))
+        .setKey(new KeyList([localnet1003.publicKey!, localnet1004.privateKey!]));
       const buffer = Buffer.from(sdkTransaction.toBytes()).toString('hex');
 
-      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
+      const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw!);
 
       if (userKey1004 === null) {
         throw new Error('User key not found');
@@ -309,7 +309,7 @@ describe('Transactions (e2e)', () => {
         description: 'TEST This is a simple account create transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey1003.id,
-        signature: Buffer.from(localnet1003.privateKey.sign(sdkTransaction.toBytes())).toString(
+        signature: Buffer.from(localnet1003.privateKey!.sign(sdkTransaction.toBytes())).toString(
           'hex',
         ),
         mirrorNetwork: localnet1003.mirrorNetwork,
@@ -321,9 +321,9 @@ describe('Transactions (e2e)', () => {
       const frozenSdkTransaction = AccountUpdateTransaction.fromBytes(
         Buffer.from(createTxResponse.body.transactionBytes, 'hex'),
       );
-      await frozenSdkTransaction.sign(localnet1003.privateKey);
+      await frozenSdkTransaction.sign(localnet1003.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1003.publicKeyRaw],
+        [localnet1003.publicKeyRaw!],
         frozenSdkTransaction,
       );
       const formattedSignatureMap = formatSignatureMap(signatureMap);

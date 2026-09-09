@@ -3,7 +3,7 @@ import { NormalizePublicKey } from './normalize-public-key.transform';
 
 class TestDto {
   @NormalizePublicKey()
-  publicKey: string;
+  publicKey!: string;
 }
 
 describe('NormalizePublicKey', () => {

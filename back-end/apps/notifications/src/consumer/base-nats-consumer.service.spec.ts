@@ -15,21 +15,20 @@ jest.mock('./message-validator.util');
  * Calling `stop()` causes the iterator to end after the current yield.
  */
 function mockConsumerMessages<T>(gen: AsyncGenerator<T>) {
-  const wrapper = {
+  return {
     stop: jest.fn(() => {
       // Force the generator to return, which ends `for await`
-      gen.return(undefined as any);
+      gen.return(undefined);
     }),
     [Symbol.asyncIterator]() {
       return gen;
     },
   };
-  return wrapper;
 }
 
 class TestDto {
-  id: number;
-  name: string;
+  id!: number;
+  name!: string;
 }
 
 class TestConsumerService extends BaseNatsConsumerService {
@@ -40,7 +39,7 @@ class TestConsumerService extends BaseNatsConsumerService {
     filterSubject: 'test.>',
   };
 
-  protected getConsumerConfig(): ConsumerConfig {
+  public getConsumerConfig(): ConsumerConfig {
     return this.mockConfig;
   }
 
@@ -90,7 +89,7 @@ describe('BaseNatsConsumerService', () => {
         },
         {
           provide: TestConsumerService,
-          useFactory: (ns: any) => new TestConsumerService(ns, 'TestConsumerSpec'),
+          useFactory: (ns: NatsJetStreamService) => new TestConsumerService(ns, 'TestConsumerSpec'),
           inject: [NatsJetStreamService],
         },
       ],
@@ -125,7 +124,7 @@ describe('BaseNatsConsumerService', () => {
     });
 
     it('should update existing consumer', async () => {
-      mockJsm.consumers.info.mockResolvedValue({} as any);
+      mockJsm.consumers.info.mockResolvedValue({});
       mockConsumer.consume.mockResolvedValue(mockConsumerMessages((async function* () {})()));
 
       await service.onModuleInit();
@@ -227,7 +226,7 @@ describe('BaseNatsConsumerService', () => {
     });
 
     it('should handle 404 error code for missing consumer', async () => {
-      const error: any = new Error('consumer not found');
+      const error: Error & {code?: string} = new Error('consumer not found');
       error.code = '404';
       mockJsm.consumers.info.mockRejectedValue(error);
       mockConsumer.consume.mockResolvedValue(mockConsumerMessages((async function* () {})()));
@@ -755,7 +754,7 @@ describe('BaseNatsConsumerService', () => {
       const stopFn = jest.fn(() => {
         // Unblock the generator AND force-end it, mimicking real NATS ConsumerMessages.stop()
         blockResolve();
-        gen.return(undefined as any);
+        gen.return(undefined);
       });
 
       const messagesWrapper = {
@@ -781,7 +780,7 @@ describe('BaseNatsConsumerService', () => {
     it('should log error via .catch() when consumeWithReconnect throws unexpectedly', async () => {
       const errorSpy = jest.spyOn(service['logger'], 'error');
 
-      jest.spyOn(service as any, 'getConsumerConfig').mockImplementation(() => {
+      jest.spyOn(service, 'getConsumerConfig').mockImplementation(() => {
         throw new Error('Unexpected config error');
       });
 
