@@ -15,6 +15,7 @@ import {
 
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
+import ToastRenderer from '@renderer/utils/ToastRenderer.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
@@ -66,7 +67,7 @@ onErrorCaptured((err: unknown) => {
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
-ToastManager.provide();
+ToastManager.provide(toastManager);
 
 /* AppCache */
 const appCache = AppCache.inject();
@@ -130,4 +131,5 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   </Transition>
 
   <GlobalAppProcesses />
+  <ToastRenderer />
 </template>

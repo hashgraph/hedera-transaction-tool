@@ -195,7 +195,7 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
     // dismisses them. Wait for detach so the next test's getToastMessageByVariant doesn't
     // read this stale toast as .last().
     const toast = window
-      .locator('.v-toast__item--error')
+      .locator('.toast-error .toast-message')
       .filter({ hasText: 'Invalid checksum for the entered Account ID.' });
     await toast.click();
     await toast.waitFor({ state: 'detached', timeout: 10_000 });
