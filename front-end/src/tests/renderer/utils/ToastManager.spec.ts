@@ -38,6 +38,7 @@ describe('ToastManager', () => {
     expect(toastManager.findEntry(message, 'success')).not.toBeNull();
     vi.advanceTimersByTime(4000);
     expect(toastManager.findEntry(message, 'success')).toBeNull();
+    vi.useRealTimers();
   });
 
   test('check duplicated error messages', async () => {
@@ -51,6 +52,7 @@ describe('ToastManager', () => {
     vi.advanceTimersByTime(800);
     toastManager.error(message);
     expect(toastManager.countErrorEntries()).toBe(1);
+    vi.useRealTimers();
   });
 });
 
