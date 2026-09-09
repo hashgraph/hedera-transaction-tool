@@ -70,4 +70,6 @@ function getFiltering(filter: Filtering) {
     case FilterRule.NOT_IN:
       return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
   }
+
+  return {};
 }

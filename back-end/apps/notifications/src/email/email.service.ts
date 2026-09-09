@@ -146,6 +146,8 @@ export class EmailService implements OnModuleDestroy {
         await new Promise((res) => setTimeout(res, delay));
       }
     }
+
+    return undefined;
   }
 
   private async processMessages(groupKey: string | number | null, notifications: Notification[]) {

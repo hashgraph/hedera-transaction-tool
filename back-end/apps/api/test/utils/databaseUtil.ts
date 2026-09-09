@@ -99,6 +99,8 @@ export async function createUser(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>) {
@@ -117,6 +119,8 @@ export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>)
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function addUsers() {
@@ -228,6 +232,8 @@ export async function getUsers() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function getUserKeys(id?: number) {
@@ -247,6 +253,8 @@ export async function getUserKeys(id?: number) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function getUserKey(userId: number, publicKey: string) {
@@ -281,6 +289,8 @@ export async function getUser(type: 'admin' | 'user' | 'userNew') {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function clearUsers() {
@@ -423,6 +433,8 @@ export async function getTransactions() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return [];
 }
 
 export function getExpiredTransaction(payerId: AccountId): SDKTransaction {
@@ -525,6 +537,8 @@ export async function withDisposableDataSource<T>(
   }
 
   await dataSource.destroy();
+
+  return undefined;
 }
 
 function verifyEnv() {
