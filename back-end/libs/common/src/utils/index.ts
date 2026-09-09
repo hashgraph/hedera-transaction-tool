@@ -12,7 +12,7 @@ export * from './semver';
 
 export const asyncFilter = async <T>(list: T[], predicate: (t: T) => Promise<boolean>) => {
   const resolvedPredicates = await Promise.all(list.map(predicate));
-  return list.filter((item, idx) => resolvedPredicates[idx]);
+  return list.filter((_item, idx) => resolvedPredicates[idx]);
 };
 
 export function maskSensitiveData(data: unknown, fieldsToMask: string[]): unknown {

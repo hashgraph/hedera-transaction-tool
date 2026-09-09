@@ -38,12 +38,12 @@ jest.mock('@nestjs/schedule', () => {
   return {
     ...original,
     Cron: function Cron() {
-      return (target: unknown, propertyKey: unknown, descriptor: unknown) => {
+      return (_target: unknown, _propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },
     CronExpression: function CronExpression() {
-      return (target: unknown, propertyKey: unknown, descriptor: unknown) => {
+      return (_target: unknown, _propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },
