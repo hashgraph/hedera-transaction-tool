@@ -3,7 +3,7 @@ import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
 
-import { Role, Transaction, TransactionObserver, TransactionStatus, User } from '@entities';
+import { Role, Transaction, TransactionObserver, TransactionReviewerListMember, TransactionStatus, User } from '@entities';
 
 import {
   TransactionSignatureService,
@@ -12,8 +12,6 @@ import {
   ErrorCodes,
   emitTransactionUpdate,
 } from '@app/common';
-
-import { ApproversService } from '../approvers';
 
 import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../dto';
 
@@ -24,7 +22,6 @@ export class ObserversService {
     @InjectRepository(TransactionObserver)
     private repo: Repository<TransactionObserver>,
     @InjectEntityManager() private entityManager: EntityManager,
-    private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {}
@@ -98,8 +95,6 @@ export class ObserversService {
       this.entityManager,
     );
 
-    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-
     if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
       return transaction.observers ?? [];
 
@@ -108,7 +103,9 @@ export class ObserversService {
       transaction.creatorKey?.userId !== user.id &&
       !(transaction.observers === undefined || transaction.observers.some(o => o.userId === user.id)) &&
       !(transaction.signers === undefined || transaction.signers.some(s => s.userKey?.userId === user.id)) &&
-      !approvers.some(a => a.userId === user.id)
+      !(await this.entityManager.count(TransactionReviewerListMember, {
+        where: { list: { transactionId: transaction.id }, userId: user.id },
+      }))
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 

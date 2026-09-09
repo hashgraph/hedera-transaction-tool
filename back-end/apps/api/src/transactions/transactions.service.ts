@@ -41,8 +41,8 @@ import {
   type NewSignerRow,
   EntityRole,
   Transaction,
-  TransactionApprover,
   TransactionEntity,
+  TransactionReviewerListMember,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -86,7 +86,6 @@ import TransactionFactory from '@app/common/transaction-signature/model/transact
 
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
-import { ApproversService } from './approvers';
 import { ReviewerAssignmentService } from './reviewer-assignment.service';
 
 export enum CancelTransactionOutcome {
@@ -102,7 +101,6 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @InjectEntityManager() private entityManager: EntityManager,
     @InjectDataSource() private dataSource: DataSource,
-    private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
@@ -211,32 +209,19 @@ export class TransactionsService {
       take: limit,
     };
 
-    const whereBrackets = new Brackets(qb =>
-      qb.where(where).andWhere(
-        `
-        (
-          with recursive "approverList" as
-            (
-              select * from "transaction_approver"
-              where "transaction_approver"."transactionId" = "Transaction"."id"
-                union all
-                  select "approver".* from "transaction_approver" as "approver"
-                  join "approverList" on "approverList"."id" = "approver"."listId"
-            )
-          select count(*) from "approverList"
-          where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
-        ) > 0
-        `,
-        {
-          userId: user.id,
-        },
-      ),
-    );
-
     const [transactions, total] = await this.repo
       .createQueryBuilder()
       .setFindOptions(findOptions)
-      .orWhere(whereBrackets)
+      .orWhere(
+        `EXISTS (
+          SELECT 1
+          FROM transaction_reviewer_list_member member
+          JOIN transaction_reviewer_list reviewerList ON reviewerList."id" = member."listId"
+          WHERE reviewerList."transactionId" = "Transaction"."id"
+            AND member."userId" = :userId
+        )`,
+        { userId: user.id },
+      )
       .getManyAndCount();
 
     return {
@@ -398,75 +383,6 @@ export class TransactionsService {
     };
   }
 
-  /* Get the transactions that need to be approved by the user. */
-  async getTransactionsToApprove(
-    user: User,
-    { page, limit, size, offset }: Pagination,
-    sort?: Sorting[],
-    filter?: Filtering[],
-  ): Promise<PaginatedResourceDto<Transaction>> {
-    const where = getWhere<Transaction>(filter);
-    const order = getOrder(sort);
-
-    const whereForUser: FindOptionsWhere<Transaction> = {
-      ...where,
-      status: Not(
-        In([
-          TransactionStatus.EXECUTED,
-          TransactionStatus.FAILED,
-          TransactionStatus.EXPIRED,
-          TransactionStatus.CANCELED,
-          TransactionStatus.ARCHIVED,
-        ]),
-      ),
-    };
-
-    const findOptions: FindManyOptions<Transaction> = {
-      order,
-      relations: {
-        creatorKey: true,
-        groupItem: true,
-      },
-      skip: offset,
-      take: limit,
-    };
-
-    const [transactions, total] = await this.repo
-      .createQueryBuilder()
-      .setFindOptions(findOptions)
-      .where(
-        new Brackets(qb =>
-          qb.where(whereForUser).andWhere(
-            `
-            (
-              with recursive "approverList" as
-                (
-                  select * from "transaction_approver"
-                  where "transaction_approver"."transactionId" = "Transaction"."id"
-                    union all
-                      select "approver".* from "transaction_approver" as "approver"
-                      join "approverList" on "approverList"."id" = "approver"."listId"
-                )
-              select count(*) from "approverList"
-              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId and "approverList"."approved" is null
-            ) > 0
-        `,
-            {
-              userId: user.id,
-            },
-          ),
-        ),
-      )
-      .getManyAndCount();
-
-    return {
-      totalItems: total,
-      items: transactions,
-      page,
-      size,
-    };
-  }
-
   /* Create a new transaction with the provided information */
   async createTransaction(dto: CreateTransactionDto, user: User): Promise<Transaction> {
     const [transaction] = await this.createTransactions([dto], user);
@@ -622,7 +538,6 @@ export class TransactionsService {
       where: { id: In(ids) },
       relations: {
         creatorKey: true,
-        approvers: true,
         signers: true,
         observers: true,
       },
@@ -1042,8 +957,6 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.TNF);
     }
 
-    await this.attachTransactionApprovers(transaction);
-
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException('You don\'t have permission to view this transaction');
     }
@@ -1066,13 +979,6 @@ export class TransactionsService {
     });
   }
 
-  async attachTransactionApprovers(transaction: Transaction) {
-    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
-
-    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-    transaction.approvers = this.approversService.getTreeStructure(approvers);
-  }
-
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
@@ -1090,7 +996,9 @@ export class TransactionsService {
       requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
       !!transaction.observers?.some(o => o.userId === user.id) ||
-      !!transaction.approvers?.some(a => a.userId === user.id)
+      (await this.entityManager.count(TransactionReviewerListMember, {
+        where: { list: { transactionId: transaction.id }, userId: user.id },
+      })) > 0
     );
   }
 
@@ -1110,17 +1018,6 @@ export class TransactionsService {
     });
   }
 
-  async getTransactionApproversForTransactions(
-    transactionIds: number[],
-  ): Promise<TransactionApprover[]> {
-    if (!transactionIds.length) {
-      return [];
-    }
-
-    //To be implemented when approver functionality is added.
-    return [];
-  }
-
   async getTransactionObserversForTransactions(
     transactionIds: number[],
   ): Promise<TransactionObserver[]> {
@@ -1133,30 +1030,6 @@ export class TransactionsService {
         transactionId: In(transactionIds),
       },
     });
-  }
-
-  /* Check whether the user should approve the transaction */
-  async shouldApproveTransaction(transactionId: number, user: User) {
-    const transaction = await this.getTransactionById(transactionId);
-    if (!transaction) {
-      throw new BadRequestException(ErrorCodes.TNF);
-    }
-
-    if (this.terminalStatuses.includes(transaction.status)) {
-      return false;
-    }
-
-    /* Get all the approvers */
-    const approvers = await this.approversService.getApproversByTransactionId(transactionId);
-
-    /* If user is approver, filter the records that belongs to the user */
-    const userApprovers = approvers.filter(a => a.userId === user.id);
-
-    /* Check if the user is an approver */
-    if (userApprovers.length === 0) return false;
-
-    /* Check if the user has already approved the transaction */
-    return !userApprovers.every(a => a.signature);
   }
 
   /* Get the user keys that are required for a given transaction */

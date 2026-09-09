@@ -11,7 +11,6 @@ import {
 import { User } from './user.entity';
 import { Transaction } from './transaction.entity';
 import { TransactionSigner } from './transaction-signer.entity';
-import { TransactionApprover } from './transaction-approver.entity';
 
 @Entity()
 export class UserKey {
@@ -40,9 +39,6 @@ export class UserKey {
 
   @OneToMany(() => Transaction, transaction => transaction.creatorKey)
   createdTransactions: Transaction[];
-
-  @OneToMany(() => TransactionApprover, approver => approver.userKey)
-  approvedTransactions: TransactionApprover[];
 
   @OneToMany(() => TransactionSigner, signer => signer.userKey)
   signedTransactions: TransactionSigner[];

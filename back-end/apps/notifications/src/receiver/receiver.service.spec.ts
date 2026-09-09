@@ -13,7 +13,7 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
-  TransactionApprover,
+  TransactionReviewerListMember,
   TransactionStatus,
   User,
   NOTIFICATION_CHANNELS,
@@ -256,8 +256,8 @@ describe('ReceiverService', () => {
     };
 
     const approvers = [
-      { userId: 4, approved: null } as unknown as TransactionApprover,
-      { userId: 5, approved: true } as TransactionApprover,
+      { userId: 4, accepted: null } as unknown as TransactionReviewerListMember,
+      { userId: 5, accepted: true } as TransactionReviewerListMember,
     ];
 
     const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
@@ -277,8 +277,8 @@ describe('ReceiverService', () => {
     };
 
     const approvers = [
-      { userId: 4, approved: null } as unknown as TransactionApprover,
-      { userId: 5, approved: true } as TransactionApprover,
+      { userId: 4, accepted: null } as unknown as TransactionReviewerListMember,
+      { userId: 5, accepted: true } as TransactionReviewerListMember,
     ];
 
     const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());

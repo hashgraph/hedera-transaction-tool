@@ -46,7 +46,6 @@ describe('TransactionNodesService', () => {
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -63,7 +62,6 @@ describe('TransactionNodesService', () => {
     user: user,
     deletedAt: null,
     createdTransactions: [],
-    approvedTransactions: [],
     signedTransactions: [],
   };
 

@@ -31,7 +31,6 @@ describe('ReviewerGroupsController', () => {
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],

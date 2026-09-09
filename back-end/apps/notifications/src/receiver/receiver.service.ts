@@ -18,7 +18,6 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
-  TransactionApprover,
   TransactionReviewerListMember,
   TransactionStatus,
   User,
@@ -120,29 +119,25 @@ export class ReceiverService {
   private async getApproversByTransactionIds(
     entityManager: EntityManager,
     transactionIds: number[],
-  ): Promise<Map<number, TransactionApprover[]>> {
+  ): Promise<Map<number, TransactionReviewerListMember[]>> {
     if (transactionIds.length === 0) return new Map();
 
-    // Run the recursive CTE once for all transactions
-    const allApprovers = await entityManager.query(
+    // Fetch reviewer members once for all transactions.
+    const allReviewerMembers = await entityManager.query(
       `
-          WITH RECURSIVE approverList AS (
-              SELECT * FROM transaction_approver
-              WHERE "transactionId" = ANY($1)
-              UNION ALL
-              SELECT approver.* FROM transaction_approver AS approver
-                                         JOIN approverList ON approverList."id" = approver."listId"
-          )
-          SELECT * FROM approverList
-          WHERE approverList."deletedAt" IS NULL
+          SELECT member.*
+          FROM transaction_reviewer_list_member AS member
+          JOIN transaction_reviewer_list AS reviewerList
+            ON reviewerList."id" = member."listId"
+          WHERE reviewerList."transactionId" = ANY($1)
       `,
       [transactionIds],
     );
 
     // Group by transactionId
-    const approversMap = new Map<number, TransactionApprover[]>();
+    const approversMap = new Map<number, TransactionReviewerListMember[]>();
 
-    for (const approver of allApprovers) {
+    for (const approver of allReviewerMembers) {
       const txId = approver.transactionId;
       if (!approversMap.has(txId)) {
         approversMap.set(txId, []);
@@ -158,7 +153,7 @@ export class ReceiverService {
   private async getTransactionParticipants(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
+    approvers: TransactionReviewerListMember[],
     keyCache?: Map<string, UserKey>,
   ) {
     const creatorId = transaction.creatorKey.userId;
@@ -172,7 +167,7 @@ export class ReceiverService {
 
     const approversUserIds = approvers.map(a => a.userId).filter(userId => userId !== undefined);
     const approversGaveChoiceUserIds = approvers
-      .filter(a => a.approved !== null)
+      .filter(a => a.accepted !== null)
       .map(a => a.userId)
       .filter(a => a !== undefined);
     const approversShouldChooseUserIds = [
@@ -180,7 +175,7 @@ export class ReceiverService {
       TransactionStatus.WAITING_FOR_SIGNATURES,
     ].includes(transaction.status)
       ? approvers
-          .filter(a => a.approved === null)
+          .filter(a => a.accepted === null)
           .map(a => a.userId)
           .filter(a => a !== undefined)
       : [];
@@ -242,7 +237,7 @@ export class ReceiverService {
     entityManager: EntityManager,
     transaction: Transaction,
     newIndicatorType: NotificationType,
-    approvers: TransactionApprover[],
+    approvers: TransactionReviewerListMember[],
     keyCache?: Map<string, UserKey>,
   ): Promise<number[]> {
     /* Get transaction participants */
@@ -375,7 +370,7 @@ export class ReceiverService {
   private async createNotificationWithReceivers(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
+    approvers: TransactionReviewerListMember[],
     notificationType: NotificationType,
     additionalData: any,
     cache: Map<number, User>,
@@ -803,7 +798,7 @@ export class ReceiverService {
   private async handleTransactionStatusUpdateNotifications(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
+    approvers: TransactionReviewerListMember[],
     syncType: NotificationType | null,
     emailType: NotificationType | null,
     cache: Map<number, User>,

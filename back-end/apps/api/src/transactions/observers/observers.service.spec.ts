@@ -6,7 +6,6 @@ import { EntityManager, Repository } from 'typeorm';
 import {
   Role,
   Transaction,
-  TransactionApprover,
   TransactionObserver,
   TransactionStatus,
   User,
@@ -21,7 +20,6 @@ import {
 import { userKeysRequiredToSign } from '@app/common/utils';
 
 import { ObserversService } from './observers.service';
-import { ApproversService } from '../approvers';
 
 jest.mock('@app/common/utils');
 
@@ -30,7 +28,6 @@ describe('ObserversService', () => {
 
   const observersRepo = mockDeep<Repository<TransactionObserver>>();
   const entityManager = mockDeep<EntityManager>();
-  const approversService = mock<ApproversService>();
   const notificationsPublisher = mock<NatsPublisherService>();
   const transactionSignatureService = mock<TransactionSignatureService>();
 
@@ -52,10 +49,6 @@ describe('ObserversService', () => {
         {
           provide: EntityManager,
           useValue: entityManager,
-        },
-        {
-          provide: ApproversService,
-          useValue: approversService,
         },
         {
           provide: NatsPublisherService,
@@ -183,7 +176,6 @@ describe('ObserversService', () => {
       const transaction = { id: transactionId, observers, signers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
-      approversService.getApproversByTransactionId.mockResolvedValue([]);
 
       const result = await service.getTransactionObserversByTransactionId(transactionId, user);
 
@@ -196,21 +188,6 @@ describe('ObserversService', () => {
       const transaction = { id: transactionId, observers: [], signers };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
-      approversService.getApproversByTransactionId.mockResolvedValue([]);
-
-      const result = await service.getTransactionObserversByTransactionId(transactionId, user);
-
-      expect(result).toEqual([]);
-    });
-
-    it('should get observers if user is approver', async () => {
-      const transactionId = 1;
-      const transaction = { id: transactionId, observers: [], signers: [] };
-      entityManager.findOne.mockResolvedValue(transaction);
-      jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
-
-      const approvers = [{ userId: user.id }] as TransactionApprover[];
-      approversService.getApproversByTransactionId.mockResolvedValue(approvers);
 
       const result = await service.getTransactionObserversByTransactionId(transactionId, user);
 
@@ -247,7 +224,6 @@ describe('ObserversService', () => {
       const transaction = { id: transactionId, observers: [], signers: [] };
       entityManager.findOne.mockResolvedValue(transaction);
       jest.mocked(userKeysRequiredToSign).mockResolvedValue([]);
-      approversService.getApproversByTransactionId.mockResolvedValue([]);
 
       await expect(
         service.getTransactionObserversByTransactionId(transactionId, user),
