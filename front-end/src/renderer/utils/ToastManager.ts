@@ -58,7 +58,7 @@ export class ToastManager {
   //
 
   removeEntry(toastId: number) {
-    const i = this.entries.value.findIndex(entry => entry.toastId == toastId);
+    const i = this.entries.value.findIndex(entry => entry.toastId === toastId);
     if (i !== -1) {
       this.entries.value.splice(i, 1);
     }
