@@ -10,14 +10,14 @@ import {
 } from '@hiero-ledger/sdk';
 
 import { TransactionSignatureService, flattenKeyList, hasValidSignatureKey, smartCollate } from '@app/common';
-import { Transaction, TransactionStatus } from '@entities';
+import { Transaction, TransactionStatus, User } from '@entities';
 
 import { keysRequiredToSign, processTransactionStatus, userKeysRequiredToSign } from '.';
 
 jest.mock('@app/common/utils');
 
 describe('keysRequiredToSign', () => {
-  let transaction;
+  let transaction: { id: number, transactionBytes: Uint8Array, network: string };
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
   const entityManager = mockDeep<EntityManager>();
 
@@ -40,7 +40,11 @@ describe('keysRequiredToSign', () => {
     transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
-    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager);
+    const result = await keysRequiredToSign(
+      transaction as unknown as Transaction,
+      transactionSignatureService,
+      entityManager,
+    );
     expect(result).toEqual(keys);
   });
 
@@ -55,15 +59,20 @@ describe('keysRequiredToSign', () => {
     transactionSignatureService.computeSignatureKey.mockResolvedValueOnce(keyList);
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
-    const result = await keysRequiredToSign(transaction, transactionSignatureService, entityManager, { excludeAlreadySigned: true });
+    const result = await keysRequiredToSign(
+      transaction as unknown as Transaction,
+      transactionSignatureService,
+      entityManager,
+      { excludeAlreadySigned: true },
+    );
     expect(result).toEqual([]);
   });
 });
 
 describe('userKeysRequiredToSign', () => {
-  let transaction;
-  let user;
-  let entityManager;
+  let transaction: { id: number, transactionBytes: Uint8Array, network: string };
+  let user: { id: number; keys: { id: number, publicKey: string }[] };
+  const entityManager = mockDeep<EntityManager>();
   const transactionSignatureService = mockDeep<TransactionSignatureService>();
 
   beforeEach(() => {
@@ -72,14 +81,13 @@ describe('userKeysRequiredToSign', () => {
     const accountCreateTx = new AccountCreateTransaction();
     transaction = { id: 1, transactionBytes: accountCreateTx.toBytes(), network: 'testnet' };
     user = { id: 1, keys: [] };
-    entityManager = { find: jest.fn() };
   });
 
   it('should return an empty array if user has no keys and none are found', async () => {
     entityManager.find.mockResolvedValueOnce([]);
     const result = await userKeysRequiredToSign(
-      transaction,
-      user,
+      transaction as unknown as Transaction,
+      user as unknown as User,
       transactionSignatureService,
       entityManager,
       false,
@@ -97,8 +105,8 @@ describe('userKeysRequiredToSign', () => {
     jest.mocked(flattenKeyList).mockReturnValueOnce([pk.publicKey]);
 
     const result = await userKeysRequiredToSign(
-      transaction,
-      user,
+      transaction as unknown as Transaction,
+      user as unknown as User,
       transactionSignatureService,
       entityManager,
       false,

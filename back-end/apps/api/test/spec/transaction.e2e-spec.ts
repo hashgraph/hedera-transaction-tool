@@ -65,12 +65,12 @@ describe('Transactions (e2e)', () => {
 
   const createTransaction = async (u?: User, account?: HederaAccount) => {
     const transaction = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId((account || localnet1003).accountId))
-      .setKey((account || localnet1003).publicKey)
+      .setTransactionId(createTransactionId((account ?? localnet1003).accountId!))
+      .setKey((account ?? localnet1003).publicKey!)
       .setAccountMemo('This is a memo');
     const buffer = Buffer.from(transaction.toBytes()).toString('hex');
 
-    const userKey = (await getUserKey((u || user).id, (account || localnet1003).publicKeyRaw))!;
+    const userKey = (await getUserKey((u || user).id, (account ?? localnet1003).publicKeyRaw!));
 
     if (userKey === null) {
       throw new Error('User key not found');
@@ -82,9 +82,9 @@ describe('Transactions (e2e)', () => {
       transactionBytes: buffer,
       creatorKeyId: userKey.id,
       signature: Buffer.from(
-        (account || localnet1003).privateKey.sign(transaction.toBytes()),
+        (account ?? localnet1003).privateKey!.sign(transaction.toBytes()),
       ).toString('hex'),
-      mirrorNetwork: (account || localnet1003).mirrorNetwork,
+      mirrorNetwork: (account ?? localnet1003).mirrorNetwork,
     };
   };
 
@@ -105,7 +105,7 @@ describe('Transactions (e2e)', () => {
     admin = (await getUser('admin'))!;
     user = (await getUser('user'))!;
 
-    adminKey1002 = (await getUserKey(admin.id, localnet1002.publicKeyRaw))!;
+    adminKey1002 = (await getUserKey(admin.id, localnet1002.publicKeyRaw!))!;
   });
 
   afterAll(async () => {
@@ -314,11 +314,11 @@ describe('Transactions (e2e)', () => {
     it('(POST) should not create an expired transaction', async () => {
       const countBefore = await repo.count();
       const transaction = new AccountCreateTransaction().setTransactionId(
-        createTransactionId(localnet1003.accountId, new Date(Date.now() - 1000 * 60 * 10)),
+        createTransactionId(localnet1003.accountId!, new Date(Date.now() - 1000 * 60 * 10)),
       );
       const buffer = Buffer.from(transaction.toBytes()).toString('hex');
 
-      const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw);
+      const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw!);
 
       if (userKey == null) throw new Error('User key not found');
 
@@ -327,7 +327,7 @@ describe('Transactions (e2e)', () => {
         description: 'This is a simple account create transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
-        signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
+        signature: Buffer.from(localnet1003.privateKey!.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet1003.mirrorNetwork,
       };
 
@@ -353,12 +353,12 @@ describe('Transactions (e2e)', () => {
           keylist.push(PrivateKey.generate().publicKey);
         }
         const transaction = new AccountCreateTransaction()
-          .setTransactionId(createTransactionId(localnet1003.accountId, new Date()))
+          .setTransactionId(createTransactionId(localnet1003.accountId!, new Date()))
           .setKey(keylist);
 
         const buffer = Buffer.from(transaction.toBytes()).toString('hex');
 
-        const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw);
+        const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw!);
 
         if (userKey == null) throw new Error('User key not found');
 
@@ -367,7 +367,7 @@ describe('Transactions (e2e)', () => {
           description: 'This is a oversized account create transaction',
           transactionBytes: buffer,
           creatorKeyId: userKey.id,
-          signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString(
+          signature: Buffer.from(localnet1003.privateKey!.sign(transaction.toBytes())).toString(
             'hex',
           ),
           mirrorNetwork: localnet1003.mirrorNetwork,
@@ -416,14 +416,14 @@ describe('Transactions (e2e)', () => {
       );
 
       expect(status).toEqual(200);
-      expect(body.items.every(t => t.type === TransactionType.FILE_CREATE)).toEqual(true);
+      expect(body.items.every((t: {type: TransactionType}) => t.type === TransactionType.FILE_CREATE)).toEqual(true);
       expect(body.totalItems).toEqual(
         addedTransactions!.userTransactions.filter(t => t.type === TransactionType.FILE_CREATE)
           .length,
       );
 
       expect(status2).toEqual(200);
-      expect(body.items.every(t => t.type === TransactionType.FILE_CREATE)).toEqual(true);
+      expect(body.items.every((t: {type: TransactionType}) => t.type === TransactionType.FILE_CREATE)).toEqual(true);
       expect(body2.totalItems).toEqual(
         addedTransactions!.adminTransactions.filter(t => t.type === TransactionType.FILE_CREATE)
           .length,
@@ -587,24 +587,24 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should get transaction to sign if user key is included in the transaction', async () => {
       const { accountId } = await createAccount(
-        localnet2.accountId,
-        localnet2.privateKey,
-        localnet2.publicKey,
+        localnet2.accountId!,
+        localnet2.privateKey!,
+        localnet2.publicKey!,
       );
 
       newlyCreatedAccount = new HederaAccount()
         .setAccountId(accountId!.toString())
-        .setPrivateKey(localnet2.privateKey.toStringDer())
-        .setNetwork(localnet2.mirrorNetwork);
+        .setPrivateKey(localnet2.privateKey!.toStringDer())
+        .setNetwork(localnet2.mirrorNetwork!);
 
       await sleep(3000); //Wait for mirror node to update its data after account creation
 
       const transaction = new AccountUpdateTransaction()
-        .setTransactionId(createTransactionId(localnet2.accountId))
+        .setTransactionId(createTransactionId(localnet2.accountId!))
         .setAccountId(accountId!)
-        .setKey(localnet1003.publicKey);
+        .setKey(localnet1003.publicKey!);
       const buffer = Buffer.from(transaction.toBytes()).toString('hex');
-      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw);
+      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw!);
       if (userKey == null) throw new Error('TEST: User key not found');
 
       const dto = {
@@ -612,7 +612,7 @@ describe('Transactions (e2e)', () => {
         description: 'TEST This is a account update transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
-        signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
+        signature: Buffer.from(localnet2.privateKey!.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
       };
 
@@ -630,10 +630,10 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should get transaction to sign if user has a key with an account that is payer for transaction', async () => {
       const transaction = new AccountCreateTransaction()
-        .setTransactionId(createTransactionId(localnet2.accountId))
-        .setKey(localnet1003.publicKey);
+        .setTransactionId(createTransactionId(localnet2.accountId!))
+        .setKey(localnet1003.publicKey!);
       const buffer = Buffer.from(transaction.toBytes()).toString('hex');
-      const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw);
+      const userKey = await getUserKey(user.id, localnet1003.publicKeyRaw!);
       if (userKey == null) throw new Error('TEST: User key not found');
 
       const dto = {
@@ -641,7 +641,7 @@ describe('Transactions (e2e)', () => {
         description: 'TEST This is a simple account create transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
-        signature: Buffer.from(localnet1003.privateKey.sign(transaction.toBytes())).toString('hex'),
+        signature: Buffer.from(localnet1003.privateKey!.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
       };
 
@@ -658,10 +658,10 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should get transaction to sign if a user has a key with an account that requires a signature upon receiving Hbars and this account is added as a receiver in a transaction', async () => {
       await updateAccount(
-        localnet2.accountId,
-        localnet2.privateKey,
-        newlyCreatedAccount.accountId,
-        newlyCreatedAccount.privateKey,
+        localnet2.accountId!,
+        localnet2.privateKey!,
+        newlyCreatedAccount.accountId!,
+        newlyCreatedAccount.privateKey!,
         {
           newKey: localnet1003.publicKey,
           newKeyPrivateKey: localnet1003.privateKey,
@@ -672,10 +672,10 @@ describe('Transactions (e2e)', () => {
       await sleep(3000); //Wait for mirror node to update its data after account creation
 
       const transaction = new TransferTransaction()
-        .setTransactionId(createTransactionId(localnet2.accountId))
-        .addHbarTransfer(newlyCreatedAccount.accountId, Hbar.fromString('10'));
+        .setTransactionId(createTransactionId(localnet2.accountId!))
+        .addHbarTransfer(newlyCreatedAccount.accountId!, Hbar.fromString('10'));
       const buffer = Buffer.from(transaction.toBytes()).toString('hex');
-      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw);
+      const userKey = await getUserKey(admin.id, localnet2.publicKeyRaw!);
       if (userKey == null) throw new Error('TEST: User key not found');
 
       const dto = {
@@ -683,7 +683,7 @@ describe('Transactions (e2e)', () => {
         description: 'TEST This is a transfer transaction',
         transactionBytes: buffer,
         creatorKeyId: userKey.id,
-        signature: Buffer.from(localnet2.privateKey.sign(transaction.toBytes())).toString('hex'),
+        signature: Buffer.from(localnet2.privateKey!.sign(transaction.toBytes())).toString('hex'),
         mirrorNetwork: localnet2.mirrorNetwork,
       };
 
@@ -709,7 +709,7 @@ describe('Transactions (e2e)', () => {
 
     it('(GET) should get keys required to sign for the given transaction', async () => {
       const { status, body } = await endpoint.get('1', userAuthToken);
-      const userKey1003 = (await getUserKey(user.id, localnet1003.publicKeyRaw))!;
+      const userKey1003 = (await getUserKey(user.id, localnet1003.publicKeyRaw!))!;
 
       expect(status).toEqual(200);
       expect(body).toEqual([userKey1003.id]);
@@ -739,9 +739,9 @@ describe('Transactions (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1002.privateKey);
+      await sdkTransaction.sign(localnet1002.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1002.publicKeyRaw],
+        [localnet1002.publicKeyRaw!],
         sdkTransaction,
       );
 
@@ -914,9 +914,9 @@ describe('Transactions (e2e)', () => {
       const sdkTransaction = AccountCreateTransaction.fromBytes(
         Buffer.from(newTransaction.transactionBytes, 'hex'),
       );
-      await sdkTransaction.sign(localnet1003.privateKey);
+      await sdkTransaction.sign(localnet1003.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1003.publicKeyRaw],
+        [localnet1003.publicKeyRaw!],
         sdkTransaction,
       );
 
@@ -1019,9 +1019,9 @@ describe('Transactions (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1002.privateKey);
+      await sdkTransaction.sign(localnet1002.privateKey!);
       const signatureMap = getSignatureMapForPublicKeys(
-        [localnet1002.publicKeyRaw],
+        [localnet1002.publicKeyRaw!],
         sdkTransaction,
       );
 
