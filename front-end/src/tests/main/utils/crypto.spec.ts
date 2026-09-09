@@ -2,7 +2,16 @@ import { expect } from 'vitest';
 import * as bcrypt from 'bcrypt';
 import nodeCrypto from 'crypto';
 
-import { decrypt, encrypt, hash, verifyHash, dualCompareHash, isLegacyBlob, PBKDF2_ITERATIONS } from '@main/utils/crypto';
+import {
+  decrypt,
+  encrypt,
+  hash,
+  verifyHash,
+  dualCompareHash,
+  isLegacyBlob,
+  PBKDF2_ITERATIONS,
+  isClearTextToken,
+} from '@main/utils/crypto';
 
 describe('Crypto utilities', () => {
   test('PBKDF2_ITERATIONS meets OWASP minimum of 600,000', () => {
@@ -29,6 +38,15 @@ describe('Crypto utilities', () => {
 
     expect(isLegacyBlob(legacyBlob)).toBe(true);
     expect(await decrypt(legacyBlob, password)).toEqual(plaintext);
+  });
+
+  test('isClearTextToken() detects clear tokens', async () => {
+    const password = 'test-password';
+    const clearTextToken = "a.b.c";
+    const encryptedToken = await encrypt(clearTextToken, password);
+
+    expect(isClearTextToken(clearTextToken)).toBe(true);
+    expect(isClearTextToken(encryptedToken)).toBe(false);
   });
 
   test('encrypt & decrypt: encrypts and decrypts text data correctly', async () => {

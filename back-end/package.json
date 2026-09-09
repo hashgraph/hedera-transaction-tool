@@ -1,6 +1,6 @@
 {
   "name": "back-end",
-  "version": "0.38.0-SNAPSHOT",
+  "version": "0.39.0-SNAPSHOT",
   "description": "",
   "author": "",
   "private": true,
@@ -12,7 +12,8 @@
     "build:notifications": "nest build notifications",
     "build:common": "nest build common",
     "build:migrations": "pnpm -F typeorm build",
-    "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build",
+    "docker:dev": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up",
+    "docker:dev:build": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml up --build",
     "docker:dev:down": "docker compose -f docker-compose.yaml -f docker-compose.dev.yaml down",
     "docker:prod": "docker-compose -f docker-compose.prod.yaml up --build",
     "docker:prod:down": "docker-compose -f docker-compose.prod.yaml down",

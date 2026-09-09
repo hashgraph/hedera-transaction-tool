@@ -15,6 +15,7 @@ const logger = createLogger('main.localUser.keyPairs');
 //Get stored key pairs
 export const getKeyPairs = async (
   user_id: string,
+  decryptPassword: string | null,
   organization_id?: string | null,
 ): Promise<KeyPair[]> => {
   const prisma = getPrismaClient();
@@ -23,7 +24,7 @@ export const getKeyPairs = async (
     user_id,
   };
 
-  await extendWhere(where, organization_id);
+  await extendWhere(where, decryptPassword, organization_id);
 
   return prisma.keyPair.findMany({
     where,
@@ -71,7 +72,7 @@ export const changeDecryptionPassword = async (
 ) => {
   const prisma = getPrismaClient();
 
-  const keyPairs = await getKeyPairs(userId);
+  const keyPairs = await getKeyPairs(userId, oldPassword);
 
   for (let i = 0; i < keyPairs.length; i++) {
     const keyPair = keyPairs[i];
@@ -89,7 +90,7 @@ export const changeDecryptionPassword = async (
     });
   }
 
-  return await getKeyPairs(userId);
+  return await getKeyPairs(userId, newPassword);
 };
 
 // Decrypt user's private key
@@ -141,6 +142,7 @@ export const decryptPrivateKey = async (
 // Delete encrypted private keys
 export const deleteEncryptedPrivateKeys = async (
   user_id: string,
+  decryptPassword: string | null,
   organization_id?: string | null,
 ) => {
   const prisma = getPrismaClient();
@@ -149,7 +151,7 @@ export const deleteEncryptedPrivateKeys = async (
     user_id,
   };
 
-  await extendWhere(where, organization_id);
+  await extendWhere(where, decryptPassword, organization_id);
 
   await prisma.keyPair.updateMany({
     where,
@@ -160,14 +162,14 @@ export const deleteEncryptedPrivateKeys = async (
 };
 
 // Clear user's keys
-export const deleteSecretHashes = async (user_id: string, organization_id?: string | null) => {
+export const deleteSecretHashes = async (user_id: string, decryptPassword: string | null, organization_id?: string | null) => {
   const prisma = getPrismaClient();
 
   const where: Prisma.KeyPairWhereInput = {
     user_id,
   };
 
-  await extendWhere(where, organization_id);
+  await extendWhere(where, decryptPassword, organization_id);
 
   await prisma.keyPair.deleteMany({
     where,
@@ -215,7 +217,7 @@ export const updateIndex = async (keyPairId: string, index: number) => {
   });
 };
 
-async function extendWhere(where: Prisma.KeyPairWhereInput, organization_id?: string | null) {
+async function extendWhere(where: Prisma.KeyPairWhereInput, decryptPassword: string | null, organization_id?: string | null) {
   if (organization_id !== undefined) {
     if (organization_id === null) {
       where.organization_id = null;
@@ -225,7 +227,7 @@ async function extendWhere(where: Prisma.KeyPairWhereInput, organization_id?: st
     const organization = await getOrganization(organization_id);
 
     if (organization) {
-      const tokenPayload = await getCurrentUser(organization.serverUrl);
+      const tokenPayload = await getCurrentUser(organization.serverUrl, decryptPassword);
 
       where.organization_id = organization.id;
 

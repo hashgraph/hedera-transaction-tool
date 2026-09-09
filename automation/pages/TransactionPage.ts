@@ -146,7 +146,7 @@ export class TransactionPage extends BasePage {
   textTypeTransactionSelector = 'p-type-transaction';
   textTransactionIdSelector = 'p-transaction-id';
   textMaxTxFeeSelector = 'p-max-tx-fee';
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   hbarAmountValueSelector = 'p-hbar-amount';
   transactionTypeHeaderSelector = 'h2-transaction-type';
   transactionDetailsCreatedAtSelector = 'p-transaction-details-created-at';

@@ -24,7 +24,7 @@ env:
 jobs:
   smoke_test_mac:
     name: macOS Smoke Test
-    runs-on: macos-latest
+    runs-on: macos-15
     timeout-minutes: 90
 
     steps:

@@ -110,7 +110,7 @@ function getOfflineHederaClient(): HederaClient {
   if (hederaClient) return hederaClient;
 
   const network: Record<string, AccountId> = {
-    "127.0.0.1:50211": new AccountId(3),
+    "127.0.0.1:35211": new AccountId(3),
   };
 
   const client = HederaClient.forNetwork(network);
