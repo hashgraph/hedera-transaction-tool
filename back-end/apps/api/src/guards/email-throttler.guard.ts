@@ -31,7 +31,7 @@ export class EmailThrottlerGuard extends ThrottlerGuard {
     );
   }
 
-  protected getTracker(req: Record<string, any>): Promise<string> {
+  protected override getTracker(req: Record<string, any>): Promise<string> {
     const rawEmail = req.body?.email;
     if (typeof rawEmail !== 'string' || !rawEmail.trim()) {
       throw new HttpException('No email specified.', HttpStatus.BAD_REQUEST);

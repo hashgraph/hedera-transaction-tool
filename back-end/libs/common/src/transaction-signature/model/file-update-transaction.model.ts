@@ -3,9 +3,7 @@ import { FileUpdateTransaction } from '@hiero-ledger/sdk';
 import { TransactionBaseModel } from './transaction-base.model';
 import { isHederaSpecialFileId } from '@app/common';
 
-export class FileUpdateTransactionModel
-  extends TransactionBaseModel<FileUpdateTransaction> {
-
+export class FileUpdateTransactionModel extends TransactionBaseModel<FileUpdateTransaction> {
   static readonly TRANSACTION_TYPE = 'FileUpdateTransaction';
 
   // If a system file, the fee payer must 2,50,55,56,57, or 58 depending on the file.
@@ -20,11 +18,14 @@ export class FileUpdateTransactionModel
   //   return signingAccounts;
   // }
 
-  getNewKeys() {
+  override getNewKeys() {
     // If system file, return empty array
     // any key would be purely ornamental
     // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements
-    if (this.transaction.fileId !== null && isHederaSpecialFileId(this.transaction.fileId.toString())) {
+    if (
+      this.transaction.fileId !== null &&
+      isHederaSpecialFileId(this.transaction.fileId.toString())
+    ) {
       return [];
     }
     return this.transaction.keys || [];

@@ -6,7 +6,7 @@ export class AccountDeleteTransactionModel
 
   static readonly TRANSACTION_TYPE = 'AccountDeleteTransaction';
 
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
     if (this.transaction.accountId) {
       set.add(this.transaction.accountId.toString());
@@ -14,7 +14,7 @@ export class AccountDeleteTransactionModel
     return set;
   }
 
-  getReceiverAccounts(): Set<string> {
+  override getReceiverAccounts(): Set<string> {
     return new Set<string>(
       this.transaction.transferAccountId ? [this.transaction.transferAccountId.toString()] : [],
     );

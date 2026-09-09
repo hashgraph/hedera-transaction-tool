@@ -31,7 +31,7 @@ export class UserThrottlerGuard extends ThrottlerGuard {
     );
   }
 
-  protected getTracker(req: Record<string, any>): Promise<string> {
+  protected override getTracker(req: Record<string, any>): Promise<string> {
     const user = req.user;
     if (!user) {
       throw new HttpException('No user connected.', HttpStatus.BAD_REQUEST);

@@ -7,7 +7,7 @@ export class RegisteredNodeCreateTransactionModel
 
   static readonly TRANSACTION_TYPE = 'RegisteredNodeCreateTransaction';
 
-  getNewKeys() {
+  override getNewKeys() {
     if (this.transaction.adminKey != null) {
       return [this.transaction.adminKey];
     }
