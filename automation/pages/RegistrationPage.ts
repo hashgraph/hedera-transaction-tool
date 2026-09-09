@@ -52,11 +52,11 @@ export class RegistrationPage extends BasePage {
   privateKeyLabelSelector = 'label-private-key';
 
   // Messages
-  toastMessageSelector = 'css=.v-toast__text';
-  visibleToastMessageSelector = 'css=.v-toast__text:visible';
-  visibleToastItemSelector = 'css=.v-toast__item:visible';
-  toastMessageByVariantPrefix = 'css=.v-toast__item--';
-  toastMessageByVariantSuffix = ' .v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
+  visibleToastMessageSelector = 'css=.toast-message:visible';
+  visibleToastItemSelector = 'css=.toast:visible';
+  toastMessageByVariantPrefix = 'css=.toast-';
+  toastMessageByVariantSuffix = ' .toast-message';
   emailErrorMessageSelector = 'invalid-text-email';
   passwordErrorMessageSelector = 'invalid-text-password';
   confirmPasswordErrorMessageSelector = 'invalid-text-password-not-match';

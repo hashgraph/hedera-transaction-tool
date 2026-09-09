@@ -131,7 +131,7 @@ export class OrganizationPage extends BasePage {
   readyToSignTabBadgeSelector = '[data-testid="tab-2"] [data-testid="span-notification-number"]';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   globalLoaderModalSelector = 'modal-global-loader';
   globalLoaderSpinnerSelector =
     'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
@@ -832,6 +832,7 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
     await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInMaxTransactionFee('10');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 

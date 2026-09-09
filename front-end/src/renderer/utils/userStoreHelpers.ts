@@ -155,6 +155,7 @@ export const getLocalKeyPairs = async (
 
   let keyPairs = await getKeyPairs(
     user.id,
+    user.password,
     selectedOrganization !== null ? selectedOrganization.id : null,
   );
 
@@ -372,7 +373,7 @@ export const getConnectedOrganization = async (
   };
 
   try {
-    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id, user.password);
 
     if (shouldSignIn) {
       return activeLoginRequired;
@@ -458,7 +459,7 @@ export const getOrganizationJwtTokens = async (
   user: PersonalUser | null,
 ): Promise<OrganizationTokens> => {
   if (isUserLoggedIn(user)) {
-    const organizationTokens = await getOrganizationTokens(user.id);
+    const organizationTokens = await getOrganizationTokens(user.id, user.password);
     return organizationTokens.reduce<OrganizationTokens>((acc, token) => {
       acc[token.organization_id] = token.jwtToken;
       return acc;

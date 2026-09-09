@@ -59,6 +59,7 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
             undefined,
             undefined,
             jwtToken,
+            user.password ?? undefined,
           );
         } catch (loginError) {
           // HTTP 426 from /auth/login means the backend rejected the client
