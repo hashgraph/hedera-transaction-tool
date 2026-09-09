@@ -431,7 +431,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
 
           <div class="flex-centered gap-4">
             <NextTransactionCursor />
-            <template v-if="visibleButtons.length > 0">
+            <template v-if="hasLoadedOnce">
               <div>
                 <SplitSignButtonDropdown
                   v-if="visibleButtons[0] === sign"
@@ -457,7 +457,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
                 </AppButton>
               </div>
             </template>
-            <template v-else-if="!hasLoadedOnce">
+            <template v-else>
               <div>
                 <AppButton color="secondary" :disabled="true" class="extra-width">... </AppButton>
               </div>
