@@ -653,11 +653,6 @@ td .btn {
   cursor: pointer;
 }
 
-.btn-close {
-  width: 0.5em;
-  height: 0.5em;
-}
-
 .toast-warning {
   background-color: var(--#{$prefix}toast-bg-color-warning) !important;
   color: var(--#{$prefix}toast-color-warning) !important;
@@ -673,6 +668,26 @@ td .btn {
   color: inherit;
   background-color: inherit;
   gap: 0.5em;
+}
+
+.toast-header .btn-close {
+  width: 0.5em;
+  height: 0.5em;
+  mask: var(--#{$prefix}btn-close-bg) center / contain no-repeat;
+  background-image: unset;
+  filter: none;
+}
+
+.toast .toast-header .btn-close {
+  background-color: var(--#{$prefix}toast-color-success) !important;
+}
+
+.toast-warning .toast-header .btn-close {
+  background-color: var(--#{$prefix}toast-color-warning) !important;
+}
+
+.toast-error .toast-header .btn-close {
+  background-color: var(--#{$prefix}toast-color-error) !important;
 }
 
 /* Tables */
