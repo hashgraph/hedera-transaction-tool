@@ -131,7 +131,7 @@ export class OrganizationPage extends BasePage {
   readyToSignTabBadgeSelector = '[data-testid="tab-2"] [data-testid="span-notification-number"]';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   globalLoaderModalSelector = 'modal-global-loader';
   globalLoaderSpinnerSelector =
     'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
@@ -1727,6 +1727,33 @@ export class OrganizationPage extends BasePage {
   async clickOnConfirmSignAllButton() {
     await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
     await this.click(this.confirmSignAllButtonSelector);
+    // AppModal.vue is always mounted (never v-if) and hardcodes
+    // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
+    // per-instance. Confirming "Sign all" closes the confirm dialog immediately, then
+    // ActionController's Doherty-threshold delay (400ms) means the progress dialog - which stays
+    // open while a large batch (e.g. 100 transactions) signs, and shares the same testid - only
+    // appears ~400ms later. A single "nothing visible" check lands in that legitimate gap almost
+    // every time, regardless of batch size, so require it to hold for longer than 400ms across
+    // repeated checks before trusting it instead of resolving on the first observation.
+    const noneVisibleSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT * 4;
+    let stableChecks = 0;
+    while (stableChecks < 3) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new Error(
+          'A modal sharing data-testid="modal-confirm-transaction" stayed visible after confirming Sign All',
+        );
+      }
+      await this.window.waitForFunction(
+        (selector: string) => document.querySelector(selector) === null,
+        noneVisibleSelector,
+        { timeout: remaining },
+      );
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+      const stillNone = (await this.window.locator(noneVisibleSelector).count()) === 0;
+      stableChecks = stillNone ? stableChecks + 1 : 0;
+    }
   }
 
   async clickOnConfirmCancelButton() {

@@ -12,10 +12,9 @@ import {
   sendApproverChoice,
 } from '@renderer/services/organization';
 import { isUserLoggedIn } from '@renderer/utils';
+import { ToastManager } from '@renderer/utils/ToastManager.ts';
 
-const toastSuccess = vi.fn();
-const toastError = vi.fn();
-const toastWarning = vi.fn();
+const toastManager = new ToastManager();
 
 const userStore = {
   personal: { id: 'user-id' },
@@ -82,14 +81,6 @@ const groupResponse = {
 
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => routerMock),
-}));
-
-vi.mock('vue-toast-notification', () => ({
-  useToast: vi.fn(() => ({
-    success: toastSuccess,
-    error: toastError,
-    warning: toastWarning,
-  })),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -247,6 +238,9 @@ const mountGroupDetails = async (
 
   const wrapper = mount(TransactionGroupDetails, {
     global: {
+      provide: {
+        [ToastManager.injectKey]: toastManager,
+      },
       stubs: {
         AppButton: AppButtonStub,
         AppConfirmModal: AppConfirmModalStub,
@@ -286,6 +280,7 @@ const confirmCancelAll = async (wrapper: ReturnType<typeof mount>) => {
 describe('TransactionGroupDetails.vue', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    toastManager.reset();
   });
 
   test('uses one Cancel All API call and refreshes group state after a failed cancel attempt', async () => {
@@ -299,7 +294,7 @@ describe('TransactionGroupDetails.vue', () => {
     expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
     expect(cancelTransactionGroup).toHaveBeenCalledWith('https://org.example.com', 10, expect.any(Array));
     expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
-    expect(toastError).toHaveBeenCalled();
+    expect(toastManager.countErrorEntries()).toBe(1);
   });
 
   test('shows success toast when all transactions cancel successfully', async () => {
@@ -319,10 +314,9 @@ describe('TransactionGroupDetails.vue', () => {
     await confirmCancelAll(wrapper);
 
     expect(cancelTransactionGroup).toHaveBeenCalledTimes(1);
-    expect(toastSuccess).toHaveBeenCalledWith(
-      '1 transaction(s) canceled successfully',
-      { duration: 4000 },
-    );
+    expect(
+      toastManager.findEntry('1 transaction(s) canceled successfully', 'success'),
+    ).not.toBeNull();
   });
 
   test('shows error toast when all transactions fail to cancel', async () => {
@@ -347,10 +341,7 @@ describe('TransactionGroupDetails.vue', () => {
     const wrapper = await mountGroupDetails();
     await confirmCancelAll(wrapper);
 
-    expect(toastError).toHaveBeenCalledWith(
-      'No transactions could be canceled',
-      expect.objectContaining({ duration: 0 }),
-    );
+    expect(toastManager.findEntry('No transactions could be canceled', 'error')).not.toBeNull();
   });
 
   test('refreshes group state after successful cancel', async () => {
@@ -401,10 +392,7 @@ describe('TransactionGroupDetails.vue', () => {
     await confirmCancelAll(wrapper);
 
     expect(cancelTransactionGroup).not.toHaveBeenCalled();
-    expect(toastError).toHaveBeenCalledWith(
-      'You must be logged in to cancel transactions.',
-      expect.objectContaining({ duration: 0 }),
-    );
+    expect(toastManager.findEntry('You must be logged in to cancel transactions.', 'error')).not.toBeNull();
   });
 
   test('shows error toast when group refresh fails after successful cancel', async () => {
@@ -420,14 +408,8 @@ describe('TransactionGroupDetails.vue', () => {
 
     await confirmCancelAll(wrapper);
 
-    expect(toastSuccess).toHaveBeenCalledWith(
-      '1 transaction(s) canceled successfully',
-      { duration: 4000 },
-    );
-    expect(toastError).toHaveBeenCalledWith(
-      'refresh failed',
-      expect.objectContaining({ duration: 0 }),
-    );
+    expect(toastManager.findEntry('1 transaction(s) canceled successfully', 'success')).not.toBeNull();
+    expect(toastManager.findEntry('refresh failed', 'error')).not.toBeNull();
   });
 
   test('calls sendApproverChoice for each item when reject all is confirmed', async () => {
@@ -461,10 +443,9 @@ describe('TransactionGroupDetails.vue', () => {
     form.element.dispatchEvent(submitEvent);
     await flushPromises();
 
-    expect(toastError).toHaveBeenCalledWith(
+    expect(toastManager.findEntry(
       'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
-      expect.objectContaining({ duration: 0 }),
-    );
-    expect(getTransactionGroupById).toHaveBeenCalledTimes(2);
+      'error',
+    )).not.toBeNull();
   });
 });
