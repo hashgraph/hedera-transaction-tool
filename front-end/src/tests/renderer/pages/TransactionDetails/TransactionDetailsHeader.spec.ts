@@ -287,7 +287,7 @@ describe('TransactionDetailsHeader.vue', () => {
     expect(toastManager.findEntry('Transaction scheduled successfully', 'success')).not.toBeNull();
   });
 
-  test.skip('shows error toast after failed schedule', async () => {
+  test('shows error toast after failed schedule', async () => {
     const onAction = vi.fn().mockResolvedValue(undefined);
     const wrapper = mountHeader(
       { status: TransactionStatus.WAITING_FOR_EXECUTION, isManual: true },
@@ -297,7 +297,7 @@ describe('TransactionDetailsHeader.vue', () => {
     vi.mocked(executeTransaction).mockRejectedValueOnce(new Error('Schedule failed'));
 
     const form = wrapper.find('form');
-    const scheduleButton = wrapper.get('[data-testid="button-schedule-org-transaction"]');
+    const scheduleButton = wrapper.get('[data-testid="button-schedule-transaction"]');
     const submitEvent = new Event('submit', { cancelable: true });
     Object.defineProperty(submitEvent, 'submitter', { value: scheduleButton.element });
     form.element.dispatchEvent(submitEvent);
@@ -313,7 +313,7 @@ describe('TransactionDetailsHeader.vue', () => {
 
     expect(executeTransaction).toHaveBeenCalledTimes(1);
     expect(onAction).toHaveBeenCalledTimes(1);
-    expect(toastManager.findEntry('Transaction scheduled successfully', 'success')).not.toBeNull();
+    expect(wrapper.findComponent({ name: 'ActionReportModal' }).exists()).toBe(true);
   });
 
   test('shows error toast when export is triggered without an SDK transaction', async () => {
