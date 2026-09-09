@@ -16,7 +16,7 @@ export class DebouncedNotificationBatcher<T = unknown> {
     private readonly delayMs: number,
     private readonly maxBatchSize: number,
     private readonly maxFlushMS: number,
-    private readonly redisUrl: string,
+    redisUrl: string,
     private readonly instanceId: string = 'default-instance',
   ) {
     this.batchKeyPrefix = `${this.instanceId}:batch:`;

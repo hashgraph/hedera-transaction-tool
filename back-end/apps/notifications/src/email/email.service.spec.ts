@@ -5,7 +5,6 @@ import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { mockDeep } from 'jest-mock-extended';
 
 import {
-  findEmailSubject,
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,

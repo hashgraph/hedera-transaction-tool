@@ -1,5 +1,4 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 
 import {
@@ -40,7 +39,6 @@ export class MirrorNodeClient {
   private readonly endpointPrefix = '/api/v1';
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {}
 
