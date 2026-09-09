@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import { ToastManager } from '@renderer/utils/ToastManager';
 
 const toastManager = ToastManager.inject();
 
@@ -22,7 +22,7 @@ const dismiss = (toastId: number) => {
       role="alert"
       aria-live="assertive"
       aria-atomic="true"
-      @click="dismiss(e.toastId)"
+      @click.stop="dismiss(e.toastId)"
     >
       <div class="toast-header">
         <span class="me-auto toast-message">{{ e.message }}</span>
@@ -30,7 +30,7 @@ const dismiss = (toastId: number) => {
           v-if="e.type === 'error'"
           type="button"
           class="btn-close"
-          @click="dismiss(e.toastId)"
+          aria-label="Close"
         />
       </div>
     </div>
