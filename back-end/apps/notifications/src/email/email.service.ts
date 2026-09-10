@@ -121,6 +121,7 @@ export class EmailService implements OnModuleDestroy {
     maxDelayMs = 60000,
     useJitter = true,
   ) {
+    let lastErr: unknown = null;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
         const info = await this.transporter.sendMail(mailOptions);
@@ -131,7 +132,10 @@ export class EmailService implements OnModuleDestroy {
         const arg = hasCode(err) ? err.code : String(err)
         console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, arg);
 
-        if (last) throw err;
+        if (last) {
+          lastErr = err;
+          continue;
+        }
 
         // exponential backoff: baseDelayMs * 2^(attempt-1), capped by maxDelayMs
         let delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
@@ -147,7 +151,7 @@ export class EmailService implements OnModuleDestroy {
       }
     }
 
-    return undefined;
+    throw lastErr;
   }
 
   private async processMessages(groupKey: string | number | null, notifications: Notification[]) {
