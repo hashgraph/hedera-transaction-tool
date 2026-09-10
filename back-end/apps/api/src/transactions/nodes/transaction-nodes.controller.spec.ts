@@ -55,7 +55,6 @@ describe('TransactionNodesController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],

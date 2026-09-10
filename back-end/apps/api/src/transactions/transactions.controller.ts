@@ -203,48 +203,6 @@ export class TransactionsController {
     return this.transactionsService.getUserKeysToSign(transaction, user);
   }
 
-  /* Get all transactions to be approved by the user */
-  /* NO LONGER USED BY FRONT-END */
-  @ApiOperation({
-    summary: 'Get transactions to approve',
-    description: 'Get all transactions to be approved by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Serialize(withPaginatedResponse(TransactionDto))
-  @Get('/approve')
-  getTransactionsToApprove(
-    @GetUser() user: User,
-    @PaginationParams() paginationParams: Pagination,
-    @SortingParams(transactionProperties) sort?: Sorting[],
-    @FilteringParams({
-      validProperties: transactionProperties,
-      dateProperties: transactionDateProperties,
-    })
-    filter?: Filtering[],
-  ) {
-    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort, filter);
-  }
-
-  /* Returns whether a user should approve a transaction with id */
-  @ApiOperation({
-    summary: 'Check if the current user should approve the transaction with the provided id',
-    description: 'Check if the current user should approve the transaction with the provided id.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [Number],
-  })
-  @Get('/approve/:transactionId')
-  async shouldApproveTransaction(
-    @GetUser() user: User,
-    @Param('transactionId', ParseIntPipe) transactionId: number,
-  ): Promise<boolean> {
-    return this.transactionsService.shouldApproveTransaction(transactionId, user);
-  }
-
   @ApiOperation({
     summary: 'Cancel a transaction',
     description: 'Cancel a transaction if the valid start date is in the future.',

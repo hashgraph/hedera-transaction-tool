@@ -14,7 +14,8 @@ import {
   TransactionGroup,
   TransactionStatus,
   TransactionObserver,
-  TransactionApprover,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   TransactionType,
 } from '@entities';
 
@@ -39,7 +40,7 @@ interface WhereClauseResult {
 }
 
 // Only EXECUTED and FAILED are world-readable. EXPIRED, CANCELED, and ARCHIVED
-// still require a user association check (creator / observer / signer / approver).
+// still require a user association check (creator / observer / signer / reviewer).
 const BYPASS_STATUSES = [
   TransactionStatus.EXECUTED,
   TransactionStatus.FAILED,
@@ -176,19 +177,12 @@ function buildEligibilityConditions(
     const userParam = addParam(user.id);
     eligibilityConditions.push(`
       EXISTS (
-        WITH RECURSIVE approverList AS (
-          SELECT *
-          FROM ${sql.table(TransactionApprover)}
-          WHERE ${sql.col(TransactionApprover, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-            AND ${sql.col(TransactionApprover, 'deletedAt')} IS NULL
-          UNION ALL
-          SELECT a.*
-          FROM ${sql.table(TransactionApprover)} a
-            JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
-          WHERE a.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
-        )
-        SELECT 1 FROM approverList
-        WHERE approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
+        SELECT 1
+        FROM ${sql.table(TransactionReviewerListMember)} member
+        JOIN ${sql.table(TransactionReviewerList)} reviewerList
+          ON reviewerList.${sql.col(TransactionReviewerList, 'id')} = member.${sql.col(TransactionReviewerListMember, 'listId')}
+        WHERE reviewerList.${sql.col(TransactionReviewerList, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+          AND member.${sql.col(TransactionReviewerListMember, 'userId')} = ${userParam}
       )
     `);
   }
@@ -202,7 +196,7 @@ function buildEligibilityConditions(
  * The resulting clause is structured as:
  * `(filter conditions) AND ((eligibility conditions) OR (bypass status check))`
  *
- * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, signer, or approver).
+ * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, signer, or reviewer).
  *
  * @param sql - The SQL builder service used to resolve table and column names.
  * @param filters - Optional filters to apply, such as status, type, and mirror network.

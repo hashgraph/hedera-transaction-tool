@@ -16,7 +16,6 @@ import {
   UserKey,
   TransactionComment,
   TransactionSigner,
-  TransactionApprover,
   TransactionObserver,
   TransactionGroupItem,
   TransactionCachedAccount,
@@ -160,9 +159,6 @@ export class Transaction {
 
   @OneToMany(() => TransactionSigner, signer => signer.transaction)
   signers?: TransactionSigner[];
-
-  @OneToMany(() => TransactionApprover, approver => approver.transaction)
-  approvers?: TransactionApprover[];
 
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers?: TransactionObserver[];

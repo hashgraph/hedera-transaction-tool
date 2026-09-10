@@ -642,7 +642,6 @@ async function createTestUserWithKeys(
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -659,7 +658,6 @@ async function createTestUserWithKeys(
       mnemonicHash: undefined,
       index: undefined,
       createdTransactions: [],
-      approvedTransactions: [],
       signedTransactions: [],
     } as DeepPartial<UserKey>);
     await dataSource.getRepository(UserKey).save(userKey);

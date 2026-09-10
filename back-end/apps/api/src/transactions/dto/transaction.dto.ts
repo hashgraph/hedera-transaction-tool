@@ -3,7 +3,6 @@ import { Expose, Transform, Type } from 'class-transformer';
 import { TransactionStatus, TransactionType } from '@entities';
 
 import { TransactionSignerUserKeyDto } from './transaction-signer.dto';
-import { TransactionApproverDto } from './transaction-approver.dto';
 import { TransactionObserverDto } from './transaction-observer.dto';
 import { TransactionGroupItemDto } from './transaction-group-item.dto';
 
@@ -80,10 +79,6 @@ export class TransactionFullDto extends TransactionDto {
   @Expose()
   @Type(() => TransactionSignerUserKeyDto)
   signers: TransactionSignerUserKeyDto[];
-
-  @Expose()
-  @Type(() => TransactionApproverDto)
-  approvers: TransactionApproverDto[];
 
   @Expose()
   @Type(() => TransactionObserverDto)

@@ -151,25 +151,18 @@ export class TransactionGroupsService {
 
     const transactionIds = group.groupItems.map(item => item.transactionId);
 
-    const [
-      transactionSigners,
-      transactionApprovers,
-      transactionObservers,
-    ] = await Promise.all([
+    const [transactionSigners, transactionObservers] = await Promise.all([
       this.transactionsService.getTransactionSignersForTransactions(transactionIds),
-      this.transactionsService.getTransactionApproversForTransactions(transactionIds),
       this.transactionsService.getTransactionObserversForTransactions(transactionIds),
     ]);
 
     const signerMap = this.groupBy(transactionSigners, s => s.transactionId);
-    const approverMap = this.groupBy(transactionApprovers, a => a.transactionId);
     const observerMap = this.groupBy(transactionObservers, o => o.transactionId);
 
     for (const groupItem of group.groupItems) {
       const txId = groupItem.transactionId;
 
       groupItem.transaction.signers = signerMap.get(txId) ?? [];
-      groupItem.transaction.approvers = approverMap.get(txId) ?? [];
       groupItem.transaction.observers = observerMap.get(txId) ?? [];
     }
 
