@@ -78,9 +78,11 @@ export class ExecuteService {
         transactions.push({ sdkTransaction, transaction });
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        throw new Error(
+        const wrappedError = new Error(
           `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${errorMessage}`,
         );
+        (wrappedError as Error & { cause: unknown }).cause = error;
+        throw wrappedError;
       }
     }
 
@@ -218,13 +220,20 @@ export class ExecuteService {
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    /* Gets the signature key — if mirror node is unreachable, skip the check and attempt execution */
+    /* Signature-key resolution is required before anything can be submitted. */
     let signatureKey: KeyList;
     try {
       signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
     } catch (error) {
-      this.logger.warn(`Key resolution failed for transaction ${transaction.id}, proceeding without signature validation`, error);
-      return sdkTransaction;
+      this.logger.error(
+        `Key resolution failed for transaction ${transaction.id}; refusing execution`,
+        error,
+      );
+      const wrappedError = new Error(
+        `Unable to resolve required signature key for transaction ${transaction.id}.`,
+      );
+      (wrappedError as Error & { cause: unknown }).cause = error;
+      throw wrappedError;
     }
 
     /* Checks if the transaction has valid signatureKey */
@@ -245,23 +254,29 @@ export class ExecuteService {
       throw new Error('Transaction does not exist.');
     }
 
-    switch (transactionEntity.status) {
-      case TransactionStatus.NEW:
-        throw new Error('Transaction is new and has not been signed yet.');
-      case TransactionStatus.READY_FOR_REVIEW:
-        throw new Error('Transaction is pending review and cannot be executed yet.');
-      case TransactionStatus.FAILED:
-        throw new Error('Transaction has already been executed, but failed.');
-      case TransactionStatus.EXECUTED:
-        throw new Error('Transaction has already been executed.');
-      case TransactionStatus.REJECTED:
-        throw new Error('Transaction has already been rejected.');
-      case TransactionStatus.EXPIRED:
-        throw new Error('Transaction has been expired.');
-      case TransactionStatus.CANCELED:
-        throw new Error('Transaction has been canceled.');
-      case TransactionStatus.ARCHIVED:
-        throw new Error('Transaction is archived.');
+    if (transactionEntity.status !== TransactionStatus.WAITING_FOR_EXECUTION) {
+      switch (transactionEntity.status) {
+        case TransactionStatus.NEW:
+          throw new Error('Transaction is new and has not been signed yet.');
+        case TransactionStatus.READY_FOR_REVIEW:
+          throw new Error('Transaction is pending review and cannot be executed yet.');
+        case TransactionStatus.FAILED:
+          throw new Error('Transaction has already been executed, but failed.');
+        case TransactionStatus.EXECUTED:
+          throw new Error('Transaction has already been executed.');
+        case TransactionStatus.REJECTED:
+          throw new Error('Transaction has already been rejected.');
+        case TransactionStatus.EXPIRED:
+          throw new Error('Transaction has been expired.');
+        case TransactionStatus.CANCELED:
+          throw new Error('Transaction has been canceled.');
+        case TransactionStatus.ARCHIVED:
+          throw new Error('Transaction is archived.');
+        case TransactionStatus.WAITING_FOR_SIGNATURES:
+          throw new Error('Transaction is waiting for signatures and cannot be executed yet.');
+        default:
+          throw new Error('Transaction is not ready for execution.');
+      }
     }
   }
 }
