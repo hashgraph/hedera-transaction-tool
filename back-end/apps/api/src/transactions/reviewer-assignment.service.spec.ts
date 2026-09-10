@@ -74,6 +74,21 @@ describe('ReviewerAssignmentService', () => {
       expect(em.findOne).not.toHaveBeenCalled();
     });
 
+    it('normalizes case and whitespace before looking up reviewer rules', async () => {
+      em.find.mockResolvedValueOnce([makeEntity()]);
+      em.find.mockResolvedValueOnce([]);
+
+      await service.assign(1, TransactionType.ACCOUNT_CREATE, '  TESTNET  '.toUpperCase(), em);
+
+      expect(em.find).toHaveBeenNthCalledWith(
+        2,
+        ReviewerRule,
+        expect.objectContaining({
+          where: expect.objectContaining({ network: NETWORK }),
+        }),
+      );
+    });
+
     it('returns false when rules exist but none match the transaction', async () => {
       em.find.mockResolvedValueOnce([makeEntity()]); // entity is 0.0.1; rule targets 0.0.999
       em.find.mockResolvedValueOnce([makeRule({ hederaEntityId: '0.0.999' })]);

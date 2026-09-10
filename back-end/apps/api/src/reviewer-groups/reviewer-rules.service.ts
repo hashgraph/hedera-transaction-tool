@@ -13,7 +13,7 @@ import {
   RulePayload,
 } from '@entities';
 
-import { ErrorCodes } from '@app/common';
+import { ErrorCodes, normalizeMirrorNetwork } from '@app/common';
 
 import { CreateReviewerRuleDto, DeleteReviewerRuleDto } from './dtos';
 
@@ -50,9 +50,11 @@ export class ReviewerRulesService {
     const group = await this.groupRepo.findOne({ where: { id: dto.groupId } });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
 
+    const network = normalizeMirrorNetwork(dto.network);
+
     const rulePayload: RulePayload = {
       hederaEntityId: dto.hederaEntityId,
-      network: dto.network,
+      network,
       entityRole: dto.entityRole ?? null,
       transactionType: dto.transactionType ?? null,
     };
@@ -63,7 +65,7 @@ export class ReviewerRulesService {
         // This keeps the ruleId stable across the rule's lifecycle so that all
         // RuleChangeRecord FKs point to the same row regardless of how many times
         // the rule has been removed and re-added.
-        const softDeleted = await this.findSoftDeletedRule(manager, dto);
+        const softDeleted = await this.findSoftDeletedRule(manager, { ...dto, network });
 
         let rule: ReviewerRule;
         if (softDeleted) {
@@ -74,7 +76,7 @@ export class ReviewerRulesService {
           rule = manager.create(ReviewerRule, {
             groupId: dto.groupId,
             hederaEntityId: dto.hederaEntityId,
-            network: dto.network,
+            network,
             entityRole: dto.entityRole ?? null,
             transactionType: dto.transactionType ?? null,
           });

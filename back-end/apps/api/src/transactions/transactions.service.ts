@@ -67,6 +67,7 @@ import {
   isExpired,
   isTransactionBodyOverMaxSize,
   NatsPublisherService,
+  normalizeMirrorNetwork,
   TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
@@ -484,12 +485,17 @@ export class TransactionsService {
 
     await attachKeys(user, this.entityManager);
 
-    const client = await getClientFromNetwork(dtos[0].mirrorNetwork);
+    // Canonicalize network identifiers before any work (even if case-insensitive for SDK resolution).
+    const normalizedDtos = dtos.map(dto => ({
+      ...dto,
+      mirrorNetwork: normalizeMirrorNetwork(dto.mirrorNetwork),
+    }));
+    const client = await getClientFromNetwork(normalizedDtos[0].mirrorNetwork);
 
     try {
       // Validate all DTOs upfront
       const validatedData = await Promise.all(
-        dtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
+        normalizedDtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
       );
 
       // Batch check for existing transactions
