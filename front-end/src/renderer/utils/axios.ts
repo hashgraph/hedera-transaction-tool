@@ -1,4 +1,4 @@
-import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
@@ -156,7 +156,7 @@ const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
   };
 };
 
-export const axiosWithCredentials = {
+export const axiosWithCredentials: Pick<AxiosInstance, 'get' | 'post' | 'patch' | 'delete'> = {
   get: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     config?: AxiosRequestConfig<D>,
