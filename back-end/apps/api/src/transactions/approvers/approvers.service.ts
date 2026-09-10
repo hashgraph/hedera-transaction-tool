@@ -7,6 +7,7 @@ import {
   EntityManager,
   FindManyOptions,
   FindOneOptions,
+  QueryDeepPartialEntity,
   Repository,
 } from 'typeorm';
 
@@ -337,7 +338,7 @@ export class ApproversService {
           const approver = transactionalEntityManager.create(TransactionApprover, data);
 
           /* Insert approver */
-          await transactionalEntityManager.insert(TransactionApprover, approver);
+          await transactionalEntityManager.save(TransactionApprover, approver);
           approvers.push(approver);
 
           /* Continue creating the three */
@@ -509,7 +510,7 @@ export class ApproversService {
 
           /* Update the user */
           if (approver.userId !== dto.userId) {
-            const data: DeepPartial<TransactionApprover> = {
+            const data: QueryDeepPartialEntity<TransactionApprover> = {
               userId: dto.userId,
               userKeyId: undefined,
               signature: undefined,

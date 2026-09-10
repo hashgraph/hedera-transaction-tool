@@ -29,7 +29,7 @@ export enum SigningReportFormat {
 export class SigningReportQueryDto {
   @ApiProperty({ enum: SigningReportType })
   @IsEnum(SigningReportType)
-  type: SigningReportType;
+  type!: SigningReportType;
 
   @ApiProperty({
     description:
@@ -37,7 +37,7 @@ export class SigningReportQueryDto {
   })
   @IsString()
   @IsNotEmpty()
-  id: string;
+  id!: string;
 
   @ApiProperty({
     required: false,
@@ -89,40 +89,40 @@ export class SigningReportQueryDto {
 
 export class SigningReportItemDto {
   @ApiProperty({ description: 'The Hedera transaction ID (e.g. 0.0.1001@1700000000.000000000)' })
-  transactionId: string;
+  transactionId!: string;
 
   @ApiProperty()
-  createdAt: string;
+  createdAt!: string;
 
   @ApiProperty()
-  validStart: string;
+  validStart!: string;
 
   @ApiProperty({ nullable: true })
-  executedAt: string | null;
+  executedAt!: string | null;
 
   @ApiProperty({ enum: SigningEntityType, description: 'Whether the key belongs to an account or a node' })
-  entityType: SigningEntityType;
+  entityType!: SigningEntityType;
 
   @ApiProperty({ description: 'The account ID (e.g. 0.0.55) or node ID the key belongs to' })
-  entityId: string;
+  entityId!: string;
 
   @ApiProperty({
     description: 'A public key from the account/node key active when the transaction ran',
   })
-  publicKey: string;
+  publicKey!: string;
 
   @ApiProperty({ nullable: true, description: 'Null when no UserKey matches the public key' })
-  userId: number | null;
+  userId!: number | null;
 
   @ApiProperty({ nullable: true, description: 'Null when no UserKey matches the public key' })
-  userEmail: string | null;
+  userEmail!: string | null;
 
   @ApiProperty({
     nullable: true,
     description: 'When the key signed the transaction (from the signer record); null if not signed',
   })
-  signedAt: string | null;
+  signedAt!: string | null;
 
   @ApiProperty({ enum: SigningStatus })
-  signingStatus: SigningStatus;
+  signingStatus!: SigningStatus;
 }

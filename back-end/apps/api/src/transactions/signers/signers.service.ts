@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { SignatureMap, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import {
+  DismissedNotificationReceiverDto,
   emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
@@ -17,7 +18,7 @@ import {
   TransactionSignatureService,
   validateSignature,
 } from '@app/common';
-import { type NewSignerRow, Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { type NewSignerRow, Transaction, TransactionSigner, TransactionStatus, User, UserKey, ValidationResult } from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -159,8 +160,8 @@ export class SignersService {
     dto: UploadSignatureMapDto[],
     user: User,
     transactionMap: Map<number, Transaction>,
-    signersByTransaction: Map<number, Set<number>>
-  ) {
+    signersByTransaction: Map<number, Set<number>>,
+  ): Promise<ValidationResult[]> {
     // Build user key lookup once
     const userKeyMap = new Map<string, UserKey>();
     for (const key of user.keys) {
@@ -266,7 +267,7 @@ export class SignersService {
   }
 
   private async persistSignatureChanges(
-    validationResults: any[],
+    validationResults: ValidationResult[],
     user: User,
     version: string | null,
   ) {
@@ -290,29 +291,29 @@ export class SignersService {
       // Skip if nothing to do - no signatures were added to the transaction
       // AND no new signers were inserted (the signature can be present on the transaction
       // if collated by an outside or 'offline' method)
-      if (isSameBytes && userKeys.length === 0) continue;
+      if (isSameBytes && userKeys!.length === 0) continue;
 
       // Collect updates
       if (!isSameBytes) {
-        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
-        transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
+        transaction!.transactionBytes = Buffer.from(sdkTransaction!.toBytes());
+        transactionsToUpdate.push({ id, transactionBytes: transaction!.transactionBytes });
       }
 
       // Collect inserts
-      if (userKeys.length > 0) {
-        const newSigners = userKeys.map(userKey => ({
+      if (userKeys!.length > 0) {
+        const newSigners = userKeys!.map(userKey => ({
           userId: user.id,
           transactionId: id,
           userKeyId: userKey.id,
           recorderId: user.id,
-          tool,
+          tool: tool ?? null,
           version,
         }));
         signersToInsert.push(...newSigners);
       }
 
-      transactionsToProcess.push({ id, transaction });
-      notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
+      transactionsToProcess.push({ id, transaction: transaction! });
+      notificationsToUpdate.push({ userId: user.id, transactionId: transaction!.id });
     }
 
     // Execute in single transaction
@@ -355,8 +356,8 @@ export class SignersService {
   }
 
   private async bulkUpdateTransactions(
-    manager: any,
-    transactionsToUpdate: { id: number; transactionBytes: Buffer }[]
+    manager: EntityManager,
+    transactionsToUpdate: { id: number; transactionBytes: Buffer }[],
   ) {
     const whenClauses = transactionsToUpdate
       .map((t, index) => `WHEN ${t.id} THEN $${index + 1}::bytea`)
@@ -375,9 +376,9 @@ export class SignersService {
   }
 
   private async bulkUpdateNotificationReceivers(
-    manager: any,
-    notificationsToUpdate: { userId: number; transactionId: number }[]
-  ) {
+    manager: EntityManager,
+    notificationsToUpdate: { userId: number; transactionId: number }[],
+  ): Promise<DismissedNotificationReceiverDto[]> {
     if (!notificationsToUpdate.length) return [];
 
     // Separate arrays of userIds and transactionIds
@@ -406,10 +407,7 @@ export class SignersService {
     return rows;
   }
 
-  private async bulkInsertSigners(
-    manager: any,
-    signersToInsert: any[],
-  ) {
+  private async bulkInsertSigners(manager: EntityManager, signersToInsert: NewSignerRow[]) {
     const result = await manager
       .createQueryBuilder()
       .insert()
@@ -418,7 +416,7 @@ export class SignersService {
       .returning('*')
       .execute();
 
-    return result.raw;
+    return result.raw as TransactionSigner[];
   }
 
   private async updateStatusesAndNotify(

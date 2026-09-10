@@ -12,41 +12,41 @@ import { CachedNodeAdminKey, TransactionCachedNode } from './';
 @Index(['nodeId', 'mirrorNetwork'], { unique: true })
 export class CachedNode {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
   @Index()
-  nodeId: number;
+  nodeId!: number;
 
   @Column({ type: String, length: 64, nullable: true })
   @Index()
-  nodeAccountId: string | null;
+  nodeAccountId!: string | null;
 
   @Column()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Column({ type: 'bytea', nullable: true })
-  encodedKey: Buffer | null;
+  encodedKey!: Buffer | null;
 
   @Column({ type: String, length: 100, nullable: true })
-  etag: string | null; // Mirror node etag or hash of response
+  etag!: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedNodeAdminKey, (key) => key.cachedNode)
-  keys: CachedNodeAdminKey[];
+  keys!: CachedNodeAdminKey[];
 
   @OneToMany(() => TransactionCachedNode, (tn) => tn.cachedNode)
-  nodeTransactions: TransactionCachedNode[];
+  nodeTransactions!: TransactionCachedNode[];
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
   @Index()
-  updatedAt: Date; // Auto-updates on ANY save - serves dual purpose:
+  updatedAt!: Date; // Auto-updates on ANY save - serves dual purpose:
                    // 1. Last time data was checked/refreshed from mirror node
                    // 2. Timestamp for when refreshToken was set (for stale lock detection)
 
   @Column({ type: 'uuid', nullable: true })
   @Index()
-  refreshToken: string | null;
+  refreshToken!: string | null;
 }

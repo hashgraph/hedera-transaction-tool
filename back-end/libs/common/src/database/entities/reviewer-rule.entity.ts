@@ -26,33 +26,33 @@ import { RuleChangeRecord } from './rule-change-record.entity';
 @Index(['groupId'])
 export class ReviewerRule {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => ReviewerGroup, group => group.rules, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'groupId' })
-  group: ReviewerGroup;
+  group!: ReviewerGroup;
 
   @Column()
-  groupId: number;
+  groupId!: number;
 
   @Column()
-  hederaEntityId: string;
+  hederaEntityId!: string;
 
   @Column()
-  network: string;
+  network!: string;
 
   @Column({ type: String, nullable: true })
-  entityRole: EntityRole | null;
+  entityRole!: EntityRole | null;
 
   @Column({ type: String, nullable: true })
-  transactionType: string | null;
+  transactionType!: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @DeleteDateColumn({ type: 'timestamptz' })
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 
   @OneToMany(() => RuleChangeRecord, record => record.rule)
-  changeRecords: RuleChangeRecord[];
+  changeRecords!: RuleChangeRecord[];
 }

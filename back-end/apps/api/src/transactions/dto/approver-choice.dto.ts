@@ -5,13 +5,13 @@ import { TransformBuffer } from '@app/common';
 export class ApproverChoiceDto {
   @IsNumber()
   @IsNotEmpty()
-  userKeyId: number;
+  userKeyId!: number;
 
   @IsNotEmpty()
   @TransformBuffer()
-  signature: Buffer;
+  signature!: Buffer;
 
   @IsBoolean()
   @IsNotEmpty()
-  approved: boolean;
+  approved!: boolean;
 }

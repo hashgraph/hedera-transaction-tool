@@ -14,19 +14,19 @@ import { MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH } from '@entities';
 export class CreateTransactionGroupDto {
   @IsString()
   @MaxLength(MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH)
-  description: string;
+  description!: string;
 
   @IsOptional()
   @IsBoolean()
-  atomic: boolean;
+  atomic!: boolean;
 
   @IsOptional()
   @IsBoolean()
-  sequential: boolean;
+  sequential!: boolean;
 
   @IsArray()
   @IsNotEmpty()
   @ValidateNested({ each: true })
   @Type(() => CreateTransactionGroupItemDto)
-  groupItems: CreateTransactionGroupItemDto[];
+  groupItems!: CreateTransactionGroupItemDto[];
 }

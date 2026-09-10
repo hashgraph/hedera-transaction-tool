@@ -4,13 +4,13 @@ import { NotificationAdditionalData, NotificationType } from '@entities';
 
 export class NotificationDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  type: NotificationType;
+  type!: NotificationType;
 
   @Expose()
-  content: string;
+  content!: string;
 
   @Expose()
   entityId?: number;
@@ -19,8 +19,8 @@ export class NotificationDto {
   actorId?: number;
 
   @Expose()
-  additionalData: NotificationAdditionalData;
+  additionalData!: NotificationAdditionalData;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 }

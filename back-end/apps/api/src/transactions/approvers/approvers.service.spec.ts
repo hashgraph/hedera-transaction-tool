@@ -340,7 +340,7 @@ describe('ApproversService', () => {
         transactionId: transaction.id,
         threshold: undefined,
       });
-      expect(dataSource.manager.insert).toHaveBeenCalled();
+      expect(dataSource.manager.save).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: transactionId  }]);
     });
 
@@ -407,42 +407,42 @@ describe('ApproversService', () => {
 
       await service.createTransactionApprovers(user, transactionId, dto);
 
-      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(1, TransactionApprover, {
+      expect(dataSource.manager.save).toHaveBeenNthCalledWith(1, TransactionApprover, {
         id: 1,
         transactionId: transaction.id,
         threshold: 2,
         listId: undefined,
         userId: undefined,
       });
-      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(2, TransactionApprover, {
+      expect(dataSource.manager.save).toHaveBeenNthCalledWith(2, TransactionApprover, {
         id: 2,
         transactionId: undefined,
         threshold: 1,
         listId: 1,
         userId: undefined,
       });
-      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(3, TransactionApprover, {
+      expect(dataSource.manager.save).toHaveBeenNthCalledWith(3, TransactionApprover, {
         id: 3,
         transactionId: undefined,
         threshold: undefined,
         listId: 2,
         userId: 1,
       });
-      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(4, TransactionApprover, {
+      expect(dataSource.manager.save).toHaveBeenNthCalledWith(4, TransactionApprover, {
         id: 4,
         transactionId: undefined,
         threshold: undefined,
         listId: 2,
         userId: 2,
       });
-      expect(dataSource.manager.insert).toHaveBeenNthCalledWith(5, TransactionApprover, {
+      expect(dataSource.manager.save).toHaveBeenNthCalledWith(5, TransactionApprover, {
         id: 5,
         transactionId: undefined,
         threshold: undefined,
         listId: 1,
         userId: 3,
       });
-      expect(dataSource.manager.insert).toHaveBeenCalledTimes(5);
+      expect(dataSource.manager.save).toHaveBeenCalledTimes(5);
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: transactionId  }]);
     });
 
@@ -668,7 +668,7 @@ describe('ApproversService', () => {
         userKeyId: 1,
         approved: true,
       });
-      expect(dataSource.manager.insert).toHaveBeenCalled();
+      expect(dataSource.manager.save).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalledWith(notificationsPublisher, [{ entityId: transactionId  }]);
     });
   });

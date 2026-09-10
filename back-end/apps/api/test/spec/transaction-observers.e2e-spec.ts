@@ -45,12 +45,12 @@ describe('Transaction Observers (e2e)', () => {
     account: HederaAccount,
   ) => {
     const transaction = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId(account.accountId))
-      .setKey(account.publicKey)
+      .setTransactionId(createTransactionId(account.accountId!))
+      .setKey(account.publicKey!)
       .setAccountMemo('This is a memo');
     const buffer = Buffer.from(transaction.toBytes()).toString('hex');
 
-    const userKey = (await getUserKey(usr.id, usrAccount.publicKeyRaw))!;
+    const userKey = (await getUserKey(usr.id, usrAccount.publicKeyRaw!))!;
 
     if (userKey === null) {
       throw new Error('User key not found');
@@ -61,7 +61,7 @@ describe('Transaction Observers (e2e)', () => {
       description: 'TEST This is a simple account create transaction',
       transactionBytes: buffer,
       creatorKeyId: userKey.id,
-      signature: Buffer.from(usrAccount.privateKey.sign(transaction.toBytes())).toString('hex'),
+      signature: Buffer.from(usrAccount.privateKey!.sign(transaction.toBytes())).toString('hex'),
       mirrorNetwork: usrAccount.mirrorNetwork,
     };
   };
@@ -233,8 +233,8 @@ describe('Transaction Observers (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1002.privateKey);
-      const signatures = getSignatureMapForPublicKeys([localnet1002.publicKeyRaw], sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey!);
+      const signatures = getSignatureMapForPublicKeys([localnet1002.publicKeyRaw!], sdkTransaction);
 
       await endpoint
         .post(

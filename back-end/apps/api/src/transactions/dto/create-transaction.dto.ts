@@ -16,26 +16,26 @@ import { MAX_TRANSACTION_DESCRIPTION_LENGTH } from '@entities';
 // also adding cascade to the transaction relations to enable single saves
 export class CreateTransactionDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
   @MaxLength(MAX_TRANSACTION_DESCRIPTION_LENGTH)
-  description: string;
+  description!: string;
 
   @IsNotEmpty()
   @TransformBuffer()
-  transactionBytes: Buffer;
+  transactionBytes!: Buffer;
 
   @IsNumber()
-  creatorKeyId: number;
+  creatorKeyId!: number;
 
   @IsNotEmpty()
   @TransformBuffer()
-  signature: Buffer;
+  signature!: Buffer;
 
   @IsNotEmpty()
   @IsString()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Type(() => Date)
   @IsDate()

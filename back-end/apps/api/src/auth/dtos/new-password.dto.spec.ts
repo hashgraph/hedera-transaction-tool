@@ -5,7 +5,7 @@ import { NewPasswordDto } from './new-password.dto';
 
 const buildDto = (password: string) => {
   const dto = new NewPasswordDto();
-  (dto as any).password = password;
+  dto.password = password;
   return dto;
 };
 

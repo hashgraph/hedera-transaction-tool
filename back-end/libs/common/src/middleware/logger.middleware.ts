@@ -2,6 +2,7 @@ import { Injectable, NestMiddleware, Inject } from '@nestjs/common';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { Logger } from 'winston';
 import { CLIENT_IP_KEY, maskSensitiveData, sanitizeForLog } from '@app/common';
+import { NextFunction, Request, Response } from 'express';
 
 const MAX_URL_LOG_LENGTH = 2048;
 
@@ -9,13 +10,19 @@ const MAX_URL_LOG_LENGTH = 2048;
 export class LoggerMiddleware implements NestMiddleware {
   constructor(@Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger) {}
 
-  use(req, res, next: () => void) {
+  use(req: Request, res: Response, next: NextFunction) {
     const { method, originalUrl, body = {}, query = {} } = req;
     const start = Date.now();
 
     const ip = req[CLIENT_IP_KEY];
 
-    const maskedBody = maskSensitiveData(body, ['password', 'newPassword', 'email', 'token', 'otp']);
+    const maskedBody = maskSensitiveData(body, [
+      'password',
+      'newPassword',
+      'email',
+      'token',
+      'otp',
+    ]);
     const maskedQuery = maskSensitiveData(query, ['token']);
 
     const maxPayloadLength = Number(process.env.LOG_PAYLOAD_MAX_LENGTH ?? 2000);
@@ -37,7 +44,9 @@ export class LoggerMiddleware implements NestMiddleware {
             : serialized;
         payload = ` - Payload: ${truncated}`;
       }
-      const message = sanitizeForLog(`${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`);
+      const message = sanitizeForLog(
+        `${ip} ${uid} ${method} ${logUrl} ${statusCode} - ${duration}ms${payload}`,
+      );
       // 404s get bumped to WARN (covers both unmatched routes and services throwing
       // NotFoundException for a missing resource) so they stand out from routine traffic
       // without needing a second, separate log line for the same request.

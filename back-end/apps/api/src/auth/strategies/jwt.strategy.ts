@@ -14,7 +14,7 @@ import { JwtPayload } from '../../interfaces';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly usersService: UsersService,
-    private readonly configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       secretOrKey: configService.getOrThrow('JWT_SECRET'),

@@ -8,6 +8,7 @@ import {
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
+  NotificationTypeEmailSubjects,
 } from '@app/common';
 
 import { EmailService } from './email.service';
@@ -37,6 +38,11 @@ jest.mock('@app/common', () => ({
     TRANSACTION_CREATED: 'Transaction Created',
     TRANSACTION_WAITING_FOR_SIGNATURES: 'Transaction Waiting Signatures',
     TRANSACTION_EXECUTED: 'Transaction Executed',
+  },
+  findEmailSubject: (value: unknown) => {
+    const subjects = Object.values(NotificationTypeEmailSubjects);
+    const candidate = value as NotificationTypeEmailSubjects;
+    return subjects.includes(candidate) ? candidate : String(value);
   },
 }));
 

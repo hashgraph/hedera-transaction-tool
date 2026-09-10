@@ -13,6 +13,7 @@ import {
   getTransactionGroupItemsQuery,
   NatsPublisherService,
   SqlBuilderService,
+  TransactionGroupItemsRow,
   TransactionSnapshotService,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
@@ -95,15 +96,15 @@ export class TransactionGroupsService {
 
     const query = getTransactionGroupItemsQuery(this.sqlBuilder, id, user);
 
-    const rows = await this.dataSource.manager.query(
+    const rows = await this.dataSource.manager.query<TransactionGroupItemsRow[]>(
       query.text,
       query.values,
     );
 
     group.groupItems = rows.map(row => {
       const creator = this.dataSource.manager.create(User, {
-        id: row.tx_creator_key_user_id,
-        email: row.tx_creator_email,
+        id: row.tx_creator_key_user_id as number,
+        email: row.tx_creator_email as string,
       });
 
       const creatorKey = this.dataSource.manager.create(UserKey, {

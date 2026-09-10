@@ -4,17 +4,17 @@ import { NotificationType } from '@entities';
 
 export class NotificationPreferencesDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  userId: number;
+  userId!: number;
 
   @Expose()
-  type: NotificationType;
+  type!: NotificationType;
 
   @Expose()
-  email: boolean;
+  email!: boolean;
 
   @Expose()
-  inApp: boolean;
+  inApp!: boolean;
 }

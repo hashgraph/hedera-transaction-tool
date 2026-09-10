@@ -6,13 +6,13 @@ import { SendMailOptions } from 'nodemailer';
 
 import {
   EmailDto,
+  findEmailSubject,
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
-  NotificationTypeEmailSubjects,
 } from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
-import { Notification } from '@entities';
+import { Notification, NotificationType } from '@entities';
 import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
@@ -70,7 +70,7 @@ export class EmailService implements OnModuleDestroy {
   private async sendTransactionalEmails(
     events: EmailDto[],
     subject: string,
-    generateMessage: (payload: any) => string,
+    generateMessage: (payload: Record<string, unknown>) => string,
     emailType: string, // For logging
   ) {
     if (events.length === 0) return;
@@ -121,16 +121,21 @@ export class EmailService implements OnModuleDestroy {
     maxDelayMs = 60000,
     useJitter = true,
   ) {
+    let lastErr: unknown = null;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
         const info = await this.transporter.sendMail(mailOptions);
         console.log(`Message sent: ${info.messageId}`);
         return info;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const last = attempt === attempts;
-        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, err?.code ?? err);
+        const arg = hasCode(err) ? err.code : String(err)
+        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, arg);
 
-        if (last) throw err;
+        if (last) {
+          lastErr = err;
+          continue;
+        }
 
         // exponential backoff: baseDelayMs * 2^(attempt-1), capped by maxDelayMs
         let delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
@@ -145,6 +150,8 @@ export class EmailService implements OnModuleDestroy {
         await new Promise((res) => setTimeout(res, delay));
       }
     }
+
+    throw lastErr;
   }
 
   private async processMessages(groupKey: string | number | null, notifications: Notification[]) {
@@ -152,7 +159,7 @@ export class EmailService implements OnModuleDestroy {
       if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
       return map;
-    }, new Map<string, Notification[]>());
+    }, new Map<NotificationType, Notification[]>());
 
     console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
 
@@ -162,7 +169,7 @@ export class EmailService implements OnModuleDestroy {
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" <${this.sender}>`,
         to: groupKey?.toString(),
-        subject: NotificationTypeEmailSubjects[type],
+        subject: findEmailSubject(type),
         text: htmlContent!.replace(/<\/?[^>]+(>|$)/g, ''),
         html: htmlContent!,
       };
@@ -175,4 +182,10 @@ export class EmailService implements OnModuleDestroy {
       }
     }
   }
+}
+
+function hasCode(value: unknown): value is { code: unknown } {
+  return (
+    typeof value === 'object' && value !== null && 'code' in value
+  );
 }

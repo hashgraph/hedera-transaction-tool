@@ -779,7 +779,7 @@ describe('TransactionSignatureService', () => {
 
     test.each(fields)(
       'when %s is set alongside accountId change → Case 2 (no threshold list)',
-      async (fieldName, fieldOverride) => {
+      async (_fieldName, fieldOverride) => {
         (TransactionFactory.fromTransaction as jest.Mock).mockReturnValue(
           makeTransactionModel({ getNodeId: jest.fn().mockReturnValue(2) }),
         );

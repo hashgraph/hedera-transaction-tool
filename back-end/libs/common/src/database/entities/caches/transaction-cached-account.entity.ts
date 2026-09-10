@@ -6,26 +6,26 @@ import { Transaction } from '../';
 @Index(['transactionId', 'cachedAccountId'], { unique: true })
 export class TransactionCachedAccount {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction, (tx) => tx.transactionCachedAccounts, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @ManyToOne(() => CachedAccount, (acc) => acc.accountTransactions, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'cachedAccountId' })
-  cachedAccount: CachedAccount;
+  cachedAccount!: CachedAccount;
 
   @Column()
-  cachedAccountId: number;
+  cachedAccountId!: number;
 
   @Column({ default: false })
-  isReceiver: boolean;
+  isReceiver!: boolean;
 }

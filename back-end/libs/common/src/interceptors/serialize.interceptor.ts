@@ -2,7 +2,7 @@ import { CallHandler, ExecutionContext, NestInterceptor, UseInterceptors } from 
 import { map, Observable } from 'rxjs';
 import { plainToInstance } from 'class-transformer';
 
-type ClassConstructor<T> = new (...args) => T;
+type ClassConstructor<T> = new (...args: unknown[]) => T;
 
 export function Serialize<T>(dto: ClassConstructor<T>) {
   return UseInterceptors(new SerializeInterceptor(dto));
@@ -11,7 +11,7 @@ export function Serialize<T>(dto: ClassConstructor<T>) {
 class SerializeInterceptor<T> implements NestInterceptor {
   constructor(private dto: ClassConstructor<T>) {}
 
-  intercept(context: ExecutionContext, handler: CallHandler): Observable<unknown> {
+  intercept(_context: ExecutionContext, handler: CallHandler): Observable<unknown> {
     return handler.handle().pipe(
       map((data: ClassConstructor<T>) =>
         plainToInstance(this.dto, data, {

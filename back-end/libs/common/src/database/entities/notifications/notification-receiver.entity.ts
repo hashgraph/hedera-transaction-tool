@@ -12,24 +12,24 @@ import { User } from '../user.entity';
 @Entity()
 export class NotificationReceiver {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Notification, notification => notification.notificationReceivers)
   @JoinColumn({ name: 'notificationId' })
-  notification: Notification;
+  notification!: Notification;
 
   @Column()
-  notificationId: number;
+  notificationId!: number;
 
   @ManyToOne(() => User, user => user.receivedNotifications)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @Column({ default: false })
-  isRead: boolean;
+  isRead!: boolean;
 
   @Column({ default: false, nullable: true })
   isInAppNotified?: boolean;
@@ -38,7 +38,7 @@ export class NotificationReceiver {
   isEmailSent?: boolean;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
 
 export const notificationReceiverProperties: (keyof NotificationReceiver)[] = [

@@ -8,8 +8,8 @@ jest.mock('class-transformer');
 jest.mock('class-validator');
 
 class TestDto {
-  id: number;
-  name: string;
+  id!: number;
+  name!: string;
 }
 
 describe('MessageValidator', () => {

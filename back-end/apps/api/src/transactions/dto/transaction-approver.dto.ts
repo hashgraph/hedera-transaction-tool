@@ -2,10 +2,10 @@ import { Expose, Transform, Type } from 'class-transformer';
 
 export class TransactionApproverDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  transactionId: number;
+  transactionId!: number;
 
   @Expose()
   listId?: number;
@@ -27,7 +27,7 @@ export class TransactionApproverDto {
   approved?: boolean;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
   @Type(() => TransactionApproverDto)

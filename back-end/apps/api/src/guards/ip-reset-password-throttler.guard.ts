@@ -32,7 +32,7 @@ export class IpResetPasswordThrottlerGuard extends ThrottlerGuard {
     );
   }
 
-  protected getTracker(req: Record<string, any>): Promise<string> {
+  protected override getTracker(req: Record<string, any>): Promise<string> {
     // Set by ClientIpMiddleware; never touch a raw header or req.ip here directly.
     return Promise.resolve(req[CLIENT_IP_KEY]);
   }

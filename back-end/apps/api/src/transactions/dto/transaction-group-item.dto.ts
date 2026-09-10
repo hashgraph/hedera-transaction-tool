@@ -4,19 +4,19 @@ import { TransactionGroupDto } from './transaction-group.dto';
 
 export class TransactionGroupItemDto {
   @Expose()
-  transactionId: number;
+  transactionId!: number;
 
   @Expose()
-  groupId: number;
+  groupId!: number;
 
   @Expose()
   @Type(() => TransactionGroupDto)
   group?: TransactionGroupDto;
 
   @Expose()
-  seq: number;
+  seq!: number;
 
   @Expose()
   @Type(() => TransactionDto)
-  transaction: TransactionDto;
+  transaction!: TransactionDto;
 }

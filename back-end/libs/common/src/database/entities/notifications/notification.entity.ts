@@ -147,15 +147,15 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
   },
 };
 
-export type NotificationAdditionalData = Record<string, any>;
+export type NotificationAdditionalData = Record<string, unknown>;
 
 @Entity()
 export class Notification {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  type: NotificationType;
+  type!: NotificationType;
 
   @Column({ nullable: true })
   entityId?: number;
@@ -171,10 +171,10 @@ export class Notification {
   actorId?: number;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
-  notificationReceivers: NotificationReceiver[];
+  notificationReceivers!: NotificationReceiver[];
 }
 
 export const notificationProperties: (keyof Notification)[] = [

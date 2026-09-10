@@ -5,23 +5,23 @@ import { NotificationType } from './notification.entity';
 @Entity()
 export class NotificationPreferences {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @Column()
-  type: NotificationType;
+  type!: NotificationType;
 
   @Column({ default: false })
-  email: boolean;
+  email!: boolean;
 
   @Column({ default: true })
-  inApp: boolean;
+  inApp!: boolean;
 }
 
 export type NotificationPreferencesOptions = Omit<

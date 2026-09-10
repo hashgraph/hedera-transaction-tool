@@ -12,5 +12,5 @@ export class UserWithClientsDto extends UserDto {
 
   @Expose()
   @Type(() => UserKeyPublicDto)
-  keys: UserKeyPublicDto[];
+  override keys!: UserKeyPublicDto[];
 }

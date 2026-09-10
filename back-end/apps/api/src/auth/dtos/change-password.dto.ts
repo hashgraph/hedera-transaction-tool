@@ -3,7 +3,7 @@ import { IsNotEmpty, IsString, IsStrongPassword } from 'class-validator';
 export class ChangePasswordDto {
   @IsString()
   @IsNotEmpty()
-  oldPassword: string;
+  oldPassword!: string;
 
   @IsStrongPassword(
     {
@@ -17,5 +17,5 @@ export class ChangePasswordDto {
       message: 'Password is too weak, must contain at least 10 characters.',
     },
   )
-  newPassword: string;
+  newPassword!: string;
 }

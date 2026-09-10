@@ -18,7 +18,6 @@ import {
   TransactionGroup,
   TransactionGroupItem,
   TransactionStatus,
-  UserKey,
 } from '@entities';
 
 import { TransactionSchedulerService } from './transaction-scheduler.service';
@@ -39,12 +38,12 @@ jest.mock('@nestjs/schedule', () => {
   return {
     ...original,
     Cron: function Cron() {
-      return (target, propertyKey, descriptor) => {
+      return (_target: unknown, _propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },
     CronExpression: function CronExpression() {
-      return (target, propertyKey, descriptor) => {
+      return (_target: unknown, _propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },
@@ -64,7 +63,7 @@ describe('TransactionStatusService', () => {
 
   let mockQueryBuilder: any;
 
-  const setupQueryBuilderMock = (rawResult: any[] = []) => {
+  const setupQueryBuilderMock = (rawResult: unknown[] = []) => {
     mockQueryBuilder = {
       update: jest.fn().mockReturnThis(),
       set: jest.fn().mockReturnThis(),
@@ -72,7 +71,7 @@ describe('TransactionStatusService', () => {
       returning: jest.fn().mockReturnThis(),
       execute: jest.fn().mockResolvedValue({ raw: rawResult }),
     };
-    transactionRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+    transactionRepo.createQueryBuilder.mockReturnValue(mockQueryBuilder);
   };
 
   beforeEach(async () => {
@@ -122,7 +121,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions that have started in initial cron', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -154,7 +153,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start after one week', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -169,7 +168,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start between one day and one week later', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -186,7 +185,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start between one hour and one day later', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -203,7 +202,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start between ten minutes and one hour later', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -220,7 +219,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start between three minutes and ten minutes later', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');
@@ -237,7 +236,7 @@ describe('TransactionStatusService', () => {
   });
 
   it('should request update for transactions with valid start between now and three minutes later', async () => {
-    const transactions = [];
+    const transactions: Transaction[] = [];
     transactionRepo.find.mockResolvedValue(transactions);
 
     jest.spyOn(service, 'updateTransactions');

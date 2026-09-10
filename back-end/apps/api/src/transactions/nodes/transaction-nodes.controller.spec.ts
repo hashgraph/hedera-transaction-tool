@@ -7,6 +7,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EntityManager } from 'typeorm';
 import { BlacklistService, guardMock } from '@app/common';
 import { HasKeyGuard, VerifiedUserGuard } from '../../guards';
+import { TransactionNodeDto } from '../dto';
 
 describe('TransactionNodesController', () => {
   let controller: TransactionNodesController;
@@ -102,7 +103,7 @@ describe('TransactionNodesController', () => {
     });
 
     it('should return an empty array if no transactions exist', async () => {
-      const result = [];
+      const result: TransactionNodeDto[] = [];
 
       transactionNodesService.getTransactionNodes.mockResolvedValue(result);
 

@@ -4,7 +4,7 @@ import { CurrentUserGuard } from './current-user.guard';
 describe('CurrentUserGuard', () => {
   let guard: CurrentUserGuard;
 
-  const mockExecutionContext = (user, params) =>
+  const mockExecutionContext = (user: unknown, params: unknown) =>
     ({
       switchToHttp: () => ({
         getRequest: () => ({

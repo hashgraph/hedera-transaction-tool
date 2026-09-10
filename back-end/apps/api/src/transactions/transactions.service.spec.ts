@@ -317,7 +317,7 @@ describe('TransactionsService', () => {
     });
 
     it('should return transactions', async () => {
-      const transactions = [];
+      const transactions: Transaction[] = [];
       const count = 0;
 
       const queryBuilder = {
@@ -377,7 +377,7 @@ describe('TransactionsService', () => {
     });
 
     it('should return history transactions', async () => {
-      const transactions = [];
+      const transactions: Transaction[] = [];
       const count = 0;
 
       transactionsRepo.findAndCount.mockResolvedValue([transactions, count]);

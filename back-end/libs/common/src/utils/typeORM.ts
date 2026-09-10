@@ -14,7 +14,7 @@ import { Sorting } from '@app/common/decorators';
 import { FilterRule, Filtering } from '@app/common/decorators';
 
 export const getOrder = (sort: Sorting[] | undefined) => {
-  const order = {};
+  const order: Record<string, string> = {};
 
   if (!sort || !sort.length) return order;
 
@@ -70,4 +70,6 @@ function getFiltering(filter: Filtering) {
     case FilterRule.NOT_IN:
       return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
   }
+
+  return {};
 }

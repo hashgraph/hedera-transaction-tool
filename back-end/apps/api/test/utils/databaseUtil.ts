@@ -99,6 +99,8 @@ export async function createUser(
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>) {
@@ -117,6 +119,8 @@ export async function attachKeyToUser(userId: number, key: DeepPartial<UserKey>)
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function addUsers() {
@@ -165,13 +169,13 @@ export async function addHederaLocalnetAccounts() {
 
   for (const account of [localnet2, localnet1002, localnet1022]) {
     await attachKeyToUser(admin.id, {
-      publicKey: account.publicKeyRaw,
+      publicKey: account.publicKeyRaw!,
     });
   }
 
   for (const account of [localnet1003, localnet1004]) {
     await attachKeyToUser(user.id, {
-      publicKey: account.publicKeyRaw,
+      publicKey: account.publicKeyRaw!,
     });
   }
 }
@@ -228,6 +232,8 @@ export async function getUsers() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function getUserKeys(id?: number) {
@@ -247,6 +253,8 @@ export async function getUserKeys(id?: number) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function getUserKey(userId: number, publicKey: string) {
@@ -265,6 +273,7 @@ export async function getUserKey(userId: number, publicKey: string) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+  return null;
 }
 
 export async function getUser(type: 'admin' | 'user' | 'userNew') {
@@ -280,6 +289,8 @@ export async function getUser(type: 'admin' | 'user' | 'userNew') {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return undefined;
 }
 
 export async function clearUsers() {
@@ -308,31 +319,31 @@ export async function addTransactions() {
     return;
   }
 
-  const userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw);
-  const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw);
-  const adminKey2 = await getUserKey(admin.id, localnet2.publicKeyRaw);
-  const adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw);
+  const userKey1003 = await getUserKey(user.id, localnet1003.publicKeyRaw!);
+  const userKey1004 = await getUserKey(user.id, localnet1004.publicKeyRaw!);
+  const adminKey2 = await getUserKey(admin.id, localnet2.publicKeyRaw!);
+  const adminKey1002 = await getUserKey(admin.id, localnet1002.publicKeyRaw!);
 
   if (!userKey1003 || !userKey1004 || !adminKey2 || !adminKey1002) {
     throw new Error('Keys not found');
   }
 
   const accountCreate = new AccountCreateTransaction()
-    .setTransactionId(createTransactionId(localnet1003.accountId))
-    .setKey(localnet1003.publicKey);
+    .setTransactionId(createTransactionId(localnet1003.accountId!))
+    .setKey(localnet1003.publicKey!);
 
   const accountUpdate = new AccountUpdateTransaction()
-    .setTransactionId(createTransactionId(localnet1004.accountId))
-    .setAccountId(localnet1004.accountId)
-    .setKey(new KeyList([localnet1004.publicKey, localnet1002.publicKey]));
+    .setTransactionId(createTransactionId(localnet1004.accountId!))
+    .setAccountId(localnet1004.accountId!)
+    .setKey(new KeyList([localnet1004.publicKey!, localnet1002.publicKey!]));
 
   const fileCreate = new FileCreateTransaction()
-    .setTransactionId(createTransactionId(localnet1002.accountId))
-    .setKeys(new KeyList([localnet1002.publicKey, localnet2.publicKey]));
+    .setTransactionId(createTransactionId(localnet1002.accountId!))
+    .setKeys(new KeyList([localnet1002.publicKey!, localnet2.publicKey!]));
 
   const fileCreate2 = new FileCreateTransaction()
-    .setTransactionId(createTransactionId(localnet1003.accountId, new Date(Date.now() + 1000)))
-    .setKeys(new KeyList([localnet1003.publicKey, localnet1003.publicKey]));
+    .setTransactionId(createTransactionId(localnet1003.accountId!, new Date(Date.now() + 1000)))
+    .setKeys(new KeyList([localnet1003.publicKey!, localnet1003.publicKey!]));
 
   const userTransactions = [
     transactionRepo.create({
@@ -341,7 +352,7 @@ export async function addTransactions() {
       transactionBytes: Buffer.from(accountCreate.toBytes()),
       unsignedTransactionBytes: Buffer.from(accountCreate.toBytes()),
       creatorKey: { id: userKey1003.id },
-      signature: Buffer.from(localnet1003.privateKey.sign(accountCreate.toBytes())),
+      signature: Buffer.from(localnet1003.privateKey!.sign(accountCreate.toBytes())),
       mirrorNetwork: localnet1003.mirrorNetwork,
     }),
     transactionRepo.create({
@@ -350,7 +361,7 @@ export async function addTransactions() {
       transactionBytes: Buffer.from(accountUpdate.toBytes()),
       unsignedTransactionBytes: Buffer.from(accountUpdate.toBytes()),
       creatorKey: { id: userKey1004.id },
-      signature: Buffer.from(localnet1004.privateKey.sign(accountUpdate.toBytes())),
+      signature: Buffer.from(localnet1004.privateKey!.sign(accountUpdate.toBytes())),
       mirrorNetwork: localnet1004.mirrorNetwork,
     }),
     transactionRepo.create({
@@ -359,7 +370,7 @@ export async function addTransactions() {
       transactionBytes: Buffer.from(fileCreate2.toBytes()),
       unsignedTransactionBytes: Buffer.from(fileCreate2.toBytes()),
       creatorKey: { id: userKey1003.id },
-      signature: Buffer.from(localnet1003.privateKey.sign(fileCreate.toBytes())),
+      signature: Buffer.from(localnet1003.privateKey!.sign(fileCreate.toBytes())),
       mirrorNetwork: localnet1003.mirrorNetwork,
     }),
   ];
@@ -371,7 +382,7 @@ export async function addTransactions() {
       transactionBytes: Buffer.from(fileCreate.toBytes()),
       unsignedTransactionBytes: Buffer.from(fileCreate.toBytes()),
       creatorKey: { id: adminKey1002.id },
-      signature: Buffer.from(localnet1002.privateKey.sign(fileCreate.toBytes())),
+      signature: Buffer.from(localnet1002.privateKey!.sign(fileCreate.toBytes())),
       mirrorNetwork: localnet1002.mirrorNetwork,
     }),
   ];
@@ -422,6 +433,8 @@ export async function getTransactions() {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.log(pc.red(errorMessage));
   }
+
+  return [];
 }
 
 export function getExpiredTransaction(payerId: AccountId): SDKTransaction {
@@ -509,8 +522,8 @@ export async function resetDatabase() {
 }
 
 export async function withDisposableDataSource<T>(
-  callback: (dataSource: DataSource, ...args) => T,
-  ...args
+  callback: (dataSource: DataSource, ...args: unknown[]) => T,
+  ...args: unknown[]
 ) {
   verifyEnv();
 
@@ -524,6 +537,8 @@ export async function withDisposableDataSource<T>(
   }
 
   await dataSource.destroy();
+
+  return undefined;
 }
 
 function verifyEnv() {

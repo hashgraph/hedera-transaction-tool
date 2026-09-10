@@ -30,17 +30,17 @@ describe('hasValidSignatureKey', () => {
 });
 
 describe('computeShortenedPublicKeyList', () => {
-  let publicKey1,
-    publicKey2,
-    publicKey3,
-    publicKey4,
-    publicKey5,
-    publicKey6,
-    publicKey7,
-    publicKey8,
-    publicKey9,
-    publicKey10;
-  let nestedKeyList1, nestedKeyList2, nestedKeyList3, keyList;
+  let publicKey1: PublicKey,
+    publicKey2: PublicKey,
+    publicKey3: PublicKey,
+    publicKey4: PublicKey,
+    publicKey5: PublicKey,
+    publicKey6: PublicKey,
+    publicKey7: PublicKey,
+    publicKey8: PublicKey,
+    publicKey9: PublicKey,
+    publicKey10: PublicKey;
+  let nestedKeyList1: KeyList, nestedKeyList2: KeyList, nestedKeyList3: KeyList, keyList: KeyList;
 
   beforeEach(() => {
     // Arrange

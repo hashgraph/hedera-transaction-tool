@@ -28,7 +28,7 @@ export interface MessageHandler<T = any> {
 export abstract class BaseNatsConsumerService implements OnModuleInit, OnModuleDestroy {
   protected consumer: Consumer | null = null;
   protected readonly logger: Logger;
-  private consumePromise: Promise<void>;
+  private consumePromise: Promise<void> | undefined;
   private running = true;
   private sleepAbort: (() => void) | null = null;
   private messages: ConsumerMessages | null = null;

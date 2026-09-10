@@ -52,17 +52,18 @@ function createOnlyOwnerKeyInterceptor<T>(keyIdProp: keyof T) {
       }
     }
 
-    searchForKeyIdProp(obj): number[] {
+    searchForKeyIdProp(obj: unknown): number[] {
       if (typeof obj !== 'object' || obj === null) return [];
+      const record = obj as Record<string, unknown>;
       const keyIdValues: number[] = [];
 
-      for (const key in obj) {
+      for (const key in record) {
         if (key === keyIdProp) {
-          if (obj[key] !== null) {
-            keyIdValues.push(Number(obj[key]));
+          if (record[key] !== null) {
+            keyIdValues.push(Number(record[key]));
           }
-        } else if (typeof obj[key] === 'object') {
-          keyIdValues.push(...this.searchForKeyIdProp(obj[key]));
+        } else if (typeof record[key] === 'object') {
+          keyIdValues.push(...this.searchForKeyIdProp(record[key]));
         }
       }
 

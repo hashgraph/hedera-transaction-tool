@@ -2,8 +2,8 @@ import { Expose } from 'class-transformer';
 
 export class UserKeyCoreDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  publicKey: string;
+  publicKey!: string;
 }

@@ -160,7 +160,7 @@ describe('NotificationPreferencesService', () => {
         email: dto.email,
         inApp: dto.inApp,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -185,7 +185,7 @@ describe('NotificationPreferencesService', () => {
         email: dto.email,
         inApp: true,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -210,7 +210,7 @@ describe('NotificationPreferencesService', () => {
         inApp: dto.inApp,
         email: false,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -285,7 +285,7 @@ describe('NotificationPreferencesService', () => {
         email: false,
         inApp: true,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
   });
@@ -337,7 +337,7 @@ describe('NotificationPreferencesService', () => {
           email: false,
           inApp: true,
         });
-        expect(repo.insert).toHaveBeenCalledWith({ ...newPreferences, type });
+        expect(repo.save).toHaveBeenCalledWith({ ...newPreferences, type });
       }
 
       expect(result).toEqual(types.map(type => ({ ...newPreferences, type })));

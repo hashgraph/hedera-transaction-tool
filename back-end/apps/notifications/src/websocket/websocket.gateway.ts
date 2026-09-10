@@ -51,7 +51,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
   }
 
   @WebSocketServer()
-  private io: Server;
+  private io!: Server;
 
   afterInit(io: Server) {
     const minimumVersion = this.configService.getOrThrow<string>(
@@ -68,7 +68,8 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     if (!socket.user?.id) {
       this.logger.error('Socket client connected without user');
-      return socket.disconnect();
+      socket.disconnect();
+      return;
     }
 
     /* Join user room */

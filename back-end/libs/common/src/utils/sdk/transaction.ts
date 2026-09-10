@@ -21,7 +21,6 @@ import {
   RegisteredNodeDeleteTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
-  FileContentsQuery,
   KeyList,
   AccountId,
 } from '@hiero-ledger/sdk';

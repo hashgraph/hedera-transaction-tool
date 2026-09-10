@@ -10,7 +10,7 @@ export class NatsStreamInitializerService implements OnModuleInit, OnModuleDestr
   private readonly logger = new Logger(NatsStreamInitializerService.name);
   private running = true;
   private sleepAbort: (() => void) | null = null;
-  private initPromise: Promise<void>;
+  private initPromise: Promise<void> | undefined;
 
   constructor(private nats: NatsJetStreamService) {}
 

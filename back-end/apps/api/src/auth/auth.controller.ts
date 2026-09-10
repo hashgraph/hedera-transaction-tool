@@ -174,7 +174,7 @@ export class AuthController {
   // once it's removed and the email moves into the request body directly,
   // IpUniqueEmailGuard keeps working unchanged.
   @UseGuards(IpResetPasswordThrottlerGuard, JwtBlackListOtpGuard, OtpJwtAuthGuard, IpUniqueEmailGuard)
-  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
+  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req: unknown) {
     const result = await this.authService.verifyOtp(user, dto);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));
     return result;
@@ -191,7 +191,7 @@ export class AuthController {
   })
   @UseGuards(JwtBlackListOtpGuard, OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req: unknown): Promise<void> {
     await this.authService.setPassword(user, dto.password);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));
   }

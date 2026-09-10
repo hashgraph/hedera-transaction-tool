@@ -6,20 +6,20 @@ export const MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH = 4000;
 @Entity()
 export class TransactionGroup {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ length: MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH })
-  description: string;
+  description!: string;
 
   @Column({ default: false })
-  atomic: boolean;
+  atomic!: boolean;
 
   @Column({ default: false })
-  sequential: boolean;
+  sequential!: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => TransactionGroupItem, groupItem => groupItem.group)
-  groupItems: TransactionGroupItem[];
+  groupItems!: TransactionGroupItem[];
 }

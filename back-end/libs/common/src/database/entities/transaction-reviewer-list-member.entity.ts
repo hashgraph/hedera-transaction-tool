@@ -16,41 +16,41 @@ import { UserKey } from './user-key.entity';
 @Index(['userId'])
 export class TransactionReviewerListMember {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => TransactionReviewerList, list => list.members)
   @JoinColumn({ name: 'listId' })
-  list: TransactionReviewerList;
+  list!: TransactionReviewerList;
 
   @Column()
-  listId: number;
+  listId!: number;
 
   @ManyToOne(() => User)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @ManyToOne(() => UserKey, { nullable: true })
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey | null;
+  userKey!: UserKey | null;
 
   @Column({ nullable: true })
-  userKeyId: number | null;
+  userKeyId!: number | null;
 
   @Column({ type: 'bytea', nullable: true })
-  signature: Buffer | null;
+  signature!: Buffer | null;
 
   @Column({ type: Boolean, nullable: true })
-  accepted: boolean | null;
+  accepted!: boolean | null;
 
   @Column({ type: String, nullable: true })
-  note: string | null;
+  note!: string | null;
 
   @Column({ type: 'timestamptz', nullable: true })
-  actionedAt: Date | null;
+  actionedAt!: Date | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

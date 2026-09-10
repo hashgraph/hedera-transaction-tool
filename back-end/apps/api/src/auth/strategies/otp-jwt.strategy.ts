@@ -19,7 +19,7 @@ import { OtpPayload } from '../../interfaces';
 export class OtpJwtStrategy extends PassportStrategy(Strategy, 'otp-jwt') {
   constructor(
     private readonly usersService: UsersService,
-    private readonly configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
       secretOrKey: configService.getOrThrow('JWT_SECRET'),

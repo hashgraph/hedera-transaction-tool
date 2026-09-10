@@ -49,7 +49,9 @@ describe('User Keys (e2e)', () => {
       const actualUserKeys = (await getUserKeys(1))!;
 
       expect(res.body).toHaveLength(actualUserKeys.length);
-      res.body.forEach(key => {
+
+      const body = res.body as Array<Record<string, unknown>>
+      body.forEach(key => {
         expect(key).not.toHaveProperty('mnemonicHash');
         expect(key).not.toHaveProperty('index');
       });
@@ -61,7 +63,9 @@ describe('User Keys (e2e)', () => {
       const actualUserKeys = (await getUserKeys(2))!;
 
       expect(res.body).toHaveLength(actualUserKeys.length);
-      res.body.forEach(key => {
+
+      const body = res.body as Array<Record<string, unknown>>;
+      body.forEach(key => {
         expect(key).toHaveProperty('mnemonicHash');
         expect(key).toHaveProperty('index');
       });

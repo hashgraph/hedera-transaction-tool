@@ -16,34 +16,34 @@ import { TransactionApprover } from './transaction-approver.entity';
 @Entity()
 export class UserKey {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User, user => user.keys)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
 
   @Column({ nullable: true })
-  mnemonicHash: string;
+  mnemonicHash!: string;
 
   @Column({ nullable: true })
-  index: number;
+  index!: number;
 
   @Column({ length: 128 })
   @Index()
-  publicKey: string;
+  publicKey!: string;
 
   @DeleteDateColumn()
-  deletedAt: Date | null;
+  deletedAt!: Date | null;
 
   @OneToMany(() => Transaction, transaction => transaction.creatorKey)
-  createdTransactions: Transaction[];
+  createdTransactions!: Transaction[];
 
   @OneToMany(() => TransactionApprover, approver => approver.userKey)
-  approvedTransactions: TransactionApprover[];
+  approvedTransactions!: TransactionApprover[];
 
   @OneToMany(() => TransactionSigner, signer => signer.userKey)
-  signedTransactions: TransactionSigner[];
+  signedTransactions!: TransactionSigner[];
 }

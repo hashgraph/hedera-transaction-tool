@@ -3,15 +3,15 @@ import { UserCoreDto } from '../../users/dtos';
 
 export class TransactionCommentDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
   @Type(() => UserCoreDto)
-  user: UserCoreDto;
+  user!: UserCoreDto;
 
   @Expose()
-  message: string;
+  message!: string;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 }

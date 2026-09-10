@@ -1,7 +1,8 @@
 import { Logger } from 'winston';
-import { CLIENT_IP_KEY } from '../ip-resolution';
+import { CLIENT_IP_KEY } from '@app/common';
 
-import { LoggerMiddleware } from './logger.middleware';
+import { LoggerMiddleware } from '@app/common';
+import { Request, Response } from 'express';
 
 describe('LoggerMiddleware', () => {
   let middleware: LoggerMiddleware;
@@ -17,14 +18,14 @@ describe('LoggerMiddleware', () => {
       body: {},
       query: {},
       ...overrides,
-    };
+    } as unknown as Request;
     const res = {
       statusCode: 200,
       on: jest.fn((event: string, cb: () => void) => {
         if (event === 'finish') finishHandlers.push(cb);
       }),
       finish: () => finishHandlers.forEach(cb => cb()),
-    };
+    } as unknown as Response & { finish: () => void};
     return { req, res };
   };
 

@@ -6,21 +6,21 @@ import { Transaction } from '../';
 @Index(['transactionId', 'nodeSnapshotId'], { unique: true })
 export class TransactionNodeSnapshot {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction, (tx) => tx.transactionNodeSnapshots, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @ManyToOne(() => NodeSnapshot, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'nodeSnapshotId' })
-  nodeSnapshot: NodeSnapshot;
+  nodeSnapshot!: NodeSnapshot;
 
   @Column()
-  nodeSnapshotId: number;
+  nodeSnapshotId!: number;
 }

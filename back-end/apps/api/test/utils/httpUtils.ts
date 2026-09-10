@@ -47,21 +47,21 @@ export class Endpoint {
     return get(this.server, this.createEndpoint(param, query), token);
   }
 
-  public post(data?, param?: string, token?: string) {
+  public post(data?: unknown, param?: string, token?: string) {
     if (data) {
       return post(this.server, this.createEndpoint(param), token).send(data);
     }
     return post(this.server, this.createEndpoint(param), token);
   }
 
-  public put(data?, param?: string, token?: string) {
+  public put(data?: unknown, param?: string, token?: string) {
     if (data) {
       return put(this.server, this.createEndpoint(param), token).send(data);
     }
     return put(this.server, this.createEndpoint(param), token);
   }
 
-  public patch(data?, param?: string, token?: string) {
+  public patch(data?: unknown, param?: string, token?: string) {
     if (data) {
       return patch(this.server, this.createEndpoint(param), token).send(data);
     }

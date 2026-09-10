@@ -17,41 +17,41 @@ import { CachedAccountKey, TransactionCachedAccount } from './';
 @Index(['account', 'mirrorNetwork'], { unique: true })
 export class CachedAccount {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   // Hedera ID (shard.realm.num or null)
   @Column({ length: 64 })
   @Index()
-  account: string;
+  account!: string;
 
   @Column()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Column({ type: Boolean, nullable: true })
-  receiverSignatureRequired: boolean | null;
+  receiverSignatureRequired!: boolean | null;
 
   @Column({ type: 'bytea', nullable: true })
-  encodedKey: Buffer | null;
+  encodedKey!: Buffer | null;
 
   @Column({ type: String, length: 100, nullable: true })
-  etag: string | null; // Mirror node etag or hash of response
+  etag!: string | null; // Mirror node etag or hash of response
 
   @OneToMany(() => CachedAccountKey, (key) => key.cachedAccount)
-  keys: CachedAccountKey[];
+  keys!: CachedAccountKey[];
 
   @OneToMany(() => TransactionCachedAccount, (ta) => ta.cachedAccount)
-  accountTransactions: TransactionCachedAccount[];
+  accountTransactions!: TransactionCachedAccount[];
 
   @CreateDateColumn()
-  createdAt: Date; // For tracking cache life span
+  createdAt!: Date; // For tracking cache life span
 
   @UpdateDateColumn()
   @Index()
-  updatedAt: Date; // Auto-updates on ANY save - serves dual purpose:
+  updatedAt!: Date; // Auto-updates on ANY save - serves dual purpose:
                    // 1. Last time data was checked/refreshed from mirror node
                    // 2. Timestamp for when refreshToken was set (for stale lock detection)
 
   @Column({ type: 'uuid', nullable: true })
   @Index()
-  refreshToken: string | null;
+  refreshToken!: string | null;
 }

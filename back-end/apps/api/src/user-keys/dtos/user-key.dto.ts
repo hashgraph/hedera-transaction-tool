@@ -2,10 +2,10 @@ import { Expose } from 'class-transformer';
 
 export class UserKeyDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  userId: number;
+  userId!: number;
 
   @Expose()
   mnemonicHash?: string;
@@ -14,7 +14,7 @@ export class UserKeyDto {
   index?: number;
 
   @Expose()
-  publicKey: string;
+  publicKey!: string;
 
   @Expose()
   deletedAt?: Date;

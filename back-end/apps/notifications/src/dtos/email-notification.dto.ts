@@ -4,9 +4,9 @@ import { Notification } from '@entities';
 export class EmailNotificationDto {
   @IsNotEmpty()
   @IsString()
-  email: string;
+  email!: string;
 
   @IsNotEmpty()
   @IsArray()
-  notifications: Notification[];
+  notifications!: Notification[];
 }

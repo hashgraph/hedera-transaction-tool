@@ -4,7 +4,6 @@ import { FrontendVersionWebsocketMiddleware } from './frontend-version-websocket
 describe('FrontendVersionWebsocketMiddleware', () => {
   let nextFunction: jest.Mock;
   let loggerWarnSpy: jest.SpyInstance;
-  let loggerErrorSpy: jest.SpyInstance;
 
   // Helper to create a mock Socket with given version in headers or auth
   const makeSocket = (
@@ -30,7 +29,6 @@ describe('FrontendVersionWebsocketMiddleware', () => {
     // Note: The middleware uses a module-level logger instance
     const { Logger } = require('@nestjs/common');
     loggerWarnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
-    loggerErrorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
 
   afterEach(() => {

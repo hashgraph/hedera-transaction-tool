@@ -7,7 +7,7 @@ export class TransferTransactionModel
 
   static readonly TRANSACTION_TYPE = 'TransferTransaction';
 
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const accounts = new Set<string>();
 
     // add all accounts that are senders
@@ -19,7 +19,7 @@ export class TransferTransactionModel
     return accounts;
   }
 
-  getReceiverAccounts(): Set<string> {
+  override getReceiverAccounts(): Set<string> {
     const accounts = new Set<string>();
 
     for (const transfer of this.transaction.hbarTransfersList) {

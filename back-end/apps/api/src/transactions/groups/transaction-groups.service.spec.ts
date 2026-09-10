@@ -138,7 +138,7 @@ describe('TransactionGroupsService', () => {
         ],
       };
 
-      dataSource.manager.create.mockImplementation((entity, data) => ({ ...data } as any));
+      dataSource.manager.create.mockImplementation((_entity, data) => ({ ...data }) as any);
       transactionsService.createTransactions.mockImplementation(async (dtos, _) => {
         return dtos.map(dto => dto as unknown as Transaction);
       });

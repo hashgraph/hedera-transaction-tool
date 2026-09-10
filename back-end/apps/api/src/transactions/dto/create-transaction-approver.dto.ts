@@ -26,5 +26,5 @@ export class CreateTransactionApproversArrayDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateTransactionApproverDto)
-  approversArray: CreateTransactionApproverDto[];
+  approversArray!: CreateTransactionApproverDto[];
 }
