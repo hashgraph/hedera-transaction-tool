@@ -3,6 +3,7 @@
   "version": "0.39.0-SNAPSHOT",
   "type": "module",
   "scripts": {
+    "test:sqlite": "tsx --test utils/db/sqlite.test.ts",
     "build": "tsc",
     "test": "tsc && playwright test",
     "test:list": "tsc && playwright test --list",
@@ -61,10 +62,11 @@
     "playwright": "1.63.0",
     "playwright-core": "1.63.0",
     "prettier": "catalog:",
-    "sqlite3": "5.1.6",
+    "better-sqlite3": "13.0.1",
     "uuid": "14.0.2"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
     "@types/async-retry": "1.4.9",
     "@types/bcrypt": "catalog:",
     "@types/deep-diff": "1.0.5",

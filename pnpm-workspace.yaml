@@ -25,7 +25,6 @@ allowBuilds:
   msgpackr-extract: true
   prisma: true
   protobufjs: true
-  sqlite3: true
   ssh2: true
   unrs-resolver: true
   vue-demi: true
@@ -89,6 +88,8 @@ catalogs:
     '@vitest/coverage-v8': *vitestVersion
 
 overrides:
+  # Prisma 7.10 still requests v12; use the shared N-API driver for its adapter.
+  "@prisma/adapter-better-sqlite3>better-sqlite3": "13.0.1"
   "protobufjs@<8.0.0": "7.6.5"
   "protobufjs@>=8.0.0": "8.7.1"
   "follow-redirects": "1.16.0"

@@ -1,4 +1,5 @@
-import sqlite3 from 'sqlite3';
+import type Database from 'better-sqlite3';
+import { openSqliteDatabase } from './sqlite.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -77,107 +78,70 @@ export function getDatabasePath(): string {
   }
 }
 
-export function openDatabase(): sqlite3.Database | null {
+export function openDatabase(): Database.Database | null {
   const dbPath = getDatabasePath();
   if (!fs.existsSync(dbPath)) {
     console.log('SQLite database file does not exist.');
     return null;
   }
 
-  return new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, err => {
-    if (err) {
-      console.error('Failed to connect to the SQLite database:', err.message);
-    } else {
-      logDatabaseDebug('Connected to the SQLite database.');
-    }
-  });
+  const db = openSqliteDatabase(dbPath);
+  logDatabaseDebug('Connected to the SQLite database.');
+  return db;
 }
 
-export function closeDatabase(db: sqlite3.Database): void {
-  if (db) {
-    db.close(err => {
-      if (err) {
-        console.error('Failed to close the SQLite database:', err.message);
-      } else {
-        logDatabaseDebug('Disconnected from the SQLite database.');
-      }
-    });
-  }
+export function closeDatabase(db: Database.Database): void {
+  db.close();
+  logDatabaseDebug('Disconnected from the SQLite database.');
 }
 
-export function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
-    if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
-    }
-
+export async function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T> {
+  const db = openDatabase();
+  if (!db) throw new Error('SQLite database file does not exist.');
+  try {
     logDatabaseDebug('Executing SQLite query', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.get<T>(query, params, (err, row) => {
-      if (err) {
-        console.error('Query error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
-        resolve(row);
-      }
-      closeDatabase(db);
-    });
-  });
+    // Preserve the existing API, which returns undefined at runtime for no row.
+    const row = db.prepare<DatabaseParams, T>(query).get(...params);
+    logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
+    return row as T;
+  } finally {
+    closeDatabase(db);
+  }
 }
 
-export function queryAllDatabase<T>(query: string, params: DatabaseParams = []): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
-    if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
-    }
-
+export async function queryAllDatabase<T>(query: string, params: DatabaseParams = []): Promise<T[]> {
+  const db = openDatabase();
+  if (!db) throw new Error('SQLite database file does not exist.');
+  try {
     logDatabaseDebug('Executing SQLite query (all)', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.all<T>(query, params, (err, rows) => {
-      if (err) {
-        console.error('Query error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite query completed', { rowCount: rows?.length ?? 0 });
-        resolve(rows ?? []);
-      }
-      closeDatabase(db);
-    });
-  });
+    const rows = db.prepare<DatabaseParams, T>(query).all(...params);
+    logDatabaseDebug('SQLite query completed', { rowCount: rows.length });
+    return rows;
+  } finally {
+    closeDatabase(db);
+  }
 }
 
-export function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
-    if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
-    }
-
+export async function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
+  const db = openDatabase();
+  if (!db) throw new Error('SQLite database file does not exist.');
+  try {
     logDatabaseDebug('Executing SQLite statement', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.run(query, params, function (err) {
-      if (err) {
-        console.error('Statement error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite statement completed', { changes: this.changes });
-        resolve(this.changes);
-      }
-      closeDatabase(db);
-    });
-  });
+    const { changes } = db.prepare(query).run(...params);
+    logDatabaseDebug('SQLite statement completed', { changes });
+    return changes;
+  } finally {
+    closeDatabase(db);
+  }
 }
 
 export async function resetDbState() {
@@ -212,34 +176,13 @@ export async function resetDbState() {
 
   try {
     for (const table of tablesToReset) {
-      await new Promise<void>((resolve, reject) => {
-        // Check if the table exists
-        db.get(
-          `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-          [table],
-          (err, row) => {
-            if (err) {
-              console.error(`Error checking for table ${table}:`, err.message);
-              reject(err);
-            } else if (row) {
-              // Table exists, proceed to delete
-              db.run(`DELETE FROM "${table}"`, [], function (err) {
-                if (err) {
-                  console.error(`Error deleting records from ${table}:`, err.message);
-                  reject(err);
-                } else {
-                  console.log(`Deleted all records from ${table}`);
-                  resolve();
-                }
-              });
-            } else {
-              // Table does not exist, skip
-              console.log(`Table ${table} does not exist, skipping.`);
-              resolve();
-            }
-          },
-        );
-      });
+      const row = db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(table);
+      if (row) {
+        db.prepare(`DELETE FROM "${table}"`).run();
+        console.log(`Deleted all records from ${table}`);
+      } else {
+        console.log(`Table ${table} does not exist, skipping.`);
+      }
     }
   } catch (err) {
     console.error('Error resetting app state:', err);

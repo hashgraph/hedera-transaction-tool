@@ -353,10 +353,11 @@ export async function insertKeyPair(
       : [generatedId, publicKey, privateKey, secretHash, organizationUserId];
 
   try {
-    await queryDatabase(query, params);
+    await executeDatabase(query, params);
     console.log('KeyPair record inserted successfully');
   } catch (error) {
     console.error('Error inserting KeyPair record:', error);
+    throw error;
   }
 }
 

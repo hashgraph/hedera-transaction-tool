@@ -10,11 +10,20 @@ This folder contains automated test tooling for Hedera Transaction Tool:
 
 - Node.js `>= 24.20.0 <25`
 - `pnpm`
+- Python and a C++ build toolchain (`build-essential` on Linux, Xcode Command Line Tools on macOS, or Visual Studio C++ Build Tools on Windows).
 - One of:
   - a built Hedera Transaction Tool executable (launch mode), or
   - a running front-end Electron app with remote debugging enabled (attach mode)
 
 ## Setup
+
+Automation and the desktop app use `better-sqlite3` 13's N-API binding, which can
+be shared by Node and Electron on the same platform and architecture. No separate
+automation binding or runtime-specific cache is needed. Normal dependency
+installation supplies the binding (or compiles it when no suitable prebuild exists).
+Run `pnpm --dir automation test:sqlite` to check fixture database access.
+The workspace overrides the Prisma adapter's v12 dependency to 13.0.1;
+keep that override aligned with both direct dependencies until Prisma supports v13.
 
 1. Clone the repository.
 2. Install dependencies from the **repository root** — the repo is a single pnpm workspace, so all modules (`back-end`, `front-end`, `automation`) install together:

@@ -132,22 +132,15 @@ async function insertKeysToSQLite(
       const publicKey = privateKey.publicKey.toStringRaw();
       const encryptedKey = await encrypt(privateKey.toStringRaw(), localPassword);
 
-      await new Promise<void>((resolve, reject) => {
-        db.run(
-          `INSERT INTO KeyPair (id, user_id, "index", public_key, private_key,
+      db.prepare(
+        `INSERT INTO KeyPair (id, user_id, "index", public_key, private_key,
                                type, organization_id, secret_hash, organization_user_id)
            VALUES (?,
                    (SELECT id FROM User WHERE email != 'keychain@mode' LIMIT 1),
                    ?, ?, ?, 'ED25519',
                    (SELECT id FROM Organization LIMIT 1),
                    ?, ?)`,
-          [crypto.randomUUID(), i, publicKey, encryptedKey, secretHash, organizationUserId],
-          function (err) {
-            if (err) reject(err);
-            else resolve();
-          },
-        );
-      });
+      ).run(crypto.randomUUID(), i, publicKey, encryptedKey, secretHash, organizationUserId);
 
       if ((i + 1) % 20 === 0 || i === privateKeys.length - 1) {
         if (DEBUG) console.log(`  Inserted ${i + 1}/${privateKeys.length} ${label} to SQLite`);
