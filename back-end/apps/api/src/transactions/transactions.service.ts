@@ -119,7 +119,6 @@ export class TransactionsService {
     TransactionStatus.NEW,
     TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_SIGNATURES,
-    TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_EXECUTION,
   ];
 

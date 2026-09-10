@@ -1,7 +1,8 @@
-import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ConflictException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { DataSource } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
+import { PrivateKey } from '@hiero-ledger/sdk';
 
 import {
   Transaction,
@@ -13,13 +14,42 @@ import {
 } from '@entities';
 import { ErrorCodes, NatsPublisherService } from '@app/common';
 
-import { ReviewersService } from './reviewers.service';
+import { ReviewersService, buildReviewAttestationMessage } from './reviewers.service';
+import { ReviewSignatureDto } from '../dto';
+
+const reviewerKey = PrivateKey.generateED25519();
+const otherKey = PrivateKey.generateED25519();
+const transactionHash = '0xdeadbeef';
+
+const sign = (
+  transactionId: number,
+  accepted: boolean,
+  note: string | undefined,
+  key: PrivateKey = reviewerKey,
+): string => {
+  const message = buildReviewAttestationMessage(transactionId, accepted, note, transactionHash);
+  return '0x' + Buffer.from(key.sign(message)).toString('hex');
+};
+
+const signAs = (
+  userKeyId: number,
+  transactionId: number,
+  accepted: boolean,
+  note: string | undefined,
+  key: PrivateKey = reviewerKey,
+): ReviewSignatureDto => ({
+  userKeyId,
+  signature: sign(transactionId, accepted, note, key),
+});
 
 const makeTransaction = (status: TransactionStatus): Transaction =>
-  ({ id: 1, status } as unknown as Transaction);
+  ({ id: 1, status, transactionHash } as unknown as Transaction);
 
 const makeMember = (overrides: Partial<TransactionReviewerListMember> = {}): TransactionReviewerListMember =>
   ({ id: 10, listId: 1, userId: 42, userKeyId: 5, actionedAt: null, accepted: null, ...overrides } as unknown as TransactionReviewerListMember);
+
+const makeUserKey = (overrides: Partial<UserKey> = {}): UserKey =>
+  ({ id: 5, publicKey: reviewerKey.publicKey.toStringDer(), ...overrides } as unknown as UserKey);
 
 const makeUser = (id = 42): User => ({ id } as unknown as User);
 
@@ -87,15 +117,21 @@ describe('ReviewersService', () => {
       };
       return cb(em);
     });
+
+    return updateQb;
   };
 
   describe('guards', () => {
     it('throws NotFoundException when transaction not found', async () => {
       dataSource.manager.findOne.mockResolvedValueOnce(null);
 
-      await expect(service.submitReview(1, { accepted: true }, makeUser())).rejects.toBeInstanceOf(
-        NotFoundException,
-      );
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws ConflictException when transaction is not READY_FOR_REVIEW', async () => {
@@ -104,7 +140,11 @@ describe('ReviewersService', () => {
       );
 
       await expect(
-        service.submitReview(1, { accepted: true }, makeUser()),
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
       ).rejects.toBeInstanceOf(ConflictException);
     });
 
@@ -116,7 +156,11 @@ describe('ReviewersService', () => {
       setupManagerChain([]);
 
       await expect(
-        service.submitReview(1, { accepted: true }, makeUser()),
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
       ).rejects.toThrow(ErrorCodes.RNPF);
     });
 
@@ -128,42 +172,186 @@ describe('ReviewersService', () => {
       setupManagerChain([makeMember({ userKeyId: null })]);
 
       await expect(
-        service.submitReview(1, { accepted: true }, makeUser()),
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
       ).rejects.toThrow(ErrorCodes.RKNA);
     });
 
     it('throws ForbiddenException RKNA when userKey not found', async () => {
-      dataSource.manager.findOne
-        .mockResolvedValueOnce(makeTransaction(TransactionStatus.READY_FOR_REVIEW))
-        .mockResolvedValueOnce(null); // key lookup
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find.mockResolvedValueOnce([]); // key lookup finds nothing
 
       setupManagerChain([makeMember({ userKeyId: 5 })]);
 
       await expect(
-        service.submitReview(1, { accepted: true }, makeUser()),
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
       ).rejects.toThrow(ErrorCodes.RKNA);
+    });
+  });
+
+  describe('signature verification', () => {
+    it('throws ForbiddenException RSIV when signature does not match the assigned key', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
+
+      setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined, otherKey)] },
+          makeUser(),
+        ),
+      ).rejects.toThrow(ErrorCodes.RSIV);
+    });
+
+    it('throws ForbiddenException RSIV when signature covers a different decision', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
+
+      setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      // signed a rejection, submitting as an acceptance
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, false, undefined)] },
+          makeUser(),
+        ),
+      ).rejects.toThrow(ErrorCodes.RSIV);
+    });
+
+    it('throws ForbiddenException RSIV when signature is not valid hex', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
+
+      setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [{ userKeyId: 5, signature: 'not-hex' }] },
+          makeUser(),
+        ),
+      ).rejects.toThrow(ErrorCodes.RSIV);
+    });
+
+    it('persists the signature bytes on the pending member rows when valid', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find
+        .mockResolvedValueOnce([makeUserKey()])
+        .mockResolvedValueOnce([]);
+
+      const updateQb = setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      const sigPair = signAs(5, 1, true, undefined);
+      await service.submitReview(1, { accepted: true, signatures: [sigPair] }, makeUser());
+
+      expect(updateQb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ signature: Buffer.from(sigPair.signature.slice(2), 'hex') }),
+      );
+    });
+
+    it('signs only the memberships tied to the matching key, leaving others in different lists pending', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      // user has two pending memberships in different lists, assigned two different keys
+      dataSource.manager.find
+        .mockResolvedValueOnce([makeUserKey({ id: 5 })])
+        .mockResolvedValueOnce([]);
+
+      const updateQb = setupManagerChain([
+        makeMember({ id: 10, listId: 1, userKeyId: 5 }),
+        makeMember({ id: 11, listId: 2, userKeyId: 6 }),
+      ]);
+
+      // only submits a signature for key 5, has no key 6 available on this device
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined, reviewerKey)] },
+        makeUser(),
+      );
+
+      expect(updateQb.whereInIds).toHaveBeenCalledWith([10]);
+      expect(updateQb.whereInIds).not.toHaveBeenCalledWith([11]);
+    });
+
+    it('actions memberships under multiple lists when signatures for both keys are submitted', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find
+        .mockResolvedValueOnce([
+          makeUserKey({ id: 5 }),
+          { id: 6, publicKey: otherKey.publicKey.toStringDer() } as unknown as UserKey,
+        ])
+        .mockResolvedValueOnce([]);
+
+      const updateQb = setupManagerChain([
+        makeMember({ id: 10, listId: 1, userKeyId: 5 }),
+        makeMember({ id: 11, listId: 2, userKeyId: 6 }),
+      ]);
+
+      await service.submitReview(
+        1,
+        {
+          accepted: true,
+          signatures: [
+            signAs(5, 1, true, undefined, reviewerKey),
+            signAs(6, 1, true, undefined, otherKey),
+          ],
+        },
+        makeUser(),
+      );
+
+      expect(updateQb.whereInIds).toHaveBeenCalledWith([10]);
+      expect(updateQb.whereInIds).toHaveBeenCalledWith([11]);
     });
   });
 
   describe('threshold evaluation', () => {
     const setupAcceptance = (
       lists: TransactionReviewerList[],
-      key: UserKey | null = { id: 5 } as unknown as UserKey,
+      key: UserKey | null = makeUserKey(),
     ) => {
-      dataSource.manager.findOne
-        .mockResolvedValueOnce(makeTransaction(TransactionStatus.READY_FOR_REVIEW))
-        .mockResolvedValueOnce(key);
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
 
       setupManagerChain([makeMember({ userKeyId: 5 })]);
 
-      dataSource.manager.find.mockResolvedValueOnce(lists);
+      dataSource.manager.find
+        .mockResolvedValueOnce(key ? [key] : [])
+        .mockResolvedValueOnce(lists);
       dataSource.manager.update.mockResolvedValue({} as any);
     };
 
     it('transitions to WAITING_FOR_SIGNATURES when all lists are satisfied', async () => {
       setupAcceptance([makeList({ threshold: 1, members: [{ accepted: true }] })]);
 
-      await service.submitReview(1, { accepted: true }, makeUser());
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+        makeUser(),
+      );
 
       expect(dataSource.manager.update).toHaveBeenCalledWith(
         Transaction,
@@ -176,7 +364,11 @@ describe('ReviewersService', () => {
     it('does not transition when count is one short of threshold', async () => {
       setupAcceptance([makeList({ threshold: 2, members: [{ accepted: true }] })]);
 
-      await service.submitReview(1, { accepted: true }, makeUser());
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+        makeUser(),
+      );
 
       expect(dataSource.manager.update).not.toHaveBeenCalled();
     });
@@ -189,7 +381,11 @@ describe('ReviewersService', () => {
         }),
       ]);
 
-      await service.submitReview(1, { accepted: true }, makeUser());
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+        makeUser(),
+      );
 
       expect(dataSource.manager.update).toHaveBeenCalledWith(
         Transaction,
@@ -204,7 +400,11 @@ describe('ReviewersService', () => {
         makeList({ id: 2, threshold: 2, members: [{ accepted: true }] }),
       ]);
 
-      await service.submitReview(1, { accepted: true }, makeUser());
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+        makeUser(),
+      );
 
       expect(dataSource.manager.update).not.toHaveBeenCalled();
     });
@@ -217,7 +417,11 @@ describe('ReviewersService', () => {
         }),
       ]);
 
-      await service.submitReview(1, { accepted: true }, makeUser());
+      await service.submitReview(
+        1,
+        { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+        makeUser(),
+      );
 
       expect(dataSource.manager.update).not.toHaveBeenCalled();
     });
@@ -228,10 +432,19 @@ describe('ReviewersService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(
         makeTransaction(TransactionStatus.READY_FOR_REVIEW),
       );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
 
       setupManagerChain([makeMember()]);
 
-      await service.submitReview(1, { accepted: false, note: 'bad tx' }, makeUser());
+      await service.submitReview(
+        1,
+        {
+          accepted: false,
+          note: 'bad tx',
+          signatures: [signAs(5, 1, false, 'bad tx')],
+        },
+        makeUser(),
+      );
 
       expect(publisher.publish).toHaveBeenCalledWith(
         expect.stringContaining('reviewer-rejection'),
@@ -243,10 +456,19 @@ describe('ReviewersService', () => {
       dataSource.manager.findOne.mockResolvedValueOnce(
         makeTransaction(TransactionStatus.READY_FOR_REVIEW),
       );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
 
       setupManagerChain([makeMember()]);
 
-      await service.submitReview(1, { accepted: false, note: 'rejected' }, makeUser());
+      await service.submitReview(
+        1,
+        {
+          accepted: false,
+          note: 'rejected',
+          signatures: [signAs(5, 1, false, 'rejected')],
+        },
+        makeUser(),
+      );
 
       expect(publisher.publish).not.toHaveBeenCalledWith(
         expect.stringContaining('status-update'),

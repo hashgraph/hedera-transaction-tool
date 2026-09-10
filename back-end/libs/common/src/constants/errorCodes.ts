@@ -55,6 +55,7 @@ export enum ErrorCodes {
   RNPF = 'RNPF',
   RKNA = 'RKNA',
   TRPC = 'TRPC',
+  RSIV = 'RSIV',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -113,4 +114,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.RNPF]: 'User is not a pending reviewer on this transaction',
   [ErrorCodes.RKNA]: 'The key assigned for review is not available on this account',
   [ErrorCodes.TRPC]: 'Transaction review phase is closed; no further review submissions are accepted',
+  [ErrorCodes.RSIV]: 'Reviewer attestation signature is invalid',
 };

@@ -2244,6 +2244,11 @@ describe('TransactionsService', () => {
   describe('verifyAccess', () => {
     beforeEach(() => {
       jest.resetAllMocks();
+      entityManager.createQueryBuilder.mockReturnValue({
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
     });
 
     it('should return true for EXECUTED status without user association check', async () => {
@@ -2328,6 +2333,17 @@ describe('TransactionsService', () => {
       const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+    });
+
+    it('should return true if user is a pending reviewer', async () => {
+      const tx = { id: 1, status: TransactionStatus.READY_FOR_REVIEW } as Transaction;
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      entityManager.createQueryBuilder.mockReturnValue({
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue({ id: 10 }),
+      } as any);
+      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
     });
   });
 
@@ -2767,6 +2783,11 @@ describe('TransactionsService', () => {
   describe('getTransactionWithVerifiedAccess', () => {
     beforeEach(() => {
       jest.resetAllMocks();
+      entityManager.createQueryBuilder.mockReturnValue({
+        innerJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
     });
 
     it('should throw if transaction is not found', async () => {
