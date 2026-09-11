@@ -202,3 +202,115 @@ model PublicKeyMapping {
   public_key String @unique
   nickname   String
 }
+
+// The following models mirror the reviewer group schema from the organization
+// backend (see #3184). They are a passive local cache of backend-authoritative
+// rows, synced down rather than created locally, so their ids are the backend's
+// own int PKs rather than locally-generated UUIDs — #3184 explicitly rejected
+// UUIDs even for the backend ("doing it piecemeal adds ongoing cognitive
+// overhead without a clear payoff"), so introducing them here, one hop removed,
+// would just move that cost to the front-end while adding an id-translation
+// layer that #3194's sync code would otherwise not need. `userId`, `userKeyId`,
+// and `TransactionReviewerList.transactionId` reference the backend's int-PK
+// `user`, `user_key`, and `transaction` tables — there is no local Prisma model
+// for those, so they are plain scalar columns rather than relations.
+// `transactionId` is NOT a FK to the front-end's own local `Transaction` model
+// (which uses a String UUID `id` — a different id space entirely).
+//
+// `attestationSignatures` is stored as a JSON string, not Bytes, because the
+// back-end's actual shape (see AttestationSignature in group-change-record.entity.ts)
+// is an array of individual signer entries — { userKeyId, vote, signature }[] — not a
+// single opaque blob. Same reasoning applies to `publicKey`: it's stored hex-encoded as
+// a String, matching GroupSnapshotMember.publicKey on the back-end and this schema's
+// own PublicKeyMapping convention, rather than as Bytes.
+//
+// Unlike the back-end, there is no local GroupChangeRecord/RuleChangeRecord history
+// here. The client never re-walks history it has already verified — it only ever
+// advances forward from its current locally-trusted state (ReviewerGroup + the current
+// ReviewerGroupMember/ReviewerRule rows) to whatever the server currently has. A fetched
+// change record's `snapshotPayload`/`rulePayload` is only needed transiently, to
+// reconstruct the exact bytes that were signed for that one verification; once verified
+// and applied, it's logically redundant with the resulting current-state rows and isn't
+// kept. `ReviewerGroup.attestationSignatures` holds the *latest* attestation only — the
+// votes that authorized the group's current `snapshotVersion`. Its sole intended use is
+// UI attribution ("this configuration was approved by these members") — it can NOT be
+// re-verified locally after the fact, since that would require the prior version's
+// member keys, which get overwritten the moment the new version is applied. If no UI
+// ever ends up surfacing it, it has no other purpose and should be dropped. A rule
+// addition needs no attestation at all, and a rule removal ends in the row being
+// deleted, so there's no equivalent "latest attestation" to keep for ReviewerRule.
+//
+// This is schema-only: no sync, verification, or UI logic is implemented here. See
+// #3194 for local store sync.
+
+model ReviewerGroup {
+  id                    Int      @id
+  name                  String
+  description           String?
+  threshold             Int
+  snapshotVersion       Int
+  attestationSignatures String? // JSON: AttestationSignature[] that authorized the current snapshotVersion. For UI attribution display only — not re-verifiable locally. Null only for a freshly-created group (no prior members to attest it).
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  members ReviewerGroupMember[]
+  rules   ReviewerRule[]
+}
+
+model ReviewerGroupMember {
+  id        Int      @id
+  groupId   Int
+  userId    Int
+  userKeyId Int
+  publicKey String // hex-encoded; stored locally for signature verification
+  createdAt DateTime @default(now())
+
+  group ReviewerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+}
+
+// Uniqueness on (hederaEntityId, network, groupId, entityRole, transactionType) cannot
+// be expressed with @@unique, because SQLite (like other SQL engines) treats two NULLs
+// as distinct, and Prisma's schema syntax has no way to express a functional/COALESCE
+// index. The constraint is instead enforced by a hand-written unique index in the
+// migration SQL, matching the COALESCE approach used by the back-end (#3184).
+model ReviewerRule {
+  id              Int      @id
+  groupId         Int
+  hederaEntityId  String
+  network         String
+  entityRole      String? // fee_payer | sender | receiver | account | file | token | topic | node; null matches any role. See EntityRole in the back-end's entity-role.enum.ts.
+  transactionType String?
+  condition       String? // reserved; JSON string; null until evaluation logic is built
+  createdAt       DateTime @default(now())
+
+  group ReviewerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+model TransactionReviewerList {
+  id            Int      @id
+  transactionId Int
+  name          String?
+  description   String?
+  threshold     Int
+  createdAt     DateTime @default(now())
+
+  members TransactionReviewerListMember[]
+}
+
+model TransactionReviewerListMember {
+  id         Int       @id
+  listId     Int
+  userId     Int
+  userKeyId  Int?
+  signature  Bytes?
+  accepted   Boolean?
+  note       String?
+  actionedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  list TransactionReviewerList @relation(fields: [listId], references: [id])
+
+  @@unique([listId, userId])
+}
