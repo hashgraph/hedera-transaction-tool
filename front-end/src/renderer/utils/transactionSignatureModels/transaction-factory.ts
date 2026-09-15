@@ -20,10 +20,6 @@ import RegisteredNodeDeleteTransactionModel from './registered-node-delete-trans
 import { getTransactionType } from '../sdk/transactions';
 
 export default class TransactionFactory {
-  static fromBytes(bytes: Buffer) {
-    const transaction = Transaction.fromBytes(bytes);
-    return this.fromTransaction(transaction);
-  }
 
   static fromTransaction(transaction: Transaction): TransactionBaseModel<Transaction> {
     const transactionModelMap = {
