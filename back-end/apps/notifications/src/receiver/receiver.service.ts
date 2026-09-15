@@ -19,7 +19,6 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
-  TransactionApprover,
   TransactionReviewerListMember,
   TransactionStatus,
   User,
@@ -122,48 +121,11 @@ export class ReceiverService {
     return new Map(transactions.map(t => [t.id, t]));
   }
 
-  private async getApproversByTransactionIds(
-    entityManager: EntityManager,
-    transactionIds: number[],
-  ): Promise<Map<number, TransactionApprover[]>> {
-    if (transactionIds.length === 0) return new Map();
-
-    // Run the recursive CTE once for all transactions
-    const allApprovers = await entityManager.query(
-      `
-          WITH RECURSIVE approverList AS (
-              SELECT * FROM transaction_approver
-              WHERE "transactionId" = ANY($1)
-              UNION ALL
-              SELECT approver.* FROM transaction_approver AS approver
-                                         JOIN approverList ON approverList."id" = approver."listId"
-          )
-          SELECT * FROM approverList
-          WHERE approverList."deletedAt" IS NULL
-      `,
-      [transactionIds],
-    );
-
-    // Group by transactionId
-    const approversMap = new Map<number, TransactionApprover[]>();
-
-    for (const approver of allApprovers) {
-      const txId = approver.transactionId;
-      if (!approversMap.has(txId)) {
-        approversMap.set(txId, []);
-      }
-      approversMap.get(txId)!.push(approver);
-    }
-
-    return approversMap;
-  }
-
   // --- Participant / recipient resolution -------------------------------
 
   private async getTransactionParticipants(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
     keyCache?: Map<string, UserKey>,
   ) {
     const creatorId = transaction.creatorKey.userId;
@@ -175,28 +137,12 @@ export class ReceiverService {
       keyCache,
     );
 
-    const approversUserIds = approvers.map(a => a.userId).filter(userId => userId !== undefined);
-    const approversGaveChoiceUserIds = approvers
-      .filter(a => a.approved !== null)
-      .map(a => a.userId)
-      .filter(a => a !== undefined);
-    const approversShouldChooseUserIds = [
-      TransactionStatus.WAITING_FOR_EXECUTION,
-      TransactionStatus.WAITING_FOR_SIGNATURES,
-    ].includes(transaction.status)
-      ? approvers
-          .filter(a => a.approved === null)
-          .map(a => a.userId)
-          .filter(a => a !== undefined)
-      : [];
-
     const participants = [
       ...new Set(
         [
           creatorId,
           ...signerUserIds,
           ...observerUserIds,
-          ...approversUserIds,
           ...requiredUserIds,
         ].filter(Boolean),
       ),
@@ -206,10 +152,7 @@ export class ReceiverService {
       creatorId,
       signerUserIds,
       observerUserIds,
-      approversUserIds,
       requiredUserIds,
-      approversGaveChoiceUserIds,
-      approversShouldChooseUserIds,
       participants,
     };
   }
@@ -247,17 +190,14 @@ export class ReceiverService {
     entityManager: EntityManager,
     transaction: Transaction,
     newIndicatorType: NotificationType,
-    approvers: TransactionApprover[],
     keyCache?: Map<string, UserKey>,
   ): Promise<number[]> {
     /* Get transaction participants */
     const {
-      approversUserIds,
-      approversShouldChooseUserIds,
       observerUserIds,
       requiredUserIds,
       creatorId,
-    } = await this.getTransactionParticipants(entityManager, transaction, approvers, keyCache);
+    } = await this.getTransactionParticipants(entityManager, transaction, keyCache);
 
     switch (newIndicatorType) {
       case NotificationType.TRANSACTION_INDICATOR_REVIEW:
@@ -265,11 +205,7 @@ export class ReceiverService {
         return this.getPendingReviewerUserIds(entityManager, transaction.id);
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
       case NotificationType.TRANSACTION_INDICATOR_REJECTED:
-        return [creatorId, ...approversUserIds, ...observerUserIds];
-
-      case NotificationType.TRANSACTION_APPROVED:
-      case NotificationType.TRANSACTION_INDICATOR_APPROVE:
-        return approversShouldChooseUserIds;
+        return [creatorId, ...observerUserIds];
 
       case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
       case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER:
@@ -285,11 +221,11 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_ARCHIVED:
-        return [creatorId, ...approversUserIds, ...observerUserIds, ...requiredUserIds];
+        return [creatorId, ...observerUserIds, ...requiredUserIds];
 
       case NotificationType.TRANSACTION_CANCELLED:
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
-        return [...approversUserIds, ...observerUserIds, ...requiredUserIds];
+        return [...observerUserIds, ...requiredUserIds];
 
       default:
         console.warn(`No recipient logic for ${newIndicatorType}`);
@@ -380,7 +316,6 @@ export class ReceiverService {
   private async createNotificationWithReceivers(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
     notificationType: NotificationType,
     additionalData: NotificationAdditionalData | undefined,
     cache: Map<number, User>,
@@ -391,7 +326,6 @@ export class ReceiverService {
       entityManager,
       transaction,
       notificationType,
-      approvers,
       keyCache,
     );
 
@@ -788,7 +722,6 @@ export class ReceiverService {
   private async handleTransactionStatusUpdateNotifications(
     entityManager: EntityManager,
     transaction: Transaction,
-    approvers: TransactionApprover[],
     syncType: NotificationType | null,
     emailType: NotificationType | null,
     cache: Map<number, User>,
@@ -820,7 +753,6 @@ export class ReceiverService {
         const newReceivers = await this.createNotificationWithReceivers(
           entityManager,
           transaction,
-          approvers,
           syncType,
           additionalData,
           cache,
@@ -839,7 +771,6 @@ export class ReceiverService {
         const newReceivers = await this.createNotificationWithReceivers(
           entityManager,
           transaction,
-          approvers,
           emailType,
           additionalData,
           cache,
@@ -1015,11 +946,6 @@ export class ReceiverService {
     const transactionIds = events.map(e => e.entityId);
     const transactionMap = await this.fetchTransactionsWithRelations(transactionIds, withDeleted);
 
-    const approversMap = await this.getApproversByTransactionIds(
-      this.entityManager,
-      transactionIds,
-    );
-
     const deletionNotifications: { [userId: number]: number[] } = {};
     const inAppNotifications: { [userId: number]: NotificationReceiver[] } = {};
     const emailNotifications: { [email: string]: Notification[] } = {};
@@ -1032,7 +958,6 @@ export class ReceiverService {
       keyCache,
       transactionIds,
       transactionMap,
-      approversMap,
       deletionNotifications,
       inAppNotifications,
       emailNotifications,
@@ -1085,24 +1010,17 @@ export class ReceiverService {
     if (groupTransactions.length === 0) return;
     if (this.configService.get<boolean>('DISABLE_NOTIFICATION_EMAILS')) return;
 
-    const approversMap = await this.getApproversByTransactionIds(
-      entityManager,
-      groupTransactions.map(t => t.id),
-    );
-
     for (const tx of groupTransactions) {
       const emailType = this.getEmailNotificationType(tx.status);
       if (!emailType || emailType === NotificationType.TRANSACTION_CANCELLED) continue;
       if (!NOTIFICATION_CHANNELS[emailType].email) continue;
 
       try {
-        const approvers = approversMap.get(tx.id) ?? [];
         const additionalData = this.buildAdditionalData(tx);
 
         const newReceivers = await this.createNotificationWithReceivers(
           entityManager,
           tx,
-          approvers,
           emailType,
           additionalData,
           cache,
@@ -1132,7 +1050,6 @@ export class ReceiverService {
       cache,
       keyCache,
       transactionMap,
-      approversMap,
       deletionNotifications,
       inAppNotifications,
       emailNotifications,
@@ -1180,7 +1097,6 @@ export class ReceiverService {
         );
         continue;
       }
-      const approvers = approversMap.get(transactionId) || [];
 
       if (transaction.deletedAt && transaction.status !== TransactionStatus.CANCELED) {
         console.error(
@@ -1216,7 +1132,6 @@ export class ReceiverService {
         await this.handleTransactionStatusUpdateNotifications(
           entityManager,
           transaction,
-          approvers,
           syncType,
           txEmailType,
           cache,
@@ -1259,13 +1174,12 @@ export class ReceiverService {
     const ctx = await this.prepareEventContext(events);
     if (!ctx) return;
 
-    const { keyCache, transactionMap, approversMap, affectedUsers } = ctx;
+    const { keyCache, transactionMap, affectedUsers } = ctx;
 
     // Process each event
     for (const { entityId: transactionId } of events) {
       const transaction = transactionMap.get(transactionId);
       if (!transaction) continue;
-      const approvers = approversMap.get(transactionId) || [];
 
       const syncType = this.getInAppNotificationType(transaction.status);
 
@@ -1274,7 +1188,6 @@ export class ReceiverService {
           this.entityManager,
           transaction,
           syncType,
-          approvers,
           keyCache,
         );
         const groupId = transaction.groupItem?.groupId;

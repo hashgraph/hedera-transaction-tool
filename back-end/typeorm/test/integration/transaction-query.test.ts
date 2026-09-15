@@ -249,7 +249,6 @@ async function createUser(
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -264,7 +263,6 @@ async function createUser(
     mnemonicHash: undefined,
     index: undefined,
     createdTransactions: [],
-    approvedTransactions: [],
     signedTransactions: [],
   } as DeepPartial<UserKey>);
   await ds.getRepository(UserKey).save(key);

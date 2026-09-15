@@ -4,12 +4,6 @@ GET http://localhost:3001/transactions?page=1&size=10
 ### Get transactions to be signed by User
 GET http://localhost:3001/transactions/sign?page=1&size=10
 
-### Get transactions to be approved by User
-GET http://localhost:3001/transactions/approve?page=1&size=10
-
-### Get transactions to be observed by User
-GET http://localhost:3001/transactions/observe?page=1&size=10
-
 ### Get transaction by Id
 GET http://localhost:3001/transactions/5
 
