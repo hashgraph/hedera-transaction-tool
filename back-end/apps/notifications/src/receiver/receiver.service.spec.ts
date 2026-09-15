@@ -2027,7 +2027,7 @@ describe('ReceiverService', () => {
       expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXPIRED, all)).toBe(true);
     });
 
-    it('treats FAILED and REJECTED as tier 3', () => {
+    it('treats FAILED as tier 3', () => {
       const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
       const txFailed = makeTx(2, TransactionStatus.FAILED);
       const txRejected = makeTx(3, TransactionStatus.REJECTED);
@@ -2035,7 +2035,6 @@ describe('ReceiverService', () => {
       // All tier 3 — any of them is eligible to trigger the group email
       expect((service as any).isLastInGroupToReachStage(txExecuted, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
       expect((service as any).isLastInGroupToReachStage(txFailed, NotificationType.TRANSACTION_FAILED, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txRejected, NotificationType.TRANSACTION_REJECTED, all)).toBe(true);
     });
   });
 
@@ -2094,23 +2093,22 @@ describe('ReceiverService', () => {
       );
     });
 
-    it('processes email-enabled statuses and skips CANCELLED, null-mapped (ARCHIVED), and email-disabled (FAILED, REJECTED) ones', async () => {
+    it('processes email-enabled statuses and skips CANCELLED, null-mapped (ARCHIVED), and email-disabled (FAILED) ones', async () => {
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
       jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
 
       const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
       const txExpired = makeTx(2, TransactionStatus.EXPIRED);
       const txFailed = makeTx(3, TransactionStatus.FAILED);     // TRANSACTION_FAILED → email: false → skipped
-      const txRejected = makeTx(4, TransactionStatus.REJECTED); // TRANSACTION_REJECTED → email: false → skipped
       const txCancelled = makeTx(5, TransactionStatus.CANCELED); // skipped (individual email)
       const txArchived = makeTx(6, TransactionStatus.ARCHIVED);  // null emailType → skipped
 
       await (service as any).handleGroupEmailForLastTransaction(
         em as any, new Map(), new Map(), {}, [],
-        [txExecuted, txExpired, txFailed, txRejected, txCancelled, txArchived],
+        [txExecuted, txExpired, txFailed, txCancelled, txArchived],
       );
 
-      // Only EXECUTED and EXPIRED have email: true; FAILED/REJECTED are classified but email-disabled
+      // Only EXECUTED and EXPIRED send group emails; FAILED is email-disabled.
       expect(createSpy).toHaveBeenCalledTimes(2);
     });
 
@@ -2320,7 +2318,7 @@ describe('ReceiverService', () => {
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
-    it('passes null txEmailType for email-channel-disabled solo types (FAILED, REJECTED)', async () => {
+    it('passes null txEmailType for email-disabled FAILED and unmapped REJECTED solo transactions', async () => {
       const txFailed = { ...makeGroupTx(80, TransactionStatus.FAILED, 0), groupItem: null };
       const txRejected = { ...makeGroupTx(81, TransactionStatus.REJECTED, 0), groupItem: null };
 
@@ -2339,8 +2337,9 @@ describe('ReceiverService', () => {
         { entityId: 81 } as any,
       ]);
 
-      // TRANSACTION_FAILED and TRANSACTION_REJECTED have email: false — must not reach the mailer
+      // TRANSACTION_FAILED has email: false — must not reach the mailer
       expect(handlerSpy.mock.calls[0][3]).toBeNull();
+      // REJECTED has no email notification type.
       expect(handlerSpy.mock.calls[1][3]).toBeNull();
     });
 

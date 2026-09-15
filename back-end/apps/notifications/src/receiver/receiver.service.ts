@@ -58,7 +58,6 @@ export class ReceiverService {
     [TransactionStatus.WAITING_FOR_EXECUTION]: NotificationType.TRANSACTION_READY_FOR_EXECUTION,
     [TransactionStatus.EXECUTED]: NotificationType.TRANSACTION_EXECUTED,
     [TransactionStatus.FAILED]: NotificationType.TRANSACTION_FAILED,
-    [TransactionStatus.REJECTED]: NotificationType.TRANSACTION_REJECTED,
     [TransactionStatus.EXPIRED]: NotificationType.TRANSACTION_EXPIRED,
     [TransactionStatus.CANCELED]: NotificationType.TRANSACTION_CANCELLED,
   };
@@ -203,9 +202,6 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_INDICATOR_REVIEW:
       case NotificationType.TRANSACTION_READY_FOR_REVIEW:
         return this.getPendingReviewerUserIds(entityManager, transaction.id);
-      case NotificationType.TRANSACTION_APPROVAL_REJECTION:
-      case NotificationType.TRANSACTION_INDICATOR_REJECTED:
-        return [creatorId, ...observerUserIds];
 
       case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES:
       case NotificationType.TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER:
