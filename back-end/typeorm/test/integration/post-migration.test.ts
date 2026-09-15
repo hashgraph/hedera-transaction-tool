@@ -44,6 +44,7 @@ describe('Post-Migration Database Validation', () => {
     expect(tableNames).toContain('user');
     expect(tableNames).toContain('user_key');
     expect(tableNames).toContain('transaction');
+    expect(tableNames).not.toContain('transaction_approver');
   });
 
   it('should be able to query critical tables', async () => {
