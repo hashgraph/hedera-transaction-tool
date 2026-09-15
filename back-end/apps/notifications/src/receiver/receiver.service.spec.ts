@@ -232,7 +232,7 @@ describe('ReceiverService', () => {
     };
 
     const result = await (service as any).getTransactionParticipants(em as any, tx, new Map());
-    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 100]));
     expect(result.requiredUserIds).toEqual([100]);
   });
 
@@ -250,7 +250,7 @@ describe('ReceiverService', () => {
     const result = await (service as any).getTransactionParticipants(em as any, tx, new Map());
 
     expect(result.creatorId).toBe(1);
-    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 100]));
     expect(result.participants).not.toContain(null);
     expect(result.participants).not.toContain(undefined);
   });
@@ -281,7 +281,6 @@ describe('ReceiverService', () => {
           em as any,
           {} as any,
           t,
-          [] as any,
         );
         expect(res).toEqual([6, 7]);
       }
@@ -298,13 +297,12 @@ describe('ReceiverService', () => {
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
       ];
-      const expected = [1, 2, 3, 5, 6, 7];
+      const expected = [1, 5, 6, 7];
       for (const t of types) {
         const res = await (service as any).getNotificationReceiverIds(
           em as any,
           {} as any,
           t,
-          [] as any,
         );
         expect(res).toEqual(expected);
       }
@@ -315,17 +313,15 @@ describe('ReceiverService', () => {
         em as any,
         {} as any,
         NotificationType.TRANSACTION_CANCELLED,
-        [] as any,
       );
-      expect(res).toEqual([2, 3, 5, 6, 7]);
+      expect(res).toEqual([5, 6, 7]);
 
       const res2 = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
         NotificationType.TRANSACTION_INDICATOR_CANCELLED,
-        [] as any,
       );
-      expect(res2).toEqual([2, 3, 5, 6, 7]);
+      expect(res2).toEqual([5, 6, 7]);
     });
 
     it('returns deduplicated pending reviewer user IDs for TRANSACTION_INDICATOR_REVIEW and TRANSACTION_READY_FOR_REVIEW', async () => {
@@ -335,7 +331,6 @@ describe('ReceiverService', () => {
         em as any,
         { id: 7 } as any,
         NotificationType.TRANSACTION_INDICATOR_REVIEW,
-        [] as any,
       );
       expect(res1).toEqual([42, 99]);
 
@@ -343,7 +338,6 @@ describe('ReceiverService', () => {
         em as any,
         { id: 7 } as any,
         NotificationType.TRANSACTION_READY_FOR_REVIEW,
-        [] as any,
       );
       expect(res2).toEqual([42, 99]);
     });
@@ -354,7 +348,6 @@ describe('ReceiverService', () => {
         em as any,
         {} as any,
         999 as any,
-        [] as any,
       );
       expect(res).toEqual([]);
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('No recipient logic for'));
@@ -1443,8 +1436,8 @@ describe('ReceiverService', () => {
 
       const callArgs = handlerSpy.mock.calls[0] as any[];
       const passedTransaction = callArgs[1] as Transaction;
-      const passedSyncType = callArgs[3] as NotificationType | null;
-      const passedEmailType = callArgs[4] as NotificationType | null;
+      const passedSyncType = callArgs[2] as NotificationType | null;
+      const passedEmailType = callArgs[3] as NotificationType | null;
 
       expect(passedTransaction.status).toBe(TransactionStatus.CANCELED);
       expect(passedSyncType).toBe(NotificationType.TRANSACTION_INDICATOR_CANCELLED);
@@ -1464,7 +1457,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 42 } as any]);
 
       expect(handlerSpy).toHaveBeenCalled();
-      const passedEmailType = handlerSpy.mock.calls[0][4] as NotificationType | null;
+      const passedEmailType = handlerSpy.mock.calls[0][3] as NotificationType | null;
       expect(passedEmailType).toBeNull();
 
       handlerSpy.mockRestore();
@@ -2200,7 +2193,7 @@ describe('ReceiverService', () => {
       // No group pre-fetch for solo tx
       expect(em.find).not.toHaveBeenCalled();
       // emailType is forwarded as-is (not suppressed)
-      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_EXECUTED);
+      expect(handlerSpy.mock.calls[0][3]).toBe(NotificationType.TRANSACTION_EXECUTED);
     });
 
     it('passes individual email for CANCELLED transactions even inside a group', async () => {
@@ -2222,7 +2215,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 20 } as any]);
 
       // CANCELLED fires its own individual email
-      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_CANCELLED);
+      expect(handlerSpy.mock.calls[0][3]).toBe(NotificationType.TRANSACTION_CANCELLED);
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
@@ -2246,7 +2239,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 30 } as any]);
 
       // Mixed tiers → isLast = false → individual email suppressed, no group email
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
@@ -2323,7 +2316,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 70 } as any]);
 
       // txEmailType should be null (no email for ARCHIVED); no group email triggered by this tx
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
@@ -2347,8 +2340,8 @@ describe('ReceiverService', () => {
       ]);
 
       // TRANSACTION_FAILED and TRANSACTION_REJECTED have email: false — must not reach the mailer
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
-      expect(handlerSpy.mock.calls[1][4]).toBeNull();
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
+      expect(handlerSpy.mock.calls[1][3]).toBeNull();
     });
 
     it('skips null-groupId entries in pre-fetched results and falls back to empty cache for groupTxs', async () => {

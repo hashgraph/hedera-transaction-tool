@@ -314,7 +314,6 @@ describe('TransactionsService', () => {
 
       const queryBuilder = {
         setFindOptions: jest.fn().mockReturnThis(),
-        orWhere: jest.fn().mockImplementation(() => queryBuilder),
         getManyAndCount: jest.fn().mockResolvedValue([transactions, count]),
       };
       transactionsRepo.createQueryBuilder.mockReturnValue(
@@ -343,22 +342,6 @@ describe('TransactionsService', () => {
         page: defaultPagination.page,
         size: defaultPagination.size,
       });
-      // execute the Brackets callback so the arrow function inside `new Brackets(qb => ...)` actually runs
-      const bracketsArg = (queryBuilder.orWhere as jest.Mock).mock.calls[0][0];
-
-      // try several possible property names where TypeORM stores the callback
-      const maybeFn =
-        (bracketsArg as any).whereFactory ||
-        (bracketsArg as any)._whereFactory ||
-        (bracketsArg as any).whereFn ||
-        (bracketsArg as any).builderFactory;
-
-      // if found, call it with a fake qb that implements where/andWhere
-      if (typeof maybeFn === 'function') {
-        const fakeQb = { where: jest.fn().mockReturnThis(), andWhere: jest.fn().mockReturnThis() };
-        maybeFn.call(bracketsArg, fakeQb);
-        expect((fakeQb.andWhere as jest.Mock).mock.calls.length).toBeGreaterThan(0);
-      }
     });
   });
 
