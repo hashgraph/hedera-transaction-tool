@@ -305,7 +305,6 @@ async function createTx(
     deletedAt: null,
     comments: [],
     signers: [],
-    approvers: [],
     observers: [],
     groupItem: undefined,
     transactionCachedAccounts: [],

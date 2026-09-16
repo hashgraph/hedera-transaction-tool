@@ -79,7 +79,6 @@ describe('ExecuteService', () => {
     const baseTransaction = {
       id: 1,
       signers: [],
-      approvers: [],
       observers: [],
       creatorKey: undefined,
       mirrorNetwork: 'testnet',

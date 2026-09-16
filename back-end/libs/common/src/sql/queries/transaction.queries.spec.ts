@@ -712,7 +712,6 @@ async function createTestTransaction(
     deletedAt: null,
     comments: [],
     signers: [],
-    approvers: [],
     observers: [],
     groupItem: undefined,
     transactionCachedAccounts: [],
