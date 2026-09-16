@@ -429,7 +429,7 @@ describe('Transaction Observers (e2e)', () => {
 
       const { status, body } = await endpoint.patch(
         {
-          role: Role.APPROVER,
+          role: Role.FULL,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
         adminAuthToken,
@@ -442,7 +442,7 @@ describe('Transaction Observers (e2e)', () => {
           id: expect.any(Number),
           transactionId: transaction.id,
           userId: user.id,
-          role: Role.APPROVER,
+          role: Role.FULL,
           createdAt: expect.any(String),
         }),
       );
@@ -477,7 +477,7 @@ describe('Transaction Observers (e2e)', () => {
 
       const { status, body } = await endpoint.patch(
         {
-          role: Role.APPROVER,
+          role: Role.FULL,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
         userAuthToken,
