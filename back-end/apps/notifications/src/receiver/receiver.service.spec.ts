@@ -13,7 +13,6 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
-  TransactionApprover,
   TransactionStatus,
   User,
   NOTIFICATION_CHANNELS,
@@ -158,29 +157,6 @@ describe('ReceiverService', () => {
     expect(result.get(3)).toBe(tx);
   });
 
-  it('getApproversByTransactionIds groups approvers', async () => {
-    em.query.mockResolvedValue([
-      { id: 10, transactionId: 1, userId: 50 },
-      { id: 11, transactionId: 1, userId: 51 },
-      { id: 12, transactionId: 2, userId: 52 },
-    ]);
-
-    const result = await (service as any).getApproversByTransactionIds(em as any, [1, 2]);
-    expect(result.get(1)!.length).toBe(2);
-    expect(result.get(2)!.length).toBe(1);
-  });
-
-  it('getApproversByTransactionIds returns empty Map when transactionIds is empty', async () => {
-    // ensure no DB calls are made for empty input
-    em.query.mockClear();
-
-    const result = await (service as any).getApproversByTransactionIds(em as any, []);
-
-    expect(result).toBeInstanceOf(Map);
-    expect(result.size).toBe(0);
-    expect(em.query).not.toHaveBeenCalled();
-  });
-
   it('getUsersIdsRequiredToSign calls keysRequiredToSign and dedups', async () => {
     (keysRequiredToSign as jest.Mock).mockResolvedValue([
       { userId: 10, user: { id: 10 } },
@@ -255,13 +231,8 @@ describe('ReceiverService', () => {
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
-    const approvers = [
-      { userId: 4, approved: null } as unknown as TransactionApprover,
-      { userId: 5, approved: true } as TransactionApprover,
-    ];
-
-    const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
-    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
+    const result = await (service as any).getTransactionParticipants(em as any, tx, new Map());
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 100]));
     expect(result.requiredUserIds).toEqual([100]);
   });
 
@@ -276,62 +247,16 @@ describe('ReceiverService', () => {
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
-    const approvers = [
-      { userId: 4, approved: null } as unknown as TransactionApprover,
-      { userId: 5, approved: true } as TransactionApprover,
-    ];
-
-    const result = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
+    const result = await (service as any).getTransactionParticipants(em as any, tx, new Map());
 
     expect(result.creatorId).toBe(1);
-    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 100]));
     expect(result.participants).not.toContain(null);
     expect(result.participants).not.toContain(undefined);
   });
 
-  it('getTransactionParticipants yields empty approversShouldChooseUserIds when status is not waiting', async () => {
-    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 100, user: { id: 100 } }]);
-
-    const tx: any = {
-      creatorKey: { userId: 1 },
-      signers: [{ userId: 2 }],
-      observers: [{ userId: 3 }],
-      status: TransactionStatus.EXECUTED, // not in waiting set
-    };
-
-    const approvers: any[] = [
-      { userId: 4, approved: null },
-      { userId: 5, approved: null },
-    ];
-
-    const res = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
-    expect(res.approversShouldChooseUserIds).toEqual([]);
-  });
-
-  it('getTransactionParticipants yields empty approversShouldChooseUserIds when no approver is pending (all approved !== null) even if status is waiting', async () => {
-    (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 200, user: { id: 200 } }]);
-
-    const tx: any = {
-      creatorKey: { userId: 1 },
-      signers: [{ userId: 2 }],
-      observers: [{ userId: 3 }],
-      status: TransactionStatus.WAITING_FOR_SIGNATURES, // in waiting set
-    };
-
-    const approvers: any[] = [
-      { userId: 4, approved: true },
-      { userId: 5, approved: false }, // explicitly not null
-      { userId: null, approved: true }, // falsy userId should be filtered out
-    ];
-
-    const res = await (service as any).getTransactionParticipants(em as any, tx, approvers, new Map());
-    expect(res.approversShouldChooseUserIds).toEqual([]);
-  });
-
   describe('getNotificationReceiverIds', () => {
     const participantsMock = {
-      approversUserIds: [2, 3],
-      approversShouldChooseUserIds: [4],
       observerUserIds: [5],
       requiredUserIds: [6, 7],
       creatorId: 1,
@@ -342,42 +267,6 @@ describe('ReceiverService', () => {
       jest
         .spyOn(service as any, 'getTransactionParticipants')
         .mockResolvedValue(participantsMock);
-    });
-
-    it('returns creator + approvers + observers for APPROVAL_REJECTION / INDICATOR_REJECTED', async () => {
-      const resA = await (service as any).getNotificationReceiverIds(
-        em as any,
-        {} as any,
-        NotificationType.TRANSACTION_APPROVAL_REJECTION,
-        [] as any,
-      );
-      expect(resA).toEqual([1, 2, 3, 5]);
-
-      const resB = await (service as any).getNotificationReceiverIds(
-        em as any,
-        {} as any,
-        NotificationType.TRANSACTION_INDICATOR_REJECTED,
-        [] as any,
-      );
-      expect(resB).toEqual([1, 2, 3, 5]);
-    });
-
-    it('returns approversShouldChooseUserIds for APPROVED / INDICATOR_APPROVE', async () => {
-      const res = await (service as any).getNotificationReceiverIds(
-        em as any,
-        {} as any,
-        NotificationType.TRANSACTION_APPROVED,
-        [] as any,
-      );
-      expect(res).toEqual([4]);
-
-      const res2 = await (service as any).getNotificationReceiverIds(
-        em as any,
-        {} as any,
-        NotificationType.TRANSACTION_INDICATOR_APPROVE,
-        [] as any,
-      );
-      expect(res2).toEqual([4]);
     });
 
     it('returns requiredUserIds for WAITING_FOR_SIGNATURES and reminder variants / INDICATOR_SIGN', async () => {
@@ -392,13 +281,12 @@ describe('ReceiverService', () => {
           em as any,
           {} as any,
           t,
-          [] as any,
         );
         expect(res).toEqual([6, 7]);
       }
     });
 
-    it('returns creator + approvers + observers + required for execution/expired/archived etc.', async () => {
+    it('returns creator + observers + required for execution/expired/archived etc.', async () => {
       const types = [
         NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
@@ -409,34 +297,31 @@ describe('ReceiverService', () => {
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
       ];
-      const expected = [1, 2, 3, 5, 6, 7];
+      const expected = [1, 5, 6, 7];
       for (const t of types) {
         const res = await (service as any).getNotificationReceiverIds(
           em as any,
           {} as any,
           t,
-          [] as any,
         );
         expect(res).toEqual(expected);
       }
     });
 
-    it('returns approvers + observers + required for CANCELLED / INDICATOR_CANCELLED', async () => {
+    it('returns observers + required for CANCELLED / INDICATOR_CANCELLED', async () => {
       const res = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
         NotificationType.TRANSACTION_CANCELLED,
-        [] as any,
       );
-      expect(res).toEqual([2, 3, 5, 6, 7]);
+      expect(res).toEqual([5, 6, 7]);
 
       const res2 = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
         NotificationType.TRANSACTION_INDICATOR_CANCELLED,
-        [] as any,
       );
-      expect(res2).toEqual([2, 3, 5, 6, 7]);
+      expect(res2).toEqual([5, 6, 7]);
     });
 
     it('returns deduplicated pending reviewer user IDs for TRANSACTION_INDICATOR_REVIEW and TRANSACTION_READY_FOR_REVIEW', async () => {
@@ -446,7 +331,6 @@ describe('ReceiverService', () => {
         em as any,
         { id: 7 } as any,
         NotificationType.TRANSACTION_INDICATOR_REVIEW,
-        [] as any,
       );
       expect(res1).toEqual([42, 99]);
 
@@ -454,7 +338,6 @@ describe('ReceiverService', () => {
         em as any,
         { id: 7 } as any,
         NotificationType.TRANSACTION_READY_FOR_REVIEW,
-        [] as any,
       );
       expect(res2).toEqual([42, 99]);
     });
@@ -465,7 +348,6 @@ describe('ReceiverService', () => {
         em as any,
         {} as any,
         999 as any,
-        [] as any,
       );
       expect(res).toEqual([]);
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('No recipient logic for'));
@@ -1142,7 +1024,6 @@ describe('ReceiverService', () => {
       const affectedUsers = new Map<number, { transactionIds: Set<number>; groupIds: Set<number> }>();
 
       const transaction = { id: 42, transactionId: 'tx-42', mirrorNetwork: 'net' } as any;
-      const approvers: any[] = [];
 
       // deleteExistingIndicators returns one deleted receiver
       jest.spyOn(service as any, 'deleteExistingIndicators').mockResolvedValue([
@@ -1162,7 +1043,6 @@ describe('ReceiverService', () => {
       await (service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         transaction,
-        approvers,
         NotificationType.TRANSACTION_INDICATOR_EXECUTED, // syncType present
         NotificationType.TRANSACTION_EXECUTED, // emailType present
         new Map(),
@@ -1199,7 +1079,6 @@ describe('ReceiverService', () => {
       await (service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         { transactionId: 'tx', mirrorNetwork: 'net' } as any,
-        [],
         null,  // syncType=null → false branch at if(syncType)
         null,
         new Map(), new Map(),
@@ -1226,7 +1105,6 @@ describe('ReceiverService', () => {
       await (service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         { transactionId: 'tx', mirrorNetwork: 'net' } as any,
-        [],
         NotificationType.TRANSACTION_INDICATOR_EXECUTED,
         null,
         new Map(), new Map(),
@@ -1245,7 +1123,6 @@ describe('ReceiverService', () => {
       await (service as any).handleTransactionStatusUpdateNotifications(
         em as any,
         { transactionId: 'tx', mirrorNetwork: 'n' } as any,
-        [],
         NotificationType.TRANSACTION_INDICATOR_EXECUTED,
         null,
         new Map(),
@@ -1409,14 +1286,12 @@ describe('ReceiverService', () => {
       const txMap = new Map<number, any>();
       txMap.set(1, { id: 1 } as any);
       jest.spyOn(service as any, 'fetchTransactionsWithRelations').mockResolvedValueOnce(txMap);
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValueOnce(new Map());
 
       const ctx = await (service as any).prepareEventContext(events, false);
 
       expect(ctx).not.toBeNull();
       expect(ctx!.transactionIds).toEqual([1]);
       expect(ctx!.transactionMap).toBe(txMap);
-      expect(ctx!.approversMap).toEqual(new Map());
       expect(ctx!.cache).toBeInstanceOf(Map);
       expect(ctx!.keyCache).toBeInstanceOf(Map);
       expect(ctx!.inAppReceiverIds).toEqual([]);
@@ -1444,9 +1319,6 @@ describe('ReceiverService', () => {
 
       // Common: fetchTransactionsWithRelations -> query builder returns the transaction
       em.qb.getMany.mockResolvedValueOnce([transaction]);
-
-      // Common: approvers query
-      em.query.mockResolvedValue([]);
 
       // Common: ensure keysRequiredToSign returns an array
       (keysRequiredToSign as jest.Mock).mockResolvedValue([]);
@@ -1483,7 +1355,6 @@ describe('ReceiverService', () => {
         cache: new Map<number, any>(),
         keyCache: new Map<number, any>(),
         transactionMap: new Map(), // empty — no transaction found
-        approversMap: new Map(),
         deletionNotifications: {},
         inAppNotifications: {},
         emailNotifications: {},
@@ -1565,8 +1436,8 @@ describe('ReceiverService', () => {
 
       const callArgs = handlerSpy.mock.calls[0] as any[];
       const passedTransaction = callArgs[1] as Transaction;
-      const passedSyncType = callArgs[3] as NotificationType | null;
-      const passedEmailType = callArgs[4] as NotificationType | null;
+      const passedSyncType = callArgs[2] as NotificationType | null;
+      const passedEmailType = callArgs[3] as NotificationType | null;
 
       expect(passedTransaction.status).toBe(TransactionStatus.CANCELED);
       expect(passedSyncType).toBe(NotificationType.TRANSACTION_INDICATOR_CANCELLED);
@@ -1586,7 +1457,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 42 } as any]);
 
       expect(handlerSpy).toHaveBeenCalled();
-      const passedEmailType = handlerSpy.mock.calls[0][4] as NotificationType | null;
+      const passedEmailType = handlerSpy.mock.calls[0][3] as NotificationType | null;
       expect(passedEmailType).toBeNull();
 
       handlerSpy.mockRestore();
@@ -1729,7 +1600,6 @@ describe('ReceiverService', () => {
       const ctx = {
         keyCache: new Map(),
         transactionMap: new Map(), // empty — entityId 999 will not be found
-        approversMap: new Map(),
         affectedUsers: new Map(),
       };
       jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
@@ -1745,7 +1615,6 @@ describe('ReceiverService', () => {
       const ctx = {
         keyCache: new Map(),
         transactionMap: new Map([[7, transaction]]),
-        approversMap: new Map([[7, []]]),
         affectedUsers: new Map(),
       };
       jest.spyOn(service as any, 'prepareEventContext').mockResolvedValue(ctx);
@@ -1848,10 +1717,6 @@ describe('ReceiverService', () => {
       // fetchTransactionsWithRelations -> returns the transaction
       em.qb.getMany.mockResolvedValue([transaction]);
 
-      // getApproversByTransactionIds/internal approver lookup uses em.query:
-      // return an empty array so the code receives [] (iterable) instead of undefined
-      em.query.mockResolvedValue([]);
-
       // keysRequiredToSign for processSignerReminders
       (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10, user: { id: 10 } }]);
       // For manual path: processNotificationType invoked; mock to return empty arrays
@@ -1888,9 +1753,6 @@ describe('ReceiverService', () => {
 
       // fetchTransactionsWithRelations -> returns the transaction
       em.qb.getMany.mockResolvedValue([transaction]);
-
-      // approvers query returns empty array
-      em.query.mockResolvedValue([]);
 
       // keysRequiredToSign returns a signer id
       (keysRequiredToSign as jest.Mock).mockResolvedValue([{ userId: 10, user: { id: 10 } }]);
@@ -2165,7 +2027,7 @@ describe('ReceiverService', () => {
       expect((service as any).isLastInGroupToReachStage(txB, NotificationType.TRANSACTION_EXPIRED, all)).toBe(true);
     });
 
-    it('treats FAILED and REJECTED as tier 3', () => {
+    it('treats FAILED as tier 3', () => {
       const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
       const txFailed = makeTx(2, TransactionStatus.FAILED);
       const txRejected = makeTx(3, TransactionStatus.REJECTED);
@@ -2173,7 +2035,6 @@ describe('ReceiverService', () => {
       // All tier 3 — any of them is eligible to trigger the group email
       expect((service as any).isLastInGroupToReachStage(txExecuted, NotificationType.TRANSACTION_EXECUTED, all)).toBe(true);
       expect((service as any).isLastInGroupToReachStage(txFailed, NotificationType.TRANSACTION_FAILED, all)).toBe(true);
-      expect((service as any).isLastInGroupToReachStage(txRejected, NotificationType.TRANSACTION_REJECTED, all)).toBe(true);
     });
   });
 
@@ -2190,18 +2051,7 @@ describe('ReceiverService', () => {
       jest.clearAllMocks();
     });
 
-    it('returns immediately for empty groupTransactions without querying the DB', async () => {
-      const approversSpy = jest.spyOn(service as any, 'getApproversByTransactionIds');
-
-      await (service as any).handleGroupEmailForLastTransaction(
-        em as any, new Map(), new Map(), {}, [], [],
-      );
-
-      expect(approversSpy).not.toHaveBeenCalled();
-    });
-
     it('skips transactions whose status maps to a null emailType (e.g., ARCHIVED)', async () => {
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
 
       const tx = makeTx(1, TransactionStatus.ARCHIVED);
@@ -2213,7 +2063,6 @@ describe('ReceiverService', () => {
     });
 
     it('skips CANCELLED transactions', async () => {
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
 
       const tx = makeTx(1, TransactionStatus.CANCELED);
@@ -2226,7 +2075,6 @@ describe('ReceiverService', () => {
 
     it('creates a notification and collects email receivers for a valid (EXECUTED) transaction', async () => {
       const fakeReceiver = { id: 99, userId: 5 } as any;
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([fakeReceiver]);
       const collectSpy = jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
 
@@ -2245,29 +2093,26 @@ describe('ReceiverService', () => {
       );
     });
 
-    it('processes email-enabled statuses and skips CANCELLED, null-mapped (ARCHIVED), and email-disabled (FAILED, REJECTED) ones', async () => {
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
+    it('processes email-enabled statuses and skips CANCELLED, null-mapped (ARCHIVED), and email-disabled (FAILED) ones', async () => {
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers').mockResolvedValue([]);
       jest.spyOn(service as any, 'collectEmailNotifications').mockImplementation(() => {});
 
       const txExecuted = makeTx(1, TransactionStatus.EXECUTED);
       const txExpired = makeTx(2, TransactionStatus.EXPIRED);
       const txFailed = makeTx(3, TransactionStatus.FAILED);     // TRANSACTION_FAILED → email: false → skipped
-      const txRejected = makeTx(4, TransactionStatus.REJECTED); // TRANSACTION_REJECTED → email: false → skipped
       const txCancelled = makeTx(5, TransactionStatus.CANCELED); // skipped (individual email)
       const txArchived = makeTx(6, TransactionStatus.ARCHIVED);  // null emailType → skipped
 
       await (service as any).handleGroupEmailForLastTransaction(
         em as any, new Map(), new Map(), {}, [],
-        [txExecuted, txExpired, txFailed, txRejected, txCancelled, txArchived],
+        [txExecuted, txExpired, txFailed, txCancelled, txArchived],
       );
 
-      // Only EXECUTED and EXPIRED have email: true; FAILED/REJECTED are classified but email-disabled
+      // Only EXECUTED and EXPIRED send group emails; FAILED is email-disabled.
       expect(createSpy).toHaveBeenCalledTimes(2);
     });
 
     it('catches per-transaction errors and continues processing remaining transactions', async () => {
-      jest.spyOn(service as any, 'getApproversByTransactionIds').mockResolvedValue(new Map());
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers')
         .mockRejectedValueOnce(new Error('db error'))
         .mockResolvedValueOnce([]);
@@ -2293,7 +2138,6 @@ describe('ReceiverService', () => {
 
     it('returns immediately when DISABLE_NOTIFICATION_EMAILS=true, skipping all DB work', async () => {
       configService.get.mockReturnValue(true);
-      const approversSpy = jest.spyOn(service as any, 'getApproversByTransactionIds');
       const createSpy = jest.spyOn(service as any, 'createNotificationWithReceivers');
 
       const tx = makeTx(1, TransactionStatus.EXECUTED);
@@ -2301,7 +2145,6 @@ describe('ReceiverService', () => {
         em as any, new Map(), new Map(), {}, [], [tx],
       );
 
-      expect(approversSpy).not.toHaveBeenCalled();
       expect(createSpy).not.toHaveBeenCalled();
     });
   });
@@ -2335,7 +2178,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[10, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2349,7 +2191,7 @@ describe('ReceiverService', () => {
       // No group pre-fetch for solo tx
       expect(em.find).not.toHaveBeenCalled();
       // emailType is forwarded as-is (not suppressed)
-      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_EXECUTED);
+      expect(handlerSpy.mock.calls[0][3]).toBe(NotificationType.TRANSACTION_EXECUTED);
     });
 
     it('passes individual email for CANCELLED transactions even inside a group', async () => {
@@ -2359,7 +2201,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[20, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2372,7 +2213,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 20 } as any]);
 
       // CANCELLED fires its own individual email
-      expect(handlerSpy.mock.calls[0][4]).toBe(NotificationType.TRANSACTION_CANCELLED);
+      expect(handlerSpy.mock.calls[0][3]).toBe(NotificationType.TRANSACTION_CANCELLED);
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
@@ -2384,7 +2225,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[30, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2397,7 +2237,7 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 30 } as any]);
 
       // Mixed tiers → isLast = false → individual email suppressed, no group email
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
@@ -2409,7 +2249,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[40, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2441,7 +2280,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[60, tx1]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2464,7 +2302,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[70, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2477,18 +2314,17 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 70 } as any]);
 
       // txEmailType should be null (no email for ARCHIVED); no group email triggered by this tx
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
       expect(groupHandlerSpy).not.toHaveBeenCalled();
     });
 
-    it('passes null txEmailType for email-channel-disabled solo types (FAILED, REJECTED)', async () => {
+    it('passes null txEmailType for email-disabled FAILED and unmapped REJECTED solo transactions', async () => {
       const txFailed = { ...makeGroupTx(80, TransactionStatus.FAILED, 0), groupItem: null };
       const txRejected = { ...makeGroupTx(81, TransactionStatus.REJECTED, 0), groupItem: null };
 
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[80, txFailed], [81, txRejected]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2501,9 +2337,10 @@ describe('ReceiverService', () => {
         { entityId: 81 } as any,
       ]);
 
-      // TRANSACTION_FAILED and TRANSACTION_REJECTED have email: false — must not reach the mailer
-      expect(handlerSpy.mock.calls[0][4]).toBeNull();
-      expect(handlerSpy.mock.calls[1][4]).toBeNull();
+      // TRANSACTION_FAILED has email: false — must not reach the mailer
+      expect(handlerSpy.mock.calls[0][3]).toBeNull();
+      // REJECTED has no email notification type.
+      expect(handlerSpy.mock.calls[1][3]).toBeNull();
     });
 
     it('skips null-groupId entries in pre-fetched results and falls back to empty cache for groupTxs', async () => {
@@ -2512,7 +2349,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[90, tx]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };
@@ -2546,7 +2382,6 @@ describe('ReceiverService', () => {
       const ctx = {
         cache: new Map(), keyCache: new Map(),
         transactionMap: new Map([[50, tx1], [51, tx2]]),
-        approversMap: new Map(),
         deletionNotifications: {}, inAppNotifications: {}, emailNotifications: {},
         inAppReceiverIds: [], emailReceiverIds: [], affectedUsers: new Map(),
       };

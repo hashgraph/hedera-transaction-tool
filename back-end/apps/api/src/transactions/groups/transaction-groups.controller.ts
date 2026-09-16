@@ -33,7 +33,7 @@ export class TransactionGroupsController {
     description:
       'Create a transaction group for the organization. ' +
       'The group contains group items that each point to a transaction ' +
-      'that the organization is to approve, sign, and execute.',
+      'that the organization is to sign, and execute.',
   })
   @ApiResponse({
     status: 201,

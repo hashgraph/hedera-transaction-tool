@@ -46,7 +46,6 @@ describe('TransactionNodesService', () => {
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -63,7 +62,6 @@ describe('TransactionNodesService', () => {
     user: user,
     deletedAt: null,
     createdTransactions: [],
-    approvedTransactions: [],
     signedTransactions: [],
   };
 
@@ -307,7 +305,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { approver: true }
+        { }
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -380,7 +378,6 @@ describe('TransactionNodesService', () => {
           signer: true,
           creator: true,
           observer: true,
-          approver: true,
         }
       );
 
@@ -420,7 +417,6 @@ describe('TransactionNodesService', () => {
           signer: true,
           creator: true,
           observer: true,
-          approver: true,
         }
       );
 
@@ -457,7 +453,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -487,7 +483,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -517,7 +513,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);

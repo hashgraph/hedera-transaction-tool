@@ -14,7 +14,6 @@ import {
   TransactionGroup,
   TransactionStatus,
   TransactionObserver,
-  TransactionApprover,
   TransactionType,
 } from '@entities';
 
@@ -28,7 +27,6 @@ type Roles = {
   signer?: boolean;
   creator?: boolean;
   observer?: boolean;
-  approver?: boolean;
   onlyUnsigned?: boolean;
 };
 
@@ -39,7 +37,7 @@ interface WhereClauseResult {
 }
 
 // Only EXECUTED and FAILED are world-readable. EXPIRED, CANCELED, and ARCHIVED
-// still require a user association check (creator / observer / signer / approver).
+// still require a user association check (creator / observer / signer).
 const BYPASS_STATUSES = [
   TransactionStatus.EXECUTED,
   TransactionStatus.FAILED,
@@ -172,27 +170,6 @@ function buildEligibilityConditions(
     `);
   }
 
-  if (roles.approver) {
-    const userParam = addParam(user.id);
-    eligibilityConditions.push(`
-      EXISTS (
-        WITH RECURSIVE approverList AS (
-          SELECT *
-          FROM ${sql.table(TransactionApprover)}
-          WHERE ${sql.col(TransactionApprover, 'transactionId')} = t.${sql.col(Transaction, 'id')}
-            AND ${sql.col(TransactionApprover, 'deletedAt')} IS NULL
-          UNION ALL
-          SELECT a.*
-          FROM ${sql.table(TransactionApprover)} a
-            JOIN approverList al ON al.${sql.col(TransactionApprover, 'id')} = a.${sql.col(TransactionApprover, 'listId')}
-          WHERE a.${sql.col(TransactionApprover, 'deletedAt')} IS NULL
-        )
-        SELECT 1 FROM approverList
-        WHERE approverList.${sql.col(TransactionApprover, 'userId')} = ${userParam}
-      )
-    `);
-  }
-
   return eligibilityConditions;
 }
 
@@ -202,7 +179,7 @@ function buildEligibilityConditions(
  * The resulting clause is structured as:
  * `(filter conditions) AND ((eligibility conditions) OR (bypass status check))`
  *
- * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer, signer, or approver).
+ * EXPIRED, CANCELED, and ARCHIVED require a user association (creator, observer or signer).
  *
  * @param sql - The SQL builder service used to resolve table and column names.
  * @param filters - Optional filters to apply, such as status, type, and mirror network.
@@ -384,7 +361,7 @@ export function getTransactionGroupItemsQuery(
   const { clause, values, addParam } = buildWhereClause(
     sql,
     undefined,
-    user ? { user, roles: { signer: true, creator: true, observer: true, approver: true } } : undefined,
+    user ? { user, roles: { signer: true, creator: true, observer: true } } : undefined,
   );
 
   const groupIdParam = addParam(groupId);
