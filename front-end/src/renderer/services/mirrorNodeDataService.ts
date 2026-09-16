@@ -13,6 +13,7 @@ import {
   type RegisteredServiceEndPoint,
   type RegisteredBlockNodeEndpoint,
   RegisteredNodeType,
+  RegisteredBlockNodeApi,
 } from '@shared/interfaces';
 
 import {
@@ -21,6 +22,7 @@ import {
   MirrorNodeServiceEndpoint as SDKMirrorNodeServiceEndpoint,
   RpcRelayServiceEndpoint as SDKRpcRelayServiceEndpoint,
   GeneralServiceEndpoint as SDKGeneralServiceEndpoint,
+  BlockNodeApi as SDKBlockNodeApi,
 } from '@hiero-ledger/sdk';
 
 import axios from 'axios';
@@ -355,7 +357,7 @@ export function parseRegisteredServiceEndpoint(
       const r = new SDKBlockNodeServiceEndpoint();
       const apis = endpoint.block_node !== null ? parseBlockNodeApis(endpoint.block_node) : null;
       if (apis !== null) {
-        r.setEndpointApis(parseBlockNodeApis(endpoint.block_node));
+        r.setEndpointApis(apis);
         result = r;
       } else {
         result = null
@@ -407,7 +409,26 @@ export function parseBlockNodeApis(blockNode: RegisteredBlockNodeEndpoint | null
   const result: number[] = [];
 
   if (blockNode !== null) {
-
+    for (const api of blockNode.endpoint_apis) {
+      switch (api) {
+        case RegisteredBlockNodeApi.OTHER:
+        case RegisteredBlockNodeApi.UNRECOGNIZED:
+          result.push(SDKBlockNodeApi.Other._code);
+          break;
+        case RegisteredBlockNodeApi.STATUS:
+          result.push(SDKBlockNodeApi.Status._code);
+          break;
+        case RegisteredBlockNodeApi.PUBLISH:
+          result.push(SDKBlockNodeApi.Publish._code);
+          break;
+        case RegisteredBlockNodeApi.SUBSCRIBE_STREAM:
+          result.push(SDKBlockNodeApi.SubscribeStream._code);
+          break;
+        case RegisteredBlockNodeApi.STATE_PROOF:
+          result.push(SDKBlockNodeApi.StateProof._code);
+          break;
+      }
+    }
   }
 
   return result;
