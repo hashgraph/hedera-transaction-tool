@@ -102,6 +102,7 @@ model TransactionDraft {
   user_id          String
   type             String
   transactionBytes String
+  snapshotBytes    String?
   description      String
   isTemplate       Boolean? @default(false)
   details          String?
