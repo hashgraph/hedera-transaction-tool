@@ -169,6 +169,6 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
     await groupPage.fillDescription('test');
     const receiverAccountId = await findMissingAccountId(newAccountId);
     const message = await groupPage.importCsvExpectingError(complexKeyAccountId, receiverAccountId, 5);
-    expect(message).toBe(`Receiver account ${receiverAccountId} does not exist on network. Review the CSV file.`);
+    expect(message).toBe(`Receiver account ${receiverAccountId} on line 5 does not exist on network. Review the CSV file.`);
   });
 });
