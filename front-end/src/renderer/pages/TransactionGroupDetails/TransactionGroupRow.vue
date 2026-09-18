@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
-import { Transaction, TransferTransaction } from '@hiero-ledger/sdk';
-import { formatHbarTransfers } from '@renderer/utils/transferTransactions';
+import { Transaction } from '@hiero-ledger/sdk';
+import { formatTransactionSummary } from '@renderer/utils/transactionSummary';
 import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
@@ -116,19 +116,12 @@ const transactionType = computed(() => {
   return formatTransactionType(typeName, false, true);
 });
 
-const transferSummary = computed(() => {
+const transactionSummary = computed(() => {
   try {
     const transaction = Transaction.fromBytes(
       hexToUint8Array(props.groupItem.transaction.transactionBytes),
     );
-    if (!(transaction instanceof TransferTransaction)) return null;
-    const parts: string[] = [];
-    if (transaction.hbarTransfersList.length > 0) {
-      parts.push(formatHbarTransfers(transaction.hbarTransfersList));
-    }
-    if (transaction.tokenTransfers.size > 0) parts.push('Token transfers');
-    if (transaction.nftTransfers.size > 0) parts.push('NFT transfers');
-    return parts.join(' · ') || 'No transfers';
+    return formatTransactionSummary(transaction);
   } catch {
     return 'Summary unavailable — see details';
   }
@@ -171,11 +164,11 @@ useRevealed(container, () => {
     <td>
       <span class="text-bold">{{ transactionType }}</span>
       <div
-        v-if="transferSummary"
+        v-if="transactionSummary"
         class="text-small mt-1 transfer-summary"
         data-testid="group-transfer-summary"
       >
-        {{ transferSummary }}
+        {{ transactionSummary }}
       </div>
     </td>
     <!-- Column #3 : Status -->
