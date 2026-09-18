@@ -31,6 +31,7 @@ export * from './dom';
 export * from './sdk';
 export * from './transactions';
 export * from './transferTransactions';
+export * from './transactionSummary';
 export * from './validator';
 export * from './axios';
 export * from './ipc';
