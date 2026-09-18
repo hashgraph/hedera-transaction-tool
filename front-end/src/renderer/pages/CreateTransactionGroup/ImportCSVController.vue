@@ -54,7 +54,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
     let validStart: Date | null = null;
     const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
-    for (const row of rows) {
+    for (const [index, row] of rows.entries()) {
       const rowInfo =
         row
           .match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
@@ -126,7 +126,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
             await accountByIdCache.lookup(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toastManager.error(
-              `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+              `Receiver account ${receiverAccount} on line ${index + 1} does not exist on network. Review the CSV file.`,
             );
             logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
@@ -140,8 +140,21 @@ async function handleImportCsv(): Promise<ActionReport | null> {
             );
 
           transaction.setTransactionId(createTransactionId(feePayer, validStart));
-          const transferAmount = rowInfo[1].replace(/,/g, '');
-          const hbarAmount = new Hbar(transferAmount, HbarUnit.Tinybar);
+
+          const rawAmount = rowInfo[1] ?? '';
+          const normalized = rawAmount.replace(/,/g, '');
+          if (
+            !/^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)$/.test(rawAmount)
+            || BigInt(normalized) <= 0n
+          ) {
+            toastManager.error(
+              `Invalid amount on CSV line ${index + 1}. Enter a positive number of tinybars.`,
+            );
+            transactionGroup.clearGroup();
+            return null;
+          }
+
+          const hbarAmount = new Hbar(normalized, HbarUnit.Tinybar);
           transaction.addHbarTransfer(receiverAccount, hbarAmount);
           transaction.addHbarTransfer(senderAccount, hbarAmount.negated());
           // If memo is not provided for the row, use the memo from the header portion
