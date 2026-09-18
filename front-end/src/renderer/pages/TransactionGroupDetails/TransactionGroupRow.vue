@@ -1,5 +1,7 @@
 <script lang="ts" setup>
 import { computed, ref, watch } from 'vue';
+import { Transaction, TransferTransaction } from '@hiero-ledger/sdk';
+import { formatHbarTransfers } from '@renderer/utils/transferTransactions';
 import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
 import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
@@ -9,6 +11,7 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import {
   assertIsLoggedInOrganization,
   getStatusFromCode,
+  hexToUint8Array,
   isSignableTransaction,
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
@@ -113,6 +116,24 @@ const transactionType = computed(() => {
   return formatTransactionType(typeName, false, true);
 });
 
+const transferSummary = computed(() => {
+  try {
+    const transaction = Transaction.fromBytes(
+      hexToUint8Array(props.groupItem.transaction.transactionBytes),
+    );
+    if (!(transaction instanceof TransferTransaction)) return null;
+    const parts: string[] = [];
+    if (transaction.hbarTransfersList.length > 0) {
+      parts.push(formatHbarTransfers(transaction.hbarTransfersList));
+    }
+    if (transaction.tokenTransfers.size > 0) parts.push('Token transfers');
+    if (transaction.nftTransfers.size > 0) parts.push('NFT transfers');
+    return parts.join(' · ') || 'No transfers';
+  } catch {
+    return 'Summary unavailable — see details';
+  }
+});
+
 /* Functions */
 const updateSigningStatus = async (): Promise<void> => {
   canSign.value = false;
@@ -149,6 +170,13 @@ useRevealed(container, () => {
     <!-- Column #2 : Transaction Type -->
     <td>
       <span class="text-bold">{{ transactionType }}</span>
+      <div
+        v-if="transferSummary"
+        class="text-small mt-1 transfer-summary"
+        data-testid="group-transfer-summary"
+      >
+        {{ transferSummary }}
+      </div>
     </td>
     <!-- Column #3 : Status -->
     <td :data-testid="`td-transaction-node-transaction-status-${props.rowIndex}`">
@@ -181,4 +209,11 @@ useRevealed(container, () => {
   </tr>
 </template>
 
-<style scoped></style>
+<style scoped>
+.transfer-summary {
+  min-width: 14rem;
+  max-width: 24rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+</style>
