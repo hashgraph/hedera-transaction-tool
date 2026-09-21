@@ -590,12 +590,12 @@ onMounted(async () => {
                       </p>
                     </template>
                     <template v-else-if="accountData.key.value instanceof DelegateContractId">
-                      <p class="text-secondary text-small" data-testid="p-account-data-key">
+                      <p class="text-semi-bold text-small" data-testid="p-account-data-key">
                         Delegatable Contract: {{ accountData.key.value.toString() }}
                       </p>
                     </template>
                     <template v-else-if="accountData.key.value instanceof ContractId">
-                      <p class="text-secondary text-small" data-testid="p-account-data-key">
+                      <p class="text-semi-bold text-small" data-testid="p-account-data-key">
                         Contract: {{ accountData.key.value.toString() }}
                       </p>
                     </template>
