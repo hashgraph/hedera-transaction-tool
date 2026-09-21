@@ -304,6 +304,19 @@ describe('Accounts.vue', () => {
     expect(wrapper.find('[data-testid="button-confirm-unlink-account"]').exists()).toBe(true);
   });
 
+  test.each([
+    ['ContractId', 'Contract: 0.0.10880916'],
+    ['DelegateContractId', 'Delegatable Contract: 0.0.10880916'],
+  ] as const)('displays a %s key', async (keyType, expectedLabel) => {
+    const sdk = await import('@hiero-ledger/sdk');
+    mocks.accountData.key.value = sdk[keyType].fromString('0.0.10880916');
+
+    const wrapper = mountAccounts();
+    await flushPromises();
+
+    expect(wrapper.get('[data-testid="p-account-data-key"]').text()).toBe(expectedLabel);
+  });
+
   test('shows complex key details and deleted account warning', async () => {
     const { KeyList } = await import('@hiero-ledger/sdk');
     mocks.accountData.key.value = new KeyList();
