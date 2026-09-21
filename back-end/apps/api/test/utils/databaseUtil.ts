@@ -439,25 +439,6 @@ export async function getTransactions() {
   return [];
 }
 
-export async function addReviewerList(
-  transactionId: number,
-  threshold: number,
-  members: { userId: number; userKeyId: number | null }[],
-) {
-  const listRepo = await getRepository(TransactionReviewerList);
-  const memberRepo = await getRepository(TransactionReviewerListMember);
-
-  const list = await listRepo.save(
-    listRepo.create({ transactionId, threshold, name: null, description: null }),
-  );
-
-  const savedMembers = await memberRepo.save(
-    members.map(m => memberRepo.create({ listId: list.id, userId: m.userId, userKeyId: m.userKeyId })),
-  );
-
-  return { list, members: savedMembers };
-}
-
 export function getExpiredTransaction(payerId: AccountId): SDKTransaction {
   return new AccountCreateTransaction().setTransactionId(
     createTransactionId(payerId, new Date(Date.now() - 1000)),
