@@ -40,11 +40,18 @@ describe('ReviewActionDto', () => {
     expect(errors.some(e => e.property === 'accepted')).toBe(true);
   });
 
-  test('a rejection note is optional (accepted: false with no note is valid)', () => {
+  test('rejects a rejection with no note (note is required when accepted is false)', () => {
     const dto = toDto({ accepted: false, signatures: [validSignature] });
 
     const errors = validateSync(dto);
-    expect(errors.length).toBe(0);
+    expect(errors.some(e => e.property === 'note')).toBe(true);
+  });
+
+  test('rejects a rejection with an empty note', () => {
+    const dto = toDto({ accepted: false, note: '', signatures: [validSignature] });
+
+    const errors = validateSync(dto);
+    expect(errors.some(e => e.property === 'note')).toBe(true);
   });
 
   test('rejects a non-string note when rejecting', () => {

@@ -590,7 +590,6 @@ export class TransactionsService {
         }
 
         if (
-          transaction.status !== TransactionStatus.READY_FOR_REVIEW &&
           transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
           transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
         )

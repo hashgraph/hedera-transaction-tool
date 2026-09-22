@@ -2,7 +2,6 @@ import {
   IsArray,
   IsBoolean,
   IsNotEmpty,
-  IsOptional,
   IsString,
   ValidateIf,
   ValidateNested,
@@ -20,7 +19,6 @@ export class ReviewActionDto {
   @ValidateIf(o => o.accepted === false)
   @IsString()
   @IsNotEmpty()
-  @IsOptional()
   note?: string;
 
   @ApiProperty({
