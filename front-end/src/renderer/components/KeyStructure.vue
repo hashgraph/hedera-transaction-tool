@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import KeyItem from './KeyItem.vue';
+import KeyComponent from './KeyComponent.vue';
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
@@ -37,7 +37,7 @@ defineEmits(['update:keyList']);
         <AppPublicKeyNickname :public-key="item" />
       </p>
       <p v-else class="ms-5 my-3">
-        <KeyItem :item="item" />
+        <KeyComponent :component="item" />
       </p>
     </template>
   </div>
