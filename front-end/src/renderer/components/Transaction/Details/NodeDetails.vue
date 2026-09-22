@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KeyComponent from '@renderer/components/KeyComponent.vue';
 import type { ITransactionFull } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref } from 'vue';
@@ -143,12 +144,12 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
       <div v-if="transaction.adminKey" class="col-12 my-3">
         <h4 :class="detailItemLabelClass">Admin Key</h4>
         <p :class="detailItemValueClass" data-testid="p-node-details-admin-key">
-          <template v-if="transaction.adminKey instanceof KeyList && true">
+          <template v-if="transaction.adminKey instanceof KeyList">
             <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
               >See details</span
             >
           </template>
-          <template v-else-if="transaction.adminKey instanceof PublicKey && true">
+          <template v-else-if="transaction.adminKey instanceof PublicKey">
             <p class="overflow-hidden">
               <span class="text-semi-bold text-pink">
                 {{ transaction.adminKey._key._type }}
@@ -156,7 +157,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               {{ transaction.adminKey.toStringRaw() }}
             </p>
           </template>
-          <template v-else>None</template>
+          <template v-else>
+            <KeyComponent :component="transaction.adminKey" />
+          </template>
         </p>
       </div>
 

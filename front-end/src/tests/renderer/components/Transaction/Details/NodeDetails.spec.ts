@@ -4,6 +4,9 @@ import { mount } from '@vue/test-utils';
 
 import {
   AccountId,
+  ContractId,
+  DelegateContractId,
+  Key,
   NodeCreateTransaction,
   NodeUpdateTransaction,
   Timestamp,
@@ -161,5 +164,21 @@ describe('NodeDetails.vue — associatedRegisteredNodes', () => {
       // 3-5 is a consecutive run; 9 stands alone.
       expect(cell.text()).toBe('3-5, 9');
     });
+  });
+});
+
+describe('admin key display', () => {
+  it('renders contract and delegate-contract keys explicitly', () => {
+    for (const [key, label] of [
+      [ContractId.fromString('0.0.456'), 'Contract 0.0.456'],
+      [DelegateContractId.fromString('0.0.789'), 'Delegate Contract 0.0.789'],
+    ] as const) {
+      const wrapper = mountDetails(new NodeCreateTransaction().setAdminKey(key));
+      expect(wrapper.text()).toContain(label);
+    }
+  });
+  it('renders an error for an unknown set key', () => {
+    const wrapper = mountDetails(new NodeCreateTransaction().setAdminKey({} as Key));
+    expect(wrapper.get('[role="alert"]').text()).toContain('Unsupported key type');
   });
 });
