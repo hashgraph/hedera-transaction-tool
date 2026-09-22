@@ -39,7 +39,7 @@ export class TransactionNodesService {
             mirrorNetwork: network,
           },
           user,
-          { approver: true }
+          { }
         );
 
         rows = await this.entityManager.query(query.text, query.values);
@@ -71,7 +71,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 
@@ -90,7 +89,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 
@@ -112,7 +110,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 

@@ -1,5 +1,4 @@
 export * from './transaction.entity';
-export * from './transaction-approver.entity';
 export * from './transaction-comment.entity';
 export * from './transaction-group.entity';
 export * from './transaction-group-item.entity';

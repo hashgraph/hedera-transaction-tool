@@ -254,7 +254,7 @@ describe('TransactionGroupsService', () => {
       });
     });
 
-    it('should not fetch signers/approvers/observers when full is false', async () => {
+    it('should not fetch signers/observers when full is false', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue(mockRows);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
@@ -262,16 +262,14 @@ describe('TransactionGroupsService', () => {
       await service.getTransactionGroup(userWithKeys, 1, false);
 
       expect(transactionsService.getTransactionSignersForTransactions).not.toHaveBeenCalled();
-      expect(transactionsService.getTransactionApproversForTransactions).not.toHaveBeenCalled();
       expect(transactionsService.getTransactionObserversForTransactions).not.toHaveBeenCalled();
     });
 
-    it('should fetch and map signers, approvers, and observers when full is true', async () => {
+    it('should fetch and map signers and observers when full is true', async () => {
       const mockSigners = [
         { transactionId: 10, userId: 1 },
         { transactionId: 11, userId: 2 },
       ];
-      const mockApprovers = [{ transactionId: 10, userId: 3 }];
       const mockObservers = [{ transactionId: 11, userId: 4 }];
 
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
@@ -279,13 +277,11 @@ describe('TransactionGroupsService', () => {
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       transactionsService.getTransactionSignersForTransactions.mockResolvedValue(mockSigners as any);
-      transactionsService.getTransactionApproversForTransactions.mockResolvedValue(mockApprovers as any);
       transactionsService.getTransactionObserversForTransactions.mockResolvedValue(mockObservers as any);
 
       const result = await service.getTransactionGroup(userWithKeys, 1, true);
 
       expect(transactionsService.getTransactionSignersForTransactions).toHaveBeenCalledWith([10, 11]);
-      expect(transactionsService.getTransactionApproversForTransactions).toHaveBeenCalledWith([10, 11]);
       expect(transactionsService.getTransactionObserversForTransactions).toHaveBeenCalledWith([10, 11]);
 
       const item1 = result.groupItems.find(i => i.transactionId === 10);
@@ -293,28 +289,24 @@ describe('TransactionGroupsService', () => {
 
       expect(item1).not.toBeUndefined();
       expect(item1!.transaction.signers).toEqual([{ transactionId: 10, userId: 1 }]);
-      expect(item1!.transaction.approvers).toEqual([{ transactionId: 10, userId: 3 }]);
       expect(item1!.transaction.observers).toEqual([]);
 
       expect(item2).not.toBeUndefined();
       expect(item2!.transaction.signers).toEqual([{ transactionId: 11, userId: 2 }]);
-      expect(item2!.transaction.approvers).toEqual([]);
       expect(item2!.transaction.observers).toEqual([{ transactionId: 11, userId: 4 }]);
     });
 
-    it('should default signers/approvers/observers to empty arrays if not found in map', async () => {
+    it('should default signers/observers to empty arrays if not found in map', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue([mockRows[0]]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       transactionsService.getTransactionSignersForTransactions.mockResolvedValue([]);
-      transactionsService.getTransactionApproversForTransactions.mockResolvedValue([]);
       transactionsService.getTransactionObserversForTransactions.mockResolvedValue([]);
 
       const result = await service.getTransactionGroup(userWithKeys, 1, true);
 
       expect(result.groupItems[0].transaction.signers).toEqual([]);
-      expect(result.groupItems[0].transaction.approvers).toEqual([]);
       expect(result.groupItems[0].transaction.observers).toEqual([]);
     });
   });

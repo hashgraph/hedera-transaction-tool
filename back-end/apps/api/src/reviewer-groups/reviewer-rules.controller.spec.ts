@@ -27,7 +27,6 @@ describe('ReviewerRulesController', () => {
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],

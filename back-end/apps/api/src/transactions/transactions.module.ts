@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   Notification,
   Transaction,
-  TransactionApprover,
   TransactionComment,
   TransactionEntity,
   TransactionGroup,
@@ -33,7 +32,6 @@ import { TransactionGroupsController, TransactionGroupsService } from './groups'
 import { CommentsController, CommentsService } from './comments';
 import { SignersController, SignersService } from './signers';
 import { ObserversController, ObserversService } from './observers';
-import { ApproversController, ApproversService } from './approvers';
 import { TransactionNodesController } from './nodes/transaction-nodes.controller';
 import { TransactionNodesService } from './nodes/transaction-nodes.service';
 import { ReviewerAssignmentService } from './reviewer-assignment.service';
@@ -50,7 +48,6 @@ import { ReviewersController, ReviewersService } from './reviewers';
       TransactionReviewerList,
       TransactionReviewerListMember,
       TransactionSigner,
-      TransactionApprover,
       TransactionObserver,
       TransactionReviewerList,
       TransactionReviewerListMember,
@@ -76,7 +73,6 @@ import { ReviewersController, ReviewersService } from './reviewers';
     CommentsController,
     SignersController,
     ObserversController,
-    ApproversController,
     TransactionGroupsController,
     TransactionNodesController,
     ReviewersController,
@@ -86,7 +82,6 @@ import { ReviewersController, ReviewersService } from './reviewers';
     CommentsService,
     SignersService,
     ObserversService,
-    ApproversService,
     TransactionGroupsService,
     TransactionNodesService,
     ReviewerAssignmentService,

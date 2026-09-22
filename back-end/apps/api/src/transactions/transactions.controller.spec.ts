@@ -78,7 +78,6 @@ describe('TransactionsController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -119,12 +118,10 @@ describe('TransactionsController', () => {
         userId: user.id,
         deletedAt: null,
         createdTransactions: [],
-        approvedTransactions: [],
         signedTransactions: [],
       },
       creatorKeyId: 1,
       signers: [],
-      approvers: [],
       observers: [],
       comments: [],
       groupItem: undefined,
@@ -363,44 +360,6 @@ describe('TransactionsController', () => {
     it('should throw bad request if transaction does not exist', async () => {
       transactionService.getTransactionById.mockResolvedValue(null);
       await expect( controller.shouldSignTransaction(user, 1)).rejects.toThrow(BadRequestException);
-    });
-  });
-
-  describe('getTransactionsToApprove', () => {
-    it('should return an array of transactions', async () => {
-      const result = {
-        totalItems: 1,
-        items: [transaction],
-        page: 1,
-        size: 10,
-      };
-
-      transactionService.getTransactionsToApprove.mockResolvedValue(result);
-
-      expect(await controller.getTransactionsToApprove(user, pagination)).toBe(result);
-    });
-
-    it('should return an empty array if no transactions exist', async () => {
-      const result = {
-        totalItems: 0,
-        items: [],
-        page: 0,
-        size: 0,
-      };
-
-      transactionService.getTransactionsToApprove.mockResolvedValue(result);
-
-      expect(await controller.getTransactionsToApprove(user, pagination)).toEqual(result);
-    });
-  });
-
-  describe('shouldApproveTransaction', () => {
-    it('should return a boolean indicating if the user can approve the transaction', async () => {
-      const result = false;
-
-      transactionService.shouldApproveTransaction.mockResolvedValue(result);
-
-      expect(await controller.shouldApproveTransaction(user, 1)).toBe(result);
     });
   });
 

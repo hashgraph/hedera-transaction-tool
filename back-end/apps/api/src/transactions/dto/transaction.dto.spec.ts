@@ -5,7 +5,6 @@ import { validateSync } from 'class-validator'
 import { TransactionDto, TransactionFullDto } from './transaction.dto'
 import { TransactionGroupItemDto } from './transaction-group-item.dto'
 import { TransactionSignerUserKeyDto } from './transaction-signer.dto'
-import { TransactionApproverDto } from './transaction-approver.dto'
 import { TransactionObserverDto } from './transaction-observer.dto'
 
 describe('TransactionDto', () => {
@@ -82,7 +81,7 @@ describe('TransactionDto', () => {
     expect(errors.length).toBe(0);
   });
 
-  test('maps full transaction -> TransactionFullDto with signers/approvers/observers', () => {
+  test('maps full transaction -> TransactionFullDto with signers/observers', () => {
     const plainFull = {
       id: 1,
       name: 'FullTx',
@@ -98,7 +97,6 @@ describe('TransactionDto', () => {
       creatorKey: { id: 9, user: { id: 10, email: 'creator@example.com' } },
       groupItem: {},
       signers: [{}],
-      approvers: [{}],
       observers: [{}]
     };
 
@@ -110,9 +108,6 @@ describe('TransactionDto', () => {
 
     expect(dto.signers).toBeInstanceOf(Array);
     expect(dto.signers[0]).toBeInstanceOf(TransactionSignerUserKeyDto);
-
-    expect(dto.approvers).toBeInstanceOf(Array);
-    expect(dto.approvers[0]).toBeInstanceOf(TransactionApproverDto);
 
     expect(dto.observers).toBeInstanceOf(Array);
     expect(dto.observers[0]).toBeInstanceOf(TransactionObserverDto);

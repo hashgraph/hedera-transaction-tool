@@ -18,16 +18,11 @@ export enum NotificationType {
   TRANSACTION_READY_FOR_EXECUTION = 'TRANSACTION_READY_FOR_EXECUTION',
   TRANSACTION_EXECUTED = 'TRANSACTION_EXECUTED',
   TRANSACTION_FAILED = 'TRANSACTION_FAILED',
-  TRANSACTION_REJECTED = 'TRANSACTION_REJECTED',
   TRANSACTION_EXPIRED = 'TRANSACTION_EXPIRED',
   TRANSACTION_CANCELLED = 'TRANSACTION_CANCELLED',
   TRANSACTION_READY_FOR_REVIEW = 'TRANSACTION_READY_FOR_REVIEW',
   TRANSACTION_INDICATOR_REVIEW = 'TRANSACTION_INDICATOR_REVIEW',
-  TRANSACTION_APPROVED = 'TRANSACTION_APPROVED',
-  TRANSACTION_APPROVAL_REJECTION = 'TRANSACTION_APPROVAL_REJECTION',
   TRANSACTION_REVIEWER_REJECTION = 'TRANSACTION_REVIEWER_REJECTION',
-  TRANSACTION_INDICATOR_APPROVE = 'TRANSACTION_INDICATOR_APPROVE',
-  TRANSACTION_INDICATOR_REJECTED = 'TRANSACTION_INDICATOR_REJECTED',
   TRANSACTION_INDICATOR_SIGN = 'TRANSACTION_INDICATOR_SIGN',
   TRANSACTION_INDICATOR_EXECUTABLE = 'TRANSACTION_INDICATOR_EXECUTABLE',
   TRANSACTION_INDICATOR_EXECUTED = 'TRANSACTION_INDICATOR_EXECUTED',
@@ -44,14 +39,6 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
 }> = {
   // Indicator types - UI notification center only, deletable when status changes
   [NotificationType.TRANSACTION_INDICATOR_REVIEW]: {
-    email: false,
-    inApp: true,
-  },
-  [NotificationType.TRANSACTION_INDICATOR_APPROVE]: {
-    email: false,
-    inApp: true,
-  },
-  [NotificationType.TRANSACTION_INDICATOR_REJECTED]: {
     email: false,
     inApp: true,
   },
@@ -119,10 +106,6 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     email: false, // type used for tier classification; template not yet implemented
     inApp: false,
   },
-  [NotificationType.TRANSACTION_REJECTED]: {
-    email: false, // type used for tier classification; template not yet implemented
-    inApp: false,
-  },
   [NotificationType.TRANSACTION_EXPIRED]: {
     email: true,
     inApp: false,
@@ -137,15 +120,6 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: false,
   },
 
-  // Approval notifications - may be required in the future
-  [NotificationType.TRANSACTION_APPROVED]: {
-    email: false,
-    inApp: false,
-  },
-  [NotificationType.TRANSACTION_APPROVAL_REJECTION]: {
-    email: false,
-    inApp: false,
-  },
   [NotificationType.TRANSACTION_REVIEWER_REJECTION]: {
     email: false,
     inApp: true,

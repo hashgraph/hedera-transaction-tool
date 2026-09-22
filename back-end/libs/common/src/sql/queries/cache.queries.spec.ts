@@ -6,6 +6,7 @@ import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/comm
 import { randomUUID } from 'node:crypto';
 
 const DIAG_TAG = '[cache.queries.spec]';
+
 function diag(message: string, extra?: Record<string, unknown>) {
   if (!enableDiag) return;
   const payload = {
@@ -14,8 +15,12 @@ function diag(message: string, extra?: Record<string, unknown>) {
     testName: expect.getState?.().currentTestName ?? null,
     ...extra,
   };
-  // eslint-disable-next-line no-console
   console.log(`${DIAG_TAG} ${message}`, payload);
+}
+
+async function getCurrentTime(ds: DataSource): Promise<Date> {
+  const [{ currentTime }] = await ds.query('SELECT LOCALTIMESTAMP AS "currentTime"');
+  return currentTime as Date;
 }
 
 describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
@@ -350,7 +355,8 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
       });
 
       const key = { account: '0.0.900', mirrorNetwork: 'mainnet' };
-      const beforeClaim = new Date();
+
+      const beforeClaim = await getCurrentTime(dataSource);
 
       const { text: query, values } = getUpsertRefreshTokenForCacheQuery(
         sqlBuilder,
@@ -364,8 +370,10 @@ describe('getUpsertRefreshTokenForCacheQuery - Integration', () => {
         new Date(Date.now() - 60000),
       ]);
 
-      // Allow tolerance for timing and timezone differences
+      const afterClaim = await getCurrentTime(dataSource);
+
       expect(result[0].updatedAt.getTime()).toBeGreaterThanOrEqual(beforeClaim.getTime());
+      expect(result[0].updatedAt.getTime()).toBeLessThanOrEqual(afterClaim.getTime());
 
       // createdAt should remain unchanged
       expect(result[0].createdAt.getTime()).toBe(oldDate.getTime());

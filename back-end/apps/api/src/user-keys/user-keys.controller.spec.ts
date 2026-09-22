@@ -50,7 +50,6 @@ describe('UserKeysController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -67,7 +66,6 @@ describe('UserKeysController', () => {
       userId: user.id,
       deletedAt: null,
       createdTransactions: [],
-      approvedTransactions: [],
       signedTransactions: [],
     };
   });

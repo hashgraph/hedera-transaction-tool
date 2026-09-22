@@ -1,33 +1,42 @@
-import type { Transfer } from '@hiero-ledger/sdk';
+import { Hbar, type Transfer } from '@hiero-ledger/sdk';
 
 import { stringifyHbarOrTinybar } from './index';
 
 export function formatHbarTransfers(transfers: Transfer[]): string {
-  if (transfers.length === 0) {
+  const senders = transfers.filter(transfer => transfer.amount.isNegative());
+  const receivers = transfers.filter(transfer => transfer.amount.toBigNumber().isGreaterThan(0));
+
+  if (senders.length === 0 && receivers.length === 0) {
     return 'No transfers';
   }
-
-  if (transfers.length === 1) {
-    const amount = transfers[0].amount;
-    if (amount.isNegative()) {
-      return 'Missing receiver';
-    } else {
-      return 'Missing sender';
-    }
+  if (senders.length === 0) {
+    return 'Missing sender';
+  }
+  if (receivers.length === 0) {
+    return 'Missing receiver';
   }
 
-  if (transfers.length === 2) {
-    // the JS SDK sorts the order of the transfers by account ID. We don't want this. We want the sender to be on the
-    // left and the receiver to be on the right. So we need to check if the amount is negative or positive and then
-    // arrange the transfers accordingly
-    let sender = transfers[0];
-    let receiver = transfers[1];
-    if (receiver.amount.isNegative()) {
-      sender = transfers[1];
-      receiver = transfers[0];
-    }
-    return `${sender.accountId.toString()} --> ${stringifyHbarOrTinybar(receiver.amount)} --> ${receiver.accountId.toString()}`;
+  const totalCredit = receivers.reduce(
+    (total, transfer) => total.plus(transfer.amount.toBigNumber()),
+    new Hbar(0).toBigNumber(),
+  );
+  const totalDebit = senders.reduce(
+    (total, transfer) => total.plus(transfer.amount.toBigNumber()),
+    new Hbar(0).toBigNumber(),
+  );
+  if (!totalCredit.plus(totalDebit).isZero()) {
+    return 'Unbalanced transfers';
   }
 
-  return 'Multiple transfers';
+  if (senders.length > 1) {
+    return 'Multiple transfers';
+  }
+
+  const accounts = (entries: Transfer[]) => {
+    const ids = [...new Set(entries.map(transfer => transfer.accountId.toString()))];
+    const others = ids.length - 1;
+    return ids[0] + (others > 0 ? ` and ${others} other account${others === 1 ? '' : 's'}` : '');
+  };
+
+  return `${accounts(senders)} → ${stringifyHbarOrTinybar(new Hbar(totalCredit))} → ${accounts(receivers)}`;
 }
