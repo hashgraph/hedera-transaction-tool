@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -42,8 +43,6 @@ import {
   Transaction,
   TransactionEntity,
   TransactionObserver,
-  TransactionReviewerList,
-  TransactionReviewerListMember,
   TransactionSigner,
   TransactionStatus,
   User,
@@ -131,6 +130,9 @@ export class TransactionsService {
           user: true
         },
         observers: true,
+        reviewerLists: {
+          members: true,
+        },
         comments: true,
         groupItem: {
           group: true
@@ -527,6 +529,9 @@ export class TransactionsService {
         creatorKey: true,
         signers: true,
         observers: true,
+        reviewerLists: {
+          members: true,
+        },
       },
     });
 
@@ -980,24 +985,25 @@ export class TransactionsService {
 
     const requiredKeyIds = await this.getUserKeysToSign(transaction, user, true);
 
-    if (
+    if (transaction.observers === undefined || transaction.reviewerLists === undefined) {
+      // Every caller of verifyAccess must eager-load `observers` and
+      // `reviewerLists: { members: true }` together. An unloaded relation here would
+      // silently read as "not an observer/reviewer" (transaction.observers?.some(...)
+      // or transaction.reviewerLists?.some(...) on undefined resolves to false) rather
+      // than erroring, which is a much worse failure mode than this loud one.
+      throw new InternalServerErrorException(
+        'verifyAccess requires the observers and reviewerLists relations to be loaded',
+      );
+    }
+
+    return (
       requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      !!transaction.observers?.some(o => o.userId === user.id)
-    ) return true;
-
-    const reviewerMember = await this.entityManager
-      .createQueryBuilder(TransactionReviewerListMember, 'member')
-      .innerJoin(
-        TransactionReviewerList,
-        'list',
-        'list.id = member.listId AND list.transactionId = :transactionId',
-        { transactionId: transaction.id },
+      transaction.observers.some(o => o.userId === user.id) ||
+      transaction.reviewerLists.some(list =>
+        list.members.some(m => m.userId === user.id),
       )
-      .where('member.userId = :userId', { userId: user.id })
-      .getOne();
-
-    return reviewerMember != null;
+    );
   }
 
   async getTransactionSignersForTransactions(

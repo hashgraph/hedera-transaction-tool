@@ -17,6 +17,7 @@ import {
   TransactionComment,
   TransactionSigner,
   TransactionObserver,
+  TransactionReviewerList,
   TransactionGroupItem,
   TransactionCachedAccount,
   TransactionCachedNode,
@@ -162,6 +163,9 @@ export class Transaction {
 
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers?: TransactionObserver[];
+
+  @OneToMany(() => TransactionReviewerList, list => list.transaction)
+  reviewerLists?: TransactionReviewerList[];
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
