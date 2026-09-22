@@ -1,7 +1,17 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { KeyList, PublicKey } from '@hiero-ledger/sdk';
+import {
+  AccountId,
+  TransactionId,
+  AccountUpdateTransaction,
+  Transaction,
+  ContractId,
+  DelegateContractId,
+  Key,
+  KeyList,
+  PublicKey,
+} from '@hiero-ledger/sdk';
 
 import KeyStructure from '@renderer/components/KeyStructure.vue';
 
@@ -83,5 +93,35 @@ describe('KeyStructure.vue', () => {
       });
       expect(wrapper.findAll('.public-key-nickname')).toHaveLength(2);
     });
+  });
+});
+
+describe('complete key review', () => {
+  it('displays contract keys after rebuilding transaction bytes', () => {
+    const tx = new AccountUpdateTransaction()
+      .setAccountId('0.0.123')
+      .setKey(
+        new KeyList([
+          PublicKey.fromString(PK1),
+          ContractId.fromString('0.0.456'),
+          new KeyList([DelegateContractId.fromString('0.0.789')]),
+        ]),
+      )
+      .setTransactionId(TransactionId.fromString('0.0.123@1234567890.000000000'))
+      .setNodeAccountIds([AccountId.fromString('0.0.3')])
+      .freeze();
+    const rebuilt = Transaction.fromBytes(tx.toBytes()) as AccountUpdateTransaction;
+    const wrapper = mount(KeyStructure, { props: { keyList: rebuilt.key as KeyList } });
+    expect(wrapper.text()).toContain('Contract 0.0.456');
+    expect(wrapper.text()).toContain('Delegate Contract 0.0.789');
+    expect(wrapper.findAll('.public-key-nickname')).toHaveLength(1);
+  });
+  it('warns prominently for an unknown nested component', () => {
+    const wrapper = mount(KeyStructure, {
+      props: {
+        keyList: new KeyList([new KeyList([{} as Key])]),
+      },
+    });
+    expect(wrapper.get('[role="alert"]').text()).toContain('Unsupported key type');
   });
 });
