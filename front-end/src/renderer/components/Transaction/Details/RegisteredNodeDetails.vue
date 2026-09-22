@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KeyComponent from '@renderer/components/KeyComponent.vue';
 import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount, ref } from 'vue';
@@ -105,7 +106,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               {{ transaction.adminKey.toStringRaw() }}
             </span>
           </template>
-          <template v-else>None</template>
+          <template v-else>
+            <KeyComponent :component="transaction.adminKey" />
+          </template>
         </p>
       </div>
 
