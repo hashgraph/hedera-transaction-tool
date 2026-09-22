@@ -12,10 +12,19 @@ import {
   User,
   UserKey,
 } from '@entities';
-import { ErrorCodes, NatsPublisherService } from '@app/common';
+import { decode, ErrorCodes, NatsPublisherService } from '@app/common';
 
 import { ReviewersService, buildReviewAttestationMessage } from './reviewers.service';
 import { ReviewSignatureDto } from '../dto';
+
+// @app/common re-exports `decode` through a chain of barrel files compiled with
+// non-configurable getters, so jest.spyOn can't stub it directly. Mocking the whole
+// module (keeping everything else real via requireActual) is the only way to force
+// decode() to throw, needed to exercise the try/catch around it in resolveSignedGroups.
+jest.mock('@app/common', () => ({
+  ...jest.requireActual('@app/common'),
+  decode: jest.fn(jest.requireActual('@app/common').decode),
+}));
 
 const reviewerKey = PrivateKey.generateED25519();
 const otherKey = PrivateKey.generateED25519();
@@ -97,6 +106,10 @@ describe('ReviewersService', () => {
 
     service = module.get(ReviewersService);
     jest.resetAllMocks();
+    // resetAllMocks() above wipes the default implementation the jest.mock() factory
+    // gave `decode` at module-load time, so every other test would otherwise see it
+    // return undefined instead of actually decoding. Restore it each test.
+    (decode as jest.Mock).mockImplementation(jest.requireActual('@app/common').decode);
 
     publisher.publish.mockResolvedValue({ success: true } as any);
   });
@@ -234,6 +247,27 @@ describe('ReviewersService', () => {
       ).rejects.toThrow(ErrorCodes.RSIV);
     });
 
+    it('throws ForbiddenException RSIV when decode() throws on the signature', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+      dataSource.manager.find.mockResolvedValueOnce([makeUserKey()]);
+
+      setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      (decode as jest.Mock).mockImplementationOnce(() => {
+        throw new Error('malformed signature');
+      });
+
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(5, 1, true, undefined)] },
+          makeUser(),
+        ),
+      ).rejects.toThrow(ErrorCodes.RSIV);
+    });
+
     it('throws ForbiddenException RSIV when signature is not valid hex', async () => {
       dataSource.manager.findOne.mockResolvedValueOnce(
         makeTransaction(TransactionStatus.READY_FOR_REVIEW),
@@ -292,6 +326,29 @@ describe('ReviewersService', () => {
 
       expect(updateQb.whereInIds).toHaveBeenCalledWith([10]);
       expect(updateQb.whereInIds).not.toHaveBeenCalledWith([11]);
+    });
+
+    it('throws ForbiddenException RKNA when a validly-signed key matches none of the pending memberships', async () => {
+      dataSource.manager.findOne.mockResolvedValueOnce(
+        makeTransaction(TransactionStatus.READY_FOR_REVIEW),
+      );
+
+      // The user has a pending membership tied to key 5, but submits a signature for key 99 -
+      // a different key they hold that isn't tied to any pending membership on this transaction.
+      setupManagerChain([makeMember({ userKeyId: 5 })]);
+
+      const unrelatedKey = PrivateKey.generateED25519();
+      dataSource.manager.find.mockResolvedValueOnce([
+        { id: 99, publicKey: unrelatedKey.publicKey.toStringDer() } as unknown as UserKey,
+      ]);
+
+      await expect(
+        service.submitReview(
+          1,
+          { accepted: true, signatures: [signAs(99, 1, true, undefined, unrelatedKey)] },
+          makeUser(),
+        ),
+      ).rejects.toThrow(ErrorCodes.RKNA);
     });
 
     it('actions memberships under multiple lists when signatures for both keys are submitted', async () => {
