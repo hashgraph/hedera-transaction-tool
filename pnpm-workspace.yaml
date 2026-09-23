@@ -45,7 +45,7 @@ catalog:
   axios: 1.20.0
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
-  dotenv: 17.4.2
+  dotenv: 18.0.1
   eslint: 10.10.0
   jest: 30.5.1
   jszip: 3.10.2
