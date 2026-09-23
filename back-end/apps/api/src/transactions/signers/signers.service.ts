@@ -1,3 +1,4 @@
+import { assertTransactionKeysReviewable } from '@app/common/utils/sdk/transaction-key-review';
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
@@ -226,6 +227,7 @@ export class SignersService {
     userKeyMap: Map<string, UserKey>,
     existingSignerIds: Set<number>
   ) {
+    assertTransactionKeysReviewable(transaction.transactionBytes);
     let sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
     // Verify ALL signatures (including already-signed keys)
