@@ -1,4 +1,4 @@
-import { Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
+import { ContractId, Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 import { proto } from '@hiero-ledger/proto';
 
 export function flattenKeyList(keyList: Key): PublicKey[] {
@@ -6,8 +6,13 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
     return [keyList];
   }
 
+  // Contract keys do not supply public-key signatures.
+  if (keyList instanceof ContractId) {
+    return [];
+  }
+
   if (!(keyList instanceof KeyList)) {
-    throw new Error('Invalid key list');
+    throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
   }
 
   const keys: PublicKey[] = [];
@@ -22,6 +27,8 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
           keys.push(pk);
         }
       });
+    } else if (!(key instanceof ContractId)) {
+      throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
     }
   });
 
@@ -29,7 +36,9 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
 }
 
 export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
-  if (key instanceof KeyList) {
+  if (key instanceof ContractId) {
+    return false;
+  } else if (key instanceof KeyList) {
     const keys = key.toArray();
 
     if (keys.length === 0) return false;
@@ -45,7 +54,9 @@ export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
     return publicKeys.includes(key.toStringRaw());
-  } else throw new Error(`Invalid key type`);
+  } else {
+    throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
+  }
 };
 
 export const serializeKey = (key: Key) => {
