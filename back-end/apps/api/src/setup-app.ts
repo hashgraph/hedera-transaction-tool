@@ -83,6 +83,17 @@ function connectMicroservices(app: NestExpressApplication) {
   });
 }
 
+// Only 'docs' exists today - a future 'live' mode (Swagger UI's "Try it out") needs
+// DocumentBuilder.addBearerAuth() + @ApiBearerAuth() wired up first; see README.
+export type SwaggerMode = 'off' | 'docs';
+
+// Deliberately independent of NODE_ENV: several deployments (e.g. staging) set
+// NODE_ENV=production to get the correct SSL/trust-proxy/bootstrap behavior in
+// main.ts, which previously also suppressed Swagger there as a side effect.
+export function getSwaggerMode(configService: ConfigService): SwaggerMode {
+  return (configService.get<string>('SWAGGER_MODE', { infer: true }) as SwaggerMode) ?? 'off';
+}
+
 export function setupSwagger(app: NestExpressApplication) {
   const config = new DocumentBuilder()
     .setTitle('Hedera Transaction Tool Backend API')
@@ -95,5 +106,9 @@ export function setupSwagger(app: NestExpressApplication) {
     // .addServer('https://production.yourapi.com/', 'Production')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api-docs', app, document, {
+    // Hides "Try it out" (supportedSubmitMethods: []) so the schema is browsable
+    // without letting a visitor fire live requests through the UI.
+    swaggerOptions: { supportedSubmitMethods: [] },
+  });
 }

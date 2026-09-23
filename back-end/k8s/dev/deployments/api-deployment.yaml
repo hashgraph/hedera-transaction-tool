@@ -75,6 +75,8 @@ spec:
               value: '0.23.0'
             - name: FRONTEND_REPO_URL
               value: 'https://github.com/hashgraph/hedera-transaction-tool/releases'
+            - name: SWAGGER_MODE
+              value: 'docs'
           ports:
             - containerPort: 3000
 ---
