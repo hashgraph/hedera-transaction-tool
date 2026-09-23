@@ -1,3 +1,4 @@
+import { assertTransactionKeysReviewable } from '@renderer/utils/transactionKeyReview';
 import { AccountId, Key, PublicKey, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { compareKeys } from '../sdk';
@@ -72,6 +73,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     publicKeyOwnerCache: PublicKeyOwnerCache,
     organization: ConnectedOrganization | null,
   ): Promise<SignatureAudit> {
+    assertTransactionKeysReviewable(this.transaction);
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
