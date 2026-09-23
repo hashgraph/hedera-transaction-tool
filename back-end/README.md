@@ -106,9 +106,11 @@ The API's Swagger UI (`/api-docs`) is controlled by `SWAGGER_MODE` in `apps/api/
 
 - `off` (default) - Swagger is not mounted at all.
 - `docs` - the docs are browsable but "Try it out" is disabled, so a visitor can't fire live requests through the UI.
-- `live` - docs plus live request execution, as if you were using a REST client with the schema pre-filled in.
+- `live` - docs plus live request execution, as if you were using a REST client with the schema pre-filled in. **Not currently supported** - see below.
 
-Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route, and `live` mode additionally lets them execute real requests against the API from the browser. "Try it out" always sends a real HTTP request to the running server - it is not mocked - and no bearer-auth scheme is declared in the docs, so authenticated endpoints will 401 while public ones (login, signup, reset-password, OTP) get real side effects (emails sent, DB writes, rate-limit counters) the same as if hit directly. Only use `live` on an isolated server you're comfortable receiving real, unauthenticated requests against - never on shared or production-adjacent infrastructure. If the deployment is public-facing at all, pair it with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route. If the deployment is public-facing at all, pair it with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+
+`live` exists as a config value but isn't a supported setup yet: no bearer-auth scheme is declared in the docs (`@nestjs/swagger` supports this via `DocumentBuilder.addBearerAuth()` plus `@ApiBearerAuth()` on protected routes, which would give Swagger UI a real "Authorize" flow, but it hasn't been wired up here). Until then, "Try it out" would just get a 401 on every authenticated endpoint, while public ones (login, signup, reset-password, OTP) would still fire real, unauthenticated requests with real side effects (emails sent, DB writes, rate-limit counters) - it is a genuine REST client, not a mock. Don't set `SWAGGER_MODE=live` outside of a throwaway environment you're comfortable receiving that traffic on.
 
 ## 4. Email API Configuration
 
