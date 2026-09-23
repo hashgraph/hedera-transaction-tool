@@ -46,12 +46,12 @@ catalog:
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
   dotenv: 17.4.2
-  eslint: 10.10.0
+  eslint: 10.11.0
   jest: 30.5.1
   jszip: 3.10.2
   long: 5.3.2
   pg: 8.23.0
-  prettier: 3.9.6
+  prettier: 3.9.8
   reflect-metadata: 0.2.2
   semver: 7.8.5
   ts-jest: 29.4.12
