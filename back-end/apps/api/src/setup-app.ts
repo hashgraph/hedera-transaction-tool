@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { Transport } from '@nestjs/microservices';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { json } from 'express';
+import { json, NextFunction, Request, Response } from 'express';
 
 import { version } from '../package.json';
 
@@ -46,10 +46,19 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
   const transactionGroupsJsonBodyLimit =
     configService.get<string>('TRANSACTION_GROUPS_JSON_BODY_LIMIT', { infer: true }) || '25mb';
 
-  // Registered before the catch-all: body-parser marks the body as parsed on
-  // first pass, so once one json() middleware has run, a later one for the
-  // same request just no-ops instead of re-checking size.
-  app.use('/transaction-groups', json({ limit: transactionGroupsJsonBodyLimit }));
+  // Registered before the catch-all: body-parser marks the body as parsed on first pass, so
+  // once one json() middleware has run, a later one for the same request just no-ops instead
+  // of re-checking size. Gated to POST specifically -- app.use() path matching is method-
+  // agnostic, and GET /transaction-groups/:id / PATCH /transaction-groups/:id/cancel don't
+  // read a body, so they should fall through to the smaller default like every other route.
+  const transactionGroupsJsonParser = json({ limit: transactionGroupsJsonBodyLimit });
+  app.use('/transaction-groups', (req: Request, res: Response, next: NextFunction) => {
+    if (req.method === 'POST') {
+      transactionGroupsJsonParser(req, res, next);
+    } else {
+      next();
+    }
+  });
   app.use(json({ limit: jsonBodyLimit }));
 
   if (addLogger) {

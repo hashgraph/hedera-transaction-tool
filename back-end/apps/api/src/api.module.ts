@@ -61,9 +61,15 @@ export const config = ConfigModule.forRoot({
     // Not required yet - not every deployment has it set (see #3332). Once it
     // is, outbound emails should stop falling back to the Host header.
     APP_URL: Joi.string().uri().optional(),
-    // express.json() body size limits; defaults applied in setup-app.ts when unset.
-    JSON_BODY_LIMIT: Joi.string().optional(),
-    TRANSACTION_GROUPS_JSON_BODY_LIMIT: Joi.string().optional(),
+    // express.json() body size limits; defaults applied in setup-app.ts when unset. Pattern
+    // matches what the underlying `bytes` package (via body-parser) accepts, so a typo here
+    // fails config validation at startup instead of a deep TypeError out of body-parser later.
+    JSON_BODY_LIMIT: Joi.string()
+      .pattern(/^\d+(\.\d+)?\s*(kb|mb|gb|tb|pb)?$/i)
+      .optional(),
+    TRANSACTION_GROUPS_JSON_BODY_LIMIT: Joi.string()
+      .pattern(/^\d+(\.\d+)?\s*(kb|mb|gb|tb|pb)?$/i)
+      .optional(),
   }),
 });
 
