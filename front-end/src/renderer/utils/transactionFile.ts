@@ -1,3 +1,4 @@
+import { assertTransactionKeysReviewable } from '@renderer/utils/transactionKeyReview';
 import type { ITransaction, ITransactionFull, TransactionFile } from '@shared/interfaces';
 import { type PrivateKey, Transaction } from '@hiero-ledger/sdk';
 import { hexToUint8Array } from '@renderer/utils/index.ts';
@@ -17,9 +18,11 @@ export const generateTransactionV1ExportContent = async (
       .flatMap(nodeMap => [...nodeMap.values()])        // NodeAccountIdSignatureMap -> SignaturePairMaps
       .every(signaturePairMap => signaturePairMap.size === 0);
 
-  const transactionBytes = hasNoSignatures(sdkTransaction)
-    ? (await sdkTransaction.sign(key)).toBytes()
-    : originalBytes;
+  let transactionBytes: Uint8Array = originalBytes;
+  if (hasNoSignatures(sdkTransaction)) {
+    assertTransactionKeysReviewable(sdkTransaction);
+    transactionBytes = (await sdkTransaction.sign(key)).toBytes();
+  }
 
   const jsonContent = JSON.stringify({
     Author: orgTransaction.creatorEmail,
