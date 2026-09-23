@@ -83,14 +83,16 @@ function connectMicroservices(app: NestExpressApplication) {
   });
 }
 
+export type SwaggerMode = 'off' | 'read-only' | 'full';
+
 // Deliberately independent of NODE_ENV: several deployments (e.g. staging) set
 // NODE_ENV=production to get the correct SSL/trust-proxy/bootstrap behavior in
 // main.ts, which previously also suppressed Swagger there as a side effect.
-export function isSwaggerEnabled(configService: ConfigService): boolean {
-  return configService.get<boolean>('SWAGGER_ENABLED', { infer: true }) === true;
+export function getSwaggerMode(configService: ConfigService): SwaggerMode {
+  return (configService.get<string>('SWAGGER_MODE', { infer: true }) as SwaggerMode) ?? 'off';
 }
 
-export function setupSwagger(app: NestExpressApplication) {
+export function setupSwagger(app: NestExpressApplication, mode: Exclude<SwaggerMode, 'off'>) {
   const config = new DocumentBuilder()
     .setTitle('Hedera Transaction Tool Backend API')
     .setDescription(
@@ -102,5 +104,9 @@ export function setupSwagger(app: NestExpressApplication) {
     // .addServer('https://production.yourapi.com/', 'Production')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
+  SwaggerModule.setup('api-docs', app, document, {
+    // 'read-only' hides "Try it out" (supportedSubmitMethods: []) so the schema is
+    // browsable without letting a visitor fire live requests through the UI.
+    swaggerOptions: mode === 'read-only' ? { supportedSubmitMethods: [] } : undefined,
+  });
 }

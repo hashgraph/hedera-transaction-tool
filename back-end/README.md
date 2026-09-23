@@ -100,6 +100,16 @@ Create `.env` files from the provided `example.env` templates in each of the fol
 
 The default values work for development.
 
+### Swagger / API Docs
+
+The API's Swagger UI (`/api-docs`) is controlled by `SWAGGER_MODE` in `apps/api/.env`, independent of `NODE_ENV`:
+
+- `off` (default) - Swagger is not mounted at all.
+- `read-only` - the docs are browsable but "Try it out" is disabled, so a visitor can't fire live requests through the UI.
+- `full` - docs plus live request execution, as if you were using a REST client with the schema pre-filled in.
+
+Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route, and `full` mode additionally lets them execute real requests against the API from the browser. Standard auth/authorization still applies to every request either way, but if the deployment is public-facing, pair this with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+
 ## 4. Email API Configuration
 
 An email api account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account, or another provider of your choosing.
