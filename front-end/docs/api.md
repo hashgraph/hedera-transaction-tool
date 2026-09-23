@@ -77,7 +77,7 @@ const transactionBytes = new FileAppendTransaction()
   .setTransactionId(TransactionId.withValidStart(AccountId.fromString("YourAccountId"), Timestamp.fromDate(new Date())))
   .setTransactionValidDuration(180)
   .setMaxTransactionFee(new Hbar(2))
-  .setFileId("0.0.111")
+  .setFileId("0.0.113")
   .setContents("YourContents")
   .toBytes();
 
@@ -124,7 +124,7 @@ console.log(uint8ToHex(transactionBytes));
 
 ### Submitting a Transaction
 
-Hex encoded unsigned transaction bytes must be prepared for the request. Show file update and file append and grouped together for system file update 111. other file updates do not require append.
+Hex encoded unsigned transaction bytes must be prepared for the request. Show file update and file append and grouped together for system file update 0.0.113. other file updates do not require append.
 
 Make sure to include the signature bytes and how to build that string.
 
