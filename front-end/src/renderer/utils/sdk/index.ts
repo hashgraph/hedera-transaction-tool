@@ -121,6 +121,8 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
     return publicKeys.includes(key.toStringRaw());
+  } else if (key instanceof ContractId) {
+    return false;
   } else {
     throw new Error(`Invalid key type`);
   }
