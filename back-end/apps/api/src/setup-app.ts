@@ -41,7 +41,16 @@ export function setupApp(app: NestExpressApplication, addLogger: boolean = true)
 
   app.useGlobalFilters(new AllExceptionsFilter(), new NotFoundExceptionFilter(), new BadRequestExceptionFilter());
 
-  app.use(json({ limit: '2mb' }));
+  const configService = app.get(ConfigService);
+  const jsonBodyLimit = configService.get<string>('JSON_BODY_LIMIT', { infer: true }) || '2mb';
+  const transactionGroupsJsonBodyLimit =
+    configService.get<string>('TRANSACTION_GROUPS_JSON_BODY_LIMIT', { infer: true }) || '25mb';
+
+  // Registered before the catch-all: body-parser marks the body as parsed on
+  // first pass, so once one json() middleware has run, a later one for the
+  // same request just no-ops instead of re-checking size.
+  app.use('/transaction-groups', json({ limit: transactionGroupsJsonBodyLimit }));
+  app.use(json({ limit: jsonBodyLimit }));
 
   if (addLogger) {
     const loggerMiddleware = app.get(LoggerMiddleware);
