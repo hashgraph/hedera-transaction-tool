@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 import { commonIPCHandler } from '@renderer/utils';
+import { type TransactionDraft } from '@prisma/client';
 import { getTransactionType } from '../utils/sdk/transactions';
 
 /* Transaction Drafts Service */
@@ -11,7 +12,7 @@ export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) =
     return await window.electronAPI.local.transactionDrafts.getDrafts(findArgs);
   }, 'Failed to fetch transaction drafts');
 
-export const getDraft = async (id: string) =>
+export const getDraft = async (id: string): Promise<TransactionDraft> =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.transactionDrafts.getDraft(id);
   }, `Failed to fetch transaction with id: ${id}`);
@@ -21,7 +22,7 @@ export const addDraft = async (
   transactionBytes: Uint8Array,
   description: string,
   details?: string,
-) => {
+): Promise<TransactionDraft> => {
   const transactionDraft: Prisma.TransactionDraftUncheckedCreateInput = {
     created_at: new Date(),
     updated_at: new Date(),

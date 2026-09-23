@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, TransactionDraft } from '@prisma/client';
 import { getPrismaClient } from '@main/db/prisma';
 
 export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) => {
@@ -9,7 +9,7 @@ export const getDrafts = async (findArgs: Prisma.TransactionDraftFindManyArgs) =
   return drafts;
 };
 
-export const getDraft = async (id: string) => {
+export const getDraft = async (id: string): Promise<TransactionDraft> => {
   const prisma = getPrismaClient();
 
   const draft = await prisma.transactionDraft.findFirst({
@@ -25,7 +25,7 @@ export const getDraft = async (id: string) => {
   return draft;
 };
 
-export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInput) => {
+export const addDraft = async (draft: Prisma.TransactionDraftUncheckedCreateInput): Promise<TransactionDraft> => {
   if (await draftExists(draft.transactionBytes)) {
     throw new Error('Transaction draft already exists');
   }
