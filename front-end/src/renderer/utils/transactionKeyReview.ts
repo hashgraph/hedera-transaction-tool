@@ -19,7 +19,12 @@ export function assertTransactionKeysReviewable(transaction: object): void {
     if (field in transaction) {
       const key = (transaction as Record<string, unknown>)[field];
       if (key != null) {
-        assertKeyReviewable(key);
+        // File transactions expose keys as Key[], not as an SDK KeyList.
+        if (field === 'keys' && Array.isArray(key)) {
+          key.forEach(assertKeyReviewable);
+        } else {
+          assertKeyReviewable(key);
+        }
       }
     }
   }
