@@ -67,6 +67,7 @@ import {
   Transaction,
   TransactionEntity,
   TransactionObserver,
+  TransactionReviewerList,
   TransactionSigner,
   TransactionStatus,
   TransactionType,
@@ -209,7 +210,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: { creatorKey: { user: true }, observers: true, comments: true, groupItem: { group: true }},
+        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: true }, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -238,7 +239,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { transactionId: transactionId },
-        relations: { creatorKey: { user: true }, observers: true, comments: true, groupItem: { group: true }},
+        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: true }, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -272,6 +273,9 @@ describe('TransactionsService', () => {
             user: true,
           },
           observers: true,
+          reviewerLists: {
+            members: true,
+          },
           comments: true,
           groupItem: {
             group: true
@@ -1233,8 +1237,18 @@ describe('TransactionsService', () => {
 
     /* Helpers that mirror the real typeorm chain calls used in importSignatures. */
     const makeFindDispatcher = (transactions: unknown[], userKeys: unknown[] = [], existingSigners: unknown[] = []) => {
+      // verifyAccess requires observers and reviewerLists to be loaded; these tests
+      // don't exercise observer/reviewer access, so default both to "loaded, empty"
+      // rather than editing every fixture.
+      const withRelationsLoaded = transactions.map(t => {
+        if (!t || typeof t !== 'object') return t;
+        const patch: Record<string, unknown> = {};
+        if (!('observers' in t)) patch.observers = [];
+        if (!('reviewerLists' in t)) patch.reviewerLists = [];
+        return Object.keys(patch).length ? { ...t, ...patch } : t;
+      });
       return (entity: unknown) => {
-        if (entity === Transaction) return Promise.resolve(transactions);
+        if (entity === Transaction) return Promise.resolve(withRelationsLoaded);
         if (entity === TransactionSigner) return Promise.resolve(existingSigners);
         if (entity === UserKey) return Promise.resolve(userKeys);
         return Promise.resolve([]);
@@ -1549,6 +1563,8 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
+        observers: [],
+        reviewerLists: [],
       };
       const txB = {
         id: 11,
@@ -1556,6 +1572,8 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
+        observers: [],
+        reviewerLists: [],
       };
       const secondKey = PrivateKey.generateECDSA();
       const userKeys = [
@@ -1612,6 +1630,8 @@ describe('TransactionsService', () => {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
         transactionBytes: sdkTransaction.toBytes(),
         mirrorNetwork: 'testnet',
+        observers: [],
+        reviewerLists: [],
       };
       await sdkTransaction.sign(privateKey);
 
@@ -2144,85 +2164,126 @@ describe('TransactionsService', () => {
     });
   });
 
-// typescript
   describe('verifyAccess', () => {
     beforeEach(() => {
       jest.resetAllMocks();
     });
 
     it('should return true for EXECUTED status without user association check', async () => {
-      const tx = { status: TransactionStatus.EXECUTED } as Transaction;
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      const tx: Partial<Transaction> = { status: TransactionStatus.EXECUTED };
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return true for FAILED status without user association check', async () => {
-      const tx = { status: TransactionStatus.FAILED } as Transaction;
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      const tx: Partial<Transaction> = { status: TransactionStatus.FAILED };
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should require user association for EXPIRED transactions', async () => {
-      const tx = { status: TransactionStatus.EXPIRED } as Transaction;
+      const tx: Partial<Transaction> = { status: TransactionStatus.EXPIRED, observers: [], reviewerLists: [] };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(false);
     });
 
     it('should require user association for CANCELED transactions', async () => {
-      const tx = { status: TransactionStatus.CANCELED } as Transaction;
+      const tx: Partial<Transaction> = { status: TransactionStatus.CANCELED, observers: [], reviewerLists: [] };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(false);
     });
 
     it('should require user association for ARCHIVED transactions', async () => {
-      const tx = { status: TransactionStatus.ARCHIVED } as Transaction;
+      const tx: Partial<Transaction> = { status: TransactionStatus.ARCHIVED, observers: [], reviewerLists: [] };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(false);
     });
 
     it('should return true for EXPIRED if user is creator', async () => {
-      const tx = {
+      const tx: Partial<Transaction> = {
         status: TransactionStatus.EXPIRED,
-        creatorKey: { userId: user.id },
-      } as Transaction;
+        creatorKey: { userId: user.id } as UserKey,
+        observers: [],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return true if user has keys to sign', async () => {
-      const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
+      const tx: Partial<Transaction> = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        observers: [],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return true if user is creator', async () => {
-      const tx = {
+      const tx: Partial<Transaction> = {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        creatorKey: { userId: user.id },
-      } as Transaction;
+        creatorKey: { userId: user.id } as UserKey,
+        observers: [],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return true if user is observer', async () => {
-      const tx = {
+      const tx: Partial<Transaction> = {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-        observers: [{ userId: user.id }],
-      } as Transaction;
+        observers: [{ userId: user.id } as TransactionObserver],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return true if user has required keys', async () => {
-      const tx = {
+      const tx: Partial<Transaction> = {
         status: TransactionStatus.WAITING_FOR_SIGNATURES,
-      } as Transaction;
+        observers: [],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(true);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
     });
 
     it('should return false if user has no access', async () => {
-      const tx = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
+      const tx: Partial<Transaction> = {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        observers: [],
+        reviewerLists: [],
+      };
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
-      await expect(service.verifyAccess(tx, user as User)).resolves.toBe(false);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(false);
+    });
+
+    it('should return true if user is a pending reviewer', async () => {
+      const tx: Partial<Transaction> = {
+        id: 1,
+        status: TransactionStatus.READY_FOR_REVIEW,
+        observers: [],
+        reviewerLists: [{ id: 10, members: [{ userId: user.id }] } as TransactionReviewerList],
+      };
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).resolves.toBe(true);
+    });
+
+    it('should throw InternalServerErrorException when observers relation is not loaded', async () => {
+      const tx: Partial<Transaction> = { status: TransactionStatus.WAITING_FOR_SIGNATURES, reviewerLists: [] };
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).rejects.toThrow(
+        'verifyAccess requires the observers and reviewerLists relations to be loaded',
+      );
+    });
+
+    it('should throw InternalServerErrorException when reviewerLists relation is not loaded', async () => {
+      const tx: Partial<Transaction> = { status: TransactionStatus.WAITING_FOR_SIGNATURES, observers: [] };
+      (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
+      await expect(service.verifyAccess(tx as Transaction, user as User)).rejects.toThrow(
+        'verifyAccess requires the observers and reviewerLists relations to be loaded',
+      );
     });
   });
 
@@ -2662,7 +2723,8 @@ describe('TransactionsService', () => {
             email: 'test@email.com',
           },
         },
-        observers: []
+        observers: [],
+        reviewerLists: [],
       } as unknown as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
@@ -2685,6 +2747,7 @@ describe('TransactionsService', () => {
           },
         },
         observers: [],
+        reviewerLists: [],
       } as unknown as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([1]);
@@ -2707,7 +2770,8 @@ describe('TransactionsService', () => {
           },
         },
         observers: [{ userId: user.id }],
-      } as Transaction;
+        reviewerLists: [],
+      } as unknown as Transaction;
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);
       transactionsRepo.find.mockResolvedValue([transaction]);
@@ -2729,6 +2793,7 @@ describe('TransactionsService', () => {
           },
         },
         observers: [],
+        reviewerLists: [],
       };
 
       (userKeysRequiredToSign as jest.Mock).mockResolvedValueOnce([]);

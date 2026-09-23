@@ -32,6 +32,8 @@ import {
   TransactionGroupItem,
   TransactionNodeSnapshot,
   TransactionObserver,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   TransactionSigner,
   TransactionStatus,
   User,
@@ -591,6 +593,8 @@ async function connectDatabase() {
       NodeSnapshot,
       TransactionAccountSnapshot,
       TransactionNodeSnapshot,
+      TransactionReviewerList,
+      TransactionReviewerListMember,
     ],
   });
 

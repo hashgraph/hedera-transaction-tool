@@ -15,3 +15,5 @@ export * from './update-transaction-observer.dto';
 export * from './cancel-group-result.dto';
 export * from './upload-signature.dto';
 export * from './upload-signature-map-response.dto';
+export * from './review-action.dto';
+export * from './review-signature.dto';

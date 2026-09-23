@@ -186,6 +186,7 @@ export class TransactionGroupsService {
 
     const cancelableStatuses = [
       TransactionStatus.NEW,
+      TransactionStatus.READY_FOR_REVIEW,
       TransactionStatus.WAITING_FOR_SIGNATURES,
       TransactionStatus.WAITING_FOR_EXECUTION,
     ];

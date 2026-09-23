@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -111,8 +112,8 @@ export class TransactionsService {
 
   private readonly cancelableStatuses = [
     TransactionStatus.NEW,
-    TransactionStatus.WAITING_FOR_SIGNATURES,
     TransactionStatus.READY_FOR_REVIEW,
+    TransactionStatus.WAITING_FOR_SIGNATURES,
     TransactionStatus.WAITING_FOR_EXECUTION,
   ];
 
@@ -129,6 +130,9 @@ export class TransactionsService {
           user: true
         },
         observers: true,
+        reviewerLists: {
+          members: true,
+        },
         comments: true,
         groupItem: {
           group: true
@@ -525,6 +529,9 @@ export class TransactionsService {
         creatorKey: true,
         signers: true,
         observers: true,
+        reviewerLists: {
+          members: true,
+        },
       },
     });
 
@@ -977,10 +984,24 @@ export class TransactionsService {
 
     const requiredKeyIds = await this.getUserKeysToSign(transaction, user, true);
 
+    if (transaction.observers === undefined || transaction.reviewerLists === undefined) {
+      // Every caller of verifyAccess must eager-load `observers` and
+      // `reviewerLists: { members: true }` together. An unloaded relation here would
+      // silently read as "not an observer/reviewer" (transaction.observers?.some(...)
+      // or transaction.reviewerLists?.some(...) on undefined resolves to false) rather
+      // than erroring, which is a much worse failure mode than this loud one.
+      throw new InternalServerErrorException(
+        'verifyAccess requires the observers and reviewerLists relations to be loaded',
+      );
+    }
+
     return (
       requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      !!transaction.observers?.some(o => o.userId === user.id)
+      transaction.observers.some(o => o.userId === user.id) ||
+      transaction.reviewerLists.some(list =>
+        list.members.some(m => m.userId === user.id),
+      )
     );
   }
 

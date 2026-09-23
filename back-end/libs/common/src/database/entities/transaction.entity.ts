@@ -17,6 +17,7 @@ import {
   TransactionComment,
   TransactionSigner,
   TransactionObserver,
+  TransactionReviewerList,
   TransactionGroupItem,
   TransactionCachedAccount,
   TransactionCachedNode,
@@ -51,8 +52,8 @@ export enum TransactionStatus {
   NEW = 'NEW', // unused
   CANCELED = 'CANCELED',
   REJECTED = 'REJECTED',
-  WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   READY_FOR_REVIEW = 'READY FOR REVIEW',
+  WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
   FAILED = 'FAILED',
@@ -162,6 +163,9 @@ export class Transaction {
 
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers?: TransactionObserver[];
+
+  @OneToMany(() => TransactionReviewerList, list => list.transaction)
+  reviewerLists?: TransactionReviewerList[];
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;

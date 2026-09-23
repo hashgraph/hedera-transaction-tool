@@ -31,6 +31,11 @@ import { ConfigService } from '@nestjs/config';
       imports: [],
       useFactory: (configService: ConfigService) =>
         ({
+          // Must match the `name: 'cache'` above: TypeOrmCoreModule.onApplicationShutdown()
+          // recomputes the DataSource injection token from these resolved options rather than
+          // from the forRootAsync() argument, so without `name` here it looks up the wrong
+          // token on shutdown and throws "Nest could not find DataSource element".
+          name: 'cache',
           type: 'postgres',
           host: configService.getOrThrow('POSTGRES_HOST'),
           port: configService.getOrThrow<number>('POSTGRES_PORT', { infer: true }),

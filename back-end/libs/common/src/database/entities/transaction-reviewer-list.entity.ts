@@ -17,7 +17,7 @@ export class TransactionReviewerList {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @ManyToOne(() => Transaction)
+  @ManyToOne(() => Transaction, transaction => transaction.reviewerLists)
   @JoinColumn({ name: 'transactionId' })
   transaction!: Transaction;
 
