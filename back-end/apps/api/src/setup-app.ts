@@ -83,6 +83,13 @@ function connectMicroservices(app: NestExpressApplication) {
   });
 }
 
+// Deliberately independent of NODE_ENV: several deployments (e.g. staging) set
+// NODE_ENV=production to get the correct SSL/trust-proxy/bootstrap behavior in
+// main.ts, which previously also suppressed Swagger there as a side effect.
+export function isSwaggerEnabled(configService: ConfigService): boolean {
+  return configService.get<boolean>('SWAGGER_ENABLED', { infer: true }) === true;
+}
+
 export function setupSwagger(app: NestExpressApplication) {
   const config = new DocumentBuilder()
     .setTitle('Hedera Transaction Tool Backend API')

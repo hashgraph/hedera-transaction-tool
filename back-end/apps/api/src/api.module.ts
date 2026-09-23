@@ -65,6 +65,9 @@ export const config = ConfigModule.forRoot({
     // express.json() body size limits; defaults applied in setup-app.ts when unset.
     JSON_BODY_LIMIT: byteSize().optional(),
     TRANSACTION_GROUPS_JSON_BODY_LIMIT: byteSize().optional(),
+    // Independent of NODE_ENV - see isSwaggerEnabled() in setup-app.ts. Defaults
+    // to disabled so a deployment must opt in explicitly.
+    SWAGGER_ENABLED: Joi.boolean().optional().default(false),
   }),
 });
 

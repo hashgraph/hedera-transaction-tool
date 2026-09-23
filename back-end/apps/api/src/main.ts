@@ -8,7 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { NestApplicationOptions } from '@nestjs/common';
 
 import { ApiModule } from './api.module';
-import { setupApp, setupSwagger } from './setup-app';
+import { isSwaggerEnabled, setupApp, setupSwagger } from './setup-app';
 
 // Explicitly cap HTTP header size. Node.js default is 16KB; we match it here
 // so the limit is visible in code rather than relying on an invisible runtime default.
@@ -19,11 +19,11 @@ async function bootstrap() {
 
   setupApp(app);
 
-  if (process.env.NODE_ENV !== 'production') {
+  const configService = app.get(ConfigService);
+
+  if (isSwaggerEnabled(configService)) {
     setupSwagger(app);
   }
-
-  const configService = app.get(ConfigService);
 
   await app.startAllMicroservices();
   await app.listen(configService.get<string>('HTTP_PORT') ?? 3000);
