@@ -24,7 +24,7 @@ async function bootstrap() {
   const swaggerMode = getSwaggerMode(configService);
   console.log(`Swagger UI: ${swaggerMode}`);
   if (swaggerMode !== 'off') {
-    setupSwagger(app, swaggerMode);
+    setupSwagger(app);
   }
 
   await app.startAllMicroservices();

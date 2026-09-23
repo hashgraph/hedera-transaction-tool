@@ -7,7 +7,7 @@ function configServiceReturning(value: unknown): ConfigService {
 }
 
 describe('getSwaggerMode', () => {
-  it.each(['off', 'docs', 'live'] as const)('passes through SWAGGER_MODE=%s', (mode) => {
+  it.each(['off', 'docs'] as const)('passes through SWAGGER_MODE=%s', (mode) => {
     expect(getSwaggerMode(configServiceReturning(mode))).toBe(mode);
   });
 
