@@ -1,4 +1,4 @@
-import { Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
+import { ContractId, Key, KeyList, Mnemonic, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
 import { proto } from '@hiero-ledger/proto';
 
 import { Prisma } from '@prisma/client';
@@ -131,8 +131,13 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
     return [keyList];
   }
 
+  // Contract keys do not supply public-key signatures.
+  if (keyList instanceof ContractId) {
+    return [];
+  }
+
   if (!(keyList instanceof KeyList)) {
-    throw new Error('Invalid key list');
+    throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
   }
 
   const keys: Set<string> = new Set<string>();
@@ -143,6 +148,8 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
     } else if (key instanceof KeyList) {
       const pks = flattenKeyList(key);
       pks.forEach(pk => keys.add(pk.toStringRaw()));
+    } else if (!(key instanceof ContractId)) {
+      throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
     }
   });
 
