@@ -66,9 +66,9 @@ export const config = ConfigModule.forRoot({
     JSON_BODY_LIMIT: byteSize().optional(),
     TRANSACTION_GROUPS_JSON_BODY_LIMIT: byteSize().optional(),
     // Independent of NODE_ENV - see getSwaggerMode() in setup-app.ts. Defaults to
-    // 'off' so a deployment must opt in explicitly. 'read-only' exposes the docs
-    // without the "Try it out" request executor; 'full' allows both.
-    SWAGGER_MODE: Joi.string().valid('off', 'read-only', 'full').optional().default('off'),
+    // 'off' so a deployment must opt in explicitly. 'docs' exposes the schema
+    // without the "Try it out" request executor; 'live' allows both.
+    SWAGGER_MODE: Joi.string().valid('off', 'docs', 'live').optional().default('off'),
   }),
 });
 

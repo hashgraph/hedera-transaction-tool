@@ -105,10 +105,10 @@ The default values work for development.
 The API's Swagger UI (`/api-docs`) is controlled by `SWAGGER_MODE` in `apps/api/.env`, independent of `NODE_ENV`:
 
 - `off` (default) - Swagger is not mounted at all.
-- `read-only` - the docs are browsable but "Try it out" is disabled, so a visitor can't fire live requests through the UI.
-- `full` - docs plus live request execution, as if you were using a REST client with the schema pre-filled in.
+- `docs` - the docs are browsable but "Try it out" is disabled, so a visitor can't fire live requests through the UI.
+- `live` - docs plus live request execution, as if you were using a REST client with the schema pre-filled in.
 
-Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route, and `full` mode additionally lets them execute real requests against the API from the browser. Standard auth/authorization still applies to every request either way, but if the deployment is public-facing, pair this with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route, and `live` mode additionally lets them execute real requests against the API from the browser. "Try it out" always sends a real HTTP request to the running server - it is not mocked - and no bearer-auth scheme is declared in the docs, so authenticated endpoints will 401 while public ones (login, signup, reset-password, OTP) get real side effects (emails sent, DB writes, rate-limit counters) the same as if hit directly. Only use `live` on an isolated server you're comfortable receiving real, unauthenticated requests against - never on shared or production-adjacent infrastructure. If the deployment is public-facing at all, pair it with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
 
 ## 4. Email API Configuration
 

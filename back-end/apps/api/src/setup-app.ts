@@ -83,7 +83,7 @@ function connectMicroservices(app: NestExpressApplication) {
   });
 }
 
-export type SwaggerMode = 'off' | 'read-only' | 'full';
+export type SwaggerMode = 'off' | 'docs' | 'live';
 
 // Deliberately independent of NODE_ENV: several deployments (e.g. staging) set
 // NODE_ENV=production to get the correct SSL/trust-proxy/bootstrap behavior in
@@ -105,8 +105,8 @@ export function setupSwagger(app: NestExpressApplication, mode: Exclude<SwaggerM
     .build();
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api-docs', app, document, {
-    // 'read-only' hides "Try it out" (supportedSubmitMethods: []) so the schema is
+    // 'docs' hides "Try it out" (supportedSubmitMethods: []) so the schema is
     // browsable without letting a visitor fire live requests through the UI.
-    swaggerOptions: mode === 'read-only' ? { supportedSubmitMethods: [] } : undefined,
+    swaggerOptions: mode === 'docs' ? { supportedSubmitMethods: [] } : undefined,
   });
 }
