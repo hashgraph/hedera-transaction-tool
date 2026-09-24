@@ -7,6 +7,7 @@ on:
     branches:
       - main
       - release/**
+      - bump-solo
   pull_request:
     branches:
       - main
@@ -103,22 +104,6 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
           node-version-file: package.json
 
-      - name: Install Docker Compose Plugin
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-
-          if docker compose version >/dev/null 2>&1; then
-            docker compose version
-            exit 0
-          fi
-
-          sudo install -d /usr/local/lib/docker/cli-plugins
-          sudo curl -fLo /usr/local/lib/docker/cli-plugins/docker-compose \
-            https://github.com/docker/compose/releases/download/v2.29.1/docker-compose-linux-x86_64
-          sudo chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
-          docker compose version
-
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
@@ -127,23 +112,18 @@ jobs:
         uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
         with:
           install_only: true
-          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
-          version: v0.26.0
-          kubectl_version: v1.31.4
+          kubectl_version: v1.35.9
+          node_image: "kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0"
+          version: v0.33.0
           verbosity: 3
           wait: 120s
 
       - name: Install Solo CLI
         if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-          npm install -g @hashgraph/solo@0.88.0
-          solo --version
-          kind --version
+        run: npm install -g @hashgraph/solo@0.91.0
 
       - name: Deploy Solo
         if: ${{ matrix.test-suite.soloRequired }}
-        id: solo_deploy
         env:
           SOLO_CLUSTER_NAME: solo
           SOLO_NAMESPACE: solo
