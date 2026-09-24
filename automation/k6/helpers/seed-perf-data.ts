@@ -55,7 +55,7 @@ let testMnemonicHash: string;
 
 const SIGN_COUNT = DATA_VOLUMES.READY_TO_SIGN;
 const HISTORY_COUNT = DATA_VOLUMES.HISTORY;
-const APPROVE_COUNT = DATA_VOLUMES.READY_FOR_REVIEW;
+const REVIEW_COUNT = DATA_VOLUMES.READY_FOR_REVIEW;
 const GROUP_SIZE = DATA_VOLUMES.GROUP_SIZE;
 const EXECUTION_COUNT = DATA_VOLUMES.READY_FOR_EXECUTION;
 const DEBUG = process.env.DEBUG === 'true';
@@ -449,7 +449,18 @@ async function cleanupAllSeedData(client: Client): Promise<void> {
   );
 
   await client.query(
-    `DELETE FROM transaction_approver
+    `DELETE FROM transaction_reviewer_list_member
+     WHERE "listId" IN (
+       SELECT id FROM transaction_reviewer_list
+       WHERE "transactionId" IN (
+         SELECT id FROM "transaction" WHERE description LIKE $1
+       )
+     )`,
+    [`${SEED_MARKER}%`],
+  );
+
+  await client.query(
+    `DELETE FROM transaction_reviewer_list
      WHERE "transactionId" IN (
        SELECT id FROM "transaction" WHERE description LIKE $1
      )`,
@@ -720,45 +731,45 @@ async function seedHistoryTransactions(
   console.log(`  Completed: ${HISTORY_COUNT} history transactions`);
 }
 
-async function seedApproveTransactions(
+async function seedReviewTransactions(
   client: Client,
   userId: number,
   userKeyId: number,
   cachedAccountId: number,
 ): Promise<void> {
-  console.log(`\nSeeding ${APPROVE_COUNT} transactions for /transactions/approve...`);
+  console.log(`\nSeeding ${REVIEW_COUNT} transactions for /transactions/review...`);
   console.log('  (Using real Hedera SDK transactions)');
 
-  for (let i = 0; i < APPROVE_COUNT; i++) {
+  for (let i = 0; i < REVIEW_COUNT; i++) {
     const result = await insertTransaction({
       client,
       index: SIGN_COUNT + HISTORY_COUNT + i,
-      status: 'WAITING FOR SIGNATURES',
+      status: 'READY FOR REVIEW',
       creatorKeyId: userKeyId,
       useRealTx: true,
       cachedAccountId,
     });
 
-    // Collect for signature generation (approve transactions also appear in /transactions/sign)
-    if (result.signData) {
-      signTransactionsData.push(result.signData);
-    }
+    // Create a transaction_reviewer_list with a single pending member (accepted = NULL)
+    const listResult: QueryResult<{ id: number }> = await client.query(
+      `INSERT INTO transaction_reviewer_list ("transactionId", threshold)
+       VALUES ($1, $2)
+       RETURNING id`,
+      [result.id, 1],
+    );
 
-    // Create transaction_approver entry with approved = NULL
     await client.query(
-      `INSERT INTO transaction_approver (
-         "transactionId", "userId", approved, "createdAt", "updatedAt"
-       )
-       VALUES ($1, $2, NULL, NOW(), NOW())`,
-      [result.id, userId],
+      `INSERT INTO transaction_reviewer_list_member ("listId", "userId")
+       VALUES ($1, $2)`,
+      [listResult.rows[0].id, userId],
     );
 
     if ((i + 1) % 25 === 0) {
-      console.log(`  Created ${i + 1}/${APPROVE_COUNT} approve transactions`);
+      console.log(`  Created ${i + 1}/${REVIEW_COUNT} review transactions`);
     }
   }
 
-  console.log(`  Completed: ${APPROVE_COUNT} approve transactions`);
+  console.log(`  Completed: ${REVIEW_COUNT} review transactions`);
 }
 
 interface GroupRow {
@@ -778,7 +789,7 @@ async function seedTransactionGroups(
   console.log('  (Using real Hedera SDK transactions)');
 
   // Calculate offset to avoid ID collisions with other seeded transactions
-  const indexOffset = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT;
+  const indexOffset = SIGN_COUNT + HISTORY_COUNT + REVIEW_COUNT;
 
   // Use a past timestamp to ensure group transactions appear on page 1
   // The Ready to Sign list is sorted by validStart ASC, so older timestamps come first
@@ -840,7 +851,7 @@ async function seedReadyForExecutionTransactions(
   console.log('  (Using real Hedera SDK transactions)');
 
   // Calculate offset to avoid ID collisions with other seeded transactions
-  const indexOffset = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT + GROUP_SIZE;
+  const indexOffset = SIGN_COUNT + HISTORY_COUNT + REVIEW_COUNT + GROUP_SIZE;
 
   for (let i = 0; i < EXECUTION_COUNT; i++) {
     const result = await insertTransaction({
@@ -965,7 +976,7 @@ async function validateSeededData(client: Client): Promise<void> {
       name: 'Sign transactions',
       query: `SELECT COUNT(*) as count FROM "transaction" WHERE description LIKE $1 AND status = 'WAITING FOR SIGNATURES' AND description NOT LIKE $2`,
       params: [`${SEED_MARKER}%`, `%group-item%`],
-      expected: SIGN_COUNT + APPROVE_COUNT, // Both types are WAITING FOR SIGNATURES
+      expected: SIGN_COUNT,
     },
     {
       name: 'History transactions',
@@ -974,10 +985,10 @@ async function validateSeededData(client: Client): Promise<void> {
       expected: HISTORY_COUNT,
     },
     {
-      name: 'Approve transactions',
-      query: `SELECT COUNT(*) as count FROM transaction_approver WHERE "transactionId" IN (SELECT id FROM "transaction" WHERE description LIKE $1)`,
+      name: 'Review transactions',
+      query: `SELECT COUNT(*) as count FROM "transaction" WHERE description LIKE $1 AND status = 'READY FOR REVIEW'`,
       params: [`${SEED_MARKER}%`],
-      expected: APPROVE_COUNT,
+      expected: REVIEW_COUNT,
     },
     {
       name: 'Group transactions',
@@ -1049,7 +1060,7 @@ async function seedDataForUser(client: Client, email: string, cachedAccountId: n
 
   await seedSignTransactions(client, userKeyId, cachedAccountId);
   await seedHistoryTransactions(client, userKeyId, cachedAccountId);
-  await seedApproveTransactions(client, userId, userKeyId, cachedAccountId);
+  await seedReviewTransactions(client, userId, userKeyId, cachedAccountId);
   await seedTransactionGroups(client, userKeyId, cachedAccountId);
   await seedReadyForExecutionTransactions(client, userKeyId, cachedAccountId);
 }
@@ -1097,7 +1108,7 @@ async function seedData(): Promise<void> {
 
     await validateSeededData(client);
 
-    const txPerUser = SIGN_COUNT + HISTORY_COUNT + APPROVE_COUNT + GROUP_SIZE + EXECUTION_COUNT;
+    const txPerUser = SIGN_COUNT + HISTORY_COUNT + REVIEW_COUNT + GROUP_SIZE + EXECUTION_COUNT;
     const totalTx = txPerUser * usersToSeed.length;
     console.log('\n=== Seeding Complete ===');
     console.log(`Users seeded: ${usersToSeed.length}`);
@@ -1105,7 +1116,7 @@ async function seedData(): Promise<void> {
     console.log(`Total transactions created: ${totalTx}`);
     console.log(`  Ready to Sign: ${SIGN_COUNT} per user`);
     console.log(`  History: ${HISTORY_COUNT} per user`);
-    console.log(`  Ready to Approve: ${APPROVE_COUNT} per user`);
+    console.log(`  Ready to Review: ${REVIEW_COUNT} per user`);
     console.log(`  Ready for Execution: ${EXECUTION_COUNT} per user`);
     console.log(`  Transaction group: 1 group with ${GROUP_SIZE} transactions per user`);
 
