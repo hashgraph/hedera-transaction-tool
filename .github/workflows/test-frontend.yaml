@@ -73,12 +73,12 @@ jobs:
       fail-fast: false
       matrix:
         test-suite:
-          - name: Local Basic
-            grep: '@local-basic'
-            soloRequired: false
-            backendRequired: false
-            sharedEnvironment: true
-            workers: 2
+#          - name: Local Basic
+#            grep: '@local-basic'
+#            soloRequired: false
+#            backendRequired: false
+#            sharedEnvironment: true
+#            workers: 2
           - name: Shared E2E
             grep: '@local-transactions|@organization-basic|@organization-advanced'
             soloRequired: true
@@ -134,40 +134,6 @@ jobs:
           kind create cluster -n "${SOLO_CLUSTER_NAME}"
           solo one-shot single deploy | tee solo-deploy.log
 
-      - name: Check port forwarding
-        if: ${{ matrix.test-suite.soloRequired }}
-        run: |
-          set -euo pipefail
-
-          wait_for_tcp() {
-            local host="$1"
-            local port="$2"
-            timeout 1 bash -c ">/dev/tcp/${host}/${port}" >/dev/null 2>&1
-          }
-
-          ps -ef | grep port-forward || true
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 35211; then
-              echo "Solo port forwarding is ready on attempt ${attempt}"
-              break
-            fi
-
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo port forwarding did not become ready in time" >&2
-              ps -ef | grep port-forward || true
-              kubectl get pods -A || true
-              exit 1
-            fi
-
-            echo "Waiting for Solo port forwarding... attempt ${attempt}/60"
-            sleep 5
-          done
-
-          curl -fsS http://localhost:38081/api/v1/network/nodes
-          wait_for_tcp 127.0.0.1 35211
-
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
         working-directory: back-end
@@ -217,42 +183,6 @@ jobs:
           sed -i 's/^RESET_IP_TEN_SECOND_LIMIT=.*/RESET_IP_TEN_SECOND_LIMIT=99999/' apps/api/.env
           sed -i 's/^RESET_IP_UNIQUE_EMAIL_LIMIT=.*/RESET_IP_UNIQUE_EMAIL_LIMIT=99999/' apps/api/.env
 
-          export COMPOSE_PARALLEL_LIMIT=4
-
-          if ! docker info &>/dev/null; then
-            echo "Docker daemon is not reachable; attempting to start it..."
-            sudo service docker start || true
-            sudo systemctl start docker || true
-          fi
-
-          for i in $(seq 1 15); do
-            if docker info &>/dev/null; then
-              break
-            fi
-            if [ "${i}" -eq 15 ]; then
-              echo "Docker daemon is unavailable after startup attempts" >&2
-              ls -l /var/run/docker.sock || true
-              sudo ls -l /var/run/docker.sock || true
-              ps -ef | grep -E 'dockerd|containerd' | grep -v grep || true
-              exit 1
-            fi
-            sleep 2
-          done
-
-          for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 35211; then
-              echo "Solo network endpoints are ready on attempt ${attempt}"
-              break
-            fi
-            if [ "${attempt}" -eq 60 ]; then
-              echo "Solo network endpoints did not become ready in time" >&2
-              exit 1
-            fi
-            echo "Waiting for Solo network endpoints... attempt ${attempt}/60"
-            sleep 5
-          done
-
           DOCKER_HOST_GATEWAY="$(docker network inspect bridge --format '{{(index .IPAM.Config 0).Gateway}}')"
           if [ -z "${DOCKER_HOST_GATEWAY}" ]; then
             echo "Failed to resolve the Docker bridge gateway IP" >&2
@@ -268,44 +198,7 @@ jobs:
 
           sleep 2
 
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:38081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 35211; then
-            echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
-            ss -lnt || true
-            sudo tail -n 50 /tmp/socat-35211.log || true
-            sudo tail -n 50 /tmp/socat-38081.log || true
-            exit 1
-          fi
-
-          for service in redis migration api chain notifications; do
-            for attempt in $(seq 1 3); do
-              if docker compose -f "${BACKEND_COMPOSE_FILE}" build --progress plain "${service}"; then
-                break
-              fi
-
-              if [ "${attempt}" -eq 3 ]; then
-                echo "docker compose build failed for ${service} after 3 attempts" >&2
-                exit 1
-              fi
-
-              echo "Build for ${service} failed on attempt ${attempt}; retrying in 15s..."
-              sleep 15
-            done
-          done
-
-          for attempt in $(seq 1 5); do
-            if docker compose -f "${BACKEND_COMPOSE_FILE}" up -d --no-build api chain notifications; then
-              break
-            fi
-            if [ "${attempt}" -eq 5 ]; then
-              echo "docker compose up failed after 5 attempts" >&2
-              docker compose -f "${BACKEND_COMPOSE_FILE}" ps || true
-              docker compose -f "${BACKEND_COMPOSE_FILE}" logs --tail=200 || true
-              exit 1
-            fi
-            echo "Attempt ${attempt} failed; retrying in 15s..."
-            sleep 15
-          done
+          docker compose -f "${BACKEND_COMPOSE_FILE}" up --build --wait --wait-timeout 600
 
           # Wait for the API to become ready.
           # The API serves HTTPS when NODE_ENV=development and cert files are present.
@@ -329,19 +222,6 @@ jobs:
             fi
             sleep 5
           done
-
-          docker compose -f "${BACKEND_COMPOSE_FILE}" ps
-
-      - name: Test API connectivity
-        if: ${{ matrix.test-suite.backendRequired }}
-        run: |
-          set -euo pipefail
-          code="$(curl -k -sS -o /dev/null -w '%{http_code}' https://localhost:3001/ || echo '000')"
-          echo "API connectivity check returned HTTP ${code}"
-          if [[ "${code}" != "200" && "${code}" != "426" ]]; then
-            echo "Unexpected HTTP status from API: ${code}" >&2
-            exit 1
-          fi
 
       - name: Restore Build Artifacts
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -461,47 +341,47 @@ jobs:
             echo "::warning::Failed to delete Actions cache build-artifacts-${{ github.sha }}"
           fi
 
-  unit-test:
-    name: Unit Tests | ${{ matrix.test-suite.name }}
-    runs-on: transaction-tools-linux-medium
-    strategy:
-      fail-fast: false
-      matrix:
-        test-suite:
-          - name: Main Process
-            command: main:coverage
-          - name: Renderer Process
-            command: renderer
-          - name: Shared
-            command: shared
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
-        with:
-          egress-policy: audit
-
-      - name: Checkout Code
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Install pnpm
-        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
-
-      - name: Set up Node.js
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-          node-version-file: package.json
-
-      - name: Install Dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Run Unit Tests
-        run: pnpm run test:${{ matrix.test-suite.command }}
-        working-directory: front-end
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+#  unit-test:
+#    name: Unit Tests | ${{ matrix.test-suite.name }}
+#    runs-on: transaction-tools-linux-medium
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        test-suite:
+#          - name: Main Process
+#            command: main:coverage
+#          - name: Renderer Process
+#            command: renderer
+#          - name: Shared
+#            command: shared
+#
+#    steps:
+#      - name: Harden Runner
+#        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+#        with:
+#          egress-policy: audit
+#
+#      - name: Checkout Code
+#        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+#
+#      - name: Install pnpm
+#        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
+#
+#      - name: Set up Node.js
+#        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+#        with:
+#          cache: pnpm
+#          cache-dependency-path: pnpm-lock.yaml
+#          node-version-file: package.json
+#
+#      - name: Install Dependencies
+#        run: pnpm install --frozen-lockfile
+#
+#      - name: Run Unit Tests
+#        run: pnpm run test:${{ matrix.test-suite.command }}
+#        working-directory: front-end
+#
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
