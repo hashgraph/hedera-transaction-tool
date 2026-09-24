@@ -112,9 +112,9 @@ jobs:
         uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
         with:
           install_only: true
-          kubectl_version: v1.35.9
-          node_image: "kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0"
-          version: v0.33.0
+          node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
+          version: v0.26.0
+          kubectl_version: v1.31.4
           verbosity: 3
           wait: 120s
 
@@ -286,7 +286,6 @@ jobs:
           kubectl get pods -A -o wide > solo-diagnostics/pods.txt || true
           kubectl get events -A --sort-by=.lastTimestamp > solo-diagnostics/events.txt || true
           kubectl describe pods -A > solo-diagnostics/pod-describe.txt || true
-          kubectl get pods -o name | xargs -P 8 -I{} kubectl logs {} --all-containers --prefix --tail=1000 > solo-diagnostics/pod-logs.txt || true
           cp solo-deploy.log solo-diagnostics/solo-deploy.log || true
           cp /tmp/socat-*.log solo-diagnostics/ 2>/dev/null || true
 
