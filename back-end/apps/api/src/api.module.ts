@@ -17,6 +17,7 @@ import {
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
+import { byteSize } from './config/byte-size.validator';
 
 import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
@@ -61,6 +62,12 @@ export const config = ConfigModule.forRoot({
     // Not required yet - not every deployment has it set (see #3332). Once it
     // is, outbound emails should stop falling back to the Host header.
     APP_URL: Joi.string().uri().optional(),
+    // express.json() body size limits; defaults applied in setup-app.ts when unset.
+    JSON_BODY_LIMIT: byteSize().optional(),
+    TRANSACTION_GROUPS_JSON_BODY_LIMIT: byteSize().optional(),
+    // Independent of NODE_ENV - see getSwaggerMode() in setup-app.ts. Defaults to
+    // 'off' so a deployment must opt in explicitly.
+    SWAGGER_MODE: Joi.string().valid('off', 'docs').optional().default('off'),
   }),
 });
 

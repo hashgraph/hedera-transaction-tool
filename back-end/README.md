@@ -100,6 +100,17 @@ Create `.env` files from the provided `example.env` templates in each of the fol
 
 The default values work for development.
 
+### Swagger / API Docs
+
+The API's Swagger UI (`/api-docs`) is controlled by `SWAGGER_MODE` in `apps/api/.env`, independent of `NODE_ENV`:
+
+- `off` (default) - Swagger is not mounted at all.
+- `docs` - the docs are browsable, but "Try it out" is disabled (`supportedSubmitMethods: []`), so a visitor can see the schema but can't fire requests through the UI.
+
+Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route. If the deployment is public-facing at all, pair it with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+
+There's intentionally no "live"/request-execution mode yet. Swagger UI's "Try it out" sends a real, unmocked HTTP request to the running server, and this app has no bearer-auth scheme declared in its docs (`@nestjs/swagger` supports one via `DocumentBuilder.addBearerAuth()` plus `@ApiBearerAuth()` on protected routes, but it isn't wired up), so a request-execution mode today would just 401 on every authenticated endpoint while still letting anyone with route access fire real requests at public ones (login, signup, reset-password, OTP) with real side effects. Once bearer-auth is wired up so "Try it out" can actually authenticate, a `live` mode can be added back to `SWAGGER_MODE`.
+
 ## 4. Email API Configuration
 
 An email api account enables you to set-up the notification system in the application. You will need to create a free tier Brevo account, or another provider of your choosing.
