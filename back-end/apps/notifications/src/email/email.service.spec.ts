@@ -307,6 +307,24 @@ describe('EmailService', () => {
       }
     );
 
+    it.each(['toString', 'constructor', 'hasOwnProperty'])(
+      'should fall back to the raw value for inherited property name %s instead of returning a function',
+      async (type) => {
+        const notifications: Notification[] = [
+          { id: 1, type: type as unknown as NotificationType } as Notification,
+        ];
+
+        jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'test-message' });
+        (generateEmailContent as jest.Mock).mockReturnValue('Content');
+
+        await (service as any)['processMessages']('user@example.com', notifications);
+
+        expect((service as any).sendWithRetry).toHaveBeenCalledWith(
+          expect.objectContaining({ subject: type })
+        );
+      }
+    );
+
     it('should handle empty notifications array', async () => {
       const sendSpy = jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'noop' } as any);
 

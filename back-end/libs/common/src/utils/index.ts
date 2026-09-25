@@ -1,4 +1,5 @@
 export * from './buffer';
+export * from './enum';
 export * from './sanitizeForLog';
 export * from './sdk';
 export * from './mirrorNode';
