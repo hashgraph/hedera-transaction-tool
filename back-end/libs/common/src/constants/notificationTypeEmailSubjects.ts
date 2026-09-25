@@ -12,7 +12,8 @@ export enum NotificationTypeEmailSubjects {
 }
 
 export function findEmailSubject(value: unknown): string {
-  const subjects = Object.values(NotificationTypeEmailSubjects);
-  const candidate = value as NotificationTypeEmailSubjects;
-  return subjects.includes(candidate) ? candidate : String(value);
+  return (
+    NotificationTypeEmailSubjects[value as keyof typeof NotificationTypeEmailSubjects] ??
+    String(value)
+  );
 }

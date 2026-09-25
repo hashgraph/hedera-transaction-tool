@@ -31,19 +31,13 @@ jest.mock('ioredis', () => {
   return { Redis: MockRedis };
 });
 jest.mock('@app/common', () => ({
+  // Keep the real NotificationTypeEmailSubjects/findEmailSubject so a regression in the
+  // key->subject lookup is caught here, instead of duplicating (and potentially
+  // re-breaking) that logic in this mock.
+  ...jest.requireActual('@app/common/constants/notificationTypeEmailSubjects'),
   generateEmailContent: jest.fn(),
   generateUserRegisteredMessage: jest.fn(),
   generateResetPasswordMessage: jest.fn(),
-  NotificationTypeEmailSubjects: {
-    TRANSACTION_CREATED: 'Transaction Created',
-    TRANSACTION_WAITING_FOR_SIGNATURES: 'Transaction Waiting Signatures',
-    TRANSACTION_EXECUTED: 'Transaction Executed',
-  },
-  findEmailSubject: (value: unknown) => {
-    const subjects = Object.values(NotificationTypeEmailSubjects);
-    const candidate = value as NotificationTypeEmailSubjects;
-    return subjects.includes(candidate) ? candidate : String(value);
-  },
 }));
 
 describe('EmailService', () => {
@@ -294,6 +288,24 @@ describe('EmailService', () => {
         notifications[1]
       );
     });
+
+    it.each(Object.entries(NotificationTypeEmailSubjects))(
+      'should resolve the human-readable subject for %s',
+      async (type, expectedSubject) => {
+        const notifications: Notification[] = [
+          { id: 1, type: type as NotificationType } as Notification,
+        ];
+
+        jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'test-message' });
+        (generateEmailContent as jest.Mock).mockReturnValue('Content');
+
+        await (service as any)['processMessages']('user@example.com', notifications);
+
+        expect((service as any).sendWithRetry).toHaveBeenCalledWith(
+          expect.objectContaining({ subject: expectedSubject })
+        );
+      }
+    );
 
     it('should handle empty notifications array', async () => {
       const sendSpy = jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'noop' } as any);
