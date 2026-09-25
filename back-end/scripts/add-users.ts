@@ -34,6 +34,14 @@ import {
   TransactionNodeSnapshot,
   AccountSnapshot,
   NodeSnapshot,
+  GroupChangeRecord,
+  ReviewerGroup,
+  ReviewerGroupMember,
+  ReviewerRule,
+  RuleChangeRecord,
+  TransactionEntity,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
 } from '@entities';
 
 dotenv.config({
@@ -178,6 +186,14 @@ async function connectDatabase() {
       NodeSnapshot,
       TransactionAccountSnapshot,
       TransactionNodeSnapshot,
+      GroupChangeRecord,
+      ReviewerGroup,
+      ReviewerGroupMember,
+      ReviewerRule,
+      RuleChangeRecord,
+      TransactionEntity,
+      TransactionReviewerList,
+      TransactionReviewerListMember
     ],
   });
 
