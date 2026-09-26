@@ -1,9 +1,10 @@
-import { describe, test, expect } from 'vitest';
+import { afterEach, describe, test, expect, vi } from 'vitest';
 import {
   AccountId,
   PrivateKey,
   TransferTransaction,
   TransactionId,
+  Transaction,
 } from '@hiero-ledger/sdk';
 
 import {
@@ -46,6 +47,35 @@ const makeOrgTransaction = (overrides: Partial<ITransactionFull> = {}): ITransac
 // ---------------------------------------------------------------------------
 
 describe('generateTransactionV1ExportContent', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  test.each([false, true])(
+    'guards unreviewable keys only when adding a signature (already signed: %s)',
+    async alreadySigned => {
+      const key = makeKey();
+      const tx = buildSdkTransaction();
+      if (alreadySigned) await tx.sign(key);
+      const orgTx = makeOrgTransaction({
+        transactionBytes: uint8ArrayToHex(tx.toBytes()),
+      });
+
+      // Simulate a future decoded key type that the review UI does not support.
+      Object.defineProperty(tx, 'key', { value: {} });
+      vi.spyOn(Transaction, 'fromBytes').mockReturnValueOnce(tx);
+      const sign = vi.spyOn(tx, 'sign');
+
+      if (alreadySigned) {
+        const result = await generateTransactionV1ExportContent(orgTx, key);
+        expect(uint8ArrayToHex(result.transactionBytes)).toBe(orgTx.transactionBytes);
+      } else {
+        await expect(generateTransactionV1ExportContent(orgTx, key)).rejects.toThrow(
+          'Unsupported key type',
+        );
+      }
+      expect(sign).not.toHaveBeenCalled();
+    },
+  );
+
   test('signs the transaction and returns signed bytes when no signatures present', async () => {
     const key = makeKey();
     const orgTx = makeOrgTransaction();

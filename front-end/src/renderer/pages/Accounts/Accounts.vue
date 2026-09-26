@@ -2,7 +2,7 @@
 import type { HederaAccount } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
-import { KeyList, PublicKey, Hbar } from '@hiero-ledger/sdk';
+import { ContractId, DelegateContractId, KeyList, PublicKey, Hbar } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -587,6 +587,16 @@ onMounted(async () => {
                         data-testid="p-account-data-key-type"
                       >
                         {{ accountData.key.value?._key?._type }}
+                      </p>
+                    </template>
+                    <template v-else-if="accountData.key.value instanceof DelegateContractId">
+                      <p class="text-semi-bold text-small" data-testid="p-account-data-key">
+                        Delegatable Contract: {{ accountData.key.value.toString() }}
+                      </p>
+                    </template>
+                    <template v-else-if="accountData.key.value instanceof ContractId">
+                      <p class="text-semi-bold text-small" data-testid="p-account-data-key">
+                        Contract: {{ accountData.key.value.toString() }}
                       </p>
                     </template>
                     <template v-else>None</template>

@@ -121,6 +121,8 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
     return publicKeys.includes(key.toStringRaw());
+  } else if (key instanceof ContractId) {
+    return false;
   } else {
     throw new Error(`Invalid key type`);
   }
@@ -206,17 +208,7 @@ export const decodeProtobuffKey = (protobuffKey: string): Key | null => {
   try {
     const key = proto.Key.decode(hexToUint8Array(protobuffKey));
 
-    if (key.thresholdKey) {
-      return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
-    }
-    if (key.keyList) {
-      return KeyList.__fromProtobufKeyList(key.keyList);
-    }
-    if (key.ed25519 || key.ECDSASecp256k1) {
-      return Key._fromProtobufKey(key);
-    }
-
-    return null;
+    return Key._fromProtobufKey(key);
   } catch {
     throw new Error('Failed to decode protobuf');
   }
@@ -363,7 +355,7 @@ export const formatAccountId = (accountId: string) => {
 
 export const formatContractId = (contractId: string) => {
   if (isContractId(contractId)) {
-     
+
     return ContractId.fromString(contractId).toString();
   } else {
     return contractId;

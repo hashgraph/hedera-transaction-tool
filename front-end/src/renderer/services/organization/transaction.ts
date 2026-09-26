@@ -1,3 +1,4 @@
+import { assertTransactionKeysReviewable } from '@renderer/utils/transactionKeyReview';
 import type { Organization } from '@prisma/client';
 import type { TransactionId } from '@hiero-ledger/sdk';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
@@ -102,6 +103,8 @@ export const uploadSignatures = async (
       },
     ];
   }
+
+  for (const item of items) assertTransactionKeysReviewable(item.transaction);
 
   for (const { publicKeys, transaction, transactionId } of items) {
     for (const publicKey of publicKeys) {
