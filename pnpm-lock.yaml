@@ -583,11 +583,14 @@ importers:
         version: 0.2.2
       typeorm:
         specifier: 'catalog:'
-        version: 1.1.0(better-sqlite3@12.11.1)(ioredis@5.11.1(supports-color@8.1.1))(mysql2@3.15.3)(pg@8.23.0)(redis@6.2.1)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.6.2)(typescript@6.0.3))
+        version: 1.1.0(better-sqlite3@12.11.1)(ioredis@6.0.0(supports-color@8.1.1))(mysql2@3.15.3)(pg@8.23.0)(redis@6.2.1)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.6.2)(typescript@6.0.3))
     devDependencies:
       '@types/jest':
         specifier: 'catalog:'
         version: 30.0.0
+      ioredis:
+        specifier: 6.0.0
+        version: 6.0.0(supports-color@8.1.1)
       jest:
         specifier: 'catalog:'
         version: 30.5.2(@types/node@26.6.2)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.6.2)(typescript@6.0.3))
@@ -1665,9 +1668,6 @@ packages:
     peerDependenciesMeta:
       '@types/node':
         optional: true
-
-  '@ioredis/commands@1.10.0':
-    resolution: {integrity: sha512-UmeW7z4LfctwoQ5wkhVzgq8tXkreED2xZGpX+Bg+zA+WJFZCT6c062AfCK/Dfk81xZnnwdhJCUMkitihRaoC2Q==}
 
   '@ioredis/commands@2.0.0':
     resolution: {integrity: sha512-vrx0AE/T0h7cRZwfo1M39Cr+ZhZrkf0V8mQN75wucKCxCLD9l/VX6no3gFvrLqD1IlG/1LtzWovqEw3t0Vr9zg==}
@@ -5789,10 +5789,6 @@ packages:
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
 
-  ioredis@5.11.1:
-    resolution: {integrity: sha512-ehuGcf94bQXhfagULNXrJdfnWO38v070jxSx/qE87Kjzmu2fU7ro5EFAb+OPituLqgfyuQaym5DlrNydW2sJ9A==}
-    engines: {node: '>=12.22.0'}
-
   ioredis@6.0.0:
     resolution: {integrity: sha512-f+Dtubxfpf6KYFq7WVXJoOLn0bk4TJrMrN9SzeE+jrWrCWj7XX3fA6vkryafhADX+GMymRxgDJDOI33COkJc0w==}
     engines: {node: '>=20.0.0'}
@@ -7607,10 +7603,6 @@ packages:
 
   redis-errors@1.2.0:
     resolution: {integrity: sha512-1qny3OExCf0UvUV/5wpYKf2YwPcOqXzkwKKSmKHiE6ZMQs5heeE/c8eXK+PNllPvmjgAbfnsbpkGZWy8cBpn9w==}
-    engines: {node: '>=4'}
-
-  redis-parser@3.0.0:
-    resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
     engines: {node: '>=4'}
 
   redis@4.7.1:
@@ -10161,9 +10153,6 @@ snapshots:
   '@inquirer/type@4.1.1(@types/node@26.6.2)':
     optionalDependencies:
       '@types/node': 26.6.2
-
-  '@ioredis/commands@1.10.0':
-    optional: true
 
   '@ioredis/commands@2.0.0': {}
 
@@ -14684,19 +14673,6 @@ snapshots:
     dependencies:
       loose-envify: 1.4.0
 
-  ioredis@5.11.1(supports-color@8.1.1):
-    dependencies:
-      '@ioredis/commands': 1.10.0
-      cluster-key-slot: 1.1.1
-      debug: 4.4.3(supports-color@8.1.1)
-      denque: 2.1.0
-      redis-errors: 1.2.0
-      redis-parser: 3.0.0
-      standard-as-callback: 2.1.0
-    transitivePeerDependencies:
-      - supports-color
-    optional: true
-
   ioredis@6.0.0(supports-color@8.1.1):
     dependencies:
       '@ioredis/commands': 2.0.0
@@ -16859,11 +16835,6 @@ snapshots:
 
   redis-errors@1.2.0: {}
 
-  redis-parser@3.0.0:
-    dependencies:
-      redis-errors: 1.2.0
-    optional: true
-
   redis@4.7.1:
     dependencies:
       '@redis/bloom': 1.2.0(@redis/client@1.6.1)
@@ -17835,29 +17806,6 @@ snapshots:
       mime-types: 3.0.2
 
   typedarray@0.0.6: {}
-
-  typeorm@1.1.0(better-sqlite3@12.11.1)(ioredis@5.11.1(supports-color@8.1.1))(mysql2@3.15.3)(pg@8.23.0)(redis@6.2.1)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.6.2)(typescript@6.0.3)):
-    dependencies:
-      '@sqltools/formatter': 1.2.5
-      ansis: 4.3.1
-      dayjs: 1.11.21
-      debug: 4.4.3(supports-color@8.1.1)
-      dedent: 1.7.2
-      reflect-metadata: 0.2.2
-      sql-highlight: 6.1.0
-      tinyglobby: 0.2.17
-      tslib: 2.8.1
-      yargs: 18.1.0
-    optionalDependencies:
-      better-sqlite3: 12.11.1
-      ioredis: 5.11.1(supports-color@8.1.1)
-      mysql2: 3.15.3
-      pg: 8.23.0
-      redis: 6.2.1
-      ts-node: 10.9.2(@types/node@26.6.2)(typescript@6.0.3)
-    transitivePeerDependencies:
-      - babel-plugin-macros
-      - supports-color
 
   typeorm@1.1.0(better-sqlite3@12.11.1)(ioredis@6.0.0(supports-color@8.1.1))(mysql2@3.15.3)(pg@8.23.0)(redis@6.2.1)(supports-color@8.1.1)(ts-node@10.9.2(@types/node@26.6.2)(typescript@6.0.3)):
     dependencies:

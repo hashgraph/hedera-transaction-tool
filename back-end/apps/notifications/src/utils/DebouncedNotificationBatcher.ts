@@ -1,5 +1,7 @@
 import { Redis } from 'ioredis';
 
+import { LEGACY_IOREDIS_OPTIONS } from '@app/common';
+
 export class DebouncedNotificationBatcher<T = unknown> {
   private pubClient: Redis;
   private subClient: Redis;
@@ -21,8 +23,8 @@ export class DebouncedNotificationBatcher<T = unknown> {
   ) {
     this.batchKeyPrefix = `${this.instanceId}:batch:`;
     this.flushKeyPrefix = `${this.instanceId}:flush:`;
-    this.pubClient = new Redis(redisUrl);
-    this.subClient = new Redis(redisUrl);
+    this.pubClient = new Redis(redisUrl, LEGACY_IOREDIS_OPTIONS);
+    this.subClient = new Redis(redisUrl, LEGACY_IOREDIS_OPTIONS);
     // Subscribe to key expiry events
     this.subClient.subscribe('__keyevent@0__:expired');
     this.subClient.on('message', async (_channel, message) => {

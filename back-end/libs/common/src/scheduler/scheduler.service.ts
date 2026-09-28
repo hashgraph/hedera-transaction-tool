@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 
 import { Redis } from 'ioredis';
 
+import { LEGACY_IOREDIS_OPTIONS } from '../redis/legacy-ioredis-options';
+
 /**
  * @description This service is responsible for creating a reminder system using Redis.
  * @notice Redis keyspace notifications are disabled by default, make sure to enable it in the Redis configuration file.
@@ -21,8 +23,8 @@ export class SchedulerService {
   constructor(private readonly configService: ConfigService) {
     const redisURL = this.configService.get('REDIS_URL');
 
-    this.pubClient = new Redis(redisURL);
-    this.subClient = new Redis(redisURL);
+    this.pubClient = new Redis(redisURL, LEGACY_IOREDIS_OPTIONS);
+    this.subClient = new Redis(redisURL, LEGACY_IOREDIS_OPTIONS);
     this.subClient.subscribe('__keyevent@0__:expired');
   }
 
