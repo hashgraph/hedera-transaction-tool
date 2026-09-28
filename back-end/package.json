@@ -1,6 +1,6 @@
 {
   "name": "back-end",
-  "version": "0.39.0-SNAPSHOT",
+  "version": "0.40.0-SNAPSHOT",
   "description": "",
   "author": "",
   "private": true,
@@ -85,8 +85,8 @@
     "@eslint/eslintrc": "catalog:",
     "@eslint/js": "catalog:",
     "@hashgraph/hedera-local": "2.40.2",
-    "@nestjs/cli": "12.0.0",
-    "@nestjs/schematics": "12.0.1",
+    "@nestjs/cli": "12.0.3",
+    "@nestjs/schematics": "12.0.4",
     "@nestjs/testing": "catalog:nestjs-core",
     "@testcontainers/postgresql": "catalog:testcontainers",
     "@testcontainers/rabbitmq": "catalog:testcontainers",
