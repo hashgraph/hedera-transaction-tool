@@ -7,6 +7,7 @@ import { computed, onBeforeMount, ref, watch } from 'vue';
 import {
   type ISignatureImport,
   NotificationType,
+  SignerTool,
   type V1ImportFilterResult,
 } from '@shared/interfaces';
 import {
@@ -38,7 +39,7 @@ import useLoader from '@renderer/composables/useLoader';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../shared/src/ITransactionNode.ts';
+} from '@shared/interfaces/ITransactionNode.ts';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
@@ -234,6 +235,7 @@ async function importSignaturesFromV2File(filePath: string) {
       importInputs.push({
         id: transaction.id,
         signatureMap: map,
+        tool: SignerTool.V2,
       });
     } catch {
       unknownTransactionIds.push(transactionId!.toString());

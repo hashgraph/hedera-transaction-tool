@@ -96,15 +96,15 @@ describe('NotificationPreferencesController', () => {
       expect(result).toEqual([preferences]);
     });
 
-    it('should return null if no preferences found', async () => {
+    it('should return [] if no preferences found', async () => {
       const user = { id: 1 } as User;
 
-      jest.spyOn(service, 'getPreferencesOrCreate').mockResolvedValue(null);
+      jest.spyOn(service, 'getPreferencesOrCreate').mockResolvedValue([]);
 
       const result = await controller.getPreferencesOrCreate(user);
 
       expect(service.getPreferencesOrCreate).toHaveBeenCalledWith(user);
-      expect(result).toBeNull();
+      expect(result).toStrictEqual([]);
     });
   });
 });

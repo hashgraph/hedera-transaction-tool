@@ -203,5 +203,6 @@ export function serializeForIPC(
     return result;
   }
 
+   
   return String(value);
 }

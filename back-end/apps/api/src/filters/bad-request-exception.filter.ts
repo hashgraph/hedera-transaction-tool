@@ -9,7 +9,7 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
-    const isErrorCode = ErrorMessages[exception.message];
+    const isErrorCode = ErrorMessages[exception.message as ErrorCodes];
 
     response.status(status).json({
       statusCode: status,

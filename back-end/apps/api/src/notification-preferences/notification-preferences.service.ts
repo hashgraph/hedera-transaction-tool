@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeepPartial, Repository } from 'typeorm';
+import { QueryDeepPartialEntity, Repository } from 'typeorm';
 
 import { NotificationPreferences, NotificationType, User } from '@entities';
 
@@ -19,7 +19,7 @@ export class NotificationPreferencesService {
     const updateTxEmail = typeof dto.email === 'boolean';
     const updateTxInApp = typeof dto.inApp === 'boolean';
 
-    const updatePreferences: DeepPartial<NotificationPreferences> = {};
+    const updatePreferences: QueryDeepPartialEntity<NotificationPreferences> = {};
 
     if (updateTxEmail) {
       updatePreferences.email = dto.email;
@@ -30,7 +30,7 @@ export class NotificationPreferencesService {
 
     const preferences = await this.getPreferences(user, dto.type);
 
-    if (!updateTxEmail && !updateTxInApp) return preferences;
+    if (!updateTxEmail && !updateTxInApp && preferences) return preferences;
 
     if (preferences) {
       await this.repo.update(
@@ -40,8 +40,8 @@ export class NotificationPreferencesService {
         updatePreferences,
       );
 
-      preferences.email = updateTxEmail ? dto.email : preferences.email;
-      preferences.inApp = updateTxInApp ? dto.inApp : preferences.inApp;
+      preferences.email = updateTxEmail ? (dto.email ?? false) : preferences.email;
+      preferences.inApp = updateTxInApp ? (dto.inApp ?? false) : preferences.inApp;
 
       return preferences;
     }
@@ -49,11 +49,11 @@ export class NotificationPreferencesService {
     const newPreferences = this.repo.create({
       userId: user.id,
       type: dto.type,
-      email: typeof updatePreferences.email === 'boolean' ? updatePreferences.email : true,
+      email: typeof updatePreferences.email === 'boolean' ? updatePreferences.email : false,
       inApp: typeof updatePreferences.inApp === 'boolean' ? updatePreferences.inApp : true,
     });
 
-    await this.repo.insert(newPreferences);
+    await this.repo.save(newPreferences);
 
     return newPreferences;
   }
@@ -73,7 +73,7 @@ export class NotificationPreferencesService {
       inApp: true,
     });
 
-    await this.repo.insert(newPreferences);
+    await this.repo.save(newPreferences);
 
     return newPreferences;
   }
@@ -95,7 +95,7 @@ export class NotificationPreferencesService {
     return preferences;
   }
 
-  async getPreferences(user: User, type: NotificationType): Promise<NotificationPreferences> {
+  async getPreferences(user: User, type: NotificationType): Promise<NotificationPreferences | null> {
     return this.repo.findOne({
       where: {
         userId: user.id,

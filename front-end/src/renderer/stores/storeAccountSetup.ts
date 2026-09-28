@@ -10,7 +10,7 @@ const logger = createLogger('renderer.store.accountSetup');
 
 export interface StoreAccountSetup {
   shouldShowAccountSetup: () => Promise<boolean>;
-  passwordChangeRequired: () => Promise<boolean>;
+  passwordChangeRequired: () => boolean;
   recoveryPhraseRequired: () => Promise<boolean>;
   handleSkipRecoveryPhrase: () => Promise<void>;
   storeSkipRecoveryPhraseClaim: () => Promise<void>;
@@ -37,7 +37,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
   });
 
   /* Actions */
-  const passwordChangeRequired = async (): Promise<boolean> => {
+  const passwordChangeRequired = (): boolean => {
     let result: boolean;
     if (isLoggedInOrganization(user.selectedOrganization)) {
       result = user.selectedOrganization.isPasswordTemporary;
@@ -60,7 +60,7 @@ const useAccountSetupStore = defineStore('accountSetupStore', (): StoreAccountSe
   };
 
   const shouldShowAccountSetup = async () => {
-    return (await passwordChangeRequired()) || (await recoveryPhraseRequired());
+    return passwordChangeRequired() || (await recoveryPhraseRequired());
   };
 
   const handleSkipRecoveryPhrase = async () => {

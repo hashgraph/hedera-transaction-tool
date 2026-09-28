@@ -29,7 +29,7 @@ export const safeAwait = async <T>(promise: Promise<T>): Promise<ISafeAwaitResul
       throwNative(data);
       return { error: data };
     }
-    return { data } as ISafeAwaitResultData<T>;
+    return { data };
   } catch (error: unknown) {
     throwNative(error as Error);
     return { error };
@@ -43,7 +43,7 @@ export const safeAwaitAll = async <T extends unknown[]>(
     const results = await Promise.all(promises.map(p => safeAwait(p)));
     return results as { [K in keyof T]: ISafeAwaitResult<T[K]> };
   } catch (error: unknown) {
-    return promises.map(() => ({ error }) as ISafeAwaitResultError) as {
+    return promises.map(() => ({ error })) as {
       [K in keyof T]: ISafeAwaitResult<T[K]>;
     };
   } finally {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RouterLink, useRouter } from 'vue-router';
+import { type _RouterClassic, RouterLink, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -16,7 +16,7 @@ type MenuItem = {
 };
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 
 /* Store */
 const user = useUserStore();
@@ -77,8 +77,8 @@ const organizationOnly = ['/contact-list'];
           class="link-menu mt-2"
           :class="{
             active:
-              $router.appMenuItem === item.title.toLowerCase() ||
-              ($router.appMenuItem === undefined &&
+              router.appMenuItem === item.title.toLowerCase() ||
+              (router.appMenuItem === undefined &&
                 $route.path.startsWith(item.activePrefix || item.link)),
           }"
           :to="item.link"

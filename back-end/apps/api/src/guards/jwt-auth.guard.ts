@@ -10,7 +10,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     super();
   }
 
-  canActivate(context: ExecutionContext) {
+  override canActivate(context: ExecutionContext) {
     // Ignore the controller guard, if set
     const ignoreControllerGuard = this.reflector.get<boolean>(
       IGNORE_CONTROLLER_GUARD,

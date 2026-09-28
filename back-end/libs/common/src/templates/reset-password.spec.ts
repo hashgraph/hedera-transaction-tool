@@ -91,6 +91,20 @@ describe('reset-password templates', () => {
       );
     });
 
+    it('calls emailWarning with the server identity when serverUrl is provided', () => {
+      resetPasswordEmailBody('123456', 'https://tool.example.com');
+      expect(emailWarning).toHaveBeenCalledWith(
+        "If you didn't request a password reset from https://tool.example.com, you can safely ignore this email."
+      );
+    });
+
+    it('passes serverUrl from additionalData through to the warning', () => {
+      generateResetPasswordMessage({ otp: '123456', serverUrl: 'https://tool.example.com' });
+      expect(emailWarning).toHaveBeenCalledWith(
+        expect.stringContaining('https://tool.example.com')
+      );
+    });
+
     it('handles different OTP formats', () => {
       const otps = ['123456', 'ABCDEF', '1a2b3c', '999999'];
       otps.forEach(otp => {

@@ -4,7 +4,7 @@ import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
 import { ErrorCodes, TransactionSnapshotService } from '@app/common';
-import { emitTransactionStatusUpdate, emitTransactionUpdate } from '@app/common/utils';
+import { emitTransactionStatusUpdate } from '@app/common/utils';
 import { Transaction, TransactionGroup, TransactionStatus, User, UserStatus } from '@entities';
 
 import { CancelFailureCode, CreateTransactionGroupDto } from '../dto';
@@ -87,7 +87,7 @@ describe('TransactionGroupsService', () => {
 
     it('should throw BadRequestException if the transaction block fails', async () => {
       transactionsService.createTransactions.mockResolvedValue([]);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       const dto: CreateTransactionGroupDto = {
         description: 'description',
@@ -138,7 +138,7 @@ describe('TransactionGroupsService', () => {
         ],
       };
 
-      dataSource.manager.create.mockImplementation((entity, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_entity, data) => ({ ...data }) as any);
       transactionsService.createTransactions.mockImplementation(async (dtos, _) => {
         return dtos.map(dto => dto as unknown as Transaction);
       });
@@ -211,7 +211,7 @@ describe('TransactionGroupsService', () => {
     ];
 
     it('should throw BadRequestException if group is not found', async () => {
-      dataSource.manager.findOne.mockResolvedValue(undefined);
+      dataSource.manager.findOne.mockResolvedValue(null);
 
       await expect(service.getTransactionGroup(userWithKeys, 1)).rejects.toThrow(
         BadRequestException,
@@ -221,7 +221,7 @@ describe('TransactionGroupsService', () => {
     it('should throw UnauthorizedException if query returns no rows', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue([]);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       await expect(service.getTransactionGroup(userWithKeys, 1)).rejects.toThrow(
         UnauthorizedException,
@@ -231,7 +231,7 @@ describe('TransactionGroupsService', () => {
     it('should return group with mapped groupItems when full is false', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue(mockRows);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       const result = await service.getTransactionGroup(userWithKeys, 1);
 
@@ -254,109 +254,60 @@ describe('TransactionGroupsService', () => {
       });
     });
 
-    it('should not fetch signers/approvers/observers when full is false', async () => {
+    it('should not fetch signers/observers when full is false', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue(mockRows);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       await service.getTransactionGroup(userWithKeys, 1, false);
 
       expect(transactionsService.getTransactionSignersForTransactions).not.toHaveBeenCalled();
-      expect(transactionsService.getTransactionApproversForTransactions).not.toHaveBeenCalled();
       expect(transactionsService.getTransactionObserversForTransactions).not.toHaveBeenCalled();
     });
 
-    it('should fetch and map signers, approvers, and observers when full is true', async () => {
+    it('should fetch and map signers and observers when full is true', async () => {
       const mockSigners = [
         { transactionId: 10, userId: 1 },
         { transactionId: 11, userId: 2 },
       ];
-      const mockApprovers = [{ transactionId: 10, userId: 3 }];
       const mockObservers = [{ transactionId: 11, userId: 4 }];
 
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue(mockRows);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       transactionsService.getTransactionSignersForTransactions.mockResolvedValue(mockSigners as any);
-      transactionsService.getTransactionApproversForTransactions.mockResolvedValue(mockApprovers as any);
       transactionsService.getTransactionObserversForTransactions.mockResolvedValue(mockObservers as any);
 
       const result = await service.getTransactionGroup(userWithKeys, 1, true);
 
       expect(transactionsService.getTransactionSignersForTransactions).toHaveBeenCalledWith([10, 11]);
-      expect(transactionsService.getTransactionApproversForTransactions).toHaveBeenCalledWith([10, 11]);
       expect(transactionsService.getTransactionObserversForTransactions).toHaveBeenCalledWith([10, 11]);
 
       const item1 = result.groupItems.find(i => i.transactionId === 10);
       const item2 = result.groupItems.find(i => i.transactionId === 11);
 
-      expect(item1.transaction.signers).toEqual([{ transactionId: 10, userId: 1 }]);
-      expect(item1.transaction.approvers).toEqual([{ transactionId: 10, userId: 3 }]);
-      expect(item1.transaction.observers).toEqual([]);
+      expect(item1).not.toBeUndefined();
+      expect(item1!.transaction.signers).toEqual([{ transactionId: 10, userId: 1 }]);
+      expect(item1!.transaction.observers).toEqual([]);
 
-      expect(item2.transaction.signers).toEqual([{ transactionId: 11, userId: 2 }]);
-      expect(item2.transaction.approvers).toEqual([]);
-      expect(item2.transaction.observers).toEqual([{ transactionId: 11, userId: 4 }]);
+      expect(item2).not.toBeUndefined();
+      expect(item2!.transaction.signers).toEqual([{ transactionId: 11, userId: 2 }]);
+      expect(item2!.transaction.observers).toEqual([{ transactionId: 11, userId: 4 }]);
     });
 
-    it('should default signers/approvers/observers to empty arrays if not found in map', async () => {
+    it('should default signers/observers to empty arrays if not found in map', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue([mockRows[0]]);
-      dataSource.manager.create.mockImplementation((_, data) => ({ ...data }));
+      dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       transactionsService.getTransactionSignersForTransactions.mockResolvedValue([]);
-      transactionsService.getTransactionApproversForTransactions.mockResolvedValue([]);
       transactionsService.getTransactionObserversForTransactions.mockResolvedValue([]);
 
       const result = await service.getTransactionGroup(userWithKeys, 1, true);
 
       expect(result.groupItems[0].transaction.signers).toEqual([]);
-      expect(result.groupItems[0].transaction.approvers).toEqual([]);
       expect(result.groupItems[0].transaction.observers).toEqual([]);
-    });
-  });
-
-  describe('removeTransactionGroup', () => {
-    beforeEach(() => {
-      jest.resetAllMocks();
-    });
-
-    it('should throw an error if the group is not found', async () => {
-      dataSource.manager.findOneBy.mockResolvedValue(undefined);
-      await expect(service.removeTransactionGroup(user as User, 1)).rejects.toThrow(
-        'group not found',
-      );
-    });
-
-    it('should remove all group items and the group itself', async () => {
-      const mockGroup = { id: 1 };
-      const mockGroupItems = [
-        { id: 1, transactionId: 101 },
-        { id: 2, transactionId: 102 },
-      ];
-
-      dataSource.manager.findOneBy.mockResolvedValue(mockGroup);
-      dataSource.manager.find.mockResolvedValue(mockGroupItems);
-      dataSource.manager.remove
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroupItems[0])
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroupItems[1])
-        //@ts-expect-error - typings
-        .mockResolvedValueOnce(mockGroup);
-
-      await service.removeTransactionGroup(user as User, 1);
-
-      expect(dataSource.manager.remove).toHaveBeenCalledTimes(3); // Twice for group items, once for the group
-      expect(transactionsService.removeTransaction).toHaveBeenCalledTimes(mockGroupItems.length);
-      expect(emitTransactionUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        expect.arrayContaining([
-          expect.objectContaining({ entityId: 101 }),
-          expect.objectContaining({ entityId: 102 }),
-        ]),
-      );
     });
   });
 
@@ -406,7 +357,7 @@ describe('TransactionGroupsService', () => {
           {
             seq: 2,
             transactionId: 2,
-            transaction: { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES, creatorKey: { userId: user.id + 999 } } as unknown as Transaction,
+            transaction: { id: 2, status: TransactionStatus.WAITING_FOR_SIGNATURES, creatorKey: { userId: user.id! + 999 } } as unknown as Transaction,
           },
         ],
       };

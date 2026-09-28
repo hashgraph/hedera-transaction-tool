@@ -39,7 +39,7 @@ function mountInput(props: Partial<{
   // `ChipMultiInputStrategy<string>` (the interface is invariant in T). Cast
   // the component reference to silence the inference; the runtime contract
   // still holds and is exercised by every assertion below.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   return mount(ChipMultiInput as any, {
     props: {
       modelValue: [] as string[],

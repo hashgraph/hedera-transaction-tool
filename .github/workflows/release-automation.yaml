@@ -39,7 +39,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -89,12 +89,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: main
@@ -113,14 +113,14 @@ jobs:
           passphrase: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Create and Switch to Release Branch
         id: branch_or_create_release
@@ -137,20 +137,10 @@ jobs:
           fi
 
       - name: Bump Versions
-        run: |
-          npm pkg set version=${{ env.VERSION }} --prefix back-end
-          npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/api
-          npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/chain
-          npm pkg set version=${{ env.VERSION }} --prefix back-end/apps/notifications
-          npm pkg set version=${{ env.VERSION }} --prefix back-end/typeorm
-          npm pkg set version=${{ env.VERSION }} --prefix front-end
-          npm pkg set version=${{ env.VERSION }} --prefix automation
+        run: pnpm -r --include-workspace-root exec npm pkg set version=${{ env.VERSION }}
 
       - name: Update Lockfiles
-        run: |
-          pnpm install --dir back-end
-          pnpm install --dir front-end
-          pnpm install --dir automation
+        run: pnpm install
 
       - name: Generate NOTICE File
         if: ${{ needs.prepare.outputs.prerelease == '' }}
@@ -166,10 +156,15 @@ jobs:
 
       - name: Commit and Tag
         if: ${{ env.TAG_EXISTS == 'false' }}
-        uses: step-security/git-auto-commit-action@749bc1cc775376092cc4227ba537137f445ca7c3 # v7.1.1
+        uses: step-security/git-auto-commit-action@ca31fda53dd20a6864523b29798308a4c5fa5cfa # v7.2.0
         with:
           commit_author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          commit_message: "chore: bump versions for ${{ env.RELEASE_TAG }} [skip ci]"
+          # No [skip ci]: create_snapshot_pr later resets main to this branch and
+          # pushes a new commit on top for the main-branch PR. If this commit's
+          # message carries [skip ci], GitHub skips the whole push (this commit
+          # included), so the PR's required status checks never run and it can't
+          # be merged.
+          commit_message: "chore: bump versions for ${{ env.RELEASE_TAG }}"
           commit_options: "--no-verify --signoff"
           commit_user_name: ${{ steps.gpg_importer.outputs.name }}
           commit_user_email: ${{ steps.gpg_importer.outputs.email }}
@@ -210,12 +205,12 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Always build from the immutable release tag for the supplied version
           # so the image is pinned to the exact tagged commit (the api embeds
@@ -225,7 +220,7 @@ jobs:
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Log in to GHCR
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: step-security/docker-login-action@8c7b695d8738c5699a679ff5254baf0f19f20a94 # v4.6.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -234,18 +229,20 @@ jobs:
       - name: Set up Docker Buildx
         # Required so build-push-action gets a docker-container (buildkit) builder;
         # the default docker driver cannot export the gha cache.
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
+        uses: step-security/setup-buildx-action@a4709e2865773e1792246433e8eb922f9743a875 # v4.2.0
 
       - name: Extract metadata (tags, labels)
         id: meta
-        uses: docker/metadata-action@80c7e94dd9b9319bd5eb7a0e0fe9291e23a2a2e9 # v6.1.0
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
           images: ${{ env.REGISTRY }}/${{ matrix.image }}
-          tags: type=raw,value=${{ env.VERSION }}
+          tags: |
+            type=raw,value=${{ env.VERSION }}
+            type=raw,value=latest
 
       - name: Build and Push Docker Image
         id: push
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
+        uses: step-security/docker-build-push-action@144392094f7fc3199dda455efe3b70dbea4b72a0 # v7.3.0
         with:
           context: .
           file: ${{ matrix.dockerfile }}
@@ -257,12 +254,12 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           # build-push-action emits its own SLSA provenance by default (the
           # source of the "unknown/unknown" entries on the GHCR package page).
-          # Disable it so the dedicated attest-build-provenance step below is the
-          # single source of provenance, wired into GitHub's attestation UI.
+          # Disable it so the dedicated attest step below is the single source
+          # of provenance, wired into GitHub's attestation UI.
           provenance: false
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: ${{ env.REGISTRY }}/${{ matrix.image }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -281,22 +278,26 @@ jobs:
   # ----------------------------
   build_mac:
     name: Build macOS Artifacts
-    runs-on: macos-latest
+    runs-on: macos-15
     # Generous: three arches (x64/arm64/universal) are built, then six
     # installers (dmg + pkg per arch) are notarized via the notary service.
     timeout-minutes: 90
     needs: [prepare, cut_release]
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # Build from the immutable release tag for the supplied version so the
           # version electron-builder bundles matches the tagged commit (same
@@ -304,22 +305,38 @@ jobs:
           ref: ${{ needs.prepare.outputs.release_tag }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
+      - name: Prepare App Store Connect API Key
+        run: |
+          API_KEY_PATH="${RUNNER_TEMP}/apple_api_key.p8"
+          echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 --decode > "${API_KEY_PATH}"
+          echo "APPLE_API_KEY=${API_KEY_PATH}" >> "$GITHUB_ENV"
+
+      - name: Verify Apple Notarization Credentials
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+        run: |
+          xcrun notarytool history \
+            --key "${APPLE_API_KEY}" \
+            --key-id "${APPLE_API_KEY_ID}" \
+            --issuer "${APPLE_API_ISSUER}"
+
       - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Get pnpm store directory
         id: pnpm-store
         run: echo "path=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
 
       - name: Cache pnpm store
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
@@ -327,9 +344,9 @@ jobs:
             ${{ runner.os }}-pnpm-store-
 
       - name: Set up Python
-        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
       - name: Install Dependencies
         # front-end postinstall (electron-builder install-app-deps) rebuilds
@@ -352,21 +369,21 @@ jobs:
           CSC_INSTALLER_KEY_PASSWORD: ${{ secrets.MACOS_CERT_INSTALLER_PASSWORD }}
         run: pnpm run build && pnpm exec electron-builder --mac --publish=never
 
-      - name: Prepare App Store Connect API Key
-        # notarytool needs the App Store Connect API key as a .p8 file on disk;
-        # the secret holds it base64-encoded. Write it to the runner temp dir
-        # and export its path for the notarization step.
-        run: |
-          API_KEY_PATH="${RUNNER_TEMP}/apple_api_key.p8"
-          echo "${{ secrets.APPLE_API_KEY_BASE64 }}" | base64 --decode > "${API_KEY_PATH}"
-          echo "APPLE_API_KEY=${API_KEY_PATH}" >> "$GITHUB_ENV"
-
       - name: Notarize and Staple Installers
         # APPLE_API_KEY (.p8 path) is exported into $GITHUB_ENV by the prior step.
         env:
           APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: bash .github/scripts/notarize-mac-installers.sh
+
+      - name: Attest macOS Artifacts
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            front-end/release/*.dmg
+            front-end/release/*.pkg
+            front-end/release/*.zip
+            front-end/release/latest-mac.yml
 
       - name: Upload macOS Artifacts
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -394,21 +411,26 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: ${{ needs.prepare.outputs.release_branch }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
+      - name: Install pnpm
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
+
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Close the Milestone
         if: ${{ needs.prepare.outputs.prerelease == '' }}
@@ -488,26 +510,96 @@ jobs:
             --prerelease \
             --repo ${{ github.repository }}
 
-
-  # ----------------------------
-  # Create or update the release tracking issue. Runs in parallel with
-  # create_snapshot_pr so a flaky GitHub API call cannot block the snapshot PR.
-  # ----------------------------
-  create_tracking_issue:
-    name: Create or Update Release Tracking Issue
+  create_snapshot_pr:
+    name: Create Snapshot Bump PR
     runs-on: transaction-tools-linux-medium
     needs: [prepare, cut_release, github_release]
+    if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
+    outputs:
+      pull_request_url: ${{ steps.create_pr.outputs.pull-request-url }}
+    env:
+      NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
+      RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ needs.prepare.outputs.release_branch }}
+          ref: main
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+      - name: Import GPG Key
+        id: gpg_importer
+        uses: step-security/ghaction-import-gpg@c0b4a334b9b72bfaaebec86ef022a78a5b17f828 # v7.0.0
+        with:
+          git_commit_gpgsign: true
+          git_committer_email: ${{ vars.GIT_USER_EMAIL }}
+          git_committer_name: ${{ vars.GIT_USER_NAME }}
+          git_tag_gpgsign: true
+          git_user_signingkey: true
+          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.GPG_PASSPHRASE }}
+
+      - name: Reset main to release branch
+        run: |
+          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
+          git reset --hard $RELEASE_BRANCH
+
+      - name: Install pnpm
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
+
+      - name: Bump to Next Snapshot Version
+        run: pnpm -r --include-workspace-root exec npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }}
+
+      - name: Update Lockfiles
+        run: pnpm install
+
+      - name: Create Pull Request
+        id: create_pr
+        uses: step-security/create-pull-request@50c103da2b9ca12cd5bc013fc6931051a5aa872b # v8.1.1
+        with:
+          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
+          branch: create-pull-request/${{ env.RELEASE_BRANCH }}
+          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}"
+          committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
+          delete-branch: true
+          signoff: true
+          title: ${{ needs.cut_release.outputs.pr_title }}
+          token: ${{ secrets.HEDERA_BOT_TOKEN }}
+
+  create_or_update_tracking_issue:
+    name: Create or Update Release Tracking Issue
+    runs-on: transaction-tools-linux-medium
+    needs: [prepare, cut_release, github_release, create_snapshot_pr]
+    if: ${{ always() && needs.github_release.result == 'success' && needs.create_snapshot_pr.result != 'failure' }}
+
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout Repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Read the checklist docs from main, not the release branch: the
+          # release branch is a long-lived snapshot from cut time, so doc
+          # updates (e.g. new manual test items) made on main afterward never
+          # reach it and silently drop out of the posted checklist.
+          ref: main
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
 
       - name: Create or Update Release Tracking Issue
@@ -517,7 +609,7 @@ jobs:
           RELEASE_VERSION: ${{ needs.prepare.outputs.release }}
           PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
           NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
-          CREATE_PR: ${{ needs.cut_release.outputs.create_pr }}
+          SNAPSHOT_PR_URL: ${{ needs.create_snapshot_pr.outputs.pull_request_url }}
         run: |
           ISSUE_TITLE="v${RELEASE_VERSION} Release Task"
           MILESTONE="v${RELEASE_VERSION}"
@@ -550,131 +642,49 @@ jobs:
               # Mark the existing checklist comment as superseded and post a fresh one.
               CHECKLIST_COMMENT_ID=$(gh api \
                 repos/${{ github.repository }}/issues/${EXISTING}/comments \
-                --jq '[.[] | select(.body | startswith("## Release Testing Checklist"))] | last | .id // empty')
+                --jq '[.[] | select(.user.login == "github-actions[bot]") | select(.body | startswith("# Release Testing Checklist"))] | last | .id // empty')
               if [ -n "$CHECKLIST_COMMENT_ID" ]; then
                 SUPERSEDED_BODY=$(gh api \
                   repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
                   --jq '.body')
-                (printf '> [!NOTE]\n> Superseded by **v%s** — see updated checklist below.\n\n' "${VERSION}"; \
-                 printf '%s' "${SUPERSEDED_BODY}") \
+                printf '<details>\n<summary>Superseded by v%s</summary>\n\n%s\n</details>' \
+                  "${VERSION}" "${SUPERSEDED_BODY}" \
                   | jq -Rs '{body: .}' \
                   | gh api repos/${{ github.repository }}/issues/comments/${CHECKLIST_COMMENT_ID} \
                       -X PATCH --input -
               fi
 
+              CHECKLIST_BODY=$(sed \
+                -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                docs/release-testing-checklist.md)
               gh issue comment "$EXISTING" \
-                --body "$(cat docs/release-testing-checklist.md)" \
+                --body "$CHECKLIST_BODY" \
                 --repo ${{ github.repository }}
             else
               gh issue comment "$EXISTING" \
                 --body "Release Automation completed for **v${VERSION}**. The automated steps are done — proceed with the Publish Release and Final deployment checklists." \
                 --repo ${{ github.repository }}
             fi
-          else
-            if [ -n "$PRERELEASE" ]; then
-              ISSUE_BODY=$(sed \
-                  -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
-                  -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
-                  docs/release-process.md)
-            else
-              ISSUE_BODY=$(sed \
-                  -e "s|<major\.minor\.patch>|${VERSION}|g" \
-                  docs/release-process.md)
-            fi
-
-            # Substitute or remove the SNAPSHOT bump PR line.
-            if [ "$CREATE_PR" = "true" ]; then
-              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed \
-                "s|<!-- snapshot-bump-pr-line -->|- [ ] Review and merge the \`v${NEXT_VERSION_SNAPSHOT}\` bump PR to \`main\`|g")
-            else
-              ISSUE_BODY=$(echo "$ISSUE_BODY" | sed "/<!-- snapshot-bump-pr-line -->/d")
-            fi
+          elif [ -n "$PRERELEASE" ]; then
+            ISSUE_BODY=$(sed \
+                -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+                -e "s|<major\.minor\.patch>-SNAPSHOT|${NEXT_VERSION_SNAPSHOT}|g" \
+                -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+                -e "s|<snapshot-pr-url>|${SNAPSHOT_PR_URL}|g" \
+                docs/release-process.md)
             ISSUE_URL=$(gh issue create \
               --title "$ISSUE_TITLE" \
               --body "$ISSUE_BODY" \
-              --label "release" \
               "${MILESTONE_ARGS[@]}" \
               --repo ${{ github.repository }})
 
             ISSUE_NUMBER="${ISSUE_URL##*/}"
+            CHECKLIST_BODY=$(sed \
+              -e "s|<major\.minor\.patch>-beta\.<number>|${VERSION}|g" \
+              -e "s|<major\.minor\.patch>|${RELEASE_VERSION}|g" \
+              docs/release-testing-checklist.md)
             gh issue comment "$ISSUE_NUMBER" \
-              --body "$(cat docs/release-testing-checklist.md)" \
+              --body "$CHECKLIST_BODY" \
               --repo ${{ github.repository }}
           fi
-
-  create_snapshot_pr:
-    name: Create Snapshot Bump PR
-    runs-on: transaction-tools-linux-medium
-    needs: [prepare, cut_release, github_release]
-    if: ${{ needs.cut_release.outputs.create_pr == 'true' && needs.github_release.result == 'success' }}
-    env:
-      NEXT_VERSION_SNAPSHOT: ${{ needs.prepare.outputs.next_version_snapshot }}
-      RELEASE_BRANCH: ${{ needs.prepare.outputs.release_branch }}
-
-    steps:
-      - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
-        with:
-          egress-policy: audit
-
-      - name: Checkout Repository
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
-        with:
-          ref: main
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}
-
-      - name: Import GPG Key
-        id: gpg_importer
-        uses: step-security/ghaction-import-gpg@c0b4a334b9b72bfaaebec86ef022a78a5b17f828 # v7.0.0
-        with:
-          git_commit_gpgsign: true
-          git_committer_email: ${{ vars.GIT_USER_EMAIL }}
-          git_committer_name: ${{ vars.GIT_USER_NAME }}
-          git_tag_gpgsign: true
-          git_user_signingkey: true
-          gpg_private_key: ${{ secrets.GPG_PRIVATE_KEY }}
-          passphrase: ${{ secrets.GPG_PASSPHRASE }}
-
-      - name: Reset main to release branch
-        run: |
-          git fetch origin $RELEASE_BRANCH:$RELEASE_BRANCH
-          git reset --hard $RELEASE_BRANCH
-
-      - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
-
-      - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
-        with:
-          node-version: 24.15.0
-
-      - name: Bump to Next Snapshot Version
-        run: |
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/apps/api
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/apps/chain
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/apps/notifications
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix back-end/typeorm
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix front-end
-          npm pkg set version=${{ env.NEXT_VERSION_SNAPSHOT }} --prefix automation
-
-      - name: Update Lockfiles
-        run: |
-          pnpm install --dir back-end
-          pnpm install --dir front-end
-          pnpm install --dir automation
-
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          author: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          body: Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }}
-          branch: create-pull-request/${{ env.RELEASE_BRANCH }}
-          commit-message: "Bump versions for v${{ env.NEXT_VERSION_SNAPSHOT }} [skip ci]"
-          committer: ${{ steps.gpg_importer.outputs.name }} <${{ steps.gpg_importer.outputs.email }}>
-          delete-branch: true
-          signoff: true
-          title: ${{ needs.cut_release.outputs.pr_title }}
-          token: ${{ secrets.HEDERA_BOT_TOKEN }}

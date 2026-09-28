@@ -54,7 +54,7 @@ export async function seedOrganizationUserKey({
   const privateKey = standardPrivateKey.toStringRaw();
   const publicKey = standardPrivateKey.publicKey.toStringRaw();
   const mnemonicHash = await argonHash(resolvedRecoveryPhraseWords.toString(), true);
-  const encryptedPrivateKey = encrypt(privateKey, localPassword);
+  const encryptedPrivateKey = await encrypt(privateKey, localPassword);
   const userId = await getUserIdByEmail(email);
 
   if (userId === null) {
@@ -143,7 +143,11 @@ export async function createSeededOrganizationSession(
         localOrganizationId,
       });
 
+      // The way tests are currently written, users[0].privateKey is later overwritten with
+      // the payer's private key... This makes sure we save the actual private key of the
+      // organization user without revisiting that design for now.
       organizationPage.users[index].privateKey = seededUser.privateKey;
+      organizationPage.users[index].organizationPrivateKey = seededUser.privateKey;
       organizationPage.organizationRecoveryWords[index] = indexRecoveryPhraseWords(
         seededUser.recoveryPhraseWords,
       );

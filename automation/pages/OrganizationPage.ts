@@ -21,6 +21,7 @@ import {
   verifyOrganizationExists,
 } from '../utils/db/databaseQueries.js';
 import * as fs from 'node:fs';
+import { randomInt } from 'node:crypto';
 import { argonHash } from '../utils/crypto/crypto.js';
 import { generateMnemonic } from '../utils/crypto/keyUtil.js';
 import {
@@ -50,6 +51,8 @@ export interface UserDetails {
   email: string;
   password: string;
   privateKey: string;
+  /** Private key matching the organization user_key public key. */
+  organizationPrivateKey?: string;
 }
 
 export interface Credentials {
@@ -82,8 +85,8 @@ export class OrganizationPage extends BasePage {
   addUserButtonSelector = 'button-add-user';
   openDatePickerButtonSelector =
     '[data-testid="date-picker-valid-start"] [data-test-id="dp-input"]';
-  datePickerCalendarSelector = 'css=.dp__instance_calendar';
-  datePickerInputSelector = 'css=.dp__time_input';
+  datePickerCalendarSelector = 'css=.dp--instance-calendar';
+  datePickerInputSelector = 'css=.dp--time-input';
   timePickerIconSelector = 'css=.dp--tp-wrap button[aria-label="Open time picker"]';
   incrementSecondsButtonSelector = 'css=button[aria-label="Increment seconds"]';
   incrementMinutesButtonSelector = 'css=button[aria-label="Increment minutes"]';
@@ -128,13 +131,15 @@ export class OrganizationPage extends BasePage {
   readyToSignTabBadgeSelector = '[data-testid="tab-2"] [data-testid="span-notification-number"]';
   transactionIdInGroupSelector = 'td-group-transaction-id';
   validStartTimeInGroupSelector = 'td-group-valid-start-time';
-  toastMessageSelector = 'css=.v-toast__text';
+  toastMessageSelector = 'css=.toast-message';
   globalLoaderModalSelector = 'modal-global-loader';
   globalLoaderSpinnerSelector =
     'css=[data-testid="modal-global-loader"] [data-testid="div-loader"]';
   // Indexes
   modeSelectionIndexSelector = 'dropdown-item-';
-  firstMissingKeyIndexSelector = 'cell-index-missing-0';
+  keyIndexSelector = 'cell-index-0';
+  keyRestoreButtonSelector = 'button-restore-key-';
+  keyUploadButtonSelector = 'button-upload-key-';
 
   transactionNodeTransactionIdIndexSelector = 'td-transaction-node-transaction-id-';
   transactionNodeTransactionTypeIndexSelector = 'td-transaction-node-transaction-type-';
@@ -248,7 +253,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async setupWrongOrganization(organizationNickname = 'Bad Organization') {
-    const serverUrl = (process.env.ORGANIZATION_URL ?? '') + Math.floor(Math.random() * 10);
+    const serverUrl = (process.env.ORGANIZATION_URL ?? '') + randomInt(0, 10);
     await this.clickOnAddNewOrganizationButton();
     await this.fillOrganizationDetailsAndContinue(organizationNickname, serverUrl);
   }
@@ -632,12 +637,28 @@ export class OrganizationPage extends BasePage {
     }
   }
 
-  async isFirstMissingKeyVisible() {
-    return await this.isElementVisible(this.firstMissingKeyIndexSelector);
+  async countKeyRestoreButtons(): Promise<number> {
+    let result = 0;
+    const selector = `[data-testid^="${this.keyRestoreButtonSelector}"]`;
+    const restoreButtons = this.window.locator(selector);
+    for (const b of await restoreButtons.all()) {
+      if (await b.isVisible()) {
+        result += 1;
+      }
+    }
+    return result;
   }
 
-  async isFirstMissingKeyHidden() {
-    return await this.isElementHidden(this.firstMissingKeyIndexSelector);
+  async countKeyUploadButtons(): Promise<number> {
+    let result = 0;
+    const selector = `[data-testid^="${this.keyUploadButtonSelector}"]`;
+    const uploadButtons = this.window.locator(selector);
+    for (const b of await uploadButtons.all()) {
+      if (await b.isVisible()) {
+        result += 1;
+      }
+    }
+    return result;
   }
 
   async clickOnDeleteNextButton() {
@@ -811,6 +832,7 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
     await this.transactionPage.fillInInitialFunds('100');
+    await this.transactionPage.fillInMaxTransactionFee('10');
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 
@@ -857,9 +879,7 @@ export class OrganizationPage extends BasePage {
   }
 
   async signTransactionByAllUsersViaApi(txId: string) {
-    console.log(
-      `[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`,
-    );
+    console.log(`[signTransactionByAllUsersViaApi] txId=${txId}, signers=${this.users.length - 1}`);
     const result = await signTransactionByAllUsersViaApi(this.users, txId);
     console.log(
       `[signTransactionByAllUsersViaApi] tx db-id=${result.transactionDbId}: sent ${result.signedUsers} signer(s), backend registered ${result.totalAcceptedSigners} new signer(s) total`,
@@ -1707,6 +1727,33 @@ export class OrganizationPage extends BasePage {
   async clickOnConfirmSignAllButton() {
     await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
     await this.click(this.confirmSignAllButtonSelector);
+    // AppModal.vue is always mounted (never v-if) and hardcodes
+    // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
+    // per-instance. Confirming "Sign all" closes the confirm dialog immediately, then
+    // ActionController's Doherty-threshold delay (400ms) means the progress dialog - which stays
+    // open while a large batch (e.g. 100 transactions) signs, and shares the same testid - only
+    // appears ~400ms later. A single "nothing visible" check lands in that legitimate gap almost
+    // every time, regardless of batch size, so require it to hold for longer than 400ms across
+    // repeated checks before trusting it instead of resolving on the first observation.
+    const noneVisibleSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT * 4;
+    let stableChecks = 0;
+    while (stableChecks < 3) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new Error(
+          'A modal sharing data-testid="modal-confirm-transaction" stayed visible after confirming Sign All',
+        );
+      }
+      await this.window.waitForFunction(
+        (selector: string) => document.querySelector(selector) === null,
+        noneVisibleSelector,
+        { timeout: remaining },
+      );
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+      const stillNone = (await this.window.locator(noneVisibleSelector).count()) === 0;
+      stableChecks = stillNone ? stableChecks + 1 : 0;
+    }
   }
 
   async clickOnConfirmCancelButton() {

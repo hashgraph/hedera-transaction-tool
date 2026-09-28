@@ -9,7 +9,7 @@ const { eventDate } = defineProps<{
 }>();
 
 /* Model */
-const model = defineModel<number | null>(); // in milliseconds
+const model = defineModel<number | null>({required: true}); // in milliseconds
 
 /* Computed */
 const allOptions = computed(() => {

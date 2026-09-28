@@ -130,7 +130,7 @@ async function insertKeysToSQLite(
     for (let i = 0; i < privateKeys.length; i++) {
       const privateKey = privateKeys[i];
       const publicKey = privateKey.publicKey.toStringRaw();
-      const encryptedKey = encrypt(privateKey.toStringRaw(), localPassword);
+      const encryptedKey = await encrypt(privateKey.toStringRaw(), localPassword);
 
       await new Promise<void>((resolve, reject) => {
         db.run(

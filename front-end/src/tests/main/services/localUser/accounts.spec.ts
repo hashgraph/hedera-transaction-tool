@@ -182,7 +182,7 @@ describe('Services Local User Accounts', () => {
     test('Should throw error if account already exists', async () => {
       prisma.hederaAccount.count.mockResolvedValueOnce(1);
 
-      expect(addAccount(userId, accountId, network, nickname)).rejects.toThrowError(
+      await expect(addAccount(userId, accountId, network, nickname)).rejects.toThrowError(
         'Account ID or Nickname already exists!',
       );
     });

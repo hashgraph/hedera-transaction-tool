@@ -11,7 +11,7 @@ export interface AuthWebsocket extends Socket {
 }
 
 export type SocketIOMiddleware = {
-  (client: Socket, next: (err?: Error) => void);
+  (client: Socket, next: (err?: Error) => void): void;
 };
 
 /* This middleware will intercept connection requests during the handshake enabling authentication to
@@ -53,7 +53,7 @@ export const AuthWebsocketMiddleware = (
     attempts.delete(ip);
   };
 
-  return async (socket: AuthWebsocket, next) => {
+  return async (socket: Socket, next) => {
     const ip = socket.handshake.address;
 
     try {
@@ -105,10 +105,10 @@ export const AuthWebsocketMiddleware = (
 
       // Success - reset rate limit counter
       resetAttempts(ip);
-      socket.user = user;
+      (socket as AuthWebsocket).user = user;
       next();
     } catch (err) {
-      const e = err as any;
+      const e = err as { name?: unknown; code?: unknown; message?: unknown[] };
 
       // Note: socket.io automatically disconnects after next(error), no need for explicit disconnect
       if (

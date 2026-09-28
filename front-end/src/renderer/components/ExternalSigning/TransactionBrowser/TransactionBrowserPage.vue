@@ -99,6 +99,7 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
                 data-testid="button-back"
                 type="button"
                 @click="show = false"
+                log-label="close-transaction-browser"
               >
                 <i class="bi bi-arrow-left"></i>
               </AppButton>
@@ -111,6 +112,8 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
                 :disabled="currentIndex <= 0"
                 color="secondary"
                 @click.prevent="emit('previous')"
+                log-label="previous-browsed-transaction"
+                :log-metadata="{ currentIndex, total: props.entries.length }"
                 >Previous</AppButton
               >
 
@@ -118,6 +121,8 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
                 :disabled="currentIndex >= props.entries.length - 1"
                 color="secondary"
                 @click.prevent="emit('next')"
+                log-label="next-browsed-transaction"
+                :log-metadata="{ currentIndex, total: props.entries.length }"
                 >Next</AppButton
               >
             </div>

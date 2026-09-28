@@ -31,6 +31,6 @@ describe('Services Organization Auth', () => {
   test('login: throws and error when failed to login', async () => {
     vi.spyOn(axios, 'post').mockRejectedValueOnce('');
 
-    expect(login(serverUrl, email, password)).rejects.toThrowError('Failed Sign in Organization');
+    await expect(login(serverUrl, email, password)).rejects.toThrowError('Failed Sign in Organization');
   });
 });

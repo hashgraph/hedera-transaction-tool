@@ -1,5 +1,6 @@
 {
   "name": "hedera-transaction-tool-root",
+  "version": "0.40.0-SNAPSHOT",
   "private": true,
   "scripts": {
     "clean:deps": "rm -rf node_modules **/node_modules",
@@ -8,36 +9,8 @@
   "devDependencies": {
     "prettier": "catalog:"
   },
-  "pnpm": {
-    "overrides": {
-      "protobufjs@<8.0.0": "7.5.8",
-      "protobufjs@>=8.0.0": "8.2.0",
-      "follow-redirects": "1.16.0",
-      "lodash": "4.18.1",
-      "handlebars": "4.7.9",
-      "js-cookie": "3.0.8",
-      "path-to-regexp@<1.0.0": "0.1.13",
-      "path-to-regexp@>=8.0.0": "8.4.0",
-      "serialize-javascript": "7.0.5",
-      "shell-quote": "1.8.4",
-      "brace-expansion@<2.0.0": "1.1.13",
-      "brace-expansion@>=2.0.0 <3.0.0": "2.0.3",
-      "picomatch@>=4.0.0": "4.0.4",
-      "flatted": "3.4.2",
-      "socket.io-parser": "4.2.6",
-      "js-yaml": "4.1.1",
-      "hono": "4.12.23",
-      "@hono/node-server": "1.19.13",
-      "tmp": "0.2.7",
-      "@xmldom/xmldom": "0.8.13",
-      "ajv@>=8.0.0": "8.20.0",
-      "tar": "7.5.11",
-      "fast-uri": "3.1.2",
-      "diff@<5.0.0": "5.2.0",
-      "@tootallnate/once@<2.0.0": "2.0.0"
-    }
-  },
+  "packageManager": "pnpm@11.15.1+sha512.81350b07e53c9538a02f1f2303b4290fa2d7be04e56e2a970c4cc4b417dc761de196edabd49d55c7dc9580db81007c44143e4e3d7e462b3000d23c255122d065",
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.20.0 <25"
   }
 }

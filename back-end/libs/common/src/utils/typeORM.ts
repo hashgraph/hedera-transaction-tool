@@ -10,11 +10,11 @@ import {
   FindOptionsWhere,
 } from 'typeorm';
 
-import { Sorting } from '../decorators/sorting-params.decorator';
-import { FilterRule, Filtering } from '../decorators/filtering-params.decorator';
+import { Sorting } from '@app/common/decorators';
+import { FilterRule, Filtering } from '@app/common/decorators';
 
-export const getOrder = (sort: Sorting[]) => {
-  const order = {};
+export const getOrder = (sort: Sorting[] | undefined) => {
+  const order: Record<string, string> = {};
 
   if (!sort || !sort.length) return order;
 
@@ -25,7 +25,7 @@ export const getOrder = (sort: Sorting[]) => {
   return order;
 };
 
-export const getWhere = <T>(filters: Filtering[]): FindOptionsWhere<T> => {
+export const getWhere = <T>(filters: Filtering[] | undefined): FindOptionsWhere<T> => {
   const where: FindOptionsWhere<T> = {};
 
   if (!filters || !filters.length) return where;
@@ -70,4 +70,6 @@ function getFiltering(filter: Filtering) {
     case FilterRule.NOT_IN:
       return { [filter.property]: Not(In(decodeURIComponent(filter.value).split(','))) };
   }
+
+  return {};
 }

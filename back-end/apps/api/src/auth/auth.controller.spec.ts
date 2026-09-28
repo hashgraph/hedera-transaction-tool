@@ -10,7 +10,12 @@ import { AuthController } from './auth.controller';
 
 import { AuthService } from './auth.service';
 
-import { EmailThrottlerGuard } from '../guards';
+import {
+  EmailThrottlerGuard,
+  IpLoginThrottlerGuard,
+  IpResetPasswordThrottlerGuard,
+  IpUniqueEmailGuard,
+} from '../guards';
 
 jest.mock('passport-jwt', () => ({
   ExtractJwt: {
@@ -47,6 +52,12 @@ describe('AuthController', () => {
     })
       .overrideGuard(EmailThrottlerGuard)
       .useValue(guardMock())
+      .overrideGuard(IpLoginThrottlerGuard)
+      .useValue(guardMock())
+      .overrideGuard(IpResetPasswordThrottlerGuard)
+      .useValue(guardMock())
+      .overrideGuard(IpUniqueEmailGuard)
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<AuthController>(AuthController);
@@ -62,7 +73,6 @@ describe('AuthController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -111,17 +121,6 @@ describe('AuthController', () => {
         }),
       );
     });
-
-    it('should throw an error if no email is supplied', async () => {
-      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
-      jest
-        .spyOn(controller, 'signUp')
-        .mockRejectedValue(new UnprocessableEntityException('Email is required.'));
-
-      await expect(controller.signUp({ email: null }, request)).rejects.toThrow(
-        'Email is required.',
-      );
-    });
   });
 
   describe('login', () => {
@@ -147,18 +146,21 @@ describe('AuthController', () => {
 
   describe('reset-password', () => {
     it('should have no return value', async () => {
-      authService.createOtp.mockResolvedValue(undefined);
+      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
+      authService.createOtp.mockResolvedValue(null);
 
-      expect(await controller.createOtp({ email: 'john@test.com' })).toBeUndefined();
+      expect(await controller.createOtp({ email: 'john@test.com' }, request)).toBeNull();
     });
   });
 
   describe('verify-reset', () => {
-    it('should have no return value', async () => {
+    it('should return the verified jwt and blacklist the used otp token', async () => {
       const result = { token: 'newToken' };
       authService.verifyOtp.mockResolvedValue(result);
 
-      expect(await controller.verifyOtp(user, { token: '' }, request)).toEqual(result);
+      const dto = { token: '123456' };
+      expect(await controller.verifyOtp(user, dto, request)).toEqual(result);
+      expect(authService.verifyOtp).toHaveBeenCalledWith(user, dto);
       expect(blacklistService.blacklistToken).toHaveBeenCalledWith('token');
     });
   });

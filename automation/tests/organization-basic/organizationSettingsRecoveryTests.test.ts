@@ -11,6 +11,9 @@ import {
 } from '../helpers/bootstrap/organizationSuiteBootstrap.js';
 import type { ActivatedTestIsolationContext } from '../../utils/setup/sharedTestEnvironment.js';
 import { createSequentialOrganizationNicknameResolver } from '../helpers/support/organizationNamingSupport.js';
+import { setupOrganizationSettingsGeneralSuite } from '../helpers/fixtures/organizationSettingsGeneralSuite.js';
+import { generateEd25519KeyPair } from '../../utils/crypto/keyUtil.js';
+import { deleteKeyPairByPublicKey } from '../../utils/db/localQueries.js';
 
 let app: TransactionToolApp;
 let window: Page;
@@ -68,7 +71,7 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
   });
 
   test('Verify user is prompted for mnemonic phrase and can recover account when resetting organization', async () => {
-    const visibleToasts = window.locator('.v-toast__text:visible');
+    const visibleToasts = window.locator('.toast-message:visible');
     const waitForToastText = async (text: string) => {
       await expect
         .poll(
@@ -115,8 +118,8 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     await organizationPage.recoverAccount(0);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKey = await organizationPage.isFirstMissingKeyVisible();
-    expect(missingKey).toBe(true);
+    const keyRestoreButtonCount = await organizationPage.countKeyRestoreButtons();
+    expect(keyRestoreButtonCount).toBe(1);
     await organizationPage.recoverPrivateKey(window);
   });
 
@@ -135,8 +138,9 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
     await organizationPage.recoverPrivateKey(window);
     await settingsPage.clickOnSettingsButton();
     await settingsPage.clickOnKeysTab();
-    const missingKeyHidden = await organizationPage.isFirstMissingKeyHidden();
-    expect(missingKeyHidden).toBe(true);
+    const restoreButtonCount = await organizationPage.countKeyRestoreButtons();
+    const uploadButtonCount = await organizationPage.countKeyUploadButtons();
+    expect(restoreButtonCount + uploadButtonCount).toBe(0);
   });
 
   test('Verify organization user can change password', async () => {
@@ -191,5 +195,64 @@ test.describe('Organization Settings (Recovery) tests @organization-basic', () =
 
     const isNewKeyAddedInDb = await organizationPage.findNewKey(userId);
     expect(isNewKeyAddedInDb).toBe(true);
+  });
+});
+
+test.describe('Settings keys missing-key import tests', () => {
+  const suite = setupOrganizationSettingsGeneralSuite();
+
+  test('Verify user can import an external private key for a missing key', async () => {
+    // Importing an external key in organization mode creates an organization
+    // user_key without a recovery-phrase index.
+    const { privateKey } = generateEd25519KeyPair();
+    const externalKeyNickname = 'External-missing-key';
+
+    await suite.settingsPage.clickOnSettingsButton();
+    await suite.settingsPage.clickOnKeysTab();
+    const baselineRowCount = await suite.settingsPage.getKeyRowCount();
+    await suite.settingsPage.clickOnImportButton();
+    await suite.settingsPage.clickOnED25519DropDown();
+    await suite.settingsPage.importED25519PrivateKey(privateKey, externalKeyNickname);
+    await suite.registrationPage.waitForToastMessageByVariant(
+      'success',
+      'ED25519 private key imported successfully',
+    );
+
+    const importedRowCount = await suite.settingsPage.getKeyRowCount();
+    expect(importedRowCount).toBe(baselineRowCount + 1);
+    const importedRows = await Promise.all(
+      Array.from({ length: importedRowCount }, (_, index) =>
+        suite.settingsPage.getRowDataByIndex(index),
+      ),
+    );
+    const importedRowIndex = importedRows.findIndex(
+      row => row.nickname?.trim() === externalKeyNickname,
+    );
+    expect(importedRowIndex).toBeGreaterThanOrEqual(0);
+    const publicKey = importedRows[importedRowIndex].publicKey?.trim() ?? '';
+    expect(publicKey).toBeTruthy();
+
+    // Organization-scoped local keys are hidden in personal mode, and the
+    // organization-mode delete action also deletes the remote user_key. Remove
+    // only the local copy so the remote key remains available for restoration.
+    expect(await deleteKeyPairByPublicKey(publicKey)).toBe(true);
+    await suite.organizationPage.selectPersonalMode();
+    await suite.organizationPage.selectOrganizationMode();
+    await suite.settingsPage.clickOnSettingsButton();
+    await suite.settingsPage.clickOnKeysTab();
+    await suite.settingsPage.clickOnRestoreKeyButtonForPublicKey(publicKey);
+    await suite.settingsPage.importED25519PrivateKey(privateKey, 'Recovered-external-key');
+
+    await suite.registrationPage.waitForToastMessageByVariant(
+      'success',
+      'ED25519 private key imported successfully',
+    );
+    const rowCount = await suite.settingsPage.getKeyRowCount();
+    expect(rowCount).toBe(baselineRowCount + 1);
+
+    const rows = await Promise.all(
+      Array.from({ length: rowCount }, (_, index) => suite.settingsPage.getRowDataByIndex(index)),
+    );
+    expect(rows.some(row => row.publicKey?.trim() === publicKey)).toBe(true);
   });
 });

@@ -4,9 +4,9 @@ import { NotificationReceiver } from '@entities';
 export class NewNotificationDto {
   @IsNotEmpty()
   @IsNumber()
-  userId: number;
+  userId!: number;
 
   @IsNotEmpty()
   @IsArray()
-  notificationReceivers: NotificationReceiver[];
+  notificationReceivers!: NotificationReceiver[];
 }

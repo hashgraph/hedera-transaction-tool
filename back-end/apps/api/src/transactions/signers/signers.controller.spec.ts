@@ -1,12 +1,12 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
-import { EntityManager } from 'typeorm';
 import { SignatureMap } from '@hiero-ledger/sdk';
 
 import { BlacklistService, guardMock } from '@app/common';
-import { TransactionSigner, User, UserStatus } from '@entities';
+import { Transaction, TransactionSigner, User, UserKey, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { SignersController } from './signers.controller';
 import { SignersService } from './signers.service';
@@ -35,7 +35,6 @@ describe('SignaturesController', () => {
   let signer: TransactionSigner;
 
   const signersService = mockDeep<SignersService>();
-  const entityManager = mockDeep<EntityManager>();
   const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
@@ -47,16 +46,14 @@ describe('SignaturesController', () => {
           useValue: signersService,
         },
         {
-          provide: EntityManager,
-          useValue: entityManager,
-        },
-        {
           provide: BlacklistService,
           useValue: blacklistService,
         },
       ],
     })
       .overrideGuard(VerifiedUserGuard)
+      .useValue(guardMock())
+      .overrideGuard(TransactionAccessGuard)
       .useValue(guardMock())
       .compile();
 
@@ -73,7 +70,6 @@ describe('SignaturesController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -82,13 +78,17 @@ describe('SignaturesController', () => {
     };
     signer = {
       id: 1,
-      transaction: null,
+      transaction: new Transaction(),
       createdAt: new Date(),
       transactionId: 1,
       user,
       userId: 1,
-      userKey: null,
+      userKey: new UserKey(),
       userKeyId: 0,
+      recorder: null,
+      recorderId: null,
+      tool: null,
+      version: null,
     };
   });
 
@@ -137,7 +137,7 @@ describe('SignaturesController', () => {
 
       expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
       expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
-      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user);
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, null);
       expect(result).toEqual(expectedSigners);
     });
 
@@ -164,7 +164,7 @@ describe('SignaturesController', () => {
       expect((plainToInstance as jest.Mock).mock.calls[0]).toEqual([UploadSignatureMapDto, dtoInput[0]]);
       expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
       expect(validateOrReject).toHaveBeenCalledTimes(2);
-      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith(transformedDtos, user);
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith(transformedDtos, user, null);
       expect(result).toEqual(expectedSigners);
     });
 
@@ -221,6 +221,70 @@ describe('SignaturesController', () => {
       const result = await controller.uploadSignatureMap(dtoInput, user);
 
       expect(result).toEqual(expectedSigners);
+    });
+
+    it('should forward x-frontend-version header to uploadSignatureMaps', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user, undefined, '1.5.0');
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, '1.5.0');
+    });
+
+    it('should pass null version when header is absent', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user);
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, null);
+    });
+
+    it('should strip a leading v from the version header before forwarding', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user, undefined, 'v1.5.0');
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, '1.5.0');
+    });
+
+    it('should pass null for an invalid version string', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (signersService.uploadSignatureMaps as jest.Mock).mockResolvedValue({
+        signers: [],
+        notificationReceiverIds: [],
+      });
+
+      await controller.uploadSignatureMap(dtoInput, user, undefined, 'not-a-version');
+
+      expect(signersService.uploadSignatureMaps).toHaveBeenCalledWith([transformedDto], user, null);
     });
   });
 });

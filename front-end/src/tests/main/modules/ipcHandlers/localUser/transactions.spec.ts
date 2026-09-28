@@ -89,6 +89,21 @@ describe('IPC handlers Accounts', () => {
     expect(executeTransaction).toHaveBeenCalledWith(transactionBytes);
   });
 
+  test('Should propagate structured error when the Hedera network returns an error', async () => {
+    const transactionBytes = new Uint8Array([1, 2, 3]);
+    // The service catches SDK StatusErrors and re-throws as Error(JSON.stringify({status, message})).
+    // This test verifies the IPC handler propagates that rejection rather than swallowing it.
+    const structuredError = new Error(
+      JSON.stringify({ status: 10, message: 'INSUFFICIENT_PAYER_BALANCE' }),
+    );
+
+    vi.mocked(executeTransaction).mockRejectedValue(structuredError);
+
+    await expect(
+      invokeIPCHandler('transactions:executeTransaction', transactionBytes),
+    ).rejects.toThrow(JSON.stringify({ status: 10, message: 'INSUFFICIENT_PAYER_BALANCE' }));
+  });
+
   test('Should set up executeQuery handler', async () => {
     const queryBytes = new Uint8Array();
     const accountId = 'accountId';

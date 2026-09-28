@@ -21,7 +21,6 @@ import {
   RegisteredNodeDeleteTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
-  FileContentsQuery,
   KeyList,
   AccountId,
 } from '@hiero-ledger/sdk';
@@ -31,10 +30,7 @@ import {
   TransactionType,
   Transaction,
 } from '@entities';
-import {
-  decode,
-  computeShortenedPublicKeyList,
-} from '@app/common';
+import { computeShortenedPublicKeyList } from '@app/common';
 import { getMaxTransactionSizeForTransaction } from './privileged-payer';
 
 export const isExpired = (transaction: SDKTransaction) => {
@@ -46,116 +42,6 @@ export const isExpired = (transaction: SDKTransaction) => {
   const duration = transaction.transactionValidDuration;
 
   return new Date().getTime() >= validStart.getTime() + duration * 1_000;
-};
-
-export const getTransactionType = (
-  transaction: SDKTransaction | Uint8Array,
-  short = false,
-  removeTransaction = false,
-) => {
-  if (transaction instanceof Uint8Array) {
-    transaction = SDKTransaction.fromBytes(transaction);
-  }
-
-  let transactionType = 'Unknown Transaction Type';
-
-  if (transaction instanceof AccountCreateTransaction) {
-    transactionType = "Account Create Transaction";
-  } else if (transaction instanceof AccountUpdateTransaction) {
-    transactionType = "Account Update Transaction";
-  } else if (transaction instanceof AccountDeleteTransaction) {
-    transactionType = "Account Delete Transaction";
-  } else if (transaction instanceof TransferTransaction) {
-    transactionType = "Transfer Transaction";
-  } else if (transaction instanceof AccountAllowanceApproveTransaction) {
-    transactionType = "Account Allowance Approve Transaction";
-  } else if (transaction instanceof FileCreateTransaction) {
-    transactionType = "File Create Transaction";
-  } else if (transaction instanceof FileUpdateTransaction) {
-    transactionType = "File Update Transaction";
-  } else if (transaction instanceof FileAppendTransaction) {
-    transactionType = "File Append Transaction";
-  } else if (transaction instanceof FileDeleteTransaction) {
-    transactionType = "File Delete Transaction";
-  } else if (transaction instanceof FileContentsQuery) {
-    transactionType = "Read File Query";
-  } else if (transaction instanceof FreezeTransaction) {
-    transactionType = "Freeze Transaction";
-  } else if (transaction instanceof NodeCreateTransaction) {
-    transactionType = "Node Create Transaction";
-  } else if (transaction instanceof NodeUpdateTransaction) {
-    transactionType = "Node Update Transaction";
-  } else if (transaction instanceof NodeDeleteTransaction) {
-    transactionType = "Node Delete Transaction";
-  } else if (transaction instanceof RegisteredNodeCreateTransaction) {
-    transactionType = "Registered Node Create Transaction";
-  } else if (transaction instanceof RegisteredNodeUpdateTransaction) {
-    transactionType = 'Registered Node Update Transaction';
-  } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
-    transactionType = 'Registered Node Delete Transaction';
-  } else if (transaction instanceof SystemDeleteTransaction) {
-    transactionType = "System Delete Transaction";
-  } else if (transaction instanceof SystemUndeleteTransaction) {
-    transactionType = "System Undelete Transaction";
-    // } else if (transaction instanceof ContractCallTransaction) {
-    //   transactionType = 'ContractCallTransaction';
-    // } else if (transaction instanceof ContractCreateTransaction) {
-    //   transactionType = 'ContractCreateTransaction';
-    // } else if (transaction instanceof ContractDeleteTransaction) {
-    //   transactionType = 'ContractDeleteTransaction';
-    // } else if (transaction instanceof ContractUpdateTransaction) {
-    //   transactionType = 'ContractUpdateTransaction';
-    // } else if (transaction instanceof ScheduleCreateTransaction) {
-    //   transactionType = 'ScheduleCreateTransaction';
-    // } else if (transaction instanceof ScheduleDeleteTransaction) {
-    //   transactionType = 'ScheduleDeleteTransaction';
-    // } else if (transaction instanceof ScheduleSignTransaction) {
-    //   transactionType = 'ScheduleSignTransaction';
-    // } else if (transaction instanceof TokenAssociateTransaction) {
-    //   transactionType = 'TokenAssociateTransaction';
-    // } else if (transaction instanceof TokenBurnTransaction) {
-    //   transactionType = 'TokenBurnTransaction';
-    // } else if (transaction instanceof TokenCreateTransaction) {
-    //   transactionType = 'TokenCreateTransaction';
-    // } else if (transaction instanceof TokenDeleteTransaction) {
-    //   transactionType = 'TokenDeleteTransaction';
-    // } else if (transaction instanceof TokenFeeScheduleUpdateTransaction) {
-    //   transactionType = 'TokenFeeScheduleUpdateTransaction';
-    // } else if (transaction instanceof TokenFreezeTransaction) {
-    //   transactionType = 'TokenFreezeTransaction';
-    // } else if (transaction instanceof TokenGrantKycTransaction) {
-    //   transactionType = 'TokenGrantKycTransaction';
-    // } else if (transaction instanceof TokenMintTransaction) {
-    //   transactionType = 'TokenMintTransaction';
-    // } else if (transaction instanceof TokenPauseTransaction) {
-    //   transactionType = 'TokenPauseTransaction';
-    // } else if (transaction instanceof TokenRevokeKycTransaction) {
-    //   transactionType = 'TokenRevokeKycTransaction';
-    // } else if (transaction instanceof TokenUnfreezeTransaction) {
-    //   transactionType = 'TokenUnfreezeTransaction';
-    // } else if (transaction instanceof TokenUnpauseTransaction) {
-    //   transactionType = 'TokenUnpauseTransaction';
-    // } else if (transaction instanceof TokenUpdateTransaction) {
-    //   transactionType = 'TokenUpdateTransaction';
-    // } else if (transaction instanceof TopicCreateTransaction) {
-    //   transactionType = 'TopicCreateTransaction';
-    // } else if (transaction instanceof TopicDeleteTransaction) {
-    //   transactionType = 'TopicDeleteTransaction';
-    // } else if (transaction instanceof TopicMessageSubmitTransaction) {
-    //   transactionType = 'TopicMessageSubmitTransaction';
-    // } else if (transaction instanceof TopicUpdateTransaction) {
-    //   transactionType = 'TopicUpdateTransaction';
-  }
-
-  if (removeTransaction) {
-    // Remove ' Transaction' only if it appears at the end
-    transactionType = transactionType.replace(/ Transaction$/, '');
-  }
-  if (short) {
-    // Remove all whitespace characters
-    transactionType = transactionType.replace(/\s+/g, '');
-  }
-  return transactionType;
 };
 
 export const getTransactionTypeEnumValue = (transaction: SDKTransaction): TransactionType => {
@@ -217,8 +103,10 @@ const getSignedTransactionsDimensions = (transaction: SDKTransaction) => {
 
     if (bodyBytes) {
       const body = proto.TransactionBody.decode(bodyBytes);
-      const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
-      transactionIdCol[transactionId] = col;
+      if (body.transactionID != null) {
+        const transactionId = TransactionId._fromProtobuf(body.transactionID).toString();
+        transactionIdCol[transactionId] = col;
+      }
     }
   }
 
@@ -279,7 +167,7 @@ export const validateSignature = (transaction: SDKTransaction, signatureMap: Sig
   return { newPublicKeys, allPublicKeys };
 };
 
-export const getStatusCodeFromMessage = (message: string) => {
+export const getStatusCodeFromMessage = (message: string): number | null => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {
@@ -292,28 +180,6 @@ export const getTransactionBodyBytes = (transaction: SDKTransaction) => {
   // @ts-expect-error - _makeTransactionBody is a private method
   const transactionBody = transaction._makeTransactionBody(null);
   return proto.TransactionBody.encode(transactionBody).finish();
-};
-
-/* Verify the signature of the transaction body without node account id */
-export const verifyTransactionBodyWithoutNodeAccountIdSignature = (
-  transaction: SDKTransaction,
-  signature: string | Buffer,
-  publicKey: string | PublicKey,
-) => {
-  const bodyBytes = getTransactionBodyBytes(transaction);
-
-  /* Deserialize Public Key */
-  publicKey = publicKey instanceof PublicKey ? publicKey : PublicKey.fromString(publicKey);
-
-  /* Deserialize Signature */
-  signature = typeof signature === 'string' ? decode(signature) : signature;
-
-  try {
-    return publicKey.verify(bodyBytes, signature);
-  } catch (err) {
-    console.log(err);
-    return false;
-  }
 };
 
 export async function smartCollate(
@@ -334,8 +200,10 @@ export async function smartCollate(
     const signatureMap = sdkTransaction.getSignatures();
     sdkTransaction.removeAllSignatures();
 
-    for (const key of publicKeys) {
-      sdkTransaction.addSignature(key, signatureMap);
+    if (publicKeys !== null) {
+      for (const key of publicKeys) {
+        sdkTransaction.addSignature(key, signatureMap);
+      }
     }
 
     // If the transaction is still too large,
@@ -364,18 +232,11 @@ export function isTransactionBodyOverMaxSize(transaction: SDKTransaction) {
   return bodyBytes.length > maxSize;
 }
 
-export const transactionIs = <T extends SDKTransaction>(
-  type: new (...args) => T,
-  transaction: SDKTransaction,
-): transaction is T => {
-  return transaction instanceof type;
-};
-
 export const isTransactionValidForNodes = (
   sdkTransaction: SDKTransaction,
   allowedNodeAccountIds: Set<string>
 ): boolean  => {
-  const nodeAccountIds = (sdkTransaction as any)._nodeAccountIds;
+  const nodeAccountIds = sdkTransaction._nodeAccountIds;
   const txNodeIds: string[] = [];
   if (
     nodeAccountIds &&

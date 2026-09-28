@@ -5,13 +5,13 @@ export const ecdsaDerPrefix2 = '30540201010420';
 export const ed25519DerPrefix = '302e020100300506032b657004220420';
 
 export class HederaAccount {
-  accountId: AccountId;
-  privateKey: PrivateKey;
-  accountIdRaw: string;
-  privateKeyRaw: string;
-  publicKey: PublicKey;
-  publicKeyRaw: string;
-  mirrorNetwork: string;
+  accountId: AccountId | undefined;
+  privateKey: PrivateKey | undefined;
+  accountIdRaw: string | undefined;
+  privateKeyRaw: string | undefined;
+  publicKey: PublicKey | undefined;
+  publicKeyRaw: string | undefined;
+  mirrorNetwork: string | undefined;
 
   setAccountId(accountId: string) {
     this.accountId = AccountId.fromString(accountId);

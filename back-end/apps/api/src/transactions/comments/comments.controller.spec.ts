@@ -1,10 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
+import { plainToInstance } from 'class-transformer';
 
 import { BlacklistService, guardMock } from '@app/common';
 import { User } from '@entities';
 
-import { VerifiedUserGuard } from '../../guards';
+import { TransactionCommentDto } from '../dto';
+
+import { UserThrottlerGuard, VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { CommentsController } from './comments.controller';
 import { CommentsService } from './comments.service';
@@ -37,6 +41,10 @@ describe('CommentsController', () => {
     })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
+      .overrideGuard(TransactionAccessGuard)
+      .useValue(guardMock())
+      .overrideGuard(UserThrottlerGuard)
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<CommentsController>(CommentsController);
@@ -62,11 +70,28 @@ describe('CommentsController', () => {
 
   describe('getCommentById', () => {
     it('should return a comment', async () => {
+      const tid = 10;
       const id = 1;
 
-      await controller.getCommentById(id);
+      await controller.getCommentById(tid, id);
 
-      expect(commentsService.getTransactionCommentById).toHaveBeenCalledWith(id);
+      expect(commentsService.getTransactionCommentById).toHaveBeenCalledWith(tid, id);
+    });
+  });
+
+  describe('TransactionCommentDto serialization', () => {
+    it('should transform nested user using UserCoreDto', () => {
+      const raw = {
+        id: 1,
+        message: 'hello',
+        createdAt: new Date(),
+        user: { id: 2, email: 'user@test.com', password: 'secret' },
+      };
+
+      const dto = plainToInstance(TransactionCommentDto, raw, { excludeExtraneousValues: true });
+
+      expect(dto.user).toEqual({ id: 2, email: 'user@test.com' });
+      expect(dto.user).not.toHaveProperty('password');
     });
   });
 });

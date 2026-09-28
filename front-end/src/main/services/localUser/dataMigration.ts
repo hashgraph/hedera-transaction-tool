@@ -23,6 +23,7 @@ import { safeAwait } from '@main/utils/safeAwait';
 import { addAccount } from './accounts';
 import { addClaim } from './claim';
 import { addPublicKey } from './publicKeyMapping';
+import { HashOptions } from 'argon2';
 
 const logger = createLogger('main.dataMigration');
 
@@ -85,7 +86,7 @@ export function getSalt(token: string): Buffer {
 }
 
 export async function generateArgon2id(password: string, salt: Buffer) {
-  const options = {
+  const options: HashOptions & { raw?: boolean } = {
     type: argon2.argon2id,
     memoryCost: 262144, // 256MB
     timeCost: 3, // iterations

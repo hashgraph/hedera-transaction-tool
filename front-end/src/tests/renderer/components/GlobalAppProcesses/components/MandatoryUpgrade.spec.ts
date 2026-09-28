@@ -236,7 +236,7 @@ describe('MandatoryUpgrade', () => {
     expect(mocks.disconnectOrganization).toHaveBeenCalledTimes(2);
     expect(mocks.disconnectOrganization).toHaveBeenNthCalledWith(1, 'https://conflict-a', 'compatibilityConflict');
     expect(mocks.disconnectOrganization).toHaveBeenNthCalledWith(2, 'https://conflict-b', 'compatibilityConflict');
-    expect(mocks.electronUpdater.startUpdate).toHaveBeenCalledWith('https://download/v2');
+    expect(mocks.electronUpdater.startUpdate).toHaveBeenCalledWith('2.0.0');
   });
 
   test('cancel disconnects only the triggering backend', async () => {

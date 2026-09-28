@@ -78,7 +78,6 @@ describe('TransactionsController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -119,17 +118,17 @@ describe('TransactionsController', () => {
         userId: user.id,
         deletedAt: null,
         createdTransactions: [],
-        approvedTransactions: [],
         signedTransactions: [],
       },
       creatorKeyId: 1,
       signers: [],
-      approvers: [],
       observers: [],
       comments: [],
-      groupItem: null,
+      groupItem: undefined,
       transactionCachedAccounts: [],
       transactionCachedNodes: [],
+      transactionAccountSnapshots: [],
+      transactionNodeSnapshots: [],
     };
     pagination = {
       page: 1,
@@ -172,7 +171,7 @@ describe('TransactionsController', () => {
 
       expect(plainToInstance).toHaveBeenCalledWith(UploadSignatureMapDto, dtoInput);
       expect(validateOrReject).toHaveBeenCalledWith(transformedDto);
-      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
       expect(result).toEqual(expectedResult);
     });
 
@@ -203,8 +202,60 @@ describe('TransactionsController', () => {
       expect((plainToInstance as jest.Mock).mock.calls[0]).toEqual([UploadSignatureMapDto, dtoInput[0]]);
       expect((plainToInstance as jest.Mock).mock.calls[1]).toEqual([UploadSignatureMapDto, dtoInput[1]]);
       expect(validateOrReject).toHaveBeenCalledTimes(2);
-      expect(transactionService.importSignatures).toHaveBeenCalledWith(transformedDtos, user);
+      expect(transactionService.importSignatures).toHaveBeenCalledWith(transformedDtos, user, null);
       expect(result).toEqual(expectedResult);
+    });
+
+    it('should forward x-frontend-version header to importSignatures', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, '2.0.0');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, '2.0.0');
+    });
+
+    it('should pass null version when header is absent', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user);
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
+    });
+
+    it('should strip a leading v from the version header before forwarding', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'v2.0.0');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, '2.0.0');
+    });
+
+    it('should pass null for an invalid version string', async () => {
+      const dtoInput = { id: 1, signatureMap: new SignatureMap() };
+      const transformedDto = { transformed: 'value' };
+
+      (plainToInstance as jest.Mock).mockReturnValueOnce(transformedDto);
+      (validateOrReject as jest.Mock).mockResolvedValue(undefined);
+      (transactionService.importSignatures as jest.Mock).mockResolvedValue([]);
+
+      await controller.importSignatures(dtoInput, user, 'not-a-version');
+
+      expect(transactionService.importSignatures).toHaveBeenCalledWith([transformedDto], user, null);
     });
   });
 
@@ -305,61 +356,10 @@ describe('TransactionsController', () => {
 
       expect(await controller.shouldSignTransaction(user, 1)).toBe(result);
     });
-  });
 
-  describe('getTransactionsToApprove', () => {
-    it('should return an array of transactions', async () => {
-      const result = {
-        totalItems: 1,
-        items: [transaction],
-        page: 1,
-        size: 10,
-      };
-
-      transactionService.getTransactionsToApprove.mockResolvedValue(result);
-
-      expect(await controller.getTransactionsToApprove(user, pagination)).toBe(result);
-    });
-
-    it('should return an empty array if no transactions exist', async () => {
-      const result = {
-        totalItems: 0,
-        items: [],
-        page: 0,
-        size: 0,
-      };
-
-      transactionService.getTransactionsToApprove.mockResolvedValue(result);
-
-      expect(await controller.getTransactionsToApprove(user, pagination)).toEqual(result);
-    });
-  });
-
-  describe('shouldApproveTransaction', () => {
-    it('should return a boolean indicating if the user can approve the transaction', async () => {
-      const result = false;
-
-      transactionService.shouldApproveTransaction.mockResolvedValue(result);
-
-      expect(await controller.shouldApproveTransaction(user, 1)).toBe(result);
-    });
-  });
-
-  describe('deleteTransaction', () => {
-    it('should return a boolean indicating if the transaction was deleted successfully', async () => {
-      const result = true;
-
-      transactionService.removeTransaction.mockResolvedValue(result);
-
-      expect(await controller.deleteTransaction(user, 1)).toBe(result);
-    });
-
-    it('should throw an error if the transaction cannot be deleted', async () => {
-      jest
-        .spyOn(controller, 'deleteTransaction')
-        .mockRejectedValue(new BadRequestException('Transaction not found'));
-
-      await expect(controller.deleteTransaction(user, 1)).rejects.toThrow('Transaction not found');
+    it('should throw bad request if transaction does not exist', async () => {
+      transactionService.getTransactionById.mockResolvedValue(null);
+      await expect( controller.shouldSignTransaction(user, 1)).rejects.toThrow(BadRequestException);
     });
   });
 

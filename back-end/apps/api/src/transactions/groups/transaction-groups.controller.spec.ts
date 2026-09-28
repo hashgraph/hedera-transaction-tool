@@ -49,7 +49,6 @@ describe('TransactionGroupsController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -89,14 +88,6 @@ describe('TransactionGroupsController', () => {
       transactionGroupsService.getTransactionGroup.mockResolvedValue(result);
 
       expect(await controller.getTransactionGroup(user, 1)).toEqual(result);
-    });
-  });
-
-  describe('removeTransactionGroup', () => {
-    it('should return void', async () => {
-      transactionGroupsService.removeTransactionGroup.mockReturnValue(undefined);
-
-      expect(await controller.removeTransactionGroup(user, 1)).toBeUndefined();
     });
   });
 

@@ -12,10 +12,10 @@ export default () => {
 
   ipcMain.handle(createChannelName('get-version'), () => app.getVersion());
 
-  ipcMain.on(createChannelName('start-download'), (_e, updateUrl: string) => {
+  ipcMain.on(createChannelName('start-download'), (_e, version: string) => {
     const updaterService = getUpdaterService();
     if (updaterService) {
-      updaterService.checkForUpdatesAndDownload(updateUrl);
+      updaterService.checkForUpdatesAndDownload(version);
     }
   });
 

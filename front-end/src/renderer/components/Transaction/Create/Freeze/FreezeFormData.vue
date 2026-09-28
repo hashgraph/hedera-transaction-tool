@@ -76,7 +76,6 @@ const columnClass = 'col-4 col-xxxl-3';
             startTimestamp: $event,
           })
         "
-        placeholder="Select Start Time"
         :min-date="new Date()"
         :now-button-visible="true"
       />

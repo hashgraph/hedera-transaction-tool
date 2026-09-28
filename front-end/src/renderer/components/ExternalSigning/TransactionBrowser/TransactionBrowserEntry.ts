@@ -5,7 +5,7 @@ import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
 import {
   filterAuditByUser,
   filterTransactionSignersByUser,
-} from '@shared/utils/transactionFile.ts';
+} from '@renderer/utils/transactionFileSigning.ts';
 
 export class TransactionBrowserEntry {
   public readonly fullySignedByUser: boolean;

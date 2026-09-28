@@ -4,7 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
-import { ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
+import { BlacklistService, ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
 import { Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
@@ -26,6 +26,7 @@ describe('UsersService', () => {
   const userRepository = mockDeep<Repository<User>>();
   const clientRepository = mockDeep<Repository<Client>>();
   const configService = mockDeep<ConfigService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -51,6 +52,10 @@ describe('UsersService', () => {
           provide: ConfigService,
           useValue: configService,
         },
+        {
+          provide: BlacklistService,
+          useValue: blacklistService,
+        },
       ],
     }).compile();
 
@@ -74,18 +79,9 @@ describe('UsersService', () => {
     expect(userRepository.findOne).toHaveBeenCalledWith({ where, withDeleted });
   });
 
-  it('should return null if where is null', async () => {
-    const where: FindOptionsWhere<User> = null;
-    const withDeleted: boolean = true;
-
-    const result = await service.getUser(where, withDeleted);
-
-    expect(result).toBeNull();
-  });
-
-  it('should return null if all values in where are null', async () => {
+  it('should return null if all values in where are undefined', async () => {
     const where: FindOptionsWhere<User> = {
-      id: null,
+      id: undefined,
     };
     const withDeleted: boolean = true;
 
@@ -113,7 +109,7 @@ describe('UsersService', () => {
 
       const result = await service.getUsers(adminUser);
 
-      expect(userRepository.find).toHaveBeenCalledWith({ relations: ['clients'] });
+      expect(userRepository.find).toHaveBeenCalledWith({ relations: { clients: true } });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(1);
@@ -271,7 +267,7 @@ describe('UsersService', () => {
 
       expect(userRepository.findOne).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: ['clients'],
+        relations: { clients: true },
       });
       expect(result.clients[0]).toHaveProperty('updateAvailable', true);
     });
@@ -447,7 +443,7 @@ describe('UsersService', () => {
     expect(userRepository.save).toHaveBeenCalledWith({
       ...userCopy,
       status: 'NEW',
-      deletedAt: null,
+      deletedAt: undefined,
     });
   });
 
@@ -477,7 +473,7 @@ describe('UsersService', () => {
   });
 
   it('should throw if find user throws error', async () => {
-    userRepository.findOne.mockRejectedValue(new Error());
+    userRepository.findOne.mockRejectedValue(new Error('Failed to retrieve user.'));
 
     await expect(service.getVerifiedUser(email, password)).rejects.toThrow(
       'Failed to retrieve user.',
@@ -541,6 +537,18 @@ describe('UsersService', () => {
     expect(userRepository.manager.softDelete).toHaveBeenCalledWith(UserKey, { userId: 1 });
     // Then user is soft-deleted
     expect(userRepository.softRemove).toHaveBeenCalledWith(user);
+    // Every JWT issued before removal is invalidated
+    expect(blacklistService.blacklistPreviousUserTokens).toHaveBeenCalledWith(1);
+  });
+
+  it('should not remove the user if JWT invalidation fails', async () => {
+    userRepository.findOne.mockResolvedValue(user as User);
+    blacklistService.blacklistPreviousUserTokens.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    await expect(service.removeUser(1)).rejects.toThrow('Redis unavailable');
+
+    expect(userRepository.manager.softDelete).not.toHaveBeenCalled();
+    expect(userRepository.softRemove).not.toHaveBeenCalled();
   });
 
   it('should throw if the user is not found', async () => {
@@ -559,7 +567,7 @@ describe('UsersService', () => {
 
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     expect(result).toEqual(email);
   });
@@ -573,7 +581,7 @@ describe('UsersService', () => {
 
     expect(userRepository.findOne).toHaveBeenCalledWith({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     expect(result).toBeNull();
   });

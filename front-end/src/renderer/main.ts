@@ -6,13 +6,11 @@ import { createPinia } from 'pinia';
 import router from '@renderer/router';
 import { addGuards } from '@renderer/router/guards';
 
-import ToastPlugin from 'vue-toast-notification';
-
-import DatePicker from '@vuepic/vue-datepicker';
+import { VueDatePicker } from '@vuepic/vue-datepicker';
 
 import App from './App.vue';
 
-import { AutoFocusFirstInputDirective } from './utils';
+import { AutoFocusFirstInputDirective, ClickLoggingDirective } from './utils';
 import { setupRendererLogging } from './utils/logger';
 
 import {
@@ -31,12 +29,11 @@ app.use(createPinia());
 
 addGuards(router);
 
-app.use(ToastPlugin, { position: 'bottom-right', duration: 4000 });
-
 app.directive('focus-first-input', AutoFocusFirstInputDirective);
+app.directive('log-click', ClickLoggingDirective);
 
 /* Custom Components */
-app.component('DatePicker', DatePicker);
+app.component('DatePicker', VueDatePicker);
 
 /* App mount */
 app.mount('#app');

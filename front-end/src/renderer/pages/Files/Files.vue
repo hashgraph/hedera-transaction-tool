@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { Client, FileId, FileInfo } from '@hiero-ledger/sdk';
+import { FileId, FileInfo } from '@hiero-ledger/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
@@ -150,7 +150,7 @@ const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
     FileId.fromString(selectedFile.value?.file_id)
-      .toStringWithChecksum(network.client as Client)
+      .toStringWithChecksum(network.client)
       .split('-'),
 );
 
@@ -365,7 +365,7 @@ watch(files, newFiles => {
             <AppButton
               color="primary"
               size="large"
-              class="w-100"
+              class="w-100 d-flex align-items-center justify-content-center"
               data-testid="button-add-new-file"
               data-bs-toggle="dropdown"
               >Add New</AppButton
@@ -526,10 +526,12 @@ watch(files, newFiles => {
                 :disabled="selectedFileIds.length < 1"
                 data-testid="button-remove-multiple-files"
                 @click="isUnlinkFileModalShown = true"
+                log-label="remove-selected-files"
+                :log-metadata="{ selectedCount: selectedFileIds.length }"
                 ><span class="bi bi-trash"></span
               ></AppButton>
             </div>
-            <template v-for="(file, index) in files" :key="file.fileId">
+            <template v-for="(file, index) in files" :key="file.file_id">
               <div class="d-flex align-items-center mt-3">
                 <div
                   v-if="selectMany"
@@ -611,6 +613,8 @@ watch(files, newFiles => {
                     color="danger"
                     @click="isUnlinkFileModalShown = true"
                     data-testid="button-remove-file-card"
+                    log-label="remove-file"
+                    :log-metadata="{ fileId: selectedFile?.file_id }"
                     ><span class="bi bi-trash"></span> Remove</AppButton
                   >
                   <div class="border-start ps-3">
@@ -625,6 +629,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="update-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-arrow-repeat"></span> Update</AppButton
                     >
                   </div>
@@ -640,6 +646,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="append-to-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-plus-square-dotted"></span> Append</AppButton
                     >
                   </div>
@@ -655,6 +663,8 @@ watch(files, newFiles => {
                           query: { fileId: selectedFile?.file_id },
                         })
                       "
+                      log-label="read-file"
+                      :log-metadata="{ fileId: selectedFile?.file_id }"
                       ><span class="bi bi-book"></span> Read</AppButton
                     >
                   </div>
@@ -729,6 +739,8 @@ watch(files, newFiles => {
                         isUserLoggedIn(user.personal) &&
                         showStoredFileInTemp(user.personal.id, selectedFile.file_id)
                       "
+                      log-label="view-stored-file"
+                      :log-metadata="{ fileId: selectedFile.file_id }"
                       >View</AppButton
                     >
                   </div>

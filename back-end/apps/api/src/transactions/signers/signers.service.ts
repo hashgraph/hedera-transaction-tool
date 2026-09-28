@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { SignatureMap, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import {
+  DismissedNotificationReceiverDto,
   emitDismissedNotifications,
   emitTransactionStatusUpdate,
   emitTransactionUpdate,
@@ -17,7 +18,7 @@ import {
   TransactionSignatureService,
   validateSignature,
 } from '@app/common';
-import { Transaction, TransactionSigner, TransactionStatus, User, UserKey } from '@entities';
+import { type NewSignerRow, Transaction, TransactionSigner, TransactionStatus, User, UserKey, ValidationResult } from '@entities';
 
 import { UploadSignatureMapDto } from '../dto';
 
@@ -34,7 +35,7 @@ export class SignersService {
   ) {}
 
   /* Get the signature for the given signature id */
-  getSignatureById(id: number): Promise<TransactionSigner | null> {
+  async getSignatureById(id: number): Promise<TransactionSigner | null> {
     if (!id) {
       return null;
     }
@@ -50,8 +51,6 @@ export class SignersService {
     { limit, offset, page, size }: Pagination,
     withDeleted: boolean = false,
   ): Promise<PaginatedResourceDto<TransactionSigner>> {
-    if (!user) return null;
-
     const [items, totalItems] = await this.repo.findAndCount({
       where: {
         userId: user.id,
@@ -60,6 +59,9 @@ export class SignersService {
         id: true,
         transactionId: true,
         userKeyId: true,
+        recorderId: true,
+        tool: true,
+        version: true,
         createdAt: true,
       },
       withDeleted,
@@ -76,13 +78,10 @@ export class SignersService {
   }
 
   /* Get the signatures for the given transaction id */
-  getSignaturesByTransactionId(
+  async getSignaturesByTransactionId(
     transactionId: number,
     withDeleted: boolean = false,
   ): Promise<TransactionSigner[]> {
-    if (!transactionId) {
-      return null;
-    }
     return this.repo.find({
       where: {
         transaction: {
@@ -100,6 +99,7 @@ export class SignersService {
   async uploadSignatureMaps(
     dto: UploadSignatureMapDto[],
     user: User,
+    version: string | null = null,
   ): Promise<{ signers: TransactionSigner[]; notificationReceiverIds: number[] }> {
     // Load all necessary data
     const { transactionMap, signersByTransaction } = await this.loadTransactionData(dto);
@@ -113,7 +113,7 @@ export class SignersService {
     );
 
     // Persist changes to database
-    const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user);
+    const { transactionsToProcess, signers, notificationsToDismiss } = await this.persistSignatureChanges(validationResults, user, version);
 
     // Update transaction statuses and emit notifications
     await this.updateStatusesAndNotify(transactionsToProcess);
@@ -138,7 +138,10 @@ export class SignersService {
     // Batch load all existing signers
     const existingSigners = await this.dataSource.manager.find(TransactionSigner, {
       where: { transactionId: In(transactionIds) },
-      select: ['transactionId', 'userKeyId'],
+      select: {
+        transactionId: true,
+        userKeyId: true,
+      },
     });
 
     // Group by transaction ID
@@ -147,7 +150,7 @@ export class SignersService {
       if (!signersByTransaction.has(signer.transactionId)) {
         signersByTransaction.set(signer.transactionId, new Set());
       }
-      signersByTransaction.get(signer.transactionId).add(signer.userKeyId);
+      signersByTransaction.get(signer.transactionId)!.add(signer.userKeyId);
     }
 
     return { transactionMap, signersByTransaction };
@@ -157,8 +160,8 @@ export class SignersService {
     dto: UploadSignatureMapDto[],
     user: User,
     transactionMap: Map<number, Transaction>,
-    signersByTransaction: Map<number, Set<number>>
-  ) {
+    signersByTransaction: Map<number, Set<number>>,
+  ): Promise<ValidationResult[]> {
     // Build user key lookup once
     const userKeyMap = new Map<string, UserKey>();
     for (const key of user.keys) {
@@ -166,7 +169,7 @@ export class SignersService {
     }
 
     return Promise.all(
-      dto.map(async ({ id, signatureMap: map }) => {
+      dto.map(async ({ id, signatureMap: map, tool }) => {
         try {
           const transaction = transactionMap.get(id);
           if (!transaction) return { id, error: ErrorCodes.TNF };
@@ -189,11 +192,13 @@ export class SignersService {
             sdkTransaction,
             userKeys,
             isSameBytes,
+            tool: tool ?? 'api',
             error: null,
           };
         } catch (err) {
-          console.error(`[TX ${id}] Error:`, err.message);
-          return { id, error: err.message };
+          const e = err instanceof Error ? err : new Error(String(err));
+          console.error(`[TX ${id}] Error:`, e);
+          return { id, error: e.message };
         }
       })
     );
@@ -262,8 +267,9 @@ export class SignersService {
   }
 
   private async persistSignatureChanges(
-    validationResults: any[],
+    validationResults: ValidationResult[],
     user: User,
+    version: string | null,
   ) {
     const signers = new Set<TransactionSigner>();
     let notificationsToDismiss: number[] = [];
@@ -271,7 +277,7 @@ export class SignersService {
     // Prepare batched operations
     const transactionsToUpdate: { id: number; transactionBytes: Buffer }[] = [];
     const notificationsToUpdate: { userId: number; transactionId: number }[] = [];
-    const signersToInsert: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const signersToInsert: NewSignerRow[] = [];
     const transactionsToProcess: { id: number; transaction: Transaction }[] = [];
 
     for (const result of validationResults) {
@@ -280,31 +286,34 @@ export class SignersService {
         continue;
       }
 
-      const { id, transaction, sdkTransaction, userKeys, isSameBytes } = result;
+      const { id, transaction, sdkTransaction, userKeys, isSameBytes, tool } = result;
 
       // Skip if nothing to do - no signatures were added to the transaction
       // AND no new signers were inserted (the signature can be present on the transaction
       // if collated by an outside or 'offline' method)
-      if (isSameBytes && userKeys.length === 0) continue;
+      if (isSameBytes && userKeys!.length === 0) continue;
 
       // Collect updates
       if (!isSameBytes) {
-        transaction.transactionBytes = Buffer.from(sdkTransaction.toBytes());
-        transactionsToUpdate.push({ id, transactionBytes: transaction.transactionBytes });
+        transaction!.transactionBytes = Buffer.from(sdkTransaction!.toBytes());
+        transactionsToUpdate.push({ id, transactionBytes: transaction!.transactionBytes });
       }
 
       // Collect inserts
-      if (userKeys.length > 0) {
-        const newSigners = userKeys.map(userKey => ({
+      if (userKeys!.length > 0) {
+        const newSigners = userKeys!.map(userKey => ({
           userId: user.id,
           transactionId: id,
           userKeyId: userKey.id,
+          recorderId: user.id,
+          tool: tool ?? null,
+          version,
         }));
         signersToInsert.push(...newSigners);
       }
 
-      transactionsToProcess.push({ id, transaction });
-      notificationsToUpdate.push({ userId: user.id, transactionId: transaction.id });
+      transactionsToProcess.push({ id, transaction: transaction! });
+      notificationsToUpdate.push({ userId: user.id, transactionId: transaction!.id });
     }
 
     // Execute in single transaction
@@ -347,8 +356,8 @@ export class SignersService {
   }
 
   private async bulkUpdateTransactions(
-    manager: any,
-    transactionsToUpdate: { id: number; transactionBytes: Buffer }[]
+    manager: EntityManager,
+    transactionsToUpdate: { id: number; transactionBytes: Buffer }[],
   ) {
     const whenClauses = transactionsToUpdate
       .map((t, index) => `WHEN ${t.id} THEN $${index + 1}::bytea`)
@@ -367,9 +376,9 @@ export class SignersService {
   }
 
   private async bulkUpdateNotificationReceivers(
-    manager: any,
-    notificationsToUpdate: { userId: number; transactionId: number }[]
-  ) {
+    manager: EntityManager,
+    notificationsToUpdate: { userId: number; transactionId: number }[],
+  ): Promise<DismissedNotificationReceiverDto[]> {
     if (!notificationsToUpdate.length) return [];
 
     // Separate arrays of userIds and transactionIds
@@ -398,10 +407,7 @@ export class SignersService {
     return rows;
   }
 
-  private async bulkInsertSigners(
-    manager: any,
-    signersToInsert: any[],
-  ) {
+  private async bulkInsertSigners(manager: EntityManager, signersToInsert: NewSignerRow[]) {
     const result = await manager
       .createQueryBuilder()
       .insert()
@@ -410,7 +416,7 @@ export class SignersService {
       .returning('*')
       .execute();
 
-    return result.raw;
+    return result.raw as TransactionSigner[];
   }
 
   private async updateStatusesAndNotify(

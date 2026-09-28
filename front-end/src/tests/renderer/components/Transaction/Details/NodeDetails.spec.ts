@@ -15,7 +15,7 @@ import Long from 'long';
 import NodeDetails from '@renderer/components/Transaction/Details/NodeDetails.vue';
 
 /**
- * HIP-1137 added an `associated_registered_node` field with two distinct
+ * HIP-1137 added an `associated_registered_nodes` field with two distinct
  * encodings:
  *
  *   - NodeCreate: a plain `repeated uint64`. The SDK getter always returns a

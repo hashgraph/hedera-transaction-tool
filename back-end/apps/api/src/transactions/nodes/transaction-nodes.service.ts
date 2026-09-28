@@ -23,7 +23,7 @@ export class TransactionNodesService {
     collection: TransactionNodeCollection,
     network: string,
     statusFilter: TransactionStatus[],
-    transactionTypeFilter: TransactionType[],
+    transactionTypeFilter?: TransactionType[],
   ): Promise<TransactionNodeDto[]> {
     let rows: any[];
 
@@ -39,7 +39,7 @@ export class TransactionNodesService {
             mirrorNetwork: network,
           },
           user,
-          { approver: true }
+          { }
         );
 
         rows = await this.entityManager.query(query.text, query.values);
@@ -71,7 +71,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 
@@ -90,7 +89,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 
@@ -99,7 +97,7 @@ export class TransactionNodesService {
       }
       case TransactionNodeCollection.HISTORY: {
         statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
-        transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : null;
+        transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : undefined;
         const query = getTransactionNodesQuery(
           this.sqlBuilder,
           {
@@ -112,7 +110,6 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
-            approver: true,
           }
         );
 

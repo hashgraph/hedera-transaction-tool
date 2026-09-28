@@ -17,12 +17,12 @@ export enum NotificationType {
   TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL = 'TRANSACTION_WAITING_FOR_SIGNATURES_REMINDER_MANUAL',
   TRANSACTION_READY_FOR_EXECUTION = 'TRANSACTION_READY_FOR_EXECUTION',
   TRANSACTION_EXECUTED = 'TRANSACTION_EXECUTED',
+  TRANSACTION_FAILED = 'TRANSACTION_FAILED',
   TRANSACTION_EXPIRED = 'TRANSACTION_EXPIRED',
   TRANSACTION_CANCELLED = 'TRANSACTION_CANCELLED',
-  TRANSACTION_APPROVED = 'TRANSACTION_APPROVED',
-  TRANSACTION_APPROVAL_REJECTION = 'TRANSACTION_APPROVAL_REJECTION',
-  TRANSACTION_INDICATOR_APPROVE = 'TRANSACTION_INDICATOR_APPROVE',
-  TRANSACTION_INDICATOR_REJECTED = 'TRANSACTION_INDICATOR_REJECTED',
+  TRANSACTION_READY_FOR_REVIEW = 'TRANSACTION_READY_FOR_REVIEW',
+  TRANSACTION_INDICATOR_REVIEW = 'TRANSACTION_INDICATOR_REVIEW',
+  TRANSACTION_REVIEWER_REJECTION = 'TRANSACTION_REVIEWER_REJECTION',
   TRANSACTION_INDICATOR_SIGN = 'TRANSACTION_INDICATOR_SIGN',
   TRANSACTION_INDICATOR_EXECUTABLE = 'TRANSACTION_INDICATOR_EXECUTABLE',
   TRANSACTION_INDICATOR_EXECUTED = 'TRANSACTION_INDICATOR_EXECUTED',
@@ -38,11 +38,7 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
   inApp: boolean;
 }> = {
   // Indicator types - UI notification center only, deletable when status changes
-  [NotificationType.TRANSACTION_INDICATOR_APPROVE]: {
-    email: false,
-    inApp: true,
-  },
-  [NotificationType.TRANSACTION_INDICATOR_REJECTED]: {
+  [NotificationType.TRANSACTION_INDICATOR_REVIEW]: {
     email: false,
     inApp: true,
   },
@@ -75,7 +71,7 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: true,
   },
   [NotificationType.USER_REGISTERED]: {
-    email: false,
+    email: true,
     inApp: true,
   },
 
@@ -106,6 +102,10 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     email: true,
     inApp: false,
   },
+  [NotificationType.TRANSACTION_FAILED]: {
+    email: false, // type used for tier classification; template not yet implemented
+    inApp: false,
+  },
   [NotificationType.TRANSACTION_EXPIRED]: {
     email: true,
     inApp: false,
@@ -115,26 +115,26 @@ export const NOTIFICATION_CHANNELS: Record<NotificationType, {
     inApp: false,
   },
 
-  // Approval notifications - may be required in the future
-  [NotificationType.TRANSACTION_APPROVED]: {
-    email: false,
+  [NotificationType.TRANSACTION_READY_FOR_REVIEW]: {
+    email: true,
     inApp: false,
   },
-  [NotificationType.TRANSACTION_APPROVAL_REJECTION]: {
+
+  [NotificationType.TRANSACTION_REVIEWER_REJECTION]: {
     email: false,
-    inApp: false,
+    inApp: true,
   },
 };
 
-export type NotificationAdditionalData = Record<string, any>;
+export type NotificationAdditionalData = Record<string, unknown>;
 
 @Entity()
 export class Notification {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column()
-  type: NotificationType;
+  type!: NotificationType;
 
   @Column({ nullable: true })
   entityId?: number;
@@ -150,10 +150,10 @@ export class Notification {
   actorId?: number;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
-  notificationReceivers: NotificationReceiver[];
+  notificationReceivers!: NotificationReceiver[];
 }
 
 export const notificationProperties: (keyof Notification)[] = [

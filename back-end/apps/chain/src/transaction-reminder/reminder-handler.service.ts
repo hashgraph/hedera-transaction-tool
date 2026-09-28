@@ -41,8 +41,12 @@ export class ReminderHandlerService implements OnModuleInit {
       return;
     }
 
-    /* Check if transaction is still waiting for signatures */
-    if (transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES) {
+    /* Only remind when signing is relevant — includes READY_FOR_REVIEW so signers
+       are notified even if a review is still pending (transaction may be near expiry) */
+    if (
+      transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
+      transaction.status !== TransactionStatus.READY_FOR_REVIEW
+    ) {
       return;
     }
 

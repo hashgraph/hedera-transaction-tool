@@ -5,32 +5,40 @@ import { UserStatus } from '@entities';
 
 import { UserKeyDto } from '../../user-keys/dtos';
 
+export class UserCoreDto {
+  @Expose()
+  id!: number;
+
+  @Expose()
+  email!: string;
+}
+
 export class UserDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  email: string;
+  email!: string;
 
   @Expose()
-  admin: boolean;
+  admin!: boolean;
 
   @Expose()
   @IsEnum(UserStatus)
-  status: UserStatus;
+  status!: UserStatus;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Expose()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Expose()
   deletedAt?: Date;
 
   @Expose()
   @Type(() => UserKeyDto)
-  keys: UserKeyDto[];
+  keys!: UserKeyDto[];
 
   @Expose()
   updateAvailable?: boolean;

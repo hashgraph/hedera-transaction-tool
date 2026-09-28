@@ -1,7 +1,7 @@
 import { TransactionStatus } from '@entities';
 
 export const TRANSACTION_STATUS_COLLECTIONS: Record<string, TransactionStatus[]> = {
-  READY_FOR_REVIEW: [TransactionStatus.WAITING_FOR_SIGNATURES],
+  READY_FOR_REVIEW: [TransactionStatus.READY_FOR_REVIEW],
 
   READY_TO_SIGN: [
     TransactionStatus.WAITING_FOR_SIGNATURES,

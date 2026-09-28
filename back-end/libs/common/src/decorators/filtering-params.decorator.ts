@@ -29,7 +29,7 @@ export const FilteringParams = createParamDecorator(
   (
     { validProperties, dateProperties }: { validProperties: string[]; dateProperties: string[] },
     ctx: ExecutionContext,
-  ): Filtering[] => {
+  ): Filtering[] | null => {
     const req: Request = ctx.switchToHttp().getRequest();
 
     if (!req.query.filter) return null;

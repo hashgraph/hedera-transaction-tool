@@ -1,10 +1,8 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ClientProxy } from '@nestjs/microservices';
-import * as request from 'supertest';
+import request from 'supertest';
 
-import { totp } from 'otplib';
-
-import { API_SERVICE } from '@app/common';
+import { API_SERVICE, NatsPublisherService, USER_PASSWORD_RESET } from '@app/common';
 import { User, UserStatus } from '@entities';
 
 import { closeApp, createNestApp } from '../utils';
@@ -21,8 +19,8 @@ describe('Auth (e2e)', () => {
 
   let adminAuthToken: string;
   let userAuthToken: string;
-  let unverifiedOTPToken: string;
   let verifiedOTPToken: string;
+  let natsPublisherService: NatsPublisherService;
 
   beforeAll(async () => {
     await resetDatabase();
@@ -32,7 +30,24 @@ describe('Auth (e2e)', () => {
 
     client = app.get<ClientProxy>(API_SERVICE);
     await client.connect();
+
+    natsPublisherService = app.get(NatsPublisherService);
   });
+
+  /* Requests an OTP for the given email and returns both the code that was
+   * emitted (by spying on the notification publish call, since the code itself
+   * is only ever sent by email, never returned to the caller) and the deprecated
+   * unverified JWT the response still carries for backward compatibility. */
+  async function requestOtp(email: string): Promise<{ otp: string; token: string }> {
+    const publishSpy = jest.spyOn(natsPublisherService, 'publish');
+
+    const { body } = await new Endpoint(server, '/auth/reset-password').post({ email }).expect(200);
+
+    const call = publishSpy.mock.calls.find(([subject]) => subject === USER_PASSWORD_RESET);
+    publishSpy.mockRestore();
+
+    return { otp: call![1][0].additionalData.otp, token: body.token };
+  }
 
   afterAll(async () => {
     try {
@@ -119,7 +134,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(201)
@@ -137,12 +152,12 @@ describe('Auth (e2e)', () => {
       const usersEndpoint = new Endpoint(server, '/users');
       const loginEndpoint = new Endpoint(server, '/auth/login');
 
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
       await usersEndpoint.delete(`${user.id}`, adminAuthToken).expect(200);
 
       await endpoint
-        .post({ email: user.email }, null, adminAuthToken)
+        .post({ email: user.email }, undefined, adminAuthToken)
         .expect(201)
         .then(res => {
           expect(res.body).toEqual({
@@ -161,10 +176,10 @@ describe('Auth (e2e)', () => {
     it('(POST) should update password and resend email if users status is NEW and the sender is an admin', async () => {
       const userRepo = await getRepository(User);
 
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
       await endpoint
-        .post({ email: user.email }, null, adminAuthToken)
+        .post({ email: user.email }, undefined, adminAuthToken)
         .expect(201)
         .then(res => {
           expect(res.body).toEqual({
@@ -182,13 +197,13 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should not register new user if already exists', async () => {
-      const user = await getUser('user');
+      const user = (await getUser('user'))!;
       await endpoint
         .post(
           {
             email: user.email,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(422);
@@ -208,7 +223,7 @@ describe('Auth (e2e)', () => {
           {
             email: validEmail,
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(403);
@@ -220,7 +235,7 @@ describe('Auth (e2e)', () => {
           {
             email: invalidEmail,
           },
-          null,
+          undefined,
           adminAuthToken,
         )
         .expect(400);
@@ -228,7 +243,7 @@ describe('Auth (e2e)', () => {
 
     it('(POST) should throw on missing email', async () => {
       await endpoint
-        .post({}, null, adminAuthToken)
+        .post({}, undefined, adminAuthToken)
         .expect(400)
         .expect({ statusCode: 400, message: 'No email specified.' });
     });
@@ -252,7 +267,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: 'newPassword',
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(200);
@@ -269,7 +284,7 @@ describe('Auth (e2e)', () => {
             oldPassword: 'invalid',
             newPassword: 'newPassword',
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(400);
@@ -282,7 +297,7 @@ describe('Auth (e2e)', () => {
             oldPassword: dummy.password,
             newPassword: dummy.password,
           },
-          null,
+          undefined,
           userAuthToken,
         )
         .expect(400);
@@ -297,19 +312,19 @@ describe('Auth (e2e)', () => {
     });
 
     it('(PATCH) should register new user if sender is admin', async () => {
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
-      return endpoint.patch({ id: user.id }, null, adminAuthToken).expect(200);
+      return endpoint.patch({ id: user.id }, undefined, adminAuthToken).expect(200);
     });
 
     it('(PATCH) should not register new user if sender is NOT admin', async () => {
-      const user = await getUser('userNew');
+      const user = (await getUser('userNew'))!;
 
-      return endpoint.patch({ id: user.id }, null, userAuthToken).expect(403);
+      return endpoint.patch({ id: user.id }, undefined, userAuthToken).expect(403);
     });
 
     it('(PATCH) should throw on invalid user id', async () => {
-      await endpoint.patch({ id: 333333 }, null, adminAuthToken).expect(400);
+      await endpoint.patch({ id: 333333 }, undefined, adminAuthToken).expect(400);
     });
   });
 
@@ -321,7 +336,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should mark the token as blacklisted', async () => {
-      await endpoint.post({}, null, userAuthToken).expect(200);
+      await endpoint.post({}, undefined, userAuthToken).expect(200);
       await request(server).get('/transactions/history?page=1&size=99').expect(401);
     });
 
@@ -338,11 +353,7 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should request OTP', async () => {
-      const res = await endpoint.post({ email: dummy.email }).expect(200);
-
-      unverifiedOTPToken = res.body.token;
-
-      expect(unverifiedOTPToken).toBeDefined();
+      await endpoint.post({ email: dummy.email }).expect(200);
     });
 
     it('(POST) should not request OTP for invalid email', async () => {
@@ -362,12 +373,12 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should verify OTP', async () => {
-      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+      const { otp, token } = await requestOtp(dummy.email);
 
       const { body } = await request(server)
         .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: otp })
+        .set('otp', token)
         .expect(200);
 
       verifiedOTPToken = body.token;
@@ -376,27 +387,76 @@ describe('Auth (e2e)', () => {
     });
 
     it('(POST) should blacklist OTP token after verification', async () => {
-      const token = totp.generate(`${process.env.OTP_SECRET}${dummy.email}`);
+      const { otp, token } = await requestOtp(dummy.email);
 
       await request(server)
         .post('/auth/verify-reset')
-        .send({ token })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: otp })
+        .set('otp', token)
+        .expect(200);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: otp })
+        .set('otp', token)
         .expect(401)
         .expect({ message: 'Unauthorized', statusCode: 401 });
     });
 
     it('(POST) should not verify OTP with invalid token', async () => {
+      const { token } = await requestOtp(dummy.email);
+
       await request(server)
         .post('/auth/verify-reset')
-        .send({ token: 'invalid token' })
-        .set('otp', unverifiedOTPToken)
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
         .expect(401)
-        .expect({ message: 'Unauthorized', statusCode: 401 });
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({ statusCode: 401, message: 'Incorrect token' }),
+          );
+        });
+    });
+
+    it('(POST) should lock out after too many failed attempts', async () => {
+      const { token } = await requestOtp(dummy.email);
+
+      // OTP_MAX_ATTEMPTS is 3 in .env.test - the first two wrong guesses are
+      // ordinary rejections, the third crosses the threshold and locks it out.
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(401);
+
+      await request(server)
+        .post('/auth/verify-reset')
+        .send({ token: 'wrong-token' })
+        .set('otp', token)
+        .expect(429)
+        .expect(res => {
+          expect(res.body).toEqual(
+            expect.objectContaining({
+              statusCode: 429,
+              message: 'Too many attempts. Please request a new code.',
+            }),
+          );
+        });
     });
 
     it('(POST) should not verify OTP without OTP token', async () => {
       await endpoint.post({}).expect(401).expect({ statusCode: 401, message: 'Unauthorized' });
+    });
+
+    it('(POST) should not verify OTP for missing token', async () => {
+      const { token } = await requestOtp(dummy.email);
+
+      await request(server).post('/auth/verify-reset').send({}).set('otp', token).expect(400);
     });
   });
 
@@ -444,7 +504,9 @@ describe('Auth (e2e)', () => {
         .expect({ statusCode: 401, message: 'Unauthorized' });
     });
 
-    it('(PATCH) should not set password with invalid OTP', async () => {
+    it('(PATCH) should not set password with an unverified OTP token', async () => {
+      const { token: unverifiedOTPToken } = await requestOtp(dummy.email);
+
       await request(server)
         .patch('/auth/set-password')
         .send({ password: 'newPassword' })

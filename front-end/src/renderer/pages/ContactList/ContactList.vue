@@ -164,7 +164,7 @@ onBeforeMount(async () => {
               color="primary"
               data-testid="button-add-new-contact"
               size="large"
-              class="w-100"
+              class="w-100 d-flex align-items-center justify-content-center"
               :disabled="
                 !isLoggedInOrganization(user.selectedOrganization) ||
                 !user.selectedOrganization.admin

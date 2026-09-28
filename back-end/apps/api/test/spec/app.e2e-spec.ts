@@ -1,6 +1,6 @@
 import { NestExpressApplication } from '@nestjs/platform-express';
 
-import * as request from 'supertest';
+import request from 'supertest';
 
 import { closeApp, createNestApp } from '../utils';
 import { resetDatabase } from '../utils/databaseUtil';

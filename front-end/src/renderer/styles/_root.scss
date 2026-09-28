@@ -18,8 +18,8 @@
   --#{$prefix}input-fill-focus-bg-color: #{$light-blue-500};
 
   --#{$prefix}card-primary-bg-color: #{$light-blue-300};
-  --#{$prefix}toast-bg-color: #{$dark-blue-700};
-  --#{$prefix}toast-color: #{$light-blue-200};
+  --#{$prefix}toast-bg-color-success: #{$dark-blue-700};
+  --#{$prefix}toast-color-success: #{$light-blue-200};
   --#{$prefix}toast-bg-color-warning: #{$warning-600};
   --#{$prefix}toast-color-warning: #{$warning-50};
   --#{$prefix}toast-bg-color-error: #{$error-700};
@@ -72,8 +72,8 @@
     --#{$prefix}input-fill-focus-bg-color: #{$dark-blue-500};
 
     --#{$prefix}card-primary-bg-color: #{$dark-blue-700};
-    --#{$prefix}toast-bg-color: #{$light-blue-200};
-    --#{$prefix}toast-color: #{$dark-blue-700};
+    --#{$prefix}toast-bg-color-success: #{$light-blue-200};
+    --#{$prefix}toast-color-success: #{$dark-blue-700};
     --#{$prefix}toast-bg-color-warning: #{$warning-600};
     --#{$prefix}toast-color-warning: #{$warning-50};
     --#{$prefix}toast-bg-color-error: #{$error-700};

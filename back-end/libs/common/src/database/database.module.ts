@@ -18,7 +18,9 @@ import { ConfigService } from '@nestjs/config';
           synchronize: configService.getOrThrow<boolean>('POSTGRES_SYNCHRONIZE', { infer: true }),
           autoLoadEntities: true,
           poolSize: configService.getOrThrow<number>('POSTGRES_MAX_POOL_SIZE', { infer: true }),
-          ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+          ssl: configService.get('POSTGRES_SSL') !== 'false' && configService.get('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),
@@ -29,6 +31,11 @@ import { ConfigService } from '@nestjs/config';
       imports: [],
       useFactory: (configService: ConfigService) =>
         ({
+          // Must match the `name: 'cache'` above: TypeOrmCoreModule.onApplicationShutdown()
+          // recomputes the DataSource injection token from these resolved options rather than
+          // from the forRootAsync() argument, so without `name` here it looks up the wrong
+          // token on shutdown and throws "Nest could not find DataSource element".
+          name: 'cache',
           type: 'postgres',
           host: configService.getOrThrow('POSTGRES_HOST'),
           port: configService.getOrThrow<number>('POSTGRES_PORT', { infer: true }),
@@ -41,7 +48,9 @@ import { ConfigService } from '@nestjs/config';
           extra: {
             statement_timeout: 15000, // Slightly longer for cache operations
           },
-          ssl: configService.get('NODE_ENV') === 'production' ? { rejectUnauthorized: false } : false,
+          ssl: configService.get('POSTGRES_SSL') !== 'false' && configService.get('NODE_ENV') === 'production'
+            ? { rejectUnauthorized: false }
+            : false,
         }) as TypeOrmModuleAsyncOptions,
       inject: [ConfigService],
     }),

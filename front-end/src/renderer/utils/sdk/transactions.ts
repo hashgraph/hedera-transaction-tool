@@ -14,16 +14,14 @@ import {
   NodeDeleteTransaction,
   NodeUpdateTransaction,
   RegisteredNodeCreateTransaction,
-  RegisteredNodeUpdateTransaction,
   RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
   Transaction,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
 import { TransactionTypeName } from '@shared/interfaces';
-import { BackendTransactionCache } from '@renderer/caches/backend/BackendTransactionCache';
-import { hexToUint8Array } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.sdk.transactions');
@@ -172,9 +170,7 @@ function isLocalTypeInput(input: TransactionTypeInput): input is LocalTypeInput 
  * (e.g. "Account Create Transaction", "Freeze Only"). Apply `short` /
  * `removeTransaction` flags via {@link formatTransactionType}.
  */
-export const getRawTransactionType = (
-  input: Exclude<TransactionTypeInput, string>,
-): string => {
+export const getRawTransactionType = (input: Exclude<TransactionTypeInput, string>): string => {
   // Backend type input (e.g., from ITransactionNode)
   if (isBackendTypeInput(input)) {
     if (input.backendType === 'FREEZE' && input.freezeType) {
@@ -242,35 +238,4 @@ export const getDisplayTransactionType = (
     return formatTransactionType(input, short, removeTransaction);
   }
   return formatTransactionType(getRawTransactionType(input), short, removeTransaction);
-};
-
-/**
- * Fetches the freeze type for a transaction from the backend.
- * Uses caching to avoid redundant API calls.
- *
- * @param serverUrl - The organization server URL
- * @param transactionId - The transaction ID
- * @param transactionCache
- * @returns The FreezeType enum value or null if not a freeze transaction or on error
- */
-export const getFreezeTypeForTransaction = async (
-  serverUrl: string,
-  transactionId: number,
-  transactionCache: BackendTransactionCache
-): Promise<FreezeType | null> => {
-
-
-  try {
-    const txFull = await transactionCache.lookup(transactionId, serverUrl);
-    const bytes = hexToUint8Array(txFull.transactionBytes);
-    const sdkTx = Transaction.fromBytes(bytes);
-
-    if (sdkTx instanceof FreezeTransaction && sdkTx.freezeType) {
-      return sdkTx.freezeType;
-    }
-  } catch (error) {
-    logger.error('Failed to fetch freeze type', { error });
-  }
-
-  return null;
 };

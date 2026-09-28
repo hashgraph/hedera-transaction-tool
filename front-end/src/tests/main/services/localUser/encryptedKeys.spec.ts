@@ -36,7 +36,7 @@ describe('Encrypted Keys Utilities', () => {
     });
 
     test('calls searchFiles with correct arguments', async () => {
-      vi.mocked(searchFiles).mockImplementation(async (filePaths, extensions, processFile) => {
+      vi.mocked(searchFiles).mockImplementation(async (filePaths, _extensions, processFile) => {
         // Simulate calling processFile for each filePath
         const results: any[] = [];
         for (const filePath of filePaths) {

@@ -193,6 +193,7 @@ watch(() => user.selectedOrganization, initialize);
       data-bs-placement="bottom"
       data-bs-custom-class="wide-tooltip"
       data-bs-title="Add organization"
+      log-label="add-new-organization"
       ><i class="bi bi-plus-square"></i
     ></AppButton>
 

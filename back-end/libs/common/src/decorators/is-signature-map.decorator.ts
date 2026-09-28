@@ -7,23 +7,23 @@ import { decode, ErrorCodes, isAccountId, isTransactionId } from '@app/common';
 import { Transform, Expose } from 'class-transformer';
 
 export function IsSignatureMap() {
-  const isObject = child => child && typeof child === 'object';
+  const isObject = (child: unknown) => child && typeof child === 'object';
 
-  const assertNodeAccountIdValid = (nodeAccountId: string, transactionIds) => {
+  const assertNodeAccountIdValid = (nodeAccountId: string, transactionIds: unknown) => {
     if (!isAccountId(nodeAccountId) || !isObject(transactionIds)) {
       throw new BadRequestException(ErrorCodes.ISNMP);
     }
   };
 
-  const assertTransactionIdValid = (transactionId: string, publicKeys) => {
+  const assertTransactionIdValid = (transactionId: string, publicKeys: unknown) => {
     if (!isTransactionId(transactionId) || !isObject(publicKeys)) {
       throw new BadRequestException(ErrorCodes.ISNMP);
     }
   };
 
-  return function (target: any, propertyKey: string) {
+  return function (target: object, propertyKey: string) {
     // ONLY apply Transform - remove Type() completely
-    Transform(({ value, obj }) => {
+    Transform(({ value /*, obj */}) => {
       // If already transformed, return as-is
       if (value instanceof SignatureMap) {
         return value;

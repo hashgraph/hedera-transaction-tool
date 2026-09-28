@@ -31,6 +31,7 @@ export * from './dom';
 export * from './sdk';
 export * from './transactions';
 export * from './transferTransactions';
+export * from './transactionSummary';
 export * from './validator';
 export * from './axios';
 export * from './ipc';
@@ -42,6 +43,7 @@ export * from './userStoreHelpers';
 export * from './sdk';
 export * from './transactionSignatureModels';
 export * from './autoFocus';
+export * from './clickLogging';
 export * from './localServices';
 export * from './transactionFile';
 export * from './logger';
@@ -156,7 +158,7 @@ export function validateAccountIdChecksum(accountId: string): boolean {
     const networkStore = useNetworkStore();
     const parsedAccountId = AccountId.fromString(baseId);
     const calculatedChecksum = parsedAccountId
-      .toStringWithChecksum(networkStore.client as Client)
+      .toStringWithChecksum(networkStore.client)
       .split('-')[1];
 
     return checksum === calculatedChecksum;
@@ -168,7 +170,7 @@ export function validateAccountIdChecksum(accountId: string): boolean {
 export const getAccountIdWithChecksum = (accountId: string): string => {
   try {
     const networkStore = useNetworkStore();
-    return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client as Client);
+    return AccountId.fromString(accountId).toStringWithChecksum(networkStore.client);
   } catch {
     return accountId;
   }
@@ -176,7 +178,7 @@ export const getAccountIdWithChecksum = (accountId: string): string => {
 
 const TINYBAR_THRESHOLD = 1_000_000;
 
-export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-secondary'): string {
+export function stringifyHbarOrTinybar(hbar: Hbar): string {
   const amount = hbar.isNegative() ? hbar.toTinybars().negate() : hbar.toTinybars();
   const showTinybars = amount.lessThan(Long.fromNumber(TINYBAR_THRESHOLD));
 
@@ -185,7 +187,7 @@ export function stringifyHbarWithFont(hbar: Hbar, fontClass = 'text-bold text-se
     : Hbar.fromTinybars(amount).toBigNumber().toString();
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
-  return `${displayAmount} <span class="${fontClass}">${displayUnit}</span>`;
+  return `${displayAmount} ${displayUnit}`;
 }
 
 export async function collectRequiredKeys(
@@ -333,7 +335,7 @@ export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: Pu
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
+    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization.serverUrl);
     if (owner) {
       return `${owner} (${publicKey})`;
     }
@@ -344,24 +346,13 @@ export const formatPublicKey = async (publicKey: string, publicKeyOwnerCache: Pu
 export const findIdentifier = async (publicKey: string, publicKeyOwnerCache: PublicKeyOwnerCache) => {
   const mapping = await getPublicKeyMapping(publicKey);
   if (mapping && mapping.nickname) {
-    return mapping.nickname as string;
+    return mapping.nickname;
   }
   const user = useUserStore();
   if (user.selectedOrganization) {
-    const owner = await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization!.serverUrl);
-    if (owner) {
-      return owner as string;
-    }
+    return await publicKeyOwnerCache.lookup(publicKey, user.selectedOrganization.serverUrl);
   }
   return null;
-};
-
-export const formatPublicKeyContactList = async (publicKey: string) => {
-  const mapping = await getPublicKeyMapping(publicKey);
-  if (mapping) {
-    return `${mapping.nickname} (${mapping.public_key})`;
-  }
-  return publicKey;
 };
 
 export const extractIdentifier = (formattedString: string) => {

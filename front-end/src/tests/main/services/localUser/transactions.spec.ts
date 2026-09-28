@@ -84,6 +84,17 @@ describe('Services Local User Transactions', () => {
       client.close();
     });
 
+    test('Should return client for the local node', async () => {
+      const forNetwork = vi
+        .spyOn(SDK.Client, 'forNetwork')
+        .mockReturnValue({ close: vi.fn() } as any);
+
+      const client = await getClientFromNetwork('local-node');
+
+      expect(forNetwork).toHaveBeenCalledWith({ 'localhost:35211': '0.0.3' });
+      client.close();
+    });
+
     test('Should return client for custom network', async () => {
       const mirrorNetwork = ['http://my-test-url.com'];
 
@@ -98,7 +109,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; });
 
       const client = await getClientFromNetwork(mirrorNetwork);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -121,7 +132,7 @@ describe('Services Local User Transactions', () => {
         setFileId: vi.fn().mockReturnThis(),
         execute: vi.fn().mockResolvedValue({}),
       };
-      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; } as any);
+      vi.spyOn(SDK, 'AddressBookQuery').mockImplementation(function () { return addressBookQueryMock; });
 
       const client = await getClientFromNetwork(mirrorNetwork, ledgerId);
       expect(forNetwork).toHaveBeenCalledWith({});
@@ -214,7 +225,7 @@ describe('Services Local User Transactions', () => {
       );
       vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
       vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
-      vi.mocked(decrypt).mockImplementation((_privateKey, password) => {
+      vi.mocked(decrypt).mockImplementation(async (_privateKey, password) => {
         expect(password).toBe(userPassword);
         return decryptedPrivateKeys[count++];
       });
@@ -223,7 +234,7 @@ describe('Services Local User Transactions', () => {
 
       expect(SDK.Transaction.fromBytes).toHaveBeenCalledWith(transactionBytes);
       expect(transactionMock.freezeWith).toHaveBeenCalled();
-      expect(getKeyPairs).toHaveBeenCalledWith(userId);
+      expect(getKeyPairs).toHaveBeenCalledWith(userId, userPassword);
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
     });
@@ -271,7 +282,7 @@ describe('Services Local User Transactions', () => {
 
       expect(SDK.Transaction.fromBytes).toHaveBeenCalledWith(transactionBytes);
       expect(transactionMock.freezeWith).toHaveBeenCalled();
-      expect(getKeyPairs).toHaveBeenCalledWith(userId);
+      expect(getKeyPairs).toHaveBeenCalledWith(userId, userPassword);
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
     });
@@ -338,7 +349,7 @@ describe('Services Local User Transactions', () => {
         () => 'ED25519' as unknown as SDK.PrivateKey,
       );
       vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
-      vi.mocked(decrypt).mockImplementation((privateKey, password) => {
+      vi.mocked(decrypt).mockImplementation(async (privateKey, password) => {
         expect(password).toBe(userPassword);
         return decryptedPrivateKeys[keyPairs.findIndex(kp => kp.private_key === privateKey)];
       });
@@ -476,7 +487,7 @@ describe('Services Local User Transactions', () => {
         const queryMock = new SDK.FileContentsQuery().setFileId(fileId);
         queryMock.execute = vi.fn().mockResolvedValue(response);
 
-        vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+        vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock);
         vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
           privateKey as unknown as SDK.PrivateKey,
         );
@@ -498,7 +509,7 @@ describe('Services Local User Transactions', () => {
       const queryMock = new SDK.FileContentsQuery();
       queryMock.execute = vi.fn().mockResolvedValue(response);
 
-      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock as unknown as SDK.Query<any>);
+      vi.spyOn(SDK.Query, 'fromBytes').mockReturnValue(queryMock);
       vi.spyOn(SDK.PrivateKey, 'fromStringED25519').mockReturnValue(
         privateKey as unknown as SDK.PrivateKey,
       );

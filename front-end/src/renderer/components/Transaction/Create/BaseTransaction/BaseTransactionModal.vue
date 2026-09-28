@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import {
-  FileAppendTransaction,
-  FileCreateTransaction,
-  FileUpdateTransaction,
-  type Transaction,
-} from '@hiero-ledger/sdk';
+import { type Transaction } from '@hiero-ledger/sdk';
 
 import { computed, ref } from 'vue';
 
@@ -87,14 +82,6 @@ function handleEditGroupItem() {
 function getTransactionBytes() {
   if (!props.getTransaction) return;
   const transaction = props.getTransaction();
-  if (
-    transaction instanceof FileCreateTransaction ||
-    transaction instanceof FileUpdateTransaction ||
-    transaction instanceof FileAppendTransaction
-  ) {
-    //@ts-expect-error - contents should be null
-    transaction.setContents(null);
-  }
   return transaction.toBytes();
 }
 

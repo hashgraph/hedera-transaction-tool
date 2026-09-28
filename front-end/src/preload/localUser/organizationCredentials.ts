@@ -6,17 +6,19 @@ export default {
   organizationCredentials: {
     getOrganizationTokens: (
       user_id: string,
+      decryptPassword: string | null,
     ): Promise<{ organization_id: string; jwtToken: string | null }[]> =>
-      ipcRenderer.invoke('organizationCredentials:getOrganizationTokens', user_id),
-    organizationsToSignIn: (
+      ipcRenderer.invoke('organizationCredentials:getOrganizationTokens', user_id, decryptPassword),
+    shouldSignInOrganization: (
       user_id: string,
-    ): Promise<{ credential_id?: string; email?: string; organization: Organization }[]> =>
-      ipcRenderer.invoke('organizationCredentials:organizationsToSignIn', user_id),
-    shouldSignInOrganization: (user_id: string, organization_id: string): Promise<boolean> =>
+      organization_id: string,
+      decryptPassword: string | null,
+    ): Promise<boolean> =>
       ipcRenderer.invoke(
         'organizationCredentials:shouldSignInOrganization',
         user_id,
         organization_id,
+        decryptPassword,
       ),
     addOrganizationCredentials: (
       email: string,
@@ -71,7 +73,11 @@ export default {
         organization_id,
         user_id,
       ),
-    getOrganizationCredentials: (organization_id: string, user_id: string, decryptPassword: string | null): Promise<{
+    getOrganizationCredentials: (
+      organization_id: string,
+      user_id: string,
+      decryptPassword: string | null,
+    ): Promise<{
       email: string;
       password: string;
       jwtToken: string | null;

@@ -1,6 +1,6 @@
 import type { ChipMultiInputStrategy } from '@renderer/components/ui/ChipMultiInput.vue';
 
-// HIP-1137 caps `associated_registered_node` at 20 entries, which is also the
+// HIP-1137 caps `associated_registered_nodes` at 20 entries, which is also the
 // `maxIds` we pass to ChipMultiInput downstream. We short-circuit here once
 // the parse exceeds that — both per-range (so a typo like `0-9999999999`
 // errors immediately instead of trying to expand into a giant Set first) and

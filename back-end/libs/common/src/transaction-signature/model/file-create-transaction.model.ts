@@ -7,7 +7,7 @@ export class FileCreateTransactionModel
 
   static readonly TRANSACTION_TYPE = 'FileCreateTransaction';
 
-  getNewKeys(): Key[] {
+  override getNewKeys(): Key[] {
     return this.transaction.keys || [];
   }
 }

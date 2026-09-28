@@ -13,7 +13,6 @@ import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import {
   getTransactionGroupById,
   type IGroup,
-  type IGroupItem,
 } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
@@ -71,7 +70,7 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
 
       const zip = new JSZip(); // Prepare a new ZIP archive
 
-      for (const item of group.groupItems as IGroupItem[]) {
+      for (const item of group.groupItems) {
         const orgTransaction = await transactionCache.lookup(
           item.transactionId,
           user.selectedOrganization.serverUrl,

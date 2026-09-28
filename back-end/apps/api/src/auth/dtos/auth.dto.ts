@@ -2,11 +2,11 @@ import { Expose } from 'class-transformer';
 
 export class AuthDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  email: string;
+  email!: string;
 
   @Expose()
-  createdAt: Date;
+  createdAt!: Date;
 }

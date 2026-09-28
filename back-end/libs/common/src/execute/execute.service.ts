@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { MurLock } from 'murlock';
 import {
+  KeyList,
   Status,
   Transaction as SDKTransaction,
 } from '@hiero-ledger/sdk';
@@ -76,9 +77,12 @@ export class ExecuteService {
         const sdkTransaction = await this.getValidatedSDKTransaction(transaction);
         transactions.push({ sdkTransaction, transaction });
       } catch (error) {
-        throw new Error(
-          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${error.message}`,
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        const wrappedError = new Error(
+          `Transaction Group cannot be submitted. Error validating transaction ${transaction.id}: ${errorMessage}`,
         );
+        (wrappedError as Error & { cause: unknown }).cause = error;
+        throw wrappedError;
       }
     }
 
@@ -113,10 +117,10 @@ export class ExecuteService {
           },
         };
       })
-      .filter(Boolean);
+      .filter(e => e !== null);
 
     if (successfulEvents.length > 0) {
-      emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
+      await emitTransactionStatusUpdate(this.notificationsPublisher, successfulEvents);
     }
 
     // Return only successful results — filter out nulls from pods that lost the race
@@ -135,7 +139,7 @@ export class ExecuteService {
 
     const executedAt = new Date();
     let transactionStatus = TransactionStatus.EXECUTED;
-    let transactionStatusCode = null;
+    let transactionStatusCode: number | null = null;
     let isDuplicate = false;
 
     const result: TransactionExecutedDto = {
@@ -152,7 +156,7 @@ export class ExecuteService {
       transactionStatusCode = receipt.status._code || Status.Ok._code;
     } catch (error) {
       let message = 'Unknown error';
-      let statusCode = null;
+      let statusCode: number | null = null;
 
       if (error instanceof Error) {
         message = error.message;
@@ -189,7 +193,7 @@ export class ExecuteService {
     const updateResult = await this.transactionsRepo
       .createQueryBuilder()
       .update(Transaction)
-      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode })
+      .set({ status: transactionStatus, executedAt, statusCode: transactionStatusCode ?? undefined})
       .where('id = :id AND status = :currentStatus', {
         id: transaction.id,
         currentStatus: TransactionStatus.WAITING_FOR_EXECUTION,
@@ -216,8 +220,21 @@ export class ExecuteService {
     /* Gets the SDK transaction from the transaction body */
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
 
-    /* Gets the signature key */
-    const signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
+    /* Signature-key resolution is required before anything can be submitted. */
+    let signatureKey: KeyList;
+    try {
+      signatureKey = await this.transactionSignatureService.computeSignatureKey(transaction);
+    } catch (error) {
+      this.logger.error(
+        `Key resolution failed for transaction ${transaction.id}; refusing execution`,
+        error,
+      );
+      const wrappedError = new Error(
+        `Unable to resolve required signature key for transaction ${transaction.id}.`,
+      );
+      (wrappedError as Error & { cause: unknown }).cause = error;
+      throw wrappedError;
+    }
 
     /* Checks if the transaction has valid signatureKey */
     if (!hasValidSignatureKey([...sdkTransaction._signerPublicKeys], signatureKey))
@@ -228,26 +245,38 @@ export class ExecuteService {
 
   /* Throws if the transaction is not in a valid state */
   private async validateTransactionStatus(transaction: Transaction) {
-    const { status } = await this.transactionsRepo.findOne({
+    const transactionEntity = await this.transactionsRepo.findOne({
       where: { id: transaction.id },
-      select: ['status'],
+      select: { status: true },
     });
 
-    switch (status) {
-      case TransactionStatus.NEW:
-        throw new Error('Transaction is new and has not been signed yet.');
-      case TransactionStatus.FAILED:
-        throw new Error('Transaction has already been executed, but failed.');
-      case TransactionStatus.EXECUTED:
-        throw new Error('Transaction has already been executed.');
-      case TransactionStatus.REJECTED:
-        throw new Error('Transaction has already been rejected.');
-      case TransactionStatus.EXPIRED:
-        throw new Error('Transaction has been expired.');
-      case TransactionStatus.CANCELED:
-        throw new Error('Transaction has been canceled.');
-      case TransactionStatus.ARCHIVED:
-        throw new Error('Transaction is archived.');
+    if (transactionEntity === null) {
+      throw new Error('Transaction does not exist.');
+    }
+
+    if (transactionEntity.status !== TransactionStatus.WAITING_FOR_EXECUTION) {
+      switch (transactionEntity.status) {
+        case TransactionStatus.NEW:
+          throw new Error('Transaction is new and has not been signed yet.');
+        case TransactionStatus.READY_FOR_REVIEW:
+          throw new Error('Transaction is pending review and cannot be executed yet.');
+        case TransactionStatus.FAILED:
+          throw new Error('Transaction has already been executed, but failed.');
+        case TransactionStatus.EXECUTED:
+          throw new Error('Transaction has already been executed.');
+        case TransactionStatus.REJECTED:
+          throw new Error('Transaction has already been rejected.');
+        case TransactionStatus.EXPIRED:
+          throw new Error('Transaction has been expired.');
+        case TransactionStatus.CANCELED:
+          throw new Error('Transaction has been canceled.');
+        case TransactionStatus.ARCHIVED:
+          throw new Error('Transaction is archived.');
+        case TransactionStatus.WAITING_FOR_SIGNATURES:
+          throw new Error('Transaction is waiting for signatures and cannot be executed yet.');
+        default:
+          throw new Error('Transaction is not ready for execution.');
+      }
     }
   }
 }

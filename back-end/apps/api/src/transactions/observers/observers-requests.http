@@ -5,7 +5,7 @@ content-type: application/json
 
 {
   "userId": 1,
-  "role": "APPROVER"
+  "role": "STATUS"
 }
 
 ### Get observer for user

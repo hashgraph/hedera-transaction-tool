@@ -70,6 +70,10 @@ spec:
                   key: sender-email
             - name: REDIS_URL
               value: 'redis://redis-master:6379'
+            - name: EMAIL_DEBOUNCE_DELAY_MS
+              value: '30000'
+            - name: EMAIL_DEBOUNCE_MAX_FLUSH_MS
+              value: '300000'
             - name: POSTGRES_HOST
               value: 'postgres-service'
             - name: POSTGRES_PORT

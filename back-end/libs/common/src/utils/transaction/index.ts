@@ -1,4 +1,4 @@
-import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
+import { KeyList, Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 
 import { EntityManager, In, Repository } from 'typeorm';
 
@@ -77,7 +77,7 @@ export const keysRequiredToSign = async (
         try {
           fetchedKeys = await entityManager.find(UserKey, {
             where: { publicKey: In([...missingPublicKeys]) },
-            relations: ['user'],
+            relations: { user: true },
           });
           // Store fetched keys in cache
           for (const key of fetchedKeys) {
@@ -93,7 +93,7 @@ export const keysRequiredToSign = async (
     } else {
       results = await entityManager.find(UserKey, {
         where: { publicKey: In(flatPublicKeys) },
-        relations: ['user'],
+        relations: { user: true },
       });
     }
   }
@@ -138,8 +138,15 @@ export async function processTransactionStatus(
   for (const transaction of transactions) {
     if (!transaction) continue;
 
+    let signatureKey: KeyList;
+    try {
+      signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
+    } catch (error) {
+      console.error(`[processTransactionStatus] key resolution failed for transaction ${transaction.id}, skipping status update`, error);
+      continue;
+    }
+
     const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
-    const signatureKey = await transactionSignatureService.computeSignatureKey(transaction);
     const isAbleToSign = hasValidSignatureKey(
       [...sdkTransaction._signerPublicKeys],
       signatureKey

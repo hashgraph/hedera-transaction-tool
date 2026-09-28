@@ -3,8 +3,8 @@ import { IsNotEmpty, IsString } from 'class-validator';
 export class EmailDto {
   @IsNotEmpty()
   @IsString()
-  email: string;
+  email!: string;
 
   @IsNotEmpty()
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
 }

@@ -31,28 +31,28 @@ import {
 @Index('IDX_account_snapshot_public_keys_gin', { synchronize: false })
 export class AccountSnapshot {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ length: 64 })
-  account: string;
+  account!: string;
 
   @Column()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Column({ type: 'bytea' })
-  encodedKey: Buffer;
+  encodedKey!: Buffer;
 
   @Column({ length: 64 })
-  keyHash: string;
+  keyHash!: string;
 
   @Column({ type: 'text', array: true })
-  publicKeys: string[];
+  publicKeys!: string[];
 
   @Column({ default: false })
-  receiverSignatureRequired: boolean;
+  receiverSignatureRequired!: boolean;
 
   // Set to the triggering transaction's executedAt — not DEFAULT now() — so
   // that timestamp-range lookups land on the correct snapshot row.
   @Column({ type: 'timestamptz' })
-  createdAt: Date;
+  createdAt!: Date;
 }

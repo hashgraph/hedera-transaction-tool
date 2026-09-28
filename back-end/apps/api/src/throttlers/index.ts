@@ -1,2 +1,1 @@
-export * from './email-throttler.module';
-export * from './ip-throttler.module';
+export * from './throttler-storage.module';

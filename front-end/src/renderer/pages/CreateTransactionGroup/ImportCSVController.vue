@@ -9,6 +9,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 import useAccountId from '@renderer/composables/useAccountId.ts';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport.ts';
+import { parseDateTime } from '@renderer/utils/parseDateTime.ts';
 
 const logger = createLogger('renderer.page.importCSVController');
 
@@ -53,7 +54,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
     let validStart: Date | null = null;
     const maxTransactionFee = ref<Hbar>(new Hbar(2));
 
-    for (const row of rows) {
+    for (const [index, row] of rows.entries()) {
       const rowInfo =
         row
           .match(/(?:"(?:\\"|[^"])*"|[^,]+)(?=,|$)/g)
@@ -112,7 +113,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           // Create the new validStart value, or add 1 millisecond to the existing one for subsequent transactions
           if (!validStart) {
             const startDate = rowInfo[2];
-            validStart = new Date(`${startDate} ${sendingTime}`);
+            validStart = await parseDateTime(startDate, sendingTime);
             if (validStart < new Date()) {
               validStart = new Date();
             }
@@ -125,7 +126,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
             await accountByIdCache.lookup(receiverAccount, network.mirrorNodeBaseURL);
           } catch (error) {
             toastManager.error(
-              `Receiver account ${receiverAccount} does not exist on network. Review the CSV file.`,
+              `Receiver account ${receiverAccount} on line ${index + 1} does not exist on network. Review the CSV file.`,
             );
             logger.error('Receiver account lookup failed', { receiverAccount, error });
             transactionGroup.clearGroup();
@@ -135,15 +136,27 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           const transaction = new TransferTransaction()
             .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
             .setMaxTransactionFee(
-              (transactionFee
-                ? new Hbar(transactionFee, HbarUnit.Tinybar)
-                : maxTransactionFee.value) as Hbar,
+              transactionFee ? new Hbar(transactionFee, HbarUnit.Tinybar) : maxTransactionFee.value,
             );
 
           transaction.setTransactionId(createTransactionId(feePayer, validStart));
-          const transferAmount = rowInfo[1].replace(/,/g, '');
-          transaction.addHbarTransfer(receiverAccount, new Hbar(transferAmount, HbarUnit.Tinybar));
-          transaction.addHbarTransfer(senderAccount, new Hbar(-transferAmount, HbarUnit.Tinybar));
+
+          const rawAmount = rowInfo[1] ?? '';
+          const normalized = rawAmount.replace(/,/g, '');
+          if (
+            !/^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)$/.test(rawAmount)
+            || BigInt(normalized) <= 0n
+          ) {
+            toastManager.error(
+              `Invalid amount on CSV line ${index + 1}. Enter a positive number of tinybars.`,
+            );
+            transactionGroup.clearGroup();
+            return null;
+          }
+
+          const hbarAmount = new Hbar(normalized, HbarUnit.Tinybar);
+          transaction.addHbarTransfer(receiverAccount, hbarAmount);
+          transaction.addHbarTransfer(senderAccount, hbarAmount.negated());
           // If memo is not provided for the row, use the memo from the header portion
           // otherwise check if the memo is not 'n/a' and set it
           if (rowInfo.length < 4 || !rowInfo[3]?.trim()) {

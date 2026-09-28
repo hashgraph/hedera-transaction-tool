@@ -1,11 +1,11 @@
-FROM node:24.15.0-alpine AS builder
+FROM node:24.20.0-alpine AS builder
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm@9.15.3
+RUN npm install -g pnpm@11.15.1
 
 # Root workspace files
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 
 # Workspace package manifests
 COPY front-end/package.json ./front-end/
@@ -29,19 +29,18 @@ WORKDIR /usr/src/app/back-end
 RUN pnpm build:common && pnpm build:migrations
 
 # Production stage - minimal runtime image
-FROM node:24.15.0-alpine
+FROM node:24.20.0-alpine
 
 WORKDIR /usr/src/app
 
 ARG NODE_ENV=production
 ENV NODE_ENV=${NODE_ENV}
 
-RUN npm install -g pnpm@9.15.3
+RUN npm install -g pnpm@11.15.1
 
 COPY --from=builder /usr/src/app/package.json ./package.json
 COPY --from=builder /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
-COPY --from=builder /usr/src/app/.npmrc ./.npmrc
 
 COPY --from=builder /usr/src/app/front-end/package.json ./front-end/package.json
 COPY --from=builder /usr/src/app/automation/package.json ./automation/package.json

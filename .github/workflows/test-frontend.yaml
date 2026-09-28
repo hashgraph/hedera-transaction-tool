@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 name: Test Frontend
 
 on:
@@ -15,6 +17,9 @@ defaults:
   run:
     shell: bash
 
+env:
+  LC_ALL: C.UTF-8
+
 permissions:
   contents: read
 
@@ -29,25 +34,22 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -57,7 +59,7 @@ jobs:
         working-directory: front-end
 
       - name: Cache Build Artifacts
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: front-end/release/linux-unpacked
           key: build-artifacts-${{ github.sha }}
@@ -84,25 +86,22 @@ jobs:
             workers: 8
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Docker Compose Plugin
         if: ${{ matrix.test-suite.backendRequired }}
@@ -125,7 +124,7 @@ jobs:
 
       - name: Setup Kind
         if: ${{ matrix.test-suite.soloRequired }}
-        uses: helm/kind-action@ef37e7f390d99f746eb8b610417061a60e82a6cc # v1.14.0
+        uses: helm/kind-action@06c1ae10762d3b9c1644e7fe69596ae519e015a2 # v1.15.0
         with:
           install_only: true
           node_image: kindest/node:v1.31.4@sha256:2cb39f7295fe7eafee0842b1052a599a4fb0f8bcf3f83d96c7f4864c357c6c30
@@ -138,7 +137,7 @@ jobs:
         if: ${{ matrix.test-suite.soloRequired }}
         run: |
           set -euo pipefail
-          npm install -g @hashgraph/solo@0.64.0
+          npm install -g @hashgraph/solo@0.91.0
           solo --version
           kind --version
 
@@ -169,9 +168,8 @@ jobs:
           ps -ef | grep port-forward || true
 
           for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8080/api/v1/network/nodes >/dev/null 2>&1 && \
-               curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
+            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 35211; then
               echo "Solo port forwarding is ready on attempt ${attempt}"
               break
             fi
@@ -187,9 +185,8 @@ jobs:
             sleep 5
           done
 
-          curl -fsS http://localhost:8080/api/v1/network/nodes
-          curl -fsS http://localhost:8081/api/v1/network/nodes
-          wait_for_tcp 127.0.0.1 50211
+          curl -fsS http://localhost:38081/api/v1/network/nodes
+          wait_for_tcp 127.0.0.1 35211
 
       - name: Deploy Back-end
         if: ${{ matrix.test-suite.backendRequired }}
@@ -234,6 +231,11 @@ jobs:
           sed -i 's/^ANONYMOUS_FIVE_SECOND_LIMIT=.*/ANONYMOUS_FIVE_SECOND_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_MINUTE_LIMIT=.*/GLOBAL_MINUTE_LIMIT=99999/' apps/api/.env
           sed -i 's/^GLOBAL_SECOND_LIMIT=.*/GLOBAL_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^LOGIN_IP_MINUTE_LIMIT=.*/LOGIN_IP_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^LOGIN_IP_TEN_SECOND_LIMIT=.*/LOGIN_IP_TEN_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_MINUTE_LIMIT=.*/RESET_IP_MINUTE_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_TEN_SECOND_LIMIT=.*/RESET_IP_TEN_SECOND_LIMIT=99999/' apps/api/.env
+          sed -i 's/^RESET_IP_UNIQUE_EMAIL_LIMIT=.*/RESET_IP_UNIQUE_EMAIL_LIMIT=99999/' apps/api/.env
 
           export COMPOSE_PARALLEL_LIMIT=4
 
@@ -258,8 +260,8 @@ jobs:
           done
 
           for attempt in $(seq 1 60); do
-            if curl -fsS http://localhost:8081/api/v1/network/nodes >/dev/null 2>&1 && \
-               wait_for_tcp 127.0.0.1 50211; then
+            if curl -fsS http://localhost:38081/api/v1/network/nodes >/dev/null 2>&1 && \
+               wait_for_tcp 127.0.0.1 35211; then
               echo "Solo network endpoints are ready on attempt ${attempt}"
               break
             fi
@@ -280,18 +282,18 @@ jobs:
 
           # Solo binds its localnet services to localhost on the runner.
           # Docker containers reach the host via the bridge gateway, so expose the ports there first.
-          for port in 50211 8081; do
+          for port in 35211 38081; do
             sudo bash -c "nohup socat TCP-LISTEN:${port},bind=${DOCKER_HOST_GATEWAY},fork,reuseaddr TCP:127.0.0.1:${port} >/tmp/socat-${port}.log 2>&1 &"
           done
 
           sleep 2
 
-          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:8081/api/v1/network/nodes" >/dev/null 2>&1 || \
-             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 50211; then
+          if ! curl -fsS "http://${DOCKER_HOST_GATEWAY}:38081/api/v1/network/nodes" >/dev/null 2>&1 || \
+             ! wait_for_tcp "${DOCKER_HOST_GATEWAY}" 35211; then
             echo "One or more Solo port proxies are not reachable on ${DOCKER_HOST_GATEWAY}" >&2
             ss -lnt || true
-            sudo tail -n 50 /tmp/socat-50211.log || true
-            sudo tail -n 50 /tmp/socat-8081.log || true
+            sudo tail -n 50 /tmp/socat-35211.log || true
+            sudo tail -n 50 /tmp/socat-38081.log || true
             exit 1
           fi
 
@@ -362,7 +364,7 @@ jobs:
           fi
 
       - name: Restore Build Artifacts
-        uses: actions/cache@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           fail-on-cache-miss: true
           path: front-end/release/linux-unpacked
@@ -391,7 +393,7 @@ jobs:
 
       - name: Upload Playwright Report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-report-${{ matrix.test-suite.name }}
           path: |
@@ -402,7 +404,7 @@ jobs:
 
       - name: Upload Playwright Test Results
         if: ${{ always() }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: playwright-test-results-${{ matrix.test-suite.name }}
           path: automation/test-results
@@ -430,7 +432,7 @@ jobs:
 
       - name: Upload Solo Diagnostics
         if: ${{ always() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: solo-diagnostics-${{ matrix.test-suite.name }}
           path: solo-diagnostics
@@ -443,7 +445,7 @@ jobs:
 
       - name: Upload Kind Logs
         if: ${{ failure() && matrix.test-suite.soloRequired }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: kind-logs-${{ matrix.test-suite.name }}
           path: kind-logs
@@ -466,7 +468,7 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
@@ -495,25 +497,22 @@ jobs:
 
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@9af89fc71515a100421586dfdb3dc9c984fbf411 # v2.19.4
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
         with:
           egress-policy: audit
 
       - name: Checkout Code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Install pnpm
-        uses: step-security/action-setup@0ad50dc56a23060fa78b14cfcf0677c4e14b42bc # v5.0.0
-        with:
-          version: 9.15.3
+        uses: step-security/action-setup@c9d80a280aaf584da8c913342a763a6de6452c7a # v6.0.10
 
       - name: Set up Node.js
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 24.15.0
-          cache: 'pnpm'
-          cache-dependency-path: |
-            pnpm-lock.yaml
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+          node-version-file: package.json
 
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
@@ -523,6 +522,6 @@ jobs:
         working-directory: front-end
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

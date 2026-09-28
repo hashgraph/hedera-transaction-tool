@@ -28,7 +28,7 @@ import {
   TransactionGroup,
   TransactionStatus,
 } from '@entities';
-import { ExecuteService } from './execute.service';
+import { ExecuteService } from '@app/common';
 
 jest.mock('@app/common/utils');
 jest.mock('murlock', () => {
@@ -36,7 +36,7 @@ jest.mock('murlock', () => {
   return {
     ...original,
     MurLock: function MurLock() {
-      return (target, propertyKey, descriptor) => {
+      return (_target: unknown, _propertyKey: unknown, descriptor: unknown) => {
         return descriptor;
       };
     },
@@ -79,9 +79,8 @@ describe('ExecuteService', () => {
     const baseTransaction = {
       id: 1,
       signers: [],
-      approvers: [],
       observers: [],
-      creatorKey: null,
+      creatorKey: undefined,
       mirrorNetwork: 'testnet',
       validStart: new Date(),
     };
@@ -255,7 +254,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
     });
@@ -280,7 +279,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
@@ -351,9 +350,33 @@ describe('ExecuteService', () => {
       );
     });
 
-    it('should throw if transaction is null or undefined', async () => {
-      await expect(service.executeTransaction(null)).rejects.toThrow('Transaction not found');
-      await expect(service.executeTransaction(undefined)).rejects.toThrow('Transaction not found');
+    it('should refuse execution when computeSignatureKey throws', async () => {
+      const transaction = getTransaction('executable') as Transaction;
+
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+      transactionSignatureService.computeSignatureKey.mockRejectedValueOnce(
+        new Error('mirror node unreachable'),
+      );
+
+      await expect(service.executeTransaction(transaction)).rejects.toThrow(
+        'Unable to resolve required signature key for transaction 1.',
+      );
+
+      expect(getClientFromNetwork).not.toHaveBeenCalled();
+      expect(hasValidSignatureKey).not.toHaveBeenCalled();
+      expect(mockQueryBuilder.set).not.toHaveBeenCalled();
+    });
+
+    it('should refuse transactions that are still waiting for signatures', async () => {
+      const transaction = getTransaction('executable') as Transaction;
+      transaction.status = TransactionStatus.WAITING_FOR_SIGNATURES;
+      transactionRepo.findOne.mockResolvedValueOnce(transaction);
+
+      await expect(service.executeTransaction(transaction)).rejects.toThrow(
+        'Transaction is waiting for signatures and cannot be executed yet.',
+      );
+      expect(transactionSignatureService.computeSignatureKey).not.toHaveBeenCalled();
+      expect(getClientFromNetwork).not.toHaveBeenCalled();
     });
   });
 
@@ -474,7 +497,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith({
         executedAt: expect.any(Date),
         status: TransactionStatus.FAILED,
-        statusCode: null,
+        statusCode: undefined,
       });
       expect(client.close).toHaveBeenCalled();
       expect(emitTransactionStatusUpdate).toHaveBeenCalled();
@@ -605,7 +628,7 @@ describe('ExecuteService', () => {
       expect(mockQueryBuilder.set).toHaveBeenCalledWith(
         expect.objectContaining({
           status: TransactionStatus.FAILED,
-          statusCode: null,
+          statusCode: undefined,
           executedAt: expect.any(Date),
         }),
       );

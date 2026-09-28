@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   ParseBoolPipe,
@@ -34,7 +33,7 @@ export class TransactionGroupsController {
     description:
       'Create a transaction group for the organization. ' +
       'The group contains group items that each point to a transaction ' +
-      'that the organization is to approve, sign, and execute.',
+      'that the organization is to sign, and execute.',
   })
   @ApiResponse({
     status: 201,
@@ -87,21 +86,4 @@ export class TransactionGroupsController {
     return this.transactionGroupsService.cancelTransactionGroup(user, groupId);
   }
 
-  /* Delete a transaction group */
-  @ApiOperation({
-    summary: 'Remove a transaction group',
-    description:
-      'Remove the transaction group, group items, and transactions for the provided transaction group id.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Boolean,
-  })
-  @Delete('/:id')
-  removeTransactionGroup(
-    @GetUser() user: User,
-    @Param('id', ParseIntPipe) groupId: number,
-  ): Promise<boolean> {
-    return this.transactionGroupsService.removeTransactionGroup(user, groupId);
-  }
 }

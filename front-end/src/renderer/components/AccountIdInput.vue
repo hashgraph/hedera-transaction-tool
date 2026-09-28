@@ -11,7 +11,6 @@ import { getAll } from '@renderer/services/accountsService';
 import {
   formatAccountId,
   getAccountIdWithChecksum,
-  isNodeCreationAuthorizedFeePayer,
   isUserLoggedIn,
 } from '@renderer/utils';
 
@@ -24,7 +23,6 @@ const props = defineProps<{
   modelValue: string;
   items?: string[];
   dataTestid?: string;
-  isNodeCreationPrivRequired?: boolean;
 }>();
 
 /* Emits */
@@ -58,10 +56,6 @@ const formattedAccountIds = computed(() => {
     } else {
       result = [];
     }
-  }
-  if (props.isNodeCreationPrivRequired) {
-    // We keep privileged accounts only
-    result = result.filter(accountId => isNodeCreationAuthorizedFeePayer(accountId));
   }
   return result.map(id => getAccountIdWithChecksum(id));
 });

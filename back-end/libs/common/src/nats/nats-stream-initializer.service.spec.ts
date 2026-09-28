@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NatsStreamInitializerService } from './nats-stream-initializer.service';
 import { NatsJetStreamService } from './nats-jetstream.service';
+import { NatsError } from 'nats/lib/nats-base-client/core';
 
 describe('NatsStreamInitializerService', () => {
   let service: NatsStreamInitializerService;
@@ -69,8 +70,7 @@ describe('NatsStreamInitializerService', () => {
     });
 
     it('should handle 404 error code for missing streams', async () => {
-      const error: any = new Error('not found');
-      error.code = '404';
+      const error = new NatsError('not found', '404');
       mockJsm.streams.info.mockRejectedValue(error);
 
       await service.onModuleInit();

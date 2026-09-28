@@ -2,21 +2,32 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import {
+  AccountDeleteTransaction,
+  AccountUpdateTransaction,
   Client,
+  FileAppendTransaction,
+  FileDeleteTransaction,
+  FileUpdateTransaction,
+  NodeCreateTransaction,
+  NodeDeleteTransaction,
+  NodeUpdateTransaction,
   PublicKey,
+  RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   Transaction as SDKTransaction,
   TransactionId,
+  TransferTransaction,
 } from '@hiero-ledger/sdk';
 
 import {
   ArrayOverlap,
-  Brackets,
   DataSource,
   EntityManager,
   FindManyOptions,
@@ -27,8 +38,10 @@ import {
 } from 'typeorm';
 
 import {
+  type NewSignerRow,
+  EntityRole,
   Transaction,
-  TransactionApprover,
+  TransactionEntity,
   TransactionObserver,
   TransactionSigner,
   TransactionStatus,
@@ -53,6 +66,7 @@ import {
   isExpired,
   isTransactionBodyOverMaxSize,
   NatsPublisherService,
+  normalizeMirrorNetwork,
   TransactionSignatureService,
   PaginatedResourceDto,
   Pagination,
@@ -72,7 +86,7 @@ import TransactionFactory from '@app/common/transaction-signature/model/transact
 
 import { CreateTransactionDto, SignatureImportResultDto, UploadSignatureMapDto } from './dto';
 
-import { ApproversService } from './approvers';
+import { ReviewerAssignmentService } from './reviewer-assignment.service';
 
 export enum CancelTransactionOutcome {
   CANCELED = 'CANCELED',
@@ -87,46 +101,43 @@ export class TransactionsService {
     @InjectRepository(Transaction) private repo: Repository<Transaction>,
     @InjectEntityManager() private entityManager: EntityManager,
     @InjectDataSource() private dataSource: DataSource,
-    private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly schedulerService: SchedulerService,
     private readonly executeService: ExecuteService,
     private readonly notificationsPublisher: NatsPublisherService,
     private readonly transactionSnapshotService: TransactionSnapshotService,
+    private readonly reviewerAssignmentService: ReviewerAssignmentService,
   ) {
   }
 
   private readonly cancelableStatuses = [
     TransactionStatus.NEW,
+    TransactionStatus.READY_FOR_REVIEW,
     TransactionStatus.WAITING_FOR_SIGNATURES,
     TransactionStatus.WAITING_FOR_EXECUTION,
-  ];
-
-  private readonly terminalStatuses = [
-    TransactionStatus.EXECUTED,
-    TransactionStatus.EXPIRED,
-    TransactionStatus.FAILED,
-    TransactionStatus.CANCELED,
-    TransactionStatus.ARCHIVED,
-    TransactionStatus.REJECTED,
   ];
 
   /* Get the transaction for the provided id in the DATABASE */
 
   /* id can be number (ie internal id) or string (ie payerId@timestamp) */
-  async getTransactionById(id: number | TransactionId): Promise<Transaction> {
+  async getTransactionById(id: number | TransactionId): Promise<Transaction | null> {
     if (!id) return null;
 
     const transactions = await this.repo.find({
       where: typeof id == 'number' ? { id } : { transactionId: id.toString() },
-      relations: [
-        'creatorKey',
-        'creatorKey.user',
-        'observers',
-        'comments',
-        'groupItem',
-        'groupItem.group',
-      ],
+      relations: {
+        creatorKey: {
+          user: true
+        },
+        observers: true,
+        reviewerLists: {
+          members: true,
+        },
+        comments: true,
+        groupItem: {
+          group: true
+        },
+      },
       order: { id: 'DESC' },
     });
 
@@ -182,37 +193,19 @@ export class TransactionsService {
     const findOptions: FindManyOptions<Transaction> = {
       where: whereForUser,
       order,
-      relations: ['creatorKey', 'groupItem', 'groupItem.group'],
+      relations: {
+        creatorKey: true,
+        groupItem: {
+          group: true
+        }
+      },
       skip: offset,
       take: limit,
     };
 
-    const whereBrackets = new Brackets(qb =>
-      qb.where(where).andWhere(
-        `
-        (
-          with recursive "approverList" as
-            (
-              select * from "transaction_approver"
-              where "transaction_approver"."transactionId" = "Transaction"."id"
-                union all
-                  select "approver".* from "transaction_approver" as "approver"
-                  join "approverList" on "approverList"."id" = "approver"."listId"
-            )
-          select count(*) from "approverList"
-          where "approverList"."deletedAt" is null and "approverList"."userId" = :userId
-        ) > 0
-        `,
-        {
-          userId: user.id,
-        },
-      ),
-    );
-
     const [transactions, total] = await this.repo
       .createQueryBuilder()
       .setFindOptions(findOptions)
-      .orWhere(whereBrackets)
       .getManyAndCount();
 
     return {
@@ -286,7 +279,11 @@ export class TransactionsService {
     const [transactions, total] = await this.repo.findAndCount({
       where: whereArray,
       order,
-      relations: ['groupItem', 'groupItem.group'],
+      relations: {
+        groupItem: {
+          group: true
+        }
+      },
       skip: offset,
       take: limit,
     });
@@ -346,7 +343,9 @@ export class TransactionsService {
 
     const transactions = await this.repo.find({
       where: whereForUser,
-      relations: ['groupItem'],
+      relations: {
+        groupItem: true
+      },
       order,
     });
 
@@ -363,75 +362,6 @@ export class TransactionsService {
     return {
       totalItems: result.length,
       items: result.slice(offset, offset + limit),
-      page,
-      size,
-    };
-  }
-
-  /* Get the transactions that need to be approved by the user. */
-  async getTransactionsToApprove(
-    user: User,
-    { page, limit, size, offset }: Pagination,
-    sort?: Sorting[],
-    filter?: Filtering[],
-  ): Promise<PaginatedResourceDto<Transaction>> {
-    const where = getWhere<Transaction>(filter);
-    const order = getOrder(sort);
-
-    const whereForUser: FindOptionsWhere<Transaction> = {
-      ...where,
-      status: Not(
-        In([
-          TransactionStatus.EXECUTED,
-          TransactionStatus.FAILED,
-          TransactionStatus.EXPIRED,
-          TransactionStatus.CANCELED,
-          TransactionStatus.ARCHIVED,
-        ]),
-      ),
-    };
-
-    const findOptions: FindManyOptions<Transaction> = {
-      order,
-      relations: {
-        creatorKey: true,
-        groupItem: true,
-      },
-      skip: offset,
-      take: limit,
-    };
-
-    const [transactions, total] = await this.repo
-      .createQueryBuilder()
-      .setFindOptions(findOptions)
-      .where(
-        new Brackets(qb =>
-          qb.where(whereForUser).andWhere(
-            `
-            (
-              with recursive "approverList" as
-                (
-                  select * from "transaction_approver"
-                  where "transaction_approver"."transactionId" = "Transaction"."id"
-                    union all
-                      select "approver".* from "transaction_approver" as "approver"
-                      join "approverList" on "approverList"."id" = "approver"."listId"
-                )
-              select count(*) from "approverList"
-              where "approverList"."deletedAt" is null and "approverList"."userId" = :userId and "approverList"."approved" is null
-            ) > 0
-        `,
-            {
-              userId: user.id,
-            },
-          ),
-        ),
-      )
-      .getManyAndCount();
-
-    return {
-      totalItems: total,
-      items: transactions,
       page,
       size,
     };
@@ -454,12 +384,17 @@ export class TransactionsService {
 
     await attachKeys(user, this.entityManager);
 
-    const client = await getClientFromNetwork(dtos[0].mirrorNetwork);
+    // Canonicalize network identifiers before any work (even if case-insensitive for SDK resolution).
+    const normalizedDtos = dtos.map(dto => ({
+      ...dto,
+      mirrorNetwork: normalizeMirrorNetwork(dto.mirrorNetwork),
+    }));
+    const client = await getClientFromNetwork(normalizedDtos[0].mirrorNetwork);
 
     try {
       // Validate all DTOs upfront
       const validatedData = await Promise.all(
-        dtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
+        normalizedDtos.map(dto => this.validateAndPrepareTransaction(dto, user, client)),
       );
 
       // Batch check for existing transactions
@@ -475,7 +410,9 @@ export class TransactionsService {
             ]),
           ),
         },
-        select: ['transactionId'],
+        select: {
+          transactionId: true
+        },
       });
 
       if (existing.length > 0) {
@@ -507,12 +444,41 @@ export class TransactionsService {
           }),
         );
 
+        let saved: Transaction[];
         try {
-          return await entityManager.save(Transaction, transactions);
+          saved = await entityManager.save(Transaction, transactions);
         } catch (error) {
-          this.logger.error('Failed to save transactions', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+          const errorStack = error instanceof Error ? error.stack : null;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error('Failed to save transactions', errorStack ?? errorMessage);
           throw new BadRequestException(ErrorCodes.FST);
         }
+
+        // Extract entities and assign reviewers for each saved transaction
+        for (let i = 0; i < saved.length; i++) {
+          const tx = saved[i];
+          const data = validatedData[i];
+          const entityRows = this.extractTransactionEntities(data.sdkTransaction, data.mirrorNetwork);
+          if (entityRows.length > 0) {
+            await entityManager.save(
+              TransactionEntity,
+              entityRows.map(e => entityManager.create(TransactionEntity, { transactionId: tx.id, ...e })),
+            );
+          }
+
+          const hasReviewers = await this.reviewerAssignmentService.assign(
+            tx.id,
+            data.type,
+            data.mirrorNetwork,
+            entityManager,
+          );
+          if (hasReviewers) {
+            tx.status = TransactionStatus.READY_FOR_REVIEW;
+            await entityManager.save(Transaction, tx);
+          }
+        }
+
+        return saved;
       });
 
       // Batch schedule reminders
@@ -547,6 +513,7 @@ export class TransactionsService {
   async importSignatures(
     dto: UploadSignatureMapDto[],
     user: User,
+    version: string | null = null,
   ): Promise<SignatureImportResultDto[]> {
     type UpdateRecord = {
       id: number;
@@ -558,7 +525,14 @@ export class TransactionsService {
     // Single batch query for all transactions
     const transactions = await this.entityManager.find(Transaction, {
       where: { id: In(ids) },
-      relations: ['creatorKey', 'approvers', 'signers', 'observers'],
+      relations: {
+        creatorKey: true,
+        signers: true,
+        observers: true,
+        reviewerLists: {
+          members: true,
+        },
+      },
     });
 
     if (transactions.length === 0) {
@@ -572,7 +546,10 @@ export class TransactionsService {
 
     const existingSigners = await this.entityManager.find(TransactionSigner, {
       where: { transactionId: In(ids) },
-      select: ['transactionId', 'userKeyId'],
+      select: {
+        transactionId: true,
+        userKeyId: true,
+      },
     });
     const signersByTransaction = new Map<number, Set<number>>();
     for (const s of existingSigners) {
@@ -586,7 +563,7 @@ export class TransactionsService {
 
     const results = new Map<number, SignatureImportResultDto>();
     const updates = new Map<number, UpdateRecord>();
-    const newSignerRows: { userId: number; transactionId: number; userKeyId: number }[] = [];
+    const newSignerRows: NewSignerRow[] = [];
     const notificationDismissals: { userId: number; transactionId: number }[] = [];
     // Dedups (userId, txId) so one user with multiple keys produces one UNNEST row.
     const notificationDismissalKeys = new Set<string>();
@@ -598,13 +575,14 @@ export class TransactionsService {
       publicKeys: PublicKey[];
       newBytes: Buffer;
       isSameBytes: boolean;
+      tool: string | null;
     };
     const intermediate = new Map<number, DtoIntermediate>();
     const allPubKeyStrings = new Set<string>();
 
     // Two-pass: defer UserKey resolution to a single bulk find below (was N+1).
-    for (const { id, signatureMap: map } of dto) {
-      const transaction = transactionMap.get(id);
+    for (const { id, signatureMap: map, tool } of dto) {
+      const transaction = transactionMap.get(id)!;
 
       try {
         if (!(await this.verifyAccess(transaction, user))) {
@@ -641,8 +619,16 @@ export class TransactionsService {
           allPubKeyStrings.add(pk.toStringDer());
         }
 
-        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes });
+        intermediate.set(id, { transaction, publicKeys: validNewKeys, newBytes, isSameBytes, tool: tool ?? 'api' });
       } catch (error) {
+        if (!(error instanceof BadRequestException)) {
+          const errorStack = error instanceof Error ? error.stack : null;
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          this.logger.error(
+            `[TX ${id}] Unexpected error during signature import`,
+            errorStack ?? errorMessage,
+          );
+        }
         results.set(id, {
           id,
           error:
@@ -668,9 +654,9 @@ export class TransactionsService {
       }
     }
 
-    for (const [id, { transaction, publicKeys, newBytes, isSameBytes }] of intermediate) {
+    for (const [id, { transaction, publicKeys, newBytes, isSameBytes, tool }] of intermediate) {
       // Create TransactionSigner rows for any keys found in the imported signatures (issue #2552).
-      const newSignersForDto: { userId: number; transactionId: number; userKeyId: number }[] = [];
+      const newSignersForDto: NewSignerRow[] = [];
       if (publicKeys.length > 0) {
         let txExistingSigners = signersByTransaction.get(id);
         if (!txExistingSigners) {
@@ -685,7 +671,7 @@ export class TransactionsService {
           for (const uk of matches) {
             if (txExistingSigners.has(uk.id)) continue;
             txExistingSigners.add(uk.id);
-            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id });
+            newSignersForDto.push({ userId: uk.userId, transactionId: id, userKeyId: uk.id, recorderId: user.id, tool, version });
           }
         }
       }
@@ -852,32 +838,6 @@ export class TransactionsService {
     return Array.from(results.values());
   }
 
-  async removeTransaction(id: number, user: User, softRemove: boolean = true): Promise<boolean> {
-    const transaction = await this.getTransactionForCreator(id, user);
-
-    if (softRemove) {
-      const executedAt = new Date();
-      await this.repo.update(transaction.id, { status: TransactionStatus.CANCELED, executedAt });
-      await this.transactionSnapshotService.captureForTransaction(transaction.id, executedAt);
-      await this.repo.softRemove(transaction);
-    } else {
-      await this.repo.remove(transaction);
-    }
-
-    emitTransactionStatusUpdate(
-      this.notificationsPublisher,
-      [{
-        entityId: transaction.id,
-        additionalData: {
-          transactionId: transaction.transactionId,
-          network: transaction.mirrorNetwork,
-        },
-      }],
-    );
-
-    return true;
-  }
-
   /* Cancel the transaction if the valid start has not come yet. */
   async cancelTransaction(id: number, user: User): Promise<boolean> {
     await this.cancelTransactionWithOutcome(id, user);
@@ -939,7 +899,7 @@ export class TransactionsService {
     const transaction = await this.getTransactionForCreator(id, user);
 
     if (
-      ![TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
+      ![TransactionStatus.READY_FOR_REVIEW, TransactionStatus.WAITING_FOR_SIGNATURES, TransactionStatus.WAITING_FOR_EXECUTION].includes(
         transaction.status,
       ) &&
       !transaction.isManual
@@ -985,8 +945,9 @@ export class TransactionsService {
   /* Get the transaction with the provided id if user has access */
   async getTransactionWithVerifiedAccess(transactionId: number | TransactionId, user: User) {
     const transaction = await this.getTransactionById(transactionId);
-
-    await this.attachTransactionApprovers(transaction);
+    if (transaction === null) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
 
     if (!(await this.verifyAccess(transaction, user))) {
       throw new UnauthorizedException('You don\'t have permission to view this transaction');
@@ -1003,16 +964,11 @@ export class TransactionsService {
           id: transaction.id,
         },
       },
-      relations: ['userKey'],
+      relations: {
+        userKey: true,
+      },
       withDeleted: true,
     });
-  }
-
-  async attachTransactionApprovers(transaction: Transaction) {
-    if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
-
-    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-    transaction.approvers = this.approversService.getTreeStructure(approvers);
   }
 
   async verifyAccess(transaction: Transaction, user: User): Promise<boolean> {
@@ -1028,11 +984,24 @@ export class TransactionsService {
 
     const requiredKeyIds = await this.getUserKeysToSign(transaction, user, true);
 
+    if (transaction.observers === undefined || transaction.reviewerLists === undefined) {
+      // Every caller of verifyAccess must eager-load `observers` and
+      // `reviewerLists: { members: true }` together. An unloaded relation here would
+      // silently read as "not an observer/reviewer" (transaction.observers?.some(...)
+      // or transaction.reviewerLists?.some(...) on undefined resolves to false) rather
+      // than erroring, which is a much worse failure mode than this loud one.
+      throw new InternalServerErrorException(
+        'verifyAccess requires the observers and reviewerLists relations to be loaded',
+      );
+    }
+
     return (
       requiredKeyIds.length !== 0 ||
       transaction.creatorKey?.userId === user.id ||
-      !!transaction.observers?.some(o => o.userId === user.id) ||
-      !!transaction.approvers?.some(a => a.userId === user.id)
+      transaction.observers.some(o => o.userId === user.id) ||
+      transaction.reviewerLists.some(list =>
+        list.members.some(m => m.userId === user.id),
+      )
     );
   }
 
@@ -1045,20 +1014,11 @@ export class TransactionsService {
       where: {
         transactionId: In(transactionIds),
       },
-      relations: ['userKey'],
+      relations: {
+        userKey: true,
+      },
       withDeleted: true,
     });
-  }
-
-  async getTransactionApproversForTransactions(
-    transactionIds: number[],
-  ): Promise<TransactionApprover[]> {
-    if (!transactionIds.length) {
-      return [];
-    }
-
-    //To be implemented when approver functionality is added.
-    return [];
   }
 
   async getTransactionObserversForTransactions(
@@ -1075,30 +1035,6 @@ export class TransactionsService {
     });
   }
 
-  /* Check whether the user should approve the transaction */
-  async shouldApproveTransaction(transactionId: number, user: User) {
-    const transaction = await this.getTransactionById(transactionId);
-    if (!transaction) {
-      throw new BadRequestException(ErrorCodes.TNF);
-    }
-
-    if (this.terminalStatuses.includes(transaction.status)) {
-      return false;
-    }
-
-    /* Get all the approvers */
-    const approvers = await this.approversService.getApproversByTransactionId(transactionId);
-
-    /* If user is approver, filter the records that belongs to the user */
-    const userApprovers = approvers.filter(a => a.userId === user.id);
-
-    /* Check if the user is an approver */
-    if (userApprovers.length === 0) return false;
-
-    /* Check if the user has already approved the transaction */
-    return !userApprovers.every(a => a.signature);
-  }
-
   /* Get the user keys that are required for a given transaction */
   async getUserKeysToSign(transaction: Transaction, user: User, showAll: boolean = false): Promise<number[]> {
     return userKeysRequiredToSign(transaction, user, this.transactionSignatureService, this.entityManager, showAll);
@@ -1111,11 +1047,77 @@ export class TransactionsService {
       throw new BadRequestException(ErrorCodes.TNF);
     }
 
-    if (transaction.creatorKey?.userId !== user?.id) {
+    if (transaction.creatorKey?.userId !== user.id) {
       throw new UnauthorizedException('Only the creator has access to this transaction');
     }
 
     return transaction;
+  }
+
+  private extractTransactionEntities(
+    sdkTx: SDKTransaction,
+    network: string,
+  ): Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] {
+    const raw: Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] = [];
+
+    const feePayerId = sdkTx.transactionId?.accountId;
+    if (feePayerId) {
+      raw.push({ hederaEntityId: feePayerId.toString(), network, entityRole: EntityRole.FEE_PAYER });
+    }
+
+    if (sdkTx instanceof TransferTransaction) {
+      for (const transfer of sdkTx.hbarTransfersList) {
+        raw.push({
+          hederaEntityId: transfer.accountId.toString(),
+          network,
+          entityRole: transfer.amount.isNegative() ? EntityRole.SENDER : EntityRole.RECEIVER,
+        });
+      }
+    }
+
+    if (sdkTx instanceof AccountUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof AccountDeleteTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeCreateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.accountId) {
+      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+    }
+
+    if (sdkTx instanceof FileAppendTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileUpdateTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+    if (sdkTx instanceof FileDeleteTransaction && sdkTx.fileId) {
+      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+    }
+
+    if (sdkTx instanceof NodeUpdateTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof NodeDeleteTransaction && sdkTx.nodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeUpdateTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+    if (sdkTx instanceof RegisteredNodeDeleteTransaction && sdkTx.registeredNodeId) {
+      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+    }
+
+    const seen = new Set<string>();
+    return raw.filter(e => {
+      const key = `${e.hederaEntityId}|${e.network}|${e.entityRole}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   /**
@@ -1147,6 +1149,8 @@ export class TransactionsService {
     if (!sdkTransaction.isFrozen()) {
       sdkTransaction.freezeWith(client);
     }
+    const transactionId = sdkTransaction.transactionId!;
+    const validStart = transactionId.validStart!;
 
     // Check if expired
     if (isExpired(sdkTransaction)) {
@@ -1188,17 +1192,18 @@ export class TransactionsService {
       name: dto.name,
       type: transactionType,
       description: dto.description,
-      transactionId: sdkTransaction.transactionId.toString(),
+      transactionId: transactionId.toString(),
       transactionHash: encodeUint8Array(transactionHash),
       transactionBytes: sdkTransaction.toBytes(),
       unsignedTransactionBytes: sdkTransaction.toBytes(),
       creatorKeyId: dto.creatorKeyId,
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
-      validStart: sdkTransaction.transactionId.validStart.toDate(),
+      validStart: validStart.toDate(),
       isManual: dto.isManual,
       cutoffAt: dto.cutoffAt,
       publicKeys,
+      sdkTransaction,
     };
   }
 

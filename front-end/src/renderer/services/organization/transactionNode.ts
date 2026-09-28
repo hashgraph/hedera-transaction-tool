@@ -3,7 +3,7 @@ import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../shared/src/ITransactionNode';
+} from '@shared/interfaces/ITransactionNode.ts';
 import { BackEndTransactionType, type Network, TransactionStatus } from '@shared/interfaces';
 import {
   TRANSACTION_NODE_DEFAULT_MESSAGE,

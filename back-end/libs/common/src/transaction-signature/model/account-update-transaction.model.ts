@@ -15,7 +15,7 @@ export class AccountUpdateTransactionModel
   // New key is required:
   // https://docs.hedera.com/hedera/sdks-and-apis/sdks/accounts-and-hbar/update-an-account
   // UNLESS waived.
-  getNewKeys(): Key[] {
+  override getNewKeys(): Key[] {
     if (
       this.transaction.key != null &&
       !this.shouldWaiveSigningRequirements(this.transaction.accountId)
@@ -28,7 +28,7 @@ export class AccountUpdateTransactionModel
   // According to documentation, if account is between 3 and 1000 inclusive,
   // the key is not required IF the fee payer is 2 or 50. In all other cases, the key is required.
   // https://github.com/hiero-ledger/hiero-consensus-node/blob/main/hedera-node/docs/privileged-transactions.md#waived-signing-requirements-for-crypto-updates
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
     const accountId = this.transaction.accountId;
     if (accountId != null && !this.shouldWaiveSigningRequirements(accountId)) {
@@ -37,7 +37,7 @@ export class AccountUpdateTransactionModel
     return set;
   }
 
-  private shouldWaiveSigningRequirements(accountId: AccountId): boolean {
+  private shouldWaiveSigningRequirements(accountId: AccountId | null): boolean {
     const feePayer = this.getFeePayerAccountId();
     return (
       this.isSystemAccount(accountId) &&
@@ -45,7 +45,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isSystemAccount(accountId: AccountId): boolean {
+  private isSystemAccount(accountId: AccountId | null): boolean {
     return (
       accountId != null &&
       accountId.compare(this.MINIMUM_SYSTEM_ACCOUNT) >= 0 &&
@@ -53,7 +53,7 @@ export class AccountUpdateTransactionModel
     );
   }
 
-  private isPrivilegedFeePayer(feePayer?: AccountId): boolean {
+  private isPrivilegedFeePayer(feePayer: AccountId | null): boolean {
     return (
       feePayer != null &&
       (feePayer.equals(this.TREASURY_ACCOUNT) || feePayer.equals(this.ADMIN_ACCOUNT))

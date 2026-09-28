@@ -10,41 +10,41 @@ export enum CancelFailureCode {
 
 class CancelGroupFailedItemDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  code: CancelFailureCode;
+  code!: CancelFailureCode;
 
   @Expose()
-  message: string;
+  message!: string;
 }
 
 class CancelGroupSummaryDto {
   @Expose()
-  processedCount: number;
+  processedCount!: number;
 
   @Expose()
-  canceled: number;
+  canceled!: number;
 
   @Expose()
-  alreadyCanceled: number;
+  alreadyCanceled!: number;
 
   @Expose()
-  failed: number;
+  failed!: number;
 }
 
 export class CancelGroupResultDto {
   @Expose()
-  canceled: number[];
+  canceled!: number[];
 
   @Expose()
-  alreadyCanceled: number[];
+  alreadyCanceled!: number[];
 
   @Expose()
   @Type(() => CancelGroupFailedItemDto)
-  failed: CancelGroupFailedItemDto[];
+  failed!: CancelGroupFailedItemDto[];
 
   @Expose()
   @Type(() => CancelGroupSummaryDto)
-  summary: CancelGroupSummaryDto;
+  summary!: CancelGroupSummaryDto;
 }

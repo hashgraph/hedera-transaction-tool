@@ -5,8 +5,8 @@ import { UserDto } from '../../users/dtos';
 export class LoginResponseDto {
   @Expose()
   @Type(() => UserDto)
-  user: UserDto;
+  user!: UserDto;
 
   @Expose()
-  accessToken: string;
+  accessToken!: string;
 }

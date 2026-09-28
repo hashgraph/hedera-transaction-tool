@@ -44,7 +44,7 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import { useRouter } from 'vue-router';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
-import { TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import { TransactionNodeCollection } from '@shared/interfaces/ITransactionNode.ts';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const HISTORY_SORT_URL_VALUES = [
@@ -497,6 +497,8 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transaction.id)"
                       color="secondary"
+                      log-label="view-transaction-details"
+                      :log-metadata="{ transactionId: transaction.id }"
                       >Details</AppButton
                     >
                   </td>
@@ -581,6 +583,8 @@ watch(
                       :data-testid="`button-transaction-details-${index}`"
                       @click="handleDetails(transactionData.transactionRaw.id)"
                       color="secondary"
+                      log-label="view-transaction-details"
+                      :log-metadata="{ transactionId: transactionData.transactionRaw.id }"
                       >Details</AppButton
                     >
                   </td>

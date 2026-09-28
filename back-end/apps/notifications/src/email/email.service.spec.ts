@@ -8,6 +8,7 @@ import {
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
+  NotificationTypeEmailSubjects,
 } from '@app/common';
 
 import { EmailService } from './email.service';
@@ -30,14 +31,13 @@ jest.mock('ioredis', () => {
   return { Redis: MockRedis };
 });
 jest.mock('@app/common', () => ({
+  // Keep the real NotificationTypeEmailSubjects/findEmailSubject so a regression in the
+  // key->subject lookup is caught here, instead of duplicating (and potentially
+  // re-breaking) that logic in this mock.
+  ...jest.requireActual('@app/common/constants/notificationTypeEmailSubjects'),
   generateEmailContent: jest.fn(),
   generateUserRegisteredMessage: jest.fn(),
   generateResetPasswordMessage: jest.fn(),
-  NotificationTypeEmailSubjects: {
-    TRANSACTION_CREATED: 'Transaction Created',
-    TRANSACTION_WAITING_FOR_SIGNATURES: 'Transaction Waiting Signatures',
-    TRANSACTION_EXECUTED: 'Transaction Executed',
-  },
 }));
 
 describe('EmailService', () => {
@@ -169,7 +169,7 @@ describe('EmailService', () => {
   });
 
   describe('processEmails', () => {
-    it('should call batcher.add for each notification except TRANSACTION_EXECUTED', async () => {
+    it('should call batcher.add for each notification', async () => {
       const emailNotifications = [
         {
           email: 'user1@example.com',
@@ -288,6 +288,42 @@ describe('EmailService', () => {
         notifications[1]
       );
     });
+
+    it.each(Object.entries(NotificationTypeEmailSubjects))(
+      'should resolve the human-readable subject for %s',
+      async (type, expectedSubject) => {
+        const notifications: Notification[] = [
+          { id: 1, type: type as NotificationType } as Notification,
+        ];
+
+        jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'test-message' });
+        (generateEmailContent as jest.Mock).mockReturnValue('Content');
+
+        await (service as any)['processMessages']('user@example.com', notifications);
+
+        expect((service as any).sendWithRetry).toHaveBeenCalledWith(
+          expect.objectContaining({ subject: expectedSubject })
+        );
+      }
+    );
+
+    it.each(['toString', 'constructor', 'hasOwnProperty'])(
+      'should fall back to the raw value for inherited property name %s instead of returning a function',
+      async (type) => {
+        const notifications: Notification[] = [
+          { id: 1, type: type as unknown as NotificationType } as Notification,
+        ];
+
+        jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'test-message' });
+        (generateEmailContent as jest.Mock).mockReturnValue('Content');
+
+        await (service as any)['processMessages']('user@example.com', notifications);
+
+        expect((service as any).sendWithRetry).toHaveBeenCalledWith(
+          expect.objectContaining({ subject: type })
+        );
+      }
+    );
 
     it('should handle empty notifications array', async () => {
       const sendSpy = jest.spyOn(service as any, 'sendWithRetry').mockResolvedValue({ messageId: 'noop' } as any);
@@ -611,6 +647,17 @@ describe('EmailService', () => {
       );
 
       logSpy.mockRestore();
+    });
+  });
+
+  describe('onModuleDestroy', () => {
+    it('calls batcher.flushAll when the module is destroyed', async () => {
+      const flushAllMock = jest.fn().mockResolvedValue(undefined);
+      (service as any).batcher = { add: jest.fn(), flushAll: flushAllMock };
+
+      await service.onModuleDestroy();
+
+      expect(flushAllMock).toHaveBeenCalledTimes(1);
     });
   });
 });

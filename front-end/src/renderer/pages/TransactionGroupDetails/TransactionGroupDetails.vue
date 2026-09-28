@@ -10,7 +10,7 @@ import {
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, reactive, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { type _RouterClassic, useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hiero-ledger/sdk';
@@ -86,7 +86,7 @@ const contacts = useContactsStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
   const id = router.currentRoute.value.params.id;
@@ -122,6 +122,12 @@ const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
 
 const fullyLoaded = ref(false);
+// Distinct from fullyLoaded: fullyLoaded toggles false/true on every fetch (initial load AND
+// background refreshes) so visibleButtons/the action button can be disabled while data is in
+// flight. hasLoadedOnce latches true after the first successful load and never resets, so we
+// only show the "not loaded yet" placeholder once, instead of swapping the real action button
+// out for a different (testid-less) element on every background refresh.
+const hasLoadedOnce = ref(false);
 const loadingStates = reactive<{ [key: string]: string | null }>({
   [reject]: null,
   [approve]: null,
@@ -205,7 +211,7 @@ const canCancelAll = computed(() => {
 const visibleButtons = computed(() => {
   const buttons: ActionButton[] = [];
 
-  if (!fullyLoaded.value) return buttons;
+  if (!hasLoadedOnce.value) return buttons;
 
   /* The order is important REJECT, APPROVE, SIGN, CANCEL, EXPORT */
   FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
@@ -238,7 +244,9 @@ const handleDetails = async (id: number) => {
   await nextTransaction.routeDown({ transactionId: id }, nodeIds, router, pageTitle.value);
 };
 
-const didSignAll = async (groupId: number | null /*, signed: boolean */) => {
+const didSignAll = async (groupId: number | null, signed: boolean) => {
+  if (!signed) return;
+
   if (goNextAfterSignAll.value) {
     // We route to the next transaction
     if (nextTransaction.hasNext) {
@@ -361,6 +369,7 @@ async function fetchGroup(id: string | number) {
           }
         }
         fullyLoaded.value = true;
+        hasLoadedOnce.value = true;
 
         const notificationIds = notifications.currentOrganizationNotifications
           .filter((n: INotificationReceiver) => {
@@ -413,6 +422,7 @@ async function fetchGroupOnNotif(groupId: string | number) {
               color="secondary"
               type="button"
               @click="handleBack"
+              log-label="back-to-transactions"
             >
               <i class="bi bi-arrow-left"></i>
             </AppButton>
@@ -421,14 +431,14 @@ async function fetchGroupOnNotif(groupId: string | number) {
 
           <div class="flex-centered gap-4">
             <NextTransactionCursor />
-            <template v-if="visibleButtons.length > 0">
+            <template v-if="hasLoadedOnce">
               <div>
                 <SplitSignButtonDropdown
                   v-if="visibleButtons[0] === sign"
                   :action-next-text="signAndNext"
                   :action-text="sign"
                   :data-testid="buttonsDataTestIds[sign]"
-                  :disabled="Boolean(loadingStates[sign])"
+                  :disabled="!fullyLoaded || Boolean(loadingStates[sign])"
                   :loading="Boolean(loadingStates[sign])"
                   :loading-text="loadingStates[sign] || ''"
                 />
@@ -436,16 +446,18 @@ async function fetchGroupOnNotif(groupId: string | number) {
                   v-else
                   :color="primaryButtons.includes(visibleButtons[0]) ? 'primary' : 'secondary'"
                   :data-testid="buttonsDataTestIds[visibleButtons[0]]"
-                  :disabled="Boolean(loadingStates[visibleButtons[0]])"
+                  :disabled="!fullyLoaded || Boolean(loadingStates[visibleButtons[0]])"
                   :loading="Boolean(loadingStates[visibleButtons[0]])"
                   :loading-text="loadingStates[visibleButtons[0]] || ''"
                   class="extra-width"
                   type="submit"
+                  log-label="transaction-group-action"
+                  :log-metadata="{ action: visibleButtons[0], groupId }"
                   >{{ visibleButtons[0] }}
                 </AppButton>
               </div>
             </template>
-            <template v-else-if="!fullyLoaded">
+            <template v-else>
               <div>
                 <AppButton color="secondary" :disabled="true" class="extra-width">... </AppButton>
               </div>

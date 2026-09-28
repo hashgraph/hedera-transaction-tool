@@ -25,10 +25,6 @@ export interface SignatureAudit {
 export abstract class TransactionBaseModel<T extends SDKTransaction> {
   constructor(protected transaction: T) {}
 
-  toBytes(): Uint8Array {
-    return this.transaction.toBytes();
-  }
-
   getFeePayerAccountId(): AccountId | null {
     return this.transaction.transactionId?.accountId ?? null;
   }

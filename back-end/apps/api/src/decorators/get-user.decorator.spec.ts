@@ -16,7 +16,6 @@ describe('GetUser Decorator', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
     };
 

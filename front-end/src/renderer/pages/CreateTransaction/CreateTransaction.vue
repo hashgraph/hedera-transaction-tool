@@ -9,7 +9,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 <template>
   <div class="p-5">
     <template v-if="Object.keys(txTypeComponentMapping).includes($route.params.type.toString())">
-      <Component
+      <component
         :is="
           txTypeComponentMapping[
             $route.params.type.toString() as keyof typeof txTypeComponentMapping

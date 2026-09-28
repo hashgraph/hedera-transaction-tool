@@ -98,7 +98,7 @@ function getGetawayFromTestContainer(container: StartedTestContainer) {
   return container.startedTestContainer.inspectResult.NetworkSettings.Gateway;
 }
 
-async function deleteContainersByName(containerName) {
+async function deleteContainersByName(containerName: string) {
   const { stdout } = await execPromise(
     `docker ps --filter "name=${containerName}" --format "{{.ID}}"`,
   );

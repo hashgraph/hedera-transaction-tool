@@ -1,5 +1,7 @@
+import { randomBytes, randomInt } from 'node:crypto';
+
 export const generateRandomEmail = (domain = 'test.com') => {
-  const randomPart = Math.random().toString(36).substring(2, 8);
+  const randomPart = randomBytes(3).toString('hex');
   return `${randomPart}@${domain}`;
 };
 
@@ -9,7 +11,7 @@ export const generateRandomPassword = (length = 10) => {
   const charactersLength = characters.length;
 
   for (let i = 0; i < length; i++) {
-    result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    result += characters.charAt(randomInt(0, charactersLength));
   }
 
   return result;

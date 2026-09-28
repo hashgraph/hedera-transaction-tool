@@ -25,7 +25,8 @@ export class MessageValidator {
         return await this.validateSingle(rawData, dtoClass, msg.subject, logger);
       }
     } catch (error) {
-      logger.error(`Parse error on ${msg.subject}:`, error.message);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error(`Parse error on ${msg.subject}:`, errorMessage);
       logger.error(`Raw message data (first 200 chars): "${msg.data.toString().substring(0, 200)}"`);
       return null;
     }

@@ -2,8 +2,8 @@ import { IsBoolean, IsNumber } from 'class-validator';
 
 export class UpdateNotificationReceiverDto {
   @IsNumber()
-  id: number;
+  id!: number;
 
   @IsBoolean()
-  isRead: boolean;
+  isRead!: boolean;
 }

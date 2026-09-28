@@ -256,6 +256,25 @@ export async function getKeyPairByIndexAndEmail(
 }
 
 /**
+ * Deletes a local key pair without changing the corresponding organization key.
+ *
+ * This is used for exercising the missing-key flow in the UI, where
+ * the remote public key must remain available for the 'missing' row to render.
+ */
+export async function deleteKeyPairByPublicKey(publicKey: string): Promise<boolean> {
+  const query = `
+    DELETE FROM KeyPair
+    WHERE public_key = ?`;
+
+  try {
+    return (await executeDatabase(query, [publicKey])) > 0;
+  } catch (error) {
+    console.error('Error deleting local key pair:', error);
+    return false;
+  }
+}
+
+/**
  * Inserts a new key pair into the local KeyPair table.
  *
  * When `localUserId` and `localOrganizationId` are both provided, the row is bound to

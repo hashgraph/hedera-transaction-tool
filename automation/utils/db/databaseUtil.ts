@@ -339,12 +339,14 @@ export async function resetPostgresDbState() {
   // Tables to reset - order matters for foreign key constraints
   const tablesToReset = [
     'notification_receiver',
-    'transaction_approver',
+    'transaction_reviewer_list_member',
+    'transaction_reviewer_list',
     'transaction_comment',
     'transaction_group_item',
     'transaction_group',
     'transaction_observer',
     'transaction_signer',
+    'transaction_entity',
     'transaction',
     'user_key',
     'notification_preferences',

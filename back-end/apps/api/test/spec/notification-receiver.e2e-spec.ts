@@ -28,8 +28,8 @@ describe('Notification Receiver (e2e)', () => {
 
     userAuthToken = await login(app, 'user');
 
-    admin = await getUser('admin');
-    user = await getUser('user');
+    admin = (await getUser('admin'))!;
+    user = (await getUser('user'))!;
   });
 
   afterAll(async () => {
@@ -48,7 +48,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id },
       });
 
-      const { status, body } = await endpoint.get(null, userAuthToken, '?page=1&size=10');
+      const { status, body } = await endpoint.get(undefined, userAuthToken, '?page=1&size=10');
 
       expect(status).toBe(200);
       expect(body.totalItems).toEqual(notificationForUser.length);
@@ -62,7 +62,7 @@ describe('Notification Receiver (e2e)', () => {
       });
 
       const { status, body } = await endpoint.get(
-        null,
+        undefined,
         userAuthToken,
         '?page=1&size=10&filter=isRead:eq:false',
       );
@@ -84,7 +84,7 @@ describe('Notification Receiver (e2e)', () => {
       });
 
       const { status, body } = await endpoint.get(
-        null,
+        undefined,
         userAuthToken,
         '?page=1&size=10&filter=type:eq:TRANSACTION_CREATED',
       );
@@ -108,7 +108,7 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id },
       });
 
-      const { status, text } = await endpoint.get(null, userAuthToken);
+      const { status, text } = await endpoint.get(undefined, userAuthToken);
 
       expect(status).toBe(200);
       expect(text).toBe(countForUser.toString());
@@ -119,7 +119,11 @@ describe('Notification Receiver (e2e)', () => {
         where: { userId: user.id, isRead: false },
       });
 
-      const { status, text } = await endpoint.get(null, userAuthToken, '?filter=isRead:eq:false');
+      const { status, text } = await endpoint.get(
+        undefined,
+        userAuthToken,
+        '?filter=isRead:eq:false',
+      );
 
       expect(status).toBe(200);
       expect(text).toBe(countForUser.toString());
@@ -136,7 +140,7 @@ describe('Notification Receiver (e2e)', () => {
       });
 
       const { status, text } = await endpoint.get(
-        null,
+        undefined,
         userAuthToken,
         '?filter=type:eq:TRANSACTION_CREATED',
       );
@@ -199,9 +203,9 @@ describe('Notification Receiver (e2e)', () => {
         userAuthToken,
       );
 
-      const notification = await entityManager.findOne(NotificationReceiver, {
+      const notification = (await entityManager.findOne(NotificationReceiver, {
         where: { id: notificationForUser[0].id },
-      });
+      }))!;
 
       expect(status).toBe(200);
       expect(body.id).toEqual(notificationForUser[0].id);
@@ -222,9 +226,9 @@ describe('Notification Receiver (e2e)', () => {
         userAuthToken,
       );
 
-      const notification = await entityManager.findOne(NotificationReceiver, {
+      const notification = (await entityManager.findOne(NotificationReceiver, {
         where: { id: notificationForAdmin[0].id },
-      });
+      }))!;
 
       expect(status).toBe(400);
       expect(notification.isRead).toEqual(false);

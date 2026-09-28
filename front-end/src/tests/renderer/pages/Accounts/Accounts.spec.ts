@@ -32,7 +32,7 @@ const mocks = vi.hoisted(() => ({
     },
     autoRenewPeriodInDays: { value: 90 },
     isValid: { value: true },
-    key: { value: null as unknown },
+    key: { value: null } as any,
     getFormattedPendingRewards: vi.fn(() => '1 ℏ'),
     getStakedToString: vi.fn(() => 'Node 3'),
     openAccountInHashscan: vi.fn(),

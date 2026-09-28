@@ -7,7 +7,7 @@ export class NodeUpdateTransactionModel
 
   static readonly TRANSACTION_TYPE = 'NodeUpdateTransaction';
 
-  getNewKeys() {
+  override getNewKeys() {
     if (this.transaction.adminKey != null) {
       return [this.transaction.adminKey];
     }
@@ -15,7 +15,7 @@ export class NodeUpdateTransactionModel
     return [];
   }
 
-  getNodeId(): number | null {
+  override getNodeId(): number | null {
     if (this.transaction.nodeId) {
       return this.transaction.nodeId.toNumber();
     }

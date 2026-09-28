@@ -34,7 +34,7 @@ export const SELECTORS = {
   BUTTON_DETAILS: 'button:has-text("Details")',
   BUTTON_SIGN_GROUP: '[data-testid="button-sign-group"]',
   BUTTON_CONFIRM: 'button:has-text("Confirm")',
-  TOAST_SIGNED_SUCCESS: '.v-toast__item--success .v-toast__text',
+  TOAST_SIGNED_SUCCESS: '.toast-success .toast-message',
 
   // Loading indicators
   SPINNER_LOADING: '.spinner-border',

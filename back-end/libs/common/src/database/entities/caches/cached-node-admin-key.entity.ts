@@ -9,18 +9,18 @@ import { CachedNode } from './';
 @Index(['cachedNodeId', 'publicKey'], { unique: true })
 export class CachedNodeAdminKey {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => CachedNode, (node) => node.keys, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'cachedNodeId' })
-  cachedNode: CachedNode;
+  cachedNode!: CachedNode;
 
   @Column()
-  cachedNodeId: number;
+  cachedNodeId!: number;
 
   @Column({ length: 128 })
   @Index()
-  publicKey: string;
+  publicKey!: string;
 }

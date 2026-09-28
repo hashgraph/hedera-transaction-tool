@@ -4,5 +4,5 @@ export class CreateTransactionObserversDto {
   @IsArray()
   @IsNumber({}, { each: true })
   @ArrayMinSize(1)
-  userIds: number[];
+  userIds!: number[];
 }

@@ -43,7 +43,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createNodeCreateTransaction({
       ...common,
-      ...(data as NodeData),
+      ...(data),
     });
 });
 

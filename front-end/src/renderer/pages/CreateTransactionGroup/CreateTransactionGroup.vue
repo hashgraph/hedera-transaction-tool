@@ -4,13 +4,15 @@ import { computed, onMounted, ref } from 'vue';
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
+import useTransactionGroupStore, {
+  type RenderedGroupItem,
+} from '@renderer/stores/storeTransactionGroup';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
+import { useRouter, useRoute, onBeforeRouteLeave, type _RouterClassic } from 'vue-router';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting';
 
 import { deleteGroup } from '@renderer/services/transactionGroupsService';
 
@@ -22,6 +24,7 @@ import {
   redirectToPreviousTransactionsTab,
 } from '@renderer/utils';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions';
+import { createTransactionId } from '@renderer/utils/sdk';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
@@ -36,7 +39,8 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import ImportCSVController from '@renderer/pages/CreateTransactionGroup/ImportCSVController.vue';
 import useNextTransactionV2, {
   type TransactionNodeId,
-} from '@renderer/stores/storeNextTransactionV2.ts';
+} from '@renderer/stores/storeNextTransactionV2';
+import { MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH } from '@shared/interfaces';
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -47,7 +51,7 @@ const user = useUserStore();
 const useNextTransaction = useNextTransactionV2();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { dateTimeSettingLabel } = useDateTimeSetting();
@@ -68,6 +72,26 @@ const groupEmpty = computed(() => transactionGroup.groupItems.length == 0);
 
 const transactionKey = computed(() => {
   return transactionGroup.getRequiredKeys();
+});
+
+// Reconstructs the same TransactionId the group item's own transaction bytes were built
+// with, purely so click logs can identify *which* transaction was acted on.
+function getGroupItemTransactionId(groupItem: RenderedGroupItem): string {
+  try {
+    return createTransactionId(groupItem.payerAccountId, groupItem.validStart).toString();
+  } catch {
+    return 'unknown';
+  }
+}
+
+// Computed once per groupItems change rather than being recomputed by each of a row's three
+// buttons on every re-render.
+const groupItemTransactionIds = computed(() => {
+  const ids = new Map<string, string>();
+  for (const groupItem of transactionGroup.groupItems) {
+    ids.set(groupItem.rowKey, getGroupItemTransactionId(groupItem));
+  }
+  return ids;
 });
 
 /* Handlers */
@@ -284,6 +308,7 @@ onBeforeRouteLeave(async to => {
           class="btn-icon-only me-4"
           data-testid="button-back"
           @click="handleBack"
+          log-label="back-to-transactions"
         >
           <i class="bi bi-arrow-left"></i>
         </AppButton>
@@ -302,6 +327,7 @@ onBeforeRouteLeave(async to => {
               filled
               placeholder="Enter Description"
               data-testid="input-transaction-group-description"
+              :limit="MAX_TRANSACTION_GROUP_DESCRIPTION_LENGTH"
             />
           </div>
           <div class="mt-4 align-self-end">
@@ -312,10 +338,18 @@ onBeforeRouteLeave(async to => {
               @click="handleDeleteAll"
               class="ms-4 text-danger"
               data-testid="button-delete-all"
+              log-label="delete-all-group-items"
+              :log-metadata="{ itemCount: transactionGroup.groupItems.length }"
             >
               Delete All</AppButton
             >
-            <AppButton color="primary" data-testid="button-save-group" type="submit" class="ms-4"
+            <AppButton
+              color="primary"
+              data-testid="button-save-group"
+              type="submit"
+              class="ms-4"
+              log-label="save-transaction-group"
+              :log-metadata="{ itemCount: transactionGroup.groupItems.length, groupId: route.query.id }"
               >Save Group</AppButton
             >
             <AppButton
@@ -325,6 +359,12 @@ onBeforeRouteLeave(async to => {
               class="ms-4"
               data-testid="button-sign-submit"
               :disabled="transactionGroup.groupItems.length == 0"
+              log-label="submit-transaction-group"
+              :log-metadata="{
+                itemCount: transactionGroup.groupItems.length,
+                sequential: transactionGroup.sequential,
+                organization: isLoggedInOrganization(user.selectedOrganization),
+              }"
             >
               <span class="bi bi-send"></span>
               {{
@@ -418,14 +458,9 @@ onBeforeRouteLeave(async to => {
                 class="text-truncate flex-grow-1 text-center"
                 :data-testid="'span-transaction-timestamp-' + index"
               >
-                <span
-                  v-if="groupItem.transferSummary"
-                  v-html="groupItem.transferSummary"
-                />
+                <span v-if="groupItem.transactionSummary">{{ groupItem.transactionSummary }}</span>
                 <template v-else>{{
-                  groupItem.description !== ''
-                    ? groupItem.description
-                    : groupItem.transactionMemo
+                  groupItem.description !== '' ? groupItem.description : groupItem.transactionMemo
                 }}</template>
               </div>
               <div
@@ -433,11 +468,7 @@ onBeforeRouteLeave(async to => {
                 style="width: 11rem"
                 :data-testid="'span-transaction-valid-start-' + index"
               >
-                <DateTimeString
-                  :date="groupItem.validStart"
-                  compact
-                  wrap
-                />
+                <DateTimeString :date="groupItem.validStart" compact wrap />
               </div>
               <div class="d-flex flex-shrink-0 align-items-center gap-3 ms-3">
                 <AppButton
@@ -451,6 +482,12 @@ onBeforeRouteLeave(async to => {
                   data-bs-placement="top"
                   data-bs-title="Duplicate Transaction"
                   :data-testid="'button-transaction-duplicate-' + index"
+                  log-label="duplicate-group-transaction"
+                  :log-metadata="{
+                    seq: groupItem.seq,
+                    type: groupItem.type,
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
+                  }"
                 >
                   <span class="bi bi-copy" aria-hidden="true"></span>
                 </AppButton>
@@ -460,6 +497,12 @@ onBeforeRouteLeave(async to => {
                   style="min-width: 6rem"
                   :data-testid="'button-transaction-edit-' + index"
                   @click="handleEditGroupItem(index, groupItem.type)"
+                  log-label="edit-group-transaction"
+                  :log-metadata="{
+                    seq: groupItem.seq,
+                    type: groupItem.type,
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
+                  }"
                 >
                   Edit
                 </AppButton>
@@ -474,6 +517,12 @@ onBeforeRouteLeave(async to => {
                   data-bs-placement="top"
                   data-bs-title="Delete Transaction"
                   :data-testid="'button-transaction-delete-' + index"
+                  log-label="delete-group-transaction"
+                  :log-metadata="{
+                    seq: groupItem.seq,
+                    type: groupItem.type,
+                    transactionId: groupItemTransactionIds.get(groupItem.rowKey),
+                  }"
                 >
                   <span class="bi bi-trash" aria-hidden="true"></span>
                 </AppButton>
@@ -515,7 +564,11 @@ onBeforeRouteLeave(async to => {
     >
       <form class="text-center p-4" @submit.prevent="wantToDeleteModalShown = false">
         <div class="text-start">
-          <i class="bi bi-x-lg cursor-pointer" @click="wantToDeleteModalShown = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="wantToDeleteModalShown = false"
+            v-log-click="'dismiss-empty-group-modal'"
+          ></i>
         </div>
         <h2 class="text-title text-semi-bold mt-3">Group Contains No Transactions</h2>
         <p class="text-small text-secondary mt-3">Would you like to delete this group?</p>
@@ -528,10 +581,16 @@ onBeforeRouteLeave(async to => {
             data-testid="button-delete-group-modal"
             type="button"
             @click="handleDelete"
+            log-label="delete-group"
+            :log-metadata="{ groupId: route.query.id }"
           >
             Delete Group
           </AppButton>
-          <AppButton color="primary" data-testid="button-continue-editing" type="submit">
+          <AppButton
+            color="primary"
+            data-testid="button-continue-editing"
+            type="submit"
+          >
             Continue Editing
           </AppButton>
         </div>
@@ -545,7 +604,11 @@ onBeforeRouteLeave(async to => {
     >
       <div class="text-center p-4">
         <div class="text-start">
-          <i class="bi bi-x-lg cursor-pointer" @click="showAreYouSure = false"></i>
+          <i
+            class="bi bi-x-lg cursor-pointer"
+            @click="showAreYouSure = false"
+            v-log-click="'dismiss-delete-all-modal'"
+          ></i>
         </div>
         <h2 class="text-title text-semi-bold mt-3">
           Are you sure you want to delete all transactions?
@@ -553,7 +616,12 @@ onBeforeRouteLeave(async to => {
         <hr class="separator my-5" />
 
         <div class="flex-between-centered gap-4">
-          <AppButton color="borderless" type="button" @click="handleCancelDeleteAll">
+          <AppButton
+            color="borderless"
+            type="button"
+            @click="handleCancelDeleteAll"
+            log-label="cancel-delete-all-group-items"
+          >
             Cancel</AppButton
           >
           <AppButton
@@ -562,6 +630,8 @@ onBeforeRouteLeave(async to => {
             @click="handleConfirmDeleteAll"
             class="text-danger"
             data-testid="button-confirm-delete-all"
+            log-label="confirm-delete-all-group-items"
+            :log-metadata="{ itemCount: transactionGroup.groupItems.length }"
           >
             Confirm</AppButton
           >

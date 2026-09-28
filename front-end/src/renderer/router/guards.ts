@@ -1,4 +1,4 @@
-import type { Router } from 'vue-router';
+import type { _RouterClassic } from 'vue-router';
 
 import { MIGRATE_RECOVERY_PHRASE_HASH } from './constants';
 
@@ -16,9 +16,10 @@ const excludedPreviousPaths = [
   MIGRATE_RECOVERY_PHRASE_HASH,
 ];
 
-export function addGuards(router: Router) {
+export function addGuards(router: _RouterClassic) {
   const user = useUserStore();
-  const setupAccount = useAccountSetupStore()
+  const setupAccount = useAccountSetupStore();
+  const xRouter = router as _RouterClassic & Record<string, string>;
 
   router.beforeEach(async (to, from) => {
     const userIsLoggedIn = user.personal?.isLoggedIn;
@@ -54,19 +55,19 @@ export function addGuards(router: Router) {
       (userIsLoggedInOrganization && to.name === 'organizationLogin') ||
       (userIsLoggedIn && to.name === 'migrate')
     ) {
-      return router.previousPath ? { path: router.previousPath } : { name: 'transactions' };
+      return xRouter.previousPath ? { path: xRouter.previousPath } : { name: 'transactions' };
     }
 
     if (!excludedPreviousPaths.includes(from.name?.toString() || '')) {
-      router.previousPath = from.path;
+      xRouter.previousPath = from.path;
     }
 
     if (from.name === 'transactions') {
-      router.previousTab = from.query.tab as string;
+      xRouter.previousTab = from.query.tab as string;
     }
 
     if (!to.meta.withoutAuth && userIsLoggedIn === false) {
-      return({ name: 'login' });
+      return { name: 'login' };
     }
 
     return true;

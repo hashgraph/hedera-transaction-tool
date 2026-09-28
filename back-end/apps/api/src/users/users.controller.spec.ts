@@ -1,10 +1,12 @@
+import { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, guardMock, VersionCheckResult } from '@app/common';
 import { Client, User, UserStatus } from '@entities';
 
-import { VerifiedUserGuard } from '../guards';
+import { UserThrottlerGuard, VerifiedUserGuard } from '../guards';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -33,6 +35,8 @@ describe('UsersController', () => {
     })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
+      .overrideGuard(UserThrottlerGuard)
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<UsersController>(UsersController);
@@ -48,7 +52,6 @@ describe('UsersController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -59,6 +62,19 @@ describe('UsersController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  it('should deny the public-key owner endpoint to non-verified users', () => {
+    const context = {
+      switchToHttp: () => ({
+        getRequest: () => ({ user: { status: UserStatus.NEW } }),
+      }),
+      getHandler: () => UsersController.prototype.getUserByPublicKey,
+    } as unknown as ExecutionContext;
+
+    const verifiedUserGuard = new VerifiedUserGuard(new Reflector());
+
+    expect(verifiedUserGuard.canActivate(context)).toBe(false);
   });
 
   describe('getUsers', () => {
@@ -132,18 +148,8 @@ describe('UsersController', () => {
       expect(await controller.updateUser(1, user)).toBe(user);
     });
 
-    it('should throw an error if admin value is not supplied', async () => {
-      const invalidUser = { ...user, admin: null };
-
-      try {
-        await controller.updateUser(1, invalidUser);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
-    });
-
     it('should throw an error if the user does not exist', async () => {
-      userService.updateUser.mockResolvedValue(null);
+      userService.updateUser.mockRejectedValue(new Error());
 
       try {
         await controller.updateUser(1, user);
@@ -161,7 +167,7 @@ describe('UsersController', () => {
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.removeUser.mockResolvedValue(null);
+      userService.removeUser.mockRejectedValue(new Error());
 
       try {
         await controller.removeUser(user, 2);
@@ -285,6 +291,8 @@ describe('UsersController', () => {
       })
         .overrideGuard(VerifiedUserGuard)
         .useValue(guardMock())
+        .overrideGuard(UserThrottlerGuard)
+        .useValue(guardMock())
         .compile();
 
       controller = module.get<UsersController>(UsersController);
@@ -297,7 +305,7 @@ describe('UsersController', () => {
 
         userService.getOwnerOfPublicKey.mockResolvedValue(email);
 
-        expect(await controller.getUserByPublicKey(publicKey)).toBe(email);
+        expect(await controller.getUserByPublicKey(user, publicKey)).toBe(email);
       });
 
       it('should return null if no user is found for the given public key', async () => {
@@ -305,7 +313,7 @@ describe('UsersController', () => {
 
         userService.getOwnerOfPublicKey.mockResolvedValue(null);
 
-        expect(await controller.getUserByPublicKey(publicKey)).toBeNull();
+        expect(await controller.getUserByPublicKey(user, publicKey)).toBeNull();
       });
 
       it('should throw an error if the service fails', async () => {
@@ -313,7 +321,9 @@ describe('UsersController', () => {
 
         userService.getOwnerOfPublicKey.mockRejectedValue(new Error('Database error'));
 
-        await expect(controller.getUserByPublicKey(publicKey)).rejects.toThrow('Database error');
+        await expect(controller.getUserByPublicKey(user, publicKey)).rejects.toThrow(
+          'Database error',
+        );
       });
     });
   });

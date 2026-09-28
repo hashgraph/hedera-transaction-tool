@@ -85,7 +85,13 @@ const handleClearWords = (value: boolean) => {
             >Clear</AppButton
           >
           <div class="flex-between-centered gap-4">
-            <AppButton color="secondary" type="button" @click="handleSkip">Skip</AppButton>
+            <AppButton
+              color="secondary"
+              type="button"
+              @click="handleSkip"
+              data-testid="button-skip-import-recovery-phrase"
+              >Skip</AppButton
+            >
             <AppButton color="primary" type="submit" :disabled="!user.recoveryPhrase"
               >Import</AppButton
             >

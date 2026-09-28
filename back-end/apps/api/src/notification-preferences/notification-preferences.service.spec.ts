@@ -148,7 +148,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -161,7 +160,7 @@ describe('NotificationPreferencesService', () => {
         email: dto.email,
         inApp: dto.inApp,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -174,7 +173,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -187,7 +185,7 @@ describe('NotificationPreferencesService', () => {
         email: dto.email,
         inApp: true,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -200,7 +198,6 @@ describe('NotificationPreferencesService', () => {
       repo.findOne.mockResolvedValue(null);
       const newPreferences = { userId: user.id, ...dto } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.updatePreferences(user, dto);
 
@@ -211,9 +208,9 @@ describe('NotificationPreferencesService', () => {
         userId: user.id,
         type: NotificationType.TRANSACTION_CREATED,
         inApp: dto.inApp,
-        email: true,
+        email: false,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
 
@@ -273,7 +270,6 @@ describe('NotificationPreferencesService', () => {
         inApp: true,
       } as NotificationPreferences;
       repo.create.mockReturnValue(newPreferences);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.getPreferenceOrCreate(
         user,
@@ -289,7 +285,7 @@ describe('NotificationPreferencesService', () => {
         email: false,
         inApp: true,
       });
-      expect(repo.insert).toHaveBeenCalledWith(newPreferences);
+      expect(repo.save).toHaveBeenCalledWith(newPreferences);
       expect(result).toEqual(newPreferences);
     });
   });
@@ -326,7 +322,6 @@ describe('NotificationPreferencesService', () => {
         inApp: true,
       };
       repo.create.mockImplementation(((data: NotificationPreferences) => data) as any);
-      repo.insert.mockResolvedValue(undefined);
 
       const result = await service.getPreferencesOrCreate(user);
 
@@ -342,7 +337,7 @@ describe('NotificationPreferencesService', () => {
           email: false,
           inApp: true,
         });
-        expect(repo.insert).toHaveBeenCalledWith({ ...newPreferences, type });
+        expect(repo.save).toHaveBeenCalledWith({ ...newPreferences, type });
       }
 
       expect(result).toEqual(types.map(type => ({ ...newPreferences, type })));

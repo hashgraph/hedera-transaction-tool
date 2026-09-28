@@ -32,9 +32,10 @@ function getFrontendVersionHeader(): string {
     }
     throw new Error(`No "version" field in ${frontendPackageJsonPath}`);
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     throw new Error(
       `Could not determine x-frontend-version header from ${frontendPackageJsonPath}. ` +
-        `Set FRONTEND_VERSION_HEADER env var to override. Cause: ${(error as Error).message}`,
+        `Set FRONTEND_VERSION_HEADER env var to override. Cause: ${errorMessage}`,
     );
   }
 }

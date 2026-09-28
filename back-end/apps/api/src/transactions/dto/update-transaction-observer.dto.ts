@@ -3,5 +3,5 @@ import { Role } from '@entities';
 
 export class UpdateTransactionObserverDto {
   @IsEnum(Role)
-  role: Role;
+  role!: Role;
 }

@@ -10,10 +10,10 @@ import { OtpPayload } from '../../interfaces';
 export class OtpVerifiedStrategy extends PassportStrategy(Strategy, 'otp-verified') {
   constructor(
     private readonly usersService: UsersService,
-    private readonly configService: ConfigService,
+    configService: ConfigService,
   ) {
     super({
-      secretOrKey: configService.get('JWT_SECRET'),
+      secretOrKey: configService.getOrThrow('JWT_SECRET'),
       ignoreExpiration: false,
       jwtFromRequest: ExtractJwt.fromHeader('otp'),
     });

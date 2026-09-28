@@ -326,6 +326,32 @@ describe('versionState', () => {
     expect(leaderResult?.suggestedVersion).toBe('2.0.0');
   });
 
+  test('organizationVersionStatus produces no status for cache-only entries (no timestamp)', async () => {
+    // Simulate data rehydrated from localStorage with no fresh check this session.
+    // The cache should feed display components but must not drive the update prompt.
+    localStorage.setItem(
+      LOCAL_STORAGE_ORG_VERSION_DATA,
+      JSON.stringify({
+        'https://org-a': {
+          latestSupportedVersion: '2.0.0',
+          minimumSupportedVersion: '0.9.0',
+          updateUrl: 'https://download/v2',
+        },
+      }),
+    );
+
+    const mod = await import('@renderer/stores/versionState');
+
+    // Data is present for display purposes.
+    expect(mod.organizationVersionData.value['https://org-a']).toBeDefined();
+    expect(mod.organizationLatestVersions.value['https://org-a']).toBe('2.0.0');
+
+    // No timestamp recorded → no status → prompt stays hidden.
+    expect(mod.organizationUpdateTimestamps.value['https://org-a']).toBeUndefined();
+    expect(mod.organizationVersionStatus.value['https://org-a']).toBeUndefined();
+    expect(mod.versionStatus.value).toBeNull();
+  });
+
   test('initialVersionCheckState starts idle', async () => {
     const mod = await import('@renderer/stores/versionState');
     expect(mod.initialVersionCheckState.value).toBe('idle');

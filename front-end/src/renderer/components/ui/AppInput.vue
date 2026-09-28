@@ -9,6 +9,7 @@ export type Props = {
   size?: 'small' | 'large' | undefined;
   autoTrim?: boolean;
   htmlTooltip?: boolean;
+  limit?: number;
 };
 
 const props = withDefaults(defineProps<Props>(), {
@@ -65,5 +66,6 @@ defineExpose({
     @input="handleInput"
     @blur="handleBlur"
     :class="[sizeClass, fillClass]"
+    :maxlength="limit || undefined"
   />
 </template>

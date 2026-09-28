@@ -81,7 +81,13 @@ const handleBlur = () => {
 <template>
   <div class="p-5">
     <div class="d-flex align-items-center">
-      <AppButton type="button" color="secondary" class="btn-icon-only me-4" @click="$router.back()">
+      <AppButton
+        type="button"
+        color="secondary"
+        class="btn-icon-only me-4"
+        @click="$router.back()"
+        log-label="back-to-accounts"
+      >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
@@ -117,6 +123,8 @@ const handleBlur = () => {
         type="submit"
         class="mt-5"
         :disabled="!accountData.isValid.value"
+        log-label="link-existing-account"
+        :log-metadata="{ accountId: accountData.accountId.value }"
         >Link Account</AppButton
       >
     </form>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   applyNanoOffset,
@@ -18,8 +18,6 @@ import type { CreateTransactionFunc } from '.';
 
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
-  FileAppendTransaction,
-  FileUpdateTransaction,
   Hbar,
   KeyList,
   NodeCreateTransaction,
@@ -147,13 +145,13 @@ const hasTransactionChanged = computed(() => {
     } else if (
       hasStartTimestampChanged(
         initialTransaction.value as Transaction,
-        transaction.value as Transaction,
+        transaction.value,
         now,
       )
     ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
-      // whether tx data match, excluding validStart and startTimestamp
+      // whether tx data match, excluding validStart, startTimestamp and expirationTime
       result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
     }
   } else {
@@ -176,8 +174,10 @@ const isNodeCreationPrivRequired = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction) => {
+const handleDraftLoaded = async (transaction: Transaction, loadedDescription: string) => {
   initialTransaction.value = transaction;
+  description.value = loadedDescription;
+  initialDescription.value = loadedDescription;
 
   const txData = getTransactionCommonData(transaction);
   payerData.accountId.value = txData.payerId;
@@ -327,13 +327,6 @@ const saveDraft = async (): Promise<void> => {
 
 const getTransactionBytes = () => {
   const transaction = createTransaction({ ...data } as TransactionCommonData);
-  if (
-    transaction instanceof FileUpdateTransaction ||
-    transaction instanceof FileAppendTransaction
-  ) {
-    //@ts-expect-error - contents should be null
-    transaction.setContents(null);
-  }
   return transaction.toBytes();
 };
 

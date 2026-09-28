@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { type ITransactionNode, TransactionNodeCollection } from '../../../../../../shared/src/ITransactionNode.ts';
+import { type ITransactionNode, TransactionNodeCollection } from '@shared/interfaces/ITransactionNode.ts';
 
 import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
 

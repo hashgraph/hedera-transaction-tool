@@ -8,6 +8,7 @@ import {
 import { generateTransactionCancelledContent } from '@app/common/templates/transaction-cancelled';
 import { generateTransactionExecutedContent } from '@app/common/templates/transaction-executed';
 import { generateTransactionExpiredContent } from '@app/common/templates/transaction-expired';
+import { generateTransactionReadyForReviewContent } from '@app/common/templates/transaction-ready-for-review';
 
 export * from './layout';
 export * from './remind-signers';
@@ -15,6 +16,7 @@ export * from './reset-password';
 export * from './transaction-cancelled';
 export * from './transaction-executed';
 export * from './transaction-ready-for-execution';
+export * from './transaction-ready-for-review';
 export * from './transaction-waiting-for-signatures';
 export * from './user-registered';
 
@@ -34,6 +36,8 @@ export const generateEmailContent = (type: string | NotificationType, ...notific
       return generateNotifyUserRegisteredContent(...notifications);
     case NotificationType.TRANSACTION_EXPIRED:
       return generateTransactionExpiredContent(...notifications);
+    case NotificationType.TRANSACTION_READY_FOR_REVIEW:
+      return generateTransactionReadyForReviewContent(...notifications);
     default:
       throw new Error(`Unknown email notification type: ${type}`);
   }

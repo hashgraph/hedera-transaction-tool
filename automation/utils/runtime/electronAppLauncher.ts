@@ -92,6 +92,9 @@ async function launchNewHederaTransactionTool(): Promise<TransactionToolApp> {
     // Optional CI stability flags (safe to keep; they reduce flakiness on Linux runners)
     '--no-sandbox',
     '--disable-dev-shm-usage',
+    // Some tests (eg organizationGroupTests.test.ts) parse formatted dates
+    // => they work in en-US locale only
+    '--lang=en-US',
   ];
 
   if (isolationContext?.userDataDir) {

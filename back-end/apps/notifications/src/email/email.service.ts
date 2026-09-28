@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import * as nodemailer from 'nodemailer';
@@ -6,17 +6,17 @@ import { SendMailOptions } from 'nodemailer';
 
 import {
   EmailDto,
+  findEmailSubject,
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
-  NotificationTypeEmailSubjects,
 } from '@app/common';
 import { DebouncedNotificationBatcher } from '../utils';
-import { Notification } from '@entities';
+import { Notification, NotificationType } from '@entities';
 import { EmailNotificationDto } from '../dtos';
 
 @Injectable()
-export class EmailService {
+export class EmailService implements OnModuleDestroy {
   private readonly sender: string;
   private readonly transporter = nodemailer.createTransport({
     host: this.configService.getOrThrow<string>('EMAIL_API_HOST'),
@@ -24,17 +24,17 @@ export class EmailService {
     secure: this.configService.getOrThrow<boolean>('EMAIL_API_SECURE'),
     ...this.getAuthConfig()
   });
-  private batcher: DebouncedNotificationBatcher;
+  private batcher: DebouncedNotificationBatcher<Notification>;
 
   constructor(private readonly configService: ConfigService) {
     this.sender = configService.getOrThrow('SENDER_EMAIL');
 
     this.batcher = new DebouncedNotificationBatcher(
       this.processMessages.bind(this),
-      2000,
+      this.configService.get<number>('EMAIL_DEBOUNCE_DELAY_MS')!,
       200,
-      10000,
-      this.configService.get('REDIS_URL'),
+      this.configService.get<number>('EMAIL_DEBOUNCE_MAX_FLUSH_MS')!,
+      this.configService.get('REDIS_URL')!,
       'emails',
     );
   }
@@ -43,6 +43,10 @@ export class EmailService {
     const user = this.configService.get<string>('EMAIL_API_USERNAME');
     const pass = this.configService.get<string>('EMAIL_API_PASSWORD');
     return user && pass ? { auth: { user, pass } } : {};
+  }
+
+  async onModuleDestroy() {
+    await this.batcher.flushAll();
   }
 
   async processUserInviteNotifications(events: EmailDto[]) {
@@ -66,7 +70,7 @@ export class EmailService {
   private async sendTransactionalEmails(
     events: EmailDto[],
     subject: string,
-    generateMessage: (payload: any) => string,
+    generateMessage: (payload: Record<string, unknown>) => string,
     emailType: string, // For logging
   ) {
     if (events.length === 0) return;
@@ -117,16 +121,21 @@ export class EmailService {
     maxDelayMs = 60000,
     useJitter = true,
   ) {
+    let lastErr: unknown = null;
     for (let attempt = 1; attempt <= attempts; attempt++) {
       try {
         const info = await this.transporter.sendMail(mailOptions);
         console.log(`Message sent: ${info.messageId}`);
         return info;
-      } catch (err: any) {
+      } catch (err: unknown) {
         const last = attempt === attempts;
-        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, err?.code ?? err);
+        const arg = hasCode(err) ? err.code : String(err)
+        console.error(`sendMail attempt ${attempt} failed${last ? ' (final)' : ''}:`, arg);
 
-        if (last) throw err;
+        if (last) {
+          lastErr = err;
+          continue;
+        }
 
         // exponential backoff: baseDelayMs * 2^(attempt-1), capped by maxDelayMs
         let delay = Math.min(baseDelayMs * Math.pow(2, attempt - 1), maxDelayMs);
@@ -141,14 +150,16 @@ export class EmailService {
         await new Promise((res) => setTimeout(res, delay));
       }
     }
+
+    throw lastErr;
   }
 
-  private async processMessages(groupKey: string, notifications: Notification[]) {
+  private async processMessages(groupKey: string | number | null, notifications: Notification[]) {
     const groupedNotifications = notifications.reduce((map, msg) => {
       if (!map.has(msg.type)) map.set(msg.type, []);
       map.get(msg.type)!.push(msg);
       return map;
-    }, new Map<string, Notification[]>());
+    }, new Map<NotificationType, Notification[]>());
 
     console.log(`Processing email batch for ${groupKey} with ${notifications.length} notifications in ${groupedNotifications.size} groups.`);
 
@@ -157,10 +168,10 @@ export class EmailService {
 
       const mailOptions: SendMailOptions = {
         from: `"Transaction Tool" <${this.sender}>`,
-        to: groupKey,
-        subject: NotificationTypeEmailSubjects[type],
-        text: htmlContent.replace(/<\/?[^>]+(>|$)/g, ''),
-        html: htmlContent,
+        to: groupKey?.toString(),
+        subject: findEmailSubject(type),
+        text: htmlContent!.replace(/<\/?[^>]+(>|$)/g, ''),
+        html: htmlContent!,
       };
 
       try {
@@ -171,4 +182,10 @@ export class EmailService {
       }
     }
   }
+}
+
+function hasCode(value: unknown): value is { code: unknown } {
+  return (
+    typeof value === 'object' && value !== null && 'code' in value
+  );
 }

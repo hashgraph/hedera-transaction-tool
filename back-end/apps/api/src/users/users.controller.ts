@@ -4,6 +4,7 @@ import {
   Controller,
   Delete,
   Get,
+  Logger,
   Param,
   ParseIntPipe,
   Patch,
@@ -16,7 +17,13 @@ import { ErrorCodes, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
+import {
+  AdminGuard,
+  JwtAuthGuard,
+  JwtBlackListAuthGuard,
+  UserThrottlerGuard,
+  VerifiedUserGuard,
+} from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
 import {
@@ -33,6 +40,8 @@ import { UsersService } from './users.service';
 @Controller('users')
 @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
 export class UsersController {
+  private readonly logger = new Logger(UsersController.name);
+
   constructor(private readonly usersService: UsersService) {}
 
   @ApiOperation({
@@ -86,10 +95,19 @@ export class UsersController {
     status: 200,
     type: String,
   })
-  @AllowNonVerifiedUser()
+  @UseGuards(UserThrottlerGuard)
   @Get('/public-owner/:publicKey')
-  getUserByPublicKey(@Param('publicKey') publicKey: string): Promise<string | null> {
-    return this.usersService.getOwnerOfPublicKey(publicKey);
+  async getUserByPublicKey(
+    @GetUser() requestingUser: User,
+    @Param('publicKey') publicKey: string,
+  ): Promise<string | null> {
+    const ownerEmail = await this.usersService.getOwnerOfPublicKey(publicKey);
+
+    this.logger.log(
+      `Public key owner lookup: userId=${requestingUser.id} publicKey=${publicKey} found=${ownerEmail !== null}`,
+    );
+
+    return ownerEmail;
   }
 
   @ApiOperation({

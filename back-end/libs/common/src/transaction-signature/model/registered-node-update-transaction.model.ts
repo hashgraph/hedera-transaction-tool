@@ -5,7 +5,7 @@ import { TransactionBaseModel } from './transaction-base.model';
 export class RegisteredNodeUpdateTransactionModel extends TransactionBaseModel<RegisteredNodeUpdateTransaction> {
   static readonly TRANSACTION_TYPE = 'RegisteredNodeUpdateTransaction';
 
-  getNewKeys() {
+  override getNewKeys() {
     if (this.transaction.adminKey != null) {
       return [this.transaction.adminKey];
     }
@@ -13,7 +13,7 @@ export class RegisteredNodeUpdateTransactionModel extends TransactionBaseModel<R
     return [];
   }
 
-  getRegisteredNodeId(): number | null {
+  override getRegisteredNodeId(): number | null {
     if (this.transaction.registeredNodeId != null) {
       return this.transaction.registeredNodeId.toNumber();
     }

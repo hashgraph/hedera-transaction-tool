@@ -4,7 +4,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref } from 'vue';
 import type { ITransaction, TransactionFile } from '@shared/interfaces';
 import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
-import { flattenNodeCollection } from '@shared/utils/transactionFile.ts';
+import { flattenNodeCollection } from '@renderer/utils/transactionFileSigning.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import {
@@ -18,7 +18,7 @@ import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../shared/src/ITransactionNode.ts';
+} from '@shared/interfaces/ITransactionNode.ts';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';

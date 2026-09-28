@@ -27,10 +27,8 @@ test.describe('Organization Contact List member view tests @organization-basic',
     await suite.organizationPage.clickOnContactListButton();
     await suite.contactListPage.clickOnAccountInContactListByEmail(suite.adminUser.email);
     await suite.contactListPage.clickOnChangeNicknameButton();
+    // fillInContactNickname tabs away after typing, which triggers the blur handler.
     await suite.contactListPage.fillInContactNickname(newNickname);
-    await suite.contactListPage.clickOnAccountInContactListByEmail(suite.adminUser.email);
-    // The contact row testid encodes the nickname, so visibility of the renamed
-    // row is sufficient — wait long enough to absorb the backend + WS round-trip.
     await suite.contactListPage.waitForContactNicknameVisible(newNickname);
   });
 });

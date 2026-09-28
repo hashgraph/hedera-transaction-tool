@@ -29,5 +29,5 @@ export function createPrismaClient() {
   });
   // Type assertion needed because generated Prisma 7 client types
   // don't properly expose the adapter option from the runtime
-  return new PrismaClient({ adapter } as ConstructorParameters<typeof PrismaClient>[0]);
+  return new PrismaClient({ adapter });
 }

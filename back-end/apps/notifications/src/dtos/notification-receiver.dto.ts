@@ -4,12 +4,12 @@ import { NotificationDto } from './notification.dto';
 
 export class NotificationReceiverDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
   @Type(() => NotificationDto)
-  notification: NotificationDto;
+  notification!: NotificationDto;
 
   @Expose()
-  notificationId: number;
+  notificationId!: number;
 }

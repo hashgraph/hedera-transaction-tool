@@ -11,11 +11,11 @@ jest.mock('node:crypto', () => ({
 }));
 
 class TestCacheEntity {
-  id: number;
-  key: string;
-  value: string;
-  refreshToken: string | null;
-  updatedAt: Date;
+  id!: number;
+  key!: string;
+  value!: string;
+  refreshToken!: string | null;
+  updatedAt!: Date;
 }
 
 describe('CacheHelper', () => {
@@ -380,7 +380,7 @@ describe('CacheHelper', () => {
         entity,
         { id: 10 },
         'token',
-        { foo: 'bar' },
+        {},
       );
 
       expect(result).toBe(10);
@@ -396,7 +396,7 @@ describe('CacheHelper', () => {
         entity,
         { id: 10 },
         'token',
-        { foo: 'bar' },
+        {},
       );
 
       expect(result).toBeNull();

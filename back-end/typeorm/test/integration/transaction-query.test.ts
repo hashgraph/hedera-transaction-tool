@@ -1,4 +1,4 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DeepPartial } from 'typeorm';
 import {
   CachedAccount,
   CachedAccountKey,
@@ -116,7 +116,11 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
 
   // --- Scenario 1, 7, 8: Bob as signer, WAITING_FOR_SIGNATURES ---
   describe('bob as signer (WAITING_FOR_SIGNATURES)', () => {
-    let result: any[];
+    let result: {
+      transaction_id: number | null;
+      group_id: number | null;
+      group_collected_count: number | null;
+    }[];
 
     beforeAll(async () => {
       const query = getTransactionNodesQuery(sqlBuilder, waitingFilter, bob, signerRole);
@@ -142,7 +146,7 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
 
     it('(scenario 7) group row should have group_collected_count = 1 (only tx8, not tx9)', () => {
       const groupRow = result.find(r => r.group_id === group1.id);
-      expect(Number(groupRow.group_collected_count)).toBe(1);
+      expect(Number(groupRow?.group_collected_count)).toBe(1);
     });
 
     it('(scenario 8) tx6 is returned via publicKeys path bypassing receiver filter', () => {
@@ -154,7 +158,10 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
   // --- Scenario 2: Carol as signer, WAITING_FOR_SIGNATURES ---
   it('should return 1 result for carol as signer (receiver-only)', async () => {
     const query = getTransactionNodesQuery(sqlBuilder, waitingFilter, carol, signerRole);
-    const result = await dataSource.query(query.text, query.values);
+    const result = await dataSource.query<{ transaction_id: number | null }[]>(
+      query.text,
+      query.values,
+    );
 
     const txIds = result.filter(r => r.transaction_id !== null).map(r => r.transaction_id);
 
@@ -181,7 +188,9 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
   // --- Scenario 5: Alice as creator, WAITING_FOR_SIGNATURES ---
   it('should return all WAITING txs for alice as creator', async () => {
     const query = getTransactionNodesQuery(sqlBuilder, waitingFilter, alice, { creator: true });
-    const result = await dataSource.query(query.text, query.values);
+    const result = await dataSource.query<
+      { transaction_id: number | null; group_id: number | null }[]
+    >(query.text, query.values);
 
     // alice created tx1, tx2, tx4, tx5, tx6, and grouped tx8+tx9 (1 group row)
     // tx3 is EXECUTED so excluded by status filter
@@ -205,7 +214,9 @@ describe('getTransactionNodesQuery - isReceiver integration', () => {
       signer: true,
       onlyUnsigned: true,
     });
-    const result = await dataSource.query(query.text, query.values);
+    const result = await dataSource.query<
+      { transaction_id: number | null; group_id: number | null }[]
+    >(query.text, query.values);
 
     const txIds = result.filter(r => r.transaction_id !== null).map(r => r.transaction_id);
     const groupIds = result.filter(r => r.group_id !== null).map(r => r.group_id);
@@ -238,7 +249,6 @@ async function createUser(
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -250,12 +260,11 @@ async function createUser(
   const key = ds.getRepository(UserKey).create({
     userId: user.id,
     publicKey,
-    mnemonicHash: null,
-    index: null,
+    mnemonicHash: undefined,
+    index: undefined,
     createdTransactions: [],
-    approvedTransactions: [],
     signedTransactions: [],
-  });
+  } as DeepPartial<UserKey>);
   await ds.getRepository(UserKey).save(key);
 
   user.keys = [key];
@@ -283,25 +292,24 @@ async function createTx(
     transactionBytes: Buffer.from('tx-bytes'),
     unsignedTransactionBytes: Buffer.from('unsigned-tx-bytes'),
     status,
-    statusCode: null,
+    statusCode: undefined,
     creatorKeyId: creator.keys[0].id,
     signature: Buffer.from('signature'),
     validStart: new Date(seconds * 1000),
     mirrorNetwork: 'mainnet',
     isManual: false,
-    cutoffAt: null,
+    cutoffAt: undefined,
     createdAt: new Date(seconds * 1000),
-    executedAt: null,
+    executedAt: undefined,
     updatedAt: new Date(seconds * 1000),
     deletedAt: null,
     comments: [],
     signers: [],
-    approvers: [],
     observers: [],
-    groupItem: null,
+    groupItem: undefined,
     transactionCachedAccounts: [],
     transactionCachedNodes: [],
-  });
+  } as DeepPartial<Transaction>);
   await ds.getRepository(Transaction).save(tx);
   return tx;
 }

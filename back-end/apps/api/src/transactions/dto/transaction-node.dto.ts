@@ -9,16 +9,16 @@ export class TransactionNodeDto implements ITransactionNode {
   groupId?: number;
 
   @Expose()
-  description: string;
+  description!: string;
 
   @Expose()
-  createdAt: string;
+  createdAt!: string;
 
   @Expose()
-  validStart: string;
+  validStart!: string;
 
   @Expose()
-  updatedAt: string;
+  updatedAt!: string;
 
   @Expose()
   executedAt?: string;

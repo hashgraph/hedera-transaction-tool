@@ -13,24 +13,24 @@ import { User } from './user.entity';
 @Entity()
 export class Client {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => User, user => user.clients)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
   @Index()
-  userId: number;
+  userId!: number;
 
   @Column()
-  version: string;
+  version!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   // Computed at runtime, not persisted
   updateAvailable?: boolean;

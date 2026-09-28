@@ -1,3 +1,6 @@
+import { LogMessage } from 'electron-log';
+import { Mock, vi } from 'vitest';
+
 vi.unmock('@main/modules/logger');
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -91,7 +94,7 @@ describe('logger', () => {
     expect(getLogFilePath()).toBe('/mock-user-data/logs/app.log');
     expect(rootLogger.transports.file.fileName).toBe('app.log');
     expect(rootLogger.transports.file.maxSize).toBe(5 * 1024 * 1024);
-    expect(rootLogger.transports.file.resolvePathFn()).toBe('/mock-user-data/logs/app.log');
+    expect((rootLogger.transports.file.resolvePathFn as any)()).toBe('/mock-user-data/logs/app.log');
     expect(rootLogger.transports.console.level).toBeTruthy();
     expect(rootLogger.transports.ipc.level).toBe(false);
     expect(rootLogger.transports.remote.level).toBe(false);
@@ -124,9 +127,9 @@ describe('logger', () => {
       variables: {
         processType: 'renderer',
       },
-    });
+    }) as LogMessage;
 
-    const formatted = rootLogger.transports.file.format({
+    const formatted = (rootLogger.transports.file.format as any)({
       data: sanitized.data,
       level: sanitized.level,
       logger: rootLogger,
@@ -199,9 +202,9 @@ describe('logger', () => {
     initLogger();
 
     const fsMock = (await import('fs')).default;
-    fsMock.existsSync.mockReturnValue(true);
+    (fsMock.existsSync as Mock).mockReturnValue(true);
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(fsMock.rmSync).toHaveBeenCalledTimes(5);
     expect(fsMock.renameSync).toHaveBeenCalledTimes(5);
@@ -213,11 +216,11 @@ describe('logger', () => {
     const fsMock = (await import('fs')).default;
 
     // Only current file exists
-    fsMock.existsSync.mockImplementation(
+    (fsMock.existsSync as Mock).mockImplementation(
       (p: string) => p === '/mock-user-data/logs/app.log'
     );
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(fsMock.renameSync).toHaveBeenCalledTimes(1);
 
@@ -230,12 +233,12 @@ describe('logger', () => {
     const fsMock = (await import('fs')).default;
     const electronLogError = electronLog.default.error;
 
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.renameSync.mockImplementation(() => {
+    (fsMock.existsSync as Mock).mockReturnValue(true);
+    (fsMock.renameSync as Mock).mockImplementation(() => {
       throw new Error('rename failed');
     });
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(electronLogError).toHaveBeenCalled();
   });
@@ -246,12 +249,12 @@ describe('logger', () => {
     const fsMock = (await import('fs')).default;
     const electronLogError = (await import('electron-log')).default.error;
 
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.rmSync.mockImplementation(() => {
+    (fsMock.existsSync as Mock).mockReturnValue(true);
+    (fsMock.rmSync as Mock).mockImplementation(() => {
       throw new Error('rm failed');
     });
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(electronLogError).toHaveBeenCalled();
   });
@@ -261,17 +264,17 @@ describe('logger', () => {
 
     const fsMock = (await import('fs')).default;
 
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.renameSync.mockImplementation(() => {
+    (fsMock.existsSync as Mock).mockReturnValue(true);
+    (fsMock.renameSync as Mock).mockImplementation(() => {
       throw new Error('rename failed');
     });
 
-    rootLogger.processMessage.mockImplementationOnce(() => {
+    (rootLogger.processMessage as Mock).mockImplementationOnce(() => {
       throw new Error('logging failed');
     });
 
     expect(() => {
-      rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+      (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
     }).not.toThrow();
   });
 
@@ -281,12 +284,12 @@ describe('logger', () => {
     const fsMock = (await import('fs')).default;
     const electronLogError = (await import('electron-log')).default.error;
 
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.renameSync.mockImplementation(() => {
+    (fsMock.existsSync as Mock).mockReturnValue(true);
+    (fsMock.renameSync as Mock).mockImplementation(() => {
       throw new Error('rename failed');
     });
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(electronLogError).toHaveBeenCalledWith(
       'Failed to rotate log file',
@@ -303,11 +306,11 @@ describe('logger', () => {
 
     const fsMock = (await import('fs')).default;
 
-    fsMock.existsSync.mockImplementation((p: string) => {
+    (fsMock.existsSync as Mock).mockImplementation((p: string) => {
       return p.includes('app.log') || p.includes('app.1.log');
     });
 
-    rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+    (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
 
     expect(fsMock.renameSync).toHaveBeenCalled();
   });
@@ -318,17 +321,17 @@ describe('logger', () => {
     const fsMock = (await import('fs')).default;
     const electronLogError = (await import('electron-log')).default.error;
 
-    fsMock.existsSync.mockReturnValue(true);
-    fsMock.renameSync.mockImplementation(() => {
+    (fsMock.existsSync as Mock).mockReturnValue(true);
+    (fsMock.renameSync as Mock).mockImplementation(() => {
       throw new Error('rename failed');
     });
 
-    electronLogError.mockImplementationOnce(() => {
+    (electronLogError as Mock).mockImplementationOnce(() => {
       throw new Error('logging failed');
     });
 
     expect(() => {
-      rootLogger.transports.file.archiveLogFn('/mock-user-data/logs/app.log');
+      (rootLogger.transports.file.archiveLogFn as any)('/mock-user-data/logs/app.log');
     }).not.toThrow();
   });
 
@@ -371,7 +374,7 @@ describe('logger', () => {
 
   test('patchMainConsole routes console.log through processMessage', () => {
     initLogger();
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     console.log('test from console');
 
@@ -384,7 +387,7 @@ describe('logger', () => {
 
   test('patchMainConsole routes console.info, warn, error, debug through processMessage', () => {
     initLogger();
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     console.info('info msg');
     console.warn('warn msg');
@@ -412,9 +415,9 @@ describe('logger', () => {
 
   test('startMainErrorCapture onError callback writes unhandled error log', () => {
     initLogger();
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
-    const onError = rootLogger.errorHandler.startCatching.mock.calls[0][0].onError;
+    const onError = (rootLogger.errorHandler.startCatching as Mock).mock.calls[0][0].onError;
     const result = onError({
       error: new Error('boom'),
       errorName: 'TestError',
@@ -433,9 +436,9 @@ describe('logger', () => {
 
   test('startMainErrorCapture onError falls back to Unhandled error when errorName is empty', () => {
     initLogger();
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
-    const onError = rootLogger.errorHandler.startCatching.mock.calls[0][0].onError;
+    const onError = (rootLogger.errorHandler.startCatching as Mock).mock.calls[0][0].onError;
     onError({ error: new Error('boom'), errorName: '', processType: 'browser' });
 
     expect(rootLogger.processMessage).toHaveBeenCalledWith(
@@ -448,7 +451,7 @@ describe('logger', () => {
   test('serializeLogEntry handles missing date', () => {
     initLogger();
 
-    const result = rootLogger.transports.file.format({
+    const result = (rootLogger.transports.file.format as any)({
       message: { data: ['hello'], level: 'info', logId: 'test', variables: {} },
     });
 
@@ -461,7 +464,7 @@ describe('logger', () => {
   test('serializeLogEntry falls back on invalid level', () => {
     initLogger();
 
-    const result = rootLogger.transports.file.format({
+    const result = (rootLogger.transports.file.format as any)({
       message: { data: ['msg'], level: 'invalid-level', logId: 'test', variables: {}, date: new Date('2026-01-01T00:00:00.000Z') },
     });
 
@@ -472,7 +475,7 @@ describe('logger', () => {
   test('serializeLogEntry falls back to Structured log for non-string text', () => {
     initLogger();
 
-    const result = rootLogger.transports.file.format({
+    const result = (rootLogger.transports.file.format as any)({
       message: { data: [{ complex: true }], level: 'info', logId: 'test', variables: {}, date: new Date('2026-01-01T00:00:00.000Z') },
     });
 
@@ -483,7 +486,7 @@ describe('logger', () => {
   test('serializeLogEntry omits metadata key when metadata is absent', () => {
     initLogger();
 
-    const result = rootLogger.transports.file.format({
+    const result = (rootLogger.transports.file.format as any)({
       message: { data: ['just a message'], level: 'info', logId: 'test', variables: {}, date: new Date('2026-01-01T00:00:00.000Z') },
     });
 
@@ -494,7 +497,7 @@ describe('logger', () => {
   test('console format uses logId as component name', () => {
     initLogger();
 
-    const result = rootLogger.transports.console.format({
+    const result = (rootLogger.transports.console.format as any)({
       message: { data: ['text'], logId: 'main.ipc', variables: {} },
     });
 
@@ -504,7 +507,7 @@ describe('logger', () => {
   test('console format falls back to renderer.unknown for empty logId with renderer processType', () => {
     initLogger();
 
-    const result = rootLogger.transports.console.format({
+    const result = (rootLogger.transports.console.format as any)({
       message: { data: ['text'], logId: '', variables: { processType: 'renderer' } },
     });
 
@@ -514,7 +517,7 @@ describe('logger', () => {
   test('console format falls back to main.unknown for empty logId without processType', () => {
     initLogger();
 
-    const result = rootLogger.transports.console.format({
+    const result = (rootLogger.transports.console.format as any)({
       message: { data: ['text'], logId: '', variables: {} },
     });
 
@@ -524,7 +527,7 @@ describe('logger', () => {
   test('console format includes metadata when present', () => {
     initLogger();
 
-    const result = rootLogger.transports.console.format({
+    const result = (rootLogger.transports.console.format as any)({
       message: { data: ['text', { key: 'value' }], logId: 'main.test', variables: {} },
     });
 
@@ -534,7 +537,7 @@ describe('logger', () => {
 
   test('logRendererMessage swallows errors from malformed input', () => {
     // Force processMessage to throw to exercise the catch block
-    rootLogger.processMessage.mockImplementationOnce(() => {
+    (rootLogger.processMessage as Mock).mockImplementationOnce(() => {
       throw new Error('unexpected');
     });
 
@@ -542,7 +545,7 @@ describe('logger', () => {
   });
 
   test('logRendererMessage uses renderer.unknown for empty component', () => {
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     logRendererMessage('info', '', 'test message');
 
@@ -554,7 +557,7 @@ describe('logger', () => {
   });
 
   test('logRendererMessage truncates component longer than 100 chars', () => {
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     const longComponent = 'a'.repeat(150);
     logRendererMessage('info', longComponent, 'test message');
@@ -565,23 +568,23 @@ describe('logger', () => {
       }),
     );
 
-    const actualLogId = rootLogger.processMessage.mock.calls[0][0].logId;
+    const actualLogId = (rootLogger.processMessage as Mock).mock.calls[0][0].logId;
     // 'renderer.' prefix is 9 chars, component is truncated to 100 chars
     expect(actualLogId.length).toBeLessThanOrEqual(9 + 100);
   });
 
   test('logRendererMessage truncates message longer than 10000 chars', () => {
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     const longMessage = 'b'.repeat(15_000);
     logRendererMessage('info', 'test', longMessage);
 
-    const actualData = rootLogger.processMessage.mock.calls[0][0].data;
+    const actualData = (rootLogger.processMessage as Mock).mock.calls[0][0].data;
     expect(actualData[0].length).toBeLessThanOrEqual(10_000);
   });
 
   test('logRendererMessage does not double prefix renderer.* component', () => {
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     logRendererMessage('info', 'renderer.mycomp', 'test message');
 
@@ -593,11 +596,11 @@ describe('logger', () => {
   });
 
   test('logRendererMessage data array has only message when metadata is undefined', () => {
-    rootLogger.processMessage.mockClear();
+    (rootLogger.processMessage as Mock).mockClear();
 
     logRendererMessage('info', 'comp', 'hello');
 
-    const actualData = rootLogger.processMessage.mock.calls[0][0].data;
+    const actualData = (rootLogger.processMessage as Mock).mock.calls[0][0].data;
     expect(actualData).toEqual(['hello']);
   });
 
@@ -618,3 +621,5 @@ describe('logger', () => {
     }
   });
 });
+
+export {} // Enables to use await

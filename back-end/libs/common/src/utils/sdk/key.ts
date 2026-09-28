@@ -31,6 +31,9 @@ export function flattenKeyList(keyList: Key): PublicKey[] {
 export const hasValidSignatureKey = (publicKeys: string[], key: Key) => {
   if (key instanceof KeyList) {
     const keys = key.toArray();
+
+    if (keys.length === 0) return false;
+
     let currentThreshold = 0;
 
     keys.forEach(key => {
@@ -60,7 +63,7 @@ export const decodeProtobufKey = (protobuffEncodedKey: string) => {
   return deserializeKey(buffer);
 };
 
-export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key) {
+export function isPublicKeyInKeyList(publicKey: PublicKey | string, key: Key): boolean {
   const keyIsKeyList = key instanceof KeyList;
   const keyIsPublicKey = key instanceof PublicKey;
 
@@ -92,8 +95,8 @@ export function computeShortenedPublicKeyList(
   publicKeys: Set<string>,
   keyList: KeyList,
 ): PublicKey[] | null {
-  const result = [];
-  const secondary = [];
+  const result: PublicKey[] = [];
+  const secondary: PublicKey[][] = [];
   const threshold = keyList.threshold ? keyList.threshold : keyList.toArray().length;
 
   // Iterates through the key list, prioritizing PublicKeys over KeyLists

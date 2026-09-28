@@ -33,7 +33,7 @@ const findNickname = (accountId: AccountId) => {
 <template>
   <div class="col-6">
     <div class="mt-3">
-      <template v-for="debit in tokenTransfers" :key="debit.accountId">
+      <template v-for="debit in tokenTransfers" :key="debit.accountId.toString()">
         <div v-if="debit.amount.isNegative()" class="mt-3">
           <div class="row align-items-center px-3">
             <div
@@ -69,7 +69,7 @@ const findNickname = (accountId: AccountId) => {
   </div>
   <div class="col-6">
     <div class="mt-3">
-      <template v-for="credit in tokenTransfers" :key="credit.accountId">
+      <template v-for="credit in tokenTransfers" :key="credit.accountId.toString()">
         <div v-if="credit.amount.isPositive()" class="mt-3">
           <div class="row align-items-center px-3">
             <div

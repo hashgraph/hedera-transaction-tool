@@ -38,7 +38,7 @@ describe('registerUpdateListeners', () => {
       downloadUpdate: mockDownloadUpdate,
       quitAndInstall: mockQuitAndInstall,
       cancelUpdate: mockCancelUpdate,
-    } as ReturnType<typeof getUpdaterService>);
+    } as unknown as ReturnType<typeof getUpdaterService>);
     registerUpdateListeners();
   });
 

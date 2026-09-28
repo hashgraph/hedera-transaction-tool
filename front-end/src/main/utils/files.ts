@@ -143,6 +143,7 @@ export const extractUnzipperFileToBuffer = (file: unzipper.File, abortSignal?: A
       .on('data', (d: Buffer) => {
         if (abortSignal?.aborted) {
           stream.destroy();
+
           reject('File extraction aborted');
         } else {
           result.push(d);
@@ -163,6 +164,7 @@ export const copyFile = (filePath: string, fileDist: string, signal?: AbortSigna
     readStream.on('data', () => {
       if (signal?.aborted) {
         readStream.destroy();
+
         reject('File copying aborted');
       }
     });

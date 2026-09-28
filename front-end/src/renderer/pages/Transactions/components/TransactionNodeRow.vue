@@ -19,7 +19,7 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
-} from '../../../../../../shared/src/ITransactionNode.ts';
+} from '@shared/interfaces/ITransactionNode.ts';
 import { FEATURE_EXTERNAL_BADGE_ENABLED } from '@shared/constants';
 
 /* Props */

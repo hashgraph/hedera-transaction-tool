@@ -1,5 +1,4 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
 
 import {
@@ -14,6 +13,7 @@ import {
   RegisteredNodeInfoParsed,
   RegisteredNodesResponse,
 } from '@app/common';
+import { AxiosError } from 'axios';
 
 const HTTP_STATUS = {
   OK: 200,
@@ -39,7 +39,6 @@ export class MirrorNodeClient {
   private readonly endpointPrefix = '/api/v1';
 
   constructor(
-    private readonly configService: ConfigService,
     private readonly httpService: HttpService,
   ) {}
 
@@ -57,7 +56,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<AccountInfo>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const accountInfoParsed = parseAccountInfo(response.data);
@@ -65,7 +64,8 @@ export class MirrorNodeClient {
 
       return { data: accountInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch account ${accountId}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to fetch account ${accountId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -84,7 +84,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<NetworkNodesResponse>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag: etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const nodeResponse = response.data;
@@ -98,7 +98,8 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch node ${nodeId}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to fetch node ${nodeId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -117,7 +118,7 @@ export class MirrorNodeClient {
       const response = await this.fetchWithRetry<RegisteredNodesResponse>(url, etag);
 
       if (response.status === HTTP_STATUS.NOT_MODIFIED) {
-        return { data: null, etag: etag };
+        return { data: null, etag: etag ?? null};
       }
 
       const nodeResponse = response.data;
@@ -131,7 +132,8 @@ export class MirrorNodeClient {
 
       return { data: nodeInfoParsed, etag: newEtag };
     } catch (error) {
-      this.logger.error(`Failed to fetch node ${registeredNodeId}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to fetch node ${registeredNodeId}: ${errorMessage}`);
       throw error;
     }
   }
@@ -143,22 +145,22 @@ export class MirrorNodeClient {
     try {
       return await this.getMirrorNodeData<T>(url, etag);
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       const shouldRetry = this.isRetryableError(error);
 
       if (!shouldRetry || attempt >= RETRY_CONFIG.MAX_RETRIES) {
-        this.logger.error(
-          `Request failed after ${attempt} attempt(s) for ${url}: ${error.message}`
-        );
-        throw new HttpException(
-          `Mirror node request failed: ${error.message}`,
-          error.response?.status || HttpStatus.SERVICE_UNAVAILABLE,
-        );
+        const errorStatus =
+          error instanceof AxiosError && typeof error.response?.status === 'number'
+            ? error.response.status
+            : HttpStatus.SERVICE_UNAVAILABLE;
+        this.logger.error(`Request failed after ${attempt} attempt(s) for ${url}: ${errorMessage}`);
+        throw new HttpException(`Mirror node request failed: ${errorMessage}`, errorStatus);
       }
 
       const delay = this.calculateBackoffDelay(attempt);
       this.logger.warn(
         `Request failed (attempt ${attempt}/${RETRY_CONFIG.MAX_RETRIES}), ` +
-        `retrying in ${delay}ms: ${error.message}`
+          `retrying in ${delay}ms: ${errorMessage}`,
       );
 
       await this.delay(delay);
@@ -172,7 +174,7 @@ export class MirrorNodeClient {
   private calculateBackoffDelay(attempt: number): number {
     const exponentialDelay = Math.min(
       RETRY_CONFIG.INITIAL_DELAY_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1),
-      RETRY_CONFIG.MAX_DELAY_MS
+      RETRY_CONFIG.MAX_DELAY_MS,
     );
 
     // Add jitter (±25% randomization) to prevent thundering herd
@@ -200,9 +202,7 @@ export class MirrorNodeClient {
     }
 
     // Retry on network errors (ECONNREFUSED, ETIMEDOUT, etc.)
-    if (error.code === 'ECONNREFUSED' ||
-      error.code === 'ETIMEDOUT' ||
-      error.code === 'ENOTFOUND') {
+    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT' || error.code === 'ENOTFOUND') {
       return true;
     }
 
@@ -214,10 +214,7 @@ export class MirrorNodeClient {
     return `${MirrorNodeREST.fromBaseURL(mirrorNetwork)}${this.endpointPrefix}`;
   }
 
-  private async getMirrorNodeData<T>(
-    url: string,
-    etag?: string,
-  ): Promise<HttpResult<T>> {
+  private async getMirrorNodeData<T>(url: string, etag?: string): Promise<HttpResult<T>> {
     const headers: Record<string, string> = {};
     if (etag) {
       headers['If-None-Match'] = etag;
@@ -226,7 +223,7 @@ export class MirrorNodeClient {
     try {
       const response = await this.httpService.axiosRef.get<T>(url, {
         headers,
-        validateStatus: (status) =>
+        validateStatus: status =>
           status === HTTP_STATUS.OK ||
           // only accept NOT_MODIFIED if we actually sent an ETag
           (etag != null && status === HTTP_STATUS.NOT_MODIFIED),
@@ -238,7 +235,8 @@ export class MirrorNodeClient {
         etag: response.headers?.etag,
       };
     } catch (error) {
-      this.logger.error(`HTTP request failed for ${url}: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error(`HTTP request failed for ${url}: ${errorMessage}`);
       throw error;
     }
   }

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-// import { ToastManager } from '@renderer/utils/ToastManager';
+// import { ToastRenderer } from '@renderer/utils/ToastRenderer';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';

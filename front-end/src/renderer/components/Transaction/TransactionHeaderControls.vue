@@ -55,6 +55,7 @@ watch(showAddReminder, show => {
         class="btn-icon-only me-4"
         data-testid="button-back"
         @click="$router.back()"
+        log-label="back-to-transactions"
       >
         <i class="bi bi-arrow-left"></i>
       </AppButton>
@@ -105,6 +106,12 @@ watch(showAddReminder, show => {
             :loading="loading"
             :disabled="createButtonDisabled"
             data-testid="button-header-create"
+            log-label="submit-transaction"
+            :log-metadata="{
+              action: createButtonLabel,
+              transactionType: headingText,
+              organization: isLoggedInOrganization(user.selectedOrganization),
+            }"
           >
             <span class="bi bi-send"></span>
             {{ createButtonLabel }}</AppButton

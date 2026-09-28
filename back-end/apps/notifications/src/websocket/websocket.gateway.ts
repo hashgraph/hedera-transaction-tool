@@ -33,7 +33,7 @@ import { DebouncedNotificationBatcher } from '../utils';
 export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(WebsocketGateway.name);
 
-  private batcher: DebouncedNotificationBatcher;
+  private batcher: DebouncedNotificationBatcher<NotificationMessage>;
 
   constructor(
     @Inject(AUTH_SERVICE) private readonly authService: ClientProxy,
@@ -45,13 +45,13 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
       500,
       200,
       2000,
-      this.configService.get('REDIS_URL'),
+      this.configService.get('REDIS_URL')!,
       'inapp-notifications',
     );
   }
 
   @WebSocketServer()
-  private io: Server;
+  private io!: Server;
 
   afterInit(io: Server) {
     const minimumVersion = this.configService.getOrThrow<string>(
@@ -68,7 +68,8 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
 
     if (!socket.user?.id) {
       this.logger.error('Socket client connected without user');
-      return socket.disconnect();
+      socket.disconnect();
+      return;
     }
 
     /* Join user room */
@@ -90,7 +91,7 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     await this.batcher.add(newMessage, userId);
   }
 
-  private async processMessages(groupKey: number | null, messages: NotificationMessage[]) {
+  private async processMessages(groupKey: string | number | null, messages: NotificationMessage[]) {
     const groupedMessages = messages.reduce((map, msg) => {
       if (!map.has(msg.message)) {
         map.set(msg.message, []);
@@ -100,9 +101,9 @@ export class WebsocketGateway implements OnGatewayInit, OnGatewayConnection, OnG
     }, new Map<string, string[]>());
 
     for (const [message, content] of groupedMessages.entries()) {
-      if (groupKey) {
+      if (groupKey !== null) {
         // Emit to specific user room, if the room doesn't exist, silent no-op
-        this.io.to(roomKeys.USER_KEY(groupKey)).emit(message, content);
+        this.io.to(roomKeys.USER_KEY(Number(groupKey))).emit(message, content);
       } else {
         this.io.emit(message, content);
       }

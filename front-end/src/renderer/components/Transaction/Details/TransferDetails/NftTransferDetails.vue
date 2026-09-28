@@ -27,7 +27,7 @@ const nftTransfers = computed(() => {
         sender: t.sender,
         recipient: t.recipient,
         serial: t.serial,
-        key: t.sender.toString() + '/' + t.recipient.toString() + '/' + t.serial,
+        key: t.sender.toString() + '/' + t.recipient.toString() + '/' + t.serial.toString(),
       });
     }
   }

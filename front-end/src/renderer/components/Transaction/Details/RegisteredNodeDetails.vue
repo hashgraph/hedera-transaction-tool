@@ -9,13 +9,14 @@ import {
   KeyList,
   PublicKey,
   RegisteredNodeCreateTransaction,
-  RegisteredNodeUpdateTransaction,
   RegisteredNodeDeleteTransaction,
+  RegisteredNodeUpdateTransaction,
   Transaction,
 } from '@hiero-ledger/sdk';
 
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
 import { labelForBlockNodeApi } from '@renderer/components/Transaction/Create/RegisteredNodeCreate/BlockNodeApiLabel.ts';
+import { stringifyIpAddressBytes } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -135,7 +136,9 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
         -->
             <tr v-for="(endpoint, index) of transaction.serviceEndpoints" :key="index">
               <td class="col text-start">{{ typeLabel[endpoint.type] ?? endpoint.type }}</td>
-              <td class="col text-start">{{ endpoint.ipAddress ?? endpoint.domainName ?? '' }}</td>
+              <td class="col text-start">
+                {{ stringifyIpAddressBytes(endpoint.ipAddress) || (endpoint.domainName ?? '') }}
+              </td>
               <td class="col text-start">{{ endpoint.port }}</td>
               <td class="col text-start">{{ endpoint.requiresTls ? 'Yes' : 'No' }}</td>
               <td class="col text-start">

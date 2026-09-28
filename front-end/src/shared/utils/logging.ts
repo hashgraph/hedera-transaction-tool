@@ -245,6 +245,7 @@ export function sanitizeLogValue(
       : { type: value.constructor?.name || 'Object' };
   }
 
+   
   return String(value);
 }
 

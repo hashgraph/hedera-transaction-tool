@@ -3,9 +3,9 @@ import { IsNotEmpty, IsNumber } from 'class-validator';
 export class DismissedNotificationReceiverDto {
   @IsNotEmpty()
   @IsNumber()
-  id: number;
+  id!: number;
 
   @IsNotEmpty()
   @IsNumber()
-  userId: number;
+  userId!: number;
 }

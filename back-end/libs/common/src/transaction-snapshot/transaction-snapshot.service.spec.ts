@@ -7,8 +7,10 @@ import { Repository } from 'typeorm';
 import {
   AccountSnapshot,
   NodeSnapshot,
+  TransactionAccountSnapshot,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionNodeSnapshot,
 } from '@entities';
 
 import { TransactionSnapshotService } from './transaction-snapshot.service';
@@ -20,11 +22,36 @@ describe('TransactionSnapshotService', () => {
   const nodeSnapshotRepo = mockDeep<Repository<NodeSnapshot>>();
   const transactionCachedAccountRepo = mockDeep<Repository<TransactionCachedAccount>>();
   const transactionCachedNodeRepo = mockDeep<Repository<TransactionCachedNode>>();
+  const transactionAccountSnapshotRepo = mockDeep<Repository<TransactionAccountSnapshot>>();
+  const transactionNodeSnapshotRepo = mockDeep<Repository<TransactionNodeSnapshot>>();
 
   const executedAt = new Date('2024-01-01T00:00:00Z');
 
+  const makeInsertChain = () => {
+    const chain = {
+      insert: jest.fn(),
+      into: jest.fn(),
+      values: jest.fn(),
+      orIgnore: jest.fn(),
+      execute: jest.fn().mockResolvedValue({}),
+    };
+    chain.insert.mockReturnValue(chain);
+    chain.into.mockReturnValue(chain);
+    chain.values.mockReturnValue(chain);
+    chain.orIgnore.mockReturnValue(chain);
+    return chain;
+  };
+
+  let accountJoinChain: ReturnType<typeof makeInsertChain>;
+  let nodeJoinChain: ReturnType<typeof makeInsertChain>;
+
   beforeEach(async () => {
     jest.resetAllMocks();
+
+    accountJoinChain = makeInsertChain();
+    nodeJoinChain = makeInsertChain();
+    transactionAccountSnapshotRepo.createQueryBuilder.mockReturnValue(accountJoinChain as any);
+    transactionNodeSnapshotRepo.createQueryBuilder.mockReturnValue(nodeJoinChain as any);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -33,6 +60,8 @@ describe('TransactionSnapshotService', () => {
         { provide: getRepositoryToken(NodeSnapshot), useValue: nodeSnapshotRepo as any },
         { provide: getRepositoryToken(TransactionCachedAccount), useValue: transactionCachedAccountRepo as any },
         { provide: getRepositoryToken(TransactionCachedNode), useValue: transactionCachedNodeRepo as any },
+        { provide: getRepositoryToken(TransactionAccountSnapshot), useValue: transactionAccountSnapshotRepo as any },
+        { provide: getRepositoryToken(TransactionNodeSnapshot), useValue: transactionNodeSnapshotRepo as any },
       ],
     }).compile();
 
@@ -235,6 +264,33 @@ describe('TransactionSnapshotService', () => {
         expect.objectContaining({ createdAt: specificDate }),
       );
     });
+
+    it('should insert a junction row with transactionId, snapshotId, and isReceiver: false', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink({ isReceiver: false })] as any);
+      accountSnapshotRepo.findOne.mockResolvedValue(null);
+      accountSnapshotRepo.save.mockResolvedValue({ id: 10 } as any);
+
+      await service.captureForTransaction(1, executedAt);
+
+      expect(accountJoinChain.values).toHaveBeenCalledWith({
+        transaction: { id: 1 },
+        accountSnapshot: { id: 10 },
+        isReceiver: false,
+      });
+    });
+
+    it('should insert a junction row with isReceiver: true when the link is a receiver', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink({ isReceiver: true })] as any);
+      accountSnapshotRepo.findOne.mockResolvedValue({ id: 99, keyHash: accountKeyHash, receiverSignatureRequired: false } as any);
+
+      await service.captureForTransaction(1, executedAt);
+
+      expect(accountJoinChain.values).toHaveBeenCalledWith({
+        transaction: { id: 1 },
+        accountSnapshot: { id: 99 },
+        isReceiver: true,
+      });
+    });
   });
 
   describe('node snapshot capture', () => {
@@ -323,6 +379,19 @@ describe('TransactionSnapshotService', () => {
       await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalled();
+    });
+
+    it('should insert a junction row with transactionId and snapshotId', async () => {
+      transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
+      nodeSnapshotRepo.findOne.mockResolvedValue(null);
+      nodeSnapshotRepo.save.mockResolvedValue({ id: 200 } as any);
+
+      await service.captureForTransaction(1, executedAt);
+
+      expect(nodeJoinChain.values).toHaveBeenCalledWith({
+        transaction: { id: 1 },
+        nodeSnapshot: { id: 200 },
+      });
     });
   });
 });

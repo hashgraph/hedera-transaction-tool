@@ -10,34 +10,68 @@ import {
 import { Transaction } from './transaction.entity';
 import { UserKey } from './user-key.entity';
 import { User } from './user.entity';
+import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
+
+export type NewSignerRow = {
+  userId: number;
+  transactionId: number;
+  userKeyId: number;
+  recorderId: number;
+  tool: string | null;
+  version: string | null;
+};
+
+export interface ValidationResult {
+  id: number;
+  transaction?: Transaction;
+  sdkTransaction?: SDKTransaction;
+  userKeys?: UserKey[];
+  isSameBytes?: boolean;
+  tool?: string;
+  error: string | null;
+}
+
 
 @Entity()
 @Index(['transactionId', 'userKeyId'])
 export class TransactionSigner {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => Transaction, transaction => transaction.signers)
   @JoinColumn({ name: 'transactionId' })
-  transaction: Transaction;
+  transaction!: Transaction;
 
   @Column()
-  transactionId: number;
+  transactionId!: number;
 
   @ManyToOne(() => UserKey, userKey => userKey.signedTransactions)
   @JoinColumn({ name: 'userKeyId' })
-  userKey: UserKey;
+  userKey!: UserKey;
 
   @Column()
-  userKeyId: number;
+  userKeyId!: number;
 
   @ManyToOne(() => User, user => user.signerForTransactions)
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: User;
 
   @Column()
-  userId: number;
+  userId!: number;
+
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'recorderId' })
+  recorder!: User | null;
+
+  @Column({ nullable: true })
+  recorderId!: number | null;
+
+  @Column({ type: String, nullable: true })
+  tool!: string | null;
+
+  @Column({ type: String, nullable: true })
+  version!: string | null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

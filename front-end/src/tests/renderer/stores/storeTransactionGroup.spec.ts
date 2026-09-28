@@ -48,7 +48,7 @@ import {
 } from '@renderer/services/transactionGroupsService';
 import { getDrafts } from '@renderer/services/transactionDraftsService';
 import { getTransactionFromBytes } from '@renderer/utils';
-import { Transaction } from '@hiero-ledger/sdk';
+import { Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import useTransactionGroupStore, {
   type RenderedGroupItem,
 } from '@renderer/stores/storeTransactionGroup';
@@ -67,7 +67,7 @@ function createGroupItem(overrides: Partial<RenderedGroupItem> = {}): RenderedGr
     validStart: new Date(1000),
     description: 'test',
     transactionMemo: '',
-    transferSummary: null,
+    transactionSummary: null,
     ...overrides,
   };
 }
@@ -712,15 +712,27 @@ describe('useTransactionGroupStore', () => {
     });
   });
 
-  describe('derived display fields (transactionMemo, transferSummary)', () => {
-    test('addGroupItem populates transactionMemo and transferSummary on the stored item', () => {
+  describe('derived display fields (transactionMemo, transactionSummary)', () => {
+    test('uses the shared summary for token and NFT transfers during group creation', () => {
+      const transaction = new TransferTransaction()
+        .addTokenTransfer('0.0.100', '0.0.2', -1)
+        .addTokenTransfer('0.0.100', '0.0.3', 1)
+        .addNftTransfer('0.0.101', 1, '0.0.2', '0.0.3');
+      vi.mocked(Transaction.fromBytes).mockReturnValueOnce(transaction);
+
+      store.addGroupItem(createGroupItem());
+
+      expect(store.groupItems[0].transactionSummary).toBe('Token transfers · NFT transfers');
+    });
+
+    test('addGroupItem populates transactionMemo and transactionSummary on the stored item', () => {
       const { rowKey: _, ...input } = createGroupItem();
       store.addGroupItem(input);
 
       // SDK mock returns a transaction without memo and not instanceof TransferTransaction,
       // so the derived fields land at their non-transfer defaults.
       expect(store.groupItems[0].transactionMemo).toBe('');
-      expect(store.groupItems[0].transferSummary).toBeNull();
+      expect(store.groupItems[0].transactionSummary).toBeNull();
     });
 
     test('updateTransactionValidStarts preserves derived display fields across per-tick rewrites', () => {
@@ -731,12 +743,12 @@ describe('useTransactionGroupStore', () => {
       // (would normally come from deriveDisplay during addGroupItem; we set it
       // directly here to verify the per-tick rewrite path doesn't clobber them).
       store.groupItems[0].transactionMemo = 'precomputed-memo';
-      store.groupItems[0].transferSummary = '<b>precomputed</b>';
+      store.groupItems[0].transactionSummary = '<b>precomputed</b>';
 
       store.updateTransactionValidStarts(new Date(5000));
 
       expect(store.groupItems[0].transactionMemo).toBe('precomputed-memo');
-      expect(store.groupItems[0].transferSummary).toBe('<b>precomputed</b>');
+      expect(store.groupItems[0].transactionSummary).toBe('<b>precomputed</b>');
     });
   });
 });

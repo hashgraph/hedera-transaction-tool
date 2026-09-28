@@ -4,7 +4,7 @@ import type { TransactionGroup } from '@prisma/client';
 
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
-import { KeyList, PublicKey, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
+import { KeyList, PublicKey, Transaction } from '@hiero-ledger/sdk';
 import { Prisma } from '@prisma/client';
 
 import { getDrafts } from '@renderer/services/transactionDraftsService';
@@ -15,7 +15,8 @@ import {
   updateGroup,
 } from '@renderer/services/transactionGroupsService';
 
-import { formatHbarTransfers, getTransactionFromBytes } from '@renderer/utils';
+import { getTransactionFromBytes } from '@renderer/utils';
+import { formatTransactionSummary } from '@renderer/utils/transactionSummary';
 import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
@@ -37,7 +38,7 @@ export interface GroupItem {
  * - `rowKey`: stable client-only id for v-for and any tracking that needs to
  *   follow a row across edits, ticks, and reorders. Named `rowKey` (not `key`)
  *   to avoid confusion with the many cryptographic keys on transaction types.
- * - `transactionMemo` / `transferSummary`: derived display values, computed
+ * - `transactionMemo` / `transactionSummary`: derived display values, computed
  *   once when an item enters the store. Pre-computing them keeps the row
  *   template free of `Transaction.fromBytes(...)` calls, which would otherwise
  *   re-deserialize every reactive bytes update (e.g. each clock tick that
@@ -49,7 +50,7 @@ export interface GroupItem {
 export interface RenderedGroupItem extends GroupItem {
   rowKey: string;
   transactionMemo: string;
-  transferSummary: string | null;
+  transactionSummary: string | null;
 }
 
 /**
@@ -59,15 +60,12 @@ export interface RenderedGroupItem extends GroupItem {
  */
 function deriveDisplay(transaction: Transaction): {
   transactionMemo: string;
-  transferSummary: string | null;
+  transactionSummary: string | null;
 } {
-  const transferSummary =
-    transaction instanceof TransferTransaction
-      ? formatHbarTransfers(transaction.hbarTransfersList)
-      : null;
+  const transactionSummary = formatTransactionSummary(transaction);
   return {
     transactionMemo: transaction.transactionMemo || '',
-    transferSummary,
+    transactionSummary,
   };
 }
 

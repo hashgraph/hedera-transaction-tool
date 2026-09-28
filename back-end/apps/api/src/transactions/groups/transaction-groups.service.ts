@@ -9,11 +9,11 @@ import { DataSource, In } from 'typeorm';
 
 import {
   emitTransactionStatusUpdate,
-  emitTransactionUpdate,
   ErrorCodes,
   getTransactionGroupItemsQuery,
   NatsPublisherService,
   SqlBuilderService,
+  TransactionGroupItemsRow,
   TransactionSnapshotService,
 } from '@app/common';
 import { Transaction, TransactionGroup, TransactionGroupItem, TransactionStatus, User, UserKey } from '@entities';
@@ -76,7 +76,9 @@ export class TransactionGroupsService {
         );
       });
     } catch (error) {
-      this.logger.error('Failed to save transaction group', (error as any)?.stack ?? (error as any)?.message ?? String(error));
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : null;
+      this.logger.error('Failed to save transaction group', errorStack ?? errorMessage);
       throw new BadRequestException(ErrorCodes.FSTG);
     }
 
@@ -94,15 +96,15 @@ export class TransactionGroupsService {
 
     const query = getTransactionGroupItemsQuery(this.sqlBuilder, id, user);
 
-    const rows = await this.dataSource.manager.query(
+    const rows = await this.dataSource.manager.query<TransactionGroupItemsRow[]>(
       query.text,
       query.values,
     );
 
     group.groupItems = rows.map(row => {
       const creator = this.dataSource.manager.create(User, {
-        id: row.tx_creator_key_user_id,
-        email: row.tx_creator_email,
+        id: row.tx_creator_key_user_id as number,
+        email: row.tx_creator_email as string,
       });
 
       const creatorKey = this.dataSource.manager.create(UserKey, {
@@ -150,57 +152,22 @@ export class TransactionGroupsService {
 
     const transactionIds = group.groupItems.map(item => item.transactionId);
 
-    const [
-      transactionSigners,
-      transactionApprovers,
-      transactionObservers,
-    ] = await Promise.all([
+    const [transactionSigners, transactionObservers] = await Promise.all([
       this.transactionsService.getTransactionSignersForTransactions(transactionIds),
-      this.transactionsService.getTransactionApproversForTransactions(transactionIds),
       this.transactionsService.getTransactionObserversForTransactions(transactionIds),
     ]);
 
     const signerMap = this.groupBy(transactionSigners, s => s.transactionId);
-    const approverMap = this.groupBy(transactionApprovers, a => a.transactionId);
     const observerMap = this.groupBy(transactionObservers, o => o.transactionId);
 
     for (const groupItem of group.groupItems) {
       const txId = groupItem.transactionId;
 
       groupItem.transaction.signers = signerMap.get(txId) ?? [];
-      groupItem.transaction.approvers = approverMap.get(txId) ?? [];
       groupItem.transaction.observers = observerMap.get(txId) ?? [];
     }
 
     return group;
-  }
-
-  async removeTransactionGroup(user: User, id: number): Promise<boolean> {
-    const group = await this.dataSource.manager.findOneBy(TransactionGroup, { id });
-    if (!group) {
-      throw new Error('group not found');
-    }
-    const groupItems = await this.dataSource.manager.find(TransactionGroupItem, {
-      relations: {
-        group: true,
-      },
-      where: {
-        group: {
-          id: group.id,
-        },
-      },
-    });
-    for (const groupItem of groupItems) {
-      const transactionId = groupItem.transactionId;
-      await this.dataSource.manager.remove(TransactionGroupItem, groupItem);
-      await this.transactionsService.removeTransaction(transactionId, user, false);
-    }
-
-    await this.dataSource.manager.remove(TransactionGroup, group);
-
-    emitTransactionUpdate(this.notificationsPublisher, groupItems.map(gi => ({ entityId: gi.transactionId })));
-
-    return true;
   }
 
   async cancelTransactionGroup(
@@ -219,6 +186,7 @@ export class TransactionGroupsService {
 
     const cancelableStatuses = [
       TransactionStatus.NEW,
+      TransactionStatus.READY_FOR_REVIEW,
       TransactionStatus.WAITING_FOR_SIGNATURES,
       TransactionStatus.WAITING_FOR_EXECUTION,
     ];
@@ -263,7 +231,7 @@ export class TransactionGroupsService {
         // Re-query only those IDs to find out what happened.
         const latestStatuses = await this.dataSource.getRepository(Transaction).find({
           where: { id: In(cancelableIds) },
-          select: ['id', 'status'],
+          select: { id: true, status: true },
         });
 
         const latestMap = new Map(latestStatuses.map(t => [t.id, t.status]));
@@ -271,7 +239,7 @@ export class TransactionGroupsService {
           const currentStatus = latestMap.get(id);
           if (currentStatus === TransactionStatus.CANCELED) {
             canceled.push(id);
-          } else if (cancelableStatuses.includes(currentStatus)) {
+          } else if (currentStatus && cancelableStatuses.includes(currentStatus)) {
             // Still cancelable but wasn't affected — treat as conflict
             failed.push({
               id,
@@ -315,16 +283,18 @@ export class TransactionGroupsService {
 
   private groupBy<T>(
     items: T[],
-    key: (item: T) => string | number,
+    key: (item: T) => string | number | undefined,
   ) {
     const map = new Map<string | number, T[]>();
 
     for (const item of items) {
       const k = key(item);
-      if (!map.has(k)) {
-        map.set(k, []);
+      if (k !== undefined) {
+        if (!map.has(k)) {
+          map.set(k, []);
+        }
+        map.get(k)!.push(item);
       }
-      map.get(k)!.push(item);
     }
 
     return map;

@@ -45,12 +45,12 @@ describe('Transaction Observers (e2e)', () => {
     account: HederaAccount,
   ) => {
     const transaction = new AccountCreateTransaction()
-      .setTransactionId(createTransactionId(account.accountId))
-      .setKey(account.publicKey)
+      .setTransactionId(createTransactionId(account.accountId!))
+      .setKey(account.publicKey!)
       .setAccountMemo('This is a memo');
     const buffer = Buffer.from(transaction.toBytes()).toString('hex');
 
-    const userKey = await getUserKey(usr.id, usrAccount.publicKeyRaw);
+    const userKey = (await getUserKey(usr.id, usrAccount.publicKeyRaw!))!;
 
     if (userKey === null) {
       throw new Error('User key not found');
@@ -61,7 +61,7 @@ describe('Transaction Observers (e2e)', () => {
       description: 'TEST This is a simple account create transaction',
       transactionBytes: buffer,
       creatorKeyId: userKey.id,
-      signature: Buffer.from(usrAccount.privateKey.sign(transaction.toBytes())).toString('hex'),
+      signature: Buffer.from(usrAccount.privateKey!.sign(transaction.toBytes())).toString('hex'),
       mirrorNetwork: usrAccount.mirrorNetwork,
     };
   };
@@ -81,8 +81,8 @@ describe('Transaction Observers (e2e)', () => {
     userAuthToken = await login(app, 'user');
     userNewAuthToken = await login(app, 'userNew');
 
-    user = await getUser('user');
-    userNew = await getUser('userNew');
+    user = (await getUser('user'))!;
+    userNew = (await getUser('userNew'))!;
   });
 
   afterAll(async () => {
@@ -97,7 +97,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(POST) should add observers to a transaction', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.post(
         {
@@ -120,7 +120,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(POST) should NOT add an observer if already added', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.post(
         {
@@ -143,7 +143,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(POST) should NOT add an observer if not creator of the transaction', async () => {
-      const transaction = addedTransactions.userTransactions[0];
+      const transaction = addedTransactions!.userTransactions[0];
 
       const { status, body } = await endpoint.post(
         {
@@ -163,7 +163,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(POST) should NOT add an observer if invalid body', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.post(
         {},
@@ -198,7 +198,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(GET) should get transaction observers if user has access (is creator)', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.get(`/${transaction.id}/observers`, adminAuthToken);
 
@@ -218,7 +218,7 @@ describe('Transaction Observers (e2e)', () => {
 
     it('(GET) should get transaction observers if user has access (is signer)', async () => {
       /* A transaction created by user that requires the admin to sign */
-      const transaction = addedTransactions.userTransactions[1];
+      const transaction = addedTransactions!.userTransactions[1];
 
       /* Add user as observer (USER) */
       await endpoint
@@ -233,8 +233,8 @@ describe('Transaction Observers (e2e)', () => {
 
       /* Sign transaction (ADMIN) */
       const sdkTransaction = AccountUpdateTransaction.fromBytes(transaction.transactionBytes);
-      await sdkTransaction.sign(localnet1002.privateKey);
-      const signatures = getSignatureMapForPublicKeys([localnet1002.publicKeyRaw], sdkTransaction);
+      await sdkTransaction.sign(localnet1002.privateKey!);
+      const signatures = getSignatureMapForPublicKeys([localnet1002.publicKeyRaw!], sdkTransaction);
 
       await endpoint
         .post(
@@ -264,7 +264,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(GET) should get transaction observers if user has access (is observer)', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.get(`/${transaction.id}/observers`, userAuthToken);
 
@@ -284,7 +284,7 @@ describe('Transaction Observers (e2e)', () => {
 
     it('(GET) should get transaction observers if user has access (should sign)', async () => {
       const transaction = await createTransaction(user, localnet1003, localnet1002);
-      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
+      const createTxRes = await endpoint.post(transaction, undefined, userAuthToken);
       await endpoint.post(
         {
           userIds: [userNew.id],
@@ -323,7 +323,7 @@ describe('Transaction Observers (e2e)', () => {
       ];
 
       const transaction = await createTransaction(user, localnet1003, localnet1003);
-      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
+      const createTxRes = await endpoint.post(transaction, undefined, userAuthToken);
       await transactionRepo.update(
         {
           id: createTxRes.body.id,
@@ -360,7 +360,7 @@ describe('Transaction Observers (e2e)', () => {
 
     it('(GET) should NOT get transaction observers if transaction is in a NOT visible status', async () => {
       const transaction = await createTransaction(user, localnet1003, localnet1003);
-      const createTxRes = await endpoint.post(transaction, null, userAuthToken);
+      const createTxRes = await endpoint.post(transaction, undefined, userAuthToken);
       await endpoint.post(
         {
           userIds: [userNew.id],
@@ -385,7 +385,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(GET) should NOT get transaction observers if user is not verified', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.get(`/${transaction.id}/observers`, userNewAuthToken);
 
@@ -398,7 +398,7 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(GET) should NOT get transaction observers if user is not logged in', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
+      const transaction = addedTransactions!.adminTransactions[0];
 
       const { status, body } = await endpoint.get(`/${transaction.id}/observers`);
 
@@ -422,14 +422,14 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(PATCH) should update transaction observer', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
-      const userObserverEntry = await transactionObserverRepo.findOne({
+      const transaction = addedTransactions!.adminTransactions[0];
+      const userObserverEntry = (await transactionObserverRepo.findOne({
         where: { transactionId: transaction.id, userId: user.id },
-      });
+      }))!;
 
       const { status, body } = await endpoint.patch(
         {
-          role: Role.APPROVER,
+          role: Role.FULL,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
         adminAuthToken,
@@ -442,17 +442,17 @@ describe('Transaction Observers (e2e)', () => {
           id: expect.any(Number),
           transactionId: transaction.id,
           userId: user.id,
-          role: Role.APPROVER,
+          role: Role.FULL,
           createdAt: expect.any(String),
         }),
       );
     });
 
     it('(PATCH) should NOT update transaction observer if invalid body', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
-      const userObserverEntry = await transactionObserverRepo.findOne({
+      const transaction = addedTransactions!.adminTransactions[0];
+      const userObserverEntry = (await transactionObserverRepo.findOne({
         where: { transactionId: transaction.id, userId: user.id },
-      });
+      }))!;
 
       const { status, body } = await endpoint.patch(
         {},
@@ -470,14 +470,14 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(PATCH) should NOT update transaction observer if user is not creator', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
-      const userObserverEntry = await transactionObserverRepo.findOne({
+      const transaction = addedTransactions!.adminTransactions[0];
+      const userObserverEntry = (await transactionObserverRepo.findOne({
         where: { transactionId: transaction.id, userId: user.id },
-      });
+      }))!;
 
       const { status, body } = await endpoint.patch(
         {
-          role: Role.APPROVER,
+          role: Role.FULL,
         },
         `/${transaction.id}/observers/${userObserverEntry.id}`,
         userAuthToken,
@@ -493,10 +493,10 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(DELETE) should NOT delete transaction observer if user is not creator', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
-      const userObserverEntry = await transactionObserverRepo.findOne({
+      const transaction = addedTransactions!.adminTransactions[0];
+      const userObserverEntry = (await transactionObserverRepo.findOne({
         where: { transactionId: transaction.id, userId: user.id },
-      });
+      }))!;
 
       const { status, body } = await endpoint.delete(
         `/${transaction.id}/observers/${userObserverEntry.id}`,
@@ -513,10 +513,10 @@ describe('Transaction Observers (e2e)', () => {
     });
 
     it('(DELETE) should delete transaction observer', async () => {
-      const transaction = addedTransactions.adminTransactions[0];
-      const userObserverEntry = await transactionObserverRepo.findOne({
+      const transaction = addedTransactions!.adminTransactions[0];
+      const userObserverEntry = (await transactionObserverRepo.findOne({
         where: { transactionId: transaction.id, userId: user.id },
-      });
+      }))!;
 
       const { status } = await endpoint.delete(
         `/${transaction.id}/observers/${userObserverEntry.id}`,

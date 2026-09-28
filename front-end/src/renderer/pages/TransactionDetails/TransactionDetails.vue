@@ -514,7 +514,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               <h2 class="text-title text-bold">{{ transactionSpecificLabel }}</h2>
 
               <!-- Transaction Specific Component -->
-              <Component
+              <component
                 :is="txTypeComponentMapping[getTransactionType(sdkTransaction, true)]"
                 :transaction="sdkTransaction"
                 :organization-transaction="orgTransaction"

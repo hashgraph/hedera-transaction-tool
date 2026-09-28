@@ -76,7 +76,7 @@ describe('AccountCacheService', () => {
     } as any;
 
     configService = {
-      get: jest.fn((key, defaultValue) => defaultValue),
+      get: jest.fn((_key, defaultValue) => defaultValue),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({

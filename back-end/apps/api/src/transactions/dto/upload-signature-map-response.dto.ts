@@ -4,8 +4,8 @@ import { Expose, Type } from 'class-transformer';
 export class UploadSignatureMapResponseDto {
   @Expose()
   @Type(() => TransactionSignerDto)
-  signers: TransactionSignerDto[];
+  signers!: TransactionSignerDto[];
 
   @Expose()
-  notificationReceiverIds: number[];
+  notificationReceiverIds!: number[];
 }

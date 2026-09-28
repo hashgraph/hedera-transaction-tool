@@ -1,21 +1,46 @@
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
-import { areKeysEqual, computeShortenedPublicKeyList } from '.';
+import { areKeysEqual, computeShortenedPublicKeyList, hasValidSignatureKey } from '.';
 
 jest.mock('@app/common/utils');
 
+describe('hasValidSignatureKey', () => {
+  it('should return false for an empty KeyList with no threshold', () => {
+    const emptyKeyList = new KeyList();
+    expect(hasValidSignatureKey([], emptyKeyList)).toBe(false);
+  });
+
+  it('should return false for an empty KeyList even when publicKeys are provided', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const emptyKeyList = new KeyList();
+    expect(hasValidSignatureKey([pk.toStringRaw()], emptyKeyList)).toBe(false);
+  });
+
+  it('should return true when a single public key satisfies the key list', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const keyList = new KeyList([pk]);
+    expect(hasValidSignatureKey([pk.toStringRaw()], keyList)).toBe(true);
+  });
+
+  it('should return false when no public key satisfies the key list', () => {
+    const pk = PublicKey.fromString('88defdd627af7e31a426fd1e2fb002a5a1c1d3867470f8780bffd3cde341dd7b');
+    const keyList = new KeyList([pk]);
+    expect(hasValidSignatureKey([], keyList)).toBe(false);
+  });
+});
+
 describe('computeShortenedPublicKeyList', () => {
-  let publicKey1,
-    publicKey2,
-    publicKey3,
-    publicKey4,
-    publicKey5,
-    publicKey6,
-    publicKey7,
-    publicKey8,
-    publicKey9,
-    publicKey10;
-  let nestedKeyList1, nestedKeyList2, nestedKeyList3, keyList;
+  let publicKey1: PublicKey,
+    publicKey2: PublicKey,
+    publicKey3: PublicKey,
+    publicKey4: PublicKey,
+    publicKey5: PublicKey,
+    publicKey6: PublicKey,
+    publicKey7: PublicKey,
+    publicKey8: PublicKey,
+    publicKey9: PublicKey,
+    publicKey10: PublicKey;
+  let nestedKeyList1: KeyList, nestedKeyList2: KeyList, nestedKeyList3: KeyList, keyList: KeyList;
 
   beforeEach(() => {
     // Arrange

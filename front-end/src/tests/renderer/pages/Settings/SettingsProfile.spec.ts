@@ -7,6 +7,7 @@ import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   userStore: {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     personal: { id: 'local-user-id', useKeychain: false, email: 'local@example.com' } as {
       id: string;
       useKeychain: boolean;

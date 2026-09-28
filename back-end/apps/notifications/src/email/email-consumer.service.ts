@@ -30,7 +30,7 @@ export class EmailConsumerService extends BaseNatsConsumerService {
     };
   }
 
-  protected getMessageHandlers(): MessageHandler[] {
+  protected getMessageHandlers(): MessageHandler<any>[] {
     return [
       {
         subject: USER_INVITE,

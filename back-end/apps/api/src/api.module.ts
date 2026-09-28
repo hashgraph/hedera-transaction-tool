@@ -6,19 +6,22 @@ import * as Joi from 'joi';
 
 import {
   DatabaseModule,
+  IpResolutionModule,
   LoggerMiddleware,
   LoggerModule,
   NatsModule,
   HealthModule,
   BlacklistModule,
+  RedisClientModule,
   SchedulerModule,
 } from '@app/common';
 
 import getEnvFilePaths from './config/envFilePaths';
+import { byteSize } from './config/byte-size.validator';
 
 import { FrontendVersionGuard, IpThrottlerGuard } from './guards';
 
-import { EmailThrottlerModule, IpThrottlerModule } from './throttlers';
+import { ThrottlerStorageModule } from './throttlers';
 
 import { AuthModule } from './auth/auth.module';
 import { TransactionsModule } from './transactions/transactions.module';
@@ -26,6 +29,8 @@ import { UserKeysModule } from './user-keys/user-keys.module';
 import { UsersModule } from './users/users.module';
 import { NotificationPreferencesModule } from './notification-preferences/notification-preferences.module';
 import { NotificationReceiverModule } from './notification-receiver/notification-receiver.module';
+import { ReportsModule } from './reports/reports.module';
+import { ReviewerGroupsModule } from './reviewer-groups/reviewer-groups.module';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -42,13 +47,27 @@ export const config = ConfigModule.forRoot({
     NATS_URL: Joi.string().required(),
     JWT_SECRET: Joi.string().required(),
     JWT_EXPIRATION: Joi.number().required(),
-    OTP_SECRET: Joi.string().required(),
+    OTP_HASH_SECRET: Joi.string().required(),
     OTP_EXPIRATION: Joi.number().required(),
+    // A non-positive value would lock every user out on their very first wrong
+    // guess (attempts >= 0 is immediately true), so fail fast at startup instead
+    // of silently shipping that.
+    OTP_MAX_ATTEMPTS: Joi.number().positive().required(),
+    OTP_VERIFIED_EXPIRATION: Joi.number().required(),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     MINIMUM_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     FRONTEND_REPO_URL: Joi.string().required(),
+    // Not required yet - not every deployment has it set (see #3332). Once it
+    // is, outbound emails should stop falling back to the Host header.
+    APP_URL: Joi.string().uri().optional(),
+    // express.json() body size limits; defaults applied in setup-app.ts when unset.
+    JSON_BODY_LIMIT: byteSize().optional(),
+    TRANSACTION_GROUPS_JSON_BODY_LIMIT: byteSize().optional(),
+    // Independent of NODE_ENV - see getSwaggerMode() in setup-app.ts. Defaults to
+    // 'off' so a deployment must opt in explicitly.
+    SWAGGER_MODE: Joi.string().valid('off', 'docs').optional().default('off'),
   }),
 });
 
@@ -64,9 +83,12 @@ export const config = ConfigModule.forRoot({
     NatsModule.forRoot(),
     NotificationPreferencesModule,
     NotificationReceiverModule,
+    ReportsModule,
+    ReviewerGroupsModule,
     HealthModule,
-    IpThrottlerModule,
-    EmailThrottlerModule,
+    IpResolutionModule,
+    RedisClientModule,
+    ThrottlerStorageModule,
     BlacklistModule.register({ isGlobal: true }),
     SchedulerModule.register({ isGlobal: true }),
   ],

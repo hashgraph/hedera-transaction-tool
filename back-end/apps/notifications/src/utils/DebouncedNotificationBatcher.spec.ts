@@ -1,18 +1,12 @@
 import { DebouncedNotificationBatcher } from './DebouncedNotificationBatcher';
-import { mockDeep } from 'jest-mock-extended';
-import { Redis } from 'ioredis';
 
 describe.skip('DebouncedNotificationBatcher', () => {
   let batcher: DebouncedNotificationBatcher;
   const flushCallback = jest.fn();
-  const pubClient = mockDeep<Redis>();
-  const subClient = mockDeep<Redis>();
 
   beforeEach(() => {
     flushCallback.mockClear();
     batcher = new DebouncedNotificationBatcher(flushCallback, 1000, 3, 5000, 'redis://localhost:6379');
-    // batcher.pubClient = pubClient;
-    // batcher.subClient = subClient;
   });
 
   it('should add messages and flush when maxBatchSize is reached', async () => {

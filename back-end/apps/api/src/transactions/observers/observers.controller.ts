@@ -15,10 +15,11 @@ import { Serialize } from '@app/common';
 import { TransactionObserver, User } from '@entities';
 
 import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 import { GetUser } from '../../decorators';
 import {
-  TransactionObserverDto,
   CreateTransactionObserversDto,
+  TransactionObserverDto,
   UpdateTransactionObserverDto,
 } from '../dto/';
 
@@ -41,6 +42,7 @@ export class ObserversController {
     type: TransactionObserverDto,
   })
   @Post()
+  @UseGuards(TransactionAccessGuard)
   createTransactionObserver(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) transactionId: number,
@@ -59,6 +61,7 @@ export class ObserversController {
     type: [TransactionObserverDto],
   })
   @Get()
+  @UseGuards(TransactionAccessGuard)
   getTransactionObserversByTransactionId(
     @GetUser() user: User,
     @Param('transactionId', ParseIntPipe) id: number,

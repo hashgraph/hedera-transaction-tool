@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router';
 import 'bootstrap/dist/js/bootstrap.bundle.min';
 
 import useUserStore from '@renderer/stores/storeUser';
-import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription.ts';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 import {
   provideDynamicLayout,
@@ -15,6 +15,7 @@ import {
 
 import AppMenu from '@renderer/components/Menu.vue';
 import AppHeader from '@renderer/components/Header.vue';
+import ToastRenderer from '@renderer/utils/ToastRenderer.vue';
 import UserPasswordModal from '@renderer/components/UserPasswordModal.vue';
 import OrganizationStatusModal from '@renderer/components/Organization/OrganizationStatusModal.vue';
 import GlobalModalLoader from '@renderer/components/GlobalModalLoader.vue';
@@ -22,7 +23,7 @@ import GlobalAppProcesses from '@renderer/components/GlobalAppProcesses';
 import { ToastManager } from './utils/ToastManager';
 import { createLogger, getErrorMessage, isLoggedInOrganization } from '@renderer/utils';
 import { AppCache } from './caches/AppCache';
-import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload.ts';
+import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { TRANSACTION_ACTION } from '@shared/constants';
 
 /* Composables */
@@ -66,7 +67,7 @@ onErrorCaptured((err: unknown) => {
 provideUserModalRef(userPasswordModalRef);
 provideGlobalModalLoaderlRef(globalModalLoaderRef);
 provideDynamicLayout(dynamicLayout);
-ToastManager.provide();
+ToastManager.provide(toastManager);
 
 /* AppCache */
 const appCache = AppCache.inject();
@@ -130,4 +131,5 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   </Transition>
 
   <GlobalAppProcesses />
+  <ToastRenderer />
 </template>

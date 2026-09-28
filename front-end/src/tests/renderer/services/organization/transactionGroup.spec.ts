@@ -57,7 +57,7 @@ describe('transactionGroup service', () => {
       },
     };
 
-    vi.mocked(axiosWithCredentials.patch).mockResolvedValueOnce({ data: payload } as any);
+    vi.mocked(axiosWithCredentials.patch).mockResolvedValueOnce({ data: payload });
 
     await expect(cancelTransactionGroup(serverUrl, groupId, groupItems)).resolves.toEqual(payload);
     expect(axiosWithCredentials.patch).toHaveBeenCalledWith(

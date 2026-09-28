@@ -18,8 +18,6 @@ import type {
 import { Prisma } from '@prisma/client';
 import { Mnemonic } from '@hiero-ledger/sdk';
 
-import { SESSION_STORAGE_AUTH_TOKEN_PREFIX } from '@shared/constants';
-
 import {
   getUserState,
   healthCheck,
@@ -157,6 +155,7 @@ export const getLocalKeyPairs = async (
 
   let keyPairs = await getKeyPairs(
     user.id,
+    user.password,
     selectedOrganization !== null ? selectedOrganization.id : null,
   );
 
@@ -374,7 +373,7 @@ export const getConnectedOrganization = async (
   };
 
   try {
-    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id);
+    const shouldSignIn = await shouldSignInOrganization(user.id, organization.id, user.password);
 
     if (shouldSignIn) {
       return activeLoginRequired;
@@ -460,28 +459,13 @@ export const getOrganizationJwtTokens = async (
   user: PersonalUser | null,
 ): Promise<OrganizationTokens> => {
   if (isUserLoggedIn(user)) {
-    const organizationTokens = await getOrganizationTokens(user.id);
+    const organizationTokens = await getOrganizationTokens(user.id, user.password);
     return organizationTokens.reduce<OrganizationTokens>((acc, token) => {
       acc[token.organization_id] = token.jwtToken;
       return acc;
     }, {});
   }
   return {};
-};
-
-export const setSessionStorageTokens = (
-  organizations: Organization[],
-  organizationTokens: OrganizationTokens,
-) => {
-  for (const organization of organizations) {
-    const token = organizationTokens[organization.id]?.trim();
-    if (token && token.length > 0) {
-      sessionStorage.setItem(
-        `${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${new URL(organization.serverUrl).origin}`,
-        token,
-      );
-    }
-  }
 };
 
 export const deleteOrganizationConnection = async (
@@ -494,24 +478,6 @@ export const deleteOrganizationConnection = async (
 
   await deleteOrganizationCredentials(organizationId, user.id);
   await deleteOrganization(organizationId);
-};
-
-export const toggleAuthTokenInSessionStorage = (
-  serverUrl: string,
-  token: string,
-  remove: boolean = false,
-) => {
-  const origin = new URL(serverUrl).origin;
-  if (remove) {
-    sessionStorage.removeItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
-    return;
-  }
-  sessionStorage.setItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`, token);
-};
-
-export const getAuthTokenFromSessionStorage = (serverUrl: string): string | null => {
-  const origin = new URL(serverUrl).origin;
-  return sessionStorage.getItem(`${SESSION_STORAGE_AUTH_TOKEN_PREFIX}${origin}`);
 };
 
 export const restoreOrganizationKeys = async (

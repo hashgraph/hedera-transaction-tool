@@ -34,21 +34,21 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get users if verified', async () => {
-      const res = await endpoint.get(null, userAuthToken).expect(200);
+      const res = await endpoint.get(undefined, userAuthToken).expect(200);
 
       const actualUsers = await getUsers();
 
-      expect(res.body).toHaveLength(actualUsers.length);
+      expect(res.body).toHaveLength(actualUsers!.length);
     });
 
     it('(GET) should include clients with updateAvailable for admin after version-check', async () => {
       const versionEndpoint = new Endpoint(server, '/users/version-check');
-      await versionEndpoint.post({ version: '0.9.0' }, null, userAuthToken).expect(201);
+      await versionEndpoint.post({ version: '0.9.0' }, undefined, userAuthToken).expect(201);
 
-      const res = await endpoint.get(null, adminAuthToken).expect(200);
+      const res = await endpoint.get(undefined, adminAuthToken).expect(200);
 
       const testUser = await getUser('user');
-      const userInResponse = res.body.find((u: { id: number }) => u.id === testUser.id);
+      const userInResponse = res.body.find((u: { id: number }) => u.id === testUser!.id);
       expect(userInResponse).toBeDefined();
       expect(userInResponse.clients).toBeDefined();
       expect(userInResponse.clients).toHaveLength(1);
@@ -59,7 +59,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should not include clients or updateAvailable for non-admin', async () => {
-      const res = await endpoint.get(null, userAuthToken).expect(200);
+      const res = await endpoint.get(undefined, userAuthToken).expect(200);
 
       for (const u of res.body) {
         expect(u).not.toHaveProperty('updateAvailable');
@@ -68,7 +68,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should not be able to get users if not verified', async () => {
-      await endpoint.get(null, userNewAuthToken).expect(403);
+      await endpoint.get(undefined, userNewAuthToken).expect(403);
     });
 
     it('(GET) should not be able to get users if not logged in', async () => {
@@ -84,7 +84,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get the current user', async () => {
-      const res = await endpoint.get(null, userAuthToken).expect(200);
+      const res = await endpoint.get(undefined, userAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: false,
@@ -99,7 +99,7 @@ describe('Users (e2e)', () => {
     });
 
     it('(GET) should get the current user if not verified', async () => {
-      const res = await endpoint.get(null, userNewAuthToken).expect(200);
+      const res = await endpoint.get(undefined, userNewAuthToken).expect(200);
 
       expect(res.body).toEqual({
         admin: false,
@@ -143,10 +143,10 @@ describe('Users (e2e)', () => {
 
     it('(GET) should include client version info after version-check', async () => {
       const versionEndpoint = new Endpoint(server, '/users/version-check');
-      await versionEndpoint.post({ version: '0.9.0' }, null, userAuthToken).expect(201);
+      await versionEndpoint.post({ version: '0.9.0' }, undefined, userAuthToken).expect(201);
 
       const user = await getUser('user');
-      const res = await endpoint.get(user.id.toString(), userAuthToken).expect(200);
+      const res = await endpoint.get(user!.id.toString(), userAuthToken).expect(200);
 
       expect(res.body.clients).toBeDefined();
       expect(res.body.clients).toHaveLength(1);
@@ -214,7 +214,7 @@ describe('Users (e2e)', () => {
     it('(DELETE) should throw if try to remove themselves', async () => {
       const admin = await getUser('admin');
 
-      await endpoint.delete(admin.id.toString(), adminAuthToken).expect(400);
+      await endpoint.delete(admin!.id.toString(), adminAuthToken).expect(400);
     });
   });
 

@@ -275,6 +275,7 @@ watch(
               :disabled="decryptPassword.trim().length === 0 || decrypting"
               :loading="decrypting"
               loading-text="Decrypting..."
+              data-testid="button-decrypt-encrypted-keys"
               >Decrypt</AppButton
             >
           </div>

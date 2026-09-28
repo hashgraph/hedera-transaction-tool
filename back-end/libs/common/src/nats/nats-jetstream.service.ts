@@ -33,7 +33,7 @@ export class NatsJetStreamService implements OnModuleDestroy {
         }
       });
 
-      let timeoutId: ReturnType<typeof setTimeout>;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
       const timeoutPromise = new Promise<never>((_, reject) => {
         timeoutId = setTimeout(() => {
           timedOut = true;
@@ -44,11 +44,14 @@ export class NatsJetStreamService implements OnModuleDestroy {
       try {
         await Promise.race([connectionPromise, timeoutPromise]);
       } finally {
-        clearTimeout(timeoutId);
+        if (timeoutId !== null) {
+          clearTimeout(timeoutId);
+        }
       }
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
       this.logger.error(
-        `Failed to connect to NATS on startup: ${err.message}. ` +
+        `Failed to connect to NATS on startup: ${errorMessage}. ` +
           'Service will continue in degraded mode and retry in the background.',
       );
     }
@@ -76,6 +79,10 @@ export class NatsJetStreamService implements OnModuleDestroy {
     if (!this.nc) return;
 
     (async () => {
+      if (this.nc === null) {
+        this.connected = false;
+        return;
+      }
       for await (const status of this.nc.status()) {
         this.logger.log(`NATS connection status: ${status.type} - ${status.data}`);
 

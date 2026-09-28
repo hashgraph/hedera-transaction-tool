@@ -5,8 +5,8 @@ export const getWidthOfElementWithText = (element: HTMLElement, text: string) =>
   const context = canvas.getContext('2d');
 
   if (context) {
-    context!.font = styles.font;
-    const { width } = context!.measureText(text);
+    context.font = styles.font;
+    const { width } = context.measureText(text);
 
     return width;
   } else {

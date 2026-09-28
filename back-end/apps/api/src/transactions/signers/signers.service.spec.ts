@@ -11,6 +11,7 @@ import {
   SignatureMap,
   AccountId,
   TransactionId,
+  PublicKey,
 } from '@hiero-ledger/sdk';
 import {
   emitTransactionStatusUpdate,
@@ -57,8 +58,8 @@ describe('SignersService', () => {
   } as User;
 
   const buildValidationResult = (sdkTransaction: any, signatureMap: SignatureMap) => {
-    const allPublicKeys = [];
-    const newPublicKeys = [];
+    const allPublicKeys: PublicKey[] = [];
+    const newPublicKeys: PublicKey[] = [];
     const seen = new Set<string>();
 
     for (const nodeMap of signatureMap.values()) {
@@ -139,7 +140,7 @@ describe('SignersService', () => {
     });
 
     it('should return null if id not provided', async () => {
-      const result = await service.getSignatureById(null);
+      const result = await service.getSignatureById(0);
 
       expect(result).toBeNull();
     });
@@ -159,6 +160,9 @@ describe('SignersService', () => {
           id: true,
           transactionId: true,
           userKeyId: true,
+          recorderId: true,
+          tool: true,
+          version: true,
           createdAt: true,
         },
         withDeleted: true,
@@ -172,12 +176,6 @@ describe('SignersService', () => {
         page: 1,
         size: 10,
       });
-    });
-
-    it('should return null if user not provided', async () => {
-      const result = await service.getSignaturesByUser(null, defaultPagination);
-
-      expect(result).toBeNull();
     });
   });
 
@@ -201,12 +199,6 @@ describe('SignersService', () => {
         },
         withDeleted: true,
       });
-    });
-
-    it('should return null if transaction id not provided', async () => {
-      const result = await service.getSignaturesByTransactionId(null);
-
-      expect(result).toBeNull();
     });
   });
 
@@ -233,7 +225,7 @@ describe('SignersService', () => {
       });
       expect(dataSource.manager.find).toHaveBeenNthCalledWith(2, TransactionSigner, {
         where: { transactionId: In([1, 2]) },
-        select: ['transactionId', 'userKeyId'],
+        select: { transactionId: true, userKeyId: true },
       });
 
       expect(result.transactionMap.size).toBe(2);
@@ -530,7 +522,7 @@ describe('SignersService', () => {
       };
       mockManager.createQueryBuilder.mockReturnValue(mockQueryBuilder);
 
-      const signersToInsert = [{ userId: 1, transactionId: 1, userKeyId: 3 }];
+      const signersToInsert = [{ userId: 1, transactionId: 1, userKeyId: 3, recorderId: 1, tool: 'v2', version: '1.0.0' }];
 
       const result = await service['bulkInsertSigners'](mockManager, signersToInsert);
 
@@ -940,7 +932,7 @@ describe('SignersService', () => {
         user,
       );
 
-      expect(consoleError).toHaveBeenCalledWith(`[TX ${transactionId}] Error:`, 'Fail');
+      expect(consoleError).toHaveBeenCalledWith(`[TX ${transactionId}] Error:`, expect.objectContaining({ message: 'Fail' }));
       expect(result.signers).toHaveLength(0);
       expect(result.notificationReceiverIds).toEqual([]);
 
@@ -1083,6 +1075,218 @@ describe('SignersService', () => {
       expect(result.notificationReceiverIds).toEqual([]);
 
       consoleError.mockRestore();
+    });
+
+    it('should set recorderId to user.id on signer rows', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const valuesCapture: any[] = [];
+      const mockManager = mockDeep<any>();
+      mockManager.query
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([[], 0]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((v) => { valuesCapture.push(...v); return { returning: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ raw: [] }) }; }),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
+      });
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+        null,
+      );
+
+      expect(valuesCapture[0]).toMatchObject({ recorderId: user.id });
+
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should set tool from dto item on signer rows', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const valuesCapture: any[] = [];
+      const mockManager = mockDeep<any>();
+      mockManager.query
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([[], 0]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((v) => { valuesCapture.push(...v); return { returning: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ raw: [] }) }; }),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
+      });
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures(), tool: 'v1' }],
+        user,
+        null,
+      );
+
+      expect(valuesCapture[0]).toMatchObject({ tool: 'v1' });
+
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should default tool to api when not provided in dto', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const valuesCapture: any[] = [];
+      const mockManager = mockDeep<any>();
+      mockManager.query
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([[], 0]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((v) => { valuesCapture.push(...v); return { returning: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ raw: [] }) }; }),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
+      });
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+        null,
+      );
+
+      expect(valuesCapture[0]).toMatchObject({ tool: 'api' });
+
+      user.keys[0].publicKey = originalPublicKey;
+    });
+
+    it('should set version from parameter on signer rows', async () => {
+      const transactionId = 3;
+      const originalPublicKey = user.keys[0].publicKey;
+      const privateKey = PrivateKey.generateECDSA();
+      user.keys[0].publicKey = privateKey.publicKey.toStringRaw();
+
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+
+      const transaction = {
+        id: transactionId,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.WAITING_FOR_EXECUTION,
+      };
+
+      await sdkTransaction.sign(privateKey);
+
+      dataSource.manager.find.mockResolvedValueOnce([transaction]);
+      dataSource.manager.find.mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const valuesCapture: any[] = [];
+      const mockManager = mockDeep<any>();
+      mockManager.query
+        .mockResolvedValueOnce(undefined)
+        .mockResolvedValueOnce([[], 0]);
+      mockManager.createQueryBuilder.mockReturnValue({
+        insert: jest.fn().mockReturnThis(),
+        into: jest.fn().mockReturnThis(),
+        values: jest.fn().mockImplementation((v) => { valuesCapture.push(...v); return { returning: jest.fn().mockReturnThis(), execute: jest.fn().mockResolvedValue({ raw: [] }) }; }),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw: [] }),
+      });
+
+      (dataSource.transaction as jest.Mock).mockImplementation(async (arg1: any, arg2?: any) => {
+        const callback = typeof arg1 === 'function' ? arg1 : arg2;
+        return callback(mockManager);
+      });
+      jest.mocked(processTransactionStatus).mockResolvedValue(new Map());
+
+      await service.uploadSignatureMaps(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        user,
+        '0.35.0',
+      );
+
+      expect(valuesCapture[0]).toMatchObject({ version: '0.35.0' });
+
+      user.keys[0].publicKey = originalPublicKey;
     });
   });
 });

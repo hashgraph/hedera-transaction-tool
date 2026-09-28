@@ -13,8 +13,6 @@ import {
   emitTransactionUpdate,
 } from '@app/common';
 
-import { ApproversService } from '../approvers';
-
 import { CreateTransactionObserversDto, UpdateTransactionObserverDto } from '../dto';
 
 @Injectable()
@@ -24,7 +22,6 @@ export class ObserversService {
     @InjectRepository(TransactionObserver)
     private repo: Repository<TransactionObserver>,
     @InjectEntityManager() private entityManager: EntityManager,
-    private readonly approversService: ApproversService,
     private readonly transactionSignatureService: TransactionSignatureService,
     private readonly notificationsPublisher: NatsPublisherService,
   ) {}
@@ -37,7 +34,7 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'creatorKey.user', 'observers'],
+      relations: { creatorKey: { user: true }, observers: true },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -47,8 +44,9 @@ export class ObserversService {
 
     const observers: TransactionObserver[] = [];
 
+    const allObservers = transaction.observers ?? [];
     for (const userId of dto.userIds) {
-      if (!transaction.observers.some(o => o.userId === userId)) {
+      if (!allObservers.some(o => o.userId === userId)) {
         const observer = this.repo.create({ userId, transactionId, role: Role.FULL });
         observers.push(observer);
       }
@@ -61,12 +59,14 @@ export class ObserversService {
     try {
       const result = await this.repo.save(observers);
 
-      emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
+      await emitTransactionUpdate(this.notificationsPublisher, [{ entityId: transactionId }]);
 
       return result;
     } catch (error) {
-      this.logger.error('Failed to save transaction observers', (error as any)?.stack ?? (error as any)?.message ?? String(error));
-      throw new BadRequestException(error.message);
+      const errorStack = error instanceof Error ? error.stack : null;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      this.logger.error('Failed to save transaction observers', errorStack ?? errorMessage);
+      throw new BadRequestException(errorMessage);
     }
   }
 
@@ -77,7 +77,13 @@ export class ObserversService {
   ): Promise<TransactionObserver[]> {
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: transactionId },
-      relations: ['creatorKey', 'observers', 'signers', 'signers.userKey'],
+      relations: {
+        creatorKey: true,
+        observers: true,
+        signers: {
+          userKey: true
+        },
+      },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
@@ -89,21 +95,18 @@ export class ObserversService {
       this.entityManager,
     );
 
-    const approvers = await this.approversService.getApproversByTransactionId(transaction.id);
-
     if ([TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(transaction.status))
-      return transaction.observers;
+      return transaction.observers ?? [];
 
     if (
       userKeysToSign.length === 0 &&
       transaction.creatorKey?.userId !== user.id &&
-      !transaction.observers.some(o => o.userId === user.id) &&
-      !transaction.signers.some(s => s.userKey?.userId === user.id) &&
-      !approvers.some(a => a.userId === user.id)
+      !(transaction.observers === undefined || transaction.observers.some(o => o.userId === user.id)) &&
+      !(transaction.signers === undefined || transaction.signers.some(s => s.userKey?.userId === user.id))
     )
       throw new UnauthorizedException("You don't have permission to view this transaction");
 
-    return transaction.observers;
+    return transaction.observers ?? [];
   }
 
   /* Update a transaction observer with the data provided for the given observer id. */
@@ -142,7 +145,11 @@ export class ObserversService {
 
     const transaction = await this.entityManager.findOne(Transaction, {
       where: { id: observer.transactionId },
-      relations: ['creatorKey', 'creatorKey.user'],
+      relations: {
+        creatorKey: {
+          user: true,
+        },
+      },
     });
 
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);

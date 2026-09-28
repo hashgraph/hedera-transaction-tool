@@ -48,7 +48,7 @@ const handleRemoveFilter = (e: Event): void => {
           <ul class="dropdown-menu text-small mt-2">
             <div class="overflow-auto pe-3" :style="{ maxHeight: '35vh' }">
               <div class="d-flex flex-column gap-2">
-                <template v-for="ial in props.itemAndLabels" :key="ial">
+                <template v-for="ial in props.itemAndLabels" :key="ial.label">
                   <div class="d-flex align-items-center">
                     <div
                       v-if="selectedItems.length > 0"

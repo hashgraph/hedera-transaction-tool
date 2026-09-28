@@ -7,7 +7,6 @@ import {
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   getKeyPairs,
-  getSecretHashes,
   deleteKeyPair,
   updateNickname,
   updateMnemonicHash,
@@ -22,7 +21,6 @@ export default () => {
   createIPCChannel('keyPairs', [
     renameFunc(storeKeyPair, 'store'),
     renameFunc(getKeyPairs, 'getAll'),
-    renameFunc(getSecretHashes, 'getSecretHashes'),
     renameFunc(changeDecryptionPassword, 'changeDecryptionPassword'),
     renameFunc(updateNickname, 'updateNickname'),
     renameFunc(updateMnemonicHash, 'updateMnemonicHash'),
@@ -35,9 +33,9 @@ export default () => {
   // Clear keys file
   ipcMain.handle(
     createChannelName('clear'),
-    async (_e, userId: string, organizationId?: string) => {
+    async (_e, userId: string, decryptPassword: string | null, organizationId?: string) => {
       try {
-        await deleteSecretHashes(userId, organizationId);
+        await deleteSecretHashes(userId, decryptPassword, organizationId);
         return true;
       } catch {
         return false;

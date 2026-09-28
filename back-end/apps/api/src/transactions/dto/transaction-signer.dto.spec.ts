@@ -29,7 +29,7 @@ describe('TransactionSigner DTOs', () => {
     expect((dto as any).userKeyId).toBe(3)
     expect((dto as any).createdAt).toBeInstanceOf(Date)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false })
     expect(errors.length).toBe(0)
   })
 
@@ -45,7 +45,7 @@ describe('TransactionSigner DTOs', () => {
     expect((dto as any).userKey).toBeInstanceOf(UserKeyCoreDto)
     expect(((dto as any).userKey as any).id).toBe(10)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false })
     expect(errors.length).toBe(0)
   })
 
@@ -71,7 +71,7 @@ describe('TransactionSigner DTOs', () => {
     expect((dto as any).userKey).toBeInstanceOf(UserKeyCoreDto)
     expect(((dto as any).transaction as any).id).toBe(20)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false })
     expect(errors.length).toBe(0)
   })
 })

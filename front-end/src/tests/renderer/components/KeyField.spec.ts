@@ -8,7 +8,7 @@ import type { ComplexKey } from '@prisma/client';
 import KeyField from '@renderer/components/KeyField.vue';
 
 const mocks = vi.hoisted(() => ({
-  userPersonal: { id: 'user-1', isLoggedIn: true } as { id: string; isLoggedIn: boolean } | null,
+  userPersonal: { id: 'user-1', isLoggedIn: true },
   isUserLoggedIn: vi.fn(),
   getComplexKeys: vi.fn(),
   updateComplexKey: vi.fn(),

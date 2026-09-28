@@ -1,3 +1,7 @@
+virtualStoreDirMaxLength: 60
+shamefullyHoist: true
+trustLockfile: true
+
 packages:
   - back-end
   - back-end/apps/*
@@ -5,30 +9,56 @@ packages:
   - front-end
   - automation
 
+allowBuilds:
+  '@nestjs/core': true
+  '@parcel/watcher': true
+  '@prisma/client': true
+  '@prisma/engines': true
+  '@scarf/scarf': true
+  argon2: true
+  bcrypt: true
+  better-sqlite3: true
+  cpu-features: true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  msgpackr-extract: true
+  prisma: true
+  protobufjs: true
+  sqlite3: true
+  ssh2: true
+  unrs-resolver: true
+  vue-demi: true
+
 catalog:
+  '@eslint/eslintrc': 3.3.7
+  '@eslint/js': 10.0.1
+  '@typescript-eslint/eslint-plugin': 8.70.1
+  '@typescript-eslint/parser': 8.70.1
   '@hiero-ledger/proto': 2.31.0
-  '@hiero-ledger/sdk': 2.85.0
+  '@hiero-ledger/sdk': 2.88.0
   '@types/bcrypt': 6.0.0
   '@types/jest': 30.0.0
-  '@types/node': 25.5.0
-  '@types/semver': 7.7.1
-  argon2: 0.44.0
-  axios: 1.16.0
+  '@types/node': 26.6.2
+  '@types/semver': 7.8.0
+  argon2: 0.45.1
+  axios: 1.20.0
   bcrypt: 6.0.0
   bcryptjs: 3.0.3
-  dotenv: 17.4.2
-  jest: 30.4.2
-  jszip: 3.10.1
+  dotenv: 18.0.1
+  eslint: 10.11.0
+  jest: 30.5.2
+  jszip: 3.10.2
   long: 5.3.2
-  pg: 8.21.0
-  prettier: 3.8.3
+  pg: 8.23.0
+  prettier: 3.9.8
   reflect-metadata: 0.2.2
-  semver: 7.8.0
-  ts-jest: 29.4.11
-  ts-loader: 9.5.7
+  semver: 7.8.5
+  ts-jest: 29.4.12
+  ts-loader: 9.6.2
   ts-node: 10.9.2
-  typeorm: 0.3.28
-  typescript: 5.9.3
+  typeorm: 1.1.0
+  typescript: 6.0.3
 
 catalogs:
   # @nestjs/* packages from the nest monorepo (nestjs/nest) ship together and
@@ -38,7 +68,7 @@ catalogs:
   # @nestjs/passport, @nestjs/config, @nestjs/swagger) — their version match
   # is coincidental.
   nestjs-core:
-    '@nestjs/common': &nestjsCore 11.1.27
+    '@nestjs/common': &nestjsCore 11.1.28
     '@nestjs/core': *nestjsCore
     '@nestjs/microservices': *nestjsCore
     '@nestjs/platform-express': *nestjsCore
@@ -58,22 +88,74 @@ catalogs:
     vitest: &vitestVersion 4.1.5
     '@vitest/coverage-v8': *vitestVersion
 
-onlyBuiltDependencies:
-  - '@nestjs/core'
-  - '@parcel/watcher'
-  - '@prisma/client'
-  - '@prisma/engines'
-  - '@scarf/scarf'
-  - argon2
-  - bcrypt
-  - better-sqlite3
-  - cpu-features
-  - electron
-  - esbuild
-  - msgpackr-extract
-  - prisma
-  - protobufjs
-  - sqlite3
-  - ssh2
-  - unrs-resolver
-  - vue-demi
+overrides:
+  "protobufjs@<8.0.0": "7.6.5"
+  "protobufjs@>=8.0.0": "8.7.1"
+  "follow-redirects": "1.16.0"
+  "lodash": "4.18.1"
+  "handlebars": "4.7.9"
+  "js-cookie": "3.0.8"
+  "path-to-regexp@>=8.0.0": "8.4.2"
+  "serialize-javascript": "7.0.5"
+  "shell-quote": "1.10.0"
+  "brace-expansion@<2.0.0": "1.1.18"
+  "brace-expansion@>=2.0.0 <3.0.0": "2.1.4"
+  "brace-expansion@>=3.0.0": "5.0.9"
+  "picomatch@>=4.0.0": "4.0.4"
+  "flatted": "3.4.2"
+  "socket.io-parser": "4.2.7"
+  "js-yaml": "5.2.2"
+  "hono": "4.12.27"
+  "@hono/node-server": "2.0.10"
+  "tmp": "0.2.7"
+  "@xmldom/xmldom": "0.8.15"
+  "ajv@>=8.0.0": "8.20.0"
+  "tar": "7.5.21"
+  "fast-uri": "3.1.6"
+  "browserslist": "4.28.7"
+  "diff@<5.2.2": "5.2.2"
+  "diff@>=6.0.0": "8.0.3"
+  "@tootallnate/once@<2.0.1": "2.0.1"
+  "form-data": "4.0.6"
+  "ws@>=8.0.0": "8.21.0"
+  "undici@>=7.0.0": "7.29.0"
+  "@grpc/grpc-js@<1.12.7": "1.12.7"
+  "qs@>=6.11.1": "6.16.0"
+  "uuid@<11.1.1": "11.1.1"
+  "@babel/core": "7.29.6"
+  "esbuild@>=0.27.3": "0.28.1"
+  "cache-manager@>=7.2.10": "7.2.9"
+  "@cacheable/utils@>=2.5.1": "2.5.0"
+  "cacheable@>=2.5.1": "2.5.0"
+  "@cacheable/memory@>=2.2.1": "2.2.0"
+  "@cacheable/node-cache@>=3.1.2": "3.1.1"
+  "@cacheable/net@>=2.1.1": "2.1.0"
+  "ecto@>=5.0.1": "5.0.0"
+  "keyv@6.0.0": "5.6.0"
+  "@keyv/redis@6.0.0": "5.1.6"
+  "@keyv/etcd@6.0.0": "2.1.1"
+  "@keyv/memcache@6.0.0": "2.0.2"
+  "@keyv/mongo@6.0.0": "3.1.0"
+  "@keyv/postgres@6.0.0": "2.2.3"
+  "@keyv/sqlite@6.0.0": "4.0.8"
+  "@keyv/valkey@6.0.0": "1.0.11"
+  "flat-cache@6.1.24": "4.0.1"
+  "file-entry-cache@11.1.6": "8.0.0"
+  "cacheable-request@13.0.20": "13.0.19"
+  "postcss": "8.5.25"
+  "body-parser": "2.3.0"
+  "immutable": "5.1.8"
+  "find-my-way": "9.7.0"
+  "valibot": "1.4.2"
+  "baseline-browser-mapping": "2.11.8"
+  "undici@<7.0.0": "6.28.0"
+  "nanoid": "3.3.18"
+
+# Refuse to resolve packages published fewer than 3 days ago.
+# This blocks supply-chain attacks that race to publish malicious versions.
+# Add a specific package@version to minimumReleaseAgeExclude only after
+# confirming it is safe (e.g. a trusted patch that is legitimately new).
+minimumReleaseAge: 3
+minimumReleaseAgeExclude:
+  - '@vue/language-core@3.3.8'
+  - vue-tsc@3.3.8

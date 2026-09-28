@@ -1,63 +1,58 @@
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-const toastSuccessSpy = vi.fn();
-const toastInfoSpy = vi.fn();
-const toastWarningSpy = vi.fn();
-const toastErrorSpy = vi.fn();
-const toastMock = {
-  success: toastSuccessSpy,
-  info: toastInfoSpy,
-  warning: toastWarningSpy,
-  error: toastErrorSpy,
-};
-
-vi.mock('vue-toast-notification', () => ({
-  useToast: () => toastMock,
-}));
-
 describe('ToastManager', () => {
-
-  beforeEach(() => {
-    toastSuccessSpy.mockReset();
-    toastInfoSpy.mockReset();
-    toastWarningSpy.mockReset();
-    toastErrorSpy.mockReset();
-  })
 
   test('check success', () => {
     const toastManager = new ToastManager();
-    toastManager.success('Nice success message');
-    expect(toastSuccessSpy).toHaveBeenCalled();
+    const message = 'Nice success message';
+    toastManager.success(message);
+    expect(toastManager.findEntry(message, 'success')).not.toBeNull();
   });
 
   test('check info', () => {
     const toastManager = new ToastManager();
-    toastManager.info('Nice info message');
-    expect(toastInfoSpy).toHaveBeenCalled();
+    const message = 'Nice info message';
+    toastManager.info(message);
+    expect(toastManager.findEntry(message, 'info')).not.toBeNull();
   });
 
   test('check warning', () => {
     const toastManager = new ToastManager();
-    toastManager.warning('Nice warning message');
-    expect(toastWarningSpy).toHaveBeenCalled();
+    const message = 'Nice warning message';
+    toastManager.warning(message);
+    expect(toastManager.findEntry(message, 'warning')).not.toBeNull();
   });
 
   test('check error', () => {
     const toastManager = new ToastManager();
-    toastManager.error('Nice error message');
-    expect(toastErrorSpy).toHaveBeenCalled();
+    const message = 'Nice error message';
+    toastManager.error(message);
+    expect(toastManager.findEntry(message, 'error')).not.toBeNull();
+  });
+
+  test('check dismiss after timeout', () => {
+    vi.useFakeTimers();
+    const toastManager = new ToastManager();
+    const message = 'Nice success message';
+    toastManager.success(message);
+    expect(toastManager.findEntry(message, 'success')).not.toBeNull();
+    vi.advanceTimersByTime(4000);
+    expect(toastManager.findEntry(message, 'success')).toBeNull();
+    vi.useRealTimers();
   });
 
   test('check duplicated error messages', async () => {
     vi.useFakeTimers();
     const toastManager = new ToastManager();
-    toastManager.error('Nice error message');
-    expect(toastErrorSpy).toHaveBeenCalledTimes(1);
-    toastManager.error('Nice error message');
-    expect(toastErrorSpy).toHaveBeenCalledTimes(1);
+    const message = 'Nice error message';
+    toastManager.error(message);
+    expect(toastManager.countErrorEntries()).toBe(1);
+    toastManager.error(message);
+    expect(toastManager.countErrorEntries()).toBe(1);
     vi.advanceTimersByTime(800);
-    toastManager.error('Nice error message');
-    expect(toastErrorSpy).toHaveBeenCalledTimes(1);
+    toastManager.error(message);
+    expect(toastManager.countErrorEntries()).toBe(1);
+    vi.useRealTimers();
   });
 });
 

@@ -12,6 +12,11 @@ const props = withDefaults(
     disableOnLoading?: boolean;
     size?: 'small' | 'large' | 'default';
     outline?: boolean;
+    // Click logging - optional. Omitted entirely, every button still logs its click via the
+    // fallback (button's own text) below. Pass logLabel (+ optional logMetadata) for a
+    // meaningful label/data instead of relying on that fallback.
+    logLabel?: string;
+    logMetadata?: Record<string, unknown>;
   }>(),
   {
     disableOnLoading: true,
@@ -42,6 +47,7 @@ const colorMapping = {
     ref="buttonRef"
     :disabled="disabled || (loading && disableOnLoading)"
     :class="['btn', color ? colorMapping[color] : '', sizeMapping[size || 'default']]"
+    v-log-click="logLabel ? { label: logLabel, metadata: logMetadata } : undefined"
   >
     <template v-if="loading">
       <span class="spinner-border spinner-border-sm me-2" role="status" inert></span>{{ ' ' }}

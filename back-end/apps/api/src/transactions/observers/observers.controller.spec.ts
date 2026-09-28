@@ -2,9 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, guardMock } from '@app/common';
-import { Role, TransactionObserver, User, UserStatus } from '@entities';
+import { Role, Transaction, TransactionObserver, User, UserStatus } from '@entities';
 
 import { VerifiedUserGuard } from '../../guards';
+import { TransactionAccessGuard } from '../../guards/transaction-access.guard';
 
 import { ObserversController } from './observers.controller';
 import { ObserversService } from './observers.service';
@@ -33,6 +34,8 @@ describe('ObserversController', () => {
     })
       .overrideGuard(VerifiedUserGuard)
       .useValue(guardMock())
+      .overrideGuard(TransactionAccessGuard)
+      .useValue(guardMock())
       .compile();
 
     controller = module.get<ObserversController>(ObserversController);
@@ -48,7 +51,6 @@ describe('ObserversController', () => {
       keys: [],
       signerForTransactions: [],
       observableTransactions: [],
-      approvableTransactions: [],
       comments: [],
       issuedNotifications: [],
       receivedNotifications: [],
@@ -57,7 +59,7 @@ describe('ObserversController', () => {
     };
     observer = {
       id: 1,
-      transaction: null,
+      transaction: new Transaction(),
       createdAt: new Date(),
       user: user,
       role: Role.FULL,

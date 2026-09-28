@@ -37,7 +37,7 @@ describe('TransactionToSignDto', () => {
     expect(Array.isArray(dto.keysToSign)).toBe(true)
     expect(dto.keysToSign).toEqual([1, 2, 3])
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 
@@ -60,7 +60,7 @@ describe('TransactionToSignDto', () => {
 
     expect(dto.keysToSign).toEqual([4, 5])
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 })

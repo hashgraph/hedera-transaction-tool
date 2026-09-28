@@ -15,7 +15,6 @@ import {
   UserKey,
   Client,
   Transaction,
-  TransactionApprover,
   TransactionSigner,
   TransactionObserver,
   TransactionComment,
@@ -27,10 +26,14 @@ import {
   NotificationReceiver,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionAccountSnapshot,
+  TransactionNodeSnapshot,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
   CachedNodeAdminKey,
+  NodeSnapshot,
+  AccountSnapshot,
 } from '@entities';
 
 dotenv.config({
@@ -59,7 +62,8 @@ async function main() {
 
     user.email = email;
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
     console.log(pc.redBright('\nExiting...'));
     process.exit(0);
   }
@@ -84,7 +88,8 @@ async function main() {
     console.log(`Password hash: ${pc.cyan(newUser.password)}`);
     console.log(`Admin: ${pc.cyan(newUser.admin.toString())}`);
   } catch (error) {
-    console.log(pc.red(error.message));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.log(pc.red(errorMessage));
   }
 
   /* Exit */
@@ -135,7 +140,6 @@ async function connectDatabase() {
       Client,
       Transaction,
       TransactionSigner,
-      TransactionApprover,
       TransactionObserver,
       TransactionComment,
       TransactionGroupItem,
@@ -149,6 +153,10 @@ async function connectDatabase() {
       Notification,
       NotificationPreferences,
       NotificationReceiver,
+      AccountSnapshot,
+      NodeSnapshot,
+      TransactionAccountSnapshot,
+      TransactionNodeSnapshot,
     ],
   });
 

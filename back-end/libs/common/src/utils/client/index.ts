@@ -13,6 +13,7 @@ import {
   USER_PASSWORD_RESET,
   EmailDto,
   DISMISSED_NOTIFICATIONS,
+  TRANSACTION_REVIEWER_REJECTION,
 } from '@app/common';
 
 const logger = new Logger('NatsEmitHelpers');
@@ -77,4 +78,12 @@ export const emitDismissedNotifications = async (
 ) => {
   const result = await publisher.publish(DISMISSED_NOTIFICATIONS, dtos);
   if (!result?.success) logPublishFailure(DISMISSED_NOTIFICATIONS, result?.response);
+};
+
+export const emitReviewerRejection = async (
+  publisher: NatsPublisherService,
+  dtos: NotificationEventDto[],
+) => {
+  const result = await publisher.publish(TRANSACTION_REVIEWER_REJECTION, dtos);
+  if (!result?.success) logPublishFailure(TRANSACTION_REVIEWER_REJECTION, result?.response);
 };

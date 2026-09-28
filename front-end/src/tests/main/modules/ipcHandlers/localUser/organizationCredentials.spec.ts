@@ -6,7 +6,6 @@ import registerOrganizationCredentialsHandlers from '@main/modules/ipcHandlers/l
 
 import {
   getOrganizationTokens,
-  organizationsToSignIn,
   shouldSignInOrganization,
   addOrganizationCredentials,
   updateOrganizationCredentials,
@@ -34,7 +33,6 @@ describe('IPC handlers organization credentials', () => {
   test('Should register handlers for each event', () => {
     const events = [
       'getOrganizationTokens',
-      'organizationsToSignIn',
       'shouldSignInOrganization',
       'addOrganizationCredentials',
       'updateOrganizationCredentials',
@@ -45,13 +43,12 @@ describe('IPC handlers organization credentials', () => {
   });
 
   test('Should set up getOrganizationTokens handler', async () => {
-    await invokeIPCHandler('organizationCredentials:getOrganizationTokens', user_id);
-    expect(getOrganizationTokens).toHaveBeenCalledWith(user_id);
-  });
-
-  test('Should set up organizationsToSignIn handler', async () => {
-    await invokeIPCHandler('organizationCredentials:organizationsToSignIn', user_id);
-    expect(organizationsToSignIn).toHaveBeenCalledWith(user_id);
+    await invokeIPCHandler(
+      'organizationCredentials:getOrganizationTokens',
+      user_id,
+      decryptPassword,
+    );
+    expect(getOrganizationTokens).toHaveBeenCalledWith(user_id, decryptPassword);
   });
 
   test('Should set up shouldSignInOrganization handler', async () => {
@@ -60,8 +57,13 @@ describe('IPC handlers organization credentials', () => {
       'organizationCredentials:shouldSignInOrganization',
       user_id,
       organization_id,
+      decryptPassword,
     );
-    expect(shouldSignInOrganization).toHaveBeenCalledWith(user_id, organization_id);
+    expect(shouldSignInOrganization).toHaveBeenCalledWith(
+      user_id,
+      organization_id,
+      decryptPassword,
+    );
   });
 
   test('Should set up addOrganizationCredentials handler', async () => {

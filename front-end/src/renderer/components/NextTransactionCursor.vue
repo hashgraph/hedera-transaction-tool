@@ -45,6 +45,11 @@ const handleNext = async () => {
       data-testid="button-previous-org-transaction"
       type="button"
       @click="handlePrev"
+      log-label="prev-transaction"
+      :log-metadata="{
+        currentIndex: nextTransaction.currentIndex,
+        collectionLength: nextTransaction.currentCollection?.length,
+      }"
     >
       <i class="bi bi-chevron-left"></i>
     </AppButton>
@@ -58,6 +63,11 @@ const handleNext = async () => {
       data-testid="button-next-org-transaction"
       type="button"
       @click="handleNext"
+      log-label="next-transaction"
+      :log-metadata="{
+        currentIndex: nextTransaction.currentIndex,
+        collectionLength: nextTransaction.currentCollection?.length,
+      }"
     >
       <i class="bi bi-chevron-right"></i>
     </AppButton>

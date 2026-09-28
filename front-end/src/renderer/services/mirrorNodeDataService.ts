@@ -13,6 +13,7 @@ import {
   type RegisteredServiceEndPoint,
   type RegisteredBlockNodeEndpoint,
   RegisteredNodeType,
+  RegisteredBlockNodeApi,
 } from '@shared/interfaces';
 
 import {
@@ -21,6 +22,7 @@ import {
   MirrorNodeServiceEndpoint as SDKMirrorNodeServiceEndpoint,
   RpcRelayServiceEndpoint as SDKRpcRelayServiceEndpoint,
   GeneralServiceEndpoint as SDKGeneralServiceEndpoint,
+  BlockNodeApi as SDKBlockNodeApi,
 } from '@hiero-ledger/sdk';
 
 import axios from 'axios';
@@ -100,7 +102,7 @@ export const getAccountInfo = async (
 
   const accountInfo: IAccountInfoParsed = {
     accountId: AccountId.fromString(rawAccountInfo.account || ''),
-    alias: rawAccountInfo.alias as string,
+    alias: rawAccountInfo.alias,
     balance: Hbar.from(rawAccountInfo.balance?.balance || 0, HbarUnit.Tinybar),
     declineReward: Boolean(rawAccountInfo.decline_reward),
     deleted: Boolean(rawAccountInfo.deleted),
@@ -182,7 +184,7 @@ export const getDollarAmount = (hbarPrice: number, hbarAmount: BigNumber) => {
     } else if (usdAmount.isGreaterThan(-resolution) && usdAmount.isLessThan(0)) {
       usdAmount = new BigNumber(-resolution);
     }
-    result = `$${usdAmount.decimalPlaces(fractionDigits)}`;
+    result = `$${usdAmount.decimalPlaces(fractionDigits).toString()}`;
   } else {
     result = '';
   }
@@ -280,7 +282,7 @@ export const getNodeInfo = async (
               domainName: node.grpc_proxy_endpoint.domain_name || '',
             })
           : null,
-        associated_registered_node: node.associated_registered_node ?? [],
+        associated_registered_nodes: node.associated_registered_nodes ?? [],
       };
       return nodeInfo;
     }
@@ -355,7 +357,7 @@ export function parseRegisteredServiceEndpoint(
       const r = new SDKBlockNodeServiceEndpoint();
       const apis = endpoint.block_node !== null ? parseBlockNodeApis(endpoint.block_node) : null;
       if (apis !== null) {
-        r.setEndpointApis(parseBlockNodeApis(endpoint.block_node));
+        r.setEndpointApis(apis);
         result = r;
       } else {
         result = null
@@ -407,7 +409,26 @@ export function parseBlockNodeApis(blockNode: RegisteredBlockNodeEndpoint | null
   const result: number[] = [];
 
   if (blockNode !== null) {
-
+    for (const api of blockNode.endpoint_apis) {
+      switch (api) {
+        case RegisteredBlockNodeApi.OTHER:
+        case RegisteredBlockNodeApi.UNRECOGNIZED:
+          result.push(SDKBlockNodeApi.Other._code);
+          break;
+        case RegisteredBlockNodeApi.STATUS:
+          result.push(SDKBlockNodeApi.Status._code);
+          break;
+        case RegisteredBlockNodeApi.PUBLISH:
+          result.push(SDKBlockNodeApi.Publish._code);
+          break;
+        case RegisteredBlockNodeApi.SUBSCRIBE_STREAM:
+          result.push(SDKBlockNodeApi.SubscribeStream._code);
+          break;
+        case RegisteredBlockNodeApi.STATE_PROOF:
+          result.push(SDKBlockNodeApi.StateProof._code);
+          break;
+      }
+    }
   }
 
   return result;

@@ -7,12 +7,15 @@ export const TESTNET = 'testnet';
 export const PREVIEWNET = 'previewnet';
 export const LOCAL_NODE = 'local-node';
 
-export const getLocalClientNetwork = (env: string) => {
+export const normalizeMirrorNetwork = (mirrorNetwork: string): string =>
+  mirrorNetwork.trim().toLowerCase();
+
+export const getLocalClientNetwork = (env: string|undefined): Record<string, string> => {
   switch (env) {
     case 'test':
-      return { '127.0.0.1:50211': '0.0.3' };
+      return { '127.0.0.1:35211': '0.0.3' };
     default:
-      return { 'host.docker.internal:50211': '0.0.3' };
+      return { 'host.docker.internal:35211': '0.0.3' };
   }
 };
 
@@ -24,7 +27,7 @@ export const getClientFromNetwork = async (
     mirrorNetwork = [mirrorNetwork];
   }
 
-  mirrorNetwork = mirrorNetwork.map(network => network.toLocaleLowerCase());
+  mirrorNetwork = mirrorNetwork.map(normalizeMirrorNetwork);
   if ([MAINNET, TESTNET, PREVIEWNET].includes(mirrorNetwork[0])) {
     return Client.forName(mirrorNetwork[0]);
   }

@@ -13,6 +13,7 @@ import useDefaultOrganization from '@renderer/composables/user/useDefaultOrganiz
 
 import { login } from '@renderer/services/organization';
 import { addOrganizationCredentials } from '@renderer/services/organizationCredentials';
+import { RequestError } from '@renderer/utils/axios';
 
 import {
   assertUserLoggedIn,
@@ -21,7 +22,6 @@ import {
   isLoggedOutOrganization,
   isOrganizationActive,
   redirectToPrevious,
-  toggleAuthTokenInSessionStorage,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -89,7 +89,6 @@ const handleLogin = async () => {
       true,
     );
 
-    toggleAuthTokenInSessionStorage(user.selectedOrganization.serverUrl, jwtToken);
     await user.refetchOrganizations();
 
     toastManager.success('Successfully signed in');
@@ -115,8 +114,13 @@ const handleLogin = async () => {
     );
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to sign in'));
-    inputEmailInvalid.value = true;
-    inputPasswordInvalid.value = true;
+
+    // Only flag the credentials as invalid when the server actually rejected them (401).
+    // A 429 (rate limited) or other error doesn't mean the email/password are wrong.
+    if (!(error instanceof RequestError) || error.status === 401) {
+      inputEmailInvalid.value = true;
+      inputPasswordInvalid.value = true;
+    }
   } finally {
     loading.value = false;
   }

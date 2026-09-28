@@ -5,35 +5,35 @@ import { ValidateNested } from 'class-validator';
 
 export class PaginatedResourceDto<T> {
   @Expose()
-  totalItems: number;
+  totalItems!: number;
 
   @Expose()
-  items: T[];
+  items!: T[];
 
   @Expose()
-  page: number;
+  page!: number;
 
   @Expose()
-  size: number;
+  size!: number;
 }
 
-type Constructor<T = object> = new (...args) => T;
+type Constructor<T = object> = new (...args: unknown[]) => T;
 
 export function withPaginatedResponse<TBase extends Constructor>(Base: TBase) {
   class ResponseDTO {
     @Expose()
-    totalItems: number;
+    totalItems!: number;
 
     @Expose()
-    page: number;
+    page!: number;
 
     @Expose()
-    size: number;
+    size!: number;
 
     @Expose()
     @Type(() => Base)
     @ValidateNested({ each: true })
-    items: Array<InstanceType<TBase>>;
+    items!: Array<InstanceType<TBase>>;
   }
   return mixin(ResponseDTO);
 }

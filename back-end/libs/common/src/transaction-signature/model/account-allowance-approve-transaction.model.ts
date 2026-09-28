@@ -7,7 +7,7 @@ export class AccountAllowanceApproveTransactionModel
 
   static readonly TRANSACTION_TYPE = 'AccountAllowanceApproveTransaction';
 
-  getSigningAccounts(): Set<string> {
+  override getSigningAccounts(): Set<string> {
     const set = super.getSigningAccounts();
 
     this.transaction.hbarApprovals.forEach(value => {

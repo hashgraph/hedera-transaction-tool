@@ -62,6 +62,24 @@ watch([file, manualContent], () => {
     manualContent.value.length > 0 ? manualContent.value : file.value?.content || null,
   );
 });
+
+watch(
+  () => props.contents,
+  contents => {
+    if (contents === null) {
+      manualContent.value = '';
+      file.value = null;
+    } else if (typeof contents === 'string') {
+      manualContent.value = contents;
+      file.value = null;
+    } else {
+      // contents is Uint8Array, meaning user has uploaded a file
+      manualContent.value = '';
+      // we don't set file.value here because the file is already set when user uploads a file
+    }
+  },
+  { immediate: true },
+);
 </script>
 <template>
   <div class="mt-6 form-group">

@@ -20,7 +20,7 @@ To setup the frontend application, Follow the complete setup process below..
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
 
-  - Required version: `>= 24.0.0`
+  - Required version: `>= 24.20.0 <25`
   - Verify installation:
 
     ```bash
@@ -54,6 +54,9 @@ To setup the frontend application, Follow the complete setup process below..
     ```bash
     python -m setuptools --version
     ```
+
+- **Redis 7.0+**
+  - Required for IP-based rate limiting on sensitive endpoints. The `IpResetPasswordUniqueEmailGuard` uses the `EXPIRE ... NX` option introduced in Redis 7.0. Earlier versions don't support this syntax and will return an error, so this guard requires Redis 7.0+ to function correctly.
 
 - **Docker Desktop with Kubernetes enabled**
   - Enable Kubernetes: Docker Desktop → Settings → Kubernetes → Enable Kubernetes → Apply & Restart.
@@ -96,6 +99,17 @@ Create `.env` files from the provided `example.env` templates in each of the fol
 - the root one
 
 The default values work for development.
+
+### Swagger / API Docs
+
+The API's Swagger UI (`/api-docs`) is controlled by `SWAGGER_MODE` in `apps/api/.env`, independent of `NODE_ENV`:
+
+- `off` (default) - Swagger is not mounted at all.
+- `docs` - the docs are browsable, but "Try it out" is disabled (`supportedSubmitMethods: []`), so a visitor can see the schema but can't fire requests through the UI.
+
+Enabling Swagger on any deployment reachable from outside your own machine exposes your full OpenAPI schema (routes, request/response shapes, field names) to anyone who can reach the route. If the deployment is public-facing at all, pair it with a rate limit and/or an IP allowlist (e.g. at the Cloudflare/Traefik edge) rather than leaving it open to the internet.
+
+There's intentionally no "live"/request-execution mode yet. Swagger UI's "Try it out" sends a real, unmocked HTTP request to the running server, and this app has no bearer-auth scheme declared in its docs (`@nestjs/swagger` supports one via `DocumentBuilder.addBearerAuth()` plus `@ApiBearerAuth()` on protected routes, but it isn't wired up), so a request-execution mode today would just 401 on every authenticated endpoint while still letting anyone with route access fire real requests at public ones (login, signup, reset-password, OTP) with real side effects. Once bearer-auth is wired up so "Try it out" can actually authenticate, a `live` mode can be added back to `SWAGGER_MODE`.
 
 ## 4. Email API Configuration
 
@@ -317,13 +331,13 @@ dialing docker-images-prod.6aa30f8b08e16409b46e0173d6de2f56.r2.cloudflarestorage
 1. Pull from mirror registry:
 
    ```bash
-   docker pull mirror.gcr.io/library/node:24.15.0-alpine
+   docker pull mirror.gcr.io/library/node:24.20.0-alpine
    ```
 
 2. Tag the image:
 
    ```bash
-   docker tag mirror.gcr.io/library/node:24.15.0-alpine node:24.15.0-alpine
+   docker tag mirror.gcr.io/library/node:24.20.0-alpine node:24.20.0-alpine
    ```
 
 **Alternative**: Configure Docker Desktop Registry Mirrors:

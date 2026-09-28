@@ -5,7 +5,7 @@ import { NotificationType } from '@entities';
 export class UpdateNotificationPreferencesDto {
   @IsNotEmpty()
   @IsEnum(NotificationType)
-  type: NotificationType;
+  type!: NotificationType;
 
   @IsBoolean()
   @IsOptional()

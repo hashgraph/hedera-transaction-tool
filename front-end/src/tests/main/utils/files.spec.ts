@@ -81,13 +81,13 @@ describe('Files utilities', () => {
       vi.mocked(fsp.stat).mockResolvedValue({
         isFile: () => true,
         isDirectory: () => false,
-      });
+      } as any);
       vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
 
-      processor.mockResolvedValue({ file: '/file.pub' });
+      processor.mockResolvedValue([{ file: '/file.pub' }]);
       const result = await files.searchFiles(['/file.pub'], extensions, processor);
       expect(processor).toHaveBeenCalledWith(expect.stringMatching(/\/file\.pub$/));
-      expect(result).toEqual([{ file: '/file.pub' }]);
+      expect(result).toEqual([[{ file: '/file.pub' }]]);
     });
 
     test('Should process a directory and recurse into files', async () => {
@@ -95,7 +95,7 @@ describe('Files utilities', () => {
         isFile: () => false,
         isDirectory: () => true,
       } as any);
-      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub', 'file2.pub']);
+      vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub', 'file2.pub'] as any);
       vi.mocked(fsp.stat).mockResolvedValue({
         isFile: () => true,
         isDirectory: () => false,
@@ -104,18 +104,18 @@ describe('Files utilities', () => {
         filePath.endsWith('.pub') ? '.pub' : '.enc'
       );
       vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-      processor.mockResolvedValueOnce({ file: '/dir/file1.pub' });
-      processor.mockResolvedValueOnce({ file: '/dir/file2.pub' });
+      processor.mockResolvedValueOnce([{ file: '/dir/file1.pub' }]);
+      processor.mockResolvedValueOnce([{ file: '/dir/file2.pub' }]);
       const result = await files.searchFiles(['/dir'], extensions, processor);
       expect(fsp.readdir).toHaveBeenCalledWith('/dir');
-      expect(result).toEqual([{ file: '/dir/file1.pub' }, { file: '/dir/file2.pub' }]);
+      expect(result).toEqual([[{ file: '/dir/file1.pub' }], [{ file: '/dir/file2.pub' }]]);
     });
 
     test('Should handles errors in processor gracefully', async () => {
       vi.mocked(fsp.stat).mockResolvedValue({
         isFile: () => true,
         isDirectory: () => false,
-      });
+      } as any);
       vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
       vi.mocked(fsp.rm).mockResolvedValue(undefined);
       processor.mockRejectedValue(new Error('Processing error'));
@@ -156,6 +156,7 @@ describe('Files utilities', () => {
 
         mockStream = {
           on: vi.fn((event, callback) => {
+            // eslint-disable-next-line @typescript-eslint/no-implied-eval
             if (event === 'data' || event === 'close') setTimeout(callback, 0);
             if (event === 'error') return this;
             return mockStream;
@@ -182,14 +183,14 @@ describe('Files utilities', () => {
           return '';
         });
         vi.mocked(fsp.access).mockRejectedValue(new Error('File does not exist'));
-        vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub']);
+        vi.mocked(fsp.readdir).mockResolvedValue(['file1.pub'] as any);
       });
 
       test('Should process a zip file', async () => {
-        processor.mockResolvedValue({ file: '/tmp/unzipped_123/file1.pub' });
+        processor.mockResolvedValue([{ file: '/tmp/unzipped_123/file1.pub' }]);
         const result = await files.searchFiles(['/archive.zip'], extensions, processor);
         expect(unzipper.Open.file).toHaveBeenCalled();
-        expect(result).toEqual([{ file: '/tmp/unzipped_123/file1.pub' }]);
+        expect(result).toEqual([[{ file: '/tmp/unzipped_123/file1.pub' }]]);
       });
 
       test('Should abort unzipping if signal is aborted', async () => {
@@ -213,7 +214,7 @@ describe('Files utilities', () => {
         vi.mocked(fsp.rm).mockResolvedValue(undefined);
         processor.mockImplementation(async (filePath: string) => {
           abortFileSearch();
-          return filePath;
+          return [{file: filePath}];
         });
         const results = await files.searchFiles(['/archive.zip'], extensions, processor);
         expect(fsp.rm).toHaveBeenCalledWith(expect.stringMatching(/^\/tmp\/search_/), { recursive: true });
@@ -231,7 +232,7 @@ describe('Files utilities', () => {
         });
         processor.mockImplementation(async (filePath: string) => {
           abortFileSearch();
-          return filePath;
+          return [{file: filePath}];
         });
 
         const results = await files.searchFiles(['/archive.zip'], extensions, processor);
@@ -261,7 +262,7 @@ describe('Files utilities', () => {
     test('Should handle abort state during file copy', async () => {
       const filePath = '/path/to/source/file.txt';
       const fileDist = '/path/to/dest/file.txt';
-      const signal = { aborted: true };
+      const signal = { aborted: true } as unknown as AbortSignal;
 
       await expect(files.copyFile(filePath, fileDist, signal)).rejects.toEqual('File copying aborted');
 

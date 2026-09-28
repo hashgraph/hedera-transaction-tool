@@ -11,7 +11,6 @@ import { UserKey } from './user-key.entity';
 import { TransactionComment } from './transaction-comment.entity';
 import { TransactionObserver } from './transaction-observer.entity';
 import { TransactionSigner } from './transaction-signer.entity';
-import { TransactionApprover } from './transaction-approver.entity';
 import { Notification, NotificationPreferences } from './notifications';
 import { NotificationReceiver } from './notifications/notification-receiver.entity';
 import { Client } from './client.entity';
@@ -25,53 +24,50 @@ export enum UserStatus {
 @Entity()
 export class User {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ unique: true })
-  email: string;
+  email!: string;
 
   @Column()
-  password: string;
+  password!: string;
 
   @Column({ default: false })
-  admin: boolean;
+  admin!: boolean;
 
   @Column({ default: UserStatus.NEW })
-  status: UserStatus;
+  status!: UserStatus;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt!: Date | null;
 
   @OneToMany(() => UserKey, userKey => userKey.user, { eager: true })
-  keys: UserKey[];
+  keys!: UserKey[];
 
   @OneToMany(() => TransactionSigner, transactionSigner => transactionSigner.user)
-  signerForTransactions: TransactionSigner[];
+  signerForTransactions!: TransactionSigner[];
 
   @OneToMany(() => TransactionObserver, observer => observer.user)
-  observableTransactions: TransactionObserver[];
-
-  @OneToMany(() => TransactionApprover, approver => approver.user)
-  approvableTransactions: TransactionApprover[];
+  observableTransactions!: TransactionObserver[];
 
   @OneToMany(() => TransactionComment, comment => comment.user)
-  comments: TransactionComment[];
+  comments!: TransactionComment[];
 
   @OneToMany(() => Notification, notification => notification.actor)
-  issuedNotifications: Notification[];
+  issuedNotifications!: Notification[];
 
   @OneToMany(() => NotificationReceiver, notificationReceiver => notificationReceiver.notification)
-  receivedNotifications: NotificationReceiver[];
+  receivedNotifications!: NotificationReceiver[];
 
   @OneToMany(() => NotificationPreferences, preferences => preferences.user)
-  notificationPreferences: NotificationPreferences[];
+  notificationPreferences!: NotificationPreferences[];
 
   @OneToMany(() => Client, client => client.user)
-  clients: Client[];
+  clients!: Client[];
 }

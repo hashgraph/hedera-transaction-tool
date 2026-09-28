@@ -1,5 +1,7 @@
 import type { Config } from 'jest';
 
+process.env.TZ = 'UTC';
+
 const config: Config = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: '.',

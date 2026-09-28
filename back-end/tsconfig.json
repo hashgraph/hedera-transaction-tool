@@ -11,18 +11,33 @@
     "baseUrl": "./",
     "incremental": true,
     "skipLibCheck": true,
-    "strictNullChecks": false,
-    "noImplicitAny": false,
-    "strictBindCallApply": false,
-    "forceConsistentCasingInFileNames": false,
-    "noFallthroughCasesInSwitch": false,
+
+    "strict": true,
+
+    "allowUnreachableCode": false,
+    "allowUnusedLabels": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+
+    "exactOptionalPropertyTypes": false,
+    "noPropertyAccessFromIndexSignature": false,
+    "noUncheckedIndexedAccess": false,
+
+    "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "types": ["node", "jest"],
     "paths": {
-      "@app/common": ["libs/common/src"],
-      "@app/common/*": ["libs/common/src/*"],
-      "@transactionModels/*": ["libs/common/src/models/*"],
-      "@entities": ["libs/common/src/database/entities"]
-    }
+      "@app/common": ["./libs/common/src"],
+      "@app/common/*": ["./libs/common/src/*"],
+      "@transactionModels/*": ["./libs/common/src/models/*"],
+      "@entities": ["./libs/common/src/database/entities"]
+    },
+    "ignoreDeprecations": "6.0"
   },
   "exclude": [
     "node_modules",

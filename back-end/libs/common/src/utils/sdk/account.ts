@@ -54,10 +54,6 @@ export function parseAccountProperty(
     | 'max_automatic_token_associations'
     | 'auto_renew_period',
 ): number | null;
-export function parseAccountProperty(
-  accountInfo: AccountInfo,
-  property: 'stake_period_start' | 'memo' | 'alias',
-): string | null;
 export function parseAccountProperty(accountInfo: AccountInfo, property: keyof AccountInfo) {
   switch (property) {
     case 'account':
@@ -87,15 +83,19 @@ export function parseAccountProperty(accountInfo: AccountInfo, property: keyof A
     case 'evm_address':
       return EvmAddress.fromString(accountInfo.evm_address || '');
     case 'key':
-      switch (accountInfo.key._type) {
-        case KeyType.ProtobufEncoded:
-          return decodeProtobufKey(accountInfo.key.key);
-        case KeyType.ED25519:
-          return PublicKey.fromStringED25519(accountInfo.key.key);
-        case KeyType.ECDSA_SECP256K1:
-          return PublicKey.fromStringECDSA(accountInfo.key.key);
-        default:
-          return null;
+      if (accountInfo.key?.key) {
+        switch (accountInfo.key._type) {
+          case KeyType.ProtobufEncoded:
+            return decodeProtobufKey(accountInfo.key.key);
+          case KeyType.ED25519:
+            return PublicKey.fromStringED25519(accountInfo.key.key);
+          case KeyType.ECDSA_SECP256K1:
+            return PublicKey.fromStringECDSA(accountInfo.key.key);
+          default:
+            return null;
+        }
+      } else {
+        return null;
       }
     case 'max_automatic_token_associations':
       return accountInfo.max_automatic_token_associations

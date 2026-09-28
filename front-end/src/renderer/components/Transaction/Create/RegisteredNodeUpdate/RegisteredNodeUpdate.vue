@@ -48,7 +48,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createRegisteredNodeUpdateTransaction({
       ...common,
-      ...(data as RegisteredNodeUpdateData),
+      ...(data),
     });
 });
 
@@ -194,11 +194,11 @@ watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
     data.description = '';
     data.adminKey = null;
     data.serviceEndpoints = [];
-  } else if (!route.query.draftId) {
+  } else if (!route.query.draftId && !route.query.groupIndex) {
     data.description = registeredNodeInfo.description ?? '';
     data.adminKey = registeredNodeInfo.admin_key;
     data.serviceEndpoints = getComponentRegisteredEndpoints(
-      registeredNodeInfo.service_endpoints as any,
+      registeredNodeInfo.service_endpoints,
     );
   }
 });

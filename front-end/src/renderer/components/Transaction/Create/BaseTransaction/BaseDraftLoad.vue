@@ -1,11 +1,6 @@
-<script setup lang="ts">
+<script lang="ts" setup>
 import { onMounted } from 'vue';
-import {
-  FileAppendTransaction,
-  FileCreateTransaction,
-  FileUpdateTransaction,
-  type Transaction,
-} from '@hiero-ledger/sdk';
+import { type Transaction } from '@hiero-ledger/sdk';
 
 import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
@@ -17,7 +12,7 @@ import { getTransactionFromBytes } from '@renderer/utils';
 
 /* Emits */
 const emit = defineEmits<{
-  (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'draft-loaded', transaction: Transaction, description: string): void;
 }>();
 
 /* Stores */
@@ -37,25 +32,21 @@ const handleLoadFromDraft = async () => {
   }
 
   let transactionBytes: string | null = null;
+  let description = '';
 
   if (!group) {
     const draft = await getDraft(draftId);
     transactionBytes = draft.transactionBytes;
+    description = draft.description || '';
   } else if (groupIndex) {
-    transactionBytes = transactionGroup.groupItems[Number(groupIndex)].transactionBytes.toString();
+    const groupItem = transactionGroup.groupItems[Number(groupIndex)];
+    transactionBytes = groupItem.transactionBytes.toString();
+    description = groupItem.description || '';
   }
 
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
-    if (
-      transaction instanceof FileCreateTransaction ||
-      transaction instanceof FileUpdateTransaction ||
-      (transaction instanceof FileAppendTransaction && transaction.contents?.length === 0)
-    ) {
-      //@ts-expect-error - contents should be null
-      transaction.setContents(null);
-    }
-    emit('draft-loaded', transaction);
+    emit('draft-loaded', transaction, description);
   }
 };
 

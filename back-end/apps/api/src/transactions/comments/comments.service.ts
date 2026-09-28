@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { TransactionComment, User } from '@entities';
 import { Repository } from 'typeorm';
 import { ErrorCodes } from '@app/common';
-import { CreateCommentDto } from '../dto/create-comment.dto';
+import { CreateCommentDto } from '../dto';
 
 @Injectable()
 export class CommentsService {
@@ -20,9 +20,11 @@ export class CommentsService {
     transactionId: number,
     dto: CreateCommentDto,
   ): Promise<TransactionComment> {
-    const comment = this.repo.create(dto);
-    comment['transaction'].id = transactionId;
-    comment.user = user;
+    const comment = this.repo.create({
+      ...dto,
+      transaction: { id: transactionId },
+      user,
+    });
     try {
       return await this.repo.save(comment);
     } catch (error) {
@@ -31,15 +33,16 @@ export class CommentsService {
     }
   }
 
-  // Get the transaction comment for the given id.
-  getTransactionCommentById(id: number) {
-    return this.repo.findOneBy({ id });
+  // Get the transaction comment for the given id, scoped to the transaction.
+  getTransactionCommentById(transactionId: number, id: number) {
+    return this.repo.findOne({ where: { id, transaction: { id: transactionId } }, relations: { user: true } });
   }
 
   // Get the transaction comments for the given transaction id.
   getTransactionComments(transactionId: number) {
     return this.repo
       .createQueryBuilder('comment')
+      .leftJoinAndSelect('comment.user', 'user')
       .where('comment.transactionId = :transactionId', { transactionId })
       .getMany();
   }

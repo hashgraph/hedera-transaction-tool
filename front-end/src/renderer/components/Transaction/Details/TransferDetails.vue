@@ -46,14 +46,14 @@ onBeforeMount(async () => {
         :hbar-transfers="props.transaction.hbarTransfersList"
         :linkedAccounts="linkedAccounts"
       />
-      <template v-for="tokenId in props.transaction.tokenTransfers.keys()" :key="tokenId">
+      <template v-for="tokenId in props.transaction.tokenTransfers.keys()" :key="tokenId.toString()">
         <TokenTransferDetails
           :token-id="tokenId"
           :transaction="props.transaction"
           :linkedAccounts="linkedAccounts"
         />
       </template>
-      <template v-for="tokenId in props.transaction.nftTransfers.keys()" :key="tokenId">
+      <template v-for="tokenId in props.transaction.nftTransfers.keys()" :key="tokenId.toString()">
         <NftTransferDetails
           :token-id="tokenId"
           :transaction="props.transaction"

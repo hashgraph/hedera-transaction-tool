@@ -67,7 +67,7 @@ describe('Services Local User Public Keys Linked', () => {
 
       prisma.transactionDraft.findFirst.mockResolvedValue(null);
 
-      expect(() => getDraft(id)).rejects.toThrow('Transaction draft not found');
+      await expect(() => getDraft(id)).rejects.toThrow('Transaction draft not found');
     });
   });
 
@@ -103,7 +103,7 @@ describe('Services Local User Public Keys Linked', () => {
 
       prisma.transactionDraft.count.mockResolvedValue(1);
 
-      expect(() => addDraft(draft)).rejects.toThrow('Transaction draft already exists');
+      await expect(() => addDraft(draft)).rejects.toThrow('Transaction draft already exists');
     });
   });
 
@@ -185,8 +185,8 @@ describe('Services Local User Public Keys Linked', () => {
         new Error('Transaction draft Database error'),
       );
 
-      expect(() => getDraftsCount(userId)).rejects.toThrow('Failed to get drafts count');
-      expect(() => getDraftsCount(userId)).rejects.toThrow(
+      await expect(() => getDraftsCount(userId)).rejects.toThrow('Failed to get drafts count');
+      await expect(() => getDraftsCount(userId)).rejects.toThrow(
         new Error('Transaction draft Database error'),
       );
     });

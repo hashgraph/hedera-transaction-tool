@@ -46,8 +46,17 @@ describe('Schema Synchronization', () => {
     const schemaBuilder = dataSource.driver.createSchemaBuilder();
     const sqls = await schemaBuilder.log();
 
-    // If there are SQL statements, schema is out of sync
-    expect(sqls.upQueries).toHaveLength(0);
-    expect(sqls.downQueries).toHaveLength(0);
+    // Functional indexes created in migrations cannot be expressed via TypeORM
+    // entity decorators, so we exclude them from the schema-sync check.
+    const migrationManagedIndexes = [
+      'UQ_reviewer_rule_entity_network_group_role_type',
+      'IDX_group_change_record_pending_groupId',
+      'IDX_rule_change_record_pending_ruleId',
+    ];
+    const isKnown = (q: { query: string }) =>
+      migrationManagedIndexes.some(name => q.query.includes(name));
+
+    expect(sqls.upQueries.filter(q => !isKnown(q))).toHaveLength(0);
+    expect(sqls.downQueries.filter(q => !isKnown(q))).toHaveLength(0);
   });
 });

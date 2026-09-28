@@ -5,6 +5,7 @@ import { onMounted } from 'vue';
 import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
+import { MAX_TRANSACTION_DESCRIPTION_LENGTH } from '@shared/interfaces';
 
 /* Props */
 defineProps<{
@@ -41,7 +42,7 @@ onMounted(async () => {
         :model-value="description"
         @update:model-value="v => $emit('update:description', v)"
         :filled="true"
-        :limit="256"
+        :limit="MAX_TRANSACTION_DESCRIPTION_LENGTH"
         placeholder="Enter a description for the transaction"
         data-testid="input-transaction-description"
       />

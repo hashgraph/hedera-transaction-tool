@@ -7,7 +7,7 @@ import { readTransactionFile, writeTransactionFile } from '@renderer/services/tr
 import {
   collectMissingSignerKeys,
   filterTransactionFileItemsToBeSigned,
-} from '@shared/utils/transactionFile.ts';
+} from '@renderer/utils/transactionFileSigning.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import { AppCache } from '@renderer/caches/AppCache.ts';
@@ -53,11 +53,11 @@ async function handleSignAll() {
 
   if (transactionFile.value) {
     const updatedFile: TransactionFile = {
-      network: transactionFile.value!.network,
+      network: transactionFile.value.network,
       items: [],
     };
 
-    for (const item of transactionFile.value!.items) {
+    for (const item of transactionFile.value.items) {
       const updatedItem = { ...item };
 
       if (itemsToBeSigned.value.includes(item)) {
@@ -66,7 +66,7 @@ async function handleSignAll() {
         const missingSignerKeys = await collectMissingSignerKeys(
           sdkTransaction,
           user.publicKeys,
-          network.getMirrorNodeREST(transactionFile.value!.network),
+          network.getMirrorNodeREST(transactionFile.value.network),
           appCache,
         );
 
@@ -92,20 +92,22 @@ async function handleSignAll() {
             signatureCountAfter: sigMapAfter.getFlatSignatureList().length,
           });
         } catch (error) {
-          logger.error('Failed to sign transaction file entry', {
-            error,
-          });
+          logger.error('Failed to sign transaction file entry', { error });
+          const reason = error instanceof Error ? `${error.message} ` : '';
+          toastManager.error(
+            `${reason}Please delete the private key and re-add it. For more help, contact your administrator.`,
+          );
+          return;
         }
       }
       updatedFile.items.push(updatedItem);
     }
+
     try {
       await writeTransactionFile(updatedFile, props.filePath!);
       showSuccessModal.value = true;
     } catch (error) {
-      logger.error('Failed to update transaction file', {
-        error,
-      });
+      logger.error('Failed to update transaction file', { error });
       toastManager.error('Failed to update file');
     }
   }

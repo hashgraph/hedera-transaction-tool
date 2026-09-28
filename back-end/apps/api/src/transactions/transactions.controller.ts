@@ -1,8 +1,9 @@
 import {
+  BadRequestException,
   Body,
   Controller,
-  Delete,
   Get,
+  Headers,
   HttpCode,
   Param,
   ParseIntPipe,
@@ -18,8 +19,10 @@ import {
 } from '@nestjs/swagger';
 
 import { TransactionId } from '@hiero-ledger/sdk';
+import * as semver from 'semver';
 
 import {
+  ErrorCodes,
   Filtering,
   FilteringParams,
   OnlyOwnerKey,
@@ -60,7 +63,7 @@ export class TransactionsController {
   /* Submit a transaction */
   @ApiOperation({
     summary: 'Create a transaction',
-    description: 'Create a transaction for the organization to approve, sign, and execute.',
+    description: 'Create a transaction for the organization to sign, and execute.',
   })
   @ApiResponse({
     status: 201,
@@ -72,7 +75,7 @@ export class TransactionsController {
   @OnlyOwnerKey<CreateTransactionDto>('creatorKeyId')
   async createTransaction(
     @Body() body: CreateTransactionDto,
-    @GetUser() user,
+    @GetUser() user: User,
   ): Promise<Transaction> {
     return this.transactionsService.createTransaction(body, user);
   }
@@ -96,6 +99,7 @@ export class TransactionsController {
   async importSignatures(
     @Body() body: UploadSignatureMapDto[] | UploadSignatureMapDto,
     @GetUser() user: User,
+    @Headers('x-frontend-version') version?: string,
   ): Promise<SignatureImportResultDto[]> {
     const transformedSignatureMaps = await transformAndValidateDto(
       UploadSignatureMapDto,
@@ -103,7 +107,7 @@ export class TransactionsController {
     );
 
     // Delegate to service to perform the import
-    return this.transactionsService.importSignatures(transformedSignatureMaps, user);
+    return this.transactionsService.importSignatures(transformedSignatureMaps, user, version ? semver.clean(version) ?? null : null);
   }
 
   /* Get all transactions visible by the user */
@@ -193,49 +197,10 @@ export class TransactionsController {
     @Param('transactionId', ParseIntPipe) transactionId: number,
   ): Promise<number[]> {
     const transaction = await this.transactionsService.getTransactionById(transactionId);
+    if (transaction === null) {
+      throw new BadRequestException(ErrorCodes.TNF);
+    }
     return this.transactionsService.getUserKeysToSign(transaction, user);
-  }
-
-  /* Get all transactions to be approved by the user */
-  /* NO LONGER USED BY FRONT-END */
-  @ApiOperation({
-    summary: 'Get transactions to approve',
-    description: 'Get all transactions to be approved by the current user.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [TransactionDto],
-  })
-  @Serialize(withPaginatedResponse(TransactionDto))
-  @Get('/approve')
-  getTransactionsToApprove(
-    @GetUser() user: User,
-    @PaginationParams() paginationParams: Pagination,
-    @SortingParams(transactionProperties) sort?: Sorting[],
-    @FilteringParams({
-      validProperties: transactionProperties,
-      dateProperties: transactionDateProperties,
-    })
-    filter?: Filtering[],
-  ) {
-    return this.transactionsService.getTransactionsToApprove(user, paginationParams, sort, filter);
-  }
-
-  /* Returns whether a user should approve a transaction with id */
-  @ApiOperation({
-    summary: 'Check if the current user should approve the transaction with the provided id',
-    description: 'Check if the current user should approve the transaction with the provided id.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: [Number],
-  })
-  @Get('/approve/:transactionId')
-  async shouldApproveTransaction(
-    @GetUser() user: User,
-    @Param('transactionId', ParseIntPipe) transactionId: number,
-  ): Promise<boolean> {
-    return this.transactionsService.shouldApproveTransaction(transactionId, user);
   }
 
   @ApiOperation({
@@ -248,7 +213,7 @@ export class TransactionsController {
   })
   @Patch('/cancel/:id')
   async cancelTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.cancelTransaction(id, user);
@@ -264,7 +229,7 @@ export class TransactionsController {
   })
   @Patch('/archive/:id')
   async archiveTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.archiveTransaction(id, user);
@@ -280,7 +245,7 @@ export class TransactionsController {
   })
   @Patch('/execute/:id')
   async executeTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', ParseIntPipe) id: number,
   ): Promise<boolean> {
     return this.transactionsService.executeTransaction(id, user);
@@ -297,22 +262,10 @@ export class TransactionsController {
   @Get('/:id')
   @Serialize(TransactionFullDto)
   async getTransaction(
-    @GetUser() user,
+    @GetUser() user: User,
     @Param('id', TransactionIdPipe) id: number | TransactionId,
   ): Promise<Transaction> {
     return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }
 
-  @ApiOperation({
-    summary: 'Deletes a transaction',
-    description: 'Deletes the transaction for the given transaction id.',
-  })
-  @ApiResponse({
-    status: 200,
-    type: Boolean,
-  })
-  @Delete('/:id')
-  deleteTransaction(@GetUser() user, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
-    return this.transactionsService.removeTransaction(id, user, true);
-  }
 }

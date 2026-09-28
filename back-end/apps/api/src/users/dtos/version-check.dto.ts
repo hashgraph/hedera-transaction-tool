@@ -11,5 +11,5 @@ export class VersionCheckDto {
   @Matches(/^\d+\.\d+\.\d+(-[\w.]+)?(\+[\w.]+)?$/, {
     message: 'Version must be in semver format (e.g., 1.2.3, 1.2.3-beta.1)',
   })
-  version: string;
+  version!: string;
 }

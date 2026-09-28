@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { AxiosError, type AxiosResponse } from 'axios';
 
 const mockOrgs: Array<{ serverUrl: string; nickname?: string }> = [];
 
@@ -11,6 +12,57 @@ vi.mock('@renderer/utils/version', () => ({
   FRONTEND_VERSION: '1.0.0',
 }));
 
+const createAxiosError = (status: number, data: Record<string, unknown> = {}): AxiosError =>
+  new AxiosError('request failed', 'ERR', undefined, undefined, {
+    status,
+    data,
+    statusText: 'error',
+    headers: {},
+    config: {} as any,
+  } as AxiosResponse);
+
+describe('commonRequestHandler', () => {
+  test('uses the default message on a 401 when messageOn401 is not provided', async () => {
+    const { commonRequestHandler, RequestError } = await import('@renderer/utils/axios');
+
+    const call = commonRequestHandler(async () => {
+      throw createAxiosError(401, { message: 'Incorrect token' });
+    }, 'Failed to verify password reset');
+
+    await expect(call).rejects.toThrow(RequestError);
+    await expect(call).rejects.toThrow('Failed to verify password reset');
+  });
+
+  test('messageOn401 overrides the backend message on a 401', async () => {
+    const { commonRequestHandler } = await import('@renderer/utils/axios');
+
+    await expect(
+      commonRequestHandler(
+        async () => {
+          throw createAxiosError(401, { message: 'from the backend' });
+        },
+        'Failed to sign in',
+        'Invalid email or password',
+      ),
+    ).rejects.toThrow('Invalid email or password');
+  });
+
+  test('statusMessages overrides the message for a specific status, taking priority over messageOn401', async () => {
+    const { commonRequestHandler } = await import('@renderer/utils/axios');
+
+    await expect(
+      commonRequestHandler(
+        async () => {
+          throw createAxiosError(429, { message: 'from the backend' });
+        },
+        'Failed to verify password reset',
+        'Incorrect code. Please try again.',
+        { 429: 'Too many attempts. Please request a new code.' },
+      ),
+    ).rejects.toThrow('Too many attempts. Please request a new code.');
+  });
+});
+
 describe('handleAxiosResponseError (426 interceptor handler)', () => {
   beforeEach(() => {
     localStorage.clear();
@@ -21,7 +73,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('does nothing for non-426 errors', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: { status: 500, data: {} },
       config: { url: 'https://org.example.com/api' },
     });
@@ -31,7 +83,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('does nothing when the serverUrl cannot be extracted', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: { latestSupportedVersion: '2.0.0', minimumSupportedVersion: '1.5.0' },
@@ -44,7 +96,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
   test('on 426 with absolute URL, stores parsed data and derives belowMinimum status', async () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: {
@@ -69,7 +121,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
     const { handleAxiosResponseError } = await import('@renderer/utils/axios');
     const state = await import('@renderer/stores/versionState');
 
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: { updateUrl: 'https://download/v2' },
@@ -91,7 +143,7 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
       updateUrl: 'https://prior',
     });
 
-    await handleAxiosResponseError({
+    handleAxiosResponseError({
       response: {
         status: 426,
         data: {

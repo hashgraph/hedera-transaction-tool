@@ -2,7 +2,7 @@ import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from
 import { Reflector } from '@nestjs/core';
 import { ExtractJwt } from 'passport-jwt';
 
-import { IGNORE_CONTROLLER_GUARD } from '../decorators/ignore-controller-guard.decorator';
+import { IGNORE_CONTROLLER_GUARD } from '../decorators';
 
 import { BlacklistService } from '@app/common';
 
@@ -12,7 +12,7 @@ export const extractJwtOtp = ExtractJwt.fromHeader('otp');
 export const JwtBlackListAuthGuard = createJwtBlacklistGuard(extractJwtAuth);
 export const JwtBlackListOtpGuard = createJwtBlacklistGuard(extractJwtOtp);
 
-export function createJwtBlacklistGuard(extractJwt: (req) => string) {
+export function createJwtBlacklistGuard(extractJwt: (req: unknown) => string | null) {
   @Injectable()
   class JwtBlacklistGuard implements CanActivate {
     constructor(

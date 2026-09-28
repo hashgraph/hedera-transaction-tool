@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   Injectable,
-  InternalServerErrorException,
   Logger,
   UnauthorizedException,
   UnprocessableEntityException,
@@ -9,13 +8,18 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 
-import { Repository } from 'typeorm';
-import { FindOptionsWhere } from 'typeorm/find-options/FindOptionsWhere';
+import { Repository, FindOptionsWhere } from 'typeorm';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
 
-import { ErrorCodes, checkFrontendVersion, isUpdateAvailable, VersionCheckResult } from '@app/common';
+import {
+  BlacklistService,
+  checkFrontendVersion,
+  ErrorCodes,
+  isUpdateAvailable,
+  VersionCheckResult,
+} from '@app/common';
 import { Client, User, UserKey, UserStatus } from '@entities';
 
 @Injectable()
@@ -26,6 +30,7 @@ export class UsersService {
     @InjectRepository(User) private repo: Repository<User>,
     @InjectRepository(Client) private clientRepo: Repository<Client>,
     private readonly configService: ConfigService,
+    private readonly blacklistService: BlacklistService,
   ) {}
 
   /* Creates a user with a given email and password. */
@@ -35,7 +40,7 @@ export class UsersService {
 
     if (user) {
       if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
-      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: null });
+      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: undefined });
     }
 
     user = this.repo.create({
@@ -48,13 +53,7 @@ export class UsersService {
 
   /* Returns the user for the given email and password. The returned user is valid and verified. */
   async getVerifiedUser(email: string, password: string): Promise<User> {
-    let user: User;
-
-    try {
-      user = await this.getUser({ email });
-    } catch {
-      throw new InternalServerErrorException('Failed to retrieve user.');
-    }
+    const user = await this.getUser({ email });
 
     if (!user) {
       throw new UnauthorizedException('Please check your login credentials');
@@ -74,19 +73,19 @@ export class UsersService {
   }
 
   // Return a user for given values
-  getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User> {
+  async getUser(where: FindOptionsWhere<User>, withDeleted = false): Promise<User | null> {
     // If where is null, or all values in where are null, return null
     if (!where || Object.values(where).every(value => !value)) {
       return null;
     }
-    return this.repo.findOne({ where, withDeleted });
+    return await this.repo.findOne({ where, withDeleted });
   }
 
   // Return an array of users, containing all current users of the organization.
   async getUsers(requestingUser: User): Promise<User[]> {
     // Only load clients relation when admin needs update info
     if (requestingUser.admin) {
-      const users = await this.repo.find({ relations: ['clients'] });
+      const users = await this.repo.find({ relations: { clients: true } });
       const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
       this.enrichUsersWithUpdateFlag(users, latestSupported);
       return users;
@@ -96,7 +95,7 @@ export class UsersService {
   }
 
   async getUserWithClients(id: number, requestingUser: User): Promise<User> {
-    const relations = (requestingUser.admin || requestingUser.id === id) ? ['clients'] : [];
+    const relations = (requestingUser.admin || requestingUser.id === id) ? { clients: true } : {};
     const user = await this.repo.findOne({ where: { id }, relations });
 
     if (!user) {
@@ -110,6 +109,7 @@ export class UsersService {
       return user;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { clients: _clients, ...userWithoutClients }: User = user;
     // Type assertion needed: serialization interceptor handles the actual shape
     return userWithoutClients as User;
@@ -118,7 +118,7 @@ export class UsersService {
   async getOwnerOfPublicKey(publicKey: string): Promise<string | null> {
     const existingUser = await this.repo.findOne({
       where: { keys: { publicKey } },
-      relations: ['keys'],
+      relations: { keys: true },
     });
     return existingUser ? existingUser.email : null;
   }
@@ -159,6 +159,11 @@ export class UsersService {
     if (!user) {
       throw new BadRequestException(ErrorCodes.UNF);
     }
+
+    // Revoke existing JWTs before changing the account state. If Redis is
+    // unavailable, fail the removal rather than deleting the user while the
+    // revocation record cannot be written.
+    await this.blacklistService.blacklistPreviousUserTokens(id);
 
     // Soft-delete all user keys first
     await this.repo.manager.softDelete(UserKey, { userId: id });

@@ -4,10 +4,13 @@ import { Socket, io } from 'socket.io-client';
 
 import useUserStore from './storeUser';
 import useOrganizationConnection from './storeOrganizationConnection';
+import useVersionCheck from '@renderer/composables/useVersionCheck';
+
+import { organizationUpdateTimestamps } from '@renderer/stores/versionState';
 
 import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 
-import { createLogger, getAuthTokenFromSessionStorage, isUserLoggedIn } from '@renderer/utils';
+import { createLogger, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
 
 interface WebsocketConnectionStoreReturn {
@@ -26,6 +29,9 @@ const useWebsocketConnection = defineStore(
     const user = useUserStore();
     const orgConnection = useOrganizationConnection();
     const logger = createLogger('renderer.websocket');
+
+    /* Composables */
+    const { performVersionCheck } = useVersionCheck();
 
     /* State */
     const sockets = ref<{ [serverUrl: string]: Socket | null }>({});
@@ -75,10 +81,17 @@ const useWebsocketConnection = defineStore(
 
     function connect(serverUrl: string, url: string) {
       const socket = sockets.value[serverUrl];
+      const userStore = useUserStore();
+      const org = userStore.organizations.find(o => o.serverUrl === serverUrl);
+      if (!org) {
+        logger.error('Organization not found during web socket connect', { serverUrl });
+        throw new Error('Organization not found');
+      }
+      const authToken = userStore.getJwtToken(org.id);
 
       if (socket) {
         //@ts-expect-error - auth is missing in typings
-        if (socket.auth?.token !== `bearer ${getAuthTokenFromSessionStorage(serverUrl)}`) {
+        if (socket.auth?.token !== `bearer ${authToken}`) {
           socket.off();
           socket.disconnect();
           connectionStates.value[serverUrl] = 'disconnected';
@@ -95,15 +108,14 @@ const useWebsocketConnection = defineStore(
       const newSocket = io(url, {
         path: '/ws',
         auth: cb => {
-          const token = getAuthTokenFromSessionStorage(serverUrl);
 
           logger.debug('Preparing websocket auth payload', {
-            hasToken: !!token,
+            hasToken: authToken !== null,
             serverUrl,
           });
 
           cb({
-            token: token ? `bearer ${token}` : undefined,
+            token: authToken ? `bearer ${authToken}` : undefined,
             version: FRONTEND_VERSION,
           });
         },
@@ -147,6 +159,28 @@ const useWebsocketConnection = defineStore(
         });
         connectionStates.value[serverUrl] = 'connected';
         orgConnection.setConnectionStatus(serverUrl, 'connected');
+
+        // Clear stale disconnect metadata from the raw org object.
+        // orgConnection.setConnectionStatus already cleared the store-side
+        // disconnect reason; this keeps the org object in sync so the
+        // OrganizationsTab fallback (org?.disconnectReason) doesn't show
+        // stale "Update required to reconnect" text after an auto-reconnect.
+        const org = user.organizations.find(o => o.serverUrl === serverUrl);
+        if (org) {
+          delete org.disconnectReason;
+          delete org.lastDisconnectedAt;
+        }
+
+        // Only run a version check if this session hasn't already gotten
+        // fresh data for this org. reconnectOrganization calls
+        // performVersionCheck before ws.connect(), so the timestamp is
+        // already set when 'connect' fires for explicit reconnects — no need
+        // to duplicate that call. For socket.io auto-reconnects and startup
+        // checks that failed (org temporarily unreachable), there is no
+        // timestamp yet, so we check now.
+        if (!organizationUpdateTimestamps.value[serverUrl]) {
+          void performVersionCheck(serverUrl);
+        }
       });
 
       socket.on('connect_error', error => {

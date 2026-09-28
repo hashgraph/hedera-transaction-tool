@@ -8,8 +8,8 @@ const error = ref<UpdateError | null>(null);
 const updateInfo = ref<UpdateInfo | null>(null);
 
 export default function useElectronUpdater() {
-  const startUpdate = (updateUrl: string) => {
-    if (!updateUrl) {
+  const startUpdate = (version: string) => {
+    if (!version) {
       return;
     }
 
@@ -45,7 +45,7 @@ export default function useElectronUpdater() {
       error.value = err;
     });
 
-    window.electronAPI.local.update.startDownload(updateUrl);
+    window.electronAPI.local.update.startDownload(version);
   };
 
   const installUpdate = () => {

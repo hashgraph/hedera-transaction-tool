@@ -41,7 +41,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createAccountUpdateTransaction(
       { ...common, ...data },
-      accountData.accountInfo.value as IAccountInfoParsed,
+      accountData.accountInfo.value,
     );
 });
 

@@ -12,18 +12,18 @@ import { CachedAccount } from './';
 @Index(['cachedAccountId', 'publicKey'], { unique: true })
 export class CachedAccountKey {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @ManyToOne(() => CachedAccount, (acc) => acc.keys, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'cachedAccountId' })
-  cachedAccount: CachedAccount;
+  cachedAccount!: CachedAccount;
 
   @Column()
-  cachedAccountId: number;
+  cachedAccountId!: number;
 
   @Column({ length: 128 })
   @Index()
-  publicKey: string;
+  publicKey!: string;
 }

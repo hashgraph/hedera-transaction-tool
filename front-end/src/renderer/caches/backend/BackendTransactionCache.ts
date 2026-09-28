@@ -1,5 +1,5 @@
 import { TransactionId } from '@hiero-ledger/sdk';
-import { EntityCache } from '@renderer/caches/base/EntityCache.ts';
+import { EntityCache } from '@renderer/caches/base/EntityCache';
 import { getTransactionById } from '@renderer/services/organization';
 import type { ITransactionFull } from '@shared/interfaces';
 

@@ -11,6 +11,7 @@ import type {
   SignatureImportResultDto,
   TransactionApproverDto,
 } from '@shared/interfaces';
+import { SignerTool } from '@shared/interfaces';
 
 import {
   axiosWithCredentials,
@@ -86,7 +87,7 @@ export const uploadSignatures = async (
   transactionId?: number,
   items?: SignatureItem[],
 ) => {
-  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap; tool: string }[] = [];
 
   if (!items) {
     if (!publicKeys || !transaction || !transactionId) {
@@ -113,6 +114,7 @@ export const uploadSignatures = async (
     formattedMaps.push({
       id: transactionId,
       signatureMap: formatSignatureMap(signatureMap),
+      tool: SignerTool.V2,
     });
   }
 
@@ -134,12 +136,13 @@ export const importSignatures = async (
   organization: LoggedInOrganization & Organization,
   signatureImport: ISignatureImport[] | ISignatureImport,
 ): Promise<SignatureImportResultDto[]> => {
-  const formattedMaps: { id: number; signatureMap: FormattedMap }[] = [];
+  const formattedMaps: { id: number; signatureMap: FormattedMap; tool?: string }[] = [];
   const imports = Array.isArray(signatureImport) ? signatureImport : [signatureImport];
-  for (const signatureImport of imports) {
+  for (const si of imports) {
     formattedMaps.push({
-      id: signatureImport.id,
-      signatureMap: formatSignatureMap(signatureImport.signatureMap),
+      id: si.id,
+      signatureMap: formatSignatureMap(si.signatureMap),
+      tool: si.tool,
     });
   }
   return commonRequestHandler(async () => {

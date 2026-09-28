@@ -31,7 +31,7 @@ export default {
     onError: (callback: (error: UpdateError) => void) => {
       ipcRenderer.on('update:error', (_e, error: UpdateError) => callback(error));
     },
-    startDownload: (updateUrl: string) => ipcRenderer.send('update:start-download', updateUrl),
+    startDownload: (version: string) => ipcRenderer.send('update:start-download', version),
     install: () => ipcRenderer.send('update:install'),
     cancel: () => ipcRenderer.send('update:cancel'),
     removeAllListeners: () => {

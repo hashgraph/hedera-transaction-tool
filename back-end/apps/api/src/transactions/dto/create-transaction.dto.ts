@@ -1,31 +1,41 @@
-import { IsBoolean, IsDate, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDate,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 import { TransformBuffer } from '@app/common';
+import { MAX_TRANSACTION_DESCRIPTION_LENGTH } from '@entities';
 
-//TODO approvers and observers can be added to this dto, validatenested,
+//TODO observers can be added to this dto, validatenested,
 // also adding cascade to the transaction relations to enable single saves
 export class CreateTransactionDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsString()
-  description: string;
+  @MaxLength(MAX_TRANSACTION_DESCRIPTION_LENGTH)
+  description!: string;
 
   @IsNotEmpty()
   @TransformBuffer()
-  transactionBytes: Buffer;
+  transactionBytes!: Buffer;
 
   @IsNumber()
-  creatorKeyId: number;
+  creatorKeyId!: number;
 
   @IsNotEmpty()
   @TransformBuffer()
-  signature: Buffer;
+  signature!: Buffer;
 
   @IsNotEmpty()
   @IsString()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Type(() => Date)
   @IsDate()

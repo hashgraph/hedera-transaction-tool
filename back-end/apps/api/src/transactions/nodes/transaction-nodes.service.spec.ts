@@ -46,7 +46,6 @@ describe('TransactionNodesService', () => {
     keys: [],
     signerForTransactions: [],
     observableTransactions: [],
-    approvableTransactions: [],
     comments: [],
     issuedNotifications: [],
     receivedNotifications: [],
@@ -61,9 +60,8 @@ describe('TransactionNodesService', () => {
     index: 1,
     publicKey: 'some public key',
     user: user,
-    deletedAt: undefined,
+    deletedAt: null,
     createdTransactions: [],
-    approvedTransactions: [],
     signedTransactions: [],
   };
 
@@ -80,9 +78,9 @@ describe('TransactionNodesService', () => {
     created_at: new Date('2025-01-01T00:00:00Z'),
     valid_start: new Date('2025-01-01T00:01:00Z'),
     updated_at: new Date('2025-01-01T00:02:00Z'),
-    executed_at: null,
+    executed_at: null as Date|null,
     status: TransactionStatus.NEW,
-    status_code: null,
+    status_code: undefined,
     sdk_transaction_id: '0.0.123@15648433.112315',
     transaction_type: TransactionType.ACCOUNT_CREATE,
     is_manual: false,
@@ -131,7 +129,7 @@ describe('TransactionNodesService', () => {
     created_at: new Date('2025-01-04T00:00:00Z'),
     valid_start: new Date('2025-01-04T00:01:00Z'),
     updated_at: new Date('2025-01-04T00:02:00Z'),
-    executed_at: null,
+    executed_at: undefined as Date | undefined,
     status: TransactionStatus.FAILED,
     status_code: 42,
     sdk_transaction_id: null,
@@ -148,9 +146,9 @@ describe('TransactionNodesService', () => {
     created_at: new Date('2025-01-05T00:00:00Z'),
     valid_start: new Date('2025-01-05T00:01:00Z'),
     updated_at: new Date('2025-01-05T00:02:00Z'),
-    executed_at: null,
+    executed_at: undefined as Date | undefined,
     status: TransactionStatus.WAITING_FOR_SIGNATURES,
-    status_code: null,
+    status_code: undefined,
     sdk_transaction_id: null,
     transaction_type: null,
     is_manual: null,
@@ -307,7 +305,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { approver: true }
+        { }
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -380,7 +378,6 @@ describe('TransactionNodesService', () => {
           signer: true,
           creator: true,
           observer: true,
-          approver: true,
         }
       );
 
@@ -420,7 +417,6 @@ describe('TransactionNodesService', () => {
           signer: true,
           creator: true,
           observer: true,
-          approver: true,
         }
       );
 
@@ -444,7 +440,7 @@ describe('TransactionNodesService', () => {
         TransactionNodeCollection.HISTORY,
         TEST_NETWORK,
         [],
-        [],
+        undefined,
       );
 
       expect(r).toStrictEqual(allNodes);
@@ -453,11 +449,11 @@ describe('TransactionNodesService', () => {
         sqlBuilderService,
         {
           statuses: TRANSACTION_STATUS_COLLECTIONS.HISTORY,
-          types: null,
+          types: undefined,
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -474,7 +470,7 @@ describe('TransactionNodesService', () => {
         TransactionNodeCollection.HISTORY,
         TEST_NETWORK,
         [TransactionStatus.EXPIRED],
-        [],
+        undefined,
       );
 
       expect(r).toStrictEqual([]);
@@ -483,11 +479,11 @@ describe('TransactionNodesService', () => {
         sqlBuilderService,
         {
           statuses: [TransactionStatus.EXPIRED],
-          types: null,
+          types: undefined,
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -517,7 +513,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { signer: true, creator: true, observer: true, approver: true },
+        { signer: true, creator: true, observer: true },
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);

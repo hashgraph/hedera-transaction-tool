@@ -16,11 +16,13 @@ import {
   UserKey,
   TransactionComment,
   TransactionSigner,
-  TransactionApprover,
   TransactionObserver,
+  TransactionReviewerList,
   TransactionGroupItem,
   TransactionCachedAccount,
   TransactionCachedNode,
+  TransactionAccountSnapshot,
+  TransactionNodeSnapshot,
 } from './';
 
 import { ApiProperty } from '@nestjs/swagger';
@@ -50,6 +52,7 @@ export enum TransactionStatus {
   NEW = 'NEW', // unused
   CANCELED = 'CANCELED',
   REJECTED = 'REJECTED',
+  READY_FOR_REVIEW = 'READY FOR REVIEW',
   WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
@@ -63,6 +66,8 @@ export const MAX_TRANSACTION_BYTE_SIZE = 6_144;
 // increased transaction size limit of 128 KB to accommodate council signatures.
 export const MAX_PRIVILEGED_TRANSACTION_BYTE_SIZE = 131_072;
 
+export const MAX_TRANSACTION_DESCRIPTION_LENGTH = 256;
+
 @Entity()
 @Index(['status', 'mirrorNetwork'])
 @Index(['creatorKeyId'])
@@ -72,37 +77,37 @@ export const MAX_PRIVILEGED_TRANSACTION_BYTE_SIZE = 131_072;
 })
 export class Transaction {
   @PrimaryGeneratedColumn()
-  id: number;
+  id!: number;
 
   @Column({ length: 100 })
-  name: string;
+  name!: string;
 
   @Column()
-  type: TransactionType;
+  type!: TransactionType;
 
-  @Column({ length: 256 })
-  description: string;
-
-  @Column()
-  transactionId: string;
+  @Column({ length: MAX_TRANSACTION_DESCRIPTION_LENGTH })
+  description!: string;
 
   @Column()
-  transactionHash: string;
+  transactionId!: string;
+
+  @Column()
+  transactionHash!: string;
 
   @ApiProperty({
     description: 'The transaction in bytes',
   })
   @Column({ type: 'bytea' })
-  transactionBytes: Buffer;
+  transactionBytes!: Buffer;
 
   @ApiProperty({
     description: 'The transaction in bytes. This transaction does not contain any signatures.',
   })
   @Column({ type: 'bytea' })
-  unsignedTransactionBytes: Buffer;
+  unsignedTransactionBytes!: Buffer;
 
   @Column()
-  status: TransactionStatus;
+  status!: TransactionStatus;
 
   @Column({ nullable: true })
   statusCode?: number;
@@ -112,22 +117,22 @@ export class Transaction {
   })
   @ManyToOne(() => UserKey, userKey => userKey.createdTransactions)
   @JoinColumn({ name: 'creatorKeyId' })
-  creatorKey: UserKey;
+  creatorKey!: UserKey;
 
   @Column()
-  creatorKeyId: number;
+  creatorKeyId!: number;
 
   @Column({ type: 'bytea' })
-  signature: Buffer;
+  signature!: Buffer;
 
   @Column()
-  validStart: Date;
+  validStart!: Date;
 
   @Column()
-  mirrorNetwork: string;
+  mirrorNetwork!: string;
 
   @Column({ default: false })
-  isManual: boolean;
+  isManual!: boolean;
 
   @Column({ nullable: true })
   cutoffAt?: Date;
@@ -136,19 +141,19 @@ export class Transaction {
    * List of keys from the newKey, where applicable.
    */
   @Column({ type: 'text', array: true, nullable: true })
-  publicKeys: string[] | null;
+  publicKeys!: string[] | null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @Column({ nullable: true })
   executedAt?: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @DeleteDateColumn()
-  deletedAt: Date;
+  deletedAt!: Date | null;
 
   @OneToMany(() => TransactionComment, comment => comment.transaction)
   comments?: TransactionComment[];
@@ -156,20 +161,26 @@ export class Transaction {
   @OneToMany(() => TransactionSigner, signer => signer.transaction)
   signers?: TransactionSigner[];
 
-  @OneToMany(() => TransactionApprover, approver => approver.transaction)
-  approvers?: TransactionApprover[];
-
   @OneToMany(() => TransactionObserver, observer => observer.transaction)
   observers?: TransactionObserver[];
+
+  @OneToMany(() => TransactionReviewerList, list => list.transaction)
+  reviewerLists?: TransactionReviewerList[];
 
   @OneToOne(() => TransactionGroupItem, groupItem => groupItem.transaction)
   groupItem?: TransactionGroupItem;
 
   @OneToMany(() => TransactionCachedAccount, (ta) => ta.transaction)
-  transactionCachedAccounts: TransactionCachedAccount[];
+  transactionCachedAccounts!: TransactionCachedAccount[];
 
   @OneToMany(() => TransactionCachedNode, (ta) => ta.transaction)
-  transactionCachedNodes: TransactionCachedNode[];
+  transactionCachedNodes!: TransactionCachedNode[];
+
+  @OneToMany(() => TransactionAccountSnapshot, (tas) => tas.transaction)
+  transactionAccountSnapshots!: TransactionAccountSnapshot[];
+
+  @OneToMany(() => TransactionNodeSnapshot, (tns) => tns.transaction)
+  transactionNodeSnapshots!: TransactionNodeSnapshot[];
 }
 
 export const transactionProperties: (keyof Transaction)[] = [

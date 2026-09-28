@@ -15,21 +15,20 @@ jest.mock('./message-validator.util');
  * Calling `stop()` causes the iterator to end after the current yield.
  */
 function mockConsumerMessages<T>(gen: AsyncGenerator<T>) {
-  const wrapper = {
+  return {
     stop: jest.fn(() => {
       // Force the generator to return, which ends `for await`
-      gen.return(undefined as any);
+      gen.return(undefined);
     }),
     [Symbol.asyncIterator]() {
       return gen;
     },
   };
-  return wrapper;
 }
 
 class TestDto {
-  id: number;
-  name: string;
+  id!: number;
+  name!: string;
 }
 
 class TestConsumerService extends BaseNatsConsumerService {
@@ -40,7 +39,7 @@ class TestConsumerService extends BaseNatsConsumerService {
     filterSubject: 'test.>',
   };
 
-  protected getConsumerConfig(): ConsumerConfig {
+  public getConsumerConfig(): ConsumerConfig {
     return this.mockConfig;
   }
 
@@ -90,7 +89,7 @@ describe('BaseNatsConsumerService', () => {
         },
         {
           provide: TestConsumerService,
-          useFactory: (ns: any) => new TestConsumerService(ns, 'TestConsumerSpec'),
+          useFactory: (ns: NatsJetStreamService) => new TestConsumerService(ns, 'TestConsumerSpec'),
           inject: [NatsJetStreamService],
         },
       ],
@@ -125,7 +124,7 @@ describe('BaseNatsConsumerService', () => {
     });
 
     it('should update existing consumer', async () => {
-      mockJsm.consumers.info.mockResolvedValue({} as any);
+      mockJsm.consumers.info.mockResolvedValue({});
       mockConsumer.consume.mockResolvedValue(mockConsumerMessages((async function* () {})()));
 
       await service.onModuleInit();
@@ -227,7 +226,7 @@ describe('BaseNatsConsumerService', () => {
     });
 
     it('should handle 404 error code for missing consumer', async () => {
-      const error: any = new Error('consumer not found');
+      const error: Error & {code?: string} = new Error('consumer not found');
       error.code = '404';
       mockJsm.consumers.info.mockRejectedValue(error);
       mockConsumer.consume.mockResolvedValue(mockConsumerMessages((async function* () {})()));
@@ -654,7 +653,7 @@ describe('BaseNatsConsumerService', () => {
       mockJsm.consumers.info.mockRejectedValue(new Error('consumer not found'));
       (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
 
-      let yieldResolve: () => void;
+      let yieldResolve: (() => void) | null = null;
       const yieldPromise = new Promise<void>(resolve => {
         yieldResolve = resolve;
       });
@@ -668,7 +667,7 @@ describe('BaseNatsConsumerService', () => {
             ack: jest.fn(),
           };
           // Signal that first message was processed
-          yieldResolve();
+          yieldResolve!();
           // Second message should not be processed if shutdown occurred
           yield {
             subject: 'test.message',
@@ -748,14 +747,14 @@ describe('BaseNatsConsumerService', () => {
       });
 
       const gen = (async function* () {
-        // Block forever to simulate waiting for next message
         await blockPromise;
+        yield; // unreachable: gen.return() terminates the generator before this
       })();
 
       const stopFn = jest.fn(() => {
         // Unblock the generator AND force-end it, mimicking real NATS ConsumerMessages.stop()
         blockResolve();
-        gen.return(undefined as any);
+        gen.return(undefined);
       });
 
       const messagesWrapper = {
@@ -781,7 +780,7 @@ describe('BaseNatsConsumerService', () => {
     it('should log error via .catch() when consumeWithReconnect throws unexpectedly', async () => {
       const errorSpy = jest.spyOn(service['logger'], 'error');
 
-      jest.spyOn(service as any, 'getConsumerConfig').mockImplementation(() => {
+      jest.spyOn(service, 'getConsumerConfig').mockImplementation(() => {
         throw new Error('Unexpected config error');
       });
 
@@ -792,6 +791,67 @@ describe('BaseNatsConsumerService', () => {
         'Unexpected consumer failure',
         expect.stringContaining('Unexpected config error'),
       );
+    });
+
+    it('should log String(err) when thrown value is not an Error instance (false branch of instanceof)', async () => {
+      const errorSpy = jest.spyOn(service['logger'], 'error');
+
+      // Throw a plain string — not an Error instance — to hit the String(err) branch
+      jest.spyOn(service as any, 'consumeWithReconnect').mockRejectedValue('raw string error');
+
+      await service.onModuleInit();
+      await new Promise(resolve => setTimeout(resolve, 50));
+
+      expect(errorSpy).toHaveBeenCalledWith('Unexpected consumer failure', 'raw string error');
+    });
+  });
+
+  describe('catch-block shutdown guard (line 107)', () => {
+    it('breaks out of catch block immediately when running is already false during error recovery', async () => {
+      const logSpy = jest.spyOn(service['logger'], 'log');
+
+      // waitForConnection sets running=false then throws, simulating shutdown arriving during recovery
+      jest.spyOn(service as any, 'waitForConnection').mockImplementation(async () => {
+        (service as any).running = false;
+        throw new Error('error while shutdown in progress');
+      });
+
+      (service as any).running = true;
+      await (service as any).consumeWithReconnect();
+
+      expect(logSpy).toHaveBeenCalledWith('Consumer loop stopped (shutdown)');
+    });
+  });
+
+  describe('startConsuming running-guard (line 137)', () => {
+    it('breaks out of for-await loop without processing message when running is false', async () => {
+      const handler = jest.fn();
+      service.mockHandlers = [{ subject: 'test.message', dtoClass: TestDto, handler }];
+
+      const handlerMap = new Map<string, MessageHandler>(
+        service.mockHandlers.map(h => [h.subject, h]),
+      );
+
+      const msg = {
+        subject: 'test.message',
+        data: new TextEncoder().encode('{}'),
+        ack: jest.fn(),
+      };
+
+      (MessageValidator.parseAndValidate as jest.Mock).mockResolvedValue({ id: 1 });
+      mockConsumer.consume.mockResolvedValueOnce({
+        stop: jest.fn(),
+        [Symbol.asyncIterator]() { return (async function* () { yield msg; })(); },
+      });
+
+      // Set running=false before consuming — the for-await check fires and breaks
+      (service as any).running = false;
+      (service as any).consumer = mockConsumer;
+
+      await (service as any).startConsuming(100, handlerMap);
+
+      expect(handler).not.toHaveBeenCalled();
+      expect(msg.ack).not.toHaveBeenCalled();
     });
   });
 

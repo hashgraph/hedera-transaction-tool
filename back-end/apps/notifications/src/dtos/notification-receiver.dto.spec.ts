@@ -27,7 +27,7 @@ describe('NotificationReceiverDto', () => {
 
     expect((dto as any).notificationId).toBe(10)
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 
@@ -48,7 +48,7 @@ describe('NotificationReceiverDto', () => {
     expect((dto as any).notification.id).toBe(9)
     expect((dto as any).notification.title).toBe('Converted')
 
-    const errors = validateSync(dto as any)
+    const errors = validateSync(dto as any, { forbidUnknownValues: false });
     expect(errors.length).toBe(0)
   })
 })

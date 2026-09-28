@@ -4,45 +4,72 @@ import { TransactionDto } from './transaction.dto';
 
 export class TransactionSignerDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  transactionId: number;
+  transactionId!: number;
 
   @Expose()
-  userKeyId: number;
+  userKeyId!: number;
 
   @Expose()
-  createdAt: Date;
+  recorderId!: number | null;
+
+  @Expose()
+  tool!: string | null;
+
+  @Expose()
+  version!: string | null;
+
+  @Expose()
+  createdAt!: Date;
 }
 
 export class TransactionSignerUserKeyDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
-  transactionId: number;
+  transactionId!: number;
 
   @Expose()
   @Type(() => UserKeyCoreDto)
-  userKey: UserKeyCoreDto;
+  userKey!: UserKeyCoreDto;
 
   @Expose()
-  createdAt: Date;
+  recorderId!: number | null;
+
+  @Expose()
+  tool!: string | null;
+
+  @Expose()
+  version!: string | null;
+
+  @Expose()
+  createdAt!: Date;
 }
 
 export class TransactionSignerFullDto {
   @Expose()
-  id: number;
+  id!: number;
 
   @Expose()
   @Type(() => TransactionDto)
-  transaction: TransactionDto;
+  transaction!: TransactionDto;
 
   @Expose()
   @Type(() => UserKeyCoreDto)
-  userKey: UserKeyCoreDto;
+  userKey!: UserKeyCoreDto;
 
   @Expose()
-  createdAt: Date;
+  recorderId!: number | null;
+
+  @Expose()
+  tool!: string | null;
+
+  @Expose()
+  version!: string | null;
+
+  @Expose()
+  createdAt!: Date;
 }

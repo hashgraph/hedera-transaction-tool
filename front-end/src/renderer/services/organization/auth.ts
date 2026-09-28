@@ -67,20 +67,25 @@ export const verifyReset = async (
   otp: string,
   token: string,
 ): Promise<string> =>
-  commonRequestHandler(async () => {
-    const response = await axios.post(
-      `${organizationServerUrl}/${authController}/verify-reset`,
-      {
-        token: otp,
-      },
-      {
-        headers: {
-          otp: token,
+  commonRequestHandler(
+    async () => {
+      const response = await axios.post(
+        `${organizationServerUrl}/${authController}/verify-reset`,
+        {
+          token: otp,
         },
-      },
-    );
-    return response.data.token;
-  }, 'Failed to verify password reset');
+        {
+          headers: {
+            otp: token,
+          },
+        },
+      );
+      return response.data.token;
+    },
+    'Failed to verify password reset',
+    'Incorrect code. Please try again.',
+    { 429: 'Too many attempts. Please request a new code.' },
+  );
 
 /* Sets new password after being OTP verified */
 export const setPassword = async (

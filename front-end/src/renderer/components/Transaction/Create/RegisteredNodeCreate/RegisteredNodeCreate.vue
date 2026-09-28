@@ -47,7 +47,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
     createRegisteredNodeCreateTransaction({
       ...common,
-      ...(data as RegisteredNodeData),
+      ...(data),
     });
 });
 

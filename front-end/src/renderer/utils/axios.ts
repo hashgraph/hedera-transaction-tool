@@ -1,12 +1,10 @@
-import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
+import axios, { AxiosError, type AxiosInstance, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { createLogger } from '@renderer/utils/logger';
 
 const logger = createLogger('renderer.axios');
-
-import { getAuthTokenFromSessionStorage } from '@renderer/utils';
 
 import { FRONTEND_VERSION } from './version';
 import {
@@ -61,10 +59,10 @@ axios.interceptors.request.use(config => {
  * rejected the client as below its minimum supported version and includes
  * version metadata in the body. Exported for direct testing.
  */
-export async function handleAxiosResponseError(error: {
+export function handleAxiosResponseError(error: {
   response?: { status?: number; data?: Partial<IVersionCheckResponse> };
   config?: { url?: string; baseURL?: string };
-}): Promise<void> {
+}): void {
   if (error.response?.status !== 426) return;
 
   try {
@@ -88,8 +86,8 @@ export async function handleAxiosResponseError(error: {
 axios.interceptors.response.use(
   response => response,
   async error => {
-    await handleAxiosResponseError(error);
-    return Promise.reject(error);
+    handleAxiosResponseError(error);
+    return Promise.reject(error as Error);
   },
 );
 
@@ -128,12 +126,11 @@ export const commonRequestHandler = async <T>(
       throwIfNoResponse(error.response);
 
       status = error.response.status;
-      const errorMessage = error.response.data?.message;
 
       if (statusMessages?.[status]) {
         message = statusMessages[status]!;
       } else if (status === 401 && messageOn401) {
-        message = messageOn401.trim() || errorMessage;
+        message = messageOn401;
       } else if (status === 400) {
         code = error.response.data?.code || ErrorCodes.UNKWN;
         message = ErrorMessages[code!] || ErrorMessages[ErrorCodes.UNKWN];
@@ -147,19 +144,22 @@ export const commonRequestHandler = async <T>(
 };
 
 const getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
+  const userStore = useUserStore();
+  const org = userStore.organizations.find(o => url.startsWith(o.serverUrl));
+  const authToken = org?.id ? userStore.getJwtToken(org.id) : null;
   return {
     ...config,
     headers: {
       ...config.headers,
-      Authorization: `bearer ${getAuthTokenFromSessionStorage(url)}`,
+      Authorization: `bearer ${authToken}`,
     },
   };
 };
 
-export const axiosWithCredentials = {
+export const axiosWithCredentials: Pick<AxiosInstance, 'get' | 'post' | 'patch' | 'delete'> = {
   get: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.get<T, R>(url, {
       ...getConfigWithAuthHeader(config || {}, url),
@@ -167,7 +167,7 @@ export const axiosWithCredentials = {
   post: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.post<T, R>(url, data, {
       ...getConfigWithAuthHeader(config || {}, url),
@@ -175,14 +175,14 @@ export const axiosWithCredentials = {
   patch: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
     data?: any,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.patch<T, R>(url, data, {
       ...getConfigWithAuthHeader(config || {}, url),
     }),
   delete: <T = any, R = AxiosResponse<T>, D = any>(
     url: string,
-    config?: AxiosRequestConfig<D> | undefined,
+    config?: AxiosRequestConfig<D>,
   ) =>
     axios.delete<T, R>(url, {
       ...getConfigWithAuthHeader(config || {}, url),

@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { Client } from '@hiero-ledger/sdk';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import type {
   AccountData,
@@ -52,7 +51,7 @@ const accountIsPayer = ref(false);
 
 /* Computed */
 const selectedMultipleAccounts = computed(() =>
-  splitMultipleAccounts(multipleAccountInput.value, network.client as Client),
+  splitMultipleAccounts(multipleAccountInput.value, network.client),
 );
 
 /* Handlers */

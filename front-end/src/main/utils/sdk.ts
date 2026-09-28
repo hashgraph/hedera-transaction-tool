@@ -1,4 +1,4 @@
-export const getStatusCodeFromMessage = (message: string) => {
+export const getStatusCodeFromMessage = (message: string): number | null => {
   if (message.includes('TRANSACTION_EXPIRED')) {
     return 4;
   } else {

@@ -1,18 +1,8 @@
-import type { KeyPair } from '@prisma/client';
-
-import {
-  PrivateKey,
-  PublicKey,
-  Transaction,
-  TransactionReceipt,
-  TransactionResponse,
-} from '@hiero-ledger/sdk';
+import { TransactionReceipt, TransactionResponse, } from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
 
 import { commonIPCHandler } from '@renderer/utils';
-
-import { decryptPrivateKey } from './keyPairService';
 
 /* Transaction service */
 
@@ -21,39 +11,6 @@ export const setClient = async (mirrorNetwork: string | string[], ledgerId?: str
   commonIPCHandler(async () => {
     await window.electronAPI.local.transactions.setClient(mirrorNetwork, ledgerId);
   }, 'Failed to set client');
-
-/* Collects and adds the signatures for the provided key pairs */
-export const getTransactionSignatures = async (
-  keyPairs: KeyPair[],
-  transaction: Transaction,
-  userId: string,
-  password: string,
-) => {
-  const publicKeys: string[] = [];
-
-  await commonIPCHandler(async () => {
-    await Promise.all(
-      keyPairs.map(async keyPair => {
-        if (!publicKeys.includes(keyPair.public_key)) {
-          const privateKeyString = await decryptPrivateKey(userId, password, keyPair.public_key);
-          const startsWithHex = privateKeyString.startsWith('0x');
-
-          const keyType = PublicKey.fromString(keyPair.public_key);
-
-          const privateKey =
-            keyType._key._type === 'secp256k1'
-              ? PrivateKey.fromStringECDSA(`${startsWithHex ? '' : '0x'}${privateKeyString}`)
-              : PrivateKey.fromStringED25519(privateKeyString);
-
-          await transaction.sign(privateKey);
-
-          publicKeys.push(keyPair.public_key);
-        }
-      }),
-    );
-  }, 'Failed to collect transaction signatures');
-  return publicKeys;
-};
 
 /* Freezes the transaction in the main process */
 export const freeze = async (transactionBytes: Uint8Array) =>

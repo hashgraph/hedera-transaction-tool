@@ -74,7 +74,7 @@ describe('Data Migration', () => {
         update: vi.fn().mockReturnValue(Buffer.from(mockDecryptedMnemonic)),
         final: vi.fn().mockReturnValue(Buffer.from('')),
         setAuthTag: vi.fn(),
-      } as unknown as crypto.Decipher);
+      } as unknown as crypto.Decipheriv);
 
       const result = await decryptMigrationMnemonic(mockPassword);
       expect(result).toEqual(mockDecryptedMnemonic.split(' '));
@@ -92,7 +92,7 @@ describe('Data Migration', () => {
         update: vi.fn().mockReturnValue(Buffer.from(mockDecryptedMnemonic)),
         final: vi.fn().mockReturnValue(Buffer.from('')),
         setAuthTag: vi.fn(),
-      } as unknown as crypto.Decipher);
+      } as unknown as crypto.Decipheriv);
 
       const result = await decryptMigrationMnemonic(mockPassword);
       expect(result).toEqual(mockDecryptedMnemonic.split(' '));
@@ -132,7 +132,7 @@ describe('Data Migration', () => {
         update: vi.fn().mockReturnValue(''),
         final: vi.fn().mockReturnValue(''),
         setAuthTag: vi.fn(),
-      } as unknown as crypto.Decipher);
+      } as unknown as crypto.Decipheriv);
 
       const result = await decryptMigrationMnemonic(mockPassword);
       expect(result).toBe(null);
@@ -150,7 +150,7 @@ describe('Data Migration', () => {
           throw new Error('Final error');
         }),
         setAuthTag: vi.fn(),
-      } as unknown as crypto.Decipher);
+      } as unknown as crypto.Decipheriv);
 
       const result = await decryptMigrationMnemonic(mockPassword);
       expect(result).toBe(null);

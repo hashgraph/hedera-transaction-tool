@@ -14,6 +14,9 @@ import {
   EmailThrottlerGuard,
   extractJwtAuth,
   extractJwtOtp,
+  IpLoginThrottlerGuard,
+  IpResetPasswordThrottlerGuard,
+  IpUniqueEmailGuard,
   JwtAuthGuard,
   JwtBlackListAuthGuard,
   JwtBlackListOtpGuard,
@@ -39,6 +42,16 @@ import {
   SignUpUserDto,
 } from './dtos';
 
+/**
+ * @deprecated Derived from the client-controlled `Host` header, so it's not
+ * trustworthy on its own - a request can set `Host` to whatever it wants.
+ * AuthService only falls back to this when `APP_URL` isn't configured; remove
+ * once `APP_URL` is set on every deployment (#3332).
+ */
+function hostHeaderUrl(req: Request): string {
+  return `${req.protocol}://${req.get('host')}`;
+}
+
 @ApiTags('Authentication')
 @Controller('auth')
 export class AuthController {
@@ -61,8 +74,7 @@ export class AuthController {
   @Serialize(AuthDto)
   @UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, AdminGuard, EmailThrottlerGuard)
   async signUp(@Body() dto: SignUpUserDto, @Req() req: Request): Promise<User> {
-    const url = `${req.protocol}://${req.get('host')}`;
-    return this.authService.signUpByAdmin(dto, url);
+    return this.authService.signUpByAdmin(dto, hostHeaderUrl(req));
   }
 
   /* User login */
@@ -80,7 +92,7 @@ export class AuthController {
   })
   @Post('/login')
   @HttpCode(200)
-  @UseGuards(LocalAuthGuard, EmailThrottlerGuard)
+  @UseGuards(EmailThrottlerGuard, IpLoginThrottlerGuard, LocalAuthGuard)
   @Serialize(LoginResponseDto)
   async login(@GetUser() user: User) {
     const accessToken = await this.authService.login(user);
@@ -122,37 +134,47 @@ export class AuthController {
   @ApiOperation({
     summary: 'Request OTP for password reset',
     description:
-      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned. Once the OTP is verified, a new JWT will be issued and the user will be able to set his new password.",
+      "Begin the process of resetting the user's password by creating and emailing an OTP to the user. A JWT is returned; it carries no real authorization on its own and is kept only for backward compatibility with clients that still expect one (see the deprecation note on OtpJwtStrategy). /verify-reset validates the OTP code from the request body against the email carried in that JWT.",
   })
   @ApiBody({
-    type: SignUpUserDto,
+    type: OtpLocalDto,
   })
   @ApiResponse({
     status: 200,
-    description: 'OTP created and sent.',
+    description: 'OTP created and sent, if the email belongs to a known user.',
   })
   @Post('/reset-password')
   @HttpCode(200)
-  @UseGuards(EmailThrottlerGuard)
-  async createOtp(@Body() { email }: OtpLocalDto) {
-    return this.authService.createOtp(email);
+  @UseGuards(EmailThrottlerGuard, IpResetPasswordThrottlerGuard, IpUniqueEmailGuard)
+  async createOtp(@Body() { email }: OtpLocalDto, @Req() req: Request) {
+    return this.authService.createOtp(email, hostHeaderUrl(req));
   }
 
   /* Verify OTP for password reset */
   @ApiOperation({
     summary: 'Verify password reset',
     description:
-      'Verify the user can reset the password by supplying the valid OTP. If the OTP is valid , a new JWT is issued and the user will be able to set his new password',
+      'Verify the user can reset the password by supplying the valid OTP alongside the `otp` JWT header issued by /reset-password. If the OTP is valid, a JWT is issued and the user will be able to set a new password. After too many incorrect attempts the OTP is invalidated and a new one must be requested via /reset-password.',
   })
   @ApiResponse({
     status: 200,
     description:
-      'The OTP verified, new JWT is issued. Now the user is able to set his new password. If the JWT is expired, the user will need to request a new OTP.',
+      'The OTP is verified and a JWT is issued. The user can now set a new password. If the JWT expires, or the OTP is invalidated after too many attempts, the user will need to request a new OTP.',
   })
   @Post('/verify-reset')
   @HttpCode(200)
-  @UseGuards(JwtBlackListOtpGuard, OtpJwtAuthGuard)
-  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req) {
+  // IpResetPasswordThrottlerGuard is reused as-is here - its key includes the handler
+  // name, so this tracks verify-reset attempts independently from reset-password ones,
+  // under the same limits. IpUniqueEmailGuard needs req.user, which JwtBlackListOtpGuard/
+  // OtpJwtAuthGuard populate - so those two run first. EmailThrottlerGuard is
+  // deliberately not reused here: its per-email request-rate cap conflicts with
+  // OTP_MAX_ATTEMPTS's own, more precise, per-email lockout (enforced in
+  // AuthService.verifyOtp), which already covers this route's per-email abuse case
+  // regardless of source IP. None of this depends on the OTP JWT being kept around:
+  // once it's removed and the email moves into the request body directly,
+  // IpUniqueEmailGuard keeps working unchanged.
+  @UseGuards(IpResetPasswordThrottlerGuard, JwtBlackListOtpGuard, OtpJwtAuthGuard, IpUniqueEmailGuard)
+  async verifyOtp(@GetUser() user: User, @Body() dto: OtpDto, @Req() req: unknown) {
     const result = await this.authService.verifyOtp(user, dto);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));
     return result;
@@ -169,7 +191,7 @@ export class AuthController {
   })
   @UseGuards(JwtBlackListOtpGuard, OtpVerifiedAuthGuard)
   @Patch('/set-password')
-  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req): Promise<void> {
+  async setPassword(@GetUser() user: User, @Body() dto: NewPasswordDto, @Req() req: unknown): Promise<void> {
     await this.authService.setPassword(user, dto.password);
     await this.blacklistService.blacklistToken(extractJwtOtp(req));
   }

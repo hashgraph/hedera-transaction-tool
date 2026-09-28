@@ -4,7 +4,7 @@ import { ErrorCodes } from '@app/common';
 
 class TestDto {
   @IsHederaPublicKey()
-  publicKey: string;
+  publicKey!: string;
 }
 
 describe('IsHederaPublicKeyConstraint', () => {
@@ -68,7 +68,7 @@ describe('IsHederaPublicKey decorator', () => {
   it('should allow custom validation message', async () => {
     class CustomMessageDto {
       @IsHederaPublicKey({ message: 'Custom error message' })
-      publicKey: string;
+      publicKey!: string;
     }
 
     const dto = new CustomMessageDto();

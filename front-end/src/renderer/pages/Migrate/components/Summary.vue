@@ -170,6 +170,7 @@ onBeforeUnmount(() => {
             color="primary"
             class="min-w-unset position-absolute top-0 end-0 m-2 py-1 px-3"
             @click="copyRecoveryPhrase"
+            log-label="copy-recovery-phrase"
           >
             <i class="bi bi-files"></i>
           </AppButton>

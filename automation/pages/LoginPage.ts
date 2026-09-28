@@ -42,8 +42,8 @@ export class LoginPage extends BasePage {
   passwordLabelSelector = 'label-password';
 
   // Messages
-  toastMessageSelector = 'css=.v-toast__text';
-  visibleToastMessageSelector = 'css=.v-toast__text:visible';
+  toastMessageSelector = 'css=.toast-message';
+  visibleToastMessageSelector = 'css=.toast-message:visible';
   invalidPasswordMessageSelector = 'invalid-text-password';
   invalidEmailMessageSelector = 'invalid-text-email';
 

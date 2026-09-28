@@ -2,9 +2,9 @@ import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, UpdateResult } from 'typeorm';
 
-import { ErrorCodes, MAX_USER_KEYS, Pagination } from '@app/common';
+import { ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { attachKeys } from '@app/common/utils';
 import { User, UserKey } from '@entities';
 
@@ -37,11 +37,19 @@ describe('UserKeysService', () => {
     expect(service).toBeDefined();
   });
 
-  describe('getUserKey', () => {
-    it('should return null if where condition is not provided', async () => {
-      expect(await service.getUserKey(undefined)).toBeNull();
-    });
+  describe('getUserKeys', () => {
+    it('should call findAndCount with pagination params and return mapped result', async () => {
+      const items = [{ id: 1, publicKey: 'key1' }] as UserKey[];
+      repo.findAndCount.mockResolvedValue([items, 1]);
 
+      const result = await service.getUserKeys({ page: 1, limit: 10, size: 10, offset: 0 });
+
+      expect(repo.findAndCount).toHaveBeenCalledWith({ take: 10, skip: 0 });
+      expect(result).toEqual({ totalItems: 1, items, page: 1, size: 10 });
+    });
+  });
+
+  describe('getUserKey', () => {
     it('should return a UserKey if where condition is provided', async () => {
       await service.getUserKey({ id: 1 });
 
@@ -147,7 +155,7 @@ describe('UserKeysService', () => {
       jest.mocked(attachKeys).mockImplementationOnce(async (user: User) => {
         user.keys = [];
       });
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
       const newUserKey = { ...dto, user: user } as UserKey;
       repo.create.mockReturnValue(newUserKey);
       repo.save.mockResolvedValue(newUserKey);
@@ -176,7 +184,7 @@ describe('UserKeysService', () => {
       jest.mocked(attachKeys).mockImplementation(async (user: User) => {
         user.keys = [];
       });
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
       repo.create.mockReturnValue({ ...dto, user } as UserKey);
 
       repo.save.mockRejectedValue(new Error('DB error'));
@@ -197,11 +205,6 @@ describe('UserKeysService', () => {
     beforeEach(() => {
       jest.resetAllMocks();
       user = { id: 1 } as unknown as User;
-    });
-
-    it('should return an empty array if userId is not provided', async () => {
-      const result = await service.getUserKeysRestricted(user, undefined);
-      expect(result).toEqual([]);
     });
 
     it('should return user keys for a given userId', async () => {
@@ -253,7 +256,7 @@ describe('UserKeysService', () => {
 
   describe('removeKey', () => {
     it('should throw BadRequestException if the key does not exist', async () => {
-      repo.findOne.mockResolvedValue(undefined);
+      repo.findOne.mockResolvedValue(null);
 
       await expect(service.removeKey(1)).rejects.toThrow(ErrorCodes.KNF);
     });
@@ -293,7 +296,7 @@ describe('UserKeysService', () => {
 
     it('should soft remove the user key if it exists and is owned by the user', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      const softRemoveSpy = jest.spyOn(repo, 'softRemove').mockResolvedValue(undefined);
+      const softRemoveSpy = jest.spyOn(repo, 'softRemove').mockResolvedValue(new UserKey());
 
       const result = await service.removeUserKey(user, 1);
 
@@ -342,7 +345,7 @@ describe('UserKeysService', () => {
 
     it('should update the mnemonic hash and index if the key exists and is owned by the user', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      repo.update.mockResolvedValue(undefined);
+      repo.update.mockResolvedValue(new UpdateResult());
 
       const result = await service.updateMnemonicHash(user, 1, dto);
 
@@ -352,80 +355,11 @@ describe('UserKeysService', () => {
 
     it('should update the mnemonic hash and keep the existing index if not provided', async () => {
       service.getUserKey = jest.fn().mockResolvedValue(userKey);
-      repo.update.mockResolvedValue(undefined);
+      repo.update.mockResolvedValue(new UpdateResult());
 
       await service.updateMnemonicHash(user, 1, { mnemonicHash: 'new-hash' });
 
       expect(repo.update).toHaveBeenCalledWith({ id: 1 }, { mnemonicHash: 'new-hash' });
-    });
-  });
-
-  describe('getUserKeys', () => {
-    it('should return paginated user keys', async () => {
-      const pagination: Pagination = { page: 1, limit: 10, size: 10, offset: 0 };
-      const mockUserKeys = [
-        { id: 1, publicKey: 'key1', userId: 1 },
-        { id: 2, publicKey: 'key2', userId: 1 },
-      ] as UserKey[];
-      const totalItems = 2;
-
-      repo.findAndCount.mockResolvedValue([mockUserKeys, totalItems]);
-
-      const result = await service.getUserKeys(pagination);
-
-      expect(repo.findAndCount).toHaveBeenCalledWith({
-        take: pagination.limit,
-        skip: pagination.offset,
-      });
-      expect(result).toEqual({
-        totalItems,
-        items: mockUserKeys,
-        page: pagination.page,
-        size: pagination.size,
-      });
-    });
-
-    it('should return empty items and total 0 if no user keys found', async () => {
-      const pagination: Pagination = { page: 1, limit: 10, size: 10, offset: 0 };
-
-      repo.findAndCount.mockResolvedValue([[], 0]);
-
-      const result = await service.getUserKeys(pagination);
-
-      expect(repo.findAndCount).toHaveBeenCalledWith({
-        take: pagination.limit,
-        skip: pagination.offset,
-      });
-      expect(result).toEqual({
-        totalItems: 0,
-        items: [],
-        page: pagination.page,
-        size: pagination.size,
-      });
-    });
-
-    it('should handle pagination correctly', async () => {
-      const pagination: Pagination = { page: 2, limit: 5, size: 5, offset: 5 };
-      const mockUserKeys = [
-        { id: 6, publicKey: 'key6', userId: 1 },
-        { id: 7, publicKey: 'key7', userId: 1 },
-      ] as UserKey[];
-      const totalItems = 7;
-
-      repo.findAndCount.mockResolvedValue([mockUserKeys, totalItems]);
-
-      const result = await service.getUserKeys(pagination);
-
-      expect(repo.findAndCount).toHaveBeenCalledWith({
-        take: pagination.limit,
-        skip: pagination.offset,
-      });
-      expect(result).toEqual({
-        totalItems,
-        items: mockUserKeys,
-        page: pagination.page,
-        size: pagination.size,
-      });
     });
   });
 });

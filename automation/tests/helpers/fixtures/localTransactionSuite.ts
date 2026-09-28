@@ -62,7 +62,8 @@ export function setupLocalTransactionSuite() {
       await loginPage.waitForElementToBeVisible(loginPage.settingsButtonSelector);
     }
 
-    await setupTransactionEnvironment();
+    await transactionPage.clickOnTransactionsMenuButton();
+    await transactionPage.closeDraftModal();
   }
 
   return {

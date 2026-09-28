@@ -40,6 +40,7 @@ export default function useRecoveryPhraseHashMigrate() {
 
     const localKeysPairs = await getKeyPairs(
       user.personal.id,
+      user.personal.password,
       user.selectedOrganization?.id || null,
     );
     return localKeysPairs.filter(
@@ -102,7 +103,7 @@ export default function useRecoveryPhraseHashMigrate() {
       return;
     }
 
-    const personalKeys = await getKeyPairs(user.personal.id, null);
+    const personalKeys = await getKeyPairs(user.personal.id, user.personal.password, null);
     const hashToKeys: { [hash: string]: KeyPair[] } = {};
     const keyAddedToUpdate: Set<string> = new Set();
 
