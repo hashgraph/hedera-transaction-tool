@@ -14,7 +14,9 @@ export const getUserNotificationPreferences = async (
   organizationServerUrl: string,
 ): Promise<INotificationPreferencesCore[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
+    const response = await axiosWithCredentials.get<INotificationPreferencesCore[]>(
+      `${organizationServerUrl}/${controller}`,
+    );
     return response.data;
   }, 'Failed to get user notification preferences');
 

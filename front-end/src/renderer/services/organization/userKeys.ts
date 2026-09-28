@@ -12,7 +12,7 @@ export const getUserKeys = async (
   organizationUserId: number,
 ): Promise<IUserKey[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(
+    const response = await axiosWithCredentials.get<IUserKey[]>(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}`,
     );
 
