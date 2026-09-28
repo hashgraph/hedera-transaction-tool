@@ -1,3 +1,5 @@
+import { getEnumValue } from '../utils/enum';
+
 export enum NotificationTypeEmailSubjects {
   TRANSACTION_CREATED = 'Transaction has been created',
   TRANSACTION_EXPIRED = 'Transaction has expired',
@@ -12,7 +14,5 @@ export enum NotificationTypeEmailSubjects {
 }
 
 export function findEmailSubject(value: unknown): string {
-  const subjects = Object.values(NotificationTypeEmailSubjects);
-  const candidate = value as NotificationTypeEmailSubjects;
-  return subjects.includes(candidate) ? candidate : String(value);
+  return getEnumValue(NotificationTypeEmailSubjects, value) ?? String(value);
 }
