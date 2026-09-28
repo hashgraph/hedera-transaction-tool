@@ -6,7 +6,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { BlacklistService, guardMock, VersionCheckResult } from '@app/common';
 import { Client, User, UserStatus } from '@entities';
 
-import { UserThrottlerGuard, VerifiedUserGuard } from '../guards';
+import { VerifiedUserGuard } from '../guards';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -34,8 +34,6 @@ describe('UsersController', () => {
       ],
     })
       .overrideGuard(VerifiedUserGuard)
-      .useValue(guardMock())
-      .overrideGuard(UserThrottlerGuard)
       .useValue(guardMock())
       .compile();
 
@@ -290,8 +288,6 @@ describe('UsersController', () => {
         ],
       })
         .overrideGuard(VerifiedUserGuard)
-        .useValue(guardMock())
-        .overrideGuard(UserThrottlerGuard)
         .useValue(guardMock())
         .compile();
 

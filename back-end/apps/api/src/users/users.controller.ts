@@ -17,13 +17,7 @@ import { ErrorCodes, Serialize } from '@app/common';
 
 import { User } from '@entities';
 
-import {
-  AdminGuard,
-  JwtAuthGuard,
-  JwtBlackListAuthGuard,
-  UserThrottlerGuard,
-  VerifiedUserGuard,
-} from '../guards';
+import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
 import { AllowNonVerifiedUser, GetUser } from '../decorators';
 
 import {
@@ -95,7 +89,6 @@ export class UsersController {
     status: 200,
     type: String,
   })
-  @UseGuards(UserThrottlerGuard)
   @Get('/public-owner/:publicKey')
   async getUserByPublicKey(
     @GetUser() requestingUser: User,
