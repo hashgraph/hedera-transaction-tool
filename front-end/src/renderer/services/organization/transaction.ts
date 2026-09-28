@@ -183,9 +183,12 @@ export const getTransactionById = async (
   id: number | TransactionId,
 ): Promise<ITransactionFull> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.get(`${serverUrl}/${controller}/${id.toString()}`, {
-      withCredentials: true,
-    });
+    const { data } = await axiosWithCredentials.get<ITransactionFull>(
+      `${serverUrl}/${controller}/${id.toString()}`,
+      {
+        withCredentials: true,
+      },
+    );
 
     return data;
   }, `Failed to get transaction with id ${id}`);
@@ -206,7 +209,7 @@ export const getHistoryTransactions = async (
     const sorting = (sort || []).map(s => `&sort=${s.property}:${s.direction}`).join('');
     const filtering = filter.map(f => `&filter=${f.property}:${f.rule}:${f.value}`).join('');
 
-    const { data } = await axiosWithCredentials.get(
+    const { data } = await axiosWithCredentials.get<PaginatedResourceDto<ITransaction>>(
       `${serverUrl}/${controller}/history?page=${page}&size=${size}${sorting}${filtering}`,
     );
 

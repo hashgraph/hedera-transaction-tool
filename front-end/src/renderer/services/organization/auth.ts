@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
-
 /* Authentification service for organization */
 
 const authController = 'auth';
@@ -59,7 +58,7 @@ export const resetPassword = async (
       email,
     });
     return response.data.token;
-  }, 'Failed to request passoword reset');
+  }, 'Failed to request password reset');
 
 /* Sends the OTP in order to verify the password reset */
 export const verifyReset = async (
