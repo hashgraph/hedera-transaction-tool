@@ -170,7 +170,7 @@ export class AxiosWithCredentials {
     );
   }
 
-  patch<D>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>) {
+  patch<D,R>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>): Promise<AxiosResponse<R>> {
     return this.runWithReconnect(() =>
       axios.patch(url, data, {
         ...this.getConfigWithAuthHeader(config || {}, url),

@@ -56,7 +56,7 @@ export const submitTransaction = async (
 /* Cancel a transaction  */
 export const cancelTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/cancel/${id}`);
+    const { data } = await axiosWithCredentials.patch<void, boolean>(`${serverUrl}/${controller}/cancel/${id}`);
 
     return data;
   }, `Failed to cancel transaction with id ${id}`);
@@ -64,7 +64,9 @@ export const cancelTransaction = async (serverUrl: string, id: number): Promise<
 /* Archive a transaction  */
 export const archiveTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/archive/${id}`);
+    const { data } = await axiosWithCredentials.patch<void, boolean>(
+      `${serverUrl}/${controller}/archive/${id}`,
+    );
 
     return data;
   }, `Failed to archive transaction with id ${id}`);
@@ -72,7 +74,9 @@ export const archiveTransaction = async (serverUrl: string, id: number): Promise
 /* Executes the manual transaction  */
 export const executeTransaction = async (serverUrl: string, id: number): Promise<boolean> =>
   commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.patch(`${serverUrl}/${controller}/execute/${id}`);
+    const { data } = await axiosWithCredentials.patch<void, boolean>(
+      `${serverUrl}/${controller}/execute/${id}`,
+    );
 
     return data;
   }, `Failed to execute transaction with id ${id}`);
