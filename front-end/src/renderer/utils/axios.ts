@@ -1,20 +1,14 @@
-import axios, {
-  AxiosError,
-  type AxiosRequestConfig,
-  type AxiosResponse,
-} from 'axios';
+import axios, { AxiosError, type AxiosRequestConfig, type AxiosResponse } from 'axios';
 
 import type { IVersionCheckResponse } from '@shared/interfaces';
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { createLogger } from '@renderer/utils/logger';
+import { FRONTEND_VERSION } from './version';
+import { setVersionDataForOrg } from '@renderer/stores/versionState';
+import useUserStore from '@renderer/stores/storeUser';
+import { reconnectOrganization } from '@renderer/services/organization';
 
 const logger = createLogger('renderer.axios');
-
-import { FRONTEND_VERSION } from './version';
-import {
-  setVersionDataForOrg,
-} from '@renderer/stores/versionState';
-import useUserStore from '@renderer/stores/storeUser';
 
 const isValidVersionPayload = (
   data?: Partial<IVersionCheckResponse>,
@@ -84,7 +78,6 @@ export function handleAxiosResponseError(error: {
   } catch (err) {
     logger.error('Failed handling version response error', err);
   }
-
 }
 
 axios.interceptors.response.use(
@@ -152,30 +145,38 @@ export class AxiosWithCredentials {
     url: string,
     config?: AxiosRequestConfig<Record<string, unknown>>,
   ): Promise<AxiosResponse<D>> {
-    return axios.get(url, {
-      ...this.getConfigWithAuthHeader(config || {}, url),
-    });
+    return this.runWithReconnect(() =>
+      axios.get(url, {
+        ...this.getConfigWithAuthHeader(config || {}, url),
+      }),
+    );
   }
 
   post<D>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>) {
-    return axios.post(url, data, {
-      ...this.getConfigWithAuthHeader(config || {}, url),
-    });
+    return this.runWithReconnect(() =>
+      axios.post(url, data, {
+        ...this.getConfigWithAuthHeader(config || {}, url),
+      }),
+    );
   }
 
   patch<D>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>) {
-    return axios.patch(url, data, {
-      ...this.getConfigWithAuthHeader(config || {}, url),
-    });
+    return this.runWithReconnect(() =>
+      axios.patch(url, data, {
+        ...this.getConfigWithAuthHeader(config || {}, url),
+      }),
+    );
   }
 
   delete<T, R extends AxiosResponse<T>, D>(
     url: string,
     config?: AxiosRequestConfig<Record<string, unknown>>,
   ): Promise<AxiosResponse<T, R, D>> {
-    return axios.delete(url, {
-      ...this.getConfigWithAuthHeader(config || {}, url),
-    });
+    return this.runWithReconnect(() =>
+      axios.delete(url, {
+        ...this.getConfigWithAuthHeader(config || {}, url),
+      }),
+    );
   }
 
   //
@@ -193,6 +194,38 @@ export class AxiosWithCredentials {
       },
     };
   };
+
+  private async runWithReconnect<T, R, D>(
+    cb: () => Promise<AxiosResponse<T, R, D>>,
+  ): Promise<AxiosResponse<T, R, D>> {
+    try {
+      return await cb();
+    } catch (error) {
+      if (this.isExpiredTokenError(error)) {
+        // JWT token has expired => we log in again and retry
+        await this.tryReconnect(error);
+        return await cb();
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  private async tryReconnect(error: AxiosError) {
+    const requestUrl = error.config?.url || error.config?.baseURL || '';
+    const serverUrl = extractServerUrlFromRequest(requestUrl);
+    if (serverUrl === null) throw error;
+    const { success } = await reconnectOrganization(serverUrl);
+    if (!success) throw error;
+  }
+
+  private isExpiredTokenError(error: unknown): error is AxiosError {
+    if (axios.isAxiosError(error) && error.status === 401) {
+      return typeof error.config?.headers?.Authorization === "string";
+    } else {
+      return false;
+    }
+  }
 }
 
 export const axiosWithCredentials = new AxiosWithCredentials();
