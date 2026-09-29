@@ -226,6 +226,10 @@ export class AxiosWithCredentials {
     const requestUrl = error.config?.url || error.config?.baseURL || '';
     const serverUrl = extractServerUrlFromRequest(requestUrl);
     if (serverUrl === null) throw error;
+    const userStore = useUserStore();
+    const org = userStore.organizations.find(o => serverUrl.startsWith(o.serverUrl));
+    if (org === undefined) throw error;
+    userStore.clearJwtToken(org.id);
     const { success } = await reconnectOrganization(serverUrl);
     if (!success) throw error;
   }
