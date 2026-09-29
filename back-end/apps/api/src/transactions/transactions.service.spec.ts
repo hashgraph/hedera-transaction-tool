@@ -26,6 +26,10 @@ import {
   NodeCreateTransaction,
   NodeDeleteTransaction,
   NodeUpdateTransaction,
+  Key,
+  KeyList,
+  ContractId,
+  DelegateContractId,
   PrivateKey,
   PublicKey,
   RegisteredNodeCreateTransaction,
@@ -105,6 +109,12 @@ jest.mock(`@app/common/utils`, () => {
     isTransactionValidForNodes: actual.isTransactionValidForNodes,
   };
 });
+
+class UnknownTestKey extends Key {
+  override _toProtobufKey() {
+    return { RSA_3072: new Uint8Array([1]) };
+  }
+}
 
 describe('TransactionsService', () => {
   let service: TransactionsService;
@@ -1322,7 +1332,30 @@ describe('TransactionsService', () => {
       });
     };
 
-    it('should import signatures atomically and persist new signers', async () => {
+
+    it('rejects unreviewable keys before signature import can persist them', async () => {
+      const crafted = new AccountCreateTransaction()
+        .setKey(new KeyList([privateKey.publicKey, new UnknownTestKey()], 1))
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')]).freeze();
+      const originalBytes = Buffer.from(crafted.toBytes());
+      const transaction = { id: transactionId, transactionBytes: originalBytes, status: TransactionStatus.WAITING_FOR_SIGNATURES };
+      await crafted.sign(privateKey);
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction]) as any);
+      jest.spyOn(service, 'verifyAccess').mockResolvedValue(true);
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: crafted.getSignatures() }], userWithKeys,
+      );
+      expect(result).toEqual([expect.objectContaining({ id: transactionId, error: expect.stringContaining('Unsupported key type') })]);
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(transaction.transactionBytes).toEqual(originalBytes);
+    });
+
+    it.each([ContractId, DelegateContractId])('should import signatures with reviewable contract keys (%p)', async Type => {
+      sdkTransaction = new AccountCreateTransaction()
+        .setKey(new KeyList([privateKey.publicKey, Type.fromString('0.0.456')], 1))
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')]).freeze();
       const transaction = {
         id: transactionId,
         transactionId: sdkTransaction.transactionId!.toString(),
