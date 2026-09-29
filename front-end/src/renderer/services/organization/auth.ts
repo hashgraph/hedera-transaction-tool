@@ -13,7 +13,7 @@ export const login = async (
 ): Promise<{ id: number; jwtToken: string }> =>
   commonRequestHandler(
     async () => {
-      const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
+      const { data } = await axios.post(`${serverUrl}/${authController}/login`, {
         email,
         password,
       });
