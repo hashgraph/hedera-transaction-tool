@@ -58,7 +58,10 @@ export const updateNotifications = async (
       const batchSize = 500;
       for (let i = 0; i < notificationsToUpdate.length; i += batchSize) {
         const batch = notificationsToUpdate.slice(i, i + batchSize);
-        await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
+        await axiosWithCredentials.patch<IUpdateNotificationReceiver[], void>(
+          `${organizationServerUrl}/${controller}`,
+          batch,
+        );
       }
     } catch (error) {
       logger.error('Failed to update notifications', { error });

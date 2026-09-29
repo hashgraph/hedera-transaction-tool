@@ -26,9 +26,9 @@ export const updateUserNotificationPreferences = async (
   preferences: IUpdateNotificationPreferencesDto,
 ): Promise<INotificationPreferencesCore> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(
-      `${organizationServerUrl}/${controller}`,
-      preferences,
-    );
+    const response = await axiosWithCredentials.patch<
+      IUpdateNotificationPreferencesDto,
+      INotificationPreferencesCore
+    >(`${organizationServerUrl}/${controller}`, preferences);
     return response.data;
   }, 'Failed to update user notification preferences');

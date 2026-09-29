@@ -45,14 +45,13 @@ export const changePassword = async (
   newPassword: string,
 ): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(
+    await axiosWithCredentials.patch(
       `${organizationServerUrl}/${authController}/change-password`,
       {
         oldPassword,
         newPassword,
       },
     );
-    return response.data;
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
@@ -136,7 +135,7 @@ export const signUp = (
 /* ADMIN ONLY: elevate a user to admin */
 export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
   commonRequestHandler(async () => {
-    await axiosWithCredentials.patch(`${organizationServerUrl}/${authController}/elevate-admin`, {
+    await axiosWithCredentials.patch<{id: number}, void>(`${organizationServerUrl}/${authController}/elevate-admin`, {
       id,
     });
   }, 'Failed to assign user as admin');

@@ -53,7 +53,7 @@ export const updateKey = async (
   index?: number,
 ) =>
   commonRequestHandler(async () => {
-    await axiosWithCredentials.patch(
+    await axiosWithCredentials.patch<{mnemonicHash: string, index?: number}, void>(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}/${keyId}`,
       {
         mnemonicHash,
