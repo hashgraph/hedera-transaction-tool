@@ -2,6 +2,15 @@ virtualStoreDirMaxLength: 60
 shamefullyHoist: true
 trustLockfile: true
 
+# typeorm@1.1.0 declares an optional ioredis peer pinned to ^5.0.4; nothing in
+# this repo uses typeorm's built-in ioredis query cache, but without this rule
+# pnpm splits typeorm into two incompatible instances (one peer-linked to our
+# direct ioredis@6 dep, one falling back to typeorm's ^5.0.4 default), which
+# breaks cross-workspace typescript compilation.
+peerDependencyRules:
+  allowedVersions:
+    'typeorm>ioredis': '6'
+
 packages:
   - back-end
   - back-end/apps/*

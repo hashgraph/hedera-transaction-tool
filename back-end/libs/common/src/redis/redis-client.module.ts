@@ -2,6 +2,8 @@ import { Global, Inject, Module, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 
+import { LEGACY_IOREDIS_OPTIONS } from './legacy-ioredis-options';
+
 export const REDIS_CLIENT = 'REDIS_CLIENT';
 
 /**
@@ -23,7 +25,8 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
   providers: [
     {
       provide: REDIS_CLIENT,
-      useFactory: (configService: ConfigService) => new Redis(configService.getOrThrow('REDIS_URL')),
+      useFactory: (configService: ConfigService) =>
+        new Redis(configService.getOrThrow('REDIS_URL'), LEGACY_IOREDIS_OPTIONS),
       inject: [ConfigService],
     },
   ],
