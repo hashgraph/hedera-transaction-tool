@@ -28,7 +28,7 @@ export const login = async (
 /* Logout the user */
 export const logout = async (serverUrl: string): Promise<void> => {
   try {
-    await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`, false);
+    await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`, {}, {}, false);
   } catch (error) {
     const status = axios.isAxiosError(error) ? error.status : undefined;
     const code = axios.isAxiosError(error) ? error.response?.data?.code : ErrorCodes.UNKWN;
