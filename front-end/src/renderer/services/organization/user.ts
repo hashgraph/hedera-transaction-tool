@@ -55,6 +55,8 @@ export const getMe = async (organizationServerUrl: string): Promise<IUser> =>
   commonRequestHandler(async () => {
     const response = await axiosWithCredentials.get<IUser>(
       `${organizationServerUrl}/${controller}/me`,
+      {},
+      false,
     );
     return response.data;
   }, 'Failed to get user information');
