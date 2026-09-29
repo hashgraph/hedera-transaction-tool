@@ -144,19 +144,29 @@ export class AxiosWithCredentials {
   get<D>(
     url: string,
     config?: AxiosRequestConfig<Record<string, unknown>>,
+    withReconnect = true,
   ): Promise<AxiosResponse<D>> {
-    return this.runWithReconnect(() =>
-      axios.get(url, {
-        ...this.getConfigWithAuthHeader(config || {}, url),
-      }),
+    return this.runWithReconnect(
+      () =>
+        axios.get(url, {
+          ...this.getConfigWithAuthHeader(config || {}, url),
+        }),
+      withReconnect,
     );
   }
 
-  post<D>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>) {
-    return this.runWithReconnect(() =>
-      axios.post(url, data, {
-        ...this.getConfigWithAuthHeader(config || {}, url),
-      }),
+  post<D>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<Record<string, unknown>>,
+    withReconnect = true,
+  ) {
+    return this.runWithReconnect(
+      () =>
+        axios.post(url, data, {
+          ...this.getConfigWithAuthHeader(config || {}, url),
+        }),
+      withReconnect,
     );
   }
 
@@ -197,11 +207,12 @@ export class AxiosWithCredentials {
 
   private async runWithReconnect<T, R, D>(
     cb: () => Promise<AxiosResponse<T, R, D>>,
+    withReconnect = true,
   ): Promise<AxiosResponse<T, R, D>> {
     try {
       return await cb();
     } catch (error) {
-      if (this.isExpiredTokenError(error)) {
+      if (this.isExpiredTokenError(error) && withReconnect) {
         // JWT token has expired => we log in again and retry
         await this.tryReconnect(error);
         return await cb();
@@ -221,7 +232,7 @@ export class AxiosWithCredentials {
 
   private isExpiredTokenError(error: unknown): error is AxiosError {
     if (axios.isAxiosError(error) && error.status === 401) {
-      return typeof error.config?.headers?.Authorization === "string";
+      return typeof error.config?.headers?.Authorization === 'string';
     } else {
       return false;
     }
