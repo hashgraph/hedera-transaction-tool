@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import { axiosWithCredentials, commonRequestHandler, RequestError } from '@renderer/utils';
+import { ErrorCodes } from '@shared/constants';
 /* Authentification service for organization */
 
 const authController = 'auth';
@@ -25,11 +26,17 @@ export const login = async (
   );
 
 /* Logout the user */
-export const logout = async (serverUrl: string): Promise<{ id: number }> =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
-    return { id: data.id };
-  }, 'Failed to Log out of Organization');
+export const logout = async (serverUrl: string): Promise<void> => {
+  try {
+    await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`, false);
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.status : undefined;
+    const code = axios.isAxiosError(error) ? error.response?.data?.code : ErrorCodes.UNKWN;
+    if (status !== 401) {
+      throw new RequestError('Failed to Log out of Organization', code, status);
+    }
+  }
+};
 
 /* Changes the password */
 export const changePassword = async (
