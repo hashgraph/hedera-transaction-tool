@@ -4,6 +4,7 @@ import {
   AccountId,
   Client,
   ContractId,
+  DelegateContractId,
   FileId,
   FileInfo,
   Hbar,
@@ -175,6 +176,15 @@ export function encodeKey(keyList: Key) {
 export function compareKeys(key1: Key, key2: Key) {
   if (key1 instanceof PublicKey && key2 instanceof PublicKey) {
     return key1.equals(key2);
+  } else if (key1 instanceof DelegateContractId && key2 instanceof DelegateContractId) {
+    return key1.compare(key2) === 0;
+  } else if (
+    key1 instanceof ContractId &&
+    !(key1 instanceof DelegateContractId) &&
+    key2 instanceof ContractId &&
+    !(key2 instanceof DelegateContractId)
+  ) {
+    return key1.compare(key2) === 0;
   } else if (key1 instanceof KeyList && key2 instanceof KeyList) {
     if (key1.threshold !== key2.threshold) return false;
     const keys1 = key1.toArray();

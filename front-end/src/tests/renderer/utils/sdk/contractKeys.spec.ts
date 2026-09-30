@@ -4,7 +4,7 @@ import { ContractId, DelegateContractId, KeyList, Long, PrivateKey } from '@hier
 import { proto } from '@hiero-ledger/proto';
 import { KeyType } from '@shared/interfaces/HederaSchema';
 
-import { decodeKeyList, encodeKey } from '@renderer/utils/sdk';
+import { compareKeys, decodeKeyList, encodeKey } from '@renderer/utils/sdk';
 
 import { parseNetworkResponseKey } from '@renderer/services/mirrorNodeDataService';
 
@@ -65,5 +65,29 @@ describe('mixed key serialization', () => {
     const decoded = decodeKeyList(Uint8Array.from(bytes).toString());
     expect(decoded._toProtobufKey()).toEqual(nested._toProtobufKey());
     expect(encodeKey(decoded)).toEqual(bytes);
+  });
+});
+
+
+describe('contract key equality', () => {
+  test('compares regular and delegatable contract keys by kind and ID', () => {
+    const regular = ContractId.fromString('0.0.10880916');
+    const sameRegular = ContractId.fromString('0.0.10880916');
+    const delegatable = DelegateContractId.fromString('0.0.10880916');
+
+    expect(compareKeys(regular, sameRegular)).toBe(true);
+    expect(compareKeys(delegatable, DelegateContractId.fromString('0.0.10880916'))).toBe(true);
+    expect(compareKeys(regular, delegatable)).toBe(false);
+  });
+
+  test('compares key lists containing contract keys independent of order', () => {
+    const regular = ContractId.fromString('0.0.10880916');
+    const delegatable = DelegateContractId.fromString('0.0.10880917');
+
+    expect(compareKeys(new KeyList([regular, delegatable]), new KeyList([
+      DelegateContractId.fromString('0.0.10880917'),
+      ContractId.fromString('0.0.10880916'),
+    ]))).toBe(true);
+    expect(compareKeys(new KeyList([regular]), new KeyList([delegatable]))).toBe(false);
   });
 });
