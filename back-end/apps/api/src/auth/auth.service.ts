@@ -48,8 +48,8 @@ export class AuthService {
   ) {}
 
   /* Register a new user by admins and send an email with the temporary password */
-  async signUpByAdmin(dto: SignUpUserDto, fallbackUrl: string): Promise<User> {
-    const url = this.resolveServerUrl(fallbackUrl);
+  async signUpByAdmin(dto: SignUpUserDto): Promise<User> {
+    const url = this.resolveServerUrl();
     const rawRepoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
     const repoUrl = rawRepoUrl ? rawRepoUrl.replace(/\/+$/, '') : '';
     const downloadUrl = `${repoUrl}/latest`;
@@ -102,7 +102,7 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string, fallbackUrl: string): Promise<{ token: string } | null> {
+  async createOtp(email: string): Promise<{ token: string } | null> {
     const user = await this.usersService.getUser({ email });
 
     if (!user) return null;
@@ -118,7 +118,7 @@ export class AuthService {
       this.getOtpWindowSeconds(),
     );
 
-    const serverUrl = this.resolveServerUrl(fallbackUrl);
+    const serverUrl = this.resolveServerUrl();
     await emitUserPasswordResetEmail(this.notificationsPublisher, [
       { email: user.email, additionalData: { otp, serverUrl } },
     ]);
@@ -198,12 +198,10 @@ export class AuthService {
     return { token: verifiedToken };
   }
 
-  /* Prefer the configured APP_URL for the base URL embedded in outbound emails.
-   * `fallbackUrl` - derived by the controller from the client-controlled `Host`
-   * header (@deprecated, see AuthController) - is only used until APP_URL is
-   * set on every deployment (#3332). */
-  private resolveServerUrl(fallbackUrl: string): string {
-    return this.configService.get<string>('APP_URL') || fallbackUrl;
+  /* Only use an explicitly configured URL in outbound emails. Request headers
+   * are client-controlled and must never determine email content. */
+  private resolveServerUrl(): string | undefined {
+    return this.configService.get<string>('APP_URL');
   }
 
   /* A random numeric code, zero-padded to a fixed width - crypto.randomInt is
