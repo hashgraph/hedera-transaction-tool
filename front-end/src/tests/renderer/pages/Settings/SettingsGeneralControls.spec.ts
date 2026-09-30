@@ -170,11 +170,11 @@ describe('settings general controls', () => {
 
     expect(input.exists()).toBe(true);
 
-    await input.setValue('https://mainnet-public.mirrornode.hedera.com:443/');
+    await input.setValue('https://mainnet.mirrornode.hedera.com:443/');
     await input.trigger('blur');
 
     expect(mocks.networkStore.setNetwork).toHaveBeenCalledWith(
-      'mainnet-public.mirrornode.hedera.com',
+      'mainnet.mirrornode.hedera.com',
     );
   });
 

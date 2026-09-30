@@ -55,7 +55,7 @@ test.describe('Settings general tests @local-basic', () => {
   });
 
   test('Verify user can switch to Custom and enter mirror node base URL', async () => {
-    const customMirrorNodeBaseURL = 'https://mainnet-public.mirrornode.hedera.com:443/';
+    const customMirrorNodeBaseURL = 'https://mainnet.mirrornode.hedera.com:443/';
 
     await settingsPage.clickOnCustomNodeTab();
     expect(await settingsPage.isCustomNodeTabActive()).toBe(true);
@@ -64,7 +64,7 @@ test.describe('Settings general tests @local-basic', () => {
     await settingsPage.setMirrorNodeBaseURL(customMirrorNodeBaseURL);
 
     const mirrorNodeBaseURL = await settingsPage.getMirrorNodeBaseURL();
-    expect(mirrorNodeBaseURL).toBe('mainnet-public.mirrornode.hedera.com');
+    expect(mirrorNodeBaseURL).toBe('mainnet.mirrornode.hedera.com');
   });
 
   test('Verify user can set global max tx fee', async () => {
