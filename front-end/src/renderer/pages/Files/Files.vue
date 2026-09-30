@@ -149,11 +149,19 @@ const selectedFileInfo = computed(() =>
 );
 
 const selectedFileDisplayKey = computed<Key | null>(() => {
-  const keyList = selectedFileInfo.value?.keys;
-  if (!keyList) return null;
+  let result: Key | null;
 
-  const keys = keyList.toArray();
-  return keys.length === 1 && !(keys[0] instanceof KeyList) ? keys[0] : keyList;
+  const keyList = selectedFileInfo.value?.keys;
+  const keys = keyList?.toArray() ?? [];
+
+  if (keys.length === 0) {
+    result = null;
+  } else if (keys.length === 1 && keys[0] instanceof KeyList) {
+    result = keys[0];
+  } else {
+    result = keyList || null;
+  }
+  return result;
 });
 
 const selectedFileIdWithChecksum = computed(
