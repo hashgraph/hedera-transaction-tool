@@ -83,7 +83,7 @@
     "@vue/test-utils": "2.5.1",
     "@vue/tsconfig": "0.9.1",
     "axios-mock-adapter": "2.1.0",
-    "electron": "42.5.1",
+    "electron": "42.10.0",
     "electron-builder": "26.15.3",
     "eslint": "catalog:",
     "eslint-plugin-vue": "10.11.0",

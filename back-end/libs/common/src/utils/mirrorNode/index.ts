@@ -16,7 +16,7 @@ export const MirrorNetworkGRPC = {
     }
   },
 
-  MAINNET: ['mainnet-public.mirrornode.hedera.com:443'],
+  MAINNET: ['mainnet.mirrornode.hedera.com:443'],
   TESTNET: ['testnet.mirrornode.hedera.com:443'],
   PREVIEWNET: ['previewnet.mirrornode.hedera.com:443'],
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
@@ -40,7 +40,7 @@ export const MirrorNodeREST = {
     }
   },
 
-  MAINNET: 'https://mainnet-public.mirrornode.hedera.com',
+  MAINNET: 'https://mainnet.mirrornode.hedera.com',
   TESTNET: 'https://testnet.mirrornode.hedera.com',
   PREVIEWNET: 'https://previewnet.mirrornode.hedera.com',
   /* Using host.docker.internal to access the host machine from the container, will work only in dev mode */
