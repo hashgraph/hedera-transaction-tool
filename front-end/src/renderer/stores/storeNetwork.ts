@@ -95,7 +95,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
   /* Helpers */
   function getMirrorNodeREST(network: Network) {
     const networkLink = {
-      [CommonNetwork.MAINNET]: 'https://mainnet-public.mirrornode.hedera.com',
+      [CommonNetwork.MAINNET]: 'https://mainnet.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
       [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
       [CommonNetwork.LOCAL_NODE]: 'http://localhost:38081',
