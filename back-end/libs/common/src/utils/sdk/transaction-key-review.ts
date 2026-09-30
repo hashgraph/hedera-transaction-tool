@@ -6,7 +6,7 @@ const supportedKeyFields = new Set([
   'contractID', 'delegatableContractId', 'ed25519', 'ECDSASecp256k1', 'keyList', 'thresholdKey',
 ]);
 
-function assertBodyKeysReviewable(value: unknown): void {
+function assertBodyKeysReviewable(value: unknown, flattenKeys = true): void {
   if (!value || typeof value !== 'object' || value instanceof Uint8Array) {
     return;
   }
@@ -20,10 +20,14 @@ function assertBodyKeysReviewable(value: unknown): void {
     if (fields.length !== 1 || !supportedKeyFields.has(fields[0])) {
       throw new Error('Unsupported key type: transaction cannot be reviewed or signed');
     }
-    // Flattening validates every component, even when a threshold is already met.
-    flattenKeyList(Key._fromProtobufKey(value as proto.IKey));
+    if (flattenKeys) {
+      // Flattening validates every component, even when a threshold is already met.
+      // We do this only once at the root of the key structure.
+      flattenKeyList(Key._fromProtobufKey(value as proto.IKey));
+    }
   }
-  Object.values(value).forEach(assertBodyKeysReviewable);
+  const flattenChildren = value.constructor.name === 'Key' ? false : flattenKeys;
+  Object.values(value).forEach(entry => assertBodyKeysReviewable(entry, flattenChildren));
 }
 
 // Make sure all body keys (including keys not required to sign) are reviewable, i.e. contain only components
