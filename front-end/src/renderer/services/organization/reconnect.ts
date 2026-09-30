@@ -61,6 +61,8 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
             jwtToken,
             user.password ?? undefined,
           );
+
+          await userStore.refetchOrganizationTokens();
         } catch (loginError) {
           // HTTP 426 from /auth/login means the backend rejected the client
           // as below its minimum supported version. If the 426 payload has
