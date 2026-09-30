@@ -105,12 +105,16 @@ describe('AuthService', () => {
       //@ts-expect-error - incorrect overload expected
       .calledWith('NODE_ENV')
       .mockReturnValue(production ? 'production' : 'development');
+    configService.get
+      //@ts-expect-error - incorrect overload expected
+      .calledWith('APP_URL')
+      .mockReturnValue(serverUrl);
     jwtService.sign.mockReturnValue('unverifiedToken');
 
     //@ts-expect-error - incorrect overload expected
     jest.mocked(randomInt).mockReturnValue(1234);
 
-    const result = await service.createOtp(email, serverUrl);
+    const result = await service.createOtp(email);
 
     return { user, otp, serverUrl, result };
   }
@@ -151,7 +155,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
 
-    await service.signUpByAdmin(dto, 'http://localhost');
+    await service.signUpByAdmin(dto);
 
     expect(userService.createUser).toHaveBeenCalledWith(dto.email, expect.any(String));
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
@@ -161,7 +165,7 @@ describe('AuthService', () => {
           email: dto.email,
           additionalData: expect.objectContaining({
             tempPassword: expect.any(String),
-            url: expect.any(String),
+            url: undefined,
           }),
         }),
       ]),
@@ -178,7 +182,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
 
-    await service.signUpByAdmin(dto, 'http://localhost');
+    await service.signUpByAdmin(dto);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.invite',
@@ -202,7 +206,7 @@ describe('AuthService', () => {
 
     jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
 
-    await service.signUpByAdmin(dto, 'http://localhost');
+    await service.signUpByAdmin(dto);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.invite',
@@ -214,18 +218,33 @@ describe('AuthService', () => {
     );
   });
 
-  it('should fall back to the Host-header-derived URL when APP_URL is not set', async () => {
+  it('should omit the reset email URL when APP_URL is unset', async () => {
+    const email = 'some@email.com';
+    userService.getUser.mockResolvedValue({ email } as User);
+    configService.get.mockReturnValue(undefined);
+    //@ts-expect-error - incorrect overload expected
+    jest.mocked(randomInt).mockReturnValue(1234);
+
+    await service.createOtp(email);
+
+    expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+      'notifications.queue.email.password-reset',
+      [expect.objectContaining({ additionalData: expect.objectContaining({ serverUrl: undefined }) })],
+    );
+  });
+
+  it('should omit the URL when APP_URL is not set', async () => {
     const dto: SignUpUserDto = { email: 'test@email.com' };
 
     jest.spyOn(userService, 'createUser').mockResolvedValue({ id: 1, email: dto.email } as User);
 
-    await service.signUpByAdmin(dto, 'http://localhost');
+    await service.signUpByAdmin(dto);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.invite',
       expect.arrayContaining([
         expect.objectContaining({
-          additionalData: expect.objectContaining({ url: 'http://localhost' }),
+          additionalData: expect.objectContaining({ url: undefined }),
         }),
       ]),
     );
@@ -250,7 +269,7 @@ describe('AuthService', () => {
       password: 'hashedPassword',
     } as User);
 
-    await service.signUpByAdmin(dto, 'http://localhost');
+    await service.signUpByAdmin(dto);
 
     expect(userService.getUser).toHaveBeenCalledWith({ email: dto.email }, true);
 
@@ -265,7 +284,7 @@ describe('AuthService', () => {
           email: dto.email,
           additionalData: expect.objectContaining({
             tempPassword: expect.any(String),
-            url: expect.any(String),
+            url: undefined,
           }),
         }),
       ]),
@@ -375,7 +394,7 @@ describe('AuthService', () => {
     //@ts-expect-error - incorrect overload expected
     jest.mocked(randomInt).mockReturnValue(1234);
 
-    await service.createOtp(email, 'http://localhost');
+    await service.createOtp(email);
 
     expect(notificationsPublisher.publish).toHaveBeenCalledWith(
       'notifications.queue.email.password-reset',
@@ -407,7 +426,7 @@ describe('AuthService', () => {
 
     userService.getUser.mockResolvedValue(null);
 
-    await service.createOtp(email, 'https://tool.example.com');
+    await service.createOtp(email);
 
     expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
     expect(otpStoreService.storeCodeHash).not.toHaveBeenCalled();
@@ -415,11 +434,9 @@ describe('AuthService', () => {
 
   it('should not create otp if opt secret not set', async () => {
     const email = '';
-    const fallbackUrl = '';
-
     configService.get.mockReturnValue(undefined);
 
-    await service.createOtp(email, fallbackUrl);
+    await service.createOtp(email);
   });
 
   it('should verify otp in dev', async () => {
