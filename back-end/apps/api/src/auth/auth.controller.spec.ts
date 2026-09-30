@@ -89,18 +89,16 @@ describe('AuthController', () => {
     it('should return a user', async () => {
       const result = user;
 
-      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       authService.signUpByAdmin.mockResolvedValue(result);
 
-      expect(await controller.signUp({ email: 'john@test.com' }, request)).toBe(result);
+      expect(await controller.signUp({ email: 'john@test.com' })).toBe(result);
     });
 
     it('should throw an error if the user already exists or return an updated user if it exists but its status is NEW', async () => {
-      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       jest
         .spyOn(authService, 'signUpByAdmin')
         .mockRejectedValueOnce(new UnprocessableEntityException('Email already exists.'));
-      await expect(controller.signUp({ email: 'john@test.com' }, request)).rejects.toThrow(
+      await expect(controller.signUp({ email: 'john@test.com' })).rejects.toThrow(
         'Email already exists.',
       );
 
@@ -111,7 +109,7 @@ describe('AuthController', () => {
         password: 'newHashedPassword',
       } as User);
 
-      const result = await controller.signUp({ email: 'john@test.com' }, request);
+      const result = await controller.signUp({ email: 'john@test.com' });
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -146,10 +144,9 @@ describe('AuthController', () => {
 
   describe('reset-password', () => {
     it('should have no return value', async () => {
-      jest.mocked(request.get).mockImplementationOnce(() => 'localhost');
       authService.createOtp.mockResolvedValue(null);
 
-      expect(await controller.createOtp({ email: 'john@test.com' }, request)).toBeNull();
+      expect(await controller.createOtp({ email: 'john@test.com' })).toBeNull();
     });
   });
 
