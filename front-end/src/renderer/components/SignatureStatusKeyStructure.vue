@@ -3,11 +3,10 @@ import { computed } from 'vue';
 
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
-import { flattenKeyList } from '@renderer/services/keyPairService';
-
 import { ableToSign } from '@renderer/utils';
 
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
+import KeyComponent from '@renderer/components/KeyComponent.vue';
 
 /* Props */
 const props = defineProps<{
@@ -18,28 +17,28 @@ const props = defineProps<{
 }>();
 
 /* Computed */
-const publicKeysInKeyList = computed(() => flattenKeyList(props.keyList));
-const publicKeysInKeyListRaw = computed(() =>
-  flattenKeyList(props.keyList).map(k => k.toStringRaw()),
-);
+const singlePublicKey = computed(() => {
+  const keys = props.keyList.toArray();
+  return keys.length === 1 && keys[0] instanceof PublicKey ? keys[0].toStringRaw() : null;
+});
 
 /* Emits */
 defineEmits(['update:keyList']);
 </script>
 <template>
-  <template v-if="publicKeysInKeyList.length === 1">
+  <template v-if="singlePublicKey">
     <div class="d-flex position-relative text-nowrap">
       <span
-        v-if="publicKeysSigned.includes(publicKeysInKeyListRaw[0])"
+        v-if="publicKeysSigned.includes(singlePublicKey)"
         class="bi bi-check-lg text-success position-absolute"
         :style="{ left: '-15px' }"
         data-testid="span-checkmark-payer-key"
       ></span>
       <AppPublicKeyNickname
-        :public-key="publicKeysInKeyListRaw[0]"
+        :public-key="singlePublicKey"
         class="me-2"
         :signed="ableToSign(publicKeysSigned, keyList)"
-        :external="props.externalKeys.has(publicKeysInKeyListRaw[0])"
+        :external="props.externalKeys.has(singlePublicKey)"
       />
     </div>
   </template>
@@ -62,7 +61,7 @@ defineEmits(['update:keyList']);
         </p>
       </div>
       <template v-for="(item, _index) in keyList.toArray()" :key="_index">
-        <template v-if="item instanceof KeyList && true">
+        <template v-if="item instanceof KeyList">
           <div class="ms-5">
             <SignatureStatusKeyStructure
               :key-list="item"
@@ -72,7 +71,7 @@ defineEmits(['update:keyList']);
             />
           </div>
         </template>
-        <template v-else-if="item instanceof PublicKey && true">
+        <template v-else-if="item instanceof PublicKey">
           <div class="d-flex position-relative text-nowrap ms-5 my-3">
             <span
               v-if="publicKeysSigned.includes(item.toStringRaw())"
@@ -89,6 +88,9 @@ defineEmits(['update:keyList']);
             </p>
           </div>
         </template>
+        <div v-else class="text-nowrap ms-5 my-3">
+          <KeyComponent :component="item" />
+        </div>
       </template>
     </div>
   </template>
