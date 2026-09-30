@@ -1,3 +1,4 @@
+import { assertTransactionKeysReviewable } from '@app/common/utils/sdk/transaction-key-review';
 import {
   BadRequestException,
   ConflictException,
@@ -595,6 +596,11 @@ export class TransactionsService {
         )
           throw new BadRequestException(ErrorCodes.TNRS);
 
+        try {
+          assertTransactionKeysReviewable(transaction.transactionBytes);
+        } catch (error) {
+          throw new BadRequestException(error instanceof Error ? error.message : 'Invalid transaction keys');
+        }
         const sdkTransaction = SDKTransaction.fromBytes(transaction.transactionBytes);
         if (isExpired(sdkTransaction)) throw new BadRequestException(ErrorCodes.TE);
 

@@ -4,6 +4,8 @@ import type { ITransactionFull } from '@shared/interfaces';
 
 import { onBeforeMount, onBeforeUnmount, ref, watch, watchEffect } from 'vue';
 
+import KeyComponent from '@renderer/components/KeyComponent.vue';
+
 import {
   AccountCreateTransaction,
   Transaction,
@@ -140,9 +142,6 @@ onBeforeMount(async () => {
   }
 
   await checkAndFetchTransactionInfo();
-  if (props.transaction.key && props.transaction.key instanceof PublicKey) {
-    formattedKey.value = await formatPublicKey(props.transaction.key.toStringRaw(), publicKeyOwnerCache);
-  }
 });
 
 onBeforeUnmount(() => {
@@ -150,6 +149,30 @@ onBeforeUnmount(() => {
 });
 
 /* Watchers */
+watch(
+  () => (props.transaction as AccountCreateTransaction | AccountUpdateTransaction).key,
+  async (newValue, _oldValue, onCleanup) => {
+    let active = true;
+    onCleanup(() => {
+      // prevent an outdated result from updating the UI
+      active = false;
+    });
+    formattedKey.value = '';
+    if (newValue instanceof PublicKey) {
+      let label = newValue.toStringRaw();
+      try {
+        label = await formatPublicKey(label, publicKeyOwnerCache);
+      } catch {
+        /* Ignore the lookup error and keep the raw key reviewable */
+      }
+      if (active) {
+        formattedKey.value = label;
+      }
+    }
+  },
+  { immediate: true },
+);
+
 watch([() => props.transaction, () => props.organizationTransaction], async () => {
   setTimeout(async () => await checkAndFetchTransactionInfo(), 3000);
 });
@@ -235,12 +258,12 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
     >
       <h4 :class="detailItemLabelClass">Key</h4>
       <p :class="detailItemValueClass" data-testid="p-account-details-key">
-        <template v-if="transaction.key instanceof KeyList && true">
+        <template v-if="transaction.key instanceof KeyList">
           <span class="link-primary cursor-pointer" @click="isKeyStructureModalShown = true"
             >See details</span
           >
         </template>
-        <template v-else-if="transaction.key instanceof PublicKey && true && formattedKey">
+        <template v-else-if="transaction.key instanceof PublicKey">
           <p class="overflow-hidden">
             <span class="text-semi-bold" :class="{ 'text-pink': !extractIdentifier(formattedKey) }">
               {{ transaction.key._key._type }}
@@ -253,10 +276,13 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 `(${extractIdentifier(formattedKey)?.pk})`
               }}</span>
             </span>
-            <span v-else>{{ formattedKey }}</span>
+            <span v-else>{{ formattedKey || transaction.key.toStringRaw() }}</span>
+            <span v-if="!formattedKey" role="status"> Loading key owner…</span>
           </p>
         </template>
-        <template v-else>None</template>
+        <template v-else>
+          <KeyComponent :component="transaction.key" />
+        </template>
       </p>
     </div>
 

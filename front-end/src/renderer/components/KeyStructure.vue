@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KeyComponent from './KeyComponent.vue';
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
@@ -29,16 +30,15 @@ defineEmits(['update:keyList']);
       of {{ keyList.toArray().length }})
     </p>
     <template v-for="(item, _index) in keyList.toArray()" :key="_index">
-      <template v-if="item instanceof KeyList && true">
-        <div class="ms-5">
-          <KeyStructure :key-list="item" />
-        </div>
-      </template>
-      <template v-else-if="item instanceof PublicKey && true">
-        <p class="text-nowrap ms-5 my-3">
-          <AppPublicKeyNickname :public-key="item" />
-        </p>
-      </template>
+      <div v-if="item instanceof KeyList" class="ms-5">
+        <KeyStructure :key-list="item" />
+      </div>
+      <p v-else-if="item instanceof PublicKey" class="text-nowrap ms-5 my-3">
+        <AppPublicKeyNickname :public-key="item" />
+      </p>
+      <p v-else class="ms-5 my-3">
+        <KeyComponent :component="item" />
+      </p>
     </template>
   </div>
 </template>

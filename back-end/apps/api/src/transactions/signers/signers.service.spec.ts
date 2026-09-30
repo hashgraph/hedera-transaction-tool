@@ -7,6 +7,10 @@ import { Transaction, TransactionSigner, TransactionStatus, User } from '@entiti
 
 import {
   AccountCreateTransaction,
+  Key,
+  KeyList,
+  ContractId,
+  DelegateContractId,
   PrivateKey,
   SignatureMap,
   AccountId,
@@ -34,6 +38,12 @@ jest.mock('@app/common', () => ({
   processTransactionStatus: jest.fn(),
   validateSignature: jest.fn(),
 }));
+
+class UnknownTestKey extends Key {
+  override _toProtobufKey() {
+    return { RSA_3072: new Uint8Array([1]) };
+  }
+}
 
 describe('SignersService', () => {
   let service: SignersService;
@@ -292,12 +302,36 @@ describe('SignersService', () => {
   });
 
   describe('processTransactionSignatures', () => {
-    it('should process signatures and return updated transaction', async () => {
+    it('does not persist uploaded signatures over unreviewable keys', async () => {
+      const privateKey = PrivateKey.generateED25519();
+      const sdkTransaction = new AccountCreateTransaction()
+        .setKey(new KeyList([privateKey.publicKey, new UnknownTestKey()], 1))
+        .setTransactionId(TransactionId.generate('0.0.2'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')]).freeze();
+      const originalBytes = Buffer.from(sdkTransaction.toBytes());
+      const transaction = { id: 1, transactionBytes: originalBytes, status: TransactionStatus.WAITING_FOR_SIGNATURES } as Transaction;
+      await sdkTransaction.sign(privateKey);
+      dataSource.manager.find.mockResolvedValueOnce([transaction]).mockResolvedValueOnce([]);
+      jest.mocked(isExpired).mockReturnValue(false);
+      const manager = mockDeep<any>();
+      (dataSource.transaction as jest.Mock).mockImplementation(async callback => callback(manager));
+      const result = await service.uploadSignatureMaps(
+        [{ id: 1, signatureMap: sdkTransaction.getSignatures() }], user,
+      );
+      expect(result.signers).toEqual([]);
+      expect(validateSignature).not.toHaveBeenCalled();
+      expect(manager.query).not.toHaveBeenCalled();
+      expect(manager.createQueryBuilder).not.toHaveBeenCalled();
+      expect(transaction.transactionBytes).toEqual(originalBytes);
+    });
+
+    it.each([ContractId, DelegateContractId])('should process signatures containing reviewable contract keys (%p)', async Type => {
       const privateKey = PrivateKey.generateECDSA();
       const userKeyMap = new Map<string, any>();
       userKeyMap.set(privateKey.publicKey.toStringRaw(), { id: 3, publicKey: privateKey.publicKey.toStringRaw() });
 
       const sdkTransaction = new AccountCreateTransaction()
+        .setKey(new KeyList([privateKey.publicKey, Type.fromString('0.0.456')], 1))
         .setTransactionId(TransactionId.generate('0.0.2'))
         .setNodeAccountIds([AccountId.fromString('0.0.3')])
         .freeze();

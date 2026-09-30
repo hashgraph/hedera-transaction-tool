@@ -4,7 +4,7 @@ import { Prisma } from '@prisma/client';
 
 import { computed, onMounted, ref, watch } from 'vue';
 
-import { FileId, FileInfo } from '@hiero-ledger/sdk';
+import { FileId, FileInfo, Key, KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 
@@ -15,7 +15,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
 import { getAll, remove, showStoredFileInTemp, update } from '@renderer/services/filesService';
-import { flattenKeyList, getKeyListLevels } from '@renderer/services/keyPairService';
+import { getKeyListLevels } from '@renderer/services/keyPairService';
 
 import { convertBytes, getUInt8ArrayFromBytesString, isUserLoggedIn } from '@renderer/utils';
 import { getFormattedDateFromTimestamp } from '@renderer/utils/transactions';
@@ -26,6 +26,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import KeyStructureModal from '@renderer/components/KeyStructureModal.vue';
+import KeyComponent from '@renderer/components/KeyComponent.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import AppCheckBox from '@renderer/components/ui/AppCheckBox.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
@@ -146,6 +147,23 @@ const selectedFileInfo = computed(() =>
     ? FileInfo.fromBytes(getUInt8ArrayFromBytesString(selectedFile.value.metaBytes))
     : null,
 );
+
+const selectedFileDisplayKey = computed<Key | null>(() => {
+  let result: Key | null;
+
+  const keyList = selectedFileInfo.value?.keys;
+  const keys = keyList?.toArray() ?? [];
+
+  if (keys.length === 0) {
+    result = null;
+  } else if (keys.length === 1 && !(keys[0] instanceof KeyList)) {
+    result = keys[0];
+  } else {
+    result = keyList || null;
+  }
+  return result;
+});
+
 const selectedFileIdWithChecksum = computed(
   () =>
     selectedFile.value &&
@@ -746,30 +764,31 @@ watch(files, newFiles => {
                   </div>
                 </div>
 
-                <div class="mt-4 row" v-if="selectedFileInfo?.keys">
+                <div class="mt-4 row" v-if="selectedFileDisplayKey">
                   <div class="col-5">
                     <p class="text-small text-semi-bold">Key</p>
                   </div>
                   <div class="col-7">
-                    <template v-if="flattenKeyList(selectedFileInfo.keys).length > 1">
-                      Complex Key ({{ getKeyListLevels(selectedFileInfo.keys) }} levels)
+                    <template v-if="selectedFileDisplayKey instanceof KeyList">
+                      Complex Key ({{ getKeyListLevels(selectedFileDisplayKey) }} levels)
                       <span
                         class="link-primary cursor-pointer"
                         @click="isKeyStructureModalShown = true"
                         >See details</span
                       >
                     </template>
-                    <template v-else>
+                    <template v-else-if="selectedFileDisplayKey instanceof PublicKey">
                       <p class="text-secondary text-small overflow-hidden" data-testid="p-file-key">
-                        {{ flattenKeyList(selectedFileInfo.keys)[0].toStringRaw() }}
+                        {{ selectedFileDisplayKey.toStringRaw() }}
                       </p>
                       <p
                         class="text-small text-semi-bold text-pink mt-3"
                         data-testid="p-file-key-type"
                       >
-                        {{ flattenKeyList(selectedFileInfo.keys)[0]._key._type }}
+                        {{ selectedFileDisplayKey._key._type }}
                       </p>
                     </template>
+                    <KeyComponent v-else :component="selectedFileDisplayKey" />
                   </div>
                 </div>
 

@@ -4,6 +4,7 @@ import {
   AccountId,
   Client,
   ContractId,
+  DelegateContractId,
   FileId,
   FileInfo,
   Hbar,
@@ -121,6 +122,8 @@ export const ableToSign = (publicKeys: string[], key: Key) => {
     return currentThreshold >= (key.threshold || keys.length);
   } else if (key instanceof PublicKey) {
     return publicKeys.includes(key.toStringRaw());
+  } else if (key instanceof ContractId) {
+    return false;
   } else {
     throw new Error(`Invalid key type`);
   }
@@ -173,6 +176,15 @@ export function encodeKey(keyList: Key) {
 export function compareKeys(key1: Key, key2: Key) {
   if (key1 instanceof PublicKey && key2 instanceof PublicKey) {
     return key1.equals(key2);
+  } else if (key1 instanceof DelegateContractId && key2 instanceof DelegateContractId) {
+    return key1.compare(key2) === 0;
+  } else if (
+    key1 instanceof ContractId &&
+    !(key1 instanceof DelegateContractId) &&
+    key2 instanceof ContractId &&
+    !(key2 instanceof DelegateContractId)
+  ) {
+    return key1.compare(key2) === 0;
   } else if (key1 instanceof KeyList && key2 instanceof KeyList) {
     if (key1.threshold !== key2.threshold) return false;
     const keys1 = key1.toArray();
@@ -206,17 +218,7 @@ export const decodeProtobuffKey = (protobuffKey: string): Key | null => {
   try {
     const key = proto.Key.decode(hexToUint8Array(protobuffKey));
 
-    if (key.thresholdKey) {
-      return KeyList.__fromProtobufThresoldKey(key.thresholdKey);
-    }
-    if (key.keyList) {
-      return KeyList.__fromProtobufKeyList(key.keyList);
-    }
-    if (key.ed25519 || key.ECDSASecp256k1) {
-      return Key._fromProtobufKey(key);
-    }
-
-    return null;
+    return Key._fromProtobufKey(key);
   } catch {
     throw new Error('Failed to decode protobuf');
   }
@@ -363,7 +365,7 @@ export const formatAccountId = (accountId: string) => {
 
 export const formatContractId = (contractId: string) => {
   if (isContractId(contractId)) {
-     
+
     return ContractId.fromString(contractId).toString();
   } else {
     return contractId;

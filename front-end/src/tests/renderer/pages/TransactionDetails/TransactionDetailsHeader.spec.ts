@@ -9,6 +9,7 @@ import { cancelTransaction, executeTransaction } from '@renderer/services/organi
 import { showSaveDialog } from '@renderer/services/electronUtilsService';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import { usersPublicRequiredToSign } from '@renderer/utils';
 
 const toastManager = new ToastManager();
 
@@ -204,6 +205,24 @@ describe('TransactionDetailsHeader.vue', () => {
     expect(wrapper.find('[data-testid="button-sign-org-transaction"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="button-approve-org-transaction"]').exists()).toBe(false);
     expect(wrapper.find('[data-testid="button-reject-org-transaction"]').exists()).toBe(false);
+  });
+
+  test('hides Sign and reports an error when key reviewability validation rejects', async () => {
+    vi.mocked(usersPublicRequiredToSign).mockRejectedValueOnce(
+      new Error('Unsupported key type: transaction cannot be reviewed or signed'),
+    );
+
+    const wrapper = mountHeader({
+      status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      transactionBytes: 'placeholder',
+    });
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="button-sign-org-transaction"]').exists()).toBe(false);
+    expect(toastManager.findEntry(
+      'Unsupported key type: transaction cannot be reviewed or signed',
+      'error',
+    )).not.toBeNull();
   });
 
   test('shows success toast after successful cancel', async () => {
