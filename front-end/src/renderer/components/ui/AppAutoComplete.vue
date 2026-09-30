@@ -6,8 +6,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, watchEffect
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
 
-import { sanitizeAccountId } from '@renderer/utils';
-
 /* Props */
 const props = withDefaults(
   defineProps<{
@@ -15,6 +13,30 @@ const props = withDefaults(
     disableSpaces?: boolean;
     modelValue?: string | number;
     dataTestid?: string;
+    // Required rather than defaulted to sanitizeAccountId — every caller has a different
+    // notion of what's valid input, so that choice should always be explicit. If more
+    // callers end up wanting sanitizeAccountId, it's already exported from @renderer/utils.
+    sanitize: (value: string) => string;
+    // When true, a keystroke that would no longer be a prefix of any item is rejected
+    // outright instead of just left unmatched — for fields backed by a closed list
+    // (e.g. picking one of a fixed set of labels) rather than open-ended values like
+    // account IDs.
+    restrictToItems?: boolean;
+    // Account IDs use tabular (fixed-width) digits so a list of them lines up predictably;
+    // plain text values should look like every other input instead. Only affects digit
+    // glyphs (font-variant-numeric), not the typeface itself, so it stays legible even
+    // mixed into free text (e.g. a nickname alongside an account ID).
+    tabularNums?: boolean;
+    // Required rather than defaulted, same reasoning as sanitize — what counts as a
+    // "match" (e.g. accountId's exact-prefix-then-shard/realm/num-part fallback), and
+    // where the typed input aligns within the matched string, are both caller-specific.
+    // Called with the deduplicated list shown in the dropdown (i.e. filteredItems, not
+    // the raw items prop). Return null when nothing matches. `alignStart` is the offset
+    // into the matched item where the ghost-suggestion split happens (prefix = item up
+    // to alignStart, postfix = item after alignStart + input.length) — return -1 there
+    // if an item matches but input isn't literally alignable within it (e.g. a fuzzy
+    // matcher); the item still gets selected/highlighted, just without ghost text.
+    findMatch: (items: string[], input: string) => { index: number; alignStart: number } | null;
   }>(),
   {
     modelValue: '',
@@ -31,10 +53,15 @@ const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const prefixSuggestionRef = ref<HTMLSpanElement | null>(null);
 const postfixSuggestionRef = ref<HTMLSpanElement | null>(null);
 const dropdownRef = ref<HTMLDivElement | null>(null);
+const listRef = ref<HTMLDivElement | null>(null);
 const itemRefs = ref<HTMLElement[]>([]);
 const lastKeyPressed = ref<string | null>(null);
 const autocompletePrefixSuggestion = ref('');
 const autocompletePostfixSuggestion = ref('');
+// Snapshot of modelValue as of the most recent focus — what Escape reverts to, since
+// "back out of this edit" should mean "undo everything typed since I got here", not
+// "clear the field" (a field that started on a real selection should return to it).
+const valueOnFocus = ref('');
 
 /* Computed */
 const modelValue = computed({
@@ -45,23 +72,12 @@ const modelValue = computed({
 });
 
 const filteredItems = computed(() => [...new Set<string>(props.items)]);
-const selectedIndex = computed(() => {
-  const input = modelValue.value;
+const currentMatch = computed(() => {
+  if (!modelValue.value) return null;
 
-  if (!input) return -1;
-
-  // Exact match
-  const exactMatchIndex = props.items.findIndex(item => item.startsWith(input));
-  if (exactMatchIndex !== -1) return exactMatchIndex;
-
-  // Partial match
-  const partialMatchIndex = props.items.findIndex(item =>
-    item.split('.').some(part => part.startsWith(input)),
-  );
-  if (partialMatchIndex !== -1) return partialMatchIndex;
-
-  return -1;
+  return props.findMatch(filteredItems.value, modelValue.value);
 });
+const selectedIndex = computed(() => currentMatch.value?.index ?? -1);
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
@@ -111,7 +127,15 @@ const handleKeyDown = (e: KeyboardEvent) => {
     toggleDropdown(false);
     focusNextElement();
   } else if (e.key === 'Escape') {
-    setValue(autocompletePrefixSuggestion.value + modelValue.value);
+    if (props.restrictToItems) {
+      // Closed list — free text was never a valid value here, so backing out of the
+      // edit means reverting all the way to whatever was there before it (itself
+      // guaranteed to be empty or a real item, never partial text).
+      setValue(valueOnFocus.value);
+    }
+    // Open-ended field — the typed text is already a valid value on its own, so Escape
+    // only dismisses the ghost suggestion/dropdown (toggleDropdown below hides it) and
+    // leaves modelValue untouched, rather than undoing what was typed.
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
     e.preventDefault();
@@ -122,7 +146,18 @@ const handleKeyDown = (e: KeyboardEvent) => {
 };
 
 const handleUpdate = (value: string) => {
-  value = sanitizeAccountId(value);
+  value = props.sanitize(value);
+
+  // Same matcher used for selection/highlighting, so "is this keystroke even allowed" and
+  // "what's currently matched" can never disagree with each other.
+  if (props.restrictToItems && value.length > 0 && !props.findMatch(filteredItems.value, value)) {
+    // Reject the keystroke — the browser has already rendered it into the native
+    // input, so force it back to the last accepted value.
+    if (inputRef.value?.inputRef) {
+      inputRef.value.inputRef.value = modelValue.value;
+    }
+    return;
+  }
 
   setValue(value);
 
@@ -131,17 +166,53 @@ const handleUpdate = (value: string) => {
     inputRef.value.inputRef.value = value;
   }
 
-  if (value.length === 0) {
-    toggleDropdown(false);
-  } else {
+  // Stays open even when backspaced down to empty — the field still has focus and no
+  // selection has actually been made ("any"/empty is only a real selection once the field
+  // is left; see handleBlur/handleFocus), so the user should still be able to keep browsing.
+  if (value.length > 0) {
     scrollToItem(selectedIndex.value);
   }
+};
+
+const handleFocus = () => {
+  valueOnFocus.value = modelValue.value;
+
+  // Returning to a field that already holds a value should let the very next keystroke
+  // replace it outright rather than append to or "smartly" continue the old search —
+  // highlighting the text makes that unambiguous, matching how e.g. an address bar behaves.
+  // Deferred a tick so it runs after the click's own native caret-placement, which would
+  // otherwise immediately collapse the selection right back down.
+  setTimeout(() => inputRef.value?.inputRef?.select());
+  toggleDropdown(true);
 };
 
 const handleSelectItem = (event: Event, item: string) => {
   event.stopPropagation();
 
-  handleUpdate(item);
+  // Straight to setValue, same as every other "accept a known match" path (arrow keys,
+  // Tab, Enter, completeNextCharacter) — item came from the items list itself, so it's
+  // already valid and doesn't need to go through sanitize/restrictToItems again.
+  setValue(item);
+  toggleDropdown(false);
+};
+
+const handleBlur = () => {
+  // For a closed-list field, leaving with a partial-but-valid-prefix value (e.g. "trans")
+  // should resolve to whatever's currently highlighted ("Transfer") rather than leave the
+  // field showing text that was never actually a real selection.
+  if (props.restrictToItems && modelValue.value.length > 0) {
+    const match = filteredItems.value[selectedIndex.value];
+    if (match) {
+      if (match.toLowerCase() !== modelValue.value.toLowerCase()) {
+        setValue(match);
+      }
+    } else {
+      // Shouldn't be reachable — handleUpdate rejects keystrokes findMatch wouldn't
+      // match — but fall back to the value from before this edit session rather than
+      // ever leaving free text sitting in a restrictToItems field if it somehow is.
+      setValue(valueOnFocus.value);
+    }
+  }
   toggleDropdown(false);
 };
 
@@ -185,11 +256,18 @@ function setValue(value: string) {
 }
 
 function scrollToItem(index: number) {
-  const indexToScrollTo = index >= 0 ? index : 0;
   nextTick(() => {
-    itemRefs.value[indexToScrollTo]?.scrollIntoView({
-      block: 'nearest',
-    });
+    if (index < 0) {
+      // Nothing selected — always reset to the top of the list rather than wherever a
+      // prior search left it scrolled.
+      if (listRef.value) listRef.value.scrollTop = 0;
+      return;
+    }
+
+    // 'start' aligns the item with the top of the list; if there isn't enough content
+    // below it to do that, the browser clamps to the max scroll offset on its own —
+    // which is exactly "scroll as far down as it can go" for items near the end.
+    itemRefs.value[index]?.scrollIntoView({ block: 'start' });
     handleResize();
   });
 }
@@ -202,6 +280,17 @@ function toggleDropdown(show: boolean) {
 
   if (dropdownRef.value.style.visibility === newVisibility) return;
   if (dropdownRef.value.style.opacity === newOpacity) return;
+
+  if (show) {
+    // Position depends on the input's rendered layout, which otherwise is only
+    // (re)computed on keydown/resize/the mount-time timeout below — opening via a plain
+    // click before any of those have run left the very first open mispositioned.
+    handleMove();
+    // Reopening (e.g. re-focusing) doesn't itself change selectedIndex, so the watcher
+    // below won't fire — scroll explicitly so a reopen always lands on the current
+    // selection (or the top, if nothing is selected) instead of wherever it was left.
+    scrollToItem(selectedIndex.value);
+  }
 
   dropdownRef.value.style.visibility = newVisibility;
   dropdownRef.value.style.opacity = newOpacity;
@@ -308,41 +397,38 @@ watch(
 );
 
 watchEffect(() => {
-  if (!modelValue.value || !filteredItems.value || selectedIndex.value === -1) {
+  const result = currentMatch.value;
+
+  if (!result || result.alignStart === -1) {
     autocompletePrefixSuggestion.value = '';
     autocompletePostfixSuggestion.value = '';
     positionSuggestion();
     return;
   }
 
-  const match = filteredItems.value[selectedIndex.value];
-  if (match) {
-    const input = modelValue.value;
-    const matchIndex = match.indexOf(input);
-    if (matchIndex !== -1) {
-      autocompletePrefixSuggestion.value = match.slice(0, matchIndex);
-      autocompletePostfixSuggestion.value = match.slice(matchIndex + input.length);
-    }
-  } else {
-    autocompletePrefixSuggestion.value = '';
-    autocompletePostfixSuggestion.value = '';
-  }
+  const match = filteredItems.value[result.index];
+  const input = modelValue.value;
+  autocompletePrefixSuggestion.value = match.slice(0, result.alignStart);
+  autocompletePostfixSuggestion.value = match.slice(result.alignStart + input.length);
 
   positionSuggestion();
 });
 </script>
 
 <template>
-  <div @blur="toggleDropdown(false)" class="w-100 autocomplete-container">
+  <div class="w-100 autocomplete-container" :class="{ 'is-tabular-nums': tabularNums }">
     <div @click="toggleDropdown(true)" class="input-wrapper">
       <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{
         autocompletePrefixSuggestion
       }}</span>
       <AppInput
         ref="inputRef"
+        class="form-select"
         :model-value="modelValue"
         @update:model-value="handleUpdate"
         @keydown="handleKeyDown"
+        @focus="handleFocus"
+        @blur="handleBlur"
         :data-testid="dataTestid"
         v-bind="$attrs"
       />
@@ -356,7 +442,7 @@ watchEffect(() => {
       class="autocomplete-custom"
       :class="{ 'd-none': filteredItems.length === 0 }"
     >
-      <div>
+      <div ref="listRef">
         <template v-for="(item, i) in filteredItems">
           <!-- Check if the item is a separator -->
           <div
@@ -371,6 +457,7 @@ watchEffect(() => {
               selected: i === selectedIndex,
             }"
             :key="item"
+            @mousedown.prevent
             @click="handleSelectItem($event, item)"
             :ref="el => setItemRef(el as HTMLElement, i)"
           >

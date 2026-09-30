@@ -1163,10 +1163,6 @@ td .btn {
     position: relative;
   }
 
-  .input-wrapper input {
-    font-family: $font-family-numeric;
-  }
-
   .input-wrapper input::placeholder {
     font-family: $font-family-primary;
   }
@@ -1178,7 +1174,6 @@ td .btn {
 
     font-weight: $input-font-weight;
     line-height: $input-line-height;
-    font-family: $font-family-numeric;
     @include font-size($input-font-size);
 
     color: grey;
@@ -1186,6 +1181,18 @@ td .btn {
     z-index: 0;
     white-space: pre;
     opacity: 0.7;
+  }
+
+  // Account IDs need fixed-width digits so a list of them lines up predictably as you
+  // scan it. Only the digit glyphs get the tabular-figures feature — the typeface itself
+  // (Inter) is untouched, so this stays legible even if a nickname gets mixed into the
+  // same string later. Plain text values skip this entirely.
+  &.is-tabular-nums {
+    .input-wrapper input,
+    .autocomplete-suggestion,
+    .autocomplete-item-custom {
+      font-variant-numeric: tabular-nums;
+    }
   }
 
   .autocomplete-custom {
@@ -1226,7 +1233,6 @@ td .btn {
 
       cursor: pointer;
 
-      font-family: $font-family-numeric;
       font-size: $input-font-size;
       font-weight: $input-font-weight;
 

@@ -12,6 +12,8 @@ import {
   formatAccountId,
   getAccountIdWithChecksum,
   isUserLoggedIn,
+  matchAccountId,
+  sanitizeAccountId,
 } from '@renderer/utils';
 
 import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
@@ -96,8 +98,11 @@ onBeforeMount(async () => {
     @update:model-value="handleUpdate"
     @blur="handleOnBlur"
     :items="formattedAccountIds"
+    :sanitize="sanitizeAccountId"
+    :find-match="matchAccountId"
     :data-testid="dataTestid"
     disable-spaces
+    tabular-nums
     v-bind="$attrs"
   />
 </template>
