@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
     expirationTime: '2026-12-31T00:00:00.000Z',
     fileMemo: 'file memo',
     isDeleted: false,
-    keys: ['file-key'],
+    keys: { toArray: () => [] },
     ledgerId: 'testnet',
     size: { toNumber: () => 12 },
   },
@@ -98,6 +98,11 @@ vi.mock('@renderer/utils/transactions', () => ({
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
   const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
+  const publicKey = Object.assign(Object.create(actual.PublicKey.prototype), {
+    _key: { _type: 'ED25519' },
+    toArray: () => ['file-key'],
+    toStringRaw: () => 'file-public-key',
+  });
   return {
     ...actual,
     Client: class Client {},
@@ -107,7 +112,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
       })),
     },
     FileInfo: {
-      fromBytes: vi.fn(() => mocks.fileInfo),
+      fromBytes: vi.fn(() => ({ ...mocks.fileInfo, keys: publicKey })),
     },
   };
 });
@@ -196,6 +201,9 @@ describe('Files.vue', () => {
   test('renders files, add-new routes, and file details', async () => {
     const wrapper = mountFiles();
     await flushPromises();
+
+    // Select the file explicitly before asserting on its details panel.
+    await wrapper.find('[data-testid="p-file-nickname-0"]').trigger('click');
 
     expect(wrapper.find('[data-testid="p-file-nickname-0"]').text()).toBe('Primary File');
     expect(wrapper.find('[data-testid="p-file-id-0"]').text()).toBe('0.0.2001');
