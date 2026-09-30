@@ -156,7 +156,7 @@ const selectedFileDisplayKey = computed<Key | null>(() => {
 
   if (keys.length === 0) {
     result = null;
-  } else if (keys.length === 1 && keys[0] instanceof KeyList) {
+  } else if (keys.length === 1 && !(keys[0] instanceof KeyList)) {
     result = keys[0];
   } else {
     result = keyList || null;

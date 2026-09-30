@@ -100,8 +100,10 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
   const actual = await importOriginal<typeof import('@hiero-ledger/sdk')>();
   const publicKey = Object.assign(Object.create(actual.PublicKey.prototype), {
     _key: { _type: 'ED25519' },
-    toArray: () => ['file-key'],
     toStringRaw: () => 'file-public-key',
+  });
+  const keyList = Object.assign(Object.create(actual.KeyList.prototype), {
+    toArray: () => [publicKey],
   });
   return {
     ...actual,
@@ -112,7 +114,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
       })),
     },
     FileInfo: {
-      fromBytes: vi.fn(() => ({ ...mocks.fileInfo, keys: publicKey })),
+      fromBytes: vi.fn(() => ({ ...mocks.fileInfo, keys: keyList })),
     },
   };
 });
