@@ -36,12 +36,12 @@ const props = withDefaults(
     // whether it's in items. Independent of findMatch, which only drives the ghost
     // while the dropdown is open. Return '' for no annotation.
     decorate?: (value: string) => string;
-    // Optional — identifies items that aren't real, selectable entries (e.g. the
-    // divider line AccountIdInput puts between linked and owned accounts, though it
-    // doesn't have to be a divider — just something to exclude from selection).
-    // Arrow-key navigation skips them and clicking them is a no-op. Defaults to
-    // "nothing is ignored" when omitted.
-    ignoreItem?: (item: string) => boolean;
+    // Optional, purely presentational — draws a divider line after a real item (e.g.
+    // AccountIdInput's boundary between linked and owned accounts). Every entry in
+    // `items` stays a real, matchable, selectable value; this never adds a fake entry
+    // of its own, so it can't be confused with a match the way a sentinel value mixed
+    // into `items` could be.
+    groupBreakAfter?: (item: string) => boolean;
   }>(),
   {
     modelValue: '',
@@ -93,14 +93,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    const index = skipIgnoredItems(selectedIndex.value, previousIndex);
+    const index = previousIndex(selectedIndex.value);
     setValue(filteredItems.value[index]);
     // 'nearest' here, not 'start' — navigating should keep the list stable and just
     // keep the selection in view, not re-anchor it to the top on every press.
     scrollToItem(index, 'nearest');
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    const index = skipIgnoredItems(selectedIndex.value, nextIndex);
+    const index = nextIndex(selectedIndex.value);
     setValue(filteredItems.value[index]);
     scrollToItem(index, 'nearest');
   } else if (e.key === 'ArrowRight') {
@@ -283,21 +283,6 @@ function nextIndex(index: number): number {
   if (index < filteredItems.value.length - 1) return index + 1;
   // Already at the last item.
   return props.wrapNavigation ? 0 : index;
-}
-
-// Steps past ignored items (e.g. AccountIdInput's divider between linked/owned
-// accounts) so arrow navigation never lands on one. Bounded by length rather than
-// "until back where we started" since `from` can be -1, which step() never revisits.
-function skipIgnoredItems(from: number, step: (index: number) => number): number {
-  let index = step(from);
-  for (
-    let i = 0;
-    i < filteredItems.value.length && (props.ignoreItem?.(filteredItems.value[index]) ?? false);
-    i++
-  ) {
-    index = step(index);
-  }
-  return index;
 }
 
 function setValue(value: string) {
@@ -504,25 +489,18 @@ watchEffect(() => {
       @mousedown.prevent
     >
       <div ref="listRef">
-        <template v-for="(item, i) in filteredItems">
-          <!-- Items ignoreItem flags are rendered as a non-selectable row -->
+        <template v-for="(item, i) in filteredItems" :key="item">
           <div
-            v-if="ignoreItem?.(item)"
-            class="autocomplete-item-separator"
-            :key="'ignored-' + i"
-          ></div>
-          <div
-            v-else
             class="autocomplete-item-custom"
             :class="{
               selected: i === selectedIndex,
             }"
-            :key="item"
             @click="handleSelectItem($event, item)"
             :ref="el => setItemRef(el as HTMLElement, i)"
           >
             {{ item }}
           </div>
+          <div v-if="groupBreakAfter?.(item)" class="autocomplete-item-separator"></div>
         </template>
       </div>
     </div>

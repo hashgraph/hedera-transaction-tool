@@ -17,7 +17,7 @@ type Props = Partial<{
   wrapNavigation: boolean;
   disableSpaces: boolean;
   tabularNums: boolean;
-  ignoreItem: (item: string) => boolean;
+  groupBreakAfter: (item: string) => boolean;
 }>;
 
 // Mounts AppAutoComplete behind a tiny host component that actually binds
@@ -1072,12 +1072,12 @@ describe('AppAutoComplete', () => {
     wrapper.unmount();
   });
 
-  test('M7: clicking the separator does not change the value', async () => {
+  test('M7: clicking the divider rendered after an item does not change the value', async () => {
     const wrapper = mountAutoComplete({
       modelValue: 'x',
-      items: ['Transfer', '---', 'Approve'],
+      items: ['Transfer', 'Approve'],
       findMatch: vi.fn((): MatchResult => null),
-      ignoreItem: (item: string) => item === '---',
+      groupBreakAfter: (item: string) => item === 'Transfer',
     });
     const input = wrapper.find('input');
     await input.trigger('focus');
@@ -1085,5 +1085,27 @@ describe('AppAutoComplete', () => {
     await wrapper.find('.autocomplete-item-separator').trigger('click');
     await flushPromises();
     expect((input.element as HTMLInputElement).value).toBe('x');
+  });
+
+  // M8: groupBreakAfter is purely cosmetic — unlike the old ignoreItem design, flagging
+  // an item for a trailing divider must not exclude it from matching/selection/commit.
+  test('M8: an item with groupBreakAfter is still a normal, selectable match', async () => {
+    const wrapper = mountAutoComplete({
+      modelValue: 'x',
+      items: ['Transfer', 'Approve'],
+      findMatch: vi.fn((): MatchResult => ({ index: 0, alignStart: 0 })),
+      groupBreakAfter: (item: string) => item === 'Transfer',
+    });
+    const input = wrapper.find('input');
+    await input.trigger('focus');
+    await flushPromises();
+
+    const [, postfix] = wrapper.findAll('.autocomplete-suggestion');
+    expect(postfix.text()).toBe('ransfer');
+    expect(wrapper.find('.autocomplete-item-custom.selected').text()).toBe('Transfer');
+
+    await input.trigger('keydown', { key: 'Tab' });
+    await flushPromises();
+    expect((input.element as HTMLInputElement).value).toBe('Transfer');
   });
 });
