@@ -114,16 +114,24 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    const index = previousIndex(selectedIndex.value);
-    setValue(filteredItems.value[index]);
-    // 'nearest' here, not 'start' — navigating should keep the list stable and just
-    // keep the selection in view, not re-anchor it to the top on every press.
-    scrollToItem(index, 'nearest');
+    // Nothing to move to when the (possibly filterItem-narrowed) list is empty —
+    // filteredItems.value[index] would be undefined, and setValue(undefined) breaks
+    // consumers that assume modelValue is always a string (e.g. AccountIdInput's
+    // handleUpdate calling .split on it).
+    if (filteredItems.value.length > 0) {
+      const index = previousIndex(selectedIndex.value);
+      setValue(filteredItems.value[index]);
+      // 'nearest' here, not 'start' — navigating should keep the list stable and just
+      // keep the selection in view, not re-anchor it to the top on every press.
+      scrollToItem(index, 'nearest');
+    }
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    const index = nextIndex(selectedIndex.value);
-    setValue(filteredItems.value[index]);
-    scrollToItem(index, 'nearest');
+    if (filteredItems.value.length > 0) {
+      const index = nextIndex(selectedIndex.value);
+      setValue(filteredItems.value[index]);
+      scrollToItem(index, 'nearest');
+    }
   } else if (e.key === 'ArrowRight') {
     const inputElement = inputRef.value?.inputRef as HTMLInputElement;
     if (!inputElement) return;

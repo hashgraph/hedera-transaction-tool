@@ -643,6 +643,51 @@ describe('AppAutoComplete', () => {
     expect((input.element as HTMLInputElement).value).toBe('c');
   });
 
+  // U4/D4: with an empty list (no items, or filterItem narrowing everything out),
+  // filteredItems.value[index] would be undefined — setValue(undefined) must not reach
+  // modelValue, since consumers like AccountIdInput assume it's always a string (e.g.
+  // handleUpdate calling .split on it) and would throw on undefined. Mounted directly
+  // (not through mountAutoComplete's Host) and asserted on the raw emitted payload,
+  // since AppAutoComplete's own modelValue getter coerces undefined back to '' before
+  // it ever reaches the rendered <input> — that would mask the bug from a DOM-only check.
+  test('U4: ArrowUp with an empty list does not emit undefined', async () => {
+    const onUpdateModelValue = vi.fn();
+    const wrapper = mount(AppAutoComplete, {
+      props: {
+        items: [],
+        modelValue: '',
+        sanitize: (value: string) => value,
+        findMatch: prefixMatcher(),
+        'onUpdate:modelValue': onUpdateModelValue,
+      },
+    });
+    const input = wrapper.find('input');
+    await input.trigger('focus');
+    await flushPromises();
+    await input.trigger('keydown', { key: 'ArrowUp' });
+    await flushPromises();
+    expect(onUpdateModelValue).not.toHaveBeenCalledWith(undefined);
+  });
+
+  test('D4: ArrowDown with an empty list does not emit undefined', async () => {
+    const onUpdateModelValue = vi.fn();
+    const wrapper = mount(AppAutoComplete, {
+      props: {
+        items: [],
+        modelValue: '',
+        sanitize: (value: string) => value,
+        findMatch: prefixMatcher(),
+        'onUpdate:modelValue': onUpdateModelValue,
+      },
+    });
+    const input = wrapper.find('input');
+    await input.trigger('focus');
+    await flushPromises();
+    await input.trigger('keydown', { key: 'ArrowDown' });
+    await flushPromises();
+    expect(onUpdateModelValue).not.toHaveBeenCalledWith(undefined);
+  });
+
   test('R1: ArrowRight with cursor not at end does nothing special', async () => {
     const wrapper = mountAutoComplete({
       modelValue: 'ab',
