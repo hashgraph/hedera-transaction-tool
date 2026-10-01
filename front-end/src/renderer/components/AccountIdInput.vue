@@ -17,9 +17,14 @@ import {
   sanitizeAccountId,
 } from '@renderer/utils';
 
-import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import { compareAccountIds } from '@renderer/utils/sortAccounts';
+
+// Divider between the linked-accounts and owned-accounts groups in formattedAccountIds.
+const ACCOUNT_LIST_SEPARATOR = '-';
+function isAccountListSeparator(item: string): boolean {
+  return item === ACCOUNT_LIST_SEPARATOR;
+}
 
 /* Props */
 const props = defineProps<{
@@ -51,7 +56,7 @@ const formattedAccountIds = computed(() => {
     linkedAccounts.sort(compareAccountIds);
     ownedAccounts.sort(compareAccountIds);
     if (linkedAccounts.length > 0 && ownedAccounts.length > 0) {
-      result = linkedAccounts.concat([ITEM_SEPARATOR]).concat(ownedAccounts);
+      result = linkedAccounts.concat([ACCOUNT_LIST_SEPARATOR]).concat(ownedAccounts);
     } else if (linkedAccounts.length > 0) {
       result = linkedAccounts;
     } else if (ownedAccounts.length > 0) {
@@ -95,6 +100,7 @@ onBeforeMount(async () => {
     :sanitize="sanitizeAccountId"
     :find-match="matchAccountId"
     :decorate="decorateAccountId"
+    :ignore-item="isAccountListSeparator"
     :data-testid="dataTestid"
     disable-spaces
     tabular-nums

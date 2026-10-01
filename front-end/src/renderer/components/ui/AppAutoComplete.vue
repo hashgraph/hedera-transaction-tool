@@ -1,6 +1,3 @@
-<script lang="ts">
-export const ITEM_SEPARATOR = '-';
-</script>
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 
@@ -13,43 +10,38 @@ const props = withDefaults(
     disableSpaces?: boolean;
     modelValue?: string | number;
     dataTestid?: string;
-    // Required rather than defaulted to sanitizeAccountId — every caller has a different
-    // notion of what's valid input, so that choice should always be explicit. If more
-    // callers end up wanting sanitizeAccountId, it's already exported from @renderer/utils.
+    // Every caller has different requirements for what's valid input,
+    // so that choice should always be explicit.
     sanitize: (value: string) => string;
-    // When true, a keystroke that would no longer be a prefix of any item is rejected
-    // outright instead of just left unmatched — for fields backed by a closed list
-    // (e.g. picking one of a fixed set of labels) rather than open-ended values like
+    // Closed-list mode: a keystroke findMatch can't match against anything is rejected
+    // outright instead of left unmatched, and blur/Escape force the value back to a
+    // real match — for a fixed set of items (e.g. labels), not open-ended values like
     // account IDs.
     strictItems?: boolean;
-    // Account IDs use tabular (fixed-width) digits so a list of them lines up predictably;
-    // plain text values should look like every other input instead. Only affects digit
-    // glyphs (font-variant-numeric), not the typeface itself, so it stays legible even
-    // mixed into free text (e.g. a nickname alongside an account ID).
+    // Fixed-width digits (font-variant-numeric only, not the whole typeface) so a list
+    // of account IDs lines up — stays legible if non-numeric text gets mixed in too.
     tabularNums?: boolean;
-    // Off by default. When true, ArrowUp/ArrowDown wrap around at the ends of the list
-    // (pressing Down at the last item jumps to the first, and vice versa). When false,
-    // pressing further at a boundary just stays there. Doesn't affect entering the list
-    // from no selection — ArrowDown/ArrowUp from "nothing selected" always goes to the
-    // first/last item respectively; that's starting navigation, not wrapping it.
+    // Off by default. When true, Arrow Up/Down wrap at the list's ends instead of
+    // stopping there. Doesn't affect entering the list from "nothing selected" — that
+    // always goes to the first/last item; it's not a wrap.
     wrapNavigation?: boolean;
-    // Required rather than defaulted, same reasoning as sanitize — what counts as a
-    // "match" (e.g. accountId's exact-prefix-then-shard/realm/num-part fallback), and
-    // where the typed input aligns within the matched string, are both caller-specific.
-    // Called with the deduplicated list shown in the dropdown (i.e. filteredItems, not
-    // the raw items prop). Return null when nothing matches. `alignStart` is the offset
-    // into the matched item where the ghost-suggestion split happens (prefix = item up
-    // to alignStart, postfix = item after alignStart + input.length) — return -1 there
-    // if an item matches but input isn't literally alignable within it (e.g. a fuzzy
-    // matcher); the item still gets selected/highlighted, just without ghost text.
+    // Caller-defined matching: given the deduplicated items shown in the dropdown,
+    // return the matched index and where input aligns within it (alignStart splits the
+    // ghost suggestion into prefix/postfix), or null for no match. alignStart: -1 still
+    // selects/highlights the item but skips ghost text, for matchers where input isn't
+    // literally a substring of the match (e.g. fuzzy matching).
     findMatch: (items: string[], input: string) => { index: number; alignStart: number } | null;
-    // Optional, independent of findMatch/items entirely — a purely decorative annotation
-    // appended after the current value, shown as ghost text once editing has stopped
-    // (the dropdown is closed): e.g. an account ID's computed checksum. Computed fresh
-    // from whatever the literal current value is, whether or not that value is one of
-    // the known items — unlike findMatch, which only knows about items and drives the
-    // ghost while the dropdown is open. Return '' for no annotation.
+    // Optional, cosmetic ghost text shown after the value once the dropdown is closed
+    // (e.g. an account ID's checksum) — computed from the literal value regardless of
+    // whether it's in items. Independent of findMatch, which only drives the ghost
+    // while the dropdown is open. Return '' for no annotation.
     decorate?: (value: string) => string;
+    // Optional — identifies items that aren't real, selectable entries (e.g. the
+    // divider line AccountIdInput puts between linked and owned accounts, though it
+    // doesn't have to be a divider — just something to exclude from selection).
+    // Arrow-key navigation skips them and clicking them is a no-op. Defaults to
+    // "nothing is ignored" when omitted.
+    ignoreItem?: (item: string) => boolean;
   }>(),
   {
     modelValue: '',
@@ -101,14 +93,14 @@ const handleKeyDown = (e: KeyboardEvent) => {
 
   if (e.key === 'ArrowUp') {
     e.preventDefault();
-    const index = skipSeparators(selectedIndex.value, previousIndex);
+    const index = skipIgnoredItems(selectedIndex.value, previousIndex);
     setValue(filteredItems.value[index]);
     // 'nearest' here, not 'start' — navigating should keep the list stable and just
     // keep the selection in view, not re-anchor it to the top on every press.
     scrollToItem(index, 'nearest');
   } else if (e.key === 'ArrowDown') {
     e.preventDefault();
-    const index = skipSeparators(selectedIndex.value, nextIndex);
+    const index = skipIgnoredItems(selectedIndex.value, nextIndex);
     setValue(filteredItems.value[index]);
     scrollToItem(index, 'nearest');
   } else if (e.key === 'ArrowRight') {
@@ -121,6 +113,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
     if (cursorPosition === modelValue.value.length && autocompletePostfixSuggestion.value) {
       e.preventDefault();
       completeNextCharacter();
+      // preventDefault blocked the browser's native caret-advance, so once the v-model
+      // round trip lands (completeNextCharacter's own nextTick handles scrolling the
+      // dropdown; this is a separate concern), explicitly move the caret to the end —
+      // otherwise it'd be left wherever it was before the character was accepted.
       nextTick(() => {
         inputElement.setSelectionRange(modelValue.value.length, modelValue.value.length);
       });
@@ -142,25 +138,22 @@ const handleKeyDown = (e: KeyboardEvent) => {
         ).trim(),
       );
     } else {
-      // Open-ended field — what's typed is already a complete, valid value on its own
-      // (e.g. "0.0.2" isn't an in-progress prefix just because it coincidentally
-      // matches a longer known account); committing it as-is lets decorate recompute
-      // the right annotation for it once the dropdown closes below, instead of keeping
-      // whatever a coincidentally-matched different item's ghost text was showing.
+      // Open-ended field — what's typed is already a complete value on its own, so
+      // commit it as-is (not the highlighted match) and let decorate recompute the
+      // right annotation once the dropdown closes, rather than keeping some other
+      // item's ghost text.
       setValue(modelValue.value.trim());
     }
     toggleDropdown(false);
     focusNextElement();
   } else if (e.key === 'Escape') {
     if (props.strictItems) {
-      // Closed list — free text was never a valid value here, so backing out of the
-      // edit means reverting all the way to whatever was there before it (itself
-      // guaranteed to be empty or a real item, never partial text).
+      // Closed list — free text was never valid, so Escape reverts fully to whatever
+      // was there before the edit (always empty or a real item).
       setValue(valueOnFocus.value);
     }
-    // Open-ended field — the typed text is already a valid value on its own, so Escape
-    // only dismisses the ghost suggestion/dropdown (toggleDropdown below hides it) and
-    // leaves modelValue untouched, rather than undoing what was typed.
+    // Open-ended — typed text is already valid on its own, so Escape just dismisses
+    // the ghost/dropdown (below) and leaves modelValue untouched.
     toggleDropdown(false);
   } else if (e.code === 'Space' && props.disableSpaces) {
     e.preventDefault();
@@ -210,11 +203,9 @@ const handleUpdate = (value: string) => {
 const handleFocus = () => {
   valueOnFocus.value = modelValue.value;
 
-  // Returning to a field that already holds a value should let the very next keystroke
-  // replace it outright rather than append to or "smartly" continue the old search —
-  // highlighting the text makes that unambiguous, matching how e.g. an address bar behaves.
-  // Deferred a tick so it runs after the click's own native caret-placement, which would
-  // otherwise immediately collapse the selection right back down.
+  // Select existing text so the next keystroke replaces it outright, like an address
+  // bar. Deferred a tick so it runs after the click's own caret placement, which would
+  // otherwise collapse the selection right back down.
   setTimeout(() => inputRef.value?.inputRef?.select());
   toggleDropdown(true);
 };
@@ -280,10 +271,6 @@ const handleMove = () => {
 };
 
 /* Functions */
-function isSeparator(item: string): boolean {
-  return item === ITEM_SEPARATOR;
-}
-
 function previousIndex(index: number): number {
   if (index === -1) return filteredItems.value.length - 1; // entering the list, not a wrap
   if (index > 0) return index - 1;
@@ -298,14 +285,16 @@ function nextIndex(index: number): number {
   return props.wrapNavigation ? 0 : index;
 }
 
-// Steps past separator rows (e.g. the divider AccountIdInput puts between linked and
-// owned accounts) so arrow-key navigation never lands on one. `step` is previousIndex
-// or nextIndex depending on direction. Bounded by length rather than "until we're back
-// where we started" since `from` can be -1 (nothing selected yet), which step() never
-// revisits — this still guarantees termination in the degenerate all-separator case.
-function skipSeparators(from: number, step: (index: number) => number): number {
+// Steps past ignored items (e.g. AccountIdInput's divider between linked/owned
+// accounts) so arrow navigation never lands on one. Bounded by length rather than
+// "until back where we started" since `from` can be -1, which step() never revisits.
+function skipIgnoredItems(from: number, step: (index: number) => number): number {
   let index = step(from);
-  for (let i = 0; i < filteredItems.value.length && isSeparator(filteredItems.value[index]); i++) {
+  for (
+    let i = 0;
+    i < filteredItems.value.length && (props.ignoreItem?.(filteredItems.value[index]) ?? false);
+    i++
+  ) {
     index = step(index);
   }
   return index;
@@ -345,20 +334,18 @@ function toggleDropdown(show: boolean) {
     // (re)computed on keydown/resize/the mount-time timeout below — opening via a plain
     // click before any of those have run left the very first open mispositioned.
     handleMove();
-    // Reopening (e.g. re-focusing) doesn't itself change selectedIndex, so nothing else
-    // would trigger a scroll — do it explicitly so a reopen always lands on the current
-    // selection (or the top, if nothing is selected) instead of wherever it was left.
-    // 'nearest' since this isn't a fresh search result, just redisplaying existing state.
+    // Reopening doesn't change selectedIndex, so nothing else triggers a scroll — do it
+    // here so reopening lands on the current selection (or top), not wherever the list
+    // was left. 'nearest' since this redisplays existing state, not a fresh match.
     scrollToItem(selectedIndex.value, 'nearest');
   }
 
   dropdownRef.value.style.visibility = newVisibility;
   dropdownRef.value.style.opacity = newOpacity;
-  // Only the prefix ghost (a mid-typing tier-2 match) is tied to the dropdown being
-  // open — it's an in-progress editing affordance that stops making sense once you've
-  // left the field. The postfix ghost (e.g. a decorative checksum) stays visible either
-  // way: it's confirmation for content that's already there, not something you're about
-  // to accept, so it should still read correctly at rest.
+  // Only the prefix ghost (an in-progress match) hides when the field isn't open — it
+  // stops making sense once you've left it. The postfix ghost (e.g. a checksum) stays
+  // visible either way since it's confirming content already there, not something to
+  // accept.
   prefixSuggestionRef.value?.classList.toggle('d-none', !show);
 }
 
@@ -422,12 +409,9 @@ function completeNextCharacter() {
   // Deferred for the same reason as handleUpdate's typing path — selectedIndex won't
   // reflect this setValue until it round-trips back down through the parent.
   nextTick(() => {
-    // Normally a no-op — completing toward an already-matched item keeps selectedIndex
-    // on that same item, which is already visible (it got scrolled into view when it
-    // was first matched). 'start', not 'nearest', for the edge case where it isn't —
-    // e.g. the user scrolled the dropdown manually without changing the selection —
-    // since re-finding it here is the same "show it prominently" case as typing, not
-    // list navigation.
+    // Normally a no-op — the already-matched item is already visible. 'start' (not
+    // 'nearest') covers the edge case where the user scrolled the dropdown manually
+    // without changing selection: that's a "show it prominently" case, same as typing.
     scrollToItem(selectedIndex.value, 'start');
   });
 }
@@ -521,11 +505,11 @@ watchEffect(() => {
     >
       <div ref="listRef">
         <template v-for="(item, i) in filteredItems">
-          <!-- Check if the item is a separator -->
+          <!-- Items ignoreItem flags are rendered as a non-selectable row -->
           <div
-            v-if="isSeparator(item)"
+            v-if="ignoreItem?.(item)"
             class="autocomplete-item-separator"
-            :key="'separator-' + i"
+            :key="'ignored-' + i"
           ></div>
           <div
             v-else

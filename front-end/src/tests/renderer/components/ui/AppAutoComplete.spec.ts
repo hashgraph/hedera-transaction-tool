@@ -3,7 +3,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { defineComponent, h } from 'vue';
 
-import AppAutoComplete, { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
+import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 
 type MatchResult = { index: number; alignStart: number } | null;
 
@@ -17,6 +17,7 @@ type Props = Partial<{
   wrapNavigation: boolean;
   disableSpaces: boolean;
   tabularNums: boolean;
+  ignoreItem: (item: string) => boolean;
 }>;
 
 // Mounts AppAutoComplete behind a tiny host component that actually binds
@@ -1074,8 +1075,9 @@ describe('AppAutoComplete', () => {
   test('M7: clicking the separator does not change the value', async () => {
     const wrapper = mountAutoComplete({
       modelValue: 'x',
-      items: ['Transfer', ITEM_SEPARATOR, 'Approve'],
+      items: ['Transfer', '---', 'Approve'],
       findMatch: vi.fn((): MatchResult => null),
+      ignoreItem: (item: string) => item === '---',
     });
     const input = wrapper.find('input');
     await input.trigger('focus');
