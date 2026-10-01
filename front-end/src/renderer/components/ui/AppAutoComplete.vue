@@ -370,9 +370,11 @@ function toggleDropdown(show: boolean) {
     // (re)computed on keydown/resize/the mount-time timeout below — opening via a plain
     // click before any of those have run left the very first open mispositioned.
     handleMove();
-    // Reopening doesn't change selectedIndex, so nothing else triggers a scroll — do it
-    // here so reopening lands on the current selection (or top), not wherever the list
-    // was left. 'nearest' since this redisplays existing state, not a fresh match.
+    // Nothing else triggers a scroll on reopen — do it here, after the filterQuery
+    // reset above (which can itself shift selectedIndex, e.g. widening a filtered
+    // subset back out to the full list relocates where the matched item sits) — so
+    // reopening always lands on wherever the selection now is (or the top, if nothing's
+    // selected). 'nearest' since this redisplays existing state, not a fresh match.
     scrollToItem(selectedIndex.value, 'nearest');
   }
 
