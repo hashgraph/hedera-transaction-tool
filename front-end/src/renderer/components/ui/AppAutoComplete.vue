@@ -110,6 +110,11 @@ const selectedIndex = computed(() => currentMatch.value?.index ?? -1);
 
 /* Handlers */
 const handleKeyDown = (e: KeyboardEvent) => {
+  // Captured before toggleDropdown(true) below always flips it on — distinguishes
+  // "was already open" from "this keypress is what opened it", since the latter means
+  // the ghost below hasn't been recomputed for the open state yet (watchEffect runs
+  // async) and isn't safe to read yet.
+  const wasOpen = isOpen.value;
   toggleDropdown(true);
 
   if (e.key === 'ArrowUp') {
@@ -133,6 +138,10 @@ const handleKeyDown = (e: KeyboardEvent) => {
       scrollToItem(index, 'nearest');
     }
   } else if (e.key === 'ArrowRight') {
+    // This keypress is what just opened the dropdown — nothing to complete yet, so stop
+    // here and let it behave like a plain input (native cursor movement).
+    if (!wasOpen) return;
+
     const inputElement = inputRef.value?.inputRef as HTMLInputElement;
     if (!inputElement) return;
     const cursorPosition = inputElement.selectionStart;

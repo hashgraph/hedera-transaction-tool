@@ -365,6 +365,36 @@ describe('AppAutoComplete', () => {
     expect(el.value).toBe('0.0.25');
   });
 
+  test('E7: Escape then ArrowRight stays inert on the first press even with a non-empty decorate ghost', async () => {
+    const wrapper = mountAutoComplete({
+      items: ['0.0.258'],
+      findMatch: prefixMatcher(),
+      strictItems: false,
+      decorate: (value: string) => (value ? '-26' : ''),
+    });
+    const input = wrapper.find('input');
+    const el = input.element as HTMLInputElement;
+    await input.trigger('focus');
+    await input.setValue('0.0.25');
+    await flushPromises();
+    await input.trigger('keydown', { key: 'Escape' });
+    await flushPromises();
+
+    el.setSelectionRange(el.value.length, el.value.length);
+    await input.trigger('keydown', { key: 'ArrowRight' });
+    await flushPromises();
+    // Same first-press staleness as E6 — the postfix ghost hasn't been recomputed for the
+    // reopened state yet, so this must stay inert regardless of decorate() having a
+    // non-empty closed-state ghost ready to (wrongly) satisfy the "something to complete"
+    // guard.
+    expect(el.value).toBe('0.0.25');
+
+    el.setSelectionRange(el.value.length, el.value.length);
+    await input.trigger('keydown', { key: 'ArrowRight' });
+    await flushPromises();
+    expect(el.value).toBe('0.0.258');
+  });
+
   // N. Enter
   test('N1: strictItems true merges the live suggestion on Enter', async () => {
     const wrapper = mountAutoComplete({
