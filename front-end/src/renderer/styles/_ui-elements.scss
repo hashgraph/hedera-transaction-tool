@@ -1225,6 +1225,25 @@ td .btn {
     > div {
       max-height: var(--max-height);
       overflow: auto;
+
+      // Scrollbar colors follow the theme palette instead of the OS default. Track
+      // matches the dropdown's own background so it reads as part of the surface, not
+      // a separate native control. Thumb uses input-border-color rather than
+      // separator-bg-color: the latter is identical to input-fill-bg-color in dark
+      // mode, which made the thumb invisible against the track.
+      scrollbar-color: var(--#{$prefix}input-border-color) var(--#{$prefix}input-fill-bg-color);
+
+      &::-webkit-scrollbar-track {
+        background-color: var(--#{$prefix}input-fill-bg-color);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--#{$prefix}input-border-color);
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background-color: var(--#{$prefix}input-focus-border-color);
+      }
     }
 
     .autocomplete-item-custom {
