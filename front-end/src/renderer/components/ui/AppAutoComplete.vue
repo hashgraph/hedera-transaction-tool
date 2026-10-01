@@ -42,6 +42,13 @@ const props = withDefaults(
     // of its own, so it can't be confused with a match the way a sentinel value mixed
     // into `items` could be.
     groupBreakAfter?: (item: string) => boolean;
+    // Optional, off by default — narrows the dropdown down to only items matching the
+    // current input (e.g. typing "0.0.5" hides everything that doesn't match), instead
+    // of always showing the full list with just the best one highlighted. The rule for
+    // "matches" is caller-specific, same reason findMatch is pluggable rather than
+    // assumed — pass the same notion of "matches" findMatch itself uses, so the two
+    // can't disagree about what's a match.
+    filterItem?: (item: string, input: string) => boolean;
   }>(),
   {
     modelValue: '',
@@ -54,6 +61,7 @@ const emit = defineEmits<{
 }>();
 
 /* State */
+const inputWrapperRef = ref<HTMLDivElement | null>(null);
 const inputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const prefixSuggestionRef = ref<HTMLSpanElement | null>(null);
 const postfixSuggestionRef = ref<HTMLSpanElement | null>(null);
@@ -70,6 +78,14 @@ const valueOnFocus = ref('');
 // Drives which ghost-text source is active (see the watchEffect below): findMatch's
 // live suggestion while open/editing, decorate's static annotation once closed/at rest.
 const isOpen = ref(false);
+// What filterItem filters against — deliberately NOT modelValue. modelValue also
+// changes from arrow-key navigation, clicking a row, and Tab/Enter committing a match,
+// none of which are "typing" and none of which should re-narrow the list (arrowing
+// through a filtered list must not filter it down to just the arrowed-to row). Only
+// handleUpdate (a real keystroke) and completeNextCharacter (ArrowRight accepting a
+// ghost character) touch this; reset to '' every time the dropdown transitions from
+// closed to open, so reopening always starts from the full list until typed again.
+const filterQuery = ref('');
 
 /* Computed */
 const modelValue = computed({
@@ -79,7 +95,12 @@ const modelValue = computed({
   },
 });
 
-const filteredItems = computed(() => [...new Set<string>(props.items)]);
+const filteredItems = computed(() => {
+  const deduped = [...new Set<string>(props.items)];
+  if (!props.filterItem || !filterQuery.value) return deduped;
+
+  return deduped.filter(item => props.filterItem!(item, filterQuery.value));
+});
 const currentMatch = computed(() => {
   if (!modelValue.value) return null;
 
@@ -178,6 +199,7 @@ const handleUpdate = (value: string) => {
   }
 
   setValue(value);
+  filterQuery.value = value;
 
   // Update the input field value
   if (inputRef.value?.inputRef) {
@@ -249,12 +271,28 @@ const handleResize = () => {
   dropdownRef.value.style.width = `${inputRef.value.inputRef.offsetWidth}px`;
 };
 
+// Click vs. mousedown targets differ whenever the two land on different elements (e.g.
+// dragging a text selection from inside the input and releasing past its edge) — the
+// browser resolves the click's target to wherever the drag ended, which can be outside
+// the control even though the gesture started inside it. Tracked here so
+// handleWindowClick can tell "dragged out of" apart from "actually clicked outside".
+let mousedownStartedInside = false;
+
+function handleWindowMouseDown(e: Event) {
+  const target = e.target as HTMLElement;
+  mousedownStartedInside =
+    !!inputWrapperRef.value?.contains(target) || !!dropdownRef.value?.contains(target);
+}
+
 const handleWindowClick = (e: Event) => {
   if (!dropdownRef.value) return;
-  if (!inputRef.value?.inputRef) return;
+  if (!inputWrapperRef.value) return;
+  if (mousedownStartedInside) return;
 
+  // The wrapper, not just the <input> itself — it also holds the ghost-suggestion
+  // spans and the chevron, none of which should count as "clicked outside" either.
   const target = e.target as HTMLElement;
-  if (inputRef.value.inputRef.contains(target) || dropdownRef.value.contains(target)) return;
+  if (inputWrapperRef.value.contains(target) || dropdownRef.value.contains(target)) return;
 
   toggleDropdown(false);
 };
@@ -315,6 +353,11 @@ function toggleDropdown(show: boolean) {
   if (dropdownRef.value.style.opacity === newOpacity) return;
 
   if (show) {
+    // A fresh open starts from the full list — only typing since *this* open should
+    // narrow it. Runs before the keydown handler's own ArrowRight branch (if that's
+    // what triggered this open), so completeNextCharacter's assignment below still
+    // wins when a character is actually being accepted as part of the same keypress.
+    filterQuery.value = '';
     // Position depends on the input's rendered layout, which otherwise is only
     // (re)computed on keydown/resize/the mount-time timeout below — opening via a plain
     // click before any of those have run left the very first open mispositioned.
@@ -385,12 +428,17 @@ async function positionSuggestion() {
 function handleGlobalEvents(add: boolean) {
   const func = add ? 'addEventListener' : 'removeEventListener';
   window[func]('resize', handleResize);
+  window[func]('mousedown', handleWindowMouseDown);
   window[func]('click', handleWindowClick);
   document[func]('scroll', handleMove, true);
 }
 
 function completeNextCharacter() {
-  setValue(modelValue.value + autocompletePostfixSuggestion.value[0]);
+  const newValue = modelValue.value + autocompletePostfixSuggestion.value[0];
+  setValue(newValue);
+  // Accepting a ghost character is "typing" it, same as a real keystroke — unlike
+  // arrow-key navigation or clicking a row, this should narrow filterItem's list too.
+  filterQuery.value = newValue;
   // Deferred for the same reason as handleUpdate's typing path — selectedIndex won't
   // reflect this setValue until it round-trips back down through the parent.
   nextTick(() => {
@@ -462,13 +510,13 @@ watchEffect(() => {
 
 <template>
   <div class="w-100 autocomplete-container" :class="{ 'is-tabular-nums': tabularNums }">
-    <div @click="toggleDropdown(true)" class="input-wrapper">
+    <div ref="inputWrapperRef" @click="toggleDropdown(true)" class="input-wrapper">
       <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{
         autocompletePrefixSuggestion
       }}</span>
       <AppInput
         ref="inputRef"
-        class="form-select"
+        class="autocomplete-input"
         :model-value="modelValue"
         @update:model-value="handleUpdate"
         @keydown="handleKeyDown"
@@ -480,6 +528,7 @@ watchEffect(() => {
       <span ref="postfixSuggestionRef" class="autocomplete-suggestion">{{
         autocompletePostfixSuggestion
       }}</span>
+      <i class="bi bi-chevron-down autocomplete-chevron cursor-pointer"></i>
     </div>
 
     <div

@@ -8,6 +8,7 @@ import {
   TransferTransaction,
 } from '@hiero-ledger/sdk';
 import {
+  accountIdMatchesInput,
   collectMissingKeys,
   collectRequiredKeys,
   decorateAccountId,
@@ -388,6 +389,20 @@ describe('matchAccountId', () => {
 
   test('returns null when nothing matches', () => {
     expect(matchAccountId(['0.0.100'], '0.0.9')).toBeNull();
+  });
+});
+
+describe('accountIdMatchesInput', () => {
+  test('true for a whole-string prefix match', () => {
+    expect(accountIdMatchesInput('0.0.100', '0.0.1')).toBe(true);
+  });
+
+  test('true for a per-segment match', () => {
+    expect(accountIdMatchesInput('1.2.300', '2')).toBe(true);
+  });
+
+  test('false when nothing matches', () => {
+    expect(accountIdMatchesInput('0.0.100', '0.0.9')).toBe(false);
   });
 });
 

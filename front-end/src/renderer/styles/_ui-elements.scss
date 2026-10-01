@@ -1167,6 +1167,23 @@ td .btn {
     font-family: $font-family-primary;
   }
 
+  // Reserve space on the right so typed text/ghost text never runs under the chevron.
+  .autocomplete-input {
+    padding-right: 2rem;
+  }
+
+  // The whole input already opens the dropdown on click; this is purely a visual hint
+  // that it behaves like a dropdown, so only the icon itself gets the "this acts like a
+  // button" cursor rather than the input's text cursor.
+  .autocomplete-chevron {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+
+    color: var(--#{$prefix}text-secondary-color);
+  }
+
   .autocomplete-suggestion {
     position: absolute;
     top: 50%;

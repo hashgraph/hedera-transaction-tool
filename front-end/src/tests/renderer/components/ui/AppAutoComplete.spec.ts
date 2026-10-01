@@ -18,6 +18,7 @@ type Props = Partial<{
   disableSpaces: boolean;
   tabularNums: boolean;
   groupBreakAfter: (item: string) => boolean;
+  filterItem: (item: string, input: string) => boolean;
 }>;
 
 // Mounts AppAutoComplete behind a tiny host component that actually binds
@@ -1107,5 +1108,279 @@ describe('AppAutoComplete', () => {
     await input.trigger('keydown', { key: 'Tab' });
     await flushPromises();
     expect((input.element as HTMLInputElement).value).toBe('Transfer');
+  });
+
+  // M9: the chevron is a sibling of <input>, not a descendant of it — the window
+  // "click outside closes the dropdown" listener has to recognize it as part of the
+  // control too, or opening and that same click bubbling to window race each other and
+  // the dropdown closes right back up, making the chevron look unresponsive.
+  test('M9: clicking the chevron opens the dropdown and stays open', async () => {
+    const wrapper = mountAutoComplete(
+      { items: ['Transfer'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    await wrapper.find('.autocomplete-chevron').trigger('click');
+    await flushPromises();
+    const dropdown = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdown.style.visibility).toBe('visible');
+    wrapper.unmount();
+  });
+
+  // M10: a text-selection drag that starts inside the input and is released past its
+  // edge resolves the browser's click target to wherever the drag ended — outside the
+  // control — even though the gesture itself started inside it. That must not count as
+  // "clicked away".
+  test('M10: a drag starting inside the input but released outside does not close the dropdown', async () => {
+    const wrapper = mountAutoComplete(
+      { items: ['Transfer'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    const input = wrapper.find('input');
+    await input.trigger('focus');
+    await flushPromises();
+
+    await input.trigger('mousedown');
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    const dropdown = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdown.style.visibility).toBe('visible');
+    wrapper.unmount();
+  });
+
+  test('M11: a genuine click outside (mousedown and release both outside) still closes the dropdown', async () => {
+    const wrapper = mountAutoComplete(
+      { items: ['Transfer'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    const input = wrapper.find('input');
+    await input.trigger('focus');
+    await flushPromises();
+
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await flushPromises();
+
+    const dropdown = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdown.style.visibility).toBe('hidden');
+    wrapper.unmount();
+  });
+
+  // N. filterItem narrows the dropdown to what's actually been typed since the dropdown
+  // last opened — not to modelValue in general, which also changes from arrow-key
+  // navigation, clicking a row, and Tab/Enter, none of which are "typing".
+  describe('filterItem', () => {
+    test('N1: without filterItem, every item shows regardless of input', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N2: with filterItem, typing narrows the list to matches', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      const rows = wrapper.findAll('.autocomplete-item-custom');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].text()).toBe('0.0.100');
+    });
+
+    test('N3: with filterItem but nothing typed yet, every item shows', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N4: arrow-key navigation moves the selection without changing what is filtered in', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.101', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+
+      await input.trigger('keydown', { key: 'ArrowDown' });
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+      expect((input.element as HTMLInputElement).value).toBe('0.0.101');
+    });
+
+    test('N5: reopening resets filtering even though the value is unchanged', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(1);
+
+      await input.trigger('blur');
+      await input.trigger('focus');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N6: ArrowUp also moves the selection without changing what is filtered in', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.101', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+
+      await input.trigger('keydown', { key: 'ArrowUp' });
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N7: ArrowRight accepting a ghost character narrows the filter further', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.101', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      const el = input.element as HTMLInputElement;
+      await input.trigger('focus');
+      await input.setValue('0.0.10');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+
+      el.setSelectionRange(el.value.length, el.value.length);
+      await input.trigger('keydown', { key: 'ArrowRight' });
+      await flushPromises();
+      const rows = wrapper.findAll('.autocomplete-item-custom');
+      expect(rows).toHaveLength(1);
+      expect(rows[0].text()).toBe('0.0.100');
+    });
+
+    test('N8: ArrowRight that completes nothing (cursor not at end) leaves filtering unchanged', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.101', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      const el = input.element as HTMLInputElement;
+      await input.trigger('focus');
+      await input.setValue('0.0.10');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+
+      el.setSelectionRange(0, 0);
+      await input.trigger('keydown', { key: 'ArrowRight' });
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+      expect(el.value).toBe('0.0.10');
+    });
+
+    test('N9: ArrowLeft does not affect filtering', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.101', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.10');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+
+      await input.trigger('keydown', { key: 'ArrowLeft' });
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N10: selecting an item via click, then reopening via focus, resets filtering', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(1);
+
+      await wrapper.find('.autocomplete-item-custom').trigger('click');
+      await flushPromises();
+
+      await input.trigger('focus');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+    });
+
+    test('N11: reopening via ArrowRight after selecting an item resets filtering when nothing completes', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['0.0.100', '0.0.258'],
+        findMatch: prefixMatcher(),
+        filterItem: (item: string, input: string) => item.startsWith(input),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('0.0.1');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(1);
+
+      await wrapper.find('.autocomplete-item-custom').trigger('click');
+      await flushPromises();
+
+      // No decorate prop, so there's no at-rest postfix ghost to complete — this
+      // ArrowRight only reopens, same as the "first press" case documented in E6.
+      await input.trigger('keydown', { key: 'ArrowRight' });
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(2);
+      expect((input.element as HTMLInputElement).value).toBe('0.0.100');
+    });
+
+    test('N12: a strictItems-rejected keystroke does not change the filtered list', async () => {
+      const wrapper = mountAutoComplete({
+        items: ['Transfer', 'Approve'],
+        findMatch: prefixMatcher(),
+        strictItems: true,
+        filterItem: (item: string, input: string) =>
+          item.toLowerCase().startsWith(input.toLowerCase()),
+      });
+      const input = wrapper.find('input');
+      await input.trigger('focus');
+      await input.setValue('T');
+      await flushPromises();
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(1);
+
+      await input.setValue('Tx');
+      await flushPromises();
+      expect((input.element as HTMLInputElement).value).toBe('T');
+      expect(wrapper.findAll('.autocomplete-item-custom')).toHaveLength(1);
+    });
   });
 });

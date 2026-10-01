@@ -444,6 +444,20 @@ export function matchAccountId(
 }
 
 /**
+ * Whether `item` would be found by matchAccountId for the given `input`, for use as
+ * AppAutoComplete's `filterItem` prop. Reuses matchAccountId itself (viewing `item` as
+ * a singleton list) rather than re-implementing the prefix/part-matching rule, so the
+ * two can never drift out of sync with each other.
+ *
+ * @param {string} item - A single account ID from the dropdown's full item list.
+ * @param {string} input - The current (already-sanitized) input value.
+ * @returns {boolean} - Whether `item` matches `input`.
+ */
+export function accountIdMatchesInput(item: string, input: string): boolean {
+  return matchAccountId([item], input) !== null;
+}
+
+/**
  * Computes the checksum suffix for an account ID, for use as AppAutoComplete's
  * `decorate` prop. Works for any syntactically valid account ID, not just ones in the
  * visible items list — "0.0.2" gets its own checksum even if "0.0.2" was never one of
