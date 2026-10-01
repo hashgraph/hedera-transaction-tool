@@ -113,6 +113,25 @@ td .btn {
   }
 }
 
+// AppTextArea's auto-expand caps out at its max rows and scrolls past that natively —
+// recolor that scrollbar the same way as the autocomplete dropdown's, instead of leaving
+// the OS default.
+textarea.form-control {
+  scrollbar-color: var(--#{$prefix}input-border-color) var(--#{$prefix}input-fill-bg-color);
+
+  &::-webkit-scrollbar-track {
+    background-color: var(--#{$prefix}input-fill-bg-color);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--#{$prefix}input-border-color);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--#{$prefix}input-focus-border-color);
+  }
+}
+
 /* Icons */
 .icon {
   display: inline-flex;
@@ -1163,12 +1182,25 @@ td .btn {
     position: relative;
   }
 
-  .input-wrapper input {
-    font-family: $font-family-numeric;
-  }
-
   .input-wrapper input::placeholder {
     font-family: $font-family-primary;
+  }
+
+  // Reserve space on the right so typed text/ghost text never runs under the chevron.
+  .autocomplete-input {
+    padding-right: 2rem;
+  }
+
+  // The whole input already opens the dropdown on click; this is purely a visual hint
+  // that it behaves like a dropdown, so only the icon itself gets the "this acts like a
+  // button" cursor rather than the input's text cursor.
+  .autocomplete-chevron {
+    position: absolute;
+    top: 50%;
+    right: 0.75rem;
+    transform: translateY(-50%);
+
+    color: var(--#{$prefix}text-secondary-color);
   }
 
   .autocomplete-suggestion {
@@ -1178,7 +1210,6 @@ td .btn {
 
     font-weight: $input-font-weight;
     line-height: $input-line-height;
-    font-family: $font-family-numeric;
     @include font-size($input-font-size);
 
     color: grey;
@@ -1186,6 +1217,18 @@ td .btn {
     z-index: 0;
     white-space: pre;
     opacity: 0.7;
+  }
+
+  // Account IDs need fixed-width digits so a list of them lines up predictably as you
+  // scan it. Only the digit glyphs get the tabular-figures feature — the typeface itself
+  // (Inter) is untouched, so this stays legible even if a nickname gets mixed into the
+  // same string later. Plain text values skip this entirely.
+  &.is-tabular-nums {
+    .input-wrapper input,
+    .autocomplete-suggestion,
+    .autocomplete-item-custom {
+      font-variant-numeric: tabular-nums;
+    }
   }
 
   .autocomplete-custom {
@@ -1218,6 +1261,25 @@ td .btn {
     > div {
       max-height: var(--max-height);
       overflow: auto;
+
+      // Scrollbar colors follow the theme palette instead of the OS default. Track
+      // matches the dropdown's own background so it reads as part of the surface, not
+      // a separate native control. Thumb uses input-border-color rather than
+      // separator-bg-color: the latter is identical to input-fill-bg-color in dark
+      // mode, which made the thumb invisible against the track.
+      scrollbar-color: var(--#{$prefix}input-border-color) var(--#{$prefix}input-fill-bg-color);
+
+      &::-webkit-scrollbar-track {
+        background-color: var(--#{$prefix}input-fill-bg-color);
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background-color: var(--#{$prefix}input-border-color);
+      }
+
+      &::-webkit-scrollbar-thumb:hover {
+        background-color: var(--#{$prefix}input-focus-border-color);
+      }
     }
 
     .autocomplete-item-custom {
@@ -1226,7 +1288,6 @@ td .btn {
 
       cursor: pointer;
 
-      font-family: $font-family-numeric;
       font-size: $input-font-size;
       font-weight: $input-font-weight;
 
