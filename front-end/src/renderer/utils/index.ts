@@ -443,6 +443,21 @@ export function matchAccountId(
   return null;
 }
 
+/**
+ * Computes the checksum suffix for an account ID, for use as AppAutoComplete's
+ * `decorate` prop. Works for any syntactically valid account ID, not just ones in the
+ * visible items list — "0.0.2" gets its own checksum even if "0.0.2" was never one of
+ * the suggested accounts.
+ *
+ * @param {string} value - The current (already-sanitized) account ID value.
+ * @returns {string} - The checksum suffix (e.g. "-abcde"), or '' if none applies.
+ */
+export function decorateAccountId(value: string): string {
+  if (!value) return '';
+  const withChecksum = getAccountIdWithChecksum(value);
+  return withChecksum.length > value.length ? withChecksum.slice(value.length) : '';
+}
+
 export const formatProgressBytes = (
   bytes: number | undefined | null,
   fallback: string = '0',

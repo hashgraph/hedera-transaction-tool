@@ -9,6 +9,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import {
+  decorateAccountId,
   formatAccountId,
   getAccountIdWithChecksum,
   isUserLoggedIn,
@@ -62,13 +63,6 @@ const formattedAccountIds = computed(() => {
   return result.map(id => getAccountIdWithChecksum(id));
 });
 
-const accountValue = computed(() => {
-  const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
-  return allIds.includes(props.modelValue)
-    ? getAccountIdWithChecksum(props.modelValue)
-    : props.modelValue;
-});
-
 /* Handlers */
 const handleUpdate = (value: string) => {
   const idWithoutChecksum = value.split('-')[0];
@@ -94,12 +88,13 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="accountValue"
+    :model-value="modelValue"
     @update:model-value="handleUpdate"
     @blur="handleOnBlur"
     :items="formattedAccountIds"
     :sanitize="sanitizeAccountId"
     :find-match="matchAccountId"
+    :decorate="decorateAccountId"
     :data-testid="dataTestid"
     disable-spaces
     tabular-nums

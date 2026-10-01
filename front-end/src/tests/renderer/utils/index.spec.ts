@@ -1,8 +1,19 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { FreezeTransaction, FreezeType, Timestamp, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import {
-  collectMissingKeys, collectRequiredKeys,
+  FreezeTransaction,
+  FreezeType,
+  LedgerId,
+  Timestamp,
+  Transaction,
+  TransferTransaction,
+} from '@hiero-ledger/sdk';
+import {
+  collectMissingKeys,
+  collectRequiredKeys,
+  decorateAccountId,
   hasStartTimestampChanged,
+  matchAccountId,
+  sanitizeAccountId,
   signItems,
   transactionsDataMatch,
 } from '@renderer/utils';
@@ -331,4 +342,77 @@ describe('signItems', () => {
     expect(mockDismissNotifications).toHaveBeenCalledWith('https://api.test', [10, 11, 12]);
   });
 
+});
+
+describe('sanitizeAccountId', () => {
+  test('passes through a well-formed account id with no checksum', () => {
+    expect(sanitizeAccountId('0.0.100')).toBe('0.0.100');
+  });
+
+  test('strips invalid characters outright', () => {
+    expect(sanitizeAccountId('0.0.abc')).toBe('0.0.');
+  });
+
+  test('limits to three dot-separated parts', () => {
+    expect(sanitizeAccountId('0.0.1.2.3')).toBe('0.0.1');
+  });
+
+  test('removes leading zeros from each part', () => {
+    expect(sanitizeAccountId('00.00.0100')).toBe('0.0.100');
+  });
+
+  test('allows a checksum suffix once the 0.0.0 shape is present', () => {
+    expect(sanitizeAccountId('0.0.100-abcde')).toBe('0.0.100-abcde');
+  });
+
+  test('limits the checksum suffix to 5 lowercase letters', () => {
+    expect(sanitizeAccountId('0.0.100-abcdefgh')).toBe('0.0.100-abcde');
+  });
+});
+
+describe('matchAccountId', () => {
+  test('tier 1: exact whole-string prefix match wins, alignStart 0', () => {
+    expect(matchAccountId(['0.0.100', '0.0.258'], '0.0.1')).toEqual({ index: 0, alignStart: 0 });
+  });
+
+  test('tier 2: falls back to a per-segment match when no whole-string prefix matches', () => {
+    // "2" isn't a prefix of the whole string "1.2.300", but matches the realm segment.
+    expect(matchAccountId(['1.2.300'], '2')).toEqual({ index: 0, alignStart: 2 });
+  });
+
+  test('aligns at the real segment start, not the first coincidental occurrence', () => {
+    // Naive indexOf would find "22" at index 1 (inside the leading "122"); the real
+    // match is the trailing "22" segment at index 6.
+    expect(matchAccountId(['122.2.22'], '22')).toEqual({ index: 0, alignStart: 6 });
+  });
+
+  test('returns null when nothing matches', () => {
+    expect(matchAccountId(['0.0.100'], '0.0.9')).toBeNull();
+  });
+});
+
+describe('decorateAccountId', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // A fake client shaped just enough to satisfy the real SDK's checksum computation
+    // (AccountId.toStringWithChecksum reads client._network._ledgerId._ledgerId) —
+    // checksums are computed locally from the ledger ID, no network I/O involved.
+    mockUseNetworkStore.mockReturnValue({
+      client: { _network: { _ledgerId: LedgerId.TESTNET } },
+    });
+  });
+
+  test('returns the checksum suffix for a valid account id', () => {
+    expect(decorateAccountId('0.0.100')).toBe('-quros');
+  });
+
+  test('returns empty string for an empty value', () => {
+    expect(decorateAccountId('')).toBe('');
+  });
+
+  test('returns empty string for an unparsable value', () => {
+    // getAccountIdWithChecksum's try/catch returns the input unchanged on parse
+    // failure, so decorateAccountId sees no length difference and returns ''.
+    expect(decorateAccountId('0.0.')).toBe('');
+  });
 });
