@@ -64,6 +64,12 @@ export const getTransactionTypeFromBackendType = (
   return result;
 };
 
+// Hand-copies the same label strings as HederaSchema's TransactionTypeLabels, derived here via
+// an instanceof chain since we only have a constructed SDK object, not a raw TransactionType
+// string. Not a drop-in replacement candidate for every branch: RegisteredNode*Transaction and
+// FileContentsQuery are app-specific/non-transaction cases with no raw-type equivalent, same
+// caveat as TransactionTypeName. The rest could resolve their raw type (e.g. via the object's
+// constructor name) and look the label up in TransactionTypeLabels instead of repeating it here.
 export const getTransactionType = (
   transaction: Transaction | Uint8Array,
   short = false,

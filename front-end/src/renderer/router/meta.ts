@@ -10,7 +10,7 @@ const withoutAuthRoutes = [
 ];
 
 const onlyAdminRoutes = ['signUpUser'];
-const onlyOrganizationRoute = ['settingsNotifications', 'contactList'];
+const onlyOrganizationRoute = ['settingsNotifications', 'contactList', 'reviewerGroups'];
 
 export function attachMeta(routes: RouteRecordRaw[]) {
   routes.forEach(route => {
