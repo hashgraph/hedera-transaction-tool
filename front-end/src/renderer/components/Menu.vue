@@ -3,6 +3,8 @@ import { type _RouterClassic, RouterLink, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
+
 import { isLoggedInOrganization } from '@renderer/utils';
 
 /* Types */
@@ -48,6 +50,16 @@ const getMenuItems = (): MenuItem[] => [
     title: 'Contact List',
     icon: 'bi bi-book',
   },
+  ...(FEATURE_REVIEWER_ENABLED
+    ? [
+        {
+          link: '/reviewer-groups',
+          testid: 'button-menu-reviewer-groups',
+          title: 'Reviewer Groups',
+          icon: 'bi bi-people',
+        },
+      ]
+    : []),
   // {
   //   link: '/style-guide',
   //   title: 'Style Guide',
@@ -60,7 +72,7 @@ const handleClick = (item: MenuItem) => {
 };
 
 /* Misc */
-const organizationOnly = ['/contact-list'];
+const organizationOnly = ['/contact-list', '/reviewer-groups'];
 </script>
 
 <template>

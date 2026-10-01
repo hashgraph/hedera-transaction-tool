@@ -273,6 +273,75 @@ export enum TransactionType {
   UTILPRNG = 'UTILPRNG',
 }
 
+// Shared place to translate the raw, all-caps mirror-node transaction type names (e.g.
+// CRYPTOTRANSFER) into human-readable labels (e.g. "Transfer") for display anywhere in the
+// app — dropdowns, filters, previews, etc. Naming follows the same "Entity Verb" convention
+// as organization/transactions' TransactionTypeName, just without the " Transaction" suffix.
+//
+// This is keyed by the full protocol/mirror-node TransactionType above, the superset of every
+// other transaction-type-name table in the app, so it's meant to become the single source of
+// truth those other tables derive from instead of hand-copying their own label strings:
+//  - organization/transactions/index.ts's TransactionTypeName (keyed by the app's own reduced
+//    BackEndTransactionType — can't just be replaced by this table since a few of its values,
+//    e.g. REGISTERED_NODE_CREATE, have no corresponding raw TransactionType at all).
+//  - utils/sdk/transactions.ts's getTransactionType(), which currently derives the same labels
+//    via an instanceof chain against SDK Transaction subclasses instead of an enum lookup.
+export const TransactionTypeLabels: Record<TransactionType, string> = {
+  [TransactionType.CONSENSUSCREATETOPIC]: 'Topic Create',
+  [TransactionType.CONSENSUSDELETETOPIC]: 'Topic Delete',
+  [TransactionType.CONSENSUSSUBMITMESSAGE]: 'Topic Message Submit',
+  [TransactionType.CONSENSUSUPDATETOPIC]: 'Topic Update',
+  [TransactionType.CONTRACTCALL]: 'Contract Call',
+  [TransactionType.CONTRACTCREATEINSTANCE]: 'Contract Create',
+  [TransactionType.CONTRACTDELETEINSTANCE]: 'Contract Delete',
+  [TransactionType.CONTRACTUPDATEINSTANCE]: 'Contract Update',
+  [TransactionType.CRYPTOADDLIVEHASH]: 'Live Hash Add',
+  [TransactionType.CRYPTOCREATEACCOUNT]: 'Account Create',
+  [TransactionType.CRYPTODELETE]: 'Account Delete',
+  [TransactionType.CRYPTODELETELIVEHASH]: 'Live Hash Delete',
+  [TransactionType.CRYPTOTRANSFER]: 'Transfer',
+  [TransactionType.CRYPTOUPDATEACCOUNT]: 'Account Update',
+  [TransactionType.CRYPTOAPPROVEALLOWANCE]: 'Allowance Approve',
+  [TransactionType.CRYPTODELETEALLOWANCE]: 'Allowance Delete',
+  [TransactionType.ETHEREUMTRANSACTION]: 'Ethereum Transaction',
+  [TransactionType.FILEAPPEND]: 'File Append',
+  [TransactionType.FILECREATE]: 'File Create',
+  [TransactionType.FILEDELETE]: 'File Delete',
+  [TransactionType.FILEUPDATE]: 'File Update',
+  [TransactionType.FREEZE]: 'Freeze',
+  [TransactionType.NODECREATE]: 'Node Create',
+  [TransactionType.NODEDELETE]: 'Node Delete',
+  [TransactionType.NODESTAKEUPDATE]: 'Node Stake Update',
+  [TransactionType.NODEUPDATE]: 'Node Update',
+  [TransactionType.SCHEDULECREATE]: 'Schedule Create',
+  [TransactionType.SCHEDULEDELETE]: 'Schedule Delete',
+  [TransactionType.SCHEDULESIGN]: 'Schedule Sign',
+  [TransactionType.SYSTEMDELETE]: 'System Delete',
+  [TransactionType.SYSTEMUNDELETE]: 'System Undelete',
+  [TransactionType.TOKENASSOCIATE]: 'Token Associate',
+  [TransactionType.TOKENAIRDROP]: 'Token Airdrop',
+  [TransactionType.TOKENBURN]: 'Token Burn',
+  [TransactionType.TOKENCANCELAIRDROP]: 'Token Airdrop Cancel',
+  [TransactionType.TOKENCLAIMAIRDROP]: 'Token Airdrop Claim',
+  [TransactionType.TOKENCREATION]: 'Token Create',
+  [TransactionType.TOKENDELETION]: 'Token Delete',
+  [TransactionType.TOKENDISSOCIATE]: 'Token Dissociate',
+  [TransactionType.TOKENFEESCHEDULEUPDATE]: 'Token Fee Schedule Update',
+  [TransactionType.TOKENFREEZE]: 'Token Freeze',
+  [TransactionType.TOKENGRANTKYC]: 'Token KYC Grant',
+  [TransactionType.TOKENMINT]: 'Token Mint',
+  [TransactionType.TOKENPAUSE]: 'Token Pause',
+  [TransactionType.TOKENREJECT]: 'Token Reject',
+  [TransactionType.TOKENREVOKEKYC]: 'Token KYC Revoke',
+  [TransactionType.TOKENUNFREEZE]: 'Token Unfreeze',
+  [TransactionType.TOKENUNPAUSE]: 'Token Unpause',
+  [TransactionType.TOKENUPDATE]: 'Token Update',
+  [TransactionType.TOKENUPDATENFTS]: 'Token NFTs Update',
+  [TransactionType.TOKENWIPE]: 'Token Wipe',
+  [TransactionType.UNCHECKEDSUBMIT]: 'Unchecked Submit',
+  [TransactionType.UTILPRNG]: 'Pseudorandom Number Generate',
+};
+
 export enum TransactionResult {
   SUCCESS = 'success',
   FAILURE = 'fail',
