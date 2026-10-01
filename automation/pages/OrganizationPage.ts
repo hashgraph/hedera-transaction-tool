@@ -192,6 +192,11 @@ export class OrganizationPage extends BasePage {
   async fillOrganizationDetailsAndContinue(organizationNickname: string, serverUrl: string) {
     await this.fill(this.organizationNicknameInputSelector, organizationNickname);
     await this.fill(this.serverUrlInputSelector, serverUrl);
+    // Clear any toast left by earlier setup steps before submitting this form.
+    const visibleToasts = this.window.locator('.toast:visible');
+    while (await visibleToasts.count()) {
+      await visibleToasts.first().click();
+    }
     await this.click(this.addOrganizationButtonInModalSelector);
   }
 
