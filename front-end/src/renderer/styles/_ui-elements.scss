@@ -113,6 +113,25 @@ td .btn {
   }
 }
 
+// AppTextArea's auto-expand caps out at its max rows and scrolls past that natively —
+// recolor that scrollbar the same way as the autocomplete dropdown's, instead of leaving
+// the OS default.
+textarea.form-control {
+  scrollbar-color: var(--#{$prefix}input-border-color) var(--#{$prefix}input-fill-bg-color);
+
+  &::-webkit-scrollbar-track {
+    background-color: var(--#{$prefix}input-fill-bg-color);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--#{$prefix}input-border-color);
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: var(--#{$prefix}input-focus-border-color);
+  }
+}
+
 /* Icons */
 .icon {
   display: inline-flex;
