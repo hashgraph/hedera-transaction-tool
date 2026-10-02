@@ -169,11 +169,7 @@ export async function resetDbState() {
     return;
   }
 
-  const db = openDatabase();
-  if (!db) {
-    console.log('SQLite database file does not exist. Skipping reset.');
-    return;
-  }
+  let db: BetterSqlite3.Database | null = null;
 
   const tablesToReset = [
     'Organization',
@@ -194,6 +190,12 @@ export async function resetDbState() {
   ];
 
   try {
+    db = openDatabase();
+    if (!db) {
+      console.log('SQLite database file does not exist. Skipping reset.');
+      return;
+    }
+
     for (const table of tablesToReset) {
       // Check if the table exists
       const row = db
@@ -212,7 +214,7 @@ export async function resetDbState() {
     console.error('Error resetting app state:', err);
     return Promise.reject(err);
   } finally {
-    closeDatabase(db);
+    if (db) closeDatabase(db);
   }
 }
 
