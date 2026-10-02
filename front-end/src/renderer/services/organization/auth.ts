@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
-
+import { axiosWithCredentials, commonRequestHandler, RequestError } from '@renderer/utils';
+import { ErrorCodes } from '@shared/constants';
 /* Authentification service for organization */
 
 const authController = 'auth';
@@ -14,7 +14,7 @@ export const login = async (
 ): Promise<{ id: number; jwtToken: string }> =>
   commonRequestHandler(
     async () => {
-      const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/login`, {
+      const { data } = await axios.post(`${serverUrl}/${authController}/login`, {
         email,
         password,
       });
@@ -26,11 +26,17 @@ export const login = async (
   );
 
 /* Logout the user */
-export const logout = async (serverUrl: string): Promise<{ id: number }> =>
-  commonRequestHandler(async () => {
-    const { data } = await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`);
-    return { id: data.id };
-  }, 'Failed to Log out of Organization');
+export const logout = async (serverUrl: string): Promise<void> => {
+  try {
+    await axiosWithCredentials.post(`${serverUrl}/${authController}/logout`, {}, {}, false);
+  } catch (error) {
+    const status = axios.isAxiosError(error) ? error.status : undefined;
+    const code = axios.isAxiosError(error) ? error.response?.data?.code : ErrorCodes.UNKWN;
+    if (status !== 401) {
+      throw new RequestError('Failed to Log out of Organization', code, status);
+    }
+  }
+};
 
 /* Changes the password */
 export const changePassword = async (
@@ -39,14 +45,13 @@ export const changePassword = async (
   newPassword: string,
 ): Promise<void> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(
+    await axiosWithCredentials.patch(
       `${organizationServerUrl}/${authController}/change-password`,
       {
         oldPassword,
         newPassword,
       },
     );
-    return response.data;
   }, 'Failed to change user password');
 
 /* Sends a reset password request */
@@ -59,7 +64,7 @@ export const resetPassword = async (
       email,
     });
     return response.data.token;
-  }, 'Failed to request passoword reset');
+  }, 'Failed to request password reset');
 
 /* Sends the OTP in order to verify the password reset */
 export const verifyReset = async (
@@ -130,7 +135,7 @@ export const signUp = (
 /* ADMIN ONLY: elevate a user to admin */
 export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
   commonRequestHandler(async () => {
-    await axiosWithCredentials.patch(`${organizationServerUrl}/${authController}/elevate-admin`, {
+    await axiosWithCredentials.patch<{id: number}, void>(`${organizationServerUrl}/${authController}/elevate-admin`, {
       id,
     });
   }, 'Failed to assign user as admin');
