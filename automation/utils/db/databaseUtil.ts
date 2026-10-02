@@ -1,4 +1,3 @@
-import sqlite3 from 'sqlite3';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -9,6 +8,7 @@ import * as dotenv from 'dotenv';
 import { shouldPreserveLocalAppState } from '../runtime/appMode.js';
 import { applyPlaywrightIsolationEnv } from '../setup/playwrightIsolation.js';
 import { shouldPreserveBackendState } from '../runtime/backendStateMode.js';
+import BetterSqlite3 from 'better-sqlite3';
 
 // Load environment variables from .env file
 const __filename = url.fileURLToPath(import.meta.url);
@@ -77,107 +77,90 @@ export function getDatabasePath(): string {
   }
 }
 
-export function openDatabase(): sqlite3.Database | null {
+export function openDatabase(): BetterSqlite3.Database | null {
   const dbPath = getDatabasePath();
   if (!fs.existsSync(dbPath)) {
     console.log('SQLite database file does not exist.');
     return null;
   }
 
-  return new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE, err => {
-    if (err) {
-      console.error('Failed to connect to the SQLite database:', err.message);
-    } else {
-      logDatabaseDebug('Connected to the SQLite database.');
-    }
-  });
+  const db = new BetterSqlite3(dbPath, { readonly: false, fileMustExist: true });
+  logDatabaseDebug('Connected to the SQLite database.');
+  return db;
 }
 
-export function closeDatabase(db: sqlite3.Database): void {
-  if (db) {
-    db.close(err => {
-      if (err) {
-        console.error('Failed to close the SQLite database:', err.message);
-      } else {
-        logDatabaseDebug('Disconnected from the SQLite database.');
-      }
-    });
-  }
+export function closeDatabase(db: BetterSqlite3.Database): void {
+  db.close();
+  logDatabaseDebug('Disconnected from the SQLite database.');
 }
 
-export function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
+export function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T | undefined> {
+  let db: BetterSqlite3.Database | null = null;
+  try {
+    db = openDatabase();
     if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
+      return Promise.reject(new Error('SQLite database file does not exist.'));
     }
 
     logDatabaseDebug('Executing SQLite query', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.get<T>(query, params, (err, row) => {
-      if (err) {
-        console.error('Query error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
-        resolve(row);
-      }
-      closeDatabase(db);
-    });
-  });
+    const row = db.prepare(query).get(...params) as T;
+    logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
+    return Promise.resolve(row as T | undefined);
+  } catch (err) {
+    console.error('Query error:', err instanceof Error ? err.message : err);
+    return Promise.reject(err);
+  } finally {
+    if (db) closeDatabase(db);
+  }
 }
 
 export function queryAllDatabase<T>(query: string, params: DatabaseParams = []): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
+  let db: BetterSqlite3.Database | null = null;
+  try {
+    db = openDatabase();
     if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
+      return Promise.reject(new Error('SQLite database file does not exist.'));
     }
 
     logDatabaseDebug('Executing SQLite query (all)', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.all<T>(query, params, (err, rows) => {
-      if (err) {
-        console.error('Query error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite query completed', { rowCount: rows?.length ?? 0 });
-        resolve(rows ?? []);
-      }
-      closeDatabase(db);
-    });
-  });
+    const rows = db.prepare(query).all(...params) as T[];
+    logDatabaseDebug('SQLite query (all) completed');
+    return Promise.resolve(rows as T[]);
+  } catch (err) {
+    console.error('Query error:', err instanceof Error ? err.message : err);
+    return Promise.reject(err);
+  } finally {
+    if (db) closeDatabase(db);
+  }
 }
 
 export function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
-  return new Promise((resolve, reject) => {
-    const db = openDatabase();
+  let db: BetterSqlite3.Database | null = null;
+  try {
+    db = openDatabase();
     if (!db) {
-      reject(new Error('SQLite database file does not exist.'));
-      return;
+      return Promise.reject(new Error('SQLite database file does not exist.'));
     }
 
     logDatabaseDebug('Executing SQLite statement', {
       query: truncateQueryForDebugLog(query),
       params: summarizeDatabaseParams(params),
     });
-    db.run(query, params, function (err) {
-      if (err) {
-        console.error('Statement error:', err.message);
-        reject(err);
-      } else {
-        logDatabaseDebug('SQLite statement completed', { changes: this.changes });
-        resolve(this.changes);
-      }
-      closeDatabase(db);
-    });
-  });
+    const result = db.prepare(query).run(...params) as BetterSqlite3.RunResult;
+    logDatabaseDebug('SQLite statement completed', { changes: result.changes });
+    return Promise.resolve(result.changes);
+  } catch (err) {
+    console.error('Statement error:', err instanceof Error ? err.message : err);
+    return Promise.reject(err);
+  } finally {
+    if (db) closeDatabase(db);
+  }
 }
 
 export async function resetDbState() {
@@ -212,37 +195,22 @@ export async function resetDbState() {
 
   try {
     for (const table of tablesToReset) {
-      await new Promise<void>((resolve, reject) => {
-        // Check if the table exists
-        db.get(
-          `SELECT name FROM sqlite_master WHERE type='table' AND name=?`,
-          [table],
-          (err, row) => {
-            if (err) {
-              console.error(`Error checking for table ${table}:`, err.message);
-              reject(err);
-            } else if (row) {
-              // Table exists, proceed to delete
-              db.run(`DELETE FROM "${table}"`, [], function (err) {
-                if (err) {
-                  console.error(`Error deleting records from ${table}:`, err.message);
-                  reject(err);
-                } else {
-                  console.log(`Deleted all records from ${table}`);
-                  resolve();
-                }
-              });
-            } else {
-              // Table does not exist, skip
-              console.log(`Table ${table} does not exist, skipping.`);
-              resolve();
-            }
-          },
-        );
-      });
+      // Check if the table exists
+      const row = db
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name=?`)
+        .get(table);
+      if (row) {
+        // Table exists, proceed to delete
+        const result = db.prepare(`DELETE FROM "${table}"`).run();
+        console.log(`Deleted all records from ${table}, changes: ${result.changes}`);
+      } else {
+        // Table does not exist, skip
+        console.log(`Table ${table} does not exist, skipping.`);
+      }
     }
   } catch (err) {
     console.error('Error resetting app state:', err);
+    return Promise.reject(err);
   } finally {
     closeDatabase(db);
   }
@@ -278,7 +246,10 @@ export async function disconnectPostgresDatabase(client: Client) {
   logDatabaseDebug('Disconnected from PostgreSQL database');
 }
 
-export async function queryPostgresDatabase<T extends QueryResultRow>(query: string, params: DatabaseParams = []) {
+export async function queryPostgresDatabase<T extends QueryResultRow>(
+  query: string,
+  params: DatabaseParams = [],
+) {
   const client = await connectPostgresDatabase();
 
   try {
@@ -297,7 +268,10 @@ export async function queryPostgresDatabase<T extends QueryResultRow>(query: str
   }
 }
 
-export async function createTestUsersBatch(usersData: {email: string, password: string}[], client: Client|null = null) {
+export async function createTestUsersBatch(
+  usersData: { email: string; password: string }[],
+  client: Client | null = null,
+) {
   let localClient = client;
   let shouldDisconnect = false;
 
@@ -318,7 +292,10 @@ export async function createTestUsersBatch(usersData: {email: string, password: 
     }
     const queryText = `INSERT INTO "user" (email, password, status) VALUES ${placeholders.join(', ')} RETURNING id;`;
     const res = await localClient.query(queryText, values);
-    console.log('Created users with IDs:', res.rows.map(row => row.id));
+    console.log(
+      'Created users with IDs:',
+      res.rows.map(row => row.id),
+    );
   } catch (err) {
     console.error('Error creating test users:', err);
   } finally {
