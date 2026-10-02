@@ -192,6 +192,11 @@ export class OrganizationPage extends BasePage {
   async fillOrganizationDetailsAndContinue(organizationNickname: string, serverUrl: string) {
     await this.fill(this.organizationNicknameInputSelector, organizationNickname);
     await this.fill(this.serverUrlInputSelector, serverUrl);
+    // Clear any toast left by earlier setup steps before submitting this form.
+    const visibleToasts = this.window.locator('.toast:visible');
+    while (await visibleToasts.count()) {
+      await visibleToasts.first().click();
+    }
     await this.click(this.addOrganizationButtonInModalSelector);
   }
 
@@ -1725,8 +1730,16 @@ export class OrganizationPage extends BasePage {
   }
 
   async clickOnConfirmSignAllButton() {
-    await this.waitForElementToBeVisible(this.confirmSignAllButtonSelector, 10000);
-    await this.click(this.confirmSignAllButtonSelector);
+    // SignAllController is mounted in more than one place in the transaction UI
+    // (group details and the sign-group button). Hidden controller instances keep
+    // their confirmation buttons in the DOM, so a plain getByTestId can resolve
+    // the wrong instance and wait forever on a hidden button.
+    const visibleConfirmButton = this.window
+      .getByTestId(this.confirmSignAllButtonSelector)
+      .filter({ visible: true })
+      .first();
+    await visibleConfirmButton.waitFor({ state: 'visible', timeout: 10000 });
+    await visibleConfirmButton.click();
     // AppModal.vue is always mounted (never v-if) and hardcodes
     // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
     // per-instance. Confirming "Sign all" closes the confirm dialog immediately, then
