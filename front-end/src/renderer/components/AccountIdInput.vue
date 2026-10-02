@@ -9,12 +9,14 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/accountsService';
 
 import {
+  decorateAccountId,
   formatAccountId,
   getAccountIdWithChecksum,
   isUserLoggedIn,
+  matchAccountId,
+  sanitizeAccountId,
 } from '@renderer/utils';
 
-import { ITEM_SEPARATOR } from '@renderer/components/ui/AppAutoComplete.vue';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import { compareAccountIds } from '@renderer/utils/sortAccounts';
 
@@ -38,34 +40,39 @@ const network = useNetworkStore();
 const accountIds = ref<HederaAccount[]>([]);
 
 /* Computed */
-const formattedAccountIds = computed(() => {
-  let result: string[];
-  if (props.items) {
-    result = props.items;
-  } else {
-    const linkedAccounts = accountIds.value.map(a => a.account_id);
-    const ownedAccounts = user.publicKeysToAccountsFlattened;
-    linkedAccounts.sort(compareAccountIds);
-    ownedAccounts.sort(compareAccountIds);
-    if (linkedAccounts.length > 0 && ownedAccounts.length > 0) {
-      result = linkedAccounts.concat([ITEM_SEPARATOR]).concat(ownedAccounts);
-    } else if (linkedAccounts.length > 0) {
-      result = linkedAccounts;
-    } else if (ownedAccounts.length > 0) {
-      result = ownedAccounts;
-    } else {
-      result = [];
-    }
-  }
-  return result.map(id => getAccountIdWithChecksum(id));
+// Linked and owned accounts, and (only when both groups are non-empty) which raw id is
+// the last linked one — the real item a divider should render after. Computed together
+// so the two groups are only sorted once.
+const accountGroups = computed(() => {
+  if (props.items) return { ids: props.items, lastLinkedAccountId: null as string | null };
+
+  const linkedAccounts = accountIds.value.map(a => a.account_id);
+  const ownedAccounts = user.publicKeysToAccountsFlattened;
+  linkedAccounts.sort(compareAccountIds);
+  ownedAccounts.sort(compareAccountIds);
+
+  const lastLinkedAccountId =
+    linkedAccounts.length > 0 && ownedAccounts.length > 0
+      ? linkedAccounts[linkedAccounts.length - 1]
+      : null;
+
+  return { ids: linkedAccounts.concat(ownedAccounts), lastLinkedAccountId };
 });
 
-const accountValue = computed(() => {
-  const allIds = formattedAccountIds.value.map(id => id.split('-')[0]);
-  return allIds.includes(props.modelValue)
-    ? getAccountIdWithChecksum(props.modelValue)
-    : props.modelValue;
+const formattedAccountIds = computed(() =>
+  accountGroups.value.ids.map(id => getAccountIdWithChecksum(id)),
+);
+
+// The divider's position has to be found post-checksum, since that's what AppAutoComplete's
+// items (and thus groupBreakAfter's argument) actually contain.
+const linkedOwnedBoundary = computed(() => {
+  const { lastLinkedAccountId } = accountGroups.value;
+  return lastLinkedAccountId ? getAccountIdWithChecksum(lastLinkedAccountId) : null;
 });
+
+function isLinkedOwnedBoundary(item: string): boolean {
+  return item === linkedOwnedBoundary.value;
+}
 
 /* Handlers */
 const handleUpdate = (value: string) => {
@@ -92,12 +99,17 @@ onBeforeMount(async () => {
 </script>
 <template>
   <AppAutoComplete
-    :model-value="accountValue"
+    :model-value="modelValue"
     @update:model-value="handleUpdate"
     @blur="handleOnBlur"
     :items="formattedAccountIds"
+    :sanitize="sanitizeAccountId"
+    :find-match="matchAccountId"
+    :decorate="decorateAccountId"
+    :group-break-after="isLinkedOwnedBoundary"
     :data-testid="dataTestid"
     disable-spaces
+    tabular-nums
     v-bind="$attrs"
   />
 </template>

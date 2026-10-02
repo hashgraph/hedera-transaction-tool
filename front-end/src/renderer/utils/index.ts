@@ -406,6 +406,72 @@ export function sanitizeAccountId(value: string): string {
   return value;
 }
 
+/**
+ * Finds the account ID in `items` that best matches the current input, for use as
+ * AppAutoComplete's `findMatch` prop.
+ *
+ * Tries an exact prefix match first (e.g. "0.0.1" matching "0.0.100"), then falls back
+ * to a partial match against each shard/realm/num part individually (e.g. "100" matching
+ * the "num" part of "0.0.100") so mid-ID segments are reachable too. `alignStart` points
+ * at the start of whichever part actually matched, not just the first place `input`
+ * happens to occur in the string — "22" matching the trailing part of "122.2.22" must
+ * align at index 6, not index 1 (inside the leading "122").
+ *
+ * @param {string[]} items - The account ID list shown in the dropdown.
+ * @param {string} input - The current (already-sanitized) input value.
+ * @returns {{ index: number; alignStart: number } | null} - The match, or null if nothing matches.
+ */
+export function matchAccountId(
+  items: string[],
+  input: string,
+): { index: number; alignStart: number } | null {
+  const lowerInput = input.toLowerCase();
+
+  const exactMatchIndex = items.findIndex(item => item.toLowerCase().startsWith(lowerInput));
+  if (exactMatchIndex !== -1) return { index: exactMatchIndex, alignStart: 0 };
+
+  for (let index = 0; index < items.length; index++) {
+    let partStart = 0;
+    for (const part of items[index].split('.')) {
+      if (part.toLowerCase().startsWith(lowerInput)) {
+        return { index, alignStart: partStart };
+      }
+      partStart += part.length + 1; // +1 for the '.' separator
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Whether `item` would be found by matchAccountId for the given `input`, for use as
+ * AppAutoComplete's `filterItem` prop. Reuses matchAccountId itself (viewing `item` as
+ * a singleton list) rather than re-implementing the prefix/part-matching rule, so the
+ * two can never drift out of sync with each other.
+ *
+ * @param {string} item - A single account ID from the dropdown's full item list.
+ * @param {string} input - The current (already-sanitized) input value.
+ * @returns {boolean} - Whether `item` matches `input`.
+ */
+export function accountIdMatchesInput(item: string, input: string): boolean {
+  return matchAccountId([item], input) !== null;
+}
+
+/**
+ * Computes the checksum suffix for an account ID, for use as AppAutoComplete's
+ * `decorate` prop. Works for any syntactically valid account ID, not just ones in the
+ * visible items list — "0.0.2" gets its own checksum even if "0.0.2" was never one of
+ * the suggested accounts.
+ *
+ * @param {string} value - The current (already-sanitized) account ID value.
+ * @returns {string} - The checksum suffix (e.g. "-abcde"), or '' if none applies.
+ */
+export function decorateAccountId(value: string): string {
+  if (!value) return '';
+  const withChecksum = getAccountIdWithChecksum(value);
+  return withChecksum.length > value.length ? withChecksum.slice(value.length) : '';
+}
+
 export const formatProgressBytes = (
   bytes: number | undefined | null,
   fallback: string = '0',
