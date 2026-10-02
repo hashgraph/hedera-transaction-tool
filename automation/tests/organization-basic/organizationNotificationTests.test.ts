@@ -227,4 +227,44 @@ test.describe('Organization Notification tests @organization-basic', () => {
       })
       .toBe(0);
   });
+
+  test.describe('Verify notification badges appear on relevant tabs (4.2.2)', () => {
+    test('Verify badge appears on the tab with a pending notification and is absent on unrelated tabs', async () => {
+      const notifiedTransactionId = await organizationPage.ensureNotificationStateForUser(
+        firstUser,
+        secondUser,
+        globalCredentials,
+      );
+      expect(notifiedTransactionId).toBeTruthy();
+
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.clickOnReadyToSignTab();
+
+      // Ready to Sign tab must show a badge while the sign notification is unread
+      await expect
+        .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+          timeout: organizationPage.getVeryLongTimeout(),
+          intervals: [organizationPage.getShortTimeout()],
+        })
+        .toBeGreaterThan(0);
+
+      // Ready for Review has no approve-type notifications in this suite — badge must be absent
+      expect(await organizationPage.getReadyForReviewTabBadgeCount()).toBe(0);
+
+      // Ready for Execution has no executable notifications — badge must be absent
+      expect(await organizationPage.getReadyForExecutionTabBadgeCount()).toBe(0);
+
+      // Viewing the transaction marks the notification read and must clear the Ready to Sign badge
+      await organizationPage.openReadyToSignDetailsForTransaction(notifiedTransactionId!);
+      await transactionPage.clickOnTransactionsMenuButton();
+      await organizationPage.clickOnReadyToSignTab();
+
+      await expect
+        .poll(() => organizationPage.getReadyToSignTabBadgeCount(), {
+          timeout: organizationPage.getLongTimeout(),
+          intervals: [organizationPage.getShortTimeout()],
+        })
+        .toBe(0);
+    });
+  });
 });
