@@ -73,10 +73,9 @@ export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
 /* ADMIN ONLY: Delete a user */
 export const deleteUser = (organizationServerUrl: string, id: number) =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.delete(
+     await axiosWithCredentials.delete(
       `${organizationServerUrl}/${controller}/${id}`,
     );
-    return response.data;
   }, 'Failed to delete user');
 
 export const getPublicKeyOwner = async (

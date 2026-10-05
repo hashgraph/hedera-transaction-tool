@@ -141,7 +141,7 @@ export const commonRequestHandler = async <T>(
 };
 
 export class AxiosWithCredentials {
-  get<D>(
+  async get<D>(
     url: string,
     config?: AxiosRequestConfig<Record<string, unknown>>,
     withReconnect = true,
@@ -155,7 +155,7 @@ export class AxiosWithCredentials {
     );
   }
 
-  post<D>(
+  async post<D>(
     url: string,
     data?: D,
     config?: AxiosRequestConfig<Record<string, unknown>>,
@@ -170,7 +170,11 @@ export class AxiosWithCredentials {
     );
   }
 
-  patch<D,R>(url: string, data?: D, config?: AxiosRequestConfig<Record<string, unknown>>): Promise<AxiosResponse<R>> {
+  async patch<D, R>(
+    url: string,
+    data?: D,
+    config?: AxiosRequestConfig<Record<string, unknown>>,
+  ): Promise<AxiosResponse<R>> {
     return this.runWithReconnect(() =>
       axios.patch(url, data, {
         ...this.getConfigWithAuthHeader(config || {}, url),
@@ -178,11 +182,8 @@ export class AxiosWithCredentials {
     );
   }
 
-  delete<T, R extends AxiosResponse<T>, D>(
-    url: string,
-    config?: AxiosRequestConfig<Record<string, unknown>>,
-  ): Promise<AxiosResponse<T, R, D>> {
-    return this.runWithReconnect(() =>
+  async delete(url: string, config?: AxiosRequestConfig<Record<string, unknown>>): Promise<void> {
+    await this.runWithReconnect(() =>
       axios.delete(url, {
         ...this.getConfigWithAuthHeader(config || {}, url),
       }),
