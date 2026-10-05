@@ -34,7 +34,6 @@ allowBuilds:
   msgpackr-extract: true
   prisma: true
   protobufjs: true
-  sqlite3: true
   ssh2: true
   unrs-resolver: true
   vue-demi: true
