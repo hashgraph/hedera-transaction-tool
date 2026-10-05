@@ -122,7 +122,7 @@ describe('ObserversService', () => {
       );
     });
 
-    it('should throw unauthorized exception', async () => {
+    it('should throw forbidden exception', async () => {
       const transactionId = 1;
       const dto = { userIds: [2] };
 
@@ -130,7 +130,7 @@ describe('ObserversService', () => {
       entityManager.findOne.mockResolvedValue(transaction);
 
       await expect(service.createTransactionObservers(user, transactionId, dto)).rejects.toThrow(
-        'Only the creator of the transaction is able to delete it',
+        'Only the creator of the transaction is able to create it',
       );
     });
 

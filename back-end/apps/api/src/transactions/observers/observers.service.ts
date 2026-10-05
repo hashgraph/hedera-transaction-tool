@@ -40,7 +40,7 @@ export class ObserversService {
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.userId !== user.id)
-      throw new ForbiddenException('Only the creator of the transaction is able to delete it');
+      throw new ForbiddenException('Only the creator of the transaction is able to create it');
 
     const observers: TransactionObserver[] = [];
 
