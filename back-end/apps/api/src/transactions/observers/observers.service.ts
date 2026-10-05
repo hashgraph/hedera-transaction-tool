@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger } from '@nestjs/common';
 import { InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
 import { EntityManager, Repository } from 'typeorm';
@@ -40,7 +40,7 @@ export class ObserversService {
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.userId !== user.id)
-      throw new UnauthorizedException('Only the creator of the transaction is able to delete it');
+      throw new ForbiddenException('Only the creator of the transaction is able to delete it');
 
     const observers: TransactionObserver[] = [];
 
@@ -104,7 +104,7 @@ export class ObserversService {
       !(transaction.observers === undefined || transaction.observers.some(o => o.userId === user.id)) &&
       !(transaction.signers === undefined || transaction.signers.some(s => s.userKey?.userId === user.id))
     )
-      throw new UnauthorizedException("You don't have permission to view this transaction");
+      throw new ForbiddenException("You don't have permission to view this transaction");
 
     return transaction.observers ?? [];
   }
@@ -155,7 +155,7 @@ export class ObserversService {
     if (!transaction) throw new BadRequestException(ErrorCodes.TNF);
 
     if (transaction.creatorKey?.userId !== user.id)
-      throw new UnauthorizedException('Only the creator of the transaction is able to update it');
+      throw new ForbiddenException('Only the creator of the transaction is able to update it');
 
     return observer;
   }
