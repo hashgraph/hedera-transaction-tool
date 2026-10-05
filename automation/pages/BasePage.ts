@@ -12,6 +12,15 @@ export class BasePage {
 
   constructor(protected readonly window: Page) {}
 
+  async dismissVisibleToasts(): Promise<void> {
+    const visibleToasts = this.window.locator('.toast:visible');
+    while (await visibleToasts.count()) {
+      const toast = visibleToasts.first();
+      await toast.click();
+      await toast.waitFor({ state: 'detached', timeout: this.LONG_TIMEOUT });
+    }
+  }
+
   getShortTimeout(): number {
     return this.SHORT_TIMEOUT;
   }
