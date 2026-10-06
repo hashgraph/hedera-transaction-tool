@@ -8,7 +8,7 @@ import * as dotenv from 'dotenv';
 import { shouldPreserveLocalAppState } from '../runtime/appMode.js';
 import { applyPlaywrightIsolationEnv } from '../setup/playwrightIsolation.js';
 import { shouldPreserveBackendState } from '../runtime/backendStateMode.js';
-import BetterSqlite3 from 'better-sqlite3-node';
+import BetterSqlite3 from 'better-sqlite3';
 
 // Load environment variables from .env file
 const __filename = url.fileURLToPath(import.meta.url);

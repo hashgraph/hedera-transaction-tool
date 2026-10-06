@@ -51,7 +51,7 @@
     "axios": "catalog:",
     "bcrypt": "catalog:",
     "bcryptjs": "catalog:",
-    "better-sqlite3-node": "npm:better-sqlite3@13.0.3",
+    "better-sqlite3": "catalog:",
     "bip39": "3.1.0",
     "deep-diff": "1.0.2",
     "dotenv": "catalog:",

@@ -12,7 +12,7 @@
 import crypto from 'node:crypto';
 import { getDatabasePath } from '../../utils/db/databaseUtil.js';
 import { DATA_VOLUMES } from '../../k6/src/config/constants.js';
-import BetterSqlite3 from 'better-sqlite3-node';
+import BetterSqlite3 from 'better-sqlite3';
 
 // Use DATA_VOLUMES for SSOT
 const TARGET_COUNT = DATA_VOLUMES.DRAFTS;

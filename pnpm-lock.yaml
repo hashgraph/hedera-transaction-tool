@@ -52,8 +52,8 @@ catalogs:
       specifier: 3.0.3
       version: 3.0.3
     better-sqlite3:
-      specifier: 12.11.1
-      version: 12.11.1
+      specifier: 13.0.3
+      version: 13.0.3
     dotenv:
       specifier: 18.0.4
       version: 18.0.4
@@ -236,9 +236,9 @@ importers:
       bcryptjs:
         specifier: 'catalog:'
         version: 3.0.3
-      better-sqlite3-node:
-        specifier: npm:better-sqlite3@13.0.3
-        version: better-sqlite3@13.0.3
+      better-sqlite3:
+        specifier: 'catalog:'
+        version: 13.0.3
       bip39:
         specifier: 3.1.0
         version: 3.1.0
@@ -632,7 +632,7 @@ importers:
         version: 7.10.0
       '@prisma/client':
         specifier: 7.10.0
-        version: 7.10.0(prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3))(typescript@6.0.3)
+        version: 7.10.0(prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@13.0.3)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3))(typescript@6.0.3)
       '@vuepic/vue-datepicker':
         specifier: 14.0.0
         version: 14.0.0(vue@3.5.43(typescript@6.0.3))
@@ -650,7 +650,7 @@ importers:
         version: 6.0.0
       better-sqlite3:
         specifier: 'catalog:'
-        version: 12.11.1
+        version: 13.0.3
       bignumber.js:
         specifier: 11.1.5
         version: 11.1.5
@@ -777,7 +777,7 @@ importers:
         version: 3.9.9
       prisma:
         specifier: 7.10.0
-        version: 7.10.0(@types/react@19.2.18)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3)
+        version: 7.10.0(@types/react@19.2.18)(better-sqlite3@13.0.3)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3)
       sass:
         specifier: 1.105.0
         version: 1.105.0
@@ -10653,11 +10653,11 @@ snapshots:
 
   '@prisma/client-runtime-utils@7.10.0': {}
 
-  '@prisma/client@7.10.0(prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3))(typescript@6.0.3)':
+  '@prisma/client@7.10.0(prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@13.0.3)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3))(typescript@6.0.3)':
     dependencies:
       '@prisma/client-runtime-utils': 7.10.0
     optionalDependencies:
-      prisma: 7.10.0(@types/react@19.2.18)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3)
+      prisma: 7.10.0(@types/react@19.2.18)(better-sqlite3@13.0.3)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3)
       typescript: 6.0.3
 
   '@prisma/config@7.10.0(magicast@0.5.2)':
@@ -16108,7 +16108,7 @@ snapshots:
       '@jest/schemas': 30.5.0
       ansi-styles: 5.2.0
 
-  prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@12.11.1)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3):
+  prisma@7.10.0(@types/react@19.2.18)(better-sqlite3@13.0.3)(magicast@0.5.2)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)(typescript@6.0.3):
     dependencies:
       '@prisma/config': 7.10.0(magicast@0.5.2)
       '@prisma/dev': 0.24.17(typescript@6.0.3)
@@ -16117,7 +16117,7 @@ snapshots:
       mysql2: 3.15.3
       postgres: 3.4.7
     optionalDependencies:
-      better-sqlite3: 12.11.1
+      better-sqlite3: 13.0.3
       typescript: 6.0.3
     transitivePeerDependencies:
       - '@types/react'
