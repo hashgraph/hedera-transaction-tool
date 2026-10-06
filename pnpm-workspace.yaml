@@ -99,6 +99,7 @@ catalogs:
     '@vitest/coverage-v8': *vitestVersion
 
 overrides:
+  '@prisma/adapter-better-sqlite3>better-sqlite3': 'catalog:'
   "protobufjs@<8.0.0": "7.6.5"
   "protobufjs@>=8.0.0": "8.7.1"
   "follow-redirects": "1.16.0"
