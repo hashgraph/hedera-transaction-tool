@@ -652,6 +652,14 @@ textarea.form-control {
   --#{$prefix}tooltip-max-width: 460px;
 }
 
+.no-wrap-tooltip {
+  --#{$prefix}tooltip-max-width: none;
+  .tooltip-inner {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 /* Toast */
 
 .toast-container {

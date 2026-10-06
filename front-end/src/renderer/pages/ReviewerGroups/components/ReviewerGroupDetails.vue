@@ -110,7 +110,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
       </h3>
       <ul class="mt-3 ps-4">
         <li v-for="member in group.members" :key="member.id" class="mt-2">
-          <AppPublicKeyNickname :public-key="memberPublicKey(member)" />
+          <AppPublicKeyNickname :public-key="memberPublicKey(member)" truncate-key />
         </li>
       </ul>
 
