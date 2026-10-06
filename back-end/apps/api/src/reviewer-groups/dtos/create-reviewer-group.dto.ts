@@ -1,5 +1,16 @@
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+import { MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH, MAX_REVIEWER_GROUP_NAME_LENGTH } from '@entities';
 
 export class GroupMemberInputDto {
   @IsInt()
@@ -12,10 +23,12 @@ export class GroupMemberInputDto {
 export class CreateReviewerGroupDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(MAX_REVIEWER_GROUP_NAME_LENGTH)
   name!: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH)
   description?: string;
 
   @IsInt()

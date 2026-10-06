@@ -11,15 +11,18 @@ import { ReviewerGroupMember } from './reviewer-group-member.entity';
 import { ReviewerRule } from './reviewer-rule.entity';
 import { GroupChangeRecord } from './group-change-record.entity';
 
+export const MAX_REVIEWER_GROUP_NAME_LENGTH = 75;
+export const MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH = 150;
+
 @Entity()
 export class ReviewerGroup {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column()
+  @Column({ length: MAX_REVIEWER_GROUP_NAME_LENGTH })
   name!: string;
 
-  @Column({ type: String, nullable: true })
+  @Column({ type: String, nullable: true, length: MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH })
   description!: string | null;
 
   @Column()
