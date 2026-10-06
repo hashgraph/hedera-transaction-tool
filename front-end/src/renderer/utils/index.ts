@@ -112,6 +112,8 @@ export const throwError = (errorMessage: string) => {
 export const getErrorMessage = (error: unknown, defaultErrorMessage: string) =>
   error instanceof Error ? error.message : defaultErrorMessage;
 
+export const capitalize = (value: string) => value.charAt(0).toUpperCase() + value.slice(1);
+
 export function handleFormatAccount(
   allAccounts: HederaAccount[] | undefined,
   accountToCheck: AccountInfo | HederaAccount,

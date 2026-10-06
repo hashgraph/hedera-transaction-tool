@@ -124,8 +124,6 @@ describe('ReviewerGroups.vue', () => {
         name: 'Treasury',
         description: 'Treasury movements',
         threshold: 2,
-        memberCount: 3,
-        ruleCount: 1,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       },
@@ -150,8 +148,8 @@ describe('ReviewerGroups.vue', () => {
 
   test('clicking a different group selects it and highlights its row', async () => {
     mocks.reviewerGroupsStore.groups = [
-      { id: 1, name: 'Treasury', description: '', threshold: 1, memberCount: 1, ruleCount: 0 },
-      { id: 2, name: 'Operations', description: '', threshold: 1, memberCount: 1, ruleCount: 0 },
+      { id: 1, name: 'Treasury', description: '', threshold: 1 },
+      { id: 2, name: 'Operations', description: '', threshold: 1 },
     ];
 
     const wrapper = mountReviewerGroups();

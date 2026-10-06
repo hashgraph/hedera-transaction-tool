@@ -12,13 +12,22 @@ export const ENTITY_ROLES = [
 ] as const;
 export type EntityRole = (typeof ENTITY_ROLES)[number];
 
+export const ROLE_LABELS: Record<EntityRole, string> = {
+  account: 'account',
+  fee_payer: 'fee payer',
+  file: 'file',
+  node: 'node',
+  receiver: 'receiver',
+  sender: 'sender',
+  token: 'token',
+  topic: 'topic',
+};
+
 export interface IReviewerGroupSummary {
   id: number;
   name: string;
   description: string | null;
   threshold: number;
-  memberCount: number;
-  ruleCount: number;
   createdAt: string | Date;
   updatedAt: string | Date;
 }

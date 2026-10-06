@@ -38,10 +38,14 @@ const mocks = vi.hoisted(() => ({
     keyPairs: [{ public_key: 'org-public-key' }],
   },
   contactsStore: {
-    getContact: vi.fn((userId: number) => ({
-      user: { id: userId, email: `user${userId}@example.com` },
-      userKeys: [{ id: userId * 10, publicKey: `public-key-${userId}` }],
-    })),
+    getContact: vi.fn(
+      (
+        userId: number,
+      ): { user: { id: number; email: string }; userKeys: { id: number; publicKey: string }[] } | undefined => ({
+        user: { id: userId, email: `user${userId}@example.com` },
+        userKeys: [{ id: userId * 10, publicKey: `public-key-${userId}` }],
+      }),
+    ),
   },
   reviewerGroupsStore: {
     fetch: vi.fn(),
