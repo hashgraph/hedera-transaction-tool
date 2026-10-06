@@ -5,6 +5,7 @@
     "tests/**/*.ts",
     "utils/**/*.ts",
     "constants/**/*.ts",
+    "types/**/*.d.ts",
   ],
   "compilerOptions": {
     "noEmit": true,
