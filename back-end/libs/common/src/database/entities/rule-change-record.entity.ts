@@ -18,7 +18,9 @@ import { UserKey } from './user-key.entity';
 // The known fields at time of writing — intentionally open-ended as conditions
 // will be added here in a future migration without requiring a schema change.
 export interface RulePayload {
-  hederaEntityId: string;
+  // A Hedera entity ID (e.g. "0.0.1234") for most entityRoles, or a plain node ID
+  // (e.g. "1") when entityRole is 'node'.
+  hederaId: string;
   network: string;
   entityRole: string | null;
   transactionType: string | null;
@@ -90,7 +92,7 @@ export class RuleChangeRecord {
   @Column()
   status!: ChangeRequestStatus;
 
-  // Full rule definition at the time of this change: hederaEntityId, network,
+  // Full rule definition at the time of this change: hederaId, network,
   // entityRole, transactionType, and any future fields (e.g. conditions). Stored as
   // jsonb so the schema can grow without a migration when conditions are added.
   // For REMOVE actions this is the exact payload that attestationSignatures are

@@ -87,7 +87,7 @@ describe('Reviewer Groups Schema', () => {
       [groupId, userId, keyId],
     );
     await dataSource.query(
-      `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network) VALUES ($1, '0.0.2', 'testnet')`,
+      `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network) VALUES ($1, '0.0.2', 'testnet')`,
       [groupId],
     );
 
@@ -132,12 +132,12 @@ describe('Reviewer Groups Schema', () => {
     const userKeyId = await insertUserKey(userId, 'pk-rule-record');
 
     const [rule] = await dataSource.query(
-      `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network) VALUES ($1, '0.0.5', 'testnet') RETURNING id`,
+      `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network) VALUES ($1, '0.0.5', 'testnet') RETURNING id`,
       [groupId],
     );
     const [record] = await dataSource.query(
       `INSERT INTO "rule_change_record" ("ruleId", "groupId", "userId", "userKeyId", "action", "status", "rulePayload")
-       VALUES ($1, $2, $3, $4, 'add', 'APPLIED', '{"hederaEntityId":"0.0.5","network":"testnet"}') RETURNING id`,
+       VALUES ($1, $2, $3, $4, 'add', 'APPLIED', '{"hederaId":"0.0.5","network":"testnet"}') RETURNING id`,
       [rule.id, groupId, userId, userKeyId],
     );
 
@@ -172,14 +172,14 @@ describe('Reviewer Groups Schema', () => {
     const groupId = await insertGroup('null-uniqueness-group');
 
     await dataSource.query(
-      `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network, "entityRole", "transactionType")
+      `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network, "entityRole", "transactionType")
        VALUES ($1, '0.0.10', 'testnet', NULL, NULL)`,
       [groupId],
     );
 
     await expect(
       dataSource.query(
-        `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network, "entityRole", "transactionType")
+        `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network, "entityRole", "transactionType")
          VALUES ($1, '0.0.10', 'testnet', NULL, NULL)`,
         [groupId],
       ),
@@ -190,11 +190,11 @@ describe('Reviewer Groups Schema', () => {
     const groupId = await insertGroup('multi-role-group');
 
     await dataSource.query(
-      `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network, "entityRole") VALUES ($1, '0.0.20', 'testnet', 'sender')`,
+      `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network, "entityRole") VALUES ($1, '0.0.20', 'testnet', 'sender')`,
       [groupId],
     );
     await dataSource.query(
-      `INSERT INTO "reviewer_rule" ("groupId", "hederaEntityId", network, "entityRole") VALUES ($1, '0.0.20', 'testnet', 'receiver')`,
+      `INSERT INTO "reviewer_rule" ("groupId", "hederaId", network, "entityRole") VALUES ($1, '0.0.20', 'testnet', 'receiver')`,
       [groupId],
     );
 
@@ -212,7 +212,7 @@ describe('Reviewer Groups Schema', () => {
 
     const [record] = await dataSource.query(
       `INSERT INTO "rule_change_record" ("groupId", "userId", "userKeyId", "action", "status", "rulePayload")
-       VALUES ($1, $2, $3, 'add', 'APPLIED', '{"hederaEntityId":"0.0.6","network":"testnet"}') RETURNING id`,
+       VALUES ($1, $2, $3, 'add', 'APPLIED', '{"hederaId":"0.0.6","network":"testnet"}') RETURNING id`,
       [groupId, userId, userKeyId],
     );
 
@@ -225,7 +225,7 @@ describe('Reviewer Groups Schema', () => {
     expect(row.groupId).toBeNull();
   });
 
-  it('should enforce transaction_entity uniqueness on (transactionId, hederaEntityId, network, entityRole)', async () => {
+  it('should enforce transaction_entity uniqueness on (transactionId, hederaId, network, entityRole)', async () => {
     const userId = await insertUser('entity-unique@test.com');
     const keyId = await insertUserKey(userId, 'pk-entity-unique');
 
@@ -236,13 +236,13 @@ describe('Reviewer Groups Schema', () => {
     );
 
     await dataSource.query(
-      `INSERT INTO "transaction_entity" ("transactionId", "hederaEntityId", network, "entityRole") VALUES ($1, '0.0.30', 'testnet', 'sender')`,
+      `INSERT INTO "transaction_entity" ("transactionId", "hederaId", network, "entityRole") VALUES ($1, '0.0.30', 'testnet', 'sender')`,
       [tx.id],
     );
 
     await expect(
       dataSource.query(
-        `INSERT INTO "transaction_entity" ("transactionId", "hederaEntityId", network, "entityRole") VALUES ($1, '0.0.30', 'testnet', 'sender')`,
+        `INSERT INTO "transaction_entity" ("transactionId", "hederaId", network, "entityRole") VALUES ($1, '0.0.30', 'testnet', 'sender')`,
         [tx.id],
       ),
     ).rejects.toThrow();

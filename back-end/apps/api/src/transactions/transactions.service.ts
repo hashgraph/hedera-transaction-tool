@@ -1063,18 +1063,18 @@ export class TransactionsService {
   private extractTransactionEntities(
     sdkTx: SDKTransaction,
     network: string,
-  ): Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] {
-    const raw: Pick<TransactionEntity, 'hederaEntityId' | 'network' | 'entityRole'>[] = [];
+  ): Pick<TransactionEntity, 'hederaId' | 'network' | 'entityRole'>[] {
+    const raw: Pick<TransactionEntity, 'hederaId' | 'network' | 'entityRole'>[] = [];
 
     const feePayerId = sdkTx.transactionId?.accountId;
     if (feePayerId) {
-      raw.push({ hederaEntityId: feePayerId.toString(), network, entityRole: EntityRole.FEE_PAYER });
+      raw.push({ hederaId: feePayerId.toString(), network, entityRole: EntityRole.FEE_PAYER });
     }
 
     if (sdkTx instanceof TransferTransaction) {
       for (const transfer of sdkTx.hbarTransfersList) {
         raw.push({
-          hederaEntityId: transfer.accountId.toString(),
+          hederaId: transfer.accountId.toString(),
           network,
           entityRole: transfer.amount.isNegative() ? EntityRole.SENDER : EntityRole.RECEIVER,
         });
@@ -1082,44 +1082,44 @@ export class TransactionsService {
     }
 
     if (sdkTx instanceof AccountUpdateTransaction && sdkTx.accountId) {
-      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+      raw.push({ hederaId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
     }
     if (sdkTx instanceof AccountDeleteTransaction && sdkTx.accountId) {
-      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+      raw.push({ hederaId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
     }
     if (sdkTx instanceof NodeCreateTransaction && sdkTx.accountId) {
-      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+      raw.push({ hederaId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
     }
     if (sdkTx instanceof NodeUpdateTransaction && sdkTx.accountId) {
-      raw.push({ hederaEntityId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
+      raw.push({ hederaId: sdkTx.accountId.toString(), network, entityRole: EntityRole.ACCOUNT });
     }
 
     if (sdkTx instanceof FileAppendTransaction && sdkTx.fileId) {
-      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+      raw.push({ hederaId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
     }
     if (sdkTx instanceof FileUpdateTransaction && sdkTx.fileId) {
-      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+      raw.push({ hederaId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
     }
     if (sdkTx instanceof FileDeleteTransaction && sdkTx.fileId) {
-      raw.push({ hederaEntityId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
+      raw.push({ hederaId: sdkTx.fileId.toString(), network, entityRole: EntityRole.FILE });
     }
 
     if (sdkTx instanceof NodeUpdateTransaction && sdkTx.nodeId) {
-      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+      raw.push({ hederaId: sdkTx.nodeId.toString(), network, entityRole: EntityRole.NODE });
     }
     if (sdkTx instanceof NodeDeleteTransaction && sdkTx.nodeId) {
-      raw.push({ hederaEntityId: `node:${sdkTx.nodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+      raw.push({ hederaId: sdkTx.nodeId.toString(), network, entityRole: EntityRole.NODE });
     }
     if (sdkTx instanceof RegisteredNodeUpdateTransaction && sdkTx.registeredNodeId) {
-      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+      raw.push({ hederaId: sdkTx.registeredNodeId.toString(), network, entityRole: EntityRole.NODE });
     }
     if (sdkTx instanceof RegisteredNodeDeleteTransaction && sdkTx.registeredNodeId) {
-      raw.push({ hederaEntityId: `node:${sdkTx.registeredNodeId.toNumber()}`, network, entityRole: EntityRole.NODE });
+      raw.push({ hederaId: sdkTx.registeredNodeId.toString(), network, entityRole: EntityRole.NODE });
     }
 
     const seen = new Set<string>();
     return raw.filter(e => {
-      const key = `${e.hederaEntityId}|${e.network}|${e.entityRole}`;
+      const key = `${e.hederaId}|${e.network}|${e.entityRole}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;

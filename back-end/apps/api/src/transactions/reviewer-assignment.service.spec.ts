@@ -18,7 +18,7 @@ function makeRule(overrides: Partial<ReviewerRule> = {}): ReviewerRule {
   return {
     id: 1,
     groupId: 10,
-    hederaEntityId: '0.0.1',
+    hederaId: '0.0.1',
     network: NETWORK,
     entityRole: null,
     transactionType: null,
@@ -34,7 +34,7 @@ function makeEntity(overrides: Partial<TransactionEntity> = {}): TransactionEnti
   return {
     id: 1,
     transactionId: 1,
-    hederaEntityId: '0.0.1',
+    hederaId: '0.0.1',
     network: NETWORK,
     entityRole: EntityRole.FEE_PAYER,
     createdAt: new Date(),
@@ -91,16 +91,16 @@ describe('ReviewerAssignmentService', () => {
 
     it('returns false when rules exist but none match the transaction', async () => {
       em.find.mockResolvedValueOnce([makeEntity()]); // entity is 0.0.1; rule targets 0.0.999
-      em.find.mockResolvedValueOnce([makeRule({ hederaEntityId: '0.0.999' })]);
+      em.find.mockResolvedValueOnce([makeRule({ hederaId: '0.0.999' })]);
 
       const result = await service.assign(1, TransactionType.ACCOUNT_CREATE, NETWORK, em);
 
       expect(result).toBe(false);
     });
 
-    it('matches a rule with no filters beyond hederaEntityId', async () => {
+    it('matches a rule with no filters beyond hederaId', async () => {
       em.find.mockResolvedValueOnce([makeEntity()]);
-      em.find.mockResolvedValueOnce([makeRule({ hederaEntityId: '0.0.1', entityRole: null, transactionType: null })]);
+      em.find.mockResolvedValueOnce([makeRule({ hederaId: '0.0.1', entityRole: null, transactionType: null })]);
 
       const group: Partial<ReviewerGroup> = {
         id: 10, name: 'Approvers', description: null, threshold: 1,
@@ -120,7 +120,7 @@ describe('ReviewerAssignmentService', () => {
     it('filters by entity_role when set', async () => {
       // entity is FEE_PAYER; rule requires SENDER
       em.find.mockResolvedValueOnce([makeEntity({ entityRole: EntityRole.FEE_PAYER })]);
-      em.find.mockResolvedValueOnce([makeRule({ hederaEntityId: '0.0.1', entityRole: EntityRole.SENDER })]);
+      em.find.mockResolvedValueOnce([makeRule({ hederaId: '0.0.1', entityRole: EntityRole.SENDER })]);
 
       const result = await service.assign(1, TransactionType.ACCOUNT_CREATE, NETWORK, em);
 
@@ -130,8 +130,8 @@ describe('ReviewerAssignmentService', () => {
     it('deduplicates groups matched by multiple rules', async () => {
       em.find.mockResolvedValueOnce([makeEntity()]);
       em.find.mockResolvedValueOnce([
-        makeRule({ id: 1, groupId: 10, hederaEntityId: '0.0.1' }),
-        makeRule({ id: 2, groupId: 10, hederaEntityId: '0.0.1', entityRole: EntityRole.FEE_PAYER }),
+        makeRule({ id: 1, groupId: 10, hederaId: '0.0.1' }),
+        makeRule({ id: 2, groupId: 10, hederaId: '0.0.1', entityRole: EntityRole.FEE_PAYER }),
       ]);
 
       const group: Partial<ReviewerGroup> = {

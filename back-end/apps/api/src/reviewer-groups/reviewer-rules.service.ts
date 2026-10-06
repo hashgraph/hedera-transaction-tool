@@ -53,7 +53,7 @@ export class ReviewerRulesService {
     const network = normalizeMirrorNetwork(dto.network);
 
     const rulePayload: RulePayload = {
-      hederaEntityId: dto.hederaEntityId,
+      hederaId: dto.hederaId,
       network,
       entityRole: dto.entityRole ?? null,
       transactionType: dto.transactionType ?? null,
@@ -75,7 +75,7 @@ export class ReviewerRulesService {
         } else {
           rule = manager.create(ReviewerRule, {
             groupId: dto.groupId,
-            hederaEntityId: dto.hederaEntityId,
+            hederaId: dto.hederaId,
             network,
             entityRole: dto.entityRole ?? null,
             transactionType: dto.transactionType ?? null,
@@ -127,7 +127,7 @@ export class ReviewerRulesService {
     const currentVersion = latestGroupRecord.snapshotVersion;
 
     const rulePayload: RulePayload = {
-      hederaEntityId: rule.hederaEntityId,
+      hederaId: rule.hederaId,
       network: rule.network,
       entityRole: rule.entityRole,
       transactionType: rule.transactionType,
@@ -169,7 +169,7 @@ export class ReviewerRulesService {
       .createQueryBuilder(ReviewerRule, 'rule')
       .withDeleted()
       .where('rule.groupId = :groupId', { groupId: dto.groupId })
-      .andWhere('rule.hederaEntityId = :hederaEntityId', { hederaEntityId: dto.hederaEntityId })
+      .andWhere('rule.hederaId = :hederaId', { hederaId: dto.hederaId })
       .andWhere('rule.network = :network', { network: dto.network })
       .andWhere('rule.deletedAt IS NOT NULL');
 

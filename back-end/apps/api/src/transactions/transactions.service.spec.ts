@@ -3111,7 +3111,7 @@ describe('TransactionsService.extractTransactionEntities', () => {
     const tx = new AccountCreateTransaction().setTransactionId(TX_ID);
     const entities: TransactionEntity[] = extract(tx);
     expect(entities).toContainEqual(expect.objectContaining({
-      hederaEntityId: '0.0.1', network: NETWORK, entityRole: EntityRole.FEE_PAYER,
+      hederaId: '0.0.1', network: NETWORK, entityRole: EntityRole.FEE_PAYER,
     }));
   });
 
@@ -3121,33 +3121,33 @@ describe('TransactionsService.extractTransactionEntities', () => {
       .addHbarTransfer(AccountId.fromString('0.0.2'), -1)
       .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
     const entities: TransactionEntity[] = extract(tx);
-    expect(entities).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.2', entityRole: EntityRole.SENDER }));
-    expect(entities).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.3', entityRole: EntityRole.RECEIVER }));
+    expect(entities).toContainEqual(expect.objectContaining({ hederaId: '0.0.2', entityRole: EntityRole.SENDER }));
+    expect(entities).toContainEqual(expect.objectContaining({ hederaId: '0.0.3', entityRole: EntityRole.RECEIVER }));
   });
 
   it('extracts account role from AccountUpdateTransaction', () => {
     const tx = new AccountUpdateTransaction().setTransactionId(TX_ID).setAccountId(AccountId.fromString('0.0.5'));
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.5', entityRole: EntityRole.ACCOUNT }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.5', entityRole: EntityRole.ACCOUNT }));
   });
 
   it('extracts account role from AccountDeleteTransaction', () => {
     const tx = new AccountDeleteTransaction().setTransactionId(TX_ID).setAccountId(AccountId.fromString('0.0.6'));
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.6', entityRole: EntityRole.ACCOUNT }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.6', entityRole: EntityRole.ACCOUNT }));
   });
 
   it('extracts file role from FileAppendTransaction', () => {
     const tx = new FileAppendTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.100'));
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.100', entityRole: EntityRole.FILE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.100', entityRole: EntityRole.FILE }));
   });
 
   it('extracts file role from FileUpdateTransaction', () => {
     const tx = new FileUpdateTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.101'));
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.101', entityRole: EntityRole.FILE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.101', entityRole: EntityRole.FILE }));
   });
 
   it('extracts file role from FileDeleteTransaction', () => {
     const tx = new FileDeleteTransaction().setTransactionId(TX_ID).setFileId(FileId.fromString('0.0.102'));
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.102', entityRole: EntityRole.FILE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.102', entityRole: EntityRole.FILE }));
   });
 
   it('extracts node role from NodeUpdateTransaction', () => {
@@ -3155,7 +3155,7 @@ describe('TransactionsService.extractTransactionEntities', () => {
     Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
     Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
     Object.defineProperty(tx, 'accountId', { get: () => null, configurable: true });
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:7', entityRole: EntityRole.NODE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '7', entityRole: EntityRole.NODE }));
   });
 
   it('extracts account role from NodeUpdateTransaction when accountId is set', () => {
@@ -3163,28 +3163,28 @@ describe('TransactionsService.extractTransactionEntities', () => {
     Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
     Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(7), configurable: true });
     Object.defineProperty(tx, 'accountId', { get: () => AccountId.fromString('0.0.50'), configurable: true });
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.50', entityRole: EntityRole.ACCOUNT }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.50', entityRole: EntityRole.ACCOUNT }));
   });
 
   it('extracts node role from NodeDeleteTransaction', () => {
     const tx = Object.create(NodeDeleteTransaction.prototype) as NodeDeleteTransaction;
     Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
     Object.defineProperty(tx, 'nodeId', { get: () => Long.fromNumber(8), configurable: true });
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:8', entityRole: EntityRole.NODE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '8', entityRole: EntityRole.NODE }));
   });
 
   it('extracts node role from RegisteredNodeUpdateTransaction', () => {
     const tx = Object.create(RegisteredNodeUpdateTransaction.prototype) as RegisteredNodeUpdateTransaction;
     Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
     Object.defineProperty(tx, 'registeredNodeId', { get: () => Long.fromNumber(9), configurable: true });
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:9', entityRole: EntityRole.NODE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '9', entityRole: EntityRole.NODE }));
   });
 
   it('extracts node role from RegisteredNodeDeleteTransaction', () => {
     const tx = Object.create(RegisteredNodeDeleteTransaction.prototype) as RegisteredNodeDeleteTransaction;
     Object.defineProperty(tx, 'transactionId', { get: () => TX_ID, configurable: true });
     Object.defineProperty(tx, 'registeredNodeId', { get: () => Long.fromNumber(10), configurable: true });
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: 'node:10', entityRole: EntityRole.NODE }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '10', entityRole: EntityRole.NODE }));
   });
 
   it('extracts account from NodeCreateTransaction', () => {
@@ -3193,7 +3193,7 @@ describe('TransactionsService.extractTransactionEntities', () => {
       .setTransactionId(TX_ID)
       .setAccountId(AccountId.fromString('0.0.9'))
       .setAdminKey(adminKey);
-    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaEntityId: '0.0.9', entityRole: EntityRole.ACCOUNT }));
+    expect(extract(tx)).toContainEqual(expect.objectContaining({ hederaId: '0.0.9', entityRole: EntityRole.ACCOUNT }));
   });
 
   it('stores the same entity in multiple roles as separate entries', () => {
@@ -3202,8 +3202,8 @@ describe('TransactionsService.extractTransactionEntities', () => {
       .addHbarTransfer(AccountId.fromString('0.0.1'), -1)
       .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
     const entities: TransactionEntity[] = extract(tx);
-    expect(entities.filter(e => e.hederaEntityId === '0.0.1' && e.entityRole === EntityRole.FEE_PAYER)).toHaveLength(1);
-    expect(entities.filter(e => e.hederaEntityId === '0.0.1' && e.entityRole === EntityRole.SENDER)).toHaveLength(1);
+    expect(entities.filter(e => e.hederaId === '0.0.1' && e.entityRole === EntityRole.FEE_PAYER)).toHaveLength(1);
+    expect(entities.filter(e => e.hederaId === '0.0.1' && e.entityRole === EntityRole.SENDER)).toHaveLength(1);
   });
 
   it('deduplicates identical entity+role combinations', () => {
@@ -3213,6 +3213,6 @@ describe('TransactionsService.extractTransactionEntities', () => {
       .addHbarTransfer(AccountId.fromString('0.0.3'), 1)
       .addHbarTransfer(AccountId.fromString('0.0.3'), 1);
     const entities: TransactionEntity[] = extract(tx);
-    expect(entities.filter(e => e.hederaEntityId === '0.0.3' && e.entityRole === EntityRole.RECEIVER)).toHaveLength(1);
+    expect(entities.filter(e => e.hederaId === '0.0.3' && e.entityRole === EntityRole.RECEIVER)).toHaveLength(1);
   });
 });

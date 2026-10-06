@@ -48,7 +48,7 @@ describe('ReviewerRulesService', () => {
     ({
       id: 1,
       groupId: 1,
-      hederaEntityId: '0.0.1234',
+      hederaId: '0.0.1234',
       network: 'testnet',
       entityRole: null,
       transactionType: null,
@@ -78,7 +78,7 @@ describe('ReviewerRulesService', () => {
 
   const createDto: CreateReviewerRuleDto = {
     groupId: 1,
-    hederaEntityId: '0.0.1234',
+    hederaId: '0.0.1234',
     network: 'testnet',
     userKeyId: 99,
     userSignature: 'deadbeef',
