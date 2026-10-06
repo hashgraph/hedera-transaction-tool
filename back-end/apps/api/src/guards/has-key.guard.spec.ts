@@ -47,7 +47,7 @@ describe('HasKeyGuard', () => {
     expect(await hasKeyGuard.canActivate(context)).toBe(false);
   });
 
-  it('should throw UnauthorizedException if user has no keys', async () => {
+  it('should throw ForbiddenException if user has no keys', async () => {
     jest.spyOn(userKeysService, 'getUserKeysCount').mockResolvedValue(0);
     const context = {
       switchToHttp: () => ({

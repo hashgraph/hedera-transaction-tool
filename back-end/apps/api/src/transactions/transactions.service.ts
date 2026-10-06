@@ -2,10 +2,10 @@ import { assertTransactionKeysReviewable } from '@app/common/utils/sdk/transacti
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   Logger,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectDataSource, InjectEntityManager, InjectRepository } from '@nestjs/typeorm';
 
@@ -956,7 +956,7 @@ export class TransactionsService {
     }
 
     if (!(await this.verifyAccess(transaction, user))) {
-      throw new UnauthorizedException('You don\'t have permission to view this transaction');
+      throw new ForbiddenException("You don't have permission to view this transaction");
     }
     return transaction;
   }
@@ -1054,7 +1054,7 @@ export class TransactionsService {
     }
 
     if (transaction.creatorKey?.userId !== user.id) {
-      throw new UnauthorizedException('Only the creator has access to this transaction');
+      throw new ForbiddenException('Only the creator has access to this transaction');
     }
 
     return transaction;

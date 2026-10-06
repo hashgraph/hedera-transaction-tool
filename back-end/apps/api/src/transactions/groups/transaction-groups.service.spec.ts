@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
@@ -218,13 +218,13 @@ describe('TransactionGroupsService', () => {
       );
     });
 
-    it('should throw UnauthorizedException if query returns no rows', async () => {
+    it('should throw ForbiddenException if query returns no rows', async () => {
       dataSource.manager.findOne.mockResolvedValue(mockGroup);
       dataSource.manager.query.mockResolvedValue([]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));
 
       await expect(service.getTransactionGroup(userWithKeys, 1)).rejects.toThrow(
-        UnauthorizedException,
+        ForbiddenException,
       );
     });
 
@@ -345,7 +345,7 @@ describe('TransactionGroupsService', () => {
       return mockRepo;
     };
 
-    it('should throw UnauthorizedException when user does not own all transactions', async () => {
+    it('should throw ForbiddenException when user does not own all transactions', async () => {
       const group = {
         id: 1,
         groupItems: [
@@ -364,7 +364,7 @@ describe('TransactionGroupsService', () => {
       jest.spyOn(service, 'getTransactionGroup').mockResolvedValue(group as any);
 
       await expect(service.cancelTransactionGroup(user as User, 1)).rejects.toThrow(
-        UnauthorizedException,
+        ForbiddenException,
       );
     });
 

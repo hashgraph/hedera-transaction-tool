@@ -1,4 +1,4 @@
-import { CanActivate, ExecutionContext, Inject, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, ForbiddenException, Inject } from '@nestjs/common';
 import { UserKeysService } from '../user-keys/user-keys.service';
 
 export class HasKeyGuard implements CanActivate {
@@ -15,14 +15,13 @@ export class HasKeyGuard implements CanActivate {
     try {
       keysCount = await this.userKeysService.getUserKeysCount(req.user.id);
     } catch (error) {
-      console.log(error);
       return false;
     }
 
     if (keysCount > 0) {
       return true;
     } else {
-      throw new UnauthorizedException('You should have at least one key to perform this action.');
+      throw new ForbiddenException('You should have at least one key to perform this action.');
     }
   }
 }
