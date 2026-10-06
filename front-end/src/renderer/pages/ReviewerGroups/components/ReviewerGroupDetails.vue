@@ -16,7 +16,9 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
-import { formatNetwork, formatRole, formatTransactionType } from '@renderer/components/ReviewerGroups/ruleDescription';
+import CreateRuleModal from '@renderer/components/ReviewerGroups/CreateRuleModal.vue';
+import DeleteGroupModal from '@renderer/components/ReviewerGroups/DeleteGroupModal.vue';
+import { formatNetwork, formatRole, formatTransactionType } from './ruleFormatting';
 
 /* Props */
 const props = defineProps<{ groupId: number }>();
@@ -31,6 +33,8 @@ const toastManager = ToastManager.inject();
 /* State */
 const group = ref<IReviewerGroupDetail | null>(null);
 const fetching = ref(false);
+const isCreateRuleModalShown = ref(false);
+const isDeleteGroupModalShown = ref(false);
 const pendingDeletion = ref(false);
 
 /* Computed */
@@ -61,6 +65,14 @@ async function fetchGroup() {
   }
 }
 
+async function handleRuleCreated() {
+  await fetchGroup();
+}
+
+async function handleGroupDeleted() {
+  await fetchGroup();
+}
+
 /* Watch */
 watch(() => props.groupId, fetchGroup, { immediate: true });
 </script>
@@ -82,9 +94,9 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
             color="danger"
             type="button"
             class="min-w-unset"
-            disabled
-            title="Coming soon"
+            :disabled="pendingDeletion"
             data-testid="button-remove-reviewer-group"
+            @click="isDeleteGroupModalShown = true"
             ><span class="bi bi-trash"></span> Remove</AppButton
           >
         </div>
@@ -111,9 +123,9 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
           color="borderless"
           type="button"
           class="min-w-unset"
-          title="Coming soon"
-          disabled
+          title="Add Rule"
           data-testid="button-add-reviewer-rule"
+          @click="isCreateRuleModalShown = true"
         >
           <span class="bi bi-plus-lg fs-4"></span>
         </AppButton>
@@ -131,7 +143,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
             </thead>
             <tbody class="text-secondary">
               <tr v-for="rule in group.rules" :key="rule.id" :data-testid="`row-reviewer-rule-${rule.id}`">
-                <td>{{ rule.hederaEntityId }}</td>
+                <td>{{ rule.hederaId }}</td>
                 <td>{{ formatRole(rule.entityRole) }}</td>
                 <td>{{ formatTransactionType(rule.transactionType) }}</td>
                 <td>{{ formatNetwork(rule.network) }}</td>
@@ -141,6 +153,18 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
         </div>
       </template>
       <p v-else class="text-secondary mt-3">No rules assigned to this group yet.</p>
+
+      <CreateRuleModal
+        v-model:show="isCreateRuleModalShown"
+        :group-id="group.id"
+        @created="handleRuleCreated"
+      />
+      <DeleteGroupModal
+        v-model:show="isDeleteGroupModalShown"
+        :group-id="group.id"
+        :group-name="group.name"
+        @deleted="handleGroupDeleted"
+      />
     </template>
   </div>
 </template>
