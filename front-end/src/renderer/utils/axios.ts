@@ -195,7 +195,8 @@ export class AxiosWithCredentials {
   //
   private getConfigWithAuthHeader = (config: AxiosRequestConfig, url: string) => {
     const userStore = useUserStore();
-    const org = userStore.organizations.find(o => url.startsWith(o.serverUrl));
+    const requestOrigin = new URL(url).origin;
+    const org = userStore.organizations.find(o => new URL(o.serverUrl).origin === requestOrigin);
     const authToken = org?.id ? userStore.getJwtToken(org.id) : null;
     return {
       ...config,
