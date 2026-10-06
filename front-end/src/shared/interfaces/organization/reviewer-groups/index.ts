@@ -1,14 +1,14 @@
 // Mirrors back-end/apps/api/src/reviewer-groups/dtos/*.ts and
 // back-end/libs/common/src/database/entities/entity-role.enum.ts.
 export const ENTITY_ROLES = [
-  'fee_payer',
-  'sender',
-  'receiver',
   'account',
+  'fee_payer',
   'file',
+  'node',
+  'receiver',
+  'sender',
   'token',
   'topic',
-  'node',
 ] as const;
 export type EntityRole = (typeof ENTITY_ROLES)[number];
 
@@ -34,7 +34,9 @@ export interface IReviewerGroupMember {
 export interface IReviewerRule {
   id: number;
   groupId: number;
-  hederaEntityId: string;
+  // A Hedera entity ID (e.g. "0.0.1234") for most entityRoles, or a plain node ID
+  // (e.g. "1") when entityRole is 'node'.
+  hederaId: string;
   network: string;
   entityRole: EntityRole | null;
   transactionType: string | null;
@@ -62,7 +64,9 @@ export interface ICreateReviewerGroupRequest {
 
 export interface ICreateReviewerRuleRequest {
   groupId: number;
-  hederaEntityId: string;
+  // A Hedera entity ID (e.g. "0.0.1234") for most entityRoles, or a plain node ID
+  // (e.g. "1") when entityRole is 'node'.
+  hederaId: string;
   network: string;
   entityRole?: EntityRole;
   transactionType?: string;

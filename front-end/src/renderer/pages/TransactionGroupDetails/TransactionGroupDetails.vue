@@ -14,7 +14,7 @@ import { type _RouterClassic, useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction } from '@hiero-ledger/sdk';
-import { FEATURE_APPROVERS_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_REVIEWER_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -214,8 +214,8 @@ const visibleButtons = computed(() => {
   if (!hasLoadedOnce.value) return buttons;
 
   /* The order is important REJECT, APPROVE, SIGN, CANCEL, EXPORT */
-  FEATURE_APPROVERS_ENABLED && shouldApprove.value && buttons.push(reject, approve);
-  canSignAll.value && !(FEATURE_APPROVERS_ENABLED && shouldApprove.value) && buttons.push(sign);
+  FEATURE_REVIEWER_ENABLED && shouldApprove.value && buttons.push(reject, approve);
+  canSignAll.value && !(FEATURE_REVIEWER_ENABLED && shouldApprove.value) && buttons.push(sign);
   canCancelAll.value && buttons.push(cancel);
   buttons.push(exportName);
 
@@ -359,7 +359,7 @@ async function fetchGroup(id: string | number) {
             break;
           }
 
-          if (FEATURE_APPROVERS_ENABLED) {
+          if (FEATURE_REVIEWER_ENABLED) {
             shouldApprove.value =
               shouldApprove.value ||
               (await getUserShouldApprove(

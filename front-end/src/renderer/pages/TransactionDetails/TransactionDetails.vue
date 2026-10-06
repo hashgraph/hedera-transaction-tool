@@ -11,7 +11,7 @@ import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { FEATURE_APPROVERS_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import { FEATURE_REVIEWER_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -357,7 +357,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
               <!-- Approvers -->
               <div
-                v-if="FEATURE_APPROVERS_ENABLED && orgTransaction?.approvers && orgTransaction.approvers.length > 0"
+                v-if="FEATURE_REVIEWER_ENABLED && orgTransaction?.approvers && orgTransaction.approvers.length > 0"
                 class="mt-5"
               >
                 <h4 class="text-title text-bold">Approvers</h4>

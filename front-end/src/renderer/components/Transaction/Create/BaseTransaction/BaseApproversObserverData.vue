@@ -3,7 +3,7 @@ import type { TransactionApproverDto } from '@shared/interfaces/organization/app
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
+import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -38,7 +38,7 @@ const user = useUserStore();
         />
       </div>
     </div>
-    <div v-if="FEATURE_APPROVERS_ENABLED" class="row mt-6">
+    <div v-if="FEATURE_REVIEWER_ENABLED" class="row mt-6">
       <div class="form-group col-12 col-xxxl-8">
         <label class="form-label">Approvers</label>
         <ApproversList

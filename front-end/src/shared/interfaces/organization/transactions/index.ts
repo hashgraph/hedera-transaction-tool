@@ -89,7 +89,9 @@ export interface ITransaction {
 
 export interface ITransactionFull extends ITransaction {
   signers: ITransactionSignerUserKey[];
-  approvers: ITransactionApprover[];
+  // The back-end no longer sends this field (TransactionApprover was removed in #3185)
+  // — kept optional so old UI paths behind FEATURE_REVIEWER_ENABLED don't assume it exists.
+  approvers?: ITransactionApprover[];
   observers: ITransactionObserverUserId[];
 }
 
