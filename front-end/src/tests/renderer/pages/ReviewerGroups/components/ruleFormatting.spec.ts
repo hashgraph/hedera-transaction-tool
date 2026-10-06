@@ -1,53 +1,10 @@
 import { describe, expect, test } from 'vitest';
 
 import {
-  describeRule,
   formatNetwork,
   formatRole,
   formatTransactionType,
-} from '@renderer/components/ReviewerGroups/ruleDescription';
-
-describe('describeRule', () => {
-  test('describes a rule with no role and no type', () => {
-    expect(describeRule({ hederaEntityId: '0.0.2' })).toBe(
-      'This group will be assigned to any transaction involving 0.0.2.',
-    );
-  });
-
-  test('describes a rule with a role only', () => {
-    expect(describeRule({ hederaEntityId: '0.0.2', entityRole: 'sender' })).toBe(
-      'This group will be assigned to any transaction where 0.0.2 is the sender.',
-    );
-  });
-
-  test('describes a rule with a transaction type only', () => {
-    expect(describeRule({ hederaEntityId: '0.0.2', transactionType: 'CRYPTOTRANSFER' })).toBe(
-      'This group will be assigned to any Transfer transaction involving 0.0.2.',
-    );
-  });
-
-  test('describes a rule with both role and type', () => {
-    expect(
-      describeRule({
-        hederaEntityId: '0.0.2',
-        entityRole: 'sender',
-        transactionType: 'CRYPTOTRANSFER',
-      }),
-    ).toBe('This group will be assigned to any Transfer transaction where 0.0.2 is the sender.');
-  });
-
-  test('maps fee_payer to a readable label', () => {
-    expect(describeRule({ hederaEntityId: '0.0.2', entityRole: 'fee_payer' })).toBe(
-      'This group will be assigned to any transaction where 0.0.2 is the fee payer.',
-    );
-  });
-
-  test('falls back to the raw string for an unrecognized transaction type', () => {
-    expect(describeRule({ hederaEntityId: '0.0.2', transactionType: 'SOMETHINGNEW' })).toBe(
-      'This group will be assigned to any SOMETHINGNEW transaction involving 0.0.2.',
-    );
-  });
-});
+} from '@renderer/pages/ReviewerGroups/components/ruleFormatting';
 
 describe('formatRole', () => {
   test('returns "Any" when no role is set', () => {
