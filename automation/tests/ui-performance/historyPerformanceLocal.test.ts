@@ -40,7 +40,7 @@ let loginPage: LoginPage;
 
 test.describe('History Page Performance (Local Mode)', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage, {
@@ -56,7 +56,7 @@ test.describe('History Page Performance (Local Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
   });
 
   test('History tab (local mode) should load in under 1 second (p95)', async () => {

@@ -42,7 +42,7 @@ let organizationPage: OrganizationPage;
 
 test.describe('Ready for Execution Performance (Org Mode)', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
     organizationPage = new OrganizationPage(window);
@@ -52,7 +52,7 @@ test.describe('Ready for Execution Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
   });
 
   test('Ready for Execution tab should load in under 1 second (p95)', async () => {

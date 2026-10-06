@@ -51,7 +51,7 @@ let organizationPage: OrganizationPage;
 
 test.describe('Sign All Performance (Org Mode)', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
     organizationPage = new OrganizationPage(window);
@@ -61,7 +61,7 @@ test.describe('Sign All Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
   });
 
   test('Sign All should complete in under 4 seconds with loading indicator', async () => {

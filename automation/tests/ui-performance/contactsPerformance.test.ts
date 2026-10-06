@@ -45,7 +45,7 @@ let loginPage: LoginPage;
 
 test.describe('Contacts Page Performance', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
@@ -75,7 +75,7 @@ test.describe('Contacts Page Performance', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
     await resetPostgresDbStateForTeardown();
   });
 

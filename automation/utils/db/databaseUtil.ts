@@ -94,12 +94,12 @@ export function closeDatabase(db: BetterSqlite3.Database): void {
   logDatabaseDebug('Disconnected from the SQLite database.');
 }
 
-export function queryDatabase<T>(query: string, params: DatabaseParams = []): Promise<T | undefined> {
+export function queryDatabase<T>(query: string, params: DatabaseParams = []): T | undefined {
   let db: BetterSqlite3.Database | null = null;
   try {
     db = openDatabase();
     if (!db) {
-      return Promise.reject(new Error('SQLite database file does not exist.'));
+      throw new Error('SQLite database file does not exist.');
     }
 
     logDatabaseDebug('Executing SQLite query', {
@@ -108,21 +108,18 @@ export function queryDatabase<T>(query: string, params: DatabaseParams = []): Pr
     });
     const row = db.prepare(query).get(...params) as T;
     logDatabaseDebug('SQLite query completed', { hasRow: row !== undefined });
-    return Promise.resolve(row as T | undefined);
-  } catch (err) {
-    console.error('Query error:', err instanceof Error ? err.message : err);
-    return Promise.reject(err);
+    return row as T | undefined;
   } finally {
     if (db) closeDatabase(db);
   }
 }
 
-export function queryAllDatabase<T>(query: string, params: DatabaseParams = []): Promise<T[]> {
+export function queryAllDatabase<T>(query: string, params: DatabaseParams = []): T[] {
   let db: BetterSqlite3.Database | null = null;
   try {
     db = openDatabase();
     if (!db) {
-      return Promise.reject(new Error('SQLite database file does not exist.'));
+      throw new Error('SQLite database file does not exist.');
     }
 
     logDatabaseDebug('Executing SQLite query (all)', {
@@ -131,21 +128,18 @@ export function queryAllDatabase<T>(query: string, params: DatabaseParams = []):
     });
     const rows = db.prepare(query).all(...params) as T[];
     logDatabaseDebug('SQLite query (all) completed');
-    return Promise.resolve(rows as T[]);
-  } catch (err) {
-    console.error('Query error:', err instanceof Error ? err.message : err);
-    return Promise.reject(err);
+    return rows as T[];
   } finally {
     if (db) closeDatabase(db);
   }
 }
 
-export function executeDatabase(query: string, params: DatabaseParams = []): Promise<number> {
+export function executeDatabase(query: string, params: DatabaseParams = []): number {
   let db: BetterSqlite3.Database | null = null;
   try {
     db = openDatabase();
     if (!db) {
-      return Promise.reject(new Error('SQLite database file does not exist.'));
+      throw new Error('SQLite database file does not exist.');
     }
 
     logDatabaseDebug('Executing SQLite statement', {
@@ -154,16 +148,13 @@ export function executeDatabase(query: string, params: DatabaseParams = []): Pro
     });
     const result = db.prepare(query).run(...params) as BetterSqlite3.RunResult;
     logDatabaseDebug('SQLite statement completed', { changes: result.changes });
-    return Promise.resolve(result.changes);
-  } catch (err) {
-    console.error('Statement error:', err instanceof Error ? err.message : err);
-    return Promise.reject(err);
+    return result.changes;
   } finally {
     if (db) closeDatabase(db);
   }
 }
 
-export async function resetDbState() {
+export function resetDbState() {
   if (shouldPreserveLocalAppState()) {
     console.log('Preserving local SQLite state. Skipping database reset.');
     return;
@@ -192,8 +183,7 @@ export async function resetDbState() {
   try {
     db = openDatabase();
     if (!db) {
-      console.log('SQLite database file does not exist. Skipping reset.');
-      return;
+      throw new Error('SQLite database file does not exist.');
     }
 
     for (const table of tablesToReset) {
@@ -210,21 +200,18 @@ export async function resetDbState() {
         console.log(`Table ${table} does not exist, skipping.`);
       }
     }
-  } catch (err) {
-    console.error('Error resetting app state:', err);
-    return Promise.reject(err);
   } finally {
     if (db) closeDatabase(db);
   }
 }
 
-export async function resetDbStateForTeardown() {
+export function resetDbStateForTeardown() {
   if (process.env.CI) {
     console.log('Skipping SQLite teardown reset in CI.');
     return;
   }
 
-  await resetDbState();
+  resetDbState();
 }
 
 // PostgreSQL Functions

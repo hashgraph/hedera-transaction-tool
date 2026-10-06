@@ -35,7 +35,7 @@ let loginPage: LoginPage;
 
 test.describe('Files Page Performance', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     ({ app, window } = await setupApp());
     loginPage = new LoginPage(window);
     const seededUser = await createSeededLocalUserSession(window, loginPage, {
@@ -51,7 +51,7 @@ test.describe('Files Page Performance', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
   });
 
   test('Files page should load in under 1 second (p95)', async () => {

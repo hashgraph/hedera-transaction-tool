@@ -13,13 +13,13 @@ function nowEpochMs(): number {
  * renders the row from `type` alone for non-freeze types (`getDisplayTransactionType`
  * only inspects bytes when type is `Freeze`).
  */
-export async function seedTransactionDrafts(userId: string, count: number): Promise<void> {
+export function seedTransactionDrafts(userId: string, count: number): void {
   const baseTime = nowEpochMs();
   for (let i = 0; i < count; i++) {
     const id = randomUUID();
     // Stagger created_at by 1ms so default `created_at desc` ordering is stable.
     const createdAt = baseTime - (count - i);
-    await executeDatabase(
+    executeDatabase(
       `INSERT INTO "TransactionDraft" (id, created_at, updated_at, user_id, type, transactionBytes, description, isTemplate)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, createdAt, createdAt, userId, 'AccountCreate', '', `pagination draft ${i + 1}`, 0],
@@ -32,17 +32,17 @@ export async function seedTransactionDrafts(userId: string, count: number): Prom
  * Used by History pagination tests. status_code 22 = SUCCESS in Hedera; the
  * History row renders the green badge for codes [0, 22, 338].
  */
-export async function seedHistoryTransactions(
+export function seedHistoryTransactions(
   userId: string,
   count: number,
   network: string,
-): Promise<void> {
+): void {
   const baseTime = nowEpochMs();
   for (let i = 0; i < count; i++) {
     const id = randomUUID();
     const createdAt = baseTime - (count - i);
     const transactionId = `0.0.1001@${Math.floor(createdAt / 1000)}.${i.toString().padStart(9, '0')}`;
-    await executeDatabase(
+    executeDatabase(
       `INSERT INTO "Transaction" (
          id, name, type, description, transaction_id, transaction_hash, body, status, status_code,
          user_id, signature, valid_start, executed_at, created_at, updated_at, network

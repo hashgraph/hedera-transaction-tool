@@ -42,7 +42,7 @@ let organizationPage: OrganizationPage;
 
 test.describe('History Performance (Org Mode)', () => {
   test.beforeAll(async () => {
-    await resetDbState();
+    resetDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
     organizationPage = new OrganizationPage(window);
@@ -52,7 +52,7 @@ test.describe('History Performance (Org Mode)', () => {
 
   test.afterAll(async () => {
     await closeApp(app);
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
   });
 
   test('History tab should load in under 1 second (p95)', async () => {
