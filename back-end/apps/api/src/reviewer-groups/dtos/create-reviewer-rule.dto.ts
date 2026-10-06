@@ -28,9 +28,11 @@ export class CreateReviewerRuleDto {
   @IsInt()
   groupId!: number;
 
+  // A Hedera entity ID (e.g. "0.0.1234") for most entityRoles, or a plain node ID
+  // (e.g. "1") when entityRole is 'node'.
   @IsString()
   @IsNotEmpty()
-  hederaEntityId!: string;
+  hederaId!: string;
 
   @IsString()
   @IsNotEmpty()

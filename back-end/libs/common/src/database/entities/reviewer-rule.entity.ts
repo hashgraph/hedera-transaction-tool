@@ -13,13 +13,13 @@ import { ReviewerGroup } from './reviewer-group.entity';
 import { EntityRole } from './entity-role.enum';
 import { RuleChangeRecord } from './rule-change-record.entity';
 
-// Uniqueness on (hederaEntityId, network, groupId, entityRole, transactionType) is
+// Uniqueness on (hederaId, network, groupId, entityRole, transactionType) is
 // enforced by a COALESCE functional unique index in the migration rather than a
 // @Unique decorator — TypeORM cannot express functional indexes via decorators, and
 // COALESCE is required so that two NULL values are treated as equal (duplicate rules).
 //
 // Rule updates are not supported until condition evaluation is introduced. Changing
-// any structural field (hederaEntityId, entityRole, etc.) is semantically a different
+// any structural field (hederaId, entityRole, etc.) is semantically a different
 // rule; remove the old one and add a new one. Once conditions land, an update action
 // will be added to RuleChangeRecord to handle in-place condition changes.
 @Entity()
@@ -35,8 +35,10 @@ export class ReviewerRule {
   @Column()
   groupId!: number;
 
+  // A Hedera entity ID (e.g. "0.0.1234") for most entityRoles, or a plain node ID
+  // (e.g. "1") when entityRole is 'node'.
   @Column()
-  hederaEntityId!: string;
+  hederaId!: string;
 
   @Column()
   network!: string;

@@ -17,7 +17,7 @@ export class ReviewerAssignmentService {
 
   private ruleMatches(rule: ReviewerRule, entities: TransactionEntity[]): boolean {
     return entities.some(e =>
-      e.hederaEntityId === rule.hederaEntityId &&
+      e.hederaId === rule.hederaId &&
       (rule.entityRole === null || e.entityRole === rule.entityRole),
     );
   }
@@ -34,13 +34,13 @@ export class ReviewerAssignmentService {
     network = normalizeMirrorNetwork(network);
     const entities = await em.find(TransactionEntity, { where: { transactionId } });
 
-    const entityIds = entities.map(e => e.hederaEntityId);
+    const entityIds = entities.map(e => e.hederaId);
     if (entityIds.length === 0) return false;
 
     const rules = await em.find(ReviewerRule, {
       where: {
         network,
-        hederaEntityId: In(entityIds),
+        hederaId: In(entityIds),
         transactionType: Or(IsNull(), Equal(transactionType)),
       },
     });
