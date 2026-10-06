@@ -13,7 +13,12 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 
 import { createReviewerGroup } from '@renderer/services/organization';
 
-import { assertIsLoggedInOrganization, assertUserLoggedIn, isLoggedInOrganization } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  assertUserLoggedIn,
+  isLoggedInOrganization,
+  matchLabelPrefix,
+} from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
@@ -89,10 +94,9 @@ const sanitizeThreshold = (value: string) => value.replace(/\D/g, '');
 // Prefix match against an ascending list of plain integers ("1", "2", ..., "10", "11") —
 // the exact item for a given prefix always sorts before any longer item sharing that
 // prefix (e.g. "1" before "10"), so the first match found is always the right one.
-const findThresholdMatch = (items: string[], input: string) => {
-  const index = items.findIndex(item => item.startsWith(input));
-  return index === -1 ? null : { index, alignStart: 0 };
-};
+// caseSensitive since these are plain digits, with no casing to normalize.
+const findThresholdMatch = (items: string[], input: string) =>
+  matchLabelPrefix(items, input, { caseSensitive: true });
 
 /* Handlers */
 const handleSubmitClick = () => {

@@ -92,11 +92,15 @@ vi.mock('@renderer/components/ReviewerGroups/signReviewerPayload', () => ({
   signReviewerPayload: mocks.signReviewerPayload,
 }));
 
-vi.mock('@renderer/utils', () => ({
-  assertUserLoggedIn: vi.fn(),
-  assertIsLoggedInOrganization: vi.fn(),
-  isLoggedInOrganization: vi.fn((organization: unknown) => organization !== null),
-}));
+vi.mock('@renderer/utils', async importOriginal => {
+  const actual = await importOriginal<typeof import('@renderer/utils')>();
+  return {
+    ...actual,
+    assertUserLoggedIn: vi.fn(),
+    assertIsLoggedInOrganization: vi.fn(),
+    isLoggedInOrganization: vi.fn((organization: unknown) => organization !== null),
+  };
+});
 
 vi.mock('@renderer/utils/ToastManager', () => ({
   ToastManager: {

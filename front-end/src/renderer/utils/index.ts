@@ -381,13 +381,19 @@ export const extractIdentifier = (formattedString: string) => {
  * @param {string} value - The input account ID string to be sanitized.
  * @returns {string} - The sanitized and formatted account ID string.
  */
-export function sanitizeAccountId(value: string): string {
-  // Ensure that every '.' has a number in front of it and limit to two '.' characters
-  value = value
+// Ensures every '.' has a digit before it (so a lone/leading '.' never survives) and
+// limits to two '.' characters (three shard.realm.num parts) — the part of account id
+// sanitizing that also applies as-is to other Hedera id shapes (e.g. node ids).
+export function collapseDotsAndLimitSegments(value: string): string {
+  return value
     .replace(/(^|[^0-9])\./g, '$1')
     .split('.')
     .slice(0, 3)
     .join('.');
+}
+
+export function sanitizeAccountId(value: string): string {
+  value = collapseDotsAndLimitSegments(value);
 
   // Remove leading zeros from each part and validate each part
   const max8ByteNumber = BigInt('18446744073709551615'); // 2^64 - 1
@@ -472,6 +478,26 @@ export function decorateAccountId(value: string): string {
   if (!value) return '';
   const withChecksum = getAccountIdWithChecksum(value);
   return withChecksum.length > value.length ? withChecksum.slice(value.length) : '';
+}
+
+/**
+ * Matches `input` as a prefix against a closed list of fixed labels, for use as
+ * AppAutoComplete's `findMatch` prop with `strictItems`.
+ *
+ * @param {string[]} items - The fixed label list shown in the dropdown.
+ * @param {string} input - The current input value.
+ * @param {{ caseSensitive?: boolean }} [options] - Pass `caseSensitive: true` for lists
+ * whose casing is already normalized (e.g. plain digits), where lowercasing is wasted work.
+ * @returns {{ index: number; alignStart: number } | null} - The match, or null if nothing matches.
+ */
+export function matchLabelPrefix(
+  items: string[],
+  input: string,
+  { caseSensitive = false }: { caseSensitive?: boolean } = {},
+): { index: number; alignStart: number } | null {
+  const normalize = (value: string) => (caseSensitive ? value : value.toLowerCase());
+  const index = items.findIndex(item => normalize(item).startsWith(normalize(input)));
+  return index === -1 ? null : { index, alignStart: 0 };
 }
 
 export const formatProgressBytes = (
