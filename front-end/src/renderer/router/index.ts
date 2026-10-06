@@ -51,7 +51,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list/create', name: 'signUpUser', component: SignUpUser },
   { path: '/contact-list', name: 'contactList', component: ContactList },
-  { path: '/reviewer-groups/create', name: 'createReviewerGroup', component: CreateReviewerGroup },
+  {
+    path: '/reviewer-groups/create/:groupId?',
+    name: 'createReviewerGroup',
+    component: CreateReviewerGroup,
+  },
   { path: '/reviewer-groups', name: 'reviewerGroups', component: ReviewerGroups },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },

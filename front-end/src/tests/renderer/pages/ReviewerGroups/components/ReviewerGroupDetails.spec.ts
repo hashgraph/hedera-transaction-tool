@@ -19,6 +19,11 @@ const mocks = vi.hoisted(() => ({
   getReviewerGroup: vi.fn(),
   getReviewerGroupChanges: vi.fn(),
   toastError: vi.fn(),
+  routerPush: vi.fn(),
+}));
+
+vi.mock('vue-router', () => ({
+  useRouter: vi.fn(() => ({ push: mocks.routerPush })),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -91,6 +96,7 @@ describe('ReviewerGroupDetails.vue', () => {
     mocks.getReviewerGroupChanges.mockReset();
     mocks.getReviewerGroupChanges.mockResolvedValue([]);
     mocks.toastError.mockReset();
+    mocks.routerPush.mockClear();
   });
 
   const createRuleModalStub = {
@@ -154,7 +160,7 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(memberNicknames[1].text()).toBe('public-key-11');
   });
 
-  test('shows a pending badge only when a pending deletion change record exists', async () => {
+  test('shows a pending badge when a pending deletion change record exists', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.getReviewerGroupChanges.mockResolvedValue([
       { id: 1, groupId: 1, type: 'DELETE', status: 'PENDING' },
@@ -165,6 +171,21 @@ describe('ReviewerGroupDetails.vue', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="badge-reviewer-group-pending"]').exists()).toBe(true);
+  });
+
+  test('shows a pending badge and disables Edit/Remove when a pending update change record exists', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.getReviewerGroupChanges.mockResolvedValue([
+      { id: 1, groupId: 1, type: 'UPDATE', status: 'PENDING' },
+    ]);
+    mocks.userStore.selectedOrganization.admin = true;
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="badge-reviewer-group-pending"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-edit-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
+    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
   });
 
   test('hides the pending badge when there is no pending deletion', async () => {
@@ -216,6 +237,49 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(wrapper.text()).toContain('No rules assigned to this group yet.');
   });
 
+  test('sorts the rules table by column, toggling direction on repeat clicks', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(
+      baseGroup({
+        rules: [
+          {
+            id: 1,
+            groupId: 1,
+            hederaId: '0.0.2000',
+            network: 'mainnet',
+            entityRole: 'sender',
+            transactionType: 'CRYPTOTRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: 2,
+            groupId: 1,
+            hederaId: '0.0.1000',
+            network: 'testnet',
+            entityRole: 'receiver',
+            transactionType: 'CRYPTOTRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    );
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    const firstColumnCell = (rowIndex: number) =>
+      wrapper.findAll('tbody tr')[rowIndex].findAll('td')[0].text();
+
+    // Default sort is by Entity / Node ID ascending
+    expect(firstColumnCell(0)).toBe('0.0.1000');
+    expect(firstColumnCell(1)).toBe('0.0.2000');
+
+    const headers = wrapper.findAll('th .table-sort-link');
+    await headers[0].trigger('click');
+
+    expect(firstColumnCell(0)).toBe('0.0.2000');
+    expect(firstColumnCell(1)).toBe('0.0.1000');
+  });
+
   test('hides the admin-only Add Rule / Remove buttons for non-admins', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.userStore.selectedOrganization.admin = false;
@@ -253,6 +317,21 @@ describe('ReviewerGroupDetails.vue', () => {
     await flushPromises();
 
     expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
+  });
+
+  test('clicking Edit navigates to the createReviewerGroup route for this group', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.userStore.selectedOrganization.admin = true;
+
+    const wrapper = mountDetails(7);
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-edit-reviewer-group"]').trigger('click');
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: 'createReviewerGroup',
+      params: { groupId: '7' },
+    });
   });
 
   test('clicking Add Rule opens the create-rule modal, and refetches the group once a rule is created', async () => {

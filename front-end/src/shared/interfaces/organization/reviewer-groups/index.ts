@@ -88,6 +88,8 @@ export interface IDeleteReviewerGroupRequest {
   userSignature: string;
 }
 
+export type IUpdateReviewerGroupRequest = ICreateReviewerGroupRequest;
+
 export type ChangeRequestStatus = 'PENDING' | 'APPLIED' | 'REJECTED';
 
 export interface IAttestationSignature {

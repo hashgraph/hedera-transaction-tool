@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import type { IReviewerGroupDetail, IReviewerGroupMember } from '@shared/interfaces';
+import type { IReviewerGroupDetail, IReviewerGroupMember, IReviewerRule } from '@shared/interfaces';
 
 import { computed, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
@@ -20,8 +21,13 @@ import CreateRuleModal from '@renderer/components/ReviewerGroups/CreateRuleModal
 import DeleteGroupModal from '@renderer/components/ReviewerGroups/DeleteGroupModal.vue';
 import { formatNetwork, formatRole, formatTransactionType } from './ruleFormatting';
 
+type RuleSortField = 'hederaId' | 'entityRole' | 'transactionType' | 'network';
+
 /* Props */
 const props = defineProps<{ groupId: number }>();
+
+/* Composables */
+const router = useRouter();
 
 /* Stores */
 const user = useUserStore();
@@ -35,16 +41,56 @@ const group = ref<IReviewerGroupDetail | null>(null);
 const fetching = ref(false);
 const isCreateRuleModalShown = ref(false);
 const isDeleteGroupModalShown = ref(false);
-const pendingDeletion = ref(false);
+// Covers any PENDING change (UPDATE or DELETE) — the back-end allows only one PENDING
+// change record per group at a time, so Edit/Remove must both stay blocked until it
+// resolves, not just while a deletion specifically is pending.
+const hasPendingChange = ref(false);
+const ruleSortField = ref<RuleSortField>('hederaId');
+const ruleSortDirection = ref<'asc' | 'desc'>('asc');
 
 /* Computed */
 const isAdmin = computed(
   () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
 );
 
+const ruleSortIconClass = computed(() =>
+  ruleSortDirection.value === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short',
+);
+
+const sortedRules = computed(() => {
+  const direction = ruleSortDirection.value === 'asc' ? 1 : -1;
+  return [...(group.value?.rules ?? [])].sort(
+    (a, b) =>
+      ruleSortValue(a, ruleSortField.value).localeCompare(ruleSortValue(b, ruleSortField.value)) *
+      direction,
+  );
+});
+
 /* Functions */
 function memberPublicKey(member: IReviewerGroupMember): string {
   return contacts.getContact(member.userId)?.userKeys.find(k => k.id === member.userKeyId)?.publicKey ?? '';
+}
+
+function ruleSortValue(rule: IReviewerRule, field: RuleSortField): string {
+  switch (field) {
+    case 'hederaId':
+      return rule.hederaId;
+    case 'entityRole':
+      return formatRole(rule.entityRole);
+    case 'transactionType':
+      return formatTransactionType(rule.transactionType);
+    case 'network':
+      return formatNetwork(rule.network);
+  }
+}
+
+function handleRuleSort(field: RuleSortField) {
+  if (ruleSortField.value === field) {
+    ruleSortDirection.value = ruleSortDirection.value === 'asc' ? 'desc' : 'asc';
+  } else {
+    ruleSortField.value = field;
+    ruleSortDirection.value = 'asc';
+  }
 }
 
 async function fetchGroup() {
@@ -56,7 +102,7 @@ async function fetchGroup() {
       getReviewerGroupChanges(user.selectedOrganization.serverUrl, props.groupId),
     ]);
     group.value = detail;
-    pendingDeletion.value = changes.some(c => c.status === 'PENDING' && c.type === 'DELETE');
+    hasPendingChange.value = changes.some(c => c.status === 'PENDING');
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
     group.value = null;
@@ -73,6 +119,10 @@ async function handleGroupDeleted() {
   await fetchGroup();
 }
 
+function handleEditClick() {
+  router.push({ name: 'createReviewerGroup', params: { groupId: String(props.groupId) } });
+}
+
 /* Watch */
 watch(() => props.groupId, fetchGroup, { immediate: true });
 </script>
@@ -87,18 +137,33 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="text-title text-bold" data-testid="p-reviewer-group-name">{{ group.name }}</h2>
         <div v-if="FEATURE_REVIEWER_ENABLED && isAdmin" class="d-flex align-items-center gap-3">
-          <span v-if="pendingDeletion" class="badge bg-warning" data-testid="badge-reviewer-group-pending">
+          <span
+            v-if="hasPendingChange"
+            class="badge bg-warning"
+            data-testid="badge-reviewer-group-pending"
+          >
             Pending
           </span>
           <AppButton
             color="danger"
             type="button"
             class="min-w-unset"
-            :disabled="pendingDeletion"
+            :disabled="hasPendingChange"
             data-testid="button-remove-reviewer-group"
             @click="isDeleteGroupModalShown = true"
             ><span class="bi bi-trash"></span> Remove</AppButton
           >
+          <div class="border-start ps-3">
+            <AppButton
+              color="borderless"
+              type="button"
+              class="min-w-unset"
+              :disabled="hasPendingChange"
+              data-testid="button-edit-reviewer-group"
+              @click="handleEditClick"
+              ><span class="bi bi-pencil-square"></span> Edit</AppButton
+            >
+          </div>
         </div>
       </div>
       <p v-if="group.description" class="text-secondary mt-2">{{ group.description }}</p>
@@ -116,33 +181,68 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
 
       <hr class="separator my-5" />
 
-      <div class="d-flex align-items-center gap-3">
+      <div class="d-flex justify-content-between align-items-center">
         <h3 class="text-small text-semi-bold mb-0">Rules</h3>
         <AppButton
           v-if="isAdmin"
-          color="borderless"
+          color="primary"
           type="button"
-          class="min-w-unset"
-          title="Add Rule"
+          size="small"
+          class="text-small min-w-unset"
           data-testid="button-add-reviewer-rule"
           @click="isCreateRuleModalShown = true"
+          >Add Rule</AppButton
         >
-          <span class="bi bi-plus-lg fs-4"></span>
-        </AppButton>
       </div>
-      <template v-if="group.rules.length > 0">
+      <template v-if="sortedRules.length > 0">
         <div class="overflow-x-auto mt-3">
           <table class="table-custom">
             <thead>
               <tr>
-                <th>Entity / Node ID</th>
-                <th>Role</th>
-                <th>Transaction Type</th>
-                <th>Network</th>
+                <th>
+                  <div class="table-sort-link" @click="handleRuleSort('hederaId')">
+                    <span>Entity / Node ID</span>
+                    <i
+                      v-if="ruleSortField === 'hederaId'"
+                      class="bi text-title"
+                      :class="[ruleSortIconClass]"
+                    ></i>
+                  </div>
+                </th>
+                <th>
+                  <div class="table-sort-link" @click="handleRuleSort('entityRole')">
+                    <span>Role</span>
+                    <i
+                      v-if="ruleSortField === 'entityRole'"
+                      class="bi text-title"
+                      :class="[ruleSortIconClass]"
+                    ></i>
+                  </div>
+                </th>
+                <th>
+                  <div class="table-sort-link" @click="handleRuleSort('transactionType')">
+                    <span>Transaction Type</span>
+                    <i
+                      v-if="ruleSortField === 'transactionType'"
+                      class="bi text-title"
+                      :class="[ruleSortIconClass]"
+                    ></i>
+                  </div>
+                </th>
+                <th>
+                  <div class="table-sort-link" @click="handleRuleSort('network')">
+                    <span>Network</span>
+                    <i
+                      v-if="ruleSortField === 'network'"
+                      class="bi text-title"
+                      :class="[ruleSortIconClass]"
+                    ></i>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody class="text-secondary">
-              <tr v-for="rule in group.rules" :key="rule.id" :data-testid="`row-reviewer-rule-${rule.id}`">
+              <tr v-for="rule in sortedRules" :key="rule.id" :data-testid="`row-reviewer-rule-${rule.id}`">
                 <td>{{ rule.hederaId }}</td>
                 <td>{{ formatRole(rule.entityRole) }}</td>
                 <td>{{ formatTransactionType(rule.transactionType) }}</td>
@@ -152,7 +252,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
           </table>
         </div>
       </template>
-      <p v-else class="text-secondary mt-3">No rules assigned to this group yet.</p>
+      <p v-else class="text-secondary text-center mt-5">No rules assigned to this group yet.</p>
 
       <CreateRuleModal
         v-model:show="isCreateRuleModalShown"

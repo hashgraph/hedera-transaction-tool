@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 
 import CreateReviewerGroup from '@renderer/pages/ReviewerGroups/CreateReviewerGroup/CreateReviewerGroup.vue';
@@ -28,6 +28,7 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerBack: vi.fn(),
   leaveGuard: null as ((to: { fullPath: string }) => boolean) | null,
+  route: { params: {} },
   userStore: {
     personal: { id: 'local-user-id' },
     selectedOrganization: {
@@ -51,9 +52,12 @@ const mocks = vi.hoisted(() => ({
     fetch: vi.fn(),
   },
   createReviewerGroup: vi.fn(),
+  getReviewerGroup: vi.fn(),
+  updateReviewerGroup: vi.fn(),
   resolveReviewerSigningKey: vi.fn(),
   signReviewerPayload: vi.fn(),
   toastSuccess: vi.fn(),
+  toastError: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -61,6 +65,7 @@ vi.mock('vue-router', () => ({
     push: mocks.routerPush,
     back: mocks.routerBack,
   })),
+  useRoute: vi.fn(() => mocks.route),
   onBeforeRouteLeave: vi.fn((guard: (to: { fullPath: string }) => boolean) => {
     mocks.leaveGuard = guard;
   }),
@@ -85,6 +90,8 @@ vi.mock('@renderer/composables/useSetDynamicLayout', () => ({
 
 vi.mock('@renderer/services/organization', () => ({
   createReviewerGroup: mocks.createReviewerGroup,
+  getReviewerGroup: mocks.getReviewerGroup,
+  updateReviewerGroup: mocks.updateReviewerGroup,
 }));
 
 vi.mock('@renderer/components/ReviewerGroups/signReviewerPayload', () => ({
@@ -106,6 +113,7 @@ vi.mock('@renderer/utils/ToastManager', () => ({
   ToastManager: {
     inject: vi.fn(() => ({
       success: mocks.toastSuccess,
+      error: mocks.toastError,
     })),
   },
 }));
@@ -125,16 +133,20 @@ describe('CreateReviewerGroup.vue', () => {
   beforeEach(() => {
     capture.callback = null;
     mocks.leaveGuard = null;
+    mocks.route.params = {};
     mocks.routerPush.mockClear();
     mocks.routerBack.mockClear();
     mocks.contactsStore.getContact.mockClear();
     mocks.reviewerGroupsStore.fetch.mockReset();
     mocks.createReviewerGroup.mockReset();
+    mocks.getReviewerGroup.mockReset();
+    mocks.updateReviewerGroup.mockReset();
     mocks.resolveReviewerSigningKey.mockReset();
     mocks.resolveReviewerSigningKey.mockReturnValue({ orgKeyId: 5, orgKeyPublicKey: 'org-public-key' });
     mocks.signReviewerPayload.mockReset();
     mocks.signReviewerPayload.mockResolvedValue({ userKeyId: 5, userSignature: 'deadbeef' });
     mocks.toastSuccess.mockClear();
+    mocks.toastError.mockClear();
   });
 
   function mountPage() {
@@ -442,6 +454,169 @@ describe('CreateReviewerGroup.vue', () => {
       const result = mocks.leaveGuard!({ fullPath: '/reviewer-groups' });
 
       expect(result).toBe(true);
+    });
+  });
+
+  describe('edit mode', () => {
+    beforeEach(() => {
+      // Some tests above override getContact's implementation (e.g. to simulate a
+      // removed contact); restore the default so publicKey lookups here are not
+      // affected by sibling-test ordering.
+      mocks.contactsStore.getContact.mockImplementation((userId: number) => ({
+        user: { id: userId, email: `user${userId}@example.com` },
+        userKeys: [{ id: userId * 10, publicKey: `public-key-${userId}` }],
+      }));
+    });
+
+    const groupDetail = {
+      id: 7,
+      name: 'Treasury',
+      description: 'Treasury movements',
+      threshold: 2,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+      members: [
+        { id: 1, groupId: 7, userId: 2, userKeyId: 20, createdAt: '2026-01-01T00:00:00.000Z' },
+        { id: 2, groupId: 7, userId: 3, userKeyId: 30, createdAt: '2026-01-01T00:00:00.000Z' },
+      ],
+      rules: [],
+    };
+
+    test('loads the existing group and prefills name, description, members, and threshold', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(mocks.getReviewerGroup).toHaveBeenCalledWith('https://org.example.com', 7);
+      expect(
+        (wrapper.find('[data-testid="input-reviewer-group-name"]').element as HTMLInputElement).value,
+      ).toBe('Treasury');
+      expect(
+        (wrapper.find('[data-testid="input-reviewer-group-description"]').element as HTMLTextAreaElement)
+          .value,
+      ).toBe('Treasury movements');
+      expect(wrapper.text()).toContain('of 2');
+      expect(
+        (wrapper.find('[data-testid="input-reviewer-group-threshold"]').element as HTMLInputElement).value,
+      ).toBe('2');
+    });
+
+    test('shows "Edit Reviewer Group" and a "Save Changes" submit label instead of the create copy', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+
+      const wrapper = mountPage();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('Edit Reviewer Group');
+      expect(wrapper.find('[data-testid="button-submit-create-reviewer-group"]').text()).toBe(
+        'Save Changes',
+      );
+    });
+
+    test('shows an error toast and navigates back when the group fails to load', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockRejectedValue(new Error('network down'));
+
+      mountPage();
+      await flushPromises();
+
+      expect(mocks.toastError).toHaveBeenCalled();
+      expect(mocks.routerBack).toHaveBeenCalledTimes(1);
+    });
+
+    test('submits an update tagged with the group id and calls updateReviewerGroup instead of create', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+      mocks.updateReviewerGroup.mockResolvedValue({});
+
+      const wrapper = mountPage();
+      await flushPromises();
+      await wrapper.find('[data-testid="input-reviewer-group-description"]').setValue('Updated notes');
+
+      expect(capture.callback).not.toBeNull();
+      const result = await capture.callback!('my-password');
+
+      expect(mocks.signReviewerPayload).toHaveBeenCalledWith(
+        'local-user-id',
+        'my-password',
+        5,
+        'org-public-key',
+        {
+          action: 'update',
+          groupId: 7,
+          name: 'Treasury',
+          description: 'Updated notes',
+          threshold: 2,
+          members: [
+            { userId: 2, userKeyId: 20, publicKey: 'public-key-2' },
+            { userId: 3, userKeyId: 30, publicKey: 'public-key-3' },
+          ],
+        },
+      );
+
+      expect(mocks.updateReviewerGroup).toHaveBeenCalledWith('https://org.example.com', 7, {
+        name: 'Treasury',
+        description: 'Updated notes',
+        threshold: 2,
+        members: [
+          { userId: 2, userKeyId: 20 },
+          { userId: 3, userKeyId: 30 },
+        ],
+        userKeyId: 5,
+        userSignature: 'deadbeef',
+      });
+
+      expect(mocks.createReviewerGroup).not.toHaveBeenCalled();
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(
+        'Group update requested — pending member attestation',
+      );
+      expect(result).toBeNull();
+    });
+
+    test('clearing the description sends an explicit empty string, not undefined, since the back-end treats omitted fields as "unchanged"', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+      mocks.updateReviewerGroup.mockResolvedValue({});
+
+      const wrapper = mountPage();
+      await flushPromises();
+      await wrapper.find('[data-testid="input-reviewer-group-description"]').setValue('');
+
+      await capture.callback!('my-password');
+
+      expect(mocks.updateReviewerGroup).toHaveBeenCalledWith(
+        'https://org.example.com',
+        7,
+        expect.objectContaining({ description: '' }),
+      );
+    });
+
+    test('leave guard allows navigation when nothing has changed since load', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+
+      mountPage();
+      await flushPromises();
+
+      const result = mocks.leaveGuard!({ fullPath: '/reviewer-groups' });
+
+      expect(result).toBe(true);
+    });
+
+    test('leave guard blocks navigation once a loaded field is edited', async () => {
+      mocks.route.params = { groupId: '7' };
+      mocks.getReviewerGroup.mockResolvedValue(groupDetail);
+
+      const wrapper = mountPage();
+      await flushPromises();
+      await wrapper.find('[data-testid="input-reviewer-group-name"]').setValue('Treasury Ops');
+
+      const result = mocks.leaveGuard!({ fullPath: '/reviewer-groups' });
+
+      expect(result).toBe(false);
     });
   });
 });

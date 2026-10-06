@@ -2,8 +2,8 @@
 import type { IGroupMemberInput } from '@shared/interfaces';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
-import { computed, ref, watch } from 'vue';
-import { onBeforeRouteLeave, useRouter } from 'vue-router';
+import { computed, onBeforeMount, ref, watch } from 'vue';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
@@ -11,11 +11,12 @@ import useReviewerGroupsStore from '@renderer/stores/storeReviewerGroups';
 
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { createReviewerGroup } from '@renderer/services/organization';
+import { createReviewerGroup, getReviewerGroup, updateReviewerGroup } from '@renderer/services/organization';
 
 import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
+  getErrorMessage,
   isLoggedInOrganization,
   matchLabelPrefix,
 } from '@renderer/utils';
@@ -24,6 +25,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import AppAutoComplete from '@renderer/components/ui/AppAutoComplete.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppTextArea from '@renderer/components/ui/AppTextArea.vue';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
@@ -37,6 +39,7 @@ type Selection = { userId: number; userKeyId: number };
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* Stores */
@@ -48,6 +51,19 @@ const reviewerGroups = useReviewerGroupsStore();
 const toastManager = ToastManager.inject();
 
 /* State */
+const groupId = computed(() => {
+  const raw = route.params.groupId;
+  const id = Number(raw);
+  return typeof raw === 'string' && raw.length > 0 && Number.isFinite(id) ? id : null;
+});
+const isEditMode = computed(() => groupId.value !== null);
+const isLoadingGroup = ref(false);
+const originalSnapshot = ref<{
+  name: string;
+  description: string;
+  threshold: number;
+  memberIds: number[];
+} | null>(null);
 const name = ref('');
 const description = ref('');
 const members = ref<IGroupMemberInput[]>([]);
@@ -63,9 +79,21 @@ const pendingLeavePath = ref('');
 /* Computed */
 const canSubmit = computed(() => name.value.trim().length > 0 && members.value.length > 0);
 
-const hasUnsavedChanges = computed(
-  () => name.value.trim().length > 0 || description.value.trim().length > 0 || members.value.length > 0,
-);
+const hasUnsavedChanges = computed(() => {
+  if (!originalSnapshot.value) {
+    return (
+      name.value.trim().length > 0 || description.value.trim().length > 0 || members.value.length > 0
+    );
+  }
+
+  const currentMemberIds = [...members.value.map(m => m.userId)].sort((a, b) => a - b);
+  return (
+    name.value.trim() !== originalSnapshot.value.name ||
+    description.value.trim() !== originalSnapshot.value.description ||
+    (threshold.value || members.value.length) !== originalSnapshot.value.threshold ||
+    JSON.stringify(currentMemberIds) !== JSON.stringify(originalSnapshot.value.memberIds)
+  );
+});
 
 const alreadyAddedUserIds = computed(() => members.value.map(m => m.userId));
 
@@ -125,7 +153,30 @@ const handleConfirmLeave = () => {
   router.push(pendingLeavePath.value);
 };
 
-const handleCreate = async (personalPassword: string | null): Promise<ActionReport | null> => {
+const loadGroupForEdit = async (id: number) => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  isLoadingGroup.value = true;
+  try {
+    const detail = await getReviewerGroup(user.selectedOrganization.serverUrl, id);
+    name.value = detail.name;
+    description.value = detail.description ?? '';
+    members.value = detail.members.map(m => ({ userId: m.userId, userKeyId: m.userKeyId }));
+    threshold.value = detail.threshold;
+    originalSnapshot.value = {
+      name: detail.name,
+      description: detail.description ?? '',
+      threshold: detail.threshold,
+      memberIds: [...members.value.map(m => m.userId)].sort((a, b) => a - b),
+    };
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
+    router.back();
+  } finally {
+    isLoadingGroup.value = false;
+  }
+};
+
+const handleSubmit = async (personalPassword: string | null): Promise<ActionReport | null> => {
   assertUserLoggedIn(user.personal);
   assertIsLoggedInOrganization(user.selectedOrganization);
 
@@ -141,6 +192,7 @@ const handleCreate = async (personalPassword: string | null): Promise<ActionRepo
   }));
 
   const snapshotPayload = {
+    ...(isEditMode.value ? { action: 'update' as const, groupId: groupId.value } : {}),
     name: name.value.trim(),
     description: description.value.trim() || null,
     threshold: effectiveThreshold,
@@ -155,16 +207,26 @@ const handleCreate = async (personalPassword: string | null): Promise<ActionRepo
     snapshotPayload,
   );
 
-  await createReviewerGroup(user.selectedOrganization.serverUrl, {
+  const dto = {
     name: snapshotPayload.name,
-    description: snapshotPayload.description ?? undefined,
+    // Edit mode's DTO is a partial update — an omitted/undefined description means
+    // "leave it unchanged", so clearing the field must send '' explicitly rather than
+    // collapsing through snapshotPayload's null (which create mode uses to mean "none").
+    description: isEditMode.value ? description.value.trim() : (snapshotPayload.description ?? undefined),
     threshold: effectiveThreshold,
     members: members.value,
     userKeyId,
     userSignature,
-  });
+  };
 
-  toastManager.success('Reviewer group created successfully');
+  if (isEditMode.value && groupId.value !== null) {
+    await updateReviewerGroup(user.selectedOrganization.serverUrl, groupId.value, dto);
+    toastManager.success('Group update requested — pending member attestation');
+  } else {
+    await createReviewerGroup(user.selectedOrganization.serverUrl, dto);
+    toastManager.success('Reviewer group created successfully');
+  }
+
   await reviewerGroups.fetch();
   leaveConfirmed.value = true;
   router.back();
@@ -190,6 +252,13 @@ onBeforeRouteLeave(to => {
   confirmLeaveModalShown.value = true;
   return false;
 });
+
+/* Hooks */
+onBeforeMount(() => {
+  if (groupId.value !== null) {
+    loadGroupForEdit(groupId.value);
+  }
+});
 </script>
 <template>
   <div class="p-5 flex-column-100">
@@ -204,10 +273,14 @@ onBeforeRouteLeave(to => {
         <i class="bi bi-arrow-left"></i>
       </AppButton>
 
-      <h2 class="text-title text-bold">New Reviewer Group</h2>
+      <h2 class="text-title text-bold">{{ isEditMode ? 'Edit Reviewer Group' : 'New Reviewer Group' }}</h2>
     </div>
 
+    <div v-if="isLoadingGroup" class="mt-5">
+      <AppLoader />
+    </div>
     <form
+      v-else
       class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4 flex-column-100"
       @submit.prevent="handleSubmitClick"
     >
@@ -290,7 +363,7 @@ onBeforeRouteLeave(to => {
           data-testid="button-submit-create-reviewer-group"
           :disabled="!canSubmit"
         >
-          Create
+          {{ isEditMode ? 'Save Changes' : 'Create' }}
         </AppButton>
       </div>
     </form>
@@ -303,10 +376,10 @@ onBeforeRouteLeave(to => {
 
     <ActionController
       v-model:activate="activate"
-      :action-callback="handleCreate"
+      :action-callback="handleSubmit"
       :personal-password-required="true"
-      progress-title="Create Reviewer Group"
-      :progress-text="`Creating group '${name}'`"
+      :progress-title="isEditMode ? 'Update Reviewer Group' : 'Create Reviewer Group'"
+      :progress-text="isEditMode ? `Requesting update to '${name}'` : `Creating group '${name}'`"
       data-testid="action-controller-create-reviewer-group"
     />
 
