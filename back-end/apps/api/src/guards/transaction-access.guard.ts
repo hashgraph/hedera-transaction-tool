@@ -15,7 +15,7 @@ export class TransactionAccessGuard implements CanActivate {
       return false;
     }
 
-    // This will throw UnauthorizedException if access is denied
+    // This will throw ForbiddenException if access is denied
     await this.transactionsService.getTransactionWithVerifiedAccess(transactionId, user);
 
     return true;
