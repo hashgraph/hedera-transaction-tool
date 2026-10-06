@@ -69,7 +69,7 @@ export async function resetBackendStateForSuite() {
     return;
   }
 
-  await resetPostgresDbState();
+  return resetPostgresDbState();
 }
 
 export async function resetBackendStateForTeardown() {
@@ -77,7 +77,7 @@ export async function resetBackendStateForTeardown() {
     return;
   }
 
-  await resetPostgresDbStateForTeardown();
+  return resetPostgresDbStateForTeardown();
 }
 
 export function createNamespacedLabel(

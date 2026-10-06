@@ -183,7 +183,8 @@ export function resetDbState() {
   try {
     db = openDatabase();
     if (!db) {
-      throw new Error('SQLite database file does not exist.');
+      console.log('SQLite database file does not exist. Skipping reset.');
+      return;
     }
 
     for (const table of tablesToReset) {
