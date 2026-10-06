@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import { nextTick } from 'vue';
 
 import ReviewerGroups from '@renderer/pages/ReviewerGroups/ReviewerGroups.vue';
 
 const mocks = vi.hoisted(() => ({
+  routerPush: vi.fn(),
   userStore: {
     personal: { id: 'local-user-id' },
     selectedOrganization: {
@@ -18,6 +20,12 @@ const mocks = vi.hoisted(() => ({
     fetching: false,
     fetch: vi.fn(),
   },
+}));
+
+vi.mock('vue-router', () => ({
+  useRouter: vi.fn(() => ({
+    push: mocks.routerPush,
+  })),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -51,6 +59,7 @@ describe('ReviewerGroups.vue', () => {
     mocks.reviewerGroupsStore.groups = [];
     mocks.reviewerGroupsStore.fetching = false;
     mocks.reviewerGroupsStore.fetch.mockReset();
+    mocks.routerPush.mockReset();
   });
 
   function mountReviewerGroups() {
@@ -62,7 +71,7 @@ describe('ReviewerGroups.vue', () => {
             template: '<button v-bind="$attrs" :disabled="disabled"><slot /></button>',
           },
           AppLoader: {
-            template: '<div />',
+            template: '<div data-testid="stub-app-loader" />',
           },
           ReviewerGroupDetails: {
             props: ['groupId'],
@@ -88,14 +97,24 @@ describe('ReviewerGroups.vue', () => {
     expect(wrapper.find('[data-testid="button-add-reviewer-group"]').exists()).toBe(false);
   });
 
-  test('shows the Add New button for admins, disabled until group creation ships', () => {
+  test('shows the Add New button for admins', () => {
     mocks.userStore.selectedOrganization.admin = true;
 
     const wrapper = mountReviewerGroups();
 
     const addButton = wrapper.find('[data-testid="button-add-reviewer-group"]');
     expect(addButton.exists()).toBe(true);
-    expect(addButton.attributes('disabled')).not.toBeUndefined();
+    expect(addButton.attributes('disabled')).toBeUndefined();
+  });
+
+  test('navigates to the create-group page when Add New is clicked', async () => {
+    mocks.userStore.selectedOrganization.admin = true;
+
+    const wrapper = mountReviewerGroups();
+    await wrapper.find('[data-testid="button-add-reviewer-group"]').trigger('click');
+    await nextTick();
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({ name: 'createReviewerGroup' });
   });
 
   test('lists groups with a truncated description and selects the first one', async () => {
@@ -118,5 +137,33 @@ describe('ReviewerGroups.vue', () => {
     expect(wrapper.text()).toContain('Treasury');
     expect(wrapper.text()).toContain('Treasury movements');
     expect(wrapper.find('[data-testid="stub-reviewer-group-details"]').text()).toBe('1');
+  });
+
+  test('shows the loader instead of the list or empty state while fetching', () => {
+    mocks.reviewerGroupsStore.fetching = true;
+
+    const wrapper = mountReviewerGroups();
+
+    expect(wrapper.find('[data-testid="stub-app-loader"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="p-no-groups-found"]').exists()).toBe(false);
+  });
+
+  test('clicking a different group selects it and highlights its row', async () => {
+    mocks.reviewerGroupsStore.groups = [
+      { id: 1, name: 'Treasury', description: '', threshold: 1, memberCount: 1, ruleCount: 0 },
+      { id: 2, name: 'Operations', description: '', threshold: 1, memberCount: 1, ruleCount: 0 },
+    ];
+
+    const wrapper = mountReviewerGroups();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="stub-reviewer-group-details"]').text()).toBe('1');
+    expect(wrapper.find('[data-testid="div-reviewer-group-1"]').classes()).toContain('is-selected');
+
+    await wrapper.find('[data-testid="div-reviewer-group-2"]').trigger('click');
+
+    expect(wrapper.find('[data-testid="stub-reviewer-group-details"]').text()).toBe('2');
+    expect(wrapper.find('[data-testid="div-reviewer-group-2"]').classes()).toContain('is-selected');
+    expect(wrapper.find('[data-testid="div-reviewer-group-1"]').classes()).not.toContain('is-selected');
   });
 });

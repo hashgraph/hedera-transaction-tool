@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useReviewerGroupsStore from '@renderer/stores/storeReviewerGroups';
@@ -18,6 +19,7 @@ const user = useUserStore();
 const reviewerGroups = useReviewerGroupsStore();
 
 /* Composables */
+const router = useRouter();
 useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -27,6 +29,10 @@ const selectedId = ref<number | null>(null);
 /* Handlers */
 function handleSelectGroup(id: number) {
   selectedId.value = id;
+}
+
+function handleAddNewClick() {
+  router.push({ name: 'createReviewerGroup' });
 }
 
 /* Watch */
@@ -62,8 +68,7 @@ watch(
               data-testid="button-add-reviewer-group"
               size="large"
               class="w-100 d-flex align-items-center justify-content-center"
-              disabled
-              title="Coming soon"
+              @click="handleAddNewClick"
             >
               Add New
             </AppButton>
