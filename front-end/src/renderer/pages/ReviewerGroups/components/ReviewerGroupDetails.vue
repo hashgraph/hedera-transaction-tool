@@ -41,10 +41,9 @@ const group = ref<IReviewerGroupDetail | null>(null);
 const fetching = ref(false);
 const isCreateRuleModalShown = ref(false);
 const isDeleteGroupModalShown = ref(false);
-// Covers any PENDING change (UPDATE or DELETE) — the back-end allows only one PENDING
-// change record per group at a time, so Edit/Remove must both stay blocked until it
-// resolves, not just while a deletion specifically is pending.
-const hasPendingChange = ref(false);
+// The back-end allows only one PENDING change record per group at a time, so Edit/Remove
+// must both stay blocked until it resolves, regardless of which type is pending.
+const pendingChangeType = ref<'UPDATE' | 'DELETE' | null>(null);
 const ruleSortField = ref<RuleSortField>('hederaId');
 const ruleSortDirection = ref<'asc' | 'desc'>('asc');
 
@@ -52,6 +51,22 @@ const ruleSortDirection = ref<'asc' | 'desc'>('asc');
 const isAdmin = computed(
   () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
 );
+
+const hasPendingChange = computed(() => pendingChangeType.value !== null);
+
+// Replaces Edit/Remove entirely while a change is pending, rather than leaving them
+// visible-but-disabled next to an easy-to-miss badge. Once attestation voting exists,
+// this should become clickable and navigate there instead of just being inert.
+const pendingButtonText = computed(() => {
+  switch (pendingChangeType.value) {
+    case 'DELETE':
+      return 'Delete Pending';
+    case 'UPDATE':
+      return 'Update Pending';
+    default:
+      return '';
+  }
+});
 
 const ruleSortIconClass = computed(() =>
   ruleSortDirection.value === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short',
@@ -102,7 +117,7 @@ async function fetchGroup() {
       getReviewerGroupChanges(user.selectedOrganization.serverUrl, props.groupId),
     ]);
     group.value = detail;
-    hasPendingChange.value = changes.some(c => c.status === 'PENDING');
+    pendingChangeType.value = changes.find(c => c.status === 'PENDING')?.type ?? null;
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
     group.value = null;
@@ -137,33 +152,35 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
       <div class="d-flex justify-content-between align-items-center">
         <h2 class="text-title text-bold" data-testid="p-reviewer-group-name">{{ group.name }}</h2>
         <div v-if="FEATURE_REVIEWER_ENABLED && isAdmin" class="d-flex align-items-center gap-3">
-          <span
-            v-if="hasPendingChange"
-            class="badge bg-warning"
-            data-testid="badge-reviewer-group-pending"
-          >
-            Pending
-          </span>
           <AppButton
-            color="danger"
+            v-if="hasPendingChange"
+            color="secondary"
             type="button"
             class="min-w-unset"
-            :disabled="hasPendingChange"
-            data-testid="button-remove-reviewer-group"
-            @click="isDeleteGroupModalShown = true"
-            ><span class="bi bi-trash"></span> Remove</AppButton
+            disabled
+            data-testid="button-pending-reviewer-group-change"
+            ><span class="bi bi-hourglass-split"></span> {{ pendingButtonText }}</AppButton
           >
-          <div class="border-start ps-3">
+          <template v-else>
             <AppButton
-              color="borderless"
+              color="danger"
               type="button"
               class="min-w-unset"
-              :disabled="hasPendingChange"
-              data-testid="button-edit-reviewer-group"
-              @click="handleEditClick"
-              ><span class="bi bi-pencil-square"></span> Edit</AppButton
+              data-testid="button-remove-reviewer-group"
+              @click="isDeleteGroupModalShown = true"
+              ><span class="bi bi-trash"></span> Remove</AppButton
             >
-          </div>
+            <div class="border-start ps-3">
+              <AppButton
+                color="borderless"
+                type="button"
+                class="min-w-unset"
+                data-testid="button-edit-reviewer-group"
+                @click="handleEditClick"
+                ><span class="bi bi-pencil-square"></span> Edit</AppButton
+              >
+            </div>
+          </template>
         </div>
       </div>
       <p v-if="group.description" class="text-secondary mt-2">{{ group.description }}</p>

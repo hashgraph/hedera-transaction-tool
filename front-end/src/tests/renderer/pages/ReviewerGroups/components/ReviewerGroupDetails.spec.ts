@@ -160,7 +160,7 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(memberNicknames[1].text()).toBe('public-key-11');
   });
 
-  test('shows a pending badge when a pending deletion change record exists', async () => {
+  test('replaces Edit/Remove with a disabled "Delete Pending" button when a pending deletion change record exists', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.getReviewerGroupChanges.mockResolvedValue([
       { id: 1, groupId: 1, type: 'DELETE', status: 'PENDING' },
@@ -170,10 +170,14 @@ describe('ReviewerGroupDetails.vue', () => {
     const wrapper = mountDetails();
     await flushPromises();
 
-    expect(wrapper.find('[data-testid="badge-reviewer-group-pending"]').exists()).toBe(true);
+    const pendingButton = wrapper.find('[data-testid="button-pending-reviewer-group-change"]');
+    expect(pendingButton.text()).toContain('Delete Pending');
+    expect(pendingButton.attributes('disabled')).not.toBeUndefined();
+    expect(wrapper.find('[data-testid="button-edit-reviewer-group"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').exists()).toBe(false);
   });
 
-  test('shows a pending badge and disables Edit/Remove when a pending update change record exists', async () => {
+  test('replaces Edit/Remove with a disabled "Update Pending" button when a pending update change record exists', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.getReviewerGroupChanges.mockResolvedValue([
       { id: 1, groupId: 1, type: 'UPDATE', status: 'PENDING' },
@@ -183,12 +187,14 @@ describe('ReviewerGroupDetails.vue', () => {
     const wrapper = mountDetails();
     await flushPromises();
 
-    expect(wrapper.find('[data-testid="badge-reviewer-group-pending"]').exists()).toBe(true);
-    expect(wrapper.find('[data-testid="button-edit-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
-    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
+    const pendingButton = wrapper.find('[data-testid="button-pending-reviewer-group-change"]');
+    expect(pendingButton.text()).toContain('Update Pending');
+    expect(pendingButton.attributes('disabled')).not.toBeUndefined();
+    expect(wrapper.find('[data-testid="button-edit-reviewer-group"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').exists()).toBe(false);
   });
 
-  test('hides the pending badge when there is no pending deletion', async () => {
+  test('shows Edit/Remove instead of the pending button when there is no pending change', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.getReviewerGroupChanges.mockResolvedValue([
       { id: 1, groupId: 1, type: 'DELETE', status: 'APPLIED' },
@@ -198,7 +204,9 @@ describe('ReviewerGroupDetails.vue', () => {
     const wrapper = mountDetails();
     await flushPromises();
 
-    expect(wrapper.find('[data-testid="badge-reviewer-group-pending"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="button-pending-reviewer-group-change"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="button-edit-reviewer-group"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').exists()).toBe(true);
   });
 
   test('shows the rules table with formatted columns when rules exist', async () => {
@@ -304,19 +312,6 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(addRuleButton.attributes('disabled')).toBeUndefined();
     expect(removeButton.exists()).toBe(true);
     expect(removeButton.attributes('disabled')).toBeUndefined();
-  });
-
-  test('disables Remove while a deletion is already pending', async () => {
-    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
-    mocks.getReviewerGroupChanges.mockResolvedValue([
-      { id: 1, groupId: 1, type: 'DELETE', status: 'PENDING' },
-    ]);
-    mocks.userStore.selectedOrganization.admin = true;
-
-    const wrapper = mountDetails();
-    await flushPromises();
-
-    expect(wrapper.find('[data-testid="button-remove-reviewer-group"]').attributes('disabled')).not.toBeUndefined();
   });
 
   test('clicking Edit navigates to the createReviewerGroup route for this group', async () => {
