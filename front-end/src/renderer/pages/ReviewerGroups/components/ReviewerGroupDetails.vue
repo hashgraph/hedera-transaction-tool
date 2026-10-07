@@ -305,7 +305,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
                 <th v-if="isAdmin"></th>
               </tr>
             </thead>
-            <tbody class="text-secondary">
+            <tbody>
               <tr
                 v-for="rule in sortedRules"
                 :key="rule.id"
