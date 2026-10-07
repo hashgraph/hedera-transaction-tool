@@ -18,12 +18,12 @@ dotenv.config();
 const TARGET_STARTUP_TIME_MS = 3000;
 
 test.describe('App Startup Performance', () => {
-  test.beforeAll(async () => {
-    await resetDbState();
+  test.beforeAll(() => {
+    resetDbState();
   });
 
-  test.afterAll(async () => {
-    await resetDbStateForTeardown();
+  test.afterAll(() => {
+    resetDbStateForTeardown();
   });
 
   test('App startup time should be within threshold', async () => {

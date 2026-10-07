@@ -88,7 +88,7 @@ test.describe('Sign All with Complex Threshold Keys (Org Mode)', () => {
   test.beforeAll(async () => {
     validateStagingConfig();
 
-    await resetDbState();
+    resetDbState();
     await resetPostgresDbState();
     ({ app, window } = await setupApp());
     registrationPage = new RegistrationPage(window);
@@ -111,7 +111,7 @@ test.describe('Sign All with Complex Threshold Keys (Org Mode)', () => {
     if (app) {
       await closeApp(app);
     }
-    await resetDbStateForTeardown();
+    resetDbStateForTeardown();
     await resetPostgresDbStateForTeardown();
   });
 

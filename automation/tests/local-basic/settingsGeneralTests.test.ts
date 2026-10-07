@@ -48,6 +48,7 @@ test.describe('Settings general tests @local-basic', () => {
 
   test('Verify user can switch between Dark and Light themes', async () => {
     await settingsPage.clickOnDarkThemeTab();
+    await expect(window.getByTestId('tab-appearance-dark')).toHaveClass(/\bactive\b/);
     expect(await settingsPage.isDarkThemeTabActive()).toBe(true);
 
     await settingsPage.clickOnLightThemeTab();

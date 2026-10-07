@@ -16,8 +16,8 @@ export async function verifyTransactionExists(transactionId: string, transaction
         WHERE transaction_id = ? AND type = ?`;
 
   try {
-    const row = await queryDatabase<{ count: number }>(query, [transactionId, transactionType]);
-    return row.count > 0;
+    const row = queryDatabase<{ count: number }>(query, [transactionId, transactionType]);
+    return (row?.count ?? 0) > 0;
   } catch (error) {
     console.error('Error verifying transaction:', error);
     return false;
@@ -43,7 +43,7 @@ export async function updateLocalTransactionStatus(
         WHERE transaction_id = ?`;
 
   try {
-    const changedRows = await executeDatabase(query, [status, statusCode, transactionId]);
+    const changedRows = executeDatabase(query, [status, statusCode, transactionId]);
     return changedRows > 0;
   } catch (error) {
     console.error('Error updating local transaction status:', error);
@@ -64,8 +64,8 @@ export async function verifyAccountExists(accountId: string) {
         WHERE account_id = ?`;
 
   try {
-    const row = await queryDatabase<{ count: number }>(query, [accountId]);
-    return row.count > 0;
+    const row = queryDatabase<{ count: number }>(query, [accountId]);
+    return (row?.count ?? 0) > 0;
   } catch (error) {
     console.error('Error verifying account:', error);
     return false;
@@ -84,7 +84,7 @@ export async function deleteAccountById(accountId: string) {
         WHERE account_id = ?`;
 
   try {
-    const changedRows = await executeDatabase(query, [accountId]);
+    const changedRows = executeDatabase(query, [accountId]);
     return changedRows > 0;
   } catch (error) {
     console.error('Error deleting account:', error);
@@ -105,8 +105,8 @@ export async function verifyFileExists(fileId: string) {
         WHERE file_id = ?`;
 
   try {
-    const row = await queryDatabase<{ count: number }>(query, [fileId]);
-    return row.count > 0;
+    const row = queryDatabase<{ count: number }>(query, [fileId]);
+    return (row?.count ?? 0) > 0;
   } catch (error) {
     console.error('Error verifying file:', error);
     return false;
@@ -130,7 +130,7 @@ export async function updateLocalFileMetadata(fileId: string, metaBytes: string)
         WHERE file_id = ?`;
 
   try {
-    const changedRows = await executeDatabase(query, [metaBytes, fileId]);
+    const changedRows = executeDatabase(query, [metaBytes, fileId]);
     return changedRows > 0;
   } catch (error) {
     console.error('Error updating local file metadata:', error);
@@ -150,7 +150,7 @@ export async function verifyUserExists(email: string) {
         FROM User
         WHERE email = ?`;
   try {
-    const user = await queryDatabase(query, [email]);
+    const user = queryDatabase(query, [email]);
     return user !== undefined;
   } catch (error) {
     console.error('Error verifying user:', error);
@@ -172,8 +172,8 @@ export async function getPublicKeyByEmail(email: string) {
         WHERE u.email = ?`;
 
   try {
-    const row = await queryDatabase<{ public_key: string }>(query, [email]);
-    return row.public_key;
+    const row = queryDatabase<{ public_key: string }>(query, [email]);
+    return row?.public_key ?? null;
   } catch (error) {
     console.error('Error fetching public key:', error);
     return null;
@@ -195,7 +195,7 @@ export async function verifyPrivateKeyExistsByEmail(email: string) {
           AND kp.private_key IS NOT NULL`;
 
   try {
-    const row = await queryDatabase(query, [email]);
+    const row = queryDatabase(query, [email]);
     return row !== undefined;
   } catch (error) {
     console.error('Error checking for private key:', error);
@@ -218,7 +218,7 @@ export async function verifyPublicKeyExistsByEmail(email: string) {
           AND kp.private_key IS NOT NULL`;
 
   try {
-    const row = await queryDatabase(query, [email]);
+    const row = queryDatabase(query, [email]);
     return row !== undefined;
   } catch (error) {
     console.error('Error checking for private key:', error);
@@ -244,7 +244,7 @@ export async function getKeyPairByIndexAndEmail(
       WHERE u.email = ? AND kp."index" = ?`;
 
   try {
-    const row = await queryDatabase<{ public_key?: string; private_key?: string } | undefined>(
+    const row = queryDatabase<{ public_key?: string; private_key?: string } | undefined>(
       query,
       [email, index],
     );
@@ -267,7 +267,7 @@ export async function deleteKeyPairByPublicKey(publicKey: string): Promise<boole
     WHERE public_key = ?`;
 
   try {
-    return (await executeDatabase(query, [publicKey])) > 0;
+    return  executeDatabase(query, [publicKey]) > 0;
   } catch (error) {
     console.error('Error deleting local key pair:', error);
     return false;
@@ -353,7 +353,7 @@ export async function insertKeyPair(
       : [generatedId, publicKey, privateKey, secretHash, organizationUserId];
 
   try {
-    await queryDatabase(query, params);
+    executeDatabase(query, params);
     console.log('KeyPair record inserted successfully');
   } catch (error) {
     console.error('Error inserting KeyPair record:', error);
@@ -373,8 +373,8 @@ export async function verifyOrganizationExists(nickname: string) {
       WHERE nickname = ?`;
 
   try {
-    const row = await queryDatabase<{ count: number }>(query, [nickname]);
-    return row.count > 0;
+    const row = queryDatabase<{ count: number }>(query, [nickname]);
+    return (row?.count ?? 0) > 0;
   } catch (error) {
     console.error('Error verifying organization:', error);
     return false;
@@ -398,7 +398,7 @@ export async function getTransactionGroupsForTransactionId(inputTransactionId: s
   // 1. Get the Transaction by its transaction_id column
   let transactionRow: { id: number } | undefined;
   try {
-    transactionRow = await queryDatabase<{ id: number }>(
+    transactionRow = queryDatabase<{ id: number }>(
       `SELECT id FROM "Transaction" WHERE transaction_id = ?`,
       [inputTransactionId],
     );
@@ -412,7 +412,7 @@ export async function getTransactionGroupsForTransactionId(inputTransactionId: s
   // 2. Get GroupItem rows for this Transaction's id
   let groupItems: { transaction_group_id: number }[];
   try {
-    groupItems = await queryAllDatabase<{ transaction_group_id: number }>(
+    groupItems = queryAllDatabase<{ transaction_group_id: number }>(
       `SELECT transaction_group_id FROM "GroupItem" WHERE transaction_id = ?`,
       [transactionRow.id],
     );
@@ -428,7 +428,7 @@ export async function getTransactionGroupsForTransactionId(inputTransactionId: s
   // 3. Find the TransactionGroup rows by these transaction_group_id values
   const placeholders = transactionGroupIds.map(() => '?').join(', ');
   try {
-    return await queryAllDatabase(
+    return queryAllDatabase(
       `SELECT * FROM "TransactionGroup" WHERE id IN (${placeholders})`,
       transactionGroupIds,
     );

@@ -48,20 +48,20 @@ export async function cleanupIsolation(context?: ActivatedTestIsolationContext |
   clearPlaywrightIsolationEnv();
 }
 
-export async function resetLocalStateForSuite() {
+export function resetLocalStateForSuite() {
   if (isSharedEnvironmentRun()) {
     return;
   }
 
-  await resetDbState();
+  resetDbState();
 }
 
-export async function resetLocalStateForTeardown() {
+export function resetLocalStateForTeardown() {
   if (isSharedEnvironmentRun()) {
     return;
   }
 
-  await resetDbStateForTeardown();
+  resetDbStateForTeardown();
 }
 
 export async function resetBackendStateForSuite() {
