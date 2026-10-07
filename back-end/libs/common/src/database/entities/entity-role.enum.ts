@@ -13,6 +13,7 @@ export enum EntityRole {
   RECEIVER = 'receiver',
   // An account sending funds (e.g. debit side of a CryptoTransfer)
   SENDER = 'sender',
-  TOKEN = 'token',
-  TOPIC = 'topic',
+  // token/topic are intentionally omitted: nothing produces them until Token/
+  // Consensus Service support lands (see transactions.service.ts's
+  // extractTransactionEntities()). Add them back here once that support exists.
 }

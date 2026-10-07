@@ -38,6 +38,7 @@ export class CreateReviewerRuleDto {
   @IsNotEmpty()
   network!: string;
 
+  // Omitted means the rule matches any role (stored as entityRole: null).
   @IsEnum(EntityRole)
   @IsOptional()
   entityRole?: EntityRole;

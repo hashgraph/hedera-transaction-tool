@@ -9,6 +9,7 @@ export class ReviewerRuleDto {
   // (e.g. "1") when entityRole is 'node'.
   @Expose() hederaId!: string;
   @Expose() network!: string;
+  // null means the rule matches any role.
   @Expose() entityRole!: EntityRole | null;
   @Expose() transactionType!: string | null;
   @Expose() createdAt!: Date;

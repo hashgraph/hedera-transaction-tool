@@ -43,6 +43,9 @@ export class ReviewerRule {
   @Column()
   network!: string;
 
+  // null means the rule applies to any role — see ReviewerAssignmentService.ruleMatches(),
+  // which matches entityRole === null against every role a transaction's entities carry.
+  // (There is no dedicated "any" enum value; null is overloaded to mean it.)
   @Column({ type: String, nullable: true })
   entityRole!: EntityRole | null;
 

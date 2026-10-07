@@ -1,10 +1,6 @@
 import { BackEndTransactionType } from '../transactions';
 
-// Subset of back-end/libs/common/src/database/entities/entity-role.enum.ts that
-// back-end/apps/api/src/transactions/transactions.service.ts's extractTransactionEntities()
-// actually assigns today. The back-end enum also reserves 'token'/'topic' for future Token/
-// Consensus Service support, but nothing produces them yet — a rule scoped to either could
-// never match a real transaction, so they're left out here until that support lands.
+// Mirrors back-end/libs/common/src/database/entities/entity-role.enum.ts.
 export const ENTITY_ROLES = ['account', 'fee_payer', 'file', 'node', 'receiver', 'sender'] as const;
 export type EntityRole = (typeof ENTITY_ROLES)[number];
 
