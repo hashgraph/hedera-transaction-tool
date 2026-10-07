@@ -27,6 +27,11 @@ vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({ push: mocks.routerPush })),
 }));
 
+vi.mock('@shared/constants', async importOriginal => {
+  const actual = await importOriginal<typeof import('@shared/constants')>();
+  return { ...actual, FEATURE_REVIEWER_ENABLED: true };
+});
+
 vi.mock('@renderer/stores/storeUser', () => ({
   default: vi.fn(() => mocks.userStore),
 }));
