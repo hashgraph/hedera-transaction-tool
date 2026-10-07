@@ -1432,3 +1432,13 @@ textarea.form-control {
     background-color: $dark-blue-800;
   }
 }
+
+// td selector needed to outweigh .table-custom td's own background-color (td paints
+// its own background over whatever the tr specifies).
+tr.reviewer-rule-row-pending-delete td {
+  background-color: $error-50;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: $error-900;
+  }
+}

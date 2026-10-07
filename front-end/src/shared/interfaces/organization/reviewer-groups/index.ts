@@ -90,6 +90,8 @@ export interface IDeleteReviewerGroupRequest {
 
 export type IUpdateReviewerGroupRequest = ICreateReviewerGroupRequest;
 
+export type IDeleteReviewerRuleRequest = IDeleteReviewerGroupRequest;
+
 export type ChangeRequestStatus = 'PENDING' | 'APPLIED' | 'REJECTED';
 
 export interface IAttestationSignature {

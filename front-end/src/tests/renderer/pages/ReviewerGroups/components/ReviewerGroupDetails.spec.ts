@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   },
   getReviewerGroup: vi.fn(),
   getReviewerGroupChanges: vi.fn(),
+  getReviewerRuleChanges: vi.fn(),
   toastError: vi.fn(),
   routerPush: vi.fn(),
 }));
@@ -37,6 +38,7 @@ vi.mock('@renderer/stores/storeContacts', () => ({
 vi.mock('@renderer/services/organization', () => ({
   getReviewerGroup: mocks.getReviewerGroup,
   getReviewerGroupChanges: mocks.getReviewerGroupChanges,
+  getReviewerRuleChanges: mocks.getReviewerRuleChanges,
 }));
 
 vi.mock('@renderer/utils', () => ({
@@ -95,6 +97,8 @@ describe('ReviewerGroupDetails.vue', () => {
     mocks.getReviewerGroup.mockReset();
     mocks.getReviewerGroupChanges.mockReset();
     mocks.getReviewerGroupChanges.mockResolvedValue([]);
+    mocks.getReviewerRuleChanges.mockReset();
+    mocks.getReviewerRuleChanges.mockResolvedValue([]);
     mocks.toastError.mockReset();
     mocks.routerPush.mockClear();
   });
@@ -121,6 +125,17 @@ describe('ReviewerGroupDetails.vue', () => {
       '</div>',
   };
 
+  const deleteRuleModalStub = {
+    props: ['show', 'ruleId', 'ruleLabel'],
+    emits: ['update:show', 'deleted'],
+    template:
+      '<div v-if="show" data-testid="stub-delete-rule-modal">' +
+      '{{ ruleId }}:{{ ruleLabel }}' +
+      '<button data-testid="delete-rule-confirm" type="button" ' +
+      '@click="$emit(\'deleted\'); $emit(\'update:show\', false)"></button>' +
+      '</div>',
+  };
+
   function mountDetails(groupId = 1) {
     return mount(ReviewerGroupDetails, {
       props: { groupId },
@@ -129,6 +144,7 @@ describe('ReviewerGroupDetails.vue', () => {
           AppLoader: { template: '<div data-testid="stub-loader" />' },
           CreateRuleModal: createRuleModalStub,
           DeleteGroupModal: deleteGroupModalStub,
+          DeleteRuleModal: deleteRuleModalStub,
         },
       },
     });
@@ -286,6 +302,102 @@ describe('ReviewerGroupDetails.vue', () => {
 
     expect(firstColumnCell(0)).toBe('0.0.2000');
     expect(firstColumnCell(1)).toBe('0.0.1000');
+  });
+
+  test('shows a remove button per rule row for admins, and opens the delete-rule modal on click', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(
+      baseGroup({
+        rules: [
+          {
+            id: 5,
+            groupId: 1,
+            hederaId: '0.0.1234',
+            network: 'mainnet',
+            entityRole: 'sender',
+            transactionType: 'CRYPTOTRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    );
+    mocks.userStore.selectedOrganization.admin = true;
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    expect(mocks.getReviewerRuleChanges).toHaveBeenCalledWith('https://org.example.com', 5);
+    expect(wrapper.find('[data-testid="stub-delete-rule-modal"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="row-reviewer-rule-5"]').classes()).not.toContain(
+      'reviewer-rule-row-pending-delete',
+    );
+
+    await wrapper.find('[data-testid="button-remove-reviewer-rule-5"]').trigger('click');
+
+    const modal = wrapper.find('[data-testid="stub-delete-rule-modal"]');
+    expect(modal.text()).toBe('5:0.0.1234');
+
+    mocks.getReviewerGroup.mockClear();
+    await wrapper.find('[data-testid="delete-rule-confirm"]').trigger('click');
+    await flushPromises();
+
+    expect(mocks.getReviewerGroup).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[data-testid="stub-delete-rule-modal"]').exists()).toBe(false);
+  });
+
+  test('shows a disabled, tooltipped delete icon instead of the remove button when a rule has a pending deletion', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(
+      baseGroup({
+        rules: [
+          {
+            id: 5,
+            groupId: 1,
+            hederaId: '0.0.1234',
+            network: 'mainnet',
+            entityRole: 'sender',
+            transactionType: 'CRYPTOTRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    );
+    mocks.userStore.selectedOrganization.admin = true;
+    mocks.getReviewerRuleChanges.mockResolvedValue([
+      { id: 1, ruleId: 5, groupId: 1, action: 'remove', status: 'PENDING' },
+    ]);
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="button-pending-reviewer-rule-5"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-remove-reviewer-rule-5"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="row-reviewer-rule-5"]').classes()).toContain(
+      'reviewer-rule-row-pending-delete',
+    );
+  });
+
+  test('hides the rule actions column for non-admins', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(
+      baseGroup({
+        rules: [
+          {
+            id: 5,
+            groupId: 1,
+            hederaId: '0.0.1234',
+            network: 'mainnet',
+            entityRole: 'sender',
+            transactionType: 'CRYPTOTRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    );
+    mocks.userStore.selectedOrganization.admin = false;
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    expect(wrapper.find('[data-testid="button-remove-reviewer-rule-5"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="row-reviewer-rule-5"]').findAll('td')).toHaveLength(4);
   });
 
   test('hides the admin-only Add Rule / Remove buttons for non-admins', async () => {

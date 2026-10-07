@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -23,32 +22,18 @@ const router = useRouter();
 useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
-/* State */
-const selectedId = ref<number | null>(null);
-
 /* Handlers */
 function handleSelectGroup(id: number) {
-  selectedId.value = id;
+  reviewerGroups.selectGroup(id);
 }
 
 function handleAddNewClick() {
   router.push({ name: 'createReviewerGroup' });
 }
 
-/* Watch */
-// Fetching is owned entirely by the store's own immediate watch on the selected org (see
-// storeReviewerGroups.ts), same as storeContacts/ContactList — not re-triggered on every mount,
-// so revisiting this page after the first load shows cached groups instantly instead of
-// flashing the loader again. Re-picks the first group whenever the list changes (including
-// once the initial fetch resolves) rather than reading it once synchronously on mount, which
-// would race the fetch on a cold start.
-watch(
-  () => reviewerGroups.groups,
-  groups => {
-    selectedId.value = groups[0]?.id ?? null;
-  },
-  { immediate: true },
-);
+// Fetching, and which group is selected, are both owned by the store (see
+// storeReviewerGroups.ts) rather than local state — this page remounts on every trip to/from
+// createReviewerGroup, and a local ref would forget the selection on the way back.
 </script>
 <template>
   <div class="px-4 px-xxl-6 py-5">
@@ -86,7 +71,7 @@ watch(
               <template v-for="group in reviewerGroups.groups" :key="group.id">
                 <div
                   class="container-multiple-select overflow-hidden p-4 mt-3"
-                  :class="{ 'is-selected': group.id === selectedId }"
+                  :class="{ 'is-selected': group.id === reviewerGroups.selectedGroupId }"
                   :data-testid="`div-reviewer-group-${group.id}`"
                   @click="handleSelectGroup(group.id)"
                 >
@@ -106,7 +91,10 @@ watch(
         </div>
 
         <div class="col-8 col-xxl-9 flex-column-100 ps-4">
-          <ReviewerGroupDetails v-if="selectedId !== null" :group-id="selectedId" />
+          <ReviewerGroupDetails
+            v-if="reviewerGroups.selectedGroupId !== null"
+            :group-id="reviewerGroups.selectedGroupId"
+          />
         </div>
       </div>
     </div>

@@ -50,6 +50,7 @@ const mocks = vi.hoisted(() => ({
   },
   reviewerGroupsStore: {
     fetch: vi.fn(),
+    selectGroup: vi.fn(),
   },
   createReviewerGroup: vi.fn(),
   getReviewerGroup: vi.fn(),
@@ -138,6 +139,7 @@ describe('CreateReviewerGroup.vue', () => {
     mocks.routerBack.mockClear();
     mocks.contactsStore.getContact.mockClear();
     mocks.reviewerGroupsStore.fetch.mockReset();
+    mocks.reviewerGroupsStore.selectGroup.mockReset();
     mocks.createReviewerGroup.mockReset();
     mocks.getReviewerGroup.mockReset();
     mocks.updateReviewerGroup.mockReset();
@@ -262,7 +264,7 @@ describe('CreateReviewerGroup.vue', () => {
   });
 
   test('signs the canonical snapshot payload, posts the raw member list, refetches, and navigates back', async () => {
-    mocks.createReviewerGroup.mockResolvedValue({});
+    mocks.createReviewerGroup.mockResolvedValue({ id: 42 });
 
     const wrapper = mountPage();
     await wrapper.find('[data-testid="input-reviewer-group-name"]').setValue('Treasury');
@@ -306,6 +308,7 @@ describe('CreateReviewerGroup.vue', () => {
     });
 
     expect(mocks.toastSuccess).toHaveBeenCalledWith('Reviewer group created successfully');
+    expect(mocks.reviewerGroupsStore.selectGroup).toHaveBeenCalledWith(42);
     expect(mocks.reviewerGroupsStore.fetch).toHaveBeenCalledTimes(1);
     expect(mocks.routerBack).toHaveBeenCalledTimes(1);
     expect(result).toBeNull();
@@ -573,6 +576,9 @@ describe('CreateReviewerGroup.vue', () => {
       expect(mocks.toastSuccess).toHaveBeenCalledWith(
         'Group update requested — pending member attestation',
       );
+      // Edit mode leaves the pre-existing selection alone — only a brand new group gets
+      // explicitly selected.
+      expect(mocks.reviewerGroupsStore.selectGroup).not.toHaveBeenCalled();
       expect(result).toBeNull();
     });
 

@@ -223,8 +223,13 @@ const handleSubmit = async (personalPassword: string | null): Promise<ActionRepo
     await updateReviewerGroup(user.selectedOrganization.serverUrl, groupId.value, dto);
     toastManager.success('Group update requested — pending member attestation');
   } else {
-    await createReviewerGroup(user.selectedOrganization.serverUrl, dto);
+    const created = await createReviewerGroup(user.selectedOrganization.serverUrl, dto);
     toastManager.success('Reviewer group created successfully');
+    // Edit mode leaves the pre-existing selection alone (the store keeps it automatically
+    // as long as the edited group is still in the refetched list); a brand new group isn't
+    // selected yet, so switch to it explicitly rather than staying on whatever was selected
+    // before navigating here.
+    reviewerGroups.selectGroup(created.id);
   }
 
   await reviewerGroups.fetch();
@@ -281,7 +286,7 @@ onBeforeMount(() => {
     </div>
     <form
       v-else
-      class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4 flex-column-100"
+      class="mt-5 col-12 col-md-8 col-lg-6 col-xxl-4 d-flex flex-column fill-remaining"
       @submit.prevent="handleSubmitClick"
     >
       <div class="form-group">

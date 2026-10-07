@@ -7,7 +7,11 @@ import { useRouter } from 'vue-router';
 import useUserStore from '@renderer/stores/storeUser';
 import useContactsStore from '@renderer/stores/storeContacts';
 
-import { getReviewerGroup, getReviewerGroupChanges } from '@renderer/services/organization';
+import {
+  getReviewerGroup,
+  getReviewerGroupChanges,
+  getReviewerRuleChanges,
+} from '@renderer/services/organization';
 
 import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
 
@@ -19,6 +23,8 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
 import CreateRuleModal from '@renderer/components/ReviewerGroups/CreateRuleModal.vue';
 import DeleteGroupModal from '@renderer/components/ReviewerGroups/DeleteGroupModal.vue';
+import DeleteRuleModal from '@renderer/components/ReviewerGroups/DeleteRuleModal.vue';
+import PendingRuleDeleteButton from '@renderer/components/ReviewerGroups/PendingRuleDeleteButton.vue';
 import { formatNetwork, formatRole, formatTransactionType } from './ruleFormatting';
 
 type RuleSortField = 'hederaId' | 'entityRole' | 'transactionType' | 'network';
@@ -41,9 +47,14 @@ const group = ref<IReviewerGroupDetail | null>(null);
 const fetching = ref(false);
 const isCreateRuleModalShown = ref(false);
 const isDeleteGroupModalShown = ref(false);
+const ruleToDelete = ref<IReviewerRule | null>(null);
 // The back-end allows only one PENDING change record per group at a time, so Edit/Remove
 // must both stay blocked until it resolves, regardless of which type is pending.
 const pendingChangeType = ref<'UPDATE' | 'DELETE' | null>(null);
+// Rule creation applies immediately, but rule deletion is a pending change requiring
+// member attestation (same as group update/delete) — tracked per rule since, unlike
+// group changes, each rule has its own independent change-record history.
+const pendingRuleDeletionIds = ref<Set<number>>(new Set());
 const ruleSortField = ref<RuleSortField>('hederaId');
 const ruleSortDirection = ref<'asc' | 'desc'>('asc');
 
@@ -66,6 +77,13 @@ const pendingButtonText = computed(() => {
     default:
       return '';
   }
+});
+
+const isDeleteRuleModalShown = computed({
+  get: () => ruleToDelete.value !== null,
+  set: (value: boolean) => {
+    if (!value) ruleToDelete.value = null;
+  },
 });
 
 const ruleSortIconClass = computed(() =>
@@ -110,17 +128,36 @@ function handleRuleSort(field: RuleSortField) {
 
 async function fetchGroup() {
   assertIsLoggedInOrganization(user.selectedOrganization);
+  const serverUrl = user.selectedOrganization.serverUrl;
   fetching.value = true;
   try {
     const [detail, changes] = await Promise.all([
-      getReviewerGroup(user.selectedOrganization.serverUrl, props.groupId),
-      getReviewerGroupChanges(user.selectedOrganization.serverUrl, props.groupId),
+      getReviewerGroup(serverUrl, props.groupId),
+      getReviewerGroupChanges(serverUrl, props.groupId),
     ]);
     group.value = detail;
     pendingChangeType.value = changes.find(c => c.status === 'PENDING')?.type ?? null;
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
     group.value = null;
+    fetching.value = false;
+    return;
+  }
+
+  // Kept out of the try block above: a transient failure fetching one rule's change
+  // history shouldn't discard the group/rules we already successfully loaded.
+  try {
+    const rules = group.value.rules;
+    const ruleChangeLists = await Promise.all(
+      rules.map(rule => getReviewerRuleChanges(serverUrl, rule.id)),
+    );
+    pendingRuleDeletionIds.value = new Set(
+      rules
+        .filter((_, index) => ruleChangeLists[index].some(change => change.status === 'PENDING'))
+        .map(rule => rule.id),
+    );
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to load rule pending-delete status'));
   } finally {
     fetching.value = false;
   }
@@ -132,6 +169,15 @@ async function handleRuleCreated() {
 
 async function handleGroupDeleted() {
   await fetchGroup();
+}
+
+async function handleRuleDeleted() {
+  ruleToDelete.value = null;
+  await fetchGroup();
+}
+
+function handleRuleRemoveClick(rule: IReviewerRule) {
+  ruleToDelete.value = rule;
 }
 
 function handleEditClick() {
@@ -159,7 +205,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
             class="min-w-unset"
             disabled
             data-testid="button-pending-reviewer-group-change"
-            ><span class="bi bi-hourglass-split"></span> {{ pendingButtonText }}</AppButton
+            >{{ pendingButtonText }}</AppButton
           >
           <template v-else>
             <AppButton
@@ -256,14 +302,36 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
                     ></i>
                   </div>
                 </th>
+                <th v-if="isAdmin"></th>
               </tr>
             </thead>
             <tbody class="text-secondary">
-              <tr v-for="rule in sortedRules" :key="rule.id" :data-testid="`row-reviewer-rule-${rule.id}`">
+              <tr
+                v-for="rule in sortedRules"
+                :key="rule.id"
+                :data-testid="`row-reviewer-rule-${rule.id}`"
+                :class="{ 'reviewer-rule-row-pending-delete': pendingRuleDeletionIds.has(rule.id) }"
+              >
                 <td>{{ rule.hederaId }}</td>
                 <td>{{ formatRole(rule.entityRole) }}</td>
                 <td>{{ formatTransactionType(rule.transactionType) }}</td>
                 <td>{{ formatNetwork(rule.network) }}</td>
+                <td v-if="isAdmin">
+                  <PendingRuleDeleteButton
+                    v-if="pendingRuleDeletionIds.has(rule.id)"
+                    :data-testid="`button-pending-reviewer-rule-${rule.id}`"
+                  />
+                  <AppButton
+                    v-else
+                    size="small"
+                    color="danger"
+                    type="button"
+                    class="min-w-unset"
+                    :data-testid="`button-remove-reviewer-rule-${rule.id}`"
+                    @click="handleRuleRemoveClick(rule)"
+                    ><span class="bi bi-trash"></span
+                  ></AppButton>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -281,6 +349,13 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
         :group-id="group.id"
         :group-name="group.name"
         @deleted="handleGroupDeleted"
+      />
+      <DeleteRuleModal
+        v-if="ruleToDelete"
+        v-model:show="isDeleteRuleModalShown"
+        :rule-id="ruleToDelete.id"
+        :rule-label="ruleToDelete.hederaId"
+        @deleted="handleRuleDeleted"
       />
     </template>
   </div>
