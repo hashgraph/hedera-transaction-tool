@@ -235,7 +235,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.1234',
             network: 'mainnet',
             entityRole: 'sender',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
         ],
@@ -248,7 +248,7 @@ describe('ReviewerGroupDetails.vue', () => {
     const row = wrapper.find('[data-testid="row-reviewer-rule-5"]');
     expect(row.exists()).toBe(true);
     const cells = row.findAll('td');
-    expect(cells.map(c => c.text())).toEqual(['0.0.1234', 'Sender', 'Transfer', 'Mainnet']);
+    expect(cells.map(c => c.text())).toEqual(['0.0.1234', 'Sender', 'Transfer Transaction', 'Mainnet']);
   });
 
   test('shows the empty-rules message when the group has no rules', async () => {
@@ -271,7 +271,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.2000',
             network: 'mainnet',
             entityRole: 'sender',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
           {
@@ -280,7 +280,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.1000',
             network: 'testnet',
             entityRole: 'receiver',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
         ],
@@ -314,7 +314,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.1234',
             network: 'mainnet',
             entityRole: 'sender',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
         ],
@@ -354,7 +354,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.1234',
             network: 'mainnet',
             entityRole: 'sender',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
         ],
@@ -385,7 +385,7 @@ describe('ReviewerGroupDetails.vue', () => {
             hederaId: '0.0.1234',
             network: 'mainnet',
             entityRole: 'sender',
-            transactionType: 'CRYPTOTRANSFER',
+            transactionType: 'TRANSFER',
             createdAt: new Date().toISOString(),
           },
         ],

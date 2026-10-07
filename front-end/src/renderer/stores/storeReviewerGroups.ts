@@ -17,22 +17,29 @@ const useReviewerGroupsStore = defineStore('reviewerGroups', () => {
   const fetching = ref(false);
   const selectedGroupId = ref<number | null>(null);
 
+  // Guards against an older fetch() call resolving after a newer one — only the result
+  // of the most recently started call is allowed to update groups/fetching.
+  let latestRequestId = 0;
+
   /* Actions */
   function selectGroup(id: number | null) {
     selectedGroupId.value = id;
   }
 
   async function fetch() {
+    const requestId = ++latestRequestId;
+
     if (!isUserLoggedIn(user.personal) || !isLoggedInOrganization(user.selectedOrganization)) {
-      groups.value = [];
+      if (requestId === latestRequestId) groups.value = [];
       return;
     }
 
     fetching.value = true;
     try {
-      groups.value = await getReviewerGroups(user.selectedOrganization.serverUrl);
+      const result = await getReviewerGroups(user.selectedOrganization.serverUrl);
+      if (requestId === latestRequestId) groups.value = result;
     } finally {
-      fetching.value = false;
+      if (requestId === latestRequestId) fetching.value = false;
     }
   }
 

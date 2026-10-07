@@ -1,6 +1,6 @@
 import type { EntityRole } from '@shared/interfaces';
 
-import { ROLE_LABELS, TransactionType, TransactionTypeLabels } from '@shared/interfaces';
+import { BackEndTransactionType, ROLE_LABELS, TransactionTypeName } from '@shared/interfaces';
 import { CommonNetworkNames } from '@shared/enums';
 
 import { capitalize } from '@renderer/utils';
@@ -11,7 +11,7 @@ export function formatRole(entityRole?: EntityRole | null): string {
 
 export function formatTransactionType(transactionType?: string | null): string {
   if (!transactionType) return 'Any';
-  return TransactionTypeLabels[transactionType as TransactionType] ?? transactionType;
+  return TransactionTypeName[transactionType as BackEndTransactionType] ?? transactionType;
 }
 
 export function formatNetwork(network: string): string {

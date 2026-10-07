@@ -9,7 +9,13 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { createReviewerRule } from '@renderer/services/organization';
 
-import { ENTITY_ROLES, ROLE_LABELS, TransactionType, TransactionTypeLabels } from '@shared/interfaces';
+import {
+  BackEndTransactionType,
+  ENTITY_ROLES,
+  ROLE_LABELS,
+  ROLE_TRANSACTION_TYPES,
+  TransactionTypeName,
+} from '@shared/interfaces';
 import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
 
 import {
@@ -76,9 +82,15 @@ const isValidHederaId = (value: string) =>
   HEDERA_NODE_ID_PATTERN.test(value) || HEDERA_ENTITY_ID_PATTERN.test(value);
 
 // Keystroke-level sanitize: digits and dots only, then the same dot-collapsing/
-// segment-limit rule sanitizeAccountId itself uses.
+// segment-limit rule sanitizeAccountId itself uses, plus the same per-segment leading-zero
+// stripping (e.g. "0.0.001234" -> "0.0.1234", node id "01" -> "1") — the backend matches
+// rules against SDK-generated ids by exact string equality, so a leading zero that survives
+// here would silently never match.
 function sanitizeHederaId(value: string): string {
-  return collapseDotsAndLimitSegments(value.replace(/[^0-9.]/g, ''));
+  return collapseDotsAndLimitSegments(value.replace(/[^0-9.]/g, '')).replace(
+    /(^|\.)(0+)(\d+)/g,
+    '$1$3',
+  );
 }
 
 const hederaIdModel = computed({
@@ -153,7 +165,9 @@ const entityRoleItems = computed<string[]>(() => {
   }
 
   const roles =
-    entityIdKind.value === 'account' ? ENTITY_ROLES.filter(role => role !== 'node') : ENTITY_ROLES;
+    entityIdKind.value === 'account'
+      ? ENTITY_ROLES.filter(role => role !== 'node')
+      : ENTITY_ROLES;
 
   return [
     ANY_ROLE_LABEL,
@@ -162,107 +176,24 @@ const entityRoleItems = computed<string[]>(() => {
 });
 
 // Same deal as entityRole above — transactionType stays '' until "Any type" or a real
-// type label has actually been matched.
-const transactionTypeLabels: { label: string; value: TransactionType | '' }[] = [
+// type label has actually been matched. Built from BackEndTransactionType (not the raw
+// mirror-node TransactionType) since that's what ReviewerAssignmentService.assign() and
+// transactions.service.ts's entity extraction both key off of — see ROLE_TRANSACTION_TYPES
+// (@shared/interfaces) for which of these an EntityRole can actually occur on.
+const transactionTypeLabels: { label: string; value: BackEndTransactionType | '' }[] = [
   { label: ANY_TYPE_LABEL, value: '' },
-  ...Object.values(TransactionType)
-    .map(type => ({ label: TransactionTypeLabels[type], value: type }))
+  ...Object.values(BackEndTransactionType)
+    .map(type => ({ label: TransactionTypeName[type], value: type }))
     .sort((a, b) => a.label.localeCompare(b.label)),
 ];
 const LABEL_TO_TRANSACTION_TYPE = new Map(
   transactionTypeLabels.map(t => [t.label.toLowerCase(), t.value]),
 );
 
-// A node only takes NodeUpdate/NodeDelete — NodeCreate has no existing node id to
-// target, and NodeStakeUpdate isn't reviewer-relevant.
-const NODE_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.NODEUPDATE,
-  TransactionType.NODEDELETE,
-]);
-
-// Sender/receiver only exist as literal fields on a handful of transaction bodies:
-// CryptoTransfer and TokenAirdrop both carry NftTransfer entries (senderAccountID/
-// receiverAccountID), and TokenClaimAirdrop/TokenCancelAirdrop address a pending airdrop
-// via PendingAirdropId (sender_id/receiver_id). Allowance transactions look similar but
-// use owner/spender instead, so they're deliberately excluded here.
-const SENDER_RECEIVER_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.CRYPTOTRANSFER,
-  TransactionType.TOKENAIRDROP,
-  TransactionType.TOKENCLAIMAIRDROP,
-  TransactionType.TOKENCANCELAIRDROP,
-]);
-
-// "Account" covers the account being targeted — as opposed to the fee payer, or the
-// sender/receiver legs of a transfer — per EntityRole.ACCOUNT's own definition: the account
-// updated in AccountUpdate (accountIDToUpdate), the account deleted in AccountDelete
-// (deleteAccountID), or the account associated with a node in NodeCreate/NodeUpdate
-// (account_id). CryptoCreate has no existing account id to target, and allowance
-// transactions use owner/spender rather than a plain account field, so both are excluded.
-const ACCOUNT_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.CRYPTOUPDATEACCOUNT,
-  TransactionType.CRYPTODELETE,
-  TransactionType.NODECREATE,
-  TransactionType.NODEUPDATE,
-]);
-
-// A file id is only a literal field (fileID) on Append/Delete/Update — FileCreate has no
-// existing file id to target, same reasoning as NodeCreate above.
-const FILE_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.FILEAPPEND,
-  TransactionType.FILEDELETE,
-  TransactionType.FILEUPDATE,
-]);
-
-// A topic id is only a literal field (topicID) on Update/Delete/SubmitMessage —
-// ConsensusCreateTopic has no existing topic id to target.
-const TOPIC_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.CONSENSUSUPDATETOPIC,
-  TransactionType.CONSENSUSDELETETOPIC,
-  TransactionType.CONSENSUSSUBMITMESSAGE,
-]);
-
-// Every Token Service transaction carries a token id — either a direct `token`/`token_id`
-// field, or (for Associate/Dissociate) a repeated token list, or (for Airdrop/Claim/Cancel/
-// Reject) a token id nested in each transfer/reference entry. TokenCreate is the one
-// exception, since it has no existing token id to target.
-const TOKEN_TRANSACTION_TYPES = new Set<TransactionType>([
-  TransactionType.TOKENASSOCIATE,
-  TransactionType.TOKENAIRDROP,
-  TransactionType.TOKENBURN,
-  TransactionType.TOKENCANCELAIRDROP,
-  TransactionType.TOKENCLAIMAIRDROP,
-  TransactionType.TOKENDELETION,
-  TransactionType.TOKENDISSOCIATE,
-  TransactionType.TOKENFEESCHEDULEUPDATE,
-  TransactionType.TOKENFREEZE,
-  TransactionType.TOKENGRANTKYC,
-  TransactionType.TOKENMINT,
-  TransactionType.TOKENPAUSE,
-  TransactionType.TOKENREJECT,
-  TransactionType.TOKENREVOKEKYC,
-  TransactionType.TOKENUNFREEZE,
-  TransactionType.TOKENUNPAUSE,
-  TransactionType.TOKENUPDATE,
-  TransactionType.TOKENUPDATENFTS,
-  TransactionType.TOKENWIPE,
-]);
-
-// Narrows the Transaction Type dropdown once a role is picked whose entity kind maps to
-// only a subset of transaction types — keyed by role rather than entityIdKind since these
-// roles describe a field's function within the transaction, not the typed entity's kind.
-const ROLE_TRANSACTION_TYPES: Partial<Record<EntityRole, Set<TransactionType>>> = {
-  sender: SENDER_RECEIVER_TRANSACTION_TYPES,
-  receiver: SENDER_RECEIVER_TRANSACTION_TYPES,
-  account: ACCOUNT_TRANSACTION_TYPES,
-  file: FILE_TRANSACTION_TYPES,
-  token: TOKEN_TRANSACTION_TYPES,
-  topic: TOPIC_TRANSACTION_TYPES,
-};
-
 const transactionTypeItems = computed(() => {
   const allowedTypes =
     entityIdKind.value === 'node'
-      ? NODE_TRANSACTION_TYPES
+      ? ROLE_TRANSACTION_TYPES.node
       : (entityRole.value && ROLE_TRANSACTION_TYPES[entityRole.value]) || null;
 
   return [
@@ -273,7 +204,7 @@ const transactionTypeItems = computed(() => {
   ];
 });
 
-const transactionType = computed<TransactionType | ''>(
+const transactionType = computed<BackEndTransactionType | ''>(
   () => LABEL_TO_TRANSACTION_TYPE.get(transactionTypeInput.value.trim().toLowerCase()) ?? '',
 );
 
@@ -359,7 +290,7 @@ watch(show, isShown => {
 watch(entityIdKind, kind => {
   if (kind === 'node') {
     entityRoleInput.value = capitalize(ROLE_LABELS.node);
-    if (transactionType.value && !NODE_TRANSACTION_TYPES.has(transactionType.value)) {
+    if (transactionType.value && !ROLE_TRANSACTION_TYPES.node?.has(transactionType.value)) {
       transactionTypeInput.value = ANY_TYPE_LABEL;
     }
   } else if (entityRole.value === 'node') {

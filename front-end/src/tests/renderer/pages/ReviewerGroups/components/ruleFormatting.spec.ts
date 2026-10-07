@@ -28,7 +28,7 @@ describe('formatTransactionType', () => {
   });
 
   test('maps a known transaction type to its label', () => {
-    expect(formatTransactionType('CRYPTOTRANSFER')).toBe('Transfer');
+    expect(formatTransactionType('TRANSFER')).toBe('Transfer Transaction');
   });
 
   test('falls back to the raw string for an unrecognized transaction type', () => {

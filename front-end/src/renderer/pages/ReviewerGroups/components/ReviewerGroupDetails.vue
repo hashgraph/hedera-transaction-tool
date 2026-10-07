@@ -57,6 +57,9 @@ const pendingChangeType = ref<'UPDATE' | 'DELETE' | null>(null);
 const pendingRuleDeletionIds = ref<Set<number>>(new Set());
 const ruleSortField = ref<RuleSortField>('hederaId');
 const ruleSortDirection = ref<'asc' | 'desc'>('asc');
+// Guards against an older fetchGroup() (for a previously-selected group) resolving after a
+// newer one — only the most recently started call is allowed to update state.
+let latestRequestId = 0;
 
 /* Computed */
 const isAdmin = computed(
@@ -129,15 +132,18 @@ function handleRuleSort(field: RuleSortField) {
 async function fetchGroup() {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const serverUrl = user.selectedOrganization.serverUrl;
+  const requestId = ++latestRequestId;
   fetching.value = true;
   try {
     const [detail, changes] = await Promise.all([
       getReviewerGroup(serverUrl, props.groupId),
       getReviewerGroupChanges(serverUrl, props.groupId),
     ]);
+    if (requestId !== latestRequestId) return;
     group.value = detail;
     pendingChangeType.value = changes.find(c => c.status === 'PENDING')?.type ?? null;
   } catch (error) {
+    if (requestId !== latestRequestId) return;
     toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
     group.value = null;
     fetching.value = false;
@@ -151,15 +157,18 @@ async function fetchGroup() {
     const ruleChangeLists = await Promise.all(
       rules.map(rule => getReviewerRuleChanges(serverUrl, rule.id)),
     );
+    if (requestId !== latestRequestId) return;
     pendingRuleDeletionIds.value = new Set(
       rules
         .filter((_, index) => ruleChangeLists[index].some(change => change.status === 'PENDING'))
         .map(rule => rule.id),
     );
   } catch (error) {
-    toastManager.error(getErrorMessage(error, 'Failed to load rule pending-delete status'));
+    if (requestId === latestRequestId) {
+      toastManager.error(getErrorMessage(error, 'Failed to load rule pending-delete status'));
+    }
   } finally {
-    fetching.value = false;
+    if (requestId === latestRequestId) fetching.value = false;
   }
 }
 

@@ -17,7 +17,6 @@ import {
   assertIsLoggedInOrganization,
   assertUserLoggedIn,
   getErrorMessage,
-  isLoggedInOrganization,
   matchLabelPrefix,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -62,7 +61,7 @@ const originalSnapshot = ref<{
   name: string;
   description: string;
   threshold: number;
-  memberIds: number[];
+  members: string[];
 } | null>(null);
 const name = ref('');
 const description = ref('');
@@ -77,7 +76,12 @@ const leaveConfirmed = ref(false);
 const pendingLeavePath = ref('');
 
 /* Computed */
-const canSubmit = computed(() => name.value.trim().length > 0 && members.value.length > 0);
+const canSubmit = computed(
+  () =>
+    name.value.trim().length > 0 &&
+    members.value.length > 0 &&
+    (!isEditMode.value || hasUnsavedChanges.value),
+);
 
 const hasUnsavedChanges = computed(() => {
   if (!originalSnapshot.value) {
@@ -86,12 +90,12 @@ const hasUnsavedChanges = computed(() => {
     );
   }
 
-  const currentMemberIds = [...members.value.map(m => m.userId)].sort((a, b) => a - b);
+  const currentMemberKeys = sortedMemberKeys(members.value);
   return (
     name.value.trim() !== originalSnapshot.value.name ||
     description.value.trim() !== originalSnapshot.value.description ||
     (threshold.value || members.value.length) !== originalSnapshot.value.threshold ||
-    JSON.stringify(currentMemberIds) !== JSON.stringify(originalSnapshot.value.memberIds)
+    JSON.stringify(currentMemberKeys) !== JSON.stringify(originalSnapshot.value.members)
   );
 });
 
@@ -116,6 +120,12 @@ const thresholdModel = computed({
 /* Functions */
 const memberDisplayName = (userId: number) =>
   contacts.getContact(userId)?.user.email ?? `User: ${userId}`;
+
+// Identifies a member by both which user and which of their keys was designated — changing
+// just the key for an otherwise-unchanged member set must still count as a change.
+const memberKey = (m: { userId: number; userKeyId: number }) => `${m.userId}:${m.userKeyId}`;
+const sortedMemberKeys = (list: { userId: number; userKeyId: number }[]) =>
+  list.map(memberKey).sort();
 
 const sanitizeThreshold = (value: string) => value.replace(/\D/g, '');
 
@@ -166,7 +176,7 @@ const loadGroupForEdit = async (id: number) => {
       name: detail.name,
       description: detail.description ?? '',
       threshold: detail.threshold,
-      memberIds: [...members.value.map(m => m.userId)].sort((a, b) => a - b),
+      members: sortedMemberKeys(members.value),
     };
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to load reviewer group'));
@@ -191,10 +201,17 @@ const handleSubmit = async (personalPassword: string | null): Promise<ActionRepo
     publicKey: contacts.getContact(m.userId)?.userKeys.find(k => k.id === m.userKeyId)?.publicKey ?? '',
   }));
 
+  // Edit mode's DTO is a partial update — an omitted/undefined description means "leave it
+  // unchanged", so clearing the field must send '' explicitly, and the signed snapshot must
+  // sign that same string rather than collapsing it to null (which only create mode uses to
+  // mean "none", and which the update DTO's string-typed field can't even carry).
+  const trimmedDescription = description.value.trim();
+  const descriptionForSigning = isEditMode.value ? trimmedDescription : trimmedDescription || null;
+
   const snapshotPayload = {
     ...(isEditMode.value ? { action: 'update' as const, groupId: groupId.value } : {}),
     name: name.value.trim(),
-    description: description.value.trim() || null,
+    description: descriptionForSigning,
     threshold: effectiveThreshold,
     members: membersWithKeys,
   };
@@ -209,10 +226,7 @@ const handleSubmit = async (personalPassword: string | null): Promise<ActionRepo
 
   const dto = {
     name: snapshotPayload.name,
-    // Edit mode's DTO is a partial update — an omitted/undefined description means
-    // "leave it unchanged", so clearing the field must send '' explicitly rather than
-    // collapsing through snapshotPayload's null (which create mode uses to mean "none").
-    description: isEditMode.value ? description.value.trim() : (snapshotPayload.description ?? undefined),
+    description: isEditMode.value ? trimmedDescription : trimmedDescription || undefined,
     threshold: effectiveThreshold,
     members: members.value,
     userKeyId,
@@ -240,12 +254,16 @@ const handleSubmit = async (personalPassword: string | null): Promise<ActionRepo
 };
 
 /* Watch */
+// Switching organizations (including to a different, still-valid one) invalidates this
+// form entirely — it was populated against the previous organization's groups/members, and
+// submitting would otherwise silently create/update a group under the new one. Leave
+// immediately rather than letting onBeforeRouteLeave offer to "Continue Editing" against a
+// form that's no longer bound to the organization the user can see.
 watch(
   () => user.selectedOrganization,
   () => {
-    if (!isLoggedInOrganization(user.selectedOrganization)) {
-      router.push({ name: 'transactions' });
-    }
+    leaveConfirmed.value = true;
+    router.push({ name: 'transactions' });
   },
 );
 
