@@ -28,6 +28,8 @@ import {
   TransactionCachedNode,
   TransactionAccountSnapshot,
   TransactionNodeSnapshot,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
@@ -157,6 +159,8 @@ async function connectDatabase() {
       NodeSnapshot,
       TransactionAccountSnapshot,
       TransactionNodeSnapshot,
+      TransactionReviewerList,
+      TransactionReviewerListMember,
     ],
   });
 
