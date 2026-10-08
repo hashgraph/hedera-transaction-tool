@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { IReviewerGroupDetail, IReviewerGroupMember, IReviewerRule } from '@shared/interfaces';
-import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -22,10 +21,10 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
-import ActionReportModal from '@renderer/components/ActionController/ActionReportModal.vue';
 import CreateRuleModal from '@renderer/components/ReviewerGroups/CreateRuleModal.vue';
 import DeleteGroupModal from '@renderer/components/ReviewerGroups/DeleteGroupModal.vue';
 import DeleteRuleModal from '@renderer/components/ReviewerGroups/DeleteRuleModal.vue';
+import NoSigningKeyModal from '@renderer/components/ReviewerGroups/NoSigningKeyModal.vue';
 import PendingRuleDeleteButton from '@renderer/components/ReviewerGroups/PendingRuleDeleteButton.vue';
 import { resolveReviewerSigningKey } from '@renderer/components/ReviewerGroups/signReviewerPayload';
 import { formatNetwork, formatRole, formatTransactionType } from './ruleFormatting';
@@ -60,8 +59,7 @@ const pendingChangeType = ref<'UPDATE' | 'DELETE' | null>(null);
 const pendingRuleDeletionIds = ref<Set<number>>(new Set());
 const ruleSortField = ref<RuleSortField>('hederaId');
 const ruleSortDirection = ref<'asc' | 'desc'>('asc');
-const signingKeyReport = ref<ActionReport | null>(null);
-const showSigningKeyReport = ref(false);
+const showNoSigningKeyModal = ref(false);
 // Guards against an older fetchGroup() (for a previously-selected group) resolving after a
 // newer one — only the most recently started call is allowed to update state.
 let latestRequestId = 0;
@@ -199,8 +197,7 @@ function checkSigningKeyAvailable(): boolean {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const signingKey = resolveReviewerSigningKey(user.keyPairs, user.selectedOrganization.userKeys);
   if ('title' in signingKey) {
-    signingKeyReport.value = signingKey;
-    showSigningKeyReport.value = true;
+    showNoSigningKeyModal.value = true;
     return false;
   }
   return true;
@@ -399,11 +396,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
         :rule-label="ruleToDelete.hederaId"
         @deleted="handleRuleDeleted"
       />
-      <ActionReportModal
-        v-if="signingKeyReport"
-        v-model:show="showSigningKeyReport"
-        :report="signingKeyReport"
-      />
+      <NoSigningKeyModal v-model:show="showNoSigningKeyModal" />
     </template>
   </div>
 </template>

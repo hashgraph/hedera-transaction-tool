@@ -147,22 +147,39 @@ describe('ReviewerGroups.vue', () => {
     expect(mocks.routerPush).toHaveBeenCalledWith({ name: 'createReviewerGroup' });
   });
 
-  test('blocks navigation and shows the signing-key report when no key is available', async () => {
+  test('blocks navigation and shows the no-signing-key modal when no key is available', async () => {
     mocks.userStore.selectedOrganization.admin = true;
-    const report = {
+    mocks.resolveReviewerSigningKey.mockReturnValue({
       status: ActionStatus.Error,
       title: 'No signing key available',
       what: 'This action must be signed with one of your keys, but none are available on this device',
       next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
-    };
-    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+    });
 
     const wrapper = mountReviewerGroups();
     await wrapper.find('[data-testid="button-add-reviewer-group"]').trigger('click');
     await nextTick();
 
     expect(mocks.routerPush).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('No signing key available');
+    expect(wrapper.text()).toContain('No Signing Key Available');
+  });
+
+  test('"Go to Settings" in the no-signing-key modal navigates to the keys settings page', async () => {
+    mocks.userStore.selectedOrganization.admin = true;
+    mocks.resolveReviewerSigningKey.mockReturnValue({
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    });
+
+    const wrapper = mountReviewerGroups();
+    await wrapper.find('[data-testid="button-add-reviewer-group"]').trigger('click');
+    await nextTick();
+
+    await wrapper.find('[data-testid="button-goto-settings-no-signing-key"]').trigger('click');
+
+    expect(mocks.routerPush).toHaveBeenCalledWith('/settings/keys');
   });
 
   test('lists groups and shows the store-selected group\'s details', async () => {

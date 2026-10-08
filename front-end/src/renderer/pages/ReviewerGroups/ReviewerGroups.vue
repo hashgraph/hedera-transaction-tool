@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
-
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
@@ -14,7 +12,7 @@ import { assertIsLoggedInOrganization, isLoggedInOrganization } from '@renderer/
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import ActionReportModal from '@renderer/components/ActionController/ActionReportModal.vue';
+import NoSigningKeyModal from '@renderer/components/ReviewerGroups/NoSigningKeyModal.vue';
 import ReviewerGroupDetails from './components/ReviewerGroupDetails.vue';
 import { resolveReviewerSigningKey } from '@renderer/components/ReviewerGroups/signReviewerPayload';
 
@@ -28,8 +26,7 @@ useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
-const signingKeyReport = ref<ActionReport | null>(null);
-const showSigningKeyReport = ref(false);
+const showNoSigningKeyModal = ref(false);
 
 /* Handlers */
 function handleSelectGroup(id: number) {
@@ -43,8 +40,7 @@ function handleAddNewClick() {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const signingKey = resolveReviewerSigningKey(user.keyPairs, user.selectedOrganization.userKeys);
   if ('title' in signingKey) {
-    signingKeyReport.value = signingKey;
-    showSigningKeyReport.value = true;
+    showNoSigningKeyModal.value = true;
     return;
   }
 
@@ -119,10 +115,6 @@ function handleAddNewClick() {
       </div>
     </div>
 
-    <ActionReportModal
-      v-if="signingKeyReport"
-      v-model:show="showSigningKeyReport"
-      :report="signingKeyReport"
-    />
+    <NoSigningKeyModal v-model:show="showNoSigningKeyModal" />
   </div>
 </template>

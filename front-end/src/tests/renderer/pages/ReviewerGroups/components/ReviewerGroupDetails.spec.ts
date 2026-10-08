@@ -392,7 +392,7 @@ describe('ReviewerGroupDetails.vue', () => {
     await wrapper.find('[data-testid="button-remove-reviewer-rule-5"]').trigger('click');
 
     expect(wrapper.find('[data-testid="stub-delete-rule-modal"]').exists()).toBe(false);
-    expect(wrapper.text()).toContain('No signing key available');
+    expect(wrapper.text()).toContain('No Signing Key Available');
   });
 
   test('shows a disabled, tooltipped delete icon instead of the remove button when a rule has a pending deletion', async () => {
@@ -509,7 +509,7 @@ describe('ReviewerGroupDetails.vue', () => {
     await wrapper.find('[data-testid="button-edit-reviewer-group"]').trigger('click');
 
     expect(mocks.routerPush).not.toHaveBeenCalled();
-    expect(wrapper.text()).toContain('No signing key available');
+    expect(wrapper.text()).toContain('No Signing Key Available');
   });
 
   test('clicking Add Rule opens the create-rule modal, and refetches the group once a rule is created', async () => {
@@ -549,7 +549,7 @@ describe('ReviewerGroupDetails.vue', () => {
     await wrapper.find('[data-testid="button-add-reviewer-rule"]').trigger('click');
 
     expect(wrapper.find('[data-testid="stub-create-rule-modal"]').exists()).toBe(false);
-    expect(wrapper.text()).toContain('No signing key available');
+    expect(wrapper.text()).toContain('No Signing Key Available');
   });
 
   test('clicking Remove opens the delete-group modal, and refetches the group once deletion is requested', async () => {
@@ -589,7 +589,26 @@ describe('ReviewerGroupDetails.vue', () => {
     await wrapper.find('[data-testid="button-remove-reviewer-group"]').trigger('click');
 
     expect(wrapper.find('[data-testid="stub-delete-group-modal"]').exists()).toBe(false);
-    expect(wrapper.text()).toContain('No signing key available');
+    expect(wrapper.text()).toContain('No Signing Key Available');
+  });
+
+  test('"Go to Settings" in the no-signing-key modal navigates to the keys settings page', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.userStore.selectedOrganization.admin = true;
+    mocks.resolveReviewerSigningKey.mockReturnValue({
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    });
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-remove-reviewer-group"]').trigger('click');
+    await wrapper.find('[data-testid="button-goto-settings-no-signing-key"]').trigger('click');
+
+    expect(mocks.routerPush).toHaveBeenCalledWith('/settings/keys');
   });
 
   test('shows an error toast and clears the group when the fetch fails', async () => {
