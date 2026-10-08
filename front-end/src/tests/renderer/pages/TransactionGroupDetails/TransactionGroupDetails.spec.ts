@@ -132,7 +132,7 @@ vi.mock('@renderer/composables/useWebsocketSubscription', () => ({
 
 vi.mock('@shared/constants', async importOriginal => {
   const actual = await importOriginal<typeof import('@shared/constants')>();
-  return { ...actual, FEATURE_APPROVERS_ENABLED: true };
+  return { ...actual, FEATURE_REVIEWER_ENABLED: true };
 });
 
 vi.mock('@renderer/services/organization', () => ({

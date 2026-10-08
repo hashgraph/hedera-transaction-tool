@@ -1241,6 +1241,91 @@ describe('AppAutoComplete', () => {
     wrapper.unmount();
   });
 
+  // Ch. Chevron click — focus-aware open/close, distinct from the wrapper's own
+  // always-open click handler.
+  test('Ch1: clicking the chevron while unfocused focuses the input, selects its text, and opens the dropdown', async () => {
+    const wrapper = mountAutoComplete(
+      { modelValue: 'Transfer', items: ['Transfer', 'Approve'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    const input = wrapper.find('input');
+    const el = input.element as HTMLInputElement;
+    const selectSpy = vi.spyOn(el, 'select');
+
+    await wrapper.find('.autocomplete-chevron').trigger('click');
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await flushPromises();
+
+    expect(document.activeElement).toBe(el);
+    expect(selectSpy).toHaveBeenCalled();
+    const dropdown = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdown.style.visibility).toBe('visible');
+
+    wrapper.unmount();
+  });
+
+  test('Ch2: clicking the chevron while focused with the dropdown open closes it without touching focus or selection', async () => {
+    const wrapper = mountAutoComplete(
+      { modelValue: 'Transfer', items: ['Transfer', 'Approve'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    const input = wrapper.find('input');
+    const el = input.element as HTMLInputElement;
+    // Real .focus() (not trigger('focus')), so document.activeElement actually moves —
+    // trigger() only dispatches the event, which is enough for handleFocus to run but
+    // leaves activeElement unchanged, defeating the chevron handler's own focus check.
+    el.focus();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await flushPromises();
+    const dropdownBefore = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdownBefore.style.visibility).toBe('visible');
+    // Focusing selects the whole value — sanity-check the starting point so the
+    // post-click collapse assertion below actually proves something changed.
+    expect(el.selectionStart).toBe(0);
+    expect(el.selectionEnd).toBe(el.value.length);
+
+    const selectSpy = vi.spyOn(el, 'select');
+    await wrapper.find('.autocomplete-chevron').trigger('click');
+    await flushPromises();
+
+    expect(document.activeElement).toBe(el);
+    expect(selectSpy).not.toHaveBeenCalled();
+    const dropdownAfter = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdownAfter.style.visibility).toBe('hidden');
+    // Closing via the chevron collapses the select-all highlight to the end so typing
+    // can resume naturally instead of overwriting the whole value.
+    expect(el.selectionStart).toBe(el.value.length);
+    expect(el.selectionEnd).toBe(el.value.length);
+
+    wrapper.unmount();
+  });
+
+  test('Ch3: clicking the chevron while focused with the dropdown closed opens it without touching focus or selection', async () => {
+    const wrapper = mountAutoComplete(
+      { items: ['Transfer', 'Approve'], findMatch: prefixMatcher() },
+      { attachTo: document.body },
+    );
+    const input = wrapper.find('input');
+    const el = input.element as HTMLInputElement;
+    el.focus();
+    await flushPromises();
+    await input.trigger('keydown', { key: 'Escape' });
+    await flushPromises();
+    const dropdownBefore = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdownBefore.style.visibility).toBe('hidden');
+
+    const selectSpy = vi.spyOn(el, 'select');
+    await wrapper.find('.autocomplete-chevron').trigger('click');
+    await flushPromises();
+
+    expect(document.activeElement).toBe(el);
+    expect(selectSpy).not.toHaveBeenCalled();
+    const dropdownAfter = wrapper.find('.autocomplete-custom').element as HTMLElement;
+    expect(dropdownAfter.style.visibility).toBe('visible');
+
+    wrapper.unmount();
+  });
+
   // N. filterItem narrows the dropdown to what's actually been typed since the dropdown
   // last opened — not to modelValue in general, which also changes from arrow-key
   // navigation, clicking a row, and Tab/Enter, none of which are "typing".

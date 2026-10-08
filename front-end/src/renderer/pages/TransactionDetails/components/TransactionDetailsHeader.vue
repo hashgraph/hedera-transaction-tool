@@ -8,7 +8,7 @@ import { useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { FEATURE_APPROVERS_ENABLED } from '@shared/constants';
+import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetwork from '@renderer/stores/storeNetwork';
@@ -209,7 +209,7 @@ watch(
     isRefreshing.value = true;
 
     const approvePromise: Promise<boolean> =
-      FEATURE_APPROVERS_ENABLED && isLoggedInOrganization(user.selectedOrganization)
+      FEATURE_REVIEWER_ENABLED && isLoggedInOrganization(user.selectedOrganization)
         ? getUserShouldApprove(user.selectedOrganization.serverUrl, transaction.id)
         : Promise.resolve(false);
 
@@ -264,7 +264,7 @@ const computeVisibleButtons = (
     const isCreator = creator?.user.id === user.selectedOrganization.userId;
     const transactionIsInProgress = isInProgressStatus(transaction.status);
 
-    const canApprove = FEATURE_APPROVERS_ENABLED && shouldApprove && isApprovableStatus(status);
+    const canApprove = FEATURE_REVIEWER_ENABLED && shouldApprove && isApprovableStatus(status);
     const canSign = isSignableStatus(status) && publicKeysRequiredToSign.length > 0;
     const canSchedule = status === TransactionStatus.WAITING_FOR_EXECUTION && isManual && isCreator;
     const canCancel = isCreator && transactionIsInProgress;

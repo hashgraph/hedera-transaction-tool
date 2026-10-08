@@ -79,7 +79,7 @@ test.describe('Organization Contact List bulk and role tests @organization-basic
   test('Verify adding a duplicate approver to a transaction shows `User already exists in the list` error', async () => {
     test.skip(
       true,
-      'Approvers UI is feature-flagged off (FEATURE_APPROVERS_ENABLED=false). Enable it to run this test.',
+      'Reviewer UI is feature-flagged off (FEATURE_REVIEWER_ENABLED=false). Enable it to run this test.',
     );
 
     await signInOrganizationUser(

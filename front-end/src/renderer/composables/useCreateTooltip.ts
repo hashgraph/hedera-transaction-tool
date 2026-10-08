@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, type Ref } from 'vue';
+import { onBeforeUnmount, onMounted, watch, type Ref } from 'vue';
 import Tooltip from 'bootstrap/js/dist/tooltip';
 
 export default function useCreateTooltip(
@@ -20,6 +20,18 @@ export default function useCreateTooltip(
   onBeforeUnmount(() => {
     stopObservingTitleChange();
   });
+
+  // Handles targets that only appear after mount (e.g. behind a v-if driven by async state)
+  watch(
+    target,
+    newTarget => {
+      stopObservingTitleChange();
+      if (newTarget !== null) {
+        startObservingTitleChange(newTarget);
+      }
+    },
+    { flush: 'post' },
+  );
 
   /* Functions */
   const startObservingTitleChange = (target: HTMLElement) => {

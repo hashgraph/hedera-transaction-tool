@@ -4,8 +4,12 @@ import { MIGRATE_RECOVERY_PHRASE_HASH } from './constants';
 
 import useUserStore from '@renderer/stores/storeUser';
 
+import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
+
 import { isLoggedInOrganization } from '@renderer/utils';
 import useAccountSetupStore from '@renderer/stores/storeAccountSetup.ts';
+
+const reviewerGroupRoutes = ['reviewerGroups', 'createReviewerGroup'];
 
 const excludedPreviousPaths = [
   'login',
@@ -34,7 +38,8 @@ export function addGuards(router: _RouterClassic) {
 
     if (
       (to.meta.onlyAdmin && !userIsAdmin) ||
-      (to.meta.onlyOrganization && !userIsLoggedInOrganization)
+      (to.meta.onlyOrganization && !userIsLoggedInOrganization) ||
+      (reviewerGroupRoutes.includes(to.name?.toString() || '') && !FEATURE_REVIEWER_ENABLED)
     ) {
       return { name: 'transactions' };
     }

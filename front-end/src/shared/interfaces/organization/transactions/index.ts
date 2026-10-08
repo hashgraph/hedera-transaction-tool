@@ -26,6 +26,11 @@ export enum BackEndTransactionType {
   REGISTERED_NODE_DELETE = 'REGISTERED NODE DELETE',
 }
 
+// Hand-copies the same label strings as HederaSchema's TransactionTypeLabels (keyed here by
+// BackEndTransactionType instead of the raw protocol TransactionType, since a few values like
+// REGISTERED_NODE_CREATE are app-specific and have no raw-type equivalent). Candidate to be
+// composed from TransactionTypeLabels + " Transaction" wherever a raw-type equivalent exists,
+// instead of maintaining this list by hand.
 export const TransactionTypeName = {
   [BackEndTransactionType.ACCOUNT_CREATE]: 'Account Create Transaction',
   [BackEndTransactionType.ACCOUNT_UPDATE]: 'Account Update Transaction',
@@ -84,7 +89,9 @@ export interface ITransaction {
 
 export interface ITransactionFull extends ITransaction {
   signers: ITransactionSignerUserKey[];
-  approvers: ITransactionApprover[];
+  // The back-end no longer sends this field (TransactionApprover was removed in #3185)
+  // — kept optional so old UI paths behind FEATURE_REVIEWER_ENABLED don't assume it exists.
+  approvers?: ITransactionApprover[];
   observers: ITransactionObserverUserId[];
 }
 

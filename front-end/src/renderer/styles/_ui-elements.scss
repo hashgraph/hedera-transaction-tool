@@ -652,6 +652,14 @@ textarea.form-control {
   --#{$prefix}tooltip-max-width: 460px;
 }
 
+.no-wrap-tooltip {
+  --#{$prefix}tooltip-max-width: none;
+  .tooltip-inner {
+    max-width: none;
+    white-space: nowrap;
+  }
+}
+
 /* Toast */
 
 .toast-container {
@@ -1177,6 +1185,11 @@ textarea.form-control {
 .autocomplete-container {
   position: relative;
   display: inline-block;
+  width: 100%;
+
+  &.narrow {
+    width: 4.5rem;
+  }
 
   .input-wrapper {
     position: relative;
@@ -1233,7 +1246,7 @@ textarea.form-control {
 
   .autocomplete-custom {
     --max-height: 30vh;
-    --offset: 10px;
+    --offset: 3px;
 
     width: 100%;
 
@@ -1247,6 +1260,7 @@ textarea.form-control {
 
     z-index: 9999;
 
+    border: 1px solid var(--#{$prefix}input-border-color);
     border-radius: $border-radius;
 
     transition: opacity 0.1s ease-in;
@@ -1311,6 +1325,29 @@ textarea.form-control {
   }
 }
 
+/* Ghost suffix — a non-editable annotation shown after a plain input's typed text (e.g.
+   an account id's checksum), without the dropdown/suggestion-list machinery a full
+   autocomplete field brings. First used by CreateRuleModal's entity/node id field; reuse
+   this instead of autocomplete-container for any other plain-input-plus-ghost-text case. */
+.ghost-suffix-wrapper {
+  position: relative;
+}
+
+.ghost-suffix {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+
+  font-weight: $input-font-weight;
+  line-height: $input-line-height;
+  @include font-size($input-font-size);
+
+  color: grey;
+  pointer-events: none;
+  white-space: pre;
+  opacity: 0.7;
+}
+
 /* Bubble */
 .bubble {
   background-color: $purple-400;
@@ -1353,10 +1390,55 @@ textarea.form-control {
   background-color: var(--#{$prefix}container-threshhold-key);
 }
 
+// Wraps the threshold header and the member list as one bordered box, so the
+// lavender header reads as the list's own control strip rather than a second,
+// same-colored component sitting on top of it.
+.reviewer-list-box {
+  display: flex;
+  flex-direction: column;
+  // Shrink-wraps to its header + row content instead of always stretching to
+  // fill the page; max-height caps it at whatever the page actually has left,
+  // at which point the list body below scrolls instead of the box growing.
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: 100%;
+  border: 1px solid var(--#{$prefix}input-border-color);
+  border-radius: $border-radius;
+  overflow: hidden;
+}
+
+.reviewer-list-header {
+  flex-shrink: 0;
+}
+
+// Overrides list-group's own bg custom property (set inline on this element by
+// bootstrap's component CSS) so rows don't fall back to --bs-body-bg, which is
+// the same lavender as the header and the filled inputs above it.
+.reviewer-list-body {
+  --bs-list-group-bg: var(--#{$prefix}modal-bg-color);
+  // flex-basis: auto (not 0) so the rows' own content height counts toward the
+  // box's shrink-wrapped size; min-height: 0 still lets it shrink and scroll
+  // once the box hits its max-height cap.
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
 .transaction-group-row {
   background-color: $light-blue-300;
 
   @media (prefers-color-scheme: dark) {
     background-color: $dark-blue-800;
+  }
+}
+
+// td selector needed to outweigh .table-custom td's own background-color (td paints
+// its own background over whatever the tr specifies).
+tr.reviewer-rule-row-pending-delete td {
+  background-color: $error-50;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: $error-900;
   }
 }

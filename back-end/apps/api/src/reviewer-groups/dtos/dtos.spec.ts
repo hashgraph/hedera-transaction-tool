@@ -94,4 +94,72 @@ describe('DTO @Transform and @Type', () => {
       expect(errors.some(e => e.property === 'condition')).toBe(true);
     });
   });
+
+  describe('description max length', () => {
+    it('fails validation when CreateReviewerGroupDto.description exceeds 150 characters', async () => {
+      const dto = plainToInstance(CreateReviewerGroupDto, {
+        name: 'Test',
+        threshold: 1,
+        members: [],
+        userKeyId: 1,
+        description: 'a'.repeat(151),
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'description')).toBe(true);
+    });
+
+    it('allows CreateReviewerGroupDto.description at exactly 150 characters', async () => {
+      const dto = plainToInstance(CreateReviewerGroupDto, {
+        name: 'Test',
+        threshold: 1,
+        members: [],
+        userKeyId: 1,
+        description: 'a'.repeat(150),
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'description')).toBe(false);
+    });
+
+    it('fails validation when UpdateReviewerGroupDto.description exceeds 150 characters', async () => {
+      const dto = plainToInstance(UpdateReviewerGroupDto, {
+        userKeyId: 1,
+        description: 'a'.repeat(151),
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'description')).toBe(true);
+    });
+  });
+
+  describe('name max length', () => {
+    it('fails validation when CreateReviewerGroupDto.name exceeds 75 characters', async () => {
+      const dto = plainToInstance(CreateReviewerGroupDto, {
+        name: 'a'.repeat(76),
+        threshold: 1,
+        members: [],
+        userKeyId: 1,
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'name')).toBe(true);
+    });
+
+    it('allows CreateReviewerGroupDto.name at exactly 75 characters', async () => {
+      const dto = plainToInstance(CreateReviewerGroupDto, {
+        name: 'a'.repeat(75),
+        threshold: 1,
+        members: [],
+        userKeyId: 1,
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'name')).toBe(false);
+    });
+
+    it('fails validation when UpdateReviewerGroupDto.name exceeds 75 characters', async () => {
+      const dto = plainToInstance(UpdateReviewerGroupDto, {
+        userKeyId: 1,
+        name: 'a'.repeat(76),
+      });
+      const errors = await validate(dto as any);
+      expect(errors.some(e => e.property === 'name')).toBe(true);
+    });
+  });
 });

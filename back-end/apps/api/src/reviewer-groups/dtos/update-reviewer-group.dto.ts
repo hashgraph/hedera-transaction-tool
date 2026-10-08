@@ -1,15 +1,19 @@
 import { Transform, Type } from 'class-transformer';
-import { IsArray, IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, MaxLength, Min, ValidateNested } from 'class-validator';
+
+import { MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH, MAX_REVIEWER_GROUP_NAME_LENGTH } from '@entities';
 
 import { GroupMemberInputDto } from './create-reviewer-group.dto';
 
 export class UpdateReviewerGroupDto {
   @IsString()
   @IsOptional()
+  @MaxLength(MAX_REVIEWER_GROUP_NAME_LENGTH)
   name?: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(MAX_REVIEWER_GROUP_DESCRIPTION_LENGTH)
   description?: string;
 
   @IsInt()

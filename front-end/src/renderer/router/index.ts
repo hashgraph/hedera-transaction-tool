@@ -17,6 +17,8 @@ const Accounts = () => import('@renderer/pages/Accounts');
 const Settings = () => import('@renderer/pages/Settings');
 const Files = () => import('@renderer/pages/Files');
 const ContactList = () => import('@renderer/pages/ContactList');
+const ReviewerGroups = () => import('@renderer/pages/ReviewerGroups');
+const CreateReviewerGroup = () => import('@renderer/pages/ReviewerGroups/CreateReviewerGroup');
 const SignUpUser = () => import('@renderer/pages/ContactList/SignUpUser');
 const AccountSetup = () => import('@renderer/pages/AccountSetup');
 const GeneralTab = () => import('@renderer/pages/Settings/components/GeneralTab');
@@ -49,6 +51,12 @@ const routes: RouteRecordRaw[] = [
   { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list/create', name: 'signUpUser', component: SignUpUser },
   { path: '/contact-list', name: 'contactList', component: ContactList },
+  {
+    path: '/reviewer-groups/create/:groupId?',
+    name: 'createReviewerGroup',
+    component: CreateReviewerGroup,
+  },
+  { path: '/reviewer-groups', name: 'reviewerGroups', component: ReviewerGroups },
   { path: '/account-setup', name: 'accountSetup', component: AccountSetup },
   { path: '/restore-key', name: constants.RESTORE_KEY, component: RestoreKey },
   { path: '/migrate', name: 'migrate', component: Migrate },

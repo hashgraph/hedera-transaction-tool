@@ -36,6 +36,8 @@ import {
   CachedNodeAdminKey,
   NodeSnapshot,
   AccountSnapshot,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
 } from '@entities';
 
 dotenv.config({

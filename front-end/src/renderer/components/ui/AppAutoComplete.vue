@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watchEffect } from 'vue';
 
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import { measureTextWidth, positionGhostSuffix } from '@renderer/utils';
 
 /* Props */
 const props = withDefaults(
@@ -259,6 +260,33 @@ const handleSelectItem = (event: Event, item: string) => {
   toggleDropdown(false);
 };
 
+const handleChevronClick = (event: Event) => {
+  // The wrapper also has @click="toggleDropdown(true)" — without this, a chevron click
+  // would both run the branch below and unconditionally reopen via the wrapper.
+  event.stopPropagation();
+
+  const input = inputRef.value?.inputRef;
+  if (document.activeElement !== input) {
+    // Native focus event drives handleFocus itself (valueOnFocus snapshot, select-all,
+    // and the open) — mirroring that here would just duplicate it.
+    input?.focus();
+    return;
+  }
+
+  // Already focused: only the dropdown should react — flip it directly instead of going
+  // through handleFocus/handleBlur.
+  const willOpen = !isOpen.value;
+  toggleDropdown(willOpen);
+
+  // Closing via the chevron leaves focus in the input, but the select-all highlight from
+  // the original focus (or from a selection made while browsing the list) would otherwise
+  // just sit there — collapse it to the end so typing can resume naturally.
+  if (!willOpen && input) {
+    const end = input.value.length;
+    input.setSelectionRange(end, end);
+  }
+};
+
 const handleBlur = () => {
   // For a closed-list field, leaving with a partial-but-valid-prefix value (e.g. "trans")
   // should resolve to whatever's currently highlighted ("Transfer") rather than leave the
@@ -396,26 +424,6 @@ function toggleDropdown(show: boolean) {
   prefixSuggestionRef.value?.classList.toggle('d-none', !show);
 }
 
-function measureTextWidth(text: string, input: HTMLInputElement): number {
-  const tempSpan = document.createElement('span');
-  tempSpan.style.visibility = 'hidden';
-  tempSpan.style.position = 'absolute';
-  tempSpan.style.whiteSpace = 'pre';
-  tempSpan.style.fontFamily = getComputedStyle(input).fontFamily;
-  tempSpan.style.fontSize = getComputedStyle(input).fontSize;
-  // Tabular-nums digits are wider than the default proportional spacing — without
-  // copying this, measured width undershoots the real input's rendered width and the
-  // postfix ghost ends up positioned underneath the input's own trailing characters.
-  tempSpan.style.fontVariantNumeric = getComputedStyle(input).fontVariantNumeric;
-  tempSpan.textContent = text;
-
-  document.body.appendChild(tempSpan);
-  const width = tempSpan.getBoundingClientRect().width;
-  document.body.removeChild(tempSpan);
-
-  return width;
-}
-
 async function positionSuggestion() {
   if (!inputRef.value?.inputRef || !prefixSuggestionRef.value || !postfixSuggestionRef.value)
     return;
@@ -439,8 +447,9 @@ async function positionSuggestion() {
   }
 
   if (autocompletePostfixSuggestion.value) {
-    const inputWidth = measureTextWidth(input.value, input);
-    postfixSuggestion.style.left = `${prefixWidth + inputWidth + leftValue + 2}px`;
+    // input.style.paddingLeft was just widened by the prefix branch above (when there's
+    // a prefix suggestion), so reading it back here already folds prefixWidth in.
+    positionGhostSuffix(input, postfixSuggestion);
   }
 }
 
@@ -528,7 +537,7 @@ watchEffect(() => {
 </script>
 
 <template>
-  <div class="w-100 autocomplete-container" :class="{ 'is-tabular-nums': tabularNums }">
+  <div class="autocomplete-container" :class="{ 'is-tabular-nums': tabularNums }">
     <div ref="inputWrapperRef" @click="toggleDropdown(true)" class="input-wrapper">
       <span ref="prefixSuggestionRef" class="autocomplete-suggestion">{{
         autocompletePrefixSuggestion
@@ -547,7 +556,11 @@ watchEffect(() => {
       <span ref="postfixSuggestionRef" class="autocomplete-suggestion">{{
         autocompletePostfixSuggestion
       }}</span>
-      <i class="bi bi-chevron-down autocomplete-chevron cursor-pointer"></i>
+      <i
+        class="bi bi-chevron-down autocomplete-chevron cursor-pointer"
+        @mousedown.prevent
+        @click="handleChevronClick"
+      ></i>
     </div>
 
     <div
