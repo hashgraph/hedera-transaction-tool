@@ -15,6 +15,11 @@ function parseTransactionFile(value: unknown): TransactionFile {
     throw new Error('Invalid transaction file: unsupported format or network');
   }
 
+  const networkScheme = value.network.match(/^([a-z][a-z\d+.-]*):\/\//i)?.[1];
+  if (networkScheme && networkScheme.toLowerCase() !== 'https') {
+    throw new Error('Invalid transaction file network: HTTPS is required');
+  }
+
   for (const item of value.items) {
     if (
       !isRecord(item) ||

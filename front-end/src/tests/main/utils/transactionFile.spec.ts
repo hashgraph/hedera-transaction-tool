@@ -120,6 +120,16 @@ describe('transactionFile utils', () => {
       });
     });
 
+    it('rejects a custom network endpoint that explicitly uses HTTP', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'http://mainnet-public.mirrornode.hedera.com', items: [] }),
+      );
+
+      await expect(readTransactionFile('/path/to/http-network.tx2')).rejects.toThrow(
+        'HTTPS is required',
+      );
+    });
+
     it('rejects malformed transaction items', async () => {
       vi.mocked(fsp.readFile).mockResolvedValue(
         JSON.stringify({ network: 'testnet', items: [{ transactionBytes: 42 }] }),
