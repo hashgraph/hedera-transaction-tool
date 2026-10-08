@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
 import ReviewerGroupDetails from '@renderer/pages/ReviewerGroups/components/ReviewerGroupDetails.vue';
+import { ActionStatus } from '@renderer/components/ActionController/ActionReport';
 
 const mocks = vi.hoisted(() => ({
   userStore: {
@@ -11,7 +12,9 @@ const mocks = vi.hoisted(() => ({
       admin: false,
       serverUrl: 'https://org.example.com',
       userId: 1,
+      userKeys: [{ id: 5, publicKey: 'org-public-key' }],
     },
+    keyPairs: [{ public_key: 'org-public-key' }],
   },
   contactsStore: {
     getContact: vi.fn((_userId: number) => undefined as any),
@@ -21,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   getReviewerRuleChanges: vi.fn(),
   toastError: vi.fn(),
   routerPush: vi.fn(),
+  resolveReviewerSigningKey: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -53,6 +57,10 @@ vi.mock('@renderer/utils', () => ({
     error instanceof Error ? error.message : fallback,
   ),
   isLoggedInOrganization: vi.fn((organization: unknown) => organization !== null),
+}));
+
+vi.mock('@renderer/components/ReviewerGroups/signReviewerPayload', () => ({
+  resolveReviewerSigningKey: mocks.resolveReviewerSigningKey,
 }));
 
 vi.mock('@renderer/utils/ToastManager', () => ({
@@ -93,7 +101,11 @@ describe('ReviewerGroupDetails.vue', () => {
       admin: false,
       serverUrl: 'https://org.example.com',
       userId: 1,
+      userKeys: [{ id: 5, publicKey: 'org-public-key' }],
     };
+    mocks.userStore.keyPairs = [{ public_key: 'org-public-key' }];
+    mocks.resolveReviewerSigningKey.mockReset();
+    mocks.resolveReviewerSigningKey.mockReturnValue({ orgKeyId: 5, orgKeyPublicKey: 'org-public-key' });
     mocks.contactsStore.getContact.mockReset();
     mocks.contactsStore.getContact.mockImplementation((userId: number) => ({
       user: { id: userId },
@@ -349,6 +361,40 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(wrapper.find('[data-testid="stub-delete-rule-modal"]').exists()).toBe(false);
   });
 
+  test('blocks per-rule Remove and shows the signing-key report when no key is available, instead of opening the delete-rule modal', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(
+      baseGroup({
+        rules: [
+          {
+            id: 5,
+            groupId: 1,
+            hederaId: '0.0.1234',
+            network: 'mainnet',
+            entityRole: 'sender',
+            transactionType: 'TRANSFER',
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      }),
+    );
+    mocks.userStore.selectedOrganization.admin = true;
+    const report = {
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    };
+    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-remove-reviewer-rule-5"]').trigger('click');
+
+    expect(wrapper.find('[data-testid="stub-delete-rule-modal"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('No signing key available');
+  });
+
   test('shows a disabled, tooltipped delete icon instead of the remove button when a rule has a pending deletion', async () => {
     mocks.getReviewerGroup.mockResolvedValue(
       baseGroup({
@@ -446,6 +492,26 @@ describe('ReviewerGroupDetails.vue', () => {
     });
   });
 
+  test('blocks Edit and shows the signing-key report when no key is available, instead of navigating', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.userStore.selectedOrganization.admin = true;
+    const report = {
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    };
+    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+
+    const wrapper = mountDetails(7);
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-edit-reviewer-group"]').trigger('click');
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('No signing key available');
+  });
+
   test('clicking Add Rule opens the create-rule modal, and refetches the group once a rule is created', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.userStore.selectedOrganization.admin = true;
@@ -466,6 +532,26 @@ describe('ReviewerGroupDetails.vue', () => {
     expect(wrapper.find('[data-testid="stub-create-rule-modal"]').exists()).toBe(false);
   });
 
+  test('blocks Add Rule and shows the signing-key report when no key is available, instead of opening the create-rule modal', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.userStore.selectedOrganization.admin = true;
+    const report = {
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    };
+    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-add-reviewer-rule"]').trigger('click');
+
+    expect(wrapper.find('[data-testid="stub-create-rule-modal"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('No signing key available');
+  });
+
   test('clicking Remove opens the delete-group modal, and refetches the group once deletion is requested', async () => {
     mocks.getReviewerGroup.mockResolvedValue(baseGroup());
     mocks.userStore.selectedOrganization.admin = true;
@@ -484,6 +570,26 @@ describe('ReviewerGroupDetails.vue', () => {
 
     expect(mocks.getReviewerGroup).toHaveBeenCalledTimes(1);
     expect(wrapper.find('[data-testid="stub-delete-group-modal"]').exists()).toBe(false);
+  });
+
+  test('blocks Remove and shows the signing-key report when no key is available, instead of opening the delete modal', async () => {
+    mocks.getReviewerGroup.mockResolvedValue(baseGroup());
+    mocks.userStore.selectedOrganization.admin = true;
+    const report = {
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    };
+    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+
+    const wrapper = mountDetails();
+    await flushPromises();
+
+    await wrapper.find('[data-testid="button-remove-reviewer-group"]').trigger('click');
+
+    expect(wrapper.find('[data-testid="stub-delete-group-modal"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('No signing key available');
   });
 
   test('shows an error toast and clears the group when the fetch fails', async () => {

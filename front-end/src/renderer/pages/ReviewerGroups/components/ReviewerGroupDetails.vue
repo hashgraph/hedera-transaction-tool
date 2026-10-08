@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IReviewerGroupDetail, IReviewerGroupMember, IReviewerRule } from '@shared/interfaces';
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -21,10 +22,12 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
+import ActionReportModal from '@renderer/components/ActionController/ActionReportModal.vue';
 import CreateRuleModal from '@renderer/components/ReviewerGroups/CreateRuleModal.vue';
 import DeleteGroupModal from '@renderer/components/ReviewerGroups/DeleteGroupModal.vue';
 import DeleteRuleModal from '@renderer/components/ReviewerGroups/DeleteRuleModal.vue';
 import PendingRuleDeleteButton from '@renderer/components/ReviewerGroups/PendingRuleDeleteButton.vue';
+import { resolveReviewerSigningKey } from '@renderer/components/ReviewerGroups/signReviewerPayload';
 import { formatNetwork, formatRole, formatTransactionType } from './ruleFormatting';
 
 type RuleSortField = 'hederaId' | 'entityRole' | 'transactionType' | 'network';
@@ -57,6 +60,8 @@ const pendingChangeType = ref<'UPDATE' | 'DELETE' | null>(null);
 const pendingRuleDeletionIds = ref<Set<number>>(new Set());
 const ruleSortField = ref<RuleSortField>('hederaId');
 const ruleSortDirection = ref<'asc' | 'desc'>('asc');
+const signingKeyReport = ref<ActionReport | null>(null);
+const showSigningKeyReport = ref(false);
 // Guards against an older fetchGroup() (for a previously-selected group) resolving after a
 // newer one — only the most recently started call is allowed to update state.
 let latestRequestId = 0;
@@ -185,12 +190,40 @@ async function handleRuleDeleted() {
   await fetchGroup();
 }
 
-function handleRuleRemoveClick(rule: IReviewerRule) {
-  ruleToDelete.value = rule;
+// Checked before navigating to edit or opening a confirmation dialog, rather than only at
+// submit time — otherwise a user without a usable key gets all the way through a form (or
+// a confirm + password prompt) before being told to go set one up, losing whatever they'd
+// entered. Shared across group edit/remove and rule add/remove, since all four sign the
+// same way (see resolveReviewerSigningKey).
+function checkSigningKeyAvailable(): boolean {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  const signingKey = resolveReviewerSigningKey(user.keyPairs, user.selectedOrganization.userKeys);
+  if ('title' in signingKey) {
+    signingKeyReport.value = signingKey;
+    showSigningKeyReport.value = true;
+    return false;
+  }
+  return true;
 }
 
 function handleEditClick() {
+  if (!checkSigningKeyAvailable()) return;
   router.push({ name: 'createReviewerGroup', params: { groupId: String(props.groupId) } });
+}
+
+function handleRemoveClick() {
+  if (!checkSigningKeyAvailable()) return;
+  isDeleteGroupModalShown.value = true;
+}
+
+function handleAddRuleClick() {
+  if (!checkSigningKeyAvailable()) return;
+  isCreateRuleModalShown.value = true;
+}
+
+function handleRuleRemoveClick(rule: IReviewerRule) {
+  if (!checkSigningKeyAvailable()) return;
+  ruleToDelete.value = rule;
 }
 
 /* Watch */
@@ -222,7 +255,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
               type="button"
               class="min-w-unset"
               data-testid="button-remove-reviewer-group"
-              @click="isDeleteGroupModalShown = true"
+              @click="handleRemoveClick"
               ><span class="bi bi-trash"></span> Remove</AppButton
             >
             <div class="border-start ps-3">
@@ -262,7 +295,7 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
           size="small"
           class="text-small min-w-unset"
           data-testid="button-add-reviewer-rule"
-          @click="isCreateRuleModalShown = true"
+          @click="handleAddRuleClick"
           >Add Rule</AppButton
         >
       </div>
@@ -365,6 +398,11 @@ watch(() => props.groupId, fetchGroup, { immediate: true });
         :rule-id="ruleToDelete.id"
         :rule-label="ruleToDelete.hederaId"
         @deleted="handleRuleDeleted"
+      />
+      <ActionReportModal
+        v-if="signingKeyReport"
+        v-model:show="showSigningKeyReport"
+        :report="signingKeyReport"
       />
     </template>
   </div>

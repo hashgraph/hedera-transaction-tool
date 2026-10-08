@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
+
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -7,11 +10,13 @@ import useReviewerGroupsStore from '@renderer/stores/storeReviewerGroups';
 import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOnlyOrganization';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
-import { isLoggedInOrganization } from '@renderer/utils';
+import { assertIsLoggedInOrganization, isLoggedInOrganization } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
+import ActionReportModal from '@renderer/components/ActionController/ActionReportModal.vue';
 import ReviewerGroupDetails from './components/ReviewerGroupDetails.vue';
+import { resolveReviewerSigningKey } from '@renderer/components/ReviewerGroups/signReviewerPayload';
 
 /* Stores */
 const user = useUserStore();
@@ -22,12 +27,27 @@ const router = useRouter();
 useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
+/* State */
+const signingKeyReport = ref<ActionReport | null>(null);
+const showSigningKeyReport = ref(false);
+
 /* Handlers */
 function handleSelectGroup(id: number) {
   reviewerGroups.selectGroup(id);
 }
 
+// Checked here, before navigating to the create form, rather than only at submit time —
+// otherwise a user without a usable key fills out the whole form before being told to go
+// set one up, losing everything they entered.
 function handleAddNewClick() {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  const signingKey = resolveReviewerSigningKey(user.keyPairs, user.selectedOrganization.userKeys);
+  if ('title' in signingKey) {
+    signingKeyReport.value = signingKey;
+    showSigningKeyReport.value = true;
+    return;
+  }
+
   router.push({ name: 'createReviewerGroup' });
 }
 
@@ -98,5 +118,11 @@ function handleAddNewClick() {
         </div>
       </div>
     </div>
+
+    <ActionReportModal
+      v-if="signingKeyReport"
+      v-model:show="showSigningKeyReport"
+      :report="signingKeyReport"
+    />
   </div>
 </template>

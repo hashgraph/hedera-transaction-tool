@@ -4,6 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { nextTick, reactive } from 'vue';
 
 import ReviewerGroups from '@renderer/pages/ReviewerGroups/ReviewerGroups.vue';
+import { ActionStatus } from '@renderer/components/ActionController/ActionReport';
 
 // vi.hoisted callbacks run before any imports resolve, so they can't call Vue's `reactive`
 // (see the storeReviewerGroups mock factory below, which does the wrapping instead).
@@ -15,7 +16,9 @@ const mocks = vi.hoisted(() => ({
       admin: false,
       serverUrl: 'https://org.example.com',
       userId: 1,
+      userKeys: [{ id: 5, publicKey: 'org-public-key' }],
     },
+    keyPairs: [{ public_key: 'org-public-key' }],
   },
   reviewerGroupsStore: {
     groups: [] as any[],
@@ -26,6 +29,7 @@ const mocks = vi.hoisted(() => ({
     }),
     fetch: vi.fn(),
   },
+  resolveReviewerSigningKey: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -61,7 +65,12 @@ vi.mock('@renderer/composables/useSetDynamicLayout', () => ({
 }));
 
 vi.mock('@renderer/utils', () => ({
+  assertIsLoggedInOrganization: vi.fn(),
   isLoggedInOrganization: vi.fn((organization: unknown) => organization !== null),
+}));
+
+vi.mock('@renderer/components/ReviewerGroups/signReviewerPayload', () => ({
+  resolveReviewerSigningKey: mocks.resolveReviewerSigningKey,
 }));
 
 describe('ReviewerGroups.vue', () => {
@@ -70,13 +79,17 @@ describe('ReviewerGroups.vue', () => {
       admin: false,
       serverUrl: 'https://org.example.com',
       userId: 1,
+      userKeys: [{ id: 5, publicKey: 'org-public-key' }],
     };
+    mocks.userStore.keyPairs = [{ public_key: 'org-public-key' }];
     mocks.reviewerGroupsStore.groups = [];
     mocks.reviewerGroupsStore.fetching = false;
     mocks.reviewerGroupsStore.selectedGroupId = null;
     mocks.reviewerGroupsStore.fetch.mockReset();
     mocks.reviewerGroupsStore.selectGroup.mockClear();
     mocks.routerPush.mockReset();
+    mocks.resolveReviewerSigningKey.mockReset();
+    mocks.resolveReviewerSigningKey.mockReturnValue({ orgKeyId: 5, orgKeyPublicKey: 'org-public-key' });
   });
 
   function mountReviewerGroups() {
@@ -132,6 +145,24 @@ describe('ReviewerGroups.vue', () => {
     await nextTick();
 
     expect(mocks.routerPush).toHaveBeenCalledWith({ name: 'createReviewerGroup' });
+  });
+
+  test('blocks navigation and shows the signing-key report when no key is available', async () => {
+    mocks.userStore.selectedOrganization.admin = true;
+    const report = {
+      status: ActionStatus.Error,
+      title: 'No signing key available',
+      what: 'This action must be signed with one of your keys, but none are available on this device',
+      next: 'Go to Settings > Keys and restore or import one of your keys, then try again',
+    };
+    mocks.resolveReviewerSigningKey.mockReturnValue(report);
+
+    const wrapper = mountReviewerGroups();
+    await wrapper.find('[data-testid="button-add-reviewer-group"]').trigger('click');
+    await nextTick();
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('No signing key available');
   });
 
   test('lists groups and shows the store-selected group\'s details', async () => {
