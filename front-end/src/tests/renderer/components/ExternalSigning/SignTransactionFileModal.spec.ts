@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
   collectMissingSignerKeys: vi.fn(),
   loggerError: vi.fn(),
   loggerDebug: vi.fn(),
+  currentNetwork: 'testnet',
 }));
 
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
@@ -45,7 +46,11 @@ vi.mock('@renderer/stores/storeUser.ts', () => ({
 
 vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => ({
-    getMirrorNodeREST: () => 'https://mirror.testnet.hedera.com',
+    network: mocks.currentNetwork,
+    getMirrorNodeREST: (network: string) => `https://${network}`,
+    isCurrentNetwork: (network: string) =>
+      network.replace(/^https?:\/\//, '').replace(/\/$/, '') ===
+      mocks.currentNetwork.replace(/^https?:\/\//, '').replace(/\/$/, ''),
   }),
 }));
 
@@ -121,6 +126,7 @@ function mountModal() {
 describe('SignTransactionFileModal – handleSignAll', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mocks.currentNetwork = 'testnet';
     mocks.readTransactionFile.mockResolvedValue(FILE);
     mocks.filterItems.mockResolvedValue({ needSigning: [ITEM], fullySigned: [] });
     mocks.collectMissingSignerKeys.mockResolvedValue(['pubkey1']);
@@ -187,5 +193,58 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     // signTransaction attempted only once — loop exited on first failure
     expect(mocks.signTransaction).toHaveBeenCalledTimes(1);
     expect(mocks.writeTransactionFile).not.toHaveBeenCalled();
+  });
+
+  test('blocks signing and asks the user to switch networks when they differ', async () => {
+    mocks.currentNetwork = 'mainnet';
+    const wrapper = mountModal();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('This file is for Testnet');
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Switch to Testnet in Settings');
+    expect(wrapper.find('[data-testid="button-close-network-mismatch"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-confirm-network"]').exists()).toBe(false);
+  });
+
+  test('rejects a custom mirror endpoint from the file unless it matches Settings', async () => {
+    mocks.readTransactionFile.mockResolvedValue({
+      network: 'mirror.attacker.example',
+      items: [ITEM],
+    });
+    const wrapper = mountModal();
+    await flushPromises();
+
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalledWith('Unknown network in transaction file.');
+    expect(wrapper.find('[data-testid="button-close-network-mismatch"]').exists()).toBe(false);
+  });
+
+  test('reports an HTTP transaction-file endpoint as requiring HTTPS', async () => {
+    mocks.readTransactionFile.mockRejectedValue(
+      new Error('Invalid transaction file network: HTTPS is required'),
+    );
+    mountModal();
+    await flushPromises();
+
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalledWith('Transaction file network must use HTTPS.');
+  });
+
+  test('uses the exact custom mirror endpoint already configured in Settings', async () => {
+    mocks.currentNetwork = 'custom.mirror.example/v1';
+    mocks.readTransactionFile.mockResolvedValue({
+      network: 'https://custom.mirror.example/v1/',
+      items: [ITEM],
+    });
+    mountModal();
+    await flushPromises();
+
+    expect(mocks.filterItems).toHaveBeenCalledWith(
+      [ITEM],
+      ['pubkey1'],
+      'https://custom.mirror.example/v1',
+      expect.anything(),
+    );
   });
 });
