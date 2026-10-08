@@ -60,11 +60,12 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
   }
 
   async function setNetwork(newNetwork: Network) {
+    const mirrorNodeURL = resolveMirrorNodeREST(newNetwork, true);
     await setClient(newNetwork);
     await setStoreClient(newNetwork);
 
-    mirrorNodeBaseURL.value = getMirrorNodeREST(newNetwork);
     network.value = newNetwork;
+    mirrorNodeBaseURL.value = mirrorNodeURL;
     exchangeRateSet.value = await getExchangeRateSet(mirrorNodeBaseURL.value);
 
     nodeNumbers.value = await getNodeNumbersFromNetwork(mirrorNodeBaseURL.value);
@@ -93,19 +94,46 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
   }
 
   /* Helpers */
-  function getMirrorNodeREST(network: Network) {
-    const networkLink = {
+  function getMirrorNodeREST(networkName: Network) {
+    return resolveMirrorNodeREST(networkName, networkName === network.value);
+  }
+
+  function resolveMirrorNodeREST(networkName: Network, allowConfiguredCustom: boolean) {
+    const networkLink: Record<string, string> = {
       [CommonNetwork.MAINNET]: 'https://mainnet.mirrornode.hedera.com',
       [CommonNetwork.TESTNET]: 'https://testnet.mirrornode.hedera.com',
       [CommonNetwork.PREVIEWNET]: 'https://previewnet.mirrornode.hedera.com',
       [CommonNetwork.LOCAL_NODE]: 'http://localhost:38081',
     };
 
-    if (!networkLink[network]) {
-      return `https://${network}`;
+    if (Object.hasOwn(networkLink, networkName)) {
+      return networkLink[networkName];
     }
 
-    return networkLink[network];
+    if (!allowConfiguredCustom) {
+      throw new Error(`Unsupported network: ${networkName}`);
+    }
+
+    let url: URL;
+    try {
+      const urlValue = /^[a-z][a-z\d+.-]*:\/\//i.test(networkName)
+        ? networkName
+        : `https://${networkName}`;
+      url = new URL(urlValue);
+    } catch {
+      throw new Error('Invalid custom mirror node URL');
+    }
+    if (
+      url.protocol !== 'https:' ||
+      !url.hostname ||
+      url.username ||
+      url.password ||
+      url.search ||
+      url.hash
+    ) {
+      throw new Error('Invalid custom mirror node URL');
+    }
+    return url.toString().replace(/\/$/, '');
   }
 
   return {
