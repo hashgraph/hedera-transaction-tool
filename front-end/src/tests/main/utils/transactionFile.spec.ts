@@ -108,6 +108,27 @@ describe('transactionFile utils', () => {
 
       await expect(readTransactionFile(mockFilePath)).rejects.toThrow();
     });
+
+    it('parses a custom network value for validation against the configured network in the renderer', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'custom.mirror.example/v1', items: [] }),
+      );
+
+      await expect(readTransactionFile('/path/to/custom.tx2')).resolves.toEqual({
+        network: 'custom.mirror.example/v1',
+        items: [],
+      });
+    });
+
+    it('rejects malformed transaction items', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'testnet', items: [{ transactionBytes: 42 }] }),
+      );
+
+      await expect(readTransactionFile('/path/to/malformed.tx2')).rejects.toThrow(
+        'invalid transaction item',
+      );
+    });
   });
 
   describe('writeTransactionFile', () => {
