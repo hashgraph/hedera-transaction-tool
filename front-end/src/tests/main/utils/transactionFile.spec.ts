@@ -109,6 +109,20 @@ describe('transactionFile utils', () => {
       await expect(readTransactionFile(mockFilePath)).rejects.toThrow();
     });
 
+    it.each([
+      null,
+      [],
+      {},
+      { network: '', items: [] },
+      { network: 'testnet' },
+    ])('rejects a transaction file with an invalid top-level shape (%#)', async fileContent => {
+      vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(fileContent));
+
+      await expect(readTransactionFile('/path/to/invalid-shape.tx2')).rejects.toThrow(
+        'unsupported format or network',
+      );
+    });
+
     it('parses a custom network value for validation against the configured network in the renderer', async () => {
       vi.mocked(fsp.readFile).mockResolvedValue(
         JSON.stringify({ network: 'custom.mirror.example/v1', items: [] }),
