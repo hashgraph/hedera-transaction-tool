@@ -1,11 +1,21 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { AxiosError, type AxiosResponse } from 'axios';
+import axios, { AxiosError, type AxiosResponse } from 'axios';
+import { axiosWithCredentials } from '@renderer/utils';
+import MockAdapter from 'axios-mock-adapter';
+import type { OrganizationTokens } from '@renderer/types';
 
-const mockOrgs: Array<{ serverUrl: string; nickname?: string }> = [];
+const mockOrgs: Array<{ serverUrl: string; nickname?: string; id?: string }> = [];
+const mockTokens: OrganizationTokens = {};
 
 vi.mock('@renderer/stores/storeUser', () => ({
-  default: () => ({ organizations: mockOrgs }),
+  default: () => ({
+    organizations: mockOrgs,
+    organizationTokens: mockTokens,
+    getJwtToken: (url: string) => mockTokens[url],
+    clearJwtToken: (url: string) => (mockTokens[url] = null),
+    refetchUserState: () => {},
+  }),
 }));
 
 vi.mock('@renderer/utils/version', () => ({
@@ -159,4 +169,69 @@ describe('handleAxiosResponseError (426 interceptor handler)', () => {
     // Fresh 426 body wins; the cached updateUrl is overwritten.
     expect(state.organizationUpdateUrls.value['https://org.example.com']).toBe('https://newer');
   });
+});
+
+describe('AxiosWithCredentials', () => {
+
+  const url = 'https://example.com';
+  const orgId = 'exampleId';
+  const config = { maxContentLength: 42 };
+  const requestData = 'Nice request';
+  const responseData = 'Nice response';
+  const successStatus = 200;
+  const jwtToken = 'Bioutiful token';
+
+  const mock = new MockAdapter(axios);
+  afterEach(() => mock.reset());
+
+  test('get()', async () => {
+    mock.onGet(url).reply(successStatus, responseData);
+    mockOrgs.push({ serverUrl: url, id: orgId });
+    mockTokens[orgId] = jwtToken;
+
+    const response = await axiosWithCredentials.get(url, config);
+    expect(response.status).toBe(successStatus);
+    expect(response.data).toBe(responseData);
+    expect(response.config.headers['Authorization']).toBe(`bearer ${jwtToken}`);
+    expect(response.config.maxContentLength).toBe(config.maxContentLength);
+  });
+
+  test('post()', async () => {
+    mock.onPost(url, requestData).reply(successStatus, responseData);
+    mockOrgs.push({ serverUrl: url, id: orgId });
+    mockTokens[orgId] = jwtToken;
+
+    const response = await axiosWithCredentials.post(url, requestData, config);
+    expect(response.status).toBe(successStatus);
+    expect(response.data).toBe(responseData);
+    expect(response.config.data).toBe(requestData);
+    expect(response.config.headers['Authorization']).toBe(`bearer ${jwtToken}`);
+    expect(response.config.maxContentLength).toBe(config.maxContentLength);
+  });
+
+  test('patch()', async () => {
+    mock.onPatch(url, requestData).reply(successStatus, responseData);
+    mockOrgs.push({ serverUrl: url, id: orgId });
+    mockTokens[orgId] = jwtToken;
+
+    const response = await axiosWithCredentials.patch(url, requestData, config);
+    expect(response.status).toBe(successStatus);
+    expect(response.data).toBe(responseData);
+    expect(response.config.data).toBe(requestData);
+    expect(response.config.headers['Authorization']).toBe(`bearer ${jwtToken}`);
+    expect(response.config.maxContentLength).toBe(config.maxContentLength);
+  });
+
+  test('delete()', async () => {
+    mock.onDelete(url).reply(successStatus);
+    mockOrgs.push({ serverUrl: url, id: orgId });
+    mockTokens[orgId] = jwtToken;
+
+    await axiosWithCredentials.delete(url, config);
+    expect(mock.history.delete.length).toBe(1);
+    const axiosConfig = mock.history.delete[0];
+    expect(axiosConfig.headers!['Authorization']).toBe(`bearer ${jwtToken}`);
+    expect(axiosConfig.maxContentLength).toBe(config.maxContentLength);
+  });
+
 });

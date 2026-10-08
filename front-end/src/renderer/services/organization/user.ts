@@ -53,24 +53,29 @@ export const getUserState = async (organizationServerUrl: string) => {
 /* Get information about current user */
 export const getMe = async (organizationServerUrl: string): Promise<IUser> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}/me`);
+    const response = await axiosWithCredentials.get<IUser>(
+      `${organizationServerUrl}/${controller}/me`,
+      {},
+      false,
+    );
     return response.data;
   }, 'Failed to get user information');
 
 /* Get information about organization users */
 export const getUsers = (organizationServerUrl: string): Promise<IUser[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
+    const response = await axiosWithCredentials.get<IUser[]>(
+      `${organizationServerUrl}/${controller}`,
+    );
     return response.data;
   }, 'Failed to get organization users');
 
 /* ADMIN ONLY: Delete a user */
 export const deleteUser = (organizationServerUrl: string, id: number) =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.delete(
+     await axiosWithCredentials.delete(
       `${organizationServerUrl}/${controller}/${id}`,
     );
-    return response.data;
   }, 'Failed to delete user');
 
 export const getPublicKeyOwner = async (
@@ -79,7 +84,7 @@ export const getPublicKeyOwner = async (
 ): Promise<string | null> => {
   return commonRequestHandler(
     async () => {
-      const response = await axiosWithCredentials.get(
+      const response = await axiosWithCredentials.get<string>(
         `${organizationServerUrl}/${controller}/public-owner/${publicKey}`,
       );
       // response.data == "" when there is no matching user => fixing

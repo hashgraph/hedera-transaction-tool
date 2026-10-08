@@ -8,7 +8,6 @@ import {
   organizationVersionData,
 } from '@renderer/stores/versionState';
 
-import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
 import { isVersionBelowMinimum } from '@renderer/services/organization/versionCompatibility';
 import { login } from '@renderer/services/organization';
 
@@ -61,6 +60,8 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
             jwtToken,
             user.password ?? undefined,
           );
+
+          await userStore.refetchOrganizationTokens();
         } catch (loginError) {
           // HTTP 426 from /auth/login means the backend rejected the client
           // as below its minimum supported version. If the 426 payload has
@@ -116,12 +117,16 @@ export async function reconnectOrganization(serverUrl: string): Promise<{
       serverUrl,
     });
 
-    const wsUrl = serverUrl.includes('localhost') ? getLocalWebsocketPath(serverUrl) : serverUrl;
-    ws.connect(serverUrl, wsUrl);
+    // setup() skips any org whose connectionStatus is 'disconnected', so clear
+    // that before calling it (otherwise it would skip reconnecting this org).
+    orgConnection.setConnectionStatus(serverUrl, 'connected');
+
+    // Use setup() rather than connect() directly so the Pinia 'setup' action
+    // fires and app-level listeners (notifications, transaction updates) are
+    // re-subscribed to the new socket instance.
+    await ws.setup();
 
     await userStore.refetchUserState();
-
-    orgConnection.setConnectionStatus(serverUrl, 'connected');
 
     if (org) {
       org.connectionStatus = 'connected';

@@ -9,7 +9,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 const performVersionCheckMock = vi.fn<(serverUrl: string) => unknown>();
 const loginMock = vi.fn<(...args: unknown[]) => unknown>();
-const wsConnectMock = vi.fn();
+const wsSetupMock = vi.fn();
 const setConnectionStatusMock = vi.fn();
 const refetchUserStateMock = vi.fn();
 const getLocalWebsocketPathMock = vi.fn((u: string) => u + '/ws');
@@ -50,7 +50,7 @@ vi.mock('@renderer/stores/storeUser', () => ({
 }));
 
 vi.mock('@renderer/stores/storeWebsocketConnection', () => ({
-  default: () => ({ connect: wsConnectMock }),
+  default: () => ({ setup: wsSetupMock }),
 }));
 
 vi.mock('@renderer/stores/storeOrganizationConnection', () => ({
@@ -73,7 +73,7 @@ vi.mock('@renderer/utils/version', () => ({
 describe('reconnectOrganization', () => {
   beforeEach(() => {
     performVersionCheckMock.mockReset();
-    wsConnectMock.mockReset();
+    wsSetupMock.mockReset();
     setConnectionStatusMock.mockReset();
     refetchUserStateMock.mockReset();
     loginMock.mockReset();
@@ -103,7 +103,7 @@ describe('reconnectOrganization', () => {
 
     const result = await reconnectOrganization('https://org');
     expect(result).toEqual({ success: true });
-    expect(wsConnectMock).toHaveBeenCalled();
+    expect(wsSetupMock).toHaveBeenCalled();
     expect(setConnectionStatusMock).toHaveBeenCalledWith('https://org', 'connected');
     expect(refetchUserStateMock).toHaveBeenCalled();
   });
@@ -123,7 +123,7 @@ describe('reconnectOrganization', () => {
 
     const result = await reconnectOrganization('https://org');
     expect(result).toEqual({ success: false, requiresUpdate: true });
-    expect(wsConnectMock).not.toHaveBeenCalled();
+    expect(wsSetupMock).not.toHaveBeenCalled();
     expect(setConnectionStatusMock).not.toHaveBeenCalled();
   });
 
@@ -135,7 +135,7 @@ describe('reconnectOrganization', () => {
 
     const result = await reconnectOrganization('https://org');
     expect(result).toEqual({ success: true });
-    expect(wsConnectMock).toHaveBeenCalled();
+    expect(wsSetupMock).toHaveBeenCalled();
   });
 
   test('throws when the org is not in the store so the caller can surface it', async () => {
@@ -185,7 +185,7 @@ describe('reconnectOrganization', () => {
 
     const result = await reconnectOrganization('https://org');
     expect(result).toEqual({ success: false });
-    expect(wsConnectMock).not.toHaveBeenCalled();
+    expect(wsSetupMock).not.toHaveBeenCalled();
     // Token storage must not have been touched since the login didn't succeed.
     expect(updateOrganizationCredentialsMock).not.toHaveBeenCalled();
   });
