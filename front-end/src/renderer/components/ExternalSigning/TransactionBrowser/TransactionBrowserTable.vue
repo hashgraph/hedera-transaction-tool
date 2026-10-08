@@ -25,7 +25,7 @@ const showStatusColumn = computed(() => props.entries.some(entry => entry.fullyS
 
 /* Handlers */
 const handleDetails = (index: number) => {
-  detailedItemIndex.value = pageStart.value + index;
+  detailedItemIndex.value = index;
   showDetailsModal.value = true;
 };
 </script>
