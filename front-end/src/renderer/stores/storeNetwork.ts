@@ -24,6 +24,7 @@ export interface NetworkStore {
   setup: (defaultNetwork?: Network) => Promise<void>;
   setNetwork: (newNetwork: Network) => Promise<void>;
   getMirrorNodeREST: (network: Network) => string;
+  isCurrentNetwork: (network: Network) => boolean;
 }
 
 const useNetworkStore = defineStore('network', (): NetworkStore => {
@@ -98,6 +99,19 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
     return resolveMirrorNodeREST(networkName, networkName === network.value);
   }
 
+  function isCurrentNetwork(networkName: Network) {
+    if (networkName === network.value) return true;
+
+    const commonNetworks = new Set<string>(Object.values(CommonNetwork));
+    if (commonNetworks.has(networkName) || commonNetworks.has(network.value)) return false;
+
+    try {
+      return normalizeCustomMirrorNodeURL(networkName) === normalizeCustomMirrorNodeURL(network.value);
+    } catch {
+      return false;
+    }
+  }
+
   function resolveMirrorNodeREST(networkName: Network, allowConfiguredCustom: boolean) {
     const networkLink: Record<string, string> = {
       [CommonNetwork.MAINNET]: 'https://mainnet.mirrornode.hedera.com',
@@ -114,6 +128,10 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
       throw new Error(`Unsupported network: ${networkName}`);
     }
 
+    return normalizeCustomMirrorNodeURL(networkName);
+  }
+
+  function normalizeCustomMirrorNodeURL(networkName: Network) {
     let url: URL;
     try {
       const urlValue = /^[a-z][a-z\d+.-]*:\/\//i.test(networkName)
@@ -146,6 +164,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
     setup,
     setNetwork,
     getMirrorNodeREST,
+    isCurrentNetwork,
   };
 });
 
