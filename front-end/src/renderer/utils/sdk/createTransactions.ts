@@ -1,4 +1,4 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -42,6 +42,7 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
+import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
 
 export type TransactionCommonData = {
   payerId: string;
@@ -758,25 +759,41 @@ export function createRegisteredNodeCreateTransaction(
 
 export function createRegisteredNodeUpdateTransaction(
   data: TransactionCommonData & RegisteredNodeUpdateData,
+  currentNodeInfo: IRegisteredNodeInfoParsed | null,
 ): RegisteredNodeUpdateTransaction {
   const transaction = new RegisteredNodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
 
   if (data.registeredNodeId) {
-    transaction.setRegisteredNodeId(Long.fromString(data.registeredNodeId));
+    const newValue = Long.fromString(data.registeredNodeId);
+    const oldValue = currentNodeInfo !== null ? Long.fromNumber(currentNodeInfo.registered_node_id) : null;
+    if (oldValue === null || oldValue !== newValue) {
+      transaction.setRegisteredNodeId(newValue);
+    }
   }
 
   if (data.adminKey) {
-    transaction.setAdminKey(data.adminKey);
+    const newValue = data.adminKey;
+    const oldValue = currentNodeInfo !== null ? currentNodeInfo.admin_key : null
+    if (oldValue === null || (newValue !== null && !compareKeys(oldValue, newValue))) {
+      transaction.setAdminKey(data.adminKey);
+    }
   }
 
   if (data.description && data.description.length > 0) {
-    transaction.setDescription(data.description);
+    const newValue = data.description;
+    const oldValue = currentNodeInfo !== null ? currentNodeInfo.description : null;
+    if (oldValue === null || oldValue !== newValue) {
+      transaction.setDescription(data.description);
+    }
   }
 
-  const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
-  if (endpoints.length > 0) {
-    transaction.setServiceEndpoints(endpoints);
+  if (data.serviceEndpoints.length > 0) {
+    const newValue = getRegisteredServiceEndpoints(data.serviceEndpoints);
+    const oldValue = currentNodeInfo !== null ? currentNodeInfo.service_endpoints : null;
+    if (oldValue === null || !compareServiceEndpoints(oldValue, newValue)) {
+      transaction.setServiceEndpoints(newValue);
+    }
   }
 
   return transaction;

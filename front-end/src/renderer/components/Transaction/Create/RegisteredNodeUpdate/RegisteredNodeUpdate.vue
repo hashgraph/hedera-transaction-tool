@@ -45,11 +45,15 @@ const data = reactive<RegisteredNodeUpdateData>({
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createRegisteredNodeUpdateTransaction({
-      ...common,
-      ...(data),
-    });
+  return (common, submitting) => {
+    return createRegisteredNodeUpdateTransaction(
+      {
+        ...common,
+        ...data,
+      },
+      submitting ? nodeData.registeredNodeInfo.value : null,
+    );
+  };
 });
 
 const createDisabled = computed(() => {
@@ -197,9 +201,7 @@ watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
   } else if (!route.query.draftId && !route.query.groupIndex) {
     data.description = registeredNodeInfo.description ?? '';
     data.adminKey = registeredNodeInfo.admin_key;
-    data.serviceEndpoints = getComponentRegisteredEndpoints(
-      registeredNodeInfo.service_endpoints,
-    );
+    data.serviceEndpoints = getComponentRegisteredEndpoints(registeredNodeInfo.service_endpoints);
   }
 });
 // Only fields that change the network-required *signer set* should trigger

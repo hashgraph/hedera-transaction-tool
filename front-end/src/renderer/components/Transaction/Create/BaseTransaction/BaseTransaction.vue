@@ -127,7 +127,7 @@ const initialDescription = ref('');
 const transactionKey = ref<KeyList>(new KeyList([]));
 
 /* Computed */
-const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData));
+const transaction = computed(() => createTransaction({ ...data } as TransactionCommonData, false));
 
 const hasTransactionChanged = computed(() => {
   let result: boolean;
@@ -143,11 +143,7 @@ const hasTransactionChanged = computed(() => {
     ) {
       result = true; // validStart was updated
     } else if (
-      hasStartTimestampChanged(
-        initialTransaction.value as Transaction,
-        transaction.value,
-        now,
-      )
+      hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value, now)
     ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
@@ -188,7 +184,7 @@ const handleDraftLoaded = async (transaction: Transaction, loadedDescription: st
 
 const handleCreate = async () => {
   basePreCreateAssert();
-  if ((await Promise.resolve(preCreateAssert?.())) === false) return;
+  if (preCreateAssert && (await preCreateAssert()) === false) return;
 
   const capturedData = { ...data } as TransactionCommonData;
   // Build the initial transaction once so the retry path can anchor on the
@@ -196,7 +192,7 @@ const handleCreate = async () => {
   // "clamp expired validStart to now" normalization. Deriving offsets from
   // the raw capturedData.validStart would skip that clamp and could submit
   // retries with an already-expired validStart.
-  const initialTx = createTransaction(capturedData);
+  const initialTx = createTransaction(capturedData, true);
   const initialTxId = initialTx.transactionId;
   const baseValidStart = initialTxId?.validStart ?? null;
   const payerAccountId = initialTxId?.accountId ?? null;
@@ -206,7 +202,7 @@ const handleCreate = async () => {
       ? (nanoOffset: number): Uint8Array => {
           if (nanoOffset === 0) return initialTx.toBytes();
           const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
-          const retryTx = createTransaction(capturedData);
+          const retryTx = createTransaction(capturedData, true);
           retryTx.setTransactionId(TransactionId.withValidStart(payerAccountId, offsetTimestamp));
           return retryTx.toBytes();
         }
@@ -307,7 +303,8 @@ function handleInputValidation(e: Event) {
 
 const saveDraft = async (): Promise<void> => {
   const draftId = route.query.draftId?.toString();
-  const transactionBytes = getTransactionBytes();
+  const transaction = createTransaction({ ...data } as TransactionCommonData, false);
+  const transactionBytes = transaction.toBytes();
   if (draftId) {
     // Draft exists => this is an update
     await updateDraft(draftId, {
@@ -323,11 +320,6 @@ const saveDraft = async (): Promise<void> => {
     isDraftSaved.value = true;
     toastManager.success('Draft saved');
   }
-};
-
-const getTransactionBytes = () => {
-  const transaction = createTransaction({ ...data } as TransactionCommonData);
-  return transaction.toBytes();
 };
 
 /* Functions */
@@ -461,7 +453,7 @@ defineExpose({
     <BaseDraftLoad @draft-loaded="handleDraftLoaded" />
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
-      :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :create-transaction="() => createTransaction({ ...data } as TransactionCommonData, false)"
       :transaction-key="transactionKey"
       @fetched-description="handleFetchedDescription"
       @fetched-payer-account-id="handleFetchedPayerAccountId"
@@ -471,7 +463,7 @@ defineExpose({
       :skip="groupActionTaken || isDraftSaved || isProcessed || Boolean(customRequest)"
       @addToGroup="handleGroupAction('add', $event)"
       @editGroupItem="handleGroupAction('edit', $event)"
-      :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :get-transaction="() => createTransaction({ ...data } as TransactionCommonData, false)"
       :description="description || ''"
       :has-data-changed="hasDataChanged"
     />
