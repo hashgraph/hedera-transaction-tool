@@ -90,5 +90,7 @@ function compareGenericServiceEndpoint(
     if (p1.domainName !== p2.domainName) return false;
   }
 
-  return p1.port === p2.port;
+  if (p1.port !== p2.port) return false;
+
+  return p1.requiresTls === p2.requiresTls;
 }

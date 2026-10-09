@@ -56,6 +56,18 @@ describe('registeredServiceEndpoint', () => {
       expect(compareServiceEndpoint(p1, p2)).toBe(true);
     });
 
+    test('requiresTls', () => {
+      const p1 = new MirrorNodeServiceEndpoint();
+      const p2 = new MirrorNodeServiceEndpoint();
+      expect(compareServiceEndpoint(p1, p2)).toBe(true);
+
+      p1.setRequiresTls(true);
+      expect(compareServiceEndpoint(p1, p2)).toBe(false);
+
+      p2.setRequiresTls(true);
+      expect(compareServiceEndpoint(p1, p2)).toBe(true);
+    });
+
     test('BlockNodeServiceEndpoint.endpointApis', () => {
       const p1 = new BlockNodeServiceEndpoint();
       const p2 = new BlockNodeServiceEndpoint();
