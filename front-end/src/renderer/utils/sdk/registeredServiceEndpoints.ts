@@ -18,7 +18,7 @@ export function compareServiceEndpoints(
   return true;
 }
 
-function compareServiceEndpoint(
+export function compareServiceEndpoint(
   p1: RegisteredServiceEndpoint,
   p2: RegisteredServiceEndpoint,
 ): boolean {
