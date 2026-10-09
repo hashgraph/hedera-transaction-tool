@@ -108,6 +108,51 @@ describe('transactionFile utils', () => {
 
       await expect(readTransactionFile(mockFilePath)).rejects.toThrow();
     });
+
+    it.each([
+      null,
+      [],
+      {},
+      { network: '', items: [] },
+      { network: 'testnet' },
+    ])('rejects a transaction file with an invalid top-level shape (%#)', async fileContent => {
+      vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(fileContent));
+
+      await expect(readTransactionFile('/path/to/invalid-shape.tx2')).rejects.toThrow(
+        'unsupported format or network',
+      );
+    });
+
+    it('parses a custom network value for validation against the configured network in the renderer', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'custom.mirror.example/v1', items: [] }),
+      );
+
+      await expect(readTransactionFile('/path/to/custom.tx2')).resolves.toEqual({
+        network: 'custom.mirror.example/v1',
+        items: [],
+      });
+    });
+
+    it('rejects a custom network endpoint that explicitly uses HTTP', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'http://mainnet-public.mirrornode.hedera.com', items: [] }),
+      );
+
+      await expect(readTransactionFile('/path/to/http-network.tx2')).rejects.toThrow(
+        'HTTPS is required',
+      );
+    });
+
+    it('rejects malformed transaction items', async () => {
+      vi.mocked(fsp.readFile).mockResolvedValue(
+        JSON.stringify({ network: 'testnet', items: [{ transactionBytes: 42 }] }),
+      );
+
+      await expect(readTransactionFile('/path/to/malformed.tx2')).rejects.toThrow(
+        'invalid transaction item',
+      );
+    });
   });
 
   describe('writeTransactionFile', () => {
