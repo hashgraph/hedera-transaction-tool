@@ -9,7 +9,7 @@ export type Processable = TransactionRequest | CustomRequest;
 
 export interface Handler {
   setNext: (handler: Handler) => void;
-  handle: (transactionRequest: Processable) => void;
+  handle: (transactionRequest: Processable) => Promise<void>;
 }
 
 export function assertHandlerExists<T extends abstract new (...args: any) => any>(

@@ -24,8 +24,8 @@ import { assertHandlerExists } from '.';
 /* Props */
 const props = defineProps<{
   onExecuted?: (data: ExecutedData) => void;
-  onSubmitted?: (id: number, body: string) => void;
-  onGroupSubmitted?: (id: number) => void;
+  onSubmitted?: (id: number, body: string) => Promise<void>;
+  onGroupSubmitted?: (id: number) => Promise<void>;
   onLocalStored?: (id: string) => void;
   onCloseSuccessModalClick?: () => void;
   watchExecutedModalShown?: (shown: boolean) => void;
