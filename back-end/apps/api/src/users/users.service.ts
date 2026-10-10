@@ -143,6 +143,10 @@ export class UsersService {
   // Set the password for the given user. This method is only accessible to a user that is
   // logged in and authenticated, or has verified the email and OTP
   async setPassword(user: User, newPassword: string): Promise<void> {
+    // Revoke existing access tokens before changing credentials.
+    // This will throw if Redis is unavailable (so, fail the password change)
+    await this.blacklistService.blacklistPreviousUserTokens(user.id);
+
     // Get the salted password, and set the status to none (no longer new)
     await this.updateUser(user, {
       password: await this.getSaltedHash(newPassword),
