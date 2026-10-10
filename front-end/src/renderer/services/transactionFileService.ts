@@ -1,9 +1,9 @@
 import { commonIPCHandler } from '@renderer/utils';
-import type { SelectedTransactionFile, TransactionFile } from '@shared/interfaces';
+import type { TransactionFileImportResult, TransactionFile } from '@shared/interfaces';
 
-export async function selectTransactionFile(onlyV2 = false): Promise<SelectedTransactionFile> {
+export async function importTransactionFile(onlyV2 = false): Promise<TransactionFileImportResult> {
   return commonIPCHandler(
-    async () => await window.electronAPI.local.transactionFile.selectTransactionFile(onlyV2),
+    async () => await window.electronAPI.local.transactionFile.importTransactionFile(onlyV2),
     'Failed to select transaction file',
   );
 }

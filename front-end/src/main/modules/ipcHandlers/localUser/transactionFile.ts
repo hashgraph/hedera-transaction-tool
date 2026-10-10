@@ -1,12 +1,12 @@
 import { ipcMain } from 'electron';
 import {
   exportTransactionFile,
-  selectTransactionFile,
+  importTransactionFile,
 } from '@main/utils/transactionFile';
 
 export default () => {
-  ipcMain.handle('transactionFile:selectTransactionFile', (_e, onlyV2: boolean) =>
-    selectTransactionFile(onlyV2),
+  ipcMain.handle('transactionFile:importTransactionFile', (_e, onlyV2: boolean) =>
+    importTransactionFile(onlyV2),
   );
   ipcMain.handle(
     'transactionFile:exportTransactionFile',

@@ -1,5 +1,5 @@
 import * as fsp from 'fs/promises';
-import type { SelectedTransactionFile, TransactionFile } from '@shared/interfaces';
+import type { TransactionFileImportResult, TransactionFile } from '@shared/interfaces';
 import { showTransactionOpenDialog, showTransactionSaveDialog } from '@main/modules/ipcHandlers/utils';
 import { filterForImportV1 } from '@main/services/localUser/importV1';
 
@@ -37,7 +37,7 @@ function parseTransactionFile(value: unknown): TransactionFile {
   return value as unknown as TransactionFile;
 }
 
-export async function selectTransactionFile(onlyV2 = false): Promise<SelectedTransactionFile> {
+export async function importTransactionFile(onlyV2 = false): Promise<TransactionFileImportResult> {
   const result = await showTransactionOpenDialog(onlyV2);
   if (result.canceled || !result.filePaths[0]) return null;
 

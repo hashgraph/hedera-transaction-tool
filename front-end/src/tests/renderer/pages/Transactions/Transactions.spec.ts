@@ -7,7 +7,7 @@ import Transactions from '@renderer/pages/Transactions/Transactions.vue';
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
-  selectTransactionFile: vi.fn(),
+  importTransactionFile: vi.fn(),
   userStore: {
     selectedOrganization: null as any,
   },
@@ -58,7 +58,7 @@ vi.mock('@renderer/services/organization/transactionNode.ts', () => ({
 }));
 
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
-  selectTransactionFile: mocks.selectTransactionFile,
+  importTransactionFile: mocks.importTransactionFile,
 }));
 
 vi.mock('@renderer/services/organization', () => ({
@@ -105,7 +105,7 @@ describe('Transactions.vue', () => {
   beforeEach(() => {
     mocks.routerPush.mockReset();
     mocks.routerReplace.mockReset();
-    mocks.selectTransactionFile.mockResolvedValue({
+    mocks.importTransactionFile.mockResolvedValue({
       kind: 'tx2', suggestedName: 'transactions.tx2', transactionFile: { network: 'testnet', items: [] },
     });
     mocks.userStore.selectedOrganization = null;
@@ -192,7 +192,7 @@ describe('Transactions.vue', () => {
 
     await wrapper.find('[data-testid="dropdown-item-signTransactionFile"]').trigger('click');
 
-    expect(mocks.selectTransactionFile).toHaveBeenCalledWith(true);
+    expect(mocks.importTransactionFile).toHaveBeenCalledWith(true);
     expect(wrapper.find('[data-testid="sign-transaction-file-modal"]').exists()).toBe(true);
   });
 

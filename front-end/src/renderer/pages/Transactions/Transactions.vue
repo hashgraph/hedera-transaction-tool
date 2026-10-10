@@ -47,7 +47,7 @@ import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignTransactionFileModal.vue';
 import ExportTransactionsModal from '@renderer/components/ExternalSigning/ExportTransactionsModal.vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { selectTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { importTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
@@ -185,7 +185,7 @@ async function handleTransactionFileAction(action: string) {
       break;
     case 'signTransactionFile':
       {
-        const selection = await selectTransactionFile(true);
+        const selection = await importTransactionFile(true);
         if (selection?.kind === 'tx2') {
           selectedTx2FileName.value = selection.suggestedName;
           selectedTx2File.value = selection.transactionFile;
@@ -195,7 +195,7 @@ async function handleTransactionFileAction(action: string) {
       break;
     case 'importSignaturesFromFile':
       {
-        const selection = await selectTransactionFile();
+        const selection = await importTransactionFile();
         if (selection?.kind === 'tx2') {
           await importSignaturesFromV2File(selection.transactionFile);
         } else if (selection?.kind === 'zip') {

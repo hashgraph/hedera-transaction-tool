@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fsp from 'fs/promises';
-import { exportTransactionFile, selectTransactionFile } from '@main/utils/transactionFile';
+import { exportTransactionFile, importTransactionFile } from '@main/utils/transactionFile';
 import { showTransactionOpenDialog, showTransactionSaveDialog } from '@main/modules/ipcHandlers/utils';
 import type { TransactionFile } from '@shared/interfaces';
 
@@ -21,14 +21,14 @@ describe('transactionFile utils', () => {
     vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
     vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(transactionFile));
 
-    const selected = await selectTransactionFile(true);
+    const selected = await importTransactionFile(true);
     expect(fsp.readFile).toHaveBeenCalledWith('/chosen/file.tx2', { encoding: 'utf8' });
     expect(selected).toMatchObject({ kind: 'tx2', suggestedName: 'file.tx2', transactionFile });
   });
 
   it('returns cancellation without reading a file', async () => {
     vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: true, filePaths: [] });
-    await expect(selectTransactionFile()).resolves.toBeNull();
+    await expect(importTransactionFile()).resolves.toBeNull();
     expect(fsp.readFile).not.toHaveBeenCalled();
   });
 
@@ -41,7 +41,7 @@ describe('transactionFile utils', () => {
       ignoredPaths: ['/home/user/import.zip'],
     });
 
-    await expect(selectTransactionFile()).resolves.toEqual({
+    await expect(importTransactionFile()).resolves.toEqual({
       kind: 'zip',
       importResult: {
         candidates: [{
@@ -55,7 +55,7 @@ describe('transactionFile utils', () => {
 
   it('rejects a file outside the supported transaction extensions', async () => {
     vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/home/user/.bashrc'] });
-    await expect(selectTransactionFile(true)).rejects.toThrow('Unsupported transaction file extension');
+    await expect(importTransactionFile(true)).rejects.toThrow('Unsupported transaction file extension');
     expect(fsp.readFile).not.toHaveBeenCalled();
   });
 
