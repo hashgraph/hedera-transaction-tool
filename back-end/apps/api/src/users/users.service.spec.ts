@@ -517,14 +517,25 @@ describe('UsersService', () => {
   it('should set new password the user', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
     jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
+    const userWithId = { ...user, id: 1 } as User;
 
-    await service.setPassword({ ...user } as User, password);
+    await service.setPassword(userWithId, password);
 
+    expect(blacklistService.blacklistPreviousUserTokens).toHaveBeenCalledWith(1);
     expect(userRepository.save).toHaveBeenCalledWith({
-      ...user,
+      ...userWithId,
       password: hashedPassword,
       status: 'NONE',
     });
+  });
+
+  it('should not change the password if JWT invalidation fails', async () => {
+    const userWithId = { ...user, id: 1 } as User;
+    blacklistService.blacklistPreviousUserTokens.mockRejectedValueOnce(new Error('Redis unavailable'));
+
+    await expect(service.setPassword(userWithId, password)).rejects.toThrow('Redis unavailable');
+
+    expect(userRepository.save).not.toHaveBeenCalled();
   });
 
   it('should remove user and soft-delete all associated keys', async () => {

@@ -1308,6 +1308,7 @@ describe('AppAutoComplete', () => {
     const input = wrapper.find('input');
     const el = input.element as HTMLInputElement;
     el.focus();
+    await new Promise(resolve => setTimeout(resolve, 0));
     await flushPromises();
     await input.trigger('keydown', { key: 'Escape' });
     await flushPromises();
