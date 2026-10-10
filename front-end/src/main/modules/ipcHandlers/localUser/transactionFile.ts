@@ -1,12 +1,15 @@
-import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
-import { readTransactionFile, writeTransactionFile } from '@main/utils/transactionFile';
+import { ipcMain } from 'electron';
+import {
+  exportTransactionFile,
+  selectTransactionFile,
+} from '@main/utils/transactionFile';
 
 export default () => {
-  /* Transactions */
-  createIPCChannel(
-    'transactionFile', [
-      renameFunc(readTransactionFile, 'readTransactionFile'),
-      renameFunc(writeTransactionFile, 'writeTransactionFile'),
-    ]
+  ipcMain.handle('transactionFile:selectTransactionFile', (_e, onlyV2: boolean) =>
+    selectTransactionFile(onlyV2),
+  );
+  ipcMain.handle(
+    'transactionFile:exportTransactionFile',
+    (_e, transactionFile, defaultName: string) => exportTransactionFile(transactionFile, defaultName),
   );
 };

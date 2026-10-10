@@ -4,10 +4,7 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
-import {
-  readTransactionFile,
-  writeTransactionFile,
-} from '@renderer/services/transactionFileService.ts';
+import { exportTransactionFile } from '@renderer/services/transactionFileService.ts';
 import {
   collectMissingSignerKeys,
   filterTransactionFileItemsToBeSigned,
@@ -26,7 +23,8 @@ import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
 
 /* Props */
 const props = defineProps<{
-  filePath: string | null;
+  suggestedName: string | null;
+  initialTransactionFile: TransactionFile | null;
 }>();
 
 /* Models */
@@ -136,7 +134,8 @@ async function handleSignAll() {
     }
 
     try {
-      await writeTransactionFile(updatedFile, props.filePath!);
+      const exported = await exportTransactionFile(updatedFile, props.suggestedName!);
+      if (!exported) return;
       showSuccessModal.value = true;
     } catch (error) {
       logger.error('Failed to update transaction file', { error });
@@ -149,14 +148,14 @@ async function handleSignAll() {
 watch(
   show,
   async () => {
-    if (show.value && props.filePath) {
+    if (show.value && props.suggestedName && props.initialTransactionFile) {
       transactionFile.value = null;
       isAuditing.value = false;
       itemsToBeSigned.value = [];
       itemsFullySigned.value = [];
       itemsSignable.value = [];
       try {
-        transactionFile.value = await readTransactionFile(props.filePath);
+        transactionFile.value = props.initialTransactionFile;
         if (
           !network.isCurrentNetwork(transactionFile.value.network) &&
           !commonNetworks.has(transactionFile.value.network)
@@ -274,14 +273,14 @@ watch(
           <AppCustomIcon :name="'success'" style="height: 80px" />
         </div>
 
-        <h3 class="text-center text-title text-bold mt-4">Transaction file updated</h3>
+        <h3 class="text-center text-title text-bold mt-4">Transaction file saved</h3>
 
         <div class="text-center text-secondary mt-4">
           You have successfully signed {{ itemsToBeSigned.length }}
           {{ itemsToBeSigned.length > 1 ? 'transactions' : 'transaction' }}.
         </div>
         <div class="text-center text-small text-muted mt-4">
-          You may now send the file back to the person who sent it to you.
+          You may now send that file back to the person who sent it to you.
         </div>
 
         <div class="d-grid mt-5">

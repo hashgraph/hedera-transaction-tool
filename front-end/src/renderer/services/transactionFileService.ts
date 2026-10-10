@@ -1,23 +1,23 @@
 import { commonIPCHandler } from '@renderer/utils';
-import type { TransactionFile } from '@shared/interfaces';
+import type { SelectedTransactionFile, TransactionFile } from '@shared/interfaces';
 
-export async function readTransactionFile(filePath: string): Promise<TransactionFile> {
+export async function selectTransactionFile(onlyV2 = false): Promise<SelectedTransactionFile> {
   return commonIPCHandler(
-    async () => await window.electronAPI.local.transactionFile.readTransactionFile(filePath),
-    'Failed to read transaction file',
+    async () => await window.electronAPI.local.transactionFile.selectTransactionFile(onlyV2),
+    'Failed to select transaction file',
   );
 }
 
-export async function writeTransactionFile(
+export async function exportTransactionFile(
   transactionFile: TransactionFile,
-  filePath: string,
-): Promise<void> {
+  defaultName: string,
+): Promise<boolean> {
   return commonIPCHandler(
     async () =>
-      await window.electronAPI.local.transactionFile.writeTransactionFile(
+      await window.electronAPI.local.transactionFile.exportTransactionFile(
         transactionFile,
-        filePath,
+        defaultName,
       ),
-    'Failed to write transaction file',
+    'Failed to export transaction file',
   );
 }

@@ -7,7 +7,7 @@ import Transactions from '@renderer/pages/Transactions/Transactions.vue';
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   routerReplace: vi.fn(),
-  showOpenDialog: vi.fn(),
+  selectTransactionFile: vi.fn(),
   userStore: {
     selectedOrganization: null as any,
   },
@@ -57,16 +57,8 @@ vi.mock('@renderer/services/organization/transactionNode.ts', () => ({
   getTransactionNodes: vi.fn(async () => []),
 }));
 
-vi.mock('@renderer/services/electronUtilsService.ts', () => ({
-  showOpenDialog: mocks.showOpenDialog,
-}));
-
-vi.mock('@renderer/services/importV1.ts', () => ({
-  filterForImportV1: vi.fn(async () => ({ candidates: [], ignoredPaths: [] })),
-}));
-
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
-  readTransactionFile: vi.fn(),
+  selectTransactionFile: mocks.selectTransactionFile,
 }));
 
 vi.mock('@renderer/services/organization', () => ({
@@ -113,9 +105,8 @@ describe('Transactions.vue', () => {
   beforeEach(() => {
     mocks.routerPush.mockReset();
     mocks.routerReplace.mockReset();
-    mocks.showOpenDialog.mockResolvedValue({
-      canceled: false,
-      filePaths: ['/tmp/transaction.tx2'],
+    mocks.selectTransactionFile.mockResolvedValue({
+      kind: 'tx2', suggestedName: 'transactions.tx2', transactionFile: { network: 'testnet', items: [] },
     });
     mocks.userStore.selectedOrganization = null;
     mocks.notificationsStore.notifications = {};
@@ -201,7 +192,7 @@ describe('Transactions.vue', () => {
 
     await wrapper.find('[data-testid="dropdown-item-signTransactionFile"]').trigger('click');
 
-    expect(mocks.showOpenDialog).toHaveBeenCalled();
+    expect(mocks.selectTransactionFile).toHaveBeenCalledWith(true);
     expect(wrapper.find('[data-testid="sign-transaction-file-modal"]').exists()).toBe(true);
   });
 

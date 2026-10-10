@@ -45,21 +45,13 @@ import History from '@renderer/pages/Transactions/components/History.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignTransactionFileModal.vue';
-import { showOpenDialog } from '@renderer/services/electronUtilsService.ts';
 import ExportTransactionsModal from '@renderer/components/ExternalSigning/ExportTransactionsModal.vue';
-import { filterForImportV1 } from '@renderer/services/importV1.ts';
 import { ToastManager } from '@renderer/utils/ToastManager';
-import { readTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { selectTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { SignatureMap, Transaction } from '@hiero-ledger/sdk';
 import { importSignatures } from '@renderer/services/organization';
 import TransactionImportModal from '@renderer/components/TransactionImportModal.vue';
 import { AppCache } from '@renderer/caches/AppCache.ts';
-
-const IMPORT_FORMATS = [
-  { name: 'All Tx Tool files', extensions: ['tx2', 'zip'] },
-  { name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] },
-  { name: 'ZIP (Tx Tool 1.0)', extensions: ['zip'] },
-];
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -92,7 +84,8 @@ const isTransactionSelectionModalShown = ref(false);
 const isSignTransactionFileModalShown = ref(false);
 
 const collectionNodes = ref<ITransactionNode[]>([]);
-const transactionFilePath = ref<string | null>(null);
+const selectedTx2FileName = ref<string | null>(null);
+const selectedTx2File = ref<import('@shared/interfaces').TransactionFile | null>(null);
 
 const emptyFilterResult: V1ImportFilterResult = { candidates: [], ignoredPaths: [] };
 const filterResult = ref<V1ImportFilterResult>(emptyFilterResult);
@@ -191,23 +184,23 @@ async function handleTransactionFileAction(action: string) {
       isExportModalShown.value = true;
       break;
     case 'signTransactionFile':
-      transactionFilePath.value = await selectTransactionFile(true);
-      if (transactionFilePath.value !== null) {
-        isSignTransactionFileModalShown.value = true;
+      {
+        const selection = await selectTransactionFile(true);
+        if (selection?.kind === 'tx2') {
+          selectedTx2FileName.value = selection.suggestedName;
+          selectedTx2File.value = selection.transactionFile;
+          isSignTransactionFileModalShown.value = true;
+        }
       }
       break;
     case 'importSignaturesFromFile':
-      transactionFilePath.value = await selectTransactionFile();
-
-      if (transactionFilePath.value !== null) {
-        const ext = transactionFilePath.value.split('.').pop();
-        if (ext === 'tx2') {
-          await importSignaturesFromV2File(transactionFilePath.value);
-        } else if (ext === 'zip') {
-          filterResult.value = await filterForImportV1([transactionFilePath.value]);
+      {
+        const selection = await selectTransactionFile();
+        if (selection?.kind === 'tx2') {
+          await importSignaturesFromV2File(selection.transactionFile);
+        } else if (selection?.kind === 'zip') {
+          filterResult.value = selection.importResult;
           isImportModalVisible.value = true;
-        } else {
-          toastManager.error(`Unsupported file extension: ${ext}`);
         }
       }
       break;
@@ -215,11 +208,10 @@ async function handleTransactionFileAction(action: string) {
 }
 
 /* Functions */
-async function importSignaturesFromV2File(filePath: string) {
+async function importSignaturesFromV2File(transactionFile: import('@shared/interfaces').TransactionFile) {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const serverUrl = user.selectedOrganization.serverUrl;
 
-  const transactionFile = await readTransactionFile(filePath);
   const importInputs: ISignatureImport[] = [];
   const unknownTransactionIds = [];
 
@@ -274,23 +266,6 @@ async function importSignaturesFromV2File(filePath: string) {
     // We forget cached data for transaction i.id
     transactionCache.forget(i.id, serverUrl);
   }
-}
-
-async function selectTransactionFile(onlyV2 = false): Promise<string | null> {
-  const filter = onlyV2 ? [IMPORT_FORMATS[1]] : IMPORT_FORMATS;
-  const message = onlyV2
-    ? 'Select .tx2 files exported by TT V2'
-    : 'Select a .tx2 file (created by TT V2) or a .zip file (created by TT V1)';
-
-  const result = await showOpenDialog(
-    'Select Transaction File',
-    'Select',
-    filter,
-    ['openFile' /*, 'openDirectory', 'multiSelections' */],
-    message,
-  );
-
-  return result.canceled ? null : result.filePaths[0];
 }
 
 async function setQueryTabAndRemount(title: string) {
@@ -454,7 +429,8 @@ onBeforeMount(async () => {
     <SignTransactionFileModal
       v-if="isSignTransactionFileModalShown"
       v-model:show="isSignTransactionFileModalShown"
-      :filePath="transactionFilePath"
+      :suggestedName="selectedTx2FileName"
+      :initialTransactionFile="selectedTx2File"
     />
 
     <TransactionImportModal v-model:show="isImportModalVisible" :filter-result="filterResult" />

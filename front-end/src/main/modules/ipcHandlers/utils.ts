@@ -68,6 +68,68 @@ const getMockedOpenDialogResult = (): OpenDialogReturnValue => ({
   filePaths: [...dialogMockState.openPaths],
 });
 
+export async function showTransactionOpenDialog(onlyV2: boolean): Promise<OpenDialogReturnValue> {
+  const windows = BrowserWindow.getAllWindows();
+  if (windows.length === 0) return { canceled: true, filePaths: [] };
+  if (isPlaywrightTestSession()) return getMockedOpenDialogResult();
+  return dialog.showOpenDialog(windows[0], {
+    title: 'Select Transaction File',
+    buttonLabel: 'Select',
+    properties: ['openFile'],
+    message: onlyV2
+      ? 'Select .tx2 files exported by TT V2'
+      : 'Select a .tx2 file (created by TT V2) or a .zip file (created by TT V1)',
+    filters: onlyV2
+      ? [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }]
+      : [{ name: 'All Tx Tool files', extensions: ['tx2', 'zip'] }],
+  });
+}
+
+export async function showTransactionSaveDialog(defaultName: string): Promise<SaveDialogReturnValue> {
+  const windows = BrowserWindow.getAllWindows();
+  if (windows.length === 0) return { canceled: true, filePath: '' };
+  if (isPlaywrightTestSession()) return getMockedSaveDialogResult();
+  return dialog.showSaveDialog(windows[0], {
+    title: 'Export transactions', defaultPath: defaultName, buttonLabel: 'Export',
+    message: 'Export transaction', filters: [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }],
+  });
+}
+
+export async function exportFilesWithDialog(
+  files: Array<{ data: Uint8Array | string; extension?: string }>,
+  name: string,
+  title: string,
+  buttonLabel: string,
+  filters: FileFilter[],
+  message: string,
+): Promise<boolean> {
+  if (!Array.isArray(files) || files.length === 0 || files.some(file =>
+    !file || !(typeof file.data === 'string' || file.data instanceof Uint8Array) ||
+    (file.extension !== undefined && !/^\.[a-z0-9]+$/i.test(file.extension)))) {
+    throw new Error('Invalid export data');
+  }
+  const windows = BrowserWindow.getAllWindows();
+  if (windows.length === 0) return false;
+  const result = isPlaywrightTestSession()
+    ? getMockedSaveDialogResult()
+    : await dialog.showSaveDialog(windows[0], { defaultPath: name, title, buttonLabel, filters, message });
+  if (result.canceled || !result.filePath) return false;
+
+  const chosenPath = result.filePath;
+  const separatorIndex = Math.max(chosenPath.lastIndexOf('/'), chosenPath.lastIndexOf('\\'));
+  const directory = chosenPath.slice(0, separatorIndex + 1);
+  const filename = chosenPath.slice(separatorIndex + 1);
+  const extensionIndex = filename.lastIndexOf('.');
+  const baseName = extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename;
+  await Promise.all(files.map((file, index) => {
+    const filePath = index === 0 || !file.extension
+      ? chosenPath
+      : `${directory}${baseName}${file.extension}`;
+    return fs.promises.writeFile(filePath, file.data);
+  }));
+  return true;
+}
+
 export default () => {
   ipcMain.on(createChannelName('setDockBounce'), (_e, bounce: boolean) => {
     if (bounce) {
@@ -154,24 +216,9 @@ export default () => {
   });
 
   ipcMain.handle(
-    createChannelName('saveFileToPath'),
-    async (
-      _e,
-      data: Uint8Array | string,
-      filePath: string,
-    ) => {
-      try {
-        if (!filePath) throw new Error('File path is undefined');
-
-        await fs.promises.writeFile(filePath, data);
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          dialog.showErrorBox('Failed to save file', error.message);
-        } else {
-          dialog.showErrorBox('Failed to save file', 'Unknown error');
-        }
-      }
-    },
+    createChannelName('exportFilesWithDialog'),
+    async (_e, files, name: string, title: string, buttonLabel: string, filters: FileFilter[], message: string): Promise<boolean> =>
+      exportFilesWithDialog(files, name, title, buttonLabel, filters, message),
   );
 
   ipcMain.handle(
@@ -196,33 +243,6 @@ export default () => {
         buttonLabel,
         filters,
         properties,
-        message,
-      });
-    },
-  );
-
-  ipcMain.handle(
-    createChannelName('showSaveDialog'),
-    async (
-      _e,
-      name: string,
-      title: string,
-      buttonLabel: string,
-      filters: FileFilter[],
-      message: string
-    ) => {
-      const windows = BrowserWindow.getAllWindows();
-      if (windows.length === 0) return;
-
-      if (isPlaywrightTestSession()) {
-        return getMockedSaveDialogResult();
-      }
-
-      return await dialog.showSaveDialog(windows[0], {
-        title,
-        defaultPath: name,
-        buttonLabel,
-        filters,
         message,
       });
     },

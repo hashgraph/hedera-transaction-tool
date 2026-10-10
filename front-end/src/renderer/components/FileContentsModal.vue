@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import { isHederaSpecialFileId, decodeProto } from '@shared/hederaSpecialFiles';
-import { showSaveDialog, saveFileToPath } from '@renderer/services/electronUtilsService';
+import { exportFilesWithDialog } from '@renderer/services/electronUtilsService';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 const props = withDefaults(
@@ -69,7 +69,8 @@ const suggestedFilename = computed(() => {
 const handleDownload = async () => {
   try {
     const ext = fileExtension.value;
-    const result = await showSaveDialog(
+    await exportFilesWithDialog(
+      [{ data: props.contents }],
       suggestedFilename.value,
       'Save File',
       'Save',
@@ -79,8 +80,6 @@ const handleDownload = async () => {
       ],
       '',
     );
-    if (result.canceled || !result.filePath) return;
-    await saveFileToPath(props.contents, result.filePath);
   } catch {
     toastManager.error('Failed to download file');
   }
