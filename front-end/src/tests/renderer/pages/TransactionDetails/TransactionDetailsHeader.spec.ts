@@ -6,7 +6,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { TransactionStatus } from '@shared/interfaces';
 import TransactionDetailsHeader from '@renderer/pages/TransactionDetails/components/TransactionDetailsHeader.vue';
 import { cancelTransaction, executeTransaction } from '@renderer/services/organization';
-import { showSaveDialog } from '@renderer/services/electronUtilsService';
+import { exportTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { usersPublicRequiredToSign } from '@renderer/utils';
@@ -96,12 +96,11 @@ vi.mock('@renderer/services/keyPairService', () => ({
 }));
 
 vi.mock('@renderer/services/electronUtilsService', () => ({
-  saveFileToPath: vi.fn(),
-  showSaveDialog: vi.fn(),
+  exportFilesWithDialog: vi.fn(),
 }));
 
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
-  writeTransactionFile: vi.fn(),
+  exportTransactionFile: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock('@renderer/utils/sdk/transactions.ts', () => ({
@@ -352,10 +351,7 @@ describe('TransactionDetailsHeader.vue', () => {
   });
 
   test('shows success toast after successful export to tx2 format', async () => {
-    vi.mocked(showSaveDialog).mockResolvedValueOnce({
-      filePath: '/tmp/export.tx2',
-      canceled: false,
-    });
+    vi.mocked(exportTransactionFile).mockResolvedValueOnce(true);
 
     const wrapper = mountHeader(
       { status: TransactionStatus.CANCELED },
@@ -371,7 +367,7 @@ describe('TransactionDetailsHeader.vue', () => {
     form.element.dispatchEvent(submitEvent);
     await flushPromises();
 
-    expect(showSaveDialog).toHaveBeenCalledTimes(1);
+    expect(exportTransactionFile).toHaveBeenCalledTimes(1);
     expect(toastManager.findEntry('Transaction exported successfully', 'success')).not.toBeNull();
   });
 });
