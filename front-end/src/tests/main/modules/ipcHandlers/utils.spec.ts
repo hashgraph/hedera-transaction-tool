@@ -25,7 +25,11 @@ vi.mock('@main/utils', () => mockDeep());
 
 import { getIPCHandler, getIPCListener, invokeIPCHandler, invokeIPCListener } from '../../_utils_';
 
-import registerUtilsListeners from '@main/modules/ipcHandlers/utils';
+import registerUtilsListeners, {
+  exportFilesWithDialog,
+  showTransactionOpenDialog,
+  showTransactionSaveDialog,
+} from '@main/modules/ipcHandlers/utils';
 
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { getNumberArrayFromString } from '@main/utils';
@@ -48,6 +52,111 @@ describe('registerUtilsListeners', () => {
     delete process.env.PLAYWRIGHT_TEST;
     registerUtilsListeners();
     await invokeIPCHandler('utils:test:clearDialogMockState');
+  });
+
+  describe('transaction file dialogs', () => {
+    test('returns a canceled open result when no window exists', async () => {
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
+      await expect(showTransactionOpenDialog(true)).resolves.toEqual({ canceled: true, filePaths: [] });
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    });
+
+    test('uses the TX2-only open dialog settings', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+
+      await showTransactionOpenDialog(true);
+
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+        title: 'Select Transaction File',
+        buttonLabel: 'Select',
+        properties: ['openFile'],
+        message: 'Select .tx2 files exported by TT V2',
+        filters: [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }],
+      });
+    });
+
+    test('uses the TX2 and ZIP open dialog settings', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      vi.mocked(dialog.showOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.zip'] });
+
+      await showTransactionOpenDialog(false);
+
+      expect(dialog.showOpenDialog).toHaveBeenCalledWith(windows[0], {
+        title: 'Select Transaction File',
+        buttonLabel: 'Select',
+        properties: ['openFile'],
+        message: 'Select a .tx2 file (created by TT V2) or a .zip file (created by TT V1)',
+        filters: [{ name: 'All Tx Tool files', extensions: ['tx2', 'zip'] }],
+      });
+    });
+
+    test('uses mocked open-dialog paths during Playwright sessions', async () => {
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([{}] as unknown as BrowserWindow[]);
+      process.env.PLAYWRIGHT_TEST = 'true';
+      await invokeIPCHandler('utils:test:setDialogMockState', { openPaths: ['/tmp/import.tx2'] });
+
+      await expect(showTransactionOpenDialog(true)).resolves.toEqual({
+        canceled: false,
+        filePaths: ['/tmp/import.tx2'],
+      });
+      expect(dialog.showOpenDialog).not.toHaveBeenCalled();
+    });
+
+    test('returns a canceled save result when no window exists', async () => {
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([]);
+      await expect(showTransactionSaveDialog('file.tx2')).resolves.toEqual({ canceled: true, filePath: '' });
+      expect(dialog.showSaveDialog).not.toHaveBeenCalled();
+    });
+
+    test('opens a TX2 save dialog with the suggested filename', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      vi.mocked(dialog.showSaveDialog).mockResolvedValue({ canceled: false, filePath: '/chosen/file.tx2' });
+
+      await showTransactionSaveDialog('file.tx2');
+
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], {
+        title: 'Export transactions',
+        defaultPath: 'file.tx2',
+        buttonLabel: 'Export',
+        message: 'Export transaction',
+        filters: [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }],
+      });
+    });
+
+    test('uses the mocked save path during Playwright sessions', async () => {
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([{}] as unknown as BrowserWindow[]);
+      process.env.PLAYWRIGHT_TEST = 'true';
+      await invokeIPCHandler('utils:test:setDialogMockState', { savePath: '/tmp/export.tx2' });
+
+      await expect(showTransactionSaveDialog('export.tx2')).resolves.toEqual({
+        canceled: false,
+        filePath: '/tmp/export.tx2',
+      });
+      expect(dialog.showSaveDialog).not.toHaveBeenCalled();
+    });
+
+    test('rejects invalid export file data', async () => {
+      await expect(exportFilesWithDialog([], 'file.tx2', 'Export', 'Export', [], ''))
+        .rejects.toThrow('Invalid export data');
+    });
+
+    test('uses the mocked save path during Playwright sessions', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      process.env.PLAYWRIGHT_TEST = 'true';
+      await invokeIPCHandler('utils:test:setDialogMockState', { savePath: '/tmp/playwright-export.tx2' });
+
+      await expect(exportFilesWithDialog(
+        [{ data: 'transaction bytes' }], 'export.tx2', 'Export', 'Export', [], '',
+      )).resolves.toBe(true);
+
+      expect(dialog.showSaveDialog).not.toHaveBeenCalled();
+      expect(fs.promises.writeFile).toHaveBeenCalledWith('/tmp/playwright-export.tx2', 'transaction bytes');
+    });
   });
 
   test('Should register handlers for each util', () => {
