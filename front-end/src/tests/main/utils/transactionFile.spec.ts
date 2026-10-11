@@ -32,6 +32,41 @@ describe('transactionFile utils', () => {
     expect(fsp.readFile).not.toHaveBeenCalled();
   });
 
+  it('rejects transaction files with an unsupported top-level shape', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ network: 'testnet' }));
+
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file: unsupported format or network',
+    );
+  });
+
+  it('rejects transaction files with a non-HTTPS network URL', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ network: 'http://mirror.example', items: [] }));
+
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file network: HTTPS is required',
+    );
+  });
+
+  it.each([
+    null,
+    { transactionBytes: 1, name: 'name', description: 'description', creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 1, description: 'description', creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 'name', description: 1, creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 'name', description: 'description', creatorEmail: 1 },
+  ])('rejects malformed transaction items (%#)', async invalidItem => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ network: 'testnet', items: [invalidItem] }),
+    );
+
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file: invalid transaction item',
+    );
+  });
+
   it('parses a selected ZIP in the main process and returns no filesystem path', async () => {
     vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/home/user/import.zip'] });
     vi.mocked(filterForImportV1).mockResolvedValue({
