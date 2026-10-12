@@ -92,7 +92,12 @@ async function handleExport() {
       collectionTransactions,
       network.network,
     );
-    await exportTransactionFile(tx2Content, `${baseName}.tx2`);
+    try {
+      await exportTransactionFile(tx2Content, `${baseName}.tx2`);
+    } catch (error) {
+      logger.error('Failed to export transactions', { error });
+      toastManager.error('Failed to export transactions');
+    }
   }
 }
 

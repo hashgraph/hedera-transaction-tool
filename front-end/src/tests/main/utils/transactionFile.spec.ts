@@ -32,6 +32,33 @@ describe('transactionFile utils', () => {
     expect(fsp.readFile).not.toHaveBeenCalled();
   });
 
+  it('propagates file-read errors for the dialog-selected path', async () => {
+    const readError = new Error('EACCES: permission denied');
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockRejectedValue(readError);
+
+    await expect(importTransactionFile(true)).rejects.toThrow(readError);
+    expect(fsp.readFile).toHaveBeenCalledWith('/chosen/file.tx2', { encoding: 'utf8' });
+  });
+
+  it('rejects invalid JSON in the dialog-selected file', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue('{not valid json');
+
+    await expect(importTransactionFile(true)).rejects.toThrow(SyntaxError);
+  });
+
+  it('accepts a custom network identifier without an explicit insecure scheme', async () => {
+    const customNetworkFile: TransactionFile = { network: 'custom.mirror.example/v1', items: [] };
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(customNetworkFile));
+
+    await expect(importTransactionFile(true)).resolves.toMatchObject({
+      kind: 'tx2',
+      transactionFile: customNetworkFile,
+    });
+  });
+
   it('rejects transaction files with an unsupported top-level shape', async () => {
     vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
     vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ network: 'testnet' }));

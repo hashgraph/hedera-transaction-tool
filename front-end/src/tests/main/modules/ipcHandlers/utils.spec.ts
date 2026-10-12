@@ -474,6 +474,22 @@ describe('registerUtilsListeners', () => {
     expect(fs.promises.writeFile).not.toHaveBeenCalled();
   });
 
+  test('Should apply the primary export extension to avoid colliding with a companion file', async () => {
+    vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([{}] as unknown as BrowserWindow[]);
+    vi.mocked(dialog.showSaveDialog).mockResolvedValue({ filePath: '/exports/transaction.txt', canceled: false });
+
+    await invokeIPCHandler(
+      'utils:exportFilesWithDialog',
+      [
+        { data: 'transaction bytes', extension: '.tx' },
+        { data: 'companion JSON', extension: '.txt' },
+      ],
+      'transaction.tx', 'Export', 'Export', [], '',
+    );
+    expect(fs.promises.writeFile).toHaveBeenNthCalledWith(1, '/exports/transaction.tx', 'transaction bytes');
+    expect(fs.promises.writeFile).toHaveBeenNthCalledWith(2, '/exports/transaction.txt', 'companion JSON');
+  });
+
   test('Should invoke app.quit in util:quit', async () => {
     await invokeIPCHandler('utils:quit');
     expect(app.quit).toHaveBeenCalled();

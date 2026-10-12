@@ -121,12 +121,11 @@ export async function exportFilesWithDialog(
   const filename = chosenPath.slice(separatorIndex + 1);
   const extensionIndex = filename.lastIndexOf('.');
   const baseName = extensionIndex > 0 ? filename.slice(0, extensionIndex) : filename;
-  await Promise.all(files.map((file, index) => {
-    const filePath = index === 0 || !file.extension
-      ? chosenPath
-      : `${directory}${baseName}${file.extension}`;
-    return fs.promises.writeFile(filePath, file.data);
+  const destinations = files.map(file => ({
+    filePath: file.extension ? `${directory}${baseName}${file.extension}` : chosenPath,
+    data: file.data,
   }));
+  await Promise.all(destinations.map(({ filePath, data }) => fs.promises.writeFile(filePath, data)));
   return true;
 }
 

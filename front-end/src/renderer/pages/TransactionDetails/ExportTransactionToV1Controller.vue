@@ -69,7 +69,7 @@ const handleExportTransaction = async (
     //  - <chosen-file-path>.tx: will contain the transaction bytes
     //  - <chosen-file-path>.txt: will contain the transaction description JSON content
     const exported = await exportFilesWithDialog(
-      [{ data: transactionBytes }, { data: jsonContent, extension: '.txt' }],
+      [{ data: transactionBytes, extension: '.tx' }, { data: jsonContent, extension: '.txt' }],
       `${baseName || 'transaction'}.tx`,
       'Export transaction',
       'Export',
