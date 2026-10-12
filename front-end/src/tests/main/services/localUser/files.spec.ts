@@ -12,6 +12,7 @@ import {
   deleteTempFolder,
   getFiles,
   removeFiles,
+  showContentInTemp,
   showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
@@ -103,6 +104,18 @@ describe('Services Local User Files', () => {
 
       await expect(addFile(file)).rejects.toThrowError('File ID or Nickname already exists!');
     });
+
+    test.each(['../notes', '0.0.1/../../notes', '0.0.1\\..\\notes'])(
+      'Should reject an invalid file ID (%s) before storing the file',
+      async fileId => {
+        await expect(addFile({ ...file, file_id: fileId })).rejects.toThrowError(
+          'Invalid Hedera file ID',
+        );
+
+        expect(prisma.hederaFile.count).not.toHaveBeenCalled();
+        expect(prisma.hederaFile.create).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('removeFiles', () => {
@@ -194,6 +207,27 @@ describe('Services Local User Files', () => {
       await expect(showStoredFileInTemp(file.user_id, file.file_id)).rejects.toThrowError(
         'Failed to open file content',
       );
+    });
+  });
+
+  describe('showContentInTemp', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test.each([
+      '../../../../../home/victim/Documents/notes',
+      '0.0.1/../../notes',
+      '0.0.1\\..\\notes',
+      '..',
+    ])('Should reject an invalid file ID (%s) before writing or opening a file', async fileId => {
+      await expect(showContentInTemp(Buffer.from('attacker data'), fileId)).rejects.toThrowError(
+        'Invalid Hedera file ID',
+      );
+
+      expect(saveContentToPath).not.toHaveBeenCalled();
+      expect(shell.showItemInFolder).not.toHaveBeenCalled();
+      expect(shell.openPath).not.toHaveBeenCalled();
     });
   });
 
