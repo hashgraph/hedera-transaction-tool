@@ -5,11 +5,10 @@ import { mount } from '@vue/test-utils';
 import FileContentsModal from '@renderer/components/FileContentsModal.vue';
 
 vi.mock('@renderer/services/electronUtilsService', () => ({
-  showSaveDialog: vi.fn().mockResolvedValue({ canceled: false, filePath: '/tmp/test.json' }),
-  saveFileToPath: vi.fn().mockResolvedValue(undefined),
+  exportFilesWithDialog: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { showSaveDialog, saveFileToPath } from '@renderer/services/electronUtilsService';
+import { exportFilesWithDialog } from '@renderer/services/electronUtilsService';
 
 const mountModal = (contents: Uint8Array, fileId?: string | null, transactionId?: string) =>
   mount(FileContentsModal, {
@@ -27,8 +26,7 @@ const mountModal = (contents: Uint8Array, fileId?: string | null, transactionId?
 
 describe('FileContentsModal.vue', () => {
   beforeEach(() => {
-    vi.mocked(showSaveDialog).mockClear();
-    vi.mocked(saveFileToPath).mockClear();
+    vi.mocked(exportFilesWithDialog).mockClear();
   });
 
   it('shows (empty) for an empty Uint8Array', () => {
@@ -79,7 +77,8 @@ describe('FileContentsModal.vue', () => {
     const contents = new TextEncoder().encode('Hello');
     const wrapper = mountModal(contents, null, '0.0.1234@1234567890.0');
     await wrapper.find('button').trigger('click');
-    expect(showSaveDialog).toHaveBeenCalledWith(
+    expect(exportFilesWithDialog).toHaveBeenCalledWith(
+      [{ data: contents }],
       '0.0.1234@1234567890.0-file-contents.txt',
       expect.any(String),
       expect.any(String),
@@ -92,7 +91,8 @@ describe('FileContentsModal.vue', () => {
     const contents = new Uint8Array([0xff, 0xfe, 0x00, 0x01]);
     const wrapper = mountModal(contents, null, '0.0.1234@1234567890.0');
     await wrapper.find('button').trigger('click');
-    expect(showSaveDialog).toHaveBeenCalledWith(
+    expect(exportFilesWithDialog).toHaveBeenCalledWith(
+      [{ data: contents }],
       '0.0.1234@1234567890.0-file-contents.bin',
       expect.any(String),
       expect.any(String),
@@ -105,7 +105,8 @@ describe('FileContentsModal.vue', () => {
     const contents = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
     const wrapper = mountModal(contents, '0.0.112');
     await wrapper.find('button').trigger('click');
-    expect(showSaveDialog).toHaveBeenCalledWith(
+    expect(exportFilesWithDialog).toHaveBeenCalledWith(
+      [{ data: contents }],
       'file-contents.bin',
       expect.any(String),
       expect.any(String),
@@ -118,7 +119,8 @@ describe('FileContentsModal.vue', () => {
     const contents = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
     const wrapper = mountModal(contents, '0.0.121');
     await wrapper.find('button').trigger('click');
-    expect(showSaveDialog).toHaveBeenCalledWith(
+    expect(exportFilesWithDialog).toHaveBeenCalledWith(
+      [{ data: contents }],
       'file-contents.bin',
       expect.any(String),
       expect.any(String),
@@ -127,19 +129,21 @@ describe('FileContentsModal.vue', () => {
     );
   });
 
-  it('saves the file to the chosen path after dialog confirm', async () => {
+  it('delegates file selection and writing to the main process', async () => {
     const contents = new TextEncoder().encode('Hello');
     const wrapper = mountModal(contents);
     await wrapper.find('button').trigger('click');
-    expect(saveFileToPath).toHaveBeenCalledWith(contents, '/tmp/test.json');
+    expect(exportFilesWithDialog).toHaveBeenCalledWith(
+      [{ data: contents }], 'file-contents.txt', 'Save File', 'Save', expect.any(Array), '',
+    );
   });
 
-  it('does not save when save dialog is cancelled', async () => {
-    vi.mocked(showSaveDialog).mockResolvedValueOnce({ canceled: true, filePath: '' });
+  it('leaves cancellation handling to the main process', async () => {
+    vi.mocked(exportFilesWithDialog).mockResolvedValueOnce(false);
     const contents = new TextEncoder().encode('Hello');
     const wrapper = mountModal(contents);
     await wrapper.find('button').trigger('click');
-    expect(saveFileToPath).not.toHaveBeenCalled();
+    expect(exportFilesWithDialog).toHaveBeenCalledTimes(1);
   });
 
   it('does not show decoded notice for plain text content', () => {

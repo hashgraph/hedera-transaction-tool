@@ -8,6 +8,7 @@ export * from './Contacts';
 export * from './V1ImportFilterResult';
 export * from './update';
 export * from './TransactionFile';
+export * from './TransactionFileImportResult';
 export * from './ITransactionNode';
 
 export type Network = string;

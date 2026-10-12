@@ -1,4 +1,4 @@
-import type { FileFilter, OpenDialogReturnValue, SaveDialogReturnValue } from 'electron';
+import type { FileFilter, OpenDialogReturnValue } from 'electron';
 
 import { commonIPCHandler } from '@renderer/utils';
 
@@ -60,39 +60,18 @@ export const showOpenDialog = async (
   }
 };
 
-/* Opens a save dialog */
-export const showSaveDialog = async (
+export const exportFilesWithDialog = async (
+  files: Array<{ data: Uint8Array | string; extension?: string }>,
   name: string,
   title: string,
   buttonLabel: string,
   filters: FileFilter[],
   message: string,
-): Promise<SaveDialogReturnValue> => {
+): Promise<boolean> => {
   try {
-    return await window.electronAPI.local.utils.showSaveDialog(
-      name,
-      title,
-      buttonLabel,
-      filters,
-      message,
-    );
+    return await window.electronAPI.local.utils.exportFilesWithDialog(files, name, title, buttonLabel, filters, message);
   } catch {
-    throw new Error('Failed to open the dialog');
-  }
-};
-
-/* Save a prename file */
-export const saveFileToPath = async (
-  data: Uint8Array | string,
-  name: string
-): Promise<void> => {
-  try {
-    return await window.electronAPI.local.utils.saveFileToPath(
-      data,
-      name
-    );
-  } catch {
-    throw new Error('Failed to open the dialog');
+    throw new Error('Failed to export file');
   }
 };
 

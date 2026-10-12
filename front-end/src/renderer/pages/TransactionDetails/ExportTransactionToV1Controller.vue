@@ -12,7 +12,7 @@ import { type ITransactionFull } from '@shared/interfaces';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { Transaction } from '@hiero-ledger/sdk';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
+import { exportFilesWithDialog } from '@renderer/services/electronUtilsService.ts';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 
 /* Props */
@@ -51,23 +51,6 @@ const handleExportTransaction = async (
     // Generate the default base name for the file
     const baseName = generateTransactionExportFileName(props.transaction);
 
-    // Show the save dialog to the user, allowing them to choose the file name and location
-    const { filePath, canceled } = await showSaveDialog(
-      `${baseName || 'transaction'}`,
-      'Export transaction',
-      'Export',
-      EXPORT_FORMAT,
-      'Export transaction',
-    );
-
-    if (canceled || !filePath) {
-      return null;
-    }
-
-    // Export to TTv1 format
-    //  - <chosen-file-path>.tx: contains the transaction bytes
-    //  - <chosen-file-path>.txt: contains the transaction description JSON content
-
     if (user.publicKeys.length === 0) {
       throw new Error(
         'Exporting in the .tx format requires a signature. User must have at least one key pair to sign the transaction.',
@@ -82,9 +65,18 @@ const handleExportTransaction = async (
       privateKey,
     );
 
-    await saveFileToPath(transactionBytes, filePath);
-    const txtFilePath = filePath.replace(/\.[^/.]+$/, '.txt');
-    await saveFileToPath(jsonContent, txtFilePath);
+    // Show the save dialog to the user and export to TTv1 format:
+    //  - <chosen-file-path>.tx: will contain the transaction bytes
+    //  - <chosen-file-path>.txt: will contain the transaction description JSON content
+    const exported = await exportFilesWithDialog(
+      [{ data: transactionBytes, extension: '.tx' }, { data: jsonContent, extension: '.txt' }],
+      `${baseName || 'transaction'}.tx`,
+      'Export transaction',
+      'Export',
+      EXPORT_FORMAT,
+      'Export transaction',
+    );
+    if (!exported) return null;
 
     toastManager.success('Transaction exported successfully');
   } else {
