@@ -42,13 +42,15 @@ describe('JwtBlacklistGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should deny access if no JWT is present', async () => {
+  it('should allow access if no JWT is present, deferring to the next auth guard', async () => {
     jest.spyOn(reflector, 'get').mockReturnValue(false);
 
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => null);
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
+    expect(blacklistService.isTokenBlacklisted).not.toHaveBeenCalled();
   });
 
   it('should deny access if the JWT is blacklisted', async () => {
@@ -72,13 +74,14 @@ describe('JwtBlacklistGuard', () => {
     expect(result).toBe(true);
   });
 
-  it('should deny access if no JWT is present in OTP header', async () => {
+  it('should allow access if no JWT is present in OTP header, deferring to the next auth guard', async () => {
     jest.spyOn(reflector, 'get').mockReturnValue(false);
 
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => null);
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
   });
 
   it('should allow access if JWT is present in OTP header and not blacklisted', async () => {
@@ -102,7 +105,7 @@ describe('JwtBlacklistGuard', () => {
     await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
   });
 
-  it('should deny access if JWT extraction throws an error', async () => {
+  it('should allow access if JWT extraction throws an error, deferring to the next auth guard', async () => {
     jest.spyOn(reflector, 'get').mockReturnValue(false);
 
     const JwtBlacklistGuard = createJwtBlacklistGuard(() => {
@@ -110,7 +113,8 @@ describe('JwtBlacklistGuard', () => {
     });
     guard = new JwtBlacklistGuard(reflector, blacklistService);
 
-    await expect(guard.canActivate(context)).rejects.toThrow(UnauthorizedException);
+    const result = await guard.canActivate(context);
+    expect(result).toBe(true);
   });
 
   it('should handle unexpected errors gracefully', async () => {

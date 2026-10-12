@@ -13,6 +13,8 @@ import {
 
 import {
   AccountSnapshot,
+  ApiKey,
+  ApiKeyEvent,
   CachedAccount,
   CachedAccountKey,
   CachedNode,
@@ -595,6 +597,8 @@ async function connectDatabase() {
       TransactionNodeSnapshot,
       TransactionReviewerList,
       TransactionReviewerListMember,
+      ApiKey,
+      ApiKeyEvent,
     ],
   });
 

@@ -11,6 +11,7 @@ import {
   USER_REGISTERED,
   USER_INVITE,
   USER_PASSWORD_RESET,
+  API_KEY_REVOKED,
   EmailDto,
   DISMISSED_NOTIFICATIONS,
   TRANSACTION_REVIEWER_REJECTION,
@@ -62,6 +63,14 @@ export const emitUserPasswordResetEmail = async (
 ) => {
   const result = await publisher.publish(USER_PASSWORD_RESET, dtos);
   if (!result?.success) logPublishFailure(USER_PASSWORD_RESET, result?.response);
+};
+
+export const emitApiKeyRevokedEmail = async (
+  publisher: NatsPublisherService,
+  dtos: EmailDto[],
+) => {
+  const result = await publisher.publish(API_KEY_REVOKED, dtos);
+  if (!result?.success) logPublishFailure(API_KEY_REVOKED, result?.response);
 };
 
 export const emitUserStatusUpdateNotifications = async (

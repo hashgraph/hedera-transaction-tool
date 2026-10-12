@@ -61,5 +61,37 @@ describe('JwtStrategy', () => {
         UnauthorizedException,
       );
     });
+
+    it('should throw UnauthorizedException when the token is older than the current JWT_EXPIRATION', async () => {
+      const iat = 1_700_000_000;
+      const expirationDays = 7;
+      mockConfigService.get.mockReturnValue(expirationDays);
+      const nowSpy = jest
+        .spyOn(Date, 'now')
+        .mockReturnValue((iat + expirationDays * 24 * 60 * 60 + 1) * 1000);
+
+      await expect(
+        jwtStrategy.validate({ userId: 1, email: 'test@test.com', iat }),
+      ).rejects.toThrow(UnauthorizedException);
+      expect(mockUsersService.getUser).not.toHaveBeenCalled();
+
+      nowSpy.mockRestore();
+    });
+
+    it('should return a user when the token is within the current JWT_EXPIRATION', async () => {
+      const iat = 1_700_000_000;
+      const expirationDays = 7;
+      const user = { id: 1, email: 'test@test.com' };
+      mockConfigService.get.mockReturnValue(expirationDays);
+      mockUsersService.getUser.mockResolvedValue(user as User);
+      const nowSpy = jest
+        .spyOn(Date, 'now')
+        .mockReturnValue((iat + expirationDays * 24 * 60 * 60 - 1) * 1000);
+
+      const result = await jwtStrategy.validate({ userId: user.id, email: user.email, iat });
+      expect(result).toEqual(user);
+
+      nowSpy.mockRestore();
+    });
   });
 });

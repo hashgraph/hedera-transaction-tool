@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { BaseNatsConsumerService, ConsumerConfig, MessageHandler } from '../consumer';
 import { EmailService } from './email.service';
 import {
+  API_KEY_REVOKED,
   EMAIL_NOTIFICATIONS,
   EmailDto,
   NatsJetStreamService,
@@ -44,6 +45,13 @@ export class EmailConsumerService extends BaseNatsConsumerService {
         dtoClass: EmailDto,
         handler: async (data: EmailDto[]) => {
           await this.emailService.processUserPasswordResetNotifications(data);
+        },
+      },
+      {
+        subject: API_KEY_REVOKED,
+        dtoClass: EmailDto,
+        handler: async (data: EmailDto[]) => {
+          await this.emailService.processApiKeyRevokedNotifications(data);
         },
       },
       {

@@ -31,6 +31,7 @@ import { NotificationPreferencesModule } from './notification-preferences/notifi
 import { NotificationReceiverModule } from './notification-receiver/notification-receiver.module';
 import { ReportsModule } from './reports/reports.module';
 import { ReviewerGroupsModule } from './reviewer-groups/reviewer-groups.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
 
 export const config = ConfigModule.forRoot({
   envFilePath: getEnvFilePaths(),
@@ -54,6 +55,7 @@ export const config = ConfigModule.forRoot({
     // of silently shipping that.
     OTP_MAX_ATTEMPTS: Joi.number().positive().required(),
     OTP_VERIFIED_EXPIRATION: Joi.number().required(),
+    API_KEY_IDLE_EXPIRY_DAYS: Joi.number().optional().default(180),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
@@ -85,6 +87,7 @@ export const config = ConfigModule.forRoot({
     NotificationReceiverModule,
     ReportsModule,
     ReviewerGroupsModule,
+    ApiKeysModule,
     HealthModule,
     IpResolutionModule,
     RedisClientModule,

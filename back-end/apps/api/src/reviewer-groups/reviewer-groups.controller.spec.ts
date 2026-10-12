@@ -24,6 +24,7 @@ describe('ReviewerGroupsController', () => {
     email: 'admin@test.com',
     password: 'hash',
     admin: true,
+    canViewReports: false,
     status: UserStatus.NONE,
     createdAt: new Date(),
     updatedAt: new Date(),

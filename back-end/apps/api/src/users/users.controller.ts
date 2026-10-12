@@ -15,10 +15,11 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { ErrorCodes, Serialize } from '@app/common';
 
-import { User } from '@entities';
+import { ApiKeyRevokedReason, User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
-import { AllowNonVerifiedUser, GetUser } from '../decorators';
+import { AdminGuard, JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard } from '../guards';
+import { AllowApiKey, AllowNonVerifiedUser, GetUser } from '../decorators';
+import { ApiKeysService } from '../api-keys/api-keys.service';
 
 import {
   UpdateUserDto,
@@ -32,20 +33,26 @@ import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard)
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly apiKeysService: ApiKeysService,
+  ) {}
 
   @ApiOperation({
     summary: 'Get all users',
-    description: 'Get all users that are currently a part of the organization.',
+    description:
+      'Get all users that are currently a part of the organization. Accepts a JWT, or a ' +
+      'GET-only read-only API key (X-Api-Key header).',
   })
   @ApiResponse({
     status: 200,
     type: [UserWithClientsDto],
   })
+  @AllowApiKey()
   @Get()
   @Serialize(UserWithClientsDto)
   getUsers(@GetUser() requestingUser: User): Promise<User[]> {
@@ -54,13 +61,16 @@ export class UsersController {
 
   @ApiOperation({
     summary: 'Get the current user',
-    description: 'Get the user that is currently a part of the organization.',
+    description:
+      'Get the user that is currently a part of the organization. Accepts a JWT, or a ' +
+      'GET-only read-only API key (X-Api-Key header).',
   })
   @ApiResponse({
     status: 200,
     type: UserDto,
   })
   @AllowNonVerifiedUser()
+  @AllowApiKey()
   @Get('/me')
   @Serialize(UserDto)
   getMe(@GetUser() user: User): User {
@@ -105,7 +115,10 @@ export class UsersController {
 
   @ApiOperation({
     summary: 'Update user information',
-    description: 'Update the admin state of a user.',
+    description:
+      'Update the admin state and/or report-viewing permission of a user. Removing either ' +
+      "one, when it leaves the user with no path to report access, revokes that user's " +
+      'report API key.',
   })
   @ApiResponse({
     status: 200,
@@ -114,8 +127,25 @@ export class UsersController {
   @UseGuards(AdminGuard)
   @Patch('/:id')
   @Serialize(UserDto)
-  updateUser(@Param('id', ParseIntPipe) userId: number, @Body() dto: UpdateUserDto): Promise<User> {
-    return this.usersService.updateUserById(userId, dto);
+  async updateUser(
+    @GetUser() admin: User,
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() dto: UpdateUserDto,
+  ): Promise<User> {
+    const before = await this.usersService.getUser({ id: userId });
+    const wasEligibleForKey = !!before && (before.admin || before.canViewReports);
+
+    const updated = await this.usersService.updateUserById(userId, dto);
+    const stillEligibleForKey = updated.admin || updated.canViewReports;
+
+    // Must compare the merged before/after entity, not the dto in isolation: dto fields are
+    // optional (partial update), so e.g. demoting admin alone (dto.admin === false) can only be
+    // known to remove eligibility by also knowing the current (possibly untouched) canViewReports.
+    if (wasEligibleForKey && !stillEligibleForKey) {
+      await this.apiKeysService.revoke(userId, ApiKeyRevokedReason.PERMISSION_REMOVED, admin.id);
+    }
+
+    return updated;
   }
 
   @ApiOperation({
@@ -130,7 +160,7 @@ export class UsersController {
   @Delete('/:id')
   removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     if (user.id === id) throw new BadRequestException(ErrorCodes.CRYFO);
-    return this.usersService.removeUser(id);
+    return this.usersService.removeUser(id, user.id);
   }
 
   @ApiOperation({

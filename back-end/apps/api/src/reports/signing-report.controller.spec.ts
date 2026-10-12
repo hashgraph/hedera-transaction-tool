@@ -2,9 +2,9 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { Response } from 'express';
 import { mockDeep } from 'jest-mock-extended';
 
-import { guardMock } from '@app/common';
+import { BlacklistService, guardMock } from '@app/common';
 
-import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
+import { JwtOrApiKeyGuard } from '../guards';
 
 import { SigningReportController } from './signing-report.controller';
 import { SigningReportService } from './signing-report.service';
@@ -21,19 +21,17 @@ describe('SigningReportController', () => {
   let controller: SigningReportController;
 
   const service = mockDeep<SigningReportService>();
+  const blacklistService = mockDeep<BlacklistService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SigningReportController],
-      providers: [{ provide: SigningReportService, useValue: service }],
+      providers: [
+        { provide: SigningReportService, useValue: service },
+        { provide: BlacklistService, useValue: blacklistService },
+      ],
     })
-      .overrideGuard(JwtBlackListAuthGuard)
-      .useValue(guardMock())
-      .overrideGuard(JwtAuthGuard)
-      .useValue(guardMock())
-      .overrideGuard(VerifiedUserGuard)
-      .useValue(guardMock())
-      .overrideGuard(AdminGuard)
+      .overrideGuard(JwtOrApiKeyGuard)
       .useValue(guardMock())
       .compile();
 

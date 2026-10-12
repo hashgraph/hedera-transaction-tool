@@ -18,7 +18,6 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { TransactionId } from '@hiero-ledger/sdk';
 import * as semver from 'semver';
 
 import {
@@ -36,11 +35,15 @@ import {
   withPaginatedResponse,
 } from '@app/common';
 
+import { TransactionId } from '@hiero-ledger/sdk';
+
+import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
+
 import { Transaction, User, transactionDateProperties, transactionProperties } from '@entities';
 
-import { JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard, HasKeyGuard } from '../guards';
+import { JwtBlackListAuthGuard, JwtOrApiKeyGuard, HasKeyGuard, VerifiedUserGuard } from '../guards';
 
-import { GetUser } from '../decorators';
+import { AllowApiKey, GetUser } from '../decorators';
 
 import { TransactionsService } from './transactions.service';
 
@@ -52,11 +55,10 @@ import {
   TransactionToSignDto,
   UploadSignatureMapDto,
 } from './dto';
-import { TransactionIdPipe } from '@app/common/pipes/transaction-id.pipe';
 
 @ApiTags('Transactions')
 @Controller('transactions')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard)
 export class TransactionsController {
   constructor(private transactionsService: TransactionsService) {}
 
@@ -251,14 +253,19 @@ export class TransactionsController {
     return this.transactionsService.executeTransaction(id, user);
   }
 
+  // Declared last so its '/:id' route doesn't shadow the more specific
+  // literal GET routes above ('/history', '/sign', '/sign/:transactionId').
   @ApiOperation({
     summary: 'Get a transaction',
-    description: 'Get the transaction for the given transaction id.',
+    description:
+      'Get the transaction for the given transaction id. Accepts a JWT, or a GET-only ' +
+      'read-only API key (X-Api-Key header).',
   })
   @ApiResponse({
     status: 200,
     type: TransactionFullDto,
   })
+  @AllowApiKey()
   @Get('/:id')
   @Serialize(TransactionFullDto)
   async getTransaction(
@@ -267,5 +274,4 @@ export class TransactionsController {
   ): Promise<Transaction> {
     return this.transactionsService.getTransactionWithVerifiedAccess(id, user);
   }
-
 }

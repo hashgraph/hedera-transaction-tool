@@ -13,6 +13,9 @@ import {
   UserKey,
 } from '@entities';
 
+import { ApiKeysModule } from '../api-keys/api-keys.module';
+import { JwtOrApiKeyGuard } from '../guards';
+
 import { SigningReportController } from './signing-report.controller';
 import { SigningReportService } from './signing-report.service';
 
@@ -34,8 +37,14 @@ import { SigningReportService } from './signing-report.service';
       TransactionSigner,
       UserKey,
     ]),
+    // JwtOrApiKeyGuard needs ApiKeysService to authenticate a read-only API
+    // key inline; the JWT path delegates to JwtAuthGuard/passport's 'jwt'
+    // strategy (registered globally by AuthModule), so no local JwtModule or
+    // UsersModule import is needed here. Paired with ReportAccessGuard to
+    // require admin/canViewReports on this controller only.
+    ApiKeysModule,
   ],
   controllers: [SigningReportController],
-  providers: [SigningReportService],
+  providers: [SigningReportService, JwtOrApiKeyGuard],
 })
 export class ReportsModule {}

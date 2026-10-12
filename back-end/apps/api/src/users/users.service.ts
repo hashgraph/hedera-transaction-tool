@@ -20,7 +20,9 @@ import {
   isUpdateAvailable,
   VersionCheckResult,
 } from '@app/common';
-import { Client, User, UserKey, UserStatus } from '@entities';
+import { ApiKeyRevokedReason, Client, User, UserKey, UserStatus } from '@entities';
+
+import { ApiKeysService, ApiKeyStatus } from '../api-keys/api-keys.service';
 
 @Injectable()
 export class UsersService {
@@ -31,6 +33,7 @@ export class UsersService {
     @InjectRepository(Client) private clientRepo: Repository<Client>,
     private readonly configService: ConfigService,
     private readonly blacklistService: BlacklistService,
+    private readonly apiKeysService: ApiKeysService,
   ) {}
 
   /* Creates a user with a given email and password. */
@@ -88,6 +91,7 @@ export class UsersService {
       const users = await this.repo.find({ relations: { clients: true } });
       const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
       this.enrichUsersWithUpdateFlag(users, latestSupported);
+      await this.enrichUsersWithApiKeyStatus(users);
       return users;
     }
 
@@ -100,6 +104,13 @@ export class UsersService {
 
     if (!user) {
       throw new BadRequestException(ErrorCodes.UNF);
+    }
+
+    // Admins can see whether any user (including themselves) has a report
+    // API key and how it's being used - never exposed to non-admins.
+    if (requestingUser.admin) {
+      (user as User & { apiKeyStatus: ApiKeyStatus }).apiKeyStatus =
+        await this.apiKeysService.getStatus(id);
     }
 
     // Only expose client version data to admins or the user themselves
@@ -152,8 +163,8 @@ export class UsersService {
 
   // Remove a user from the organization.
   // This is a soft delete, meaning the deletedTimestamp will be set.
-  // Also soft-deletes all keys belonging to the user.
-  async removeUser(id: number): Promise<boolean> {
+  // Also soft-deletes all keys belonging to the user and revokes their report API key.
+  async removeUser(id: number, performedByUserId: number): Promise<boolean> {
     const user = await this.getUser({ id });
 
     if (!user) {
@@ -167,6 +178,10 @@ export class UsersService {
 
     // Soft-delete all user keys first
     await this.repo.manager.softDelete(UserKey, { userId: id });
+
+    // Revoke the report API key before the user row itself is soft-deleted,
+    // so the revoke's relation lookup isn't touching an already-removed user.
+    await this.apiKeysService.revoke(id, ApiKeyRevokedReason.USER_REMOVED, performedByUserId);
 
     // Then soft-delete the user
     await this.repo.softRemove(user);
@@ -222,6 +237,15 @@ export class UsersService {
     }
 
     return client;
+  }
+
+  // Admin-only enrichment: attaches each user's report API key status, so
+  // admins can see key existence/usage without exposing the key itself.
+  private async enrichUsersWithApiKeyStatus(users: User[]): Promise<void> {
+    const statuses = await this.apiKeysService.getStatuses(users.map(user => user.id));
+    for (const user of users) {
+      (user as User & { apiKeyStatus: ApiKeyStatus }).apiKeyStatus = statuses.get(user.id)!;
+    }
   }
 
   private enrichUsersWithUpdateFlag(users: User[], latestSupported: string | undefined): void {

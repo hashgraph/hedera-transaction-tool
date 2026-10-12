@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { EmailConsumerService } from './email-consumer.service';
 import { NatsJetStreamService } from '@app/common/nats/nats-jetstream.service';
 import { EmailService } from './email.service';
-import { EMAIL_NOTIFICATIONS, USER_INVITE, USER_PASSWORD_RESET } from '@app/common';
+import { API_KEY_REVOKED, EMAIL_NOTIFICATIONS, USER_INVITE, USER_PASSWORD_RESET } from '@app/common';
 
 describe('EmailConsumerService', () => {
   let service: EmailConsumerService;
@@ -24,6 +24,7 @@ describe('EmailConsumerService', () => {
           useValue: {
             processUserInviteNotifications: jest.fn(),
             processUserPasswordResetNotifications: jest.fn(),
+            processApiKeyRevokedNotifications: jest.fn(),
             processEmails: jest.fn(),
           },
         },
@@ -53,10 +54,11 @@ describe('EmailConsumerService', () => {
     it('should return handlers for all email subjects', () => {
       const handlers = service['getMessageHandlers']();
 
-      expect(handlers).toHaveLength(3);
+      expect(handlers).toHaveLength(4);
       expect(handlers.map(h => h.subject)).toEqual([
         USER_INVITE,
         USER_PASSWORD_RESET,
+        API_KEY_REVOKED,
         EMAIL_NOTIFICATIONS,
       ]);
     });
@@ -81,6 +83,17 @@ describe('EmailConsumerService', () => {
       await handler!.handler(testData);
 
       expect(emailService.processUserPasswordResetNotifications).toHaveBeenCalledWith(testData);
+    });
+
+    it('should call processApiKeyRevokedNotifications for API_KEY_REVOKED', async () => {
+      const handlers = service['getMessageHandlers']();
+      const handler = handlers.find(h => h.subject === API_KEY_REVOKED);
+      expect(handler).not.toBeUndefined();
+
+      const testData = [{ email: 'test@example.com' }];
+      await handler!.handler(testData);
+
+      expect(emailService.processApiKeyRevokedNotifications).toHaveBeenCalledWith(testData);
     });
 
     it('should call processEmails for EMAIL_NOTIFICATIONS with array', async () => {

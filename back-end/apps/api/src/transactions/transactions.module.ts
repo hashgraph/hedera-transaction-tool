@@ -28,6 +28,8 @@ import {
 import { ExecuteModule, SqlBuilderModule, TransactionSignatureModule } from '@app/common';
 
 import { UserKeysModule } from '../user-keys/user-keys.module';
+import { ApiKeysModule } from '../api-keys/api-keys.module';
+import { JwtOrApiKeyGuard } from '../guards';
 import { TransactionGroupsController, TransactionGroupsService } from './groups';
 import { CommentsController, CommentsService } from './comments';
 import { SignersController, SignersService } from './signers';
@@ -67,6 +69,11 @@ import { ReviewersController, ReviewersService } from './reviewers';
     UserKeysModule,
     ExecuteModule,
     SqlBuilderModule,
+    // JwtOrApiKeyGuard needs ApiKeysService to authenticate a read-only API
+    // key inline - see the comment on that guard. The JWT path delegates to
+    // JwtAuthGuard/passport's 'jwt' strategy (registered globally by
+    // AuthModule), so no local JwtModule or UsersModule import is needed here.
+    ApiKeysModule,
   ],
   controllers: [
     TransactionsController,
@@ -86,6 +93,7 @@ import { ReviewersController, ReviewersService } from './reviewers';
     TransactionNodesService,
     ReviewerAssignmentService,
     ReviewersService,
+    JwtOrApiKeyGuard,
   ],
   exports: [TransactionsService],
 })

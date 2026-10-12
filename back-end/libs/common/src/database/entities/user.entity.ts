@@ -35,6 +35,9 @@ export class User {
   @Column({ default: false })
   admin!: boolean;
 
+  @Column({ default: false })
+  canViewReports!: boolean;
+
   @Column({ default: UserStatus.NEW })
   status!: UserStatus;
 

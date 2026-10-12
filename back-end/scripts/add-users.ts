@@ -42,6 +42,8 @@ import {
   TransactionEntity,
   TransactionReviewerList,
   TransactionReviewerListMember,
+  ApiKey,
+  ApiKeyEvent,
 } from '@entities';
 
 dotenv.config({
@@ -193,7 +195,9 @@ async function connectDatabase() {
       RuleChangeRecord,
       TransactionEntity,
       TransactionReviewerList,
-      TransactionReviewerListMember
+      TransactionReviewerListMember,
+      ApiKey,
+      ApiKeyEvent,
     ],
   });
 

@@ -9,7 +9,8 @@ import {
 } from '@nestjs/swagger';
 import { Response } from 'express';
 
-import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
+import { JwtBlackListAuthGuard, JwtOrApiKeyGuard, ReportAccessGuard, VerifiedUserGuard } from '../guards';
+import { AllowApiKey } from '../decorators';
 
 import {
   SigningReportFormat,
@@ -21,7 +22,8 @@ import { SigningReportService } from './signing-report.service';
 
 @ApiTags('Reports')
 @Controller('reports/signing')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard, AdminGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard, ReportAccessGuard)
+@AllowApiKey()
 export class SigningReportController {
   constructor(private readonly service: SigningReportService) {}
 
@@ -29,8 +31,9 @@ export class SigningReportController {
     summary: 'Get signing activity report',
     description:
       'Returns the per-account key signing activity for a given account, transaction, group, ' +
-      'or user, filtered by date range. Admin only. Returns CSV by default; pass format=json ' +
-      'for the structured JSON array.',
+      'or user, filtered by date range. Admin, or a user with report-viewing permission, via ' +
+      'JWT; or a GET-only read-only API key (X-API-Key header). Returns CSV by default; pass ' +
+      'format=json for the structured JSON array.',
   })
   @ApiExtraModels(SigningReportItemDto)
   @ApiProduces('text/csv', 'application/json')

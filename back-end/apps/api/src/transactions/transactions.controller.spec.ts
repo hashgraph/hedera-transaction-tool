@@ -10,7 +10,7 @@ import { SignatureMap, TransactionId } from '@hiero-ledger/sdk';
 import { BlacklistService, Pagination, guardMock } from '@app/common';
 import { Transaction, TransactionStatus, TransactionType, User, UserStatus } from '@entities';
 
-import { HasKeyGuard, VerifiedUserGuard } from '../guards';
+import { HasKeyGuard, JwtOrApiKeyGuard } from '../guards';
 
 import { TransactionsController } from './transactions.controller';
 import { TransactionsService } from './transactions.service';
@@ -61,7 +61,7 @@ describe('TransactionsController', () => {
     })
       .overrideGuard(HasKeyGuard)
       .useValue(guardMock())
-      .overrideGuard(VerifiedUserGuard)
+      .overrideGuard(JwtOrApiKeyGuard)
       .useValue(guardMock())
       .compile();
 
@@ -71,6 +71,7 @@ describe('TransactionsController', () => {
       email: 'John@test.com',
       password: 'Doe',
       admin: true,
+      canViewReports: false,
       status: UserStatus.NONE,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -428,7 +429,12 @@ describe('TransactionsController', () => {
     it('should return a transaction by transactionId', async () => {
       transactionService.getTransactionWithVerifiedAccess.mockResolvedValue(transaction);
 
-      expect(await controller.getTransaction(user, TransactionId.fromString('0.0.2673708@1764367157.000000000'))).toBe(transaction);
+      expect(
+        await controller.getTransaction(
+          user,
+          TransactionId.fromString('0.0.2673708@1764367157.000000000'),
+        ),
+      ).toBe(transaction);
     });
   });
 });

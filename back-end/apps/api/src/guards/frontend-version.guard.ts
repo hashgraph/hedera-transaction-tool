@@ -7,14 +7,20 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Reflector } from '@nestjs/core';
 import { CLIENT_IP_KEY } from '@app/common';
 import * as semver from 'semver';
+
+import { ALLOW_API_KEY } from '../decorators';
 
 @Injectable()
 export class FrontendVersionGuard implements CanActivate {
   private readonly logger = new Logger(FrontendVersionGuard.name);
 
-  constructor(private readonly configService: ConfigService) {}
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly reflector: Reflector,
+  ) {}
 
   private getUpdateUrl(): string | null {
     const repoUrl = this.configService.get<string>('FRONTEND_REPO_URL');
@@ -36,10 +42,27 @@ export class FrontendVersionGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const request = context.switchToHttp().getRequest();
+    const clientIp = request[CLIENT_IP_KEY] || 'unknown';
+
+    // Third-party API key consumers (e.g. the read-only report API) aren't the
+    // frontend application this guard is policing. A route that opted into key
+    // auth via @AllowApiKey(), combined with a presented key, is enough to skip
+    // version enforcement here - whether the key is actually valid is
+    // JwtOrApiKeyGuard's job, which runs later and rejects a junk key with 401
+    // rather than falling through to a misleading "update your frontend"
+    // response. On a route without @AllowApiKey(), the header is irrelevant
+    // here and the auth guard rejects the key as not allowed on that route.
+    const allowApiKey = this.reflector.getAllAndOverride<boolean>(ALLOW_API_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (allowApiKey && request.headers['x-api-key']) {
+      return true;
+    }
+
     const frontendVersion = request.headers['x-frontend-version'];
     const minimumVersion = this.configService.get<string>('MINIMUM_SUPPORTED_FRONTEND_VERSION');
     const latestVersion = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
-    const clientIp = request[CLIENT_IP_KEY] || 'unknown';
 
     const UPGRADE_REQUIRED = 426;
     const updateUrl = this.getUpdateUrl();

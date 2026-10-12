@@ -6,7 +6,7 @@ import { IGNORE_CONTROLLER_GUARD } from '../decorators';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
-  constructor(private readonly reflector: Reflector) {
+  constructor(protected readonly reflector: Reflector) {
     super();
   }
 

@@ -24,6 +24,9 @@ export class UserDto {
   admin!: boolean;
 
   @Expose()
+  canViewReports!: boolean;
+
+  @Expose()
   @IsEnum(UserStatus)
   status!: UserStatus;
 
