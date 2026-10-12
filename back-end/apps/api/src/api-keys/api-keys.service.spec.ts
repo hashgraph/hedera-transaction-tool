@@ -98,7 +98,7 @@ describe('ApiKeysService', () => {
   });
 
   describe('validateApiKey', () => {
-    it('rejects a stale key without revoking it', async () => {
+    it('still authenticates a key idle past idleExpiryDays but not yet swept', async () => {
       const apiKey = {
         id: 1,
         userId: 1,
@@ -114,8 +114,27 @@ describe('ApiKeysService', () => {
 
       const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
 
+      expect(result).toBe(apiKey.user);
+    });
+
+    it('rejects a key already revoked (e.g. by the stale sweep)', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        createdAt: new Date(),
+        lastUsedAt: null,
+        revokedAt: new Date(),
+        revokedReason: ApiKeyRevokedReason.INACTIVITY,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+
       expect(result).toBeNull();
-      expect(dataSource.transaction).not.toHaveBeenCalled();
       expect(apiKeyRepo.update).not.toHaveBeenCalled();
     });
   });

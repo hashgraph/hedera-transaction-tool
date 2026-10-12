@@ -121,13 +121,14 @@ export class ApiKeysService {
     }
   }
 
-  // Revokes keys idle past API_KEY_IDLE_EXPIRY_DAYS and emails their owners, since
-  // validateApiKey() deliberately doesn't do this itself (see comment there) - a key
-  // nobody presents again would otherwise never get revoked or reported as dead.
+  // The sole place staleness is decided - validateApiKey() only checks revokedAt
+  // (see comment there), so idleExpiryDays is enforced here, at most one sweep
+  // interval late, rather than exactly. In exchange, revokedAt/the status endpoint/
+  // the revoked email always agree with what validateApiKey() is actually doing.
   // The claiming UPDATE is a single atomic statement guarded by "revokedAt IS NULL",
   // so concurrent instances racing this same job can't double-revoke or double-email
   // a row - whichever instance's UPDATE lands first is the only one that affects it.
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { name: 'api-key-stale-sweep' })
+  @Cron(CronExpression.EVERY_DAY_AT_3AM, { name: 'api-key-stale-sweep' })
   async revokeStaleKeys(): Promise<void> {
     const cutoff = new Date(Date.now() - this.idleExpiryDays() * MS_PER_DAY);
 
@@ -234,11 +235,11 @@ export class ApiKeysService {
       return null;
     }
 
+    // Staleness isn't checked here - revokeStaleKeys() is the single source of
+    // truth for that, so revokedAt, the status endpoint, and the revoked email
+    // always agree. A key merely past idleExpiryDays but not yet swept still
+    // authenticates; see revokeStaleKeys() for the actual cutoff.
     if (apiKey.revokedAt) return null;
-
-    // Doesn't revoke here - a key going stale shouldn't depend on someone
-    // happening to present it again. revokeStaleKeys() sweeps these daily.
-    if (this.isStale(apiKey)) return null;
 
     if (!apiKey.user.admin && !apiKey.user.canViewReports) return null;
 
@@ -300,11 +301,6 @@ export class ApiKeysService {
 
   private hashSecret(secret: string): string {
     return createHash('sha256').update(secret).digest('hex');
-  }
-
-  private isStale(apiKey: ApiKey): boolean {
-    const last = apiKey.lastUsedAt ?? apiKey.createdAt;
-    return Date.now() - last.getTime() > this.idleExpiryDays() * MS_PER_DAY;
   }
 
   private idleExpiryDays(): number {
