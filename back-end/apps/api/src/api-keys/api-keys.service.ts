@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 
@@ -120,6 +121,57 @@ export class ApiKeysService {
     }
   }
 
+  // Revokes keys idle past API_KEY_IDLE_EXPIRY_DAYS and emails their owners, since
+  // validateApiKey() deliberately doesn't do this itself (see comment there) - a key
+  // nobody presents again would otherwise never get revoked or reported as dead.
+  // The claiming UPDATE is a single atomic statement guarded by "revokedAt IS NULL",
+  // so concurrent instances racing this same job can't double-revoke or double-email
+  // a row - whichever instance's UPDATE lands first is the only one that affects it.
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT, { name: 'api-key-stale-sweep' })
+  async revokeStaleKeys(): Promise<void> {
+    const cutoff = new Date(Date.now() - this.idleExpiryDays() * MS_PER_DAY);
+
+    const claimed = await this.dataSource.transaction(async manager => {
+      const result = await manager
+        .createQueryBuilder()
+        .update(ApiKey)
+        .set({ revokedAt: new Date(), revokedReason: ApiKeyRevokedReason.INACTIVITY })
+        .where('"revokedAt" IS NULL')
+        .andWhere('COALESCE("lastUsedAt", "createdAt") < :cutoff', { cutoff })
+        .returning(['id', 'userId'])
+        .execute();
+      const rows = result.raw as { id: number; userId: number }[];
+      if (rows.length === 0) return rows;
+
+      const events = rows.map(row =>
+        manager.create(ApiKeyEvent, {
+          apiKeyId: row.id,
+          userId: row.userId,
+          performedBy: null,
+          eventType: ApiKeyEventType.REVOKED,
+          reason: ApiKeyRevokedReason.INACTIVITY,
+        }),
+      );
+      await manager.save(events);
+
+      return rows;
+    });
+    if (claimed.length === 0) return;
+
+    const apiKeys = await this.apiKeyRepo.find({
+      where: { id: In(claimed.map(row => row.id)) },
+      relations: { user: true },
+    });
+    const idleExpiryDays = this.idleExpiryDays();
+    await emitApiKeyRevokedEmail(
+      this.notificationsPublisher,
+      apiKeys.map(apiKey => ({
+        email: apiKey.user.email,
+        additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays },
+      })),
+    );
+  }
+
   async getStatus(userId: number): Promise<ApiKeyStatus> {
     const apiKey = await this.apiKeyRepo.findOne({ where: { userId } });
     return this.toStatus(apiKey);
@@ -184,10 +236,9 @@ export class ApiKeysService {
 
     if (apiKey.revokedAt) return null;
 
-    if (this.isStale(apiKey)) {
-      await this.revoke(apiKey.userId, ApiKeyRevokedReason.INACTIVITY, null);
-      return null;
-    }
+    // Doesn't revoke here - a key going stale shouldn't depend on someone
+    // happening to present it again. revokeStaleKeys() sweeps these daily.
+    if (this.isStale(apiKey)) return null;
 
     if (!apiKey.user.admin && !apiKey.user.canViewReports) return null;
 

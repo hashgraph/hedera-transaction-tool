@@ -96,4 +96,78 @@ describe('ApiKeysService', () => {
       );
     });
   });
+
+  describe('validateApiKey', () => {
+    it('rejects a stale key without revoking it', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        createdAt: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
+        lastUsedAt: null,
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+
+      expect(result).toBeNull();
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(apiKeyRepo.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('revokeStaleKeys', () => {
+    const buildQueryBuilder = (raw: { id: number; userId: number }[]) => {
+      const qb: any = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw }),
+      };
+      dataSource.manager.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    };
+
+    it('does nothing when no keys are stale', async () => {
+      buildQueryBuilder([]);
+
+      await service.revokeStaleKeys();
+
+      expect(dataSource.manager.save).not.toHaveBeenCalled();
+      expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('logs an event and emails the owner for each claimed stale key', async () => {
+      buildQueryBuilder([{ id: 1, userId: 2 }]);
+      apiKeyRepo.find.mockResolvedValue([
+        { id: 1, userId: 2, user: { email: 'stale@example.com' } } as ApiKey,
+      ]);
+
+      await service.revokeStaleKeys();
+
+      expect(dataSource.manager.save).toHaveBeenCalledWith([
+        expect.objectContaining({
+          apiKeyId: 1,
+          userId: 2,
+          eventType: ApiKeyEventType.REVOKED,
+          reason: ApiKeyRevokedReason.INACTIVITY,
+        }),
+      ]);
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        'notifications.queue.email.api-key-revoked',
+        [
+          {
+            email: 'stale@example.com',
+            additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays: 180 },
+          },
+        ],
+      );
+    });
+  });
 });
