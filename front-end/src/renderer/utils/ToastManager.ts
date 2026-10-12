@@ -16,19 +16,19 @@ export class ToastManager {
   // Public
   //
 
-  public success(message: string) {
-    this.addEntry(message, 'success');
+  public success(message: string, groupId?: string) {
+    this.addEntry(message, 'success', groupId);
   }
 
-  public info(message: string) {
-    this.addEntry(message, 'info');
+  public info(message: string, groupId?: string) {
+    this.addEntry(message, 'info', groupId);
   }
 
-  public warning(message: string) {
-    this.addEntry(message, 'warning');
+  public warning(message: string, groupId?: string) {
+    this.addEntry(message, 'warning', groupId);
   }
 
-  public error(message: string) {
+  public error(message: string, groupId?: string) {
     if (
       this.findEntry(message, 'error') !== null ||
       this.countErrorEntries() >= this.maxDisplayedErrorCount
@@ -36,7 +36,7 @@ export class ToastManager {
       // We display message in console
       logger.debug('Hidden error message', { message });
     } else {
-      this.addEntry(message, 'error');
+      this.addEntry(message, 'error', groupId);
     }
   }
 
@@ -88,8 +88,12 @@ export class ToastManager {
   // Private
   //
 
-  private addEntry(message: string, type: ToastType) {
-    const newEntry = new ToastEntry(this.nextToastId++, message, type);
+  private addEntry(message: string, type: ToastType, groupId?: string) {
+    if (groupId) {
+      // A new toast in the same group replaces any toast still showing for it
+      this.entries.value = this.entries.value.filter(e => e.groupId !== groupId);
+    }
+    const newEntry = new ToastEntry(this.nextToastId++, message, type, groupId);
     this.entries.value.splice(0, 0, newEntry);
     if (type !== 'error') {
       setTimeout(() => this.removeEntry(newEntry.toastId), this.duration);
@@ -104,5 +108,6 @@ class ToastEntry {
     readonly toastId: number,
     readonly message: string,
     readonly type: ToastType,
+    readonly groupId?: string,
   ) {}
 }

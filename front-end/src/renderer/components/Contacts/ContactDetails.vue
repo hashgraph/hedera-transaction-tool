@@ -25,12 +25,13 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppSwitch from '@renderer/components/ui/AppSwitch.vue';
 import ContactDetailsAssociatedAccounts from '@renderer/components/Contacts/ContactDetailsAssociatedAccounts.vue';
 import ContactDetailsLinkedAccounts from '@renderer/components/Contacts/ContactDetailsLinkedAccounts.vue';
 import RenamePublicKeyModal from '@renderer/pages/Settings/components/PublicKeysTab/components/RenamePublicKeyModal.vue';
 import { AppCache } from '@renderer/caches/AppCache';
 import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
-import { formatDatePart } from '@renderer/utils/dateTimeFormat.ts';
+import { formatDatePart, formatDateTime } from '@renderer/utils/dateTimeFormat.ts';
 import { getLatestClient } from '@renderer/utils/clientVersion.ts';
 
 /* Modals */
@@ -71,10 +72,22 @@ const latestClientDate = computed(() => {
   return formatDatePart(new Date(latestClient.value.updatedAt), isUtcSelected.value, true);
 });
 
+const isApiKeyActive = computed(
+  () => !!props.contact.user.apiKeyStatus?.hasKey && !props.contact.user.apiKeyStatus?.revokedAt,
+);
+
+/* Helpers */
+const formatApiKeyDateTime = (value: string | null) => {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  return formatDateTime(date, isUtcSelected.value, true);
+};
+
 /* Emits */
 defineEmits<{
   (event: 'remove'): void;
   (event: 'elevate-to-admin'): void;
+  (event: 'toggle-view-reports'): void;
 }>();
 
 /* Handlers */
@@ -266,6 +279,83 @@ watch(() => props.contact.userKeys, async () => {
         </template>
         <template v-else> - </template>
       </p>
+    </div>
+  </div>
+  <hr
+    v-if="
+      isLoggedInOrganization(user.selectedOrganization) &&
+      user.selectedOrganization.admin &&
+      contact.user.id !== user.selectedOrganization.userId
+    "
+    class="separator my-4"
+  />
+  <div
+    v-if="
+      isLoggedInOrganization(user.selectedOrganization) &&
+      user.selectedOrganization.admin &&
+      contact.user.id !== user.selectedOrganization.userId
+    "
+  >
+    <div class="d-flex align-items-center justify-content-between">
+      <p class="text-main text-semi-bold mb-0">Report API access</p>
+      <AppSwitch
+        v-if="!contact.user.admin"
+        :key="contact.user.id"
+        name="report-api-access"
+        :checked="contact.user.canViewReports"
+        data-testid="switch-report-api-access"
+        @update:checked="$emit('toggle-view-reports')"
+      />
+    </div>
+    <div v-if="contact.user.admin || contact.user.canViewReports" class="ps-3 mt-2">
+      <template v-if="isApiKeyActive">
+        <div class="row">
+          <div class="col-5">
+            <p class="text-small text-semi-bold mb-0">Created</p>
+          </div>
+          <div class="col-7">
+            <p class="text-small text-secondary mb-0" data-testid="p-contact-api-key-created-at">
+              {{ formatApiKeyDateTime(contact.user.apiKeyStatus?.createdAt ?? null) }}
+            </p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-5">
+            <p class="text-small text-semi-bold mb-0">Last used</p>
+          </div>
+          <div class="col-7">
+            <p class="text-small text-secondary mb-0" data-testid="p-contact-api-key-last-used-at">
+              {{ formatApiKeyDateTime(contact.user.apiKeyStatus?.lastUsedAt ?? null) }}
+            </p>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-5">
+            <p class="text-small text-semi-bold mb-0">Key Reference</p>
+          </div>
+          <div class="col-7">
+            <p class="text-small text-secondary mb-0" data-testid="p-contact-api-key-id">
+              {{ contact.user.apiKeyStatus?.keyId }}
+            </p>
+          </div>
+        </div>
+      </template>
+      <template v-else-if="contact.user.apiKeyStatus?.hasKey">
+        <p class="text-small text-secondary" data-testid="p-contact-api-key-revoked">
+          No active key (revoked
+          {{ formatApiKeyDateTime(contact.user.apiKeyStatus.revokedAt) }})
+        </p>
+      </template>
+      <template v-else-if="contact.user.apiKeyStatus">
+        <p class="text-small text-secondary" data-testid="p-contact-no-api-key">
+          No key created
+        </p>
+      </template>
+      <template v-else>
+        <p class="text-small text-secondary" data-testid="p-contact-api-key-unavailable">
+          Key status unavailable
+        </p>
+      </template>
     </div>
   </div>
   <hr class="separator my-4" />

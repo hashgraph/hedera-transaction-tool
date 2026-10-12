@@ -134,3 +134,15 @@ export const elevateUserToAdmin = (organizationServerUrl: string, id: number) =>
       id,
     });
   }, 'Failed to assign user as admin');
+
+/* ADMIN ONLY: grant or revoke a user's ability to hold a read-only reports API key */
+export const setCanViewReports = (
+  organizationServerUrl: string,
+  id: number,
+  canViewReports: boolean,
+) =>
+  commonRequestHandler(async () => {
+    await axiosWithCredentials.patch(`${organizationServerUrl}/users/${id}`, {
+      canViewReports,
+    });
+  }, 'Failed to update report access permission');

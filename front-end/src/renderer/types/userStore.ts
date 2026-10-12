@@ -59,6 +59,7 @@ export type LoggedInOrganization = {
   userId: number;
   email: string;
   admin: boolean;
+  canViewReports: boolean;
   isPasswordTemporary: boolean;
   userKeys: IUserKey[];
   secretHashes: string[];

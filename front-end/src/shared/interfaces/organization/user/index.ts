@@ -1,4 +1,5 @@
 import type { IUserKey } from '../userKeys';
+import type { IApiKeyStatus } from '../apiKeys';
 
 export interface IClient {
   id: number;
@@ -13,7 +14,10 @@ export interface IUser {
   email: string;
   status: 'NEW' | 'NONE';
   admin: boolean;
+  canViewReports: boolean;
   keys: IUserKey[];
   clients?: IClient[];
   updateAvailable?: boolean;
+  /* Only populated for admin requesters */
+  apiKeyStatus?: IApiKeyStatus;
 }

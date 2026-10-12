@@ -14,7 +14,7 @@ import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOn
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { deleteUser, elevateUserToAdmin } from '@renderer/services/organization';
+import { deleteUser, elevateUserToAdmin, setCanViewReports } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
 import { getAll } from '@renderer/services/accountsService';
 
@@ -30,6 +30,7 @@ import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
+import RevokeViewReportsModal from '@renderer/components/Contacts/RevokeViewReportsModal.vue';
 
 
 /* Stores */
@@ -48,6 +49,7 @@ const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTE
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const isElevateToAdminModalShown = ref(false);
+const isRevokeViewReportsModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
@@ -129,6 +131,36 @@ async function handleElevate() {
 
   toastManager.success('User elevate to admin successfully');
   selectedId.value = null;
+  await contacts.fetch();
+}
+
+function handleToggleViewReportsClick() {
+  const apiKeyStatus = contact.value?.user.apiKeyStatus;
+  const hasActiveApiKey = !!apiKeyStatus?.hasKey && !apiKeyStatus?.revokedAt;
+
+  if (contact.value?.user.canViewReports && hasActiveApiKey) {
+    isRevokeViewReportsModalShown.value = true;
+  } else {
+    handleToggleViewReports();
+  }
+}
+
+async function handleToggleViewReports() {
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!contact.value) throw new Error('Contact is not selected');
+  if (!user.selectedOrganization.admin) {
+    throw new Error('User is not an admin');
+  }
+
+  const targetUserId = contact.value.user.id;
+  const nextValue = !contact.value.user.canViewReports;
+  await setCanViewReports(user.selectedOrganization.serverUrl, targetUserId, nextValue);
+
+  toastManager.success(
+    nextValue ? 'Report access granted successfully' : 'Report access revoked successfully',
+    `view-reports-access-${targetUserId}`,
+  );
   await contacts.fetch();
 }
 
@@ -245,6 +277,7 @@ onBeforeMount(async () => {
                 v-model:linked-accounts="linkedAccounts"
                 @remove="isDeleteContactModalShown = true"
                 @elevate-to-admin="isElevateToAdminModalShown = true"
+                @toggle-view-reports="handleToggleViewReportsClick"
               />
             </div>
           </Transition>
@@ -257,6 +290,11 @@ onBeforeMount(async () => {
         />
 
         <ElevateContactModal v-model:show="isElevateToAdminModalShown" @elevate="handleElevate" />
+
+        <RevokeViewReportsModal
+          v-model:show="isRevokeViewReportsModalShown"
+          @revoke="handleToggleViewReports"
+        />
       </div>
     </div>
   </div>

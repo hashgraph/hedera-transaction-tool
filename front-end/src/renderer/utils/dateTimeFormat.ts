@@ -39,3 +39,7 @@ export function formatTimePart(date: Date, utc: boolean = false, compact = false
   );
   return formatter.format(date);
 }
+
+export function formatDateTime(date: Date, utc: boolean = false, compact = false): string {
+  return `${formatDatePart(date, utc, compact)} ${formatTimePart(date, utc, compact)}`;
+}
