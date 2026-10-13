@@ -423,6 +423,7 @@ export class GroupPage extends BasePage {
 
   async clickOnSignAllButton(holdTimeout: number = 600) {
     await this.organizationPage.clickOnSignAllTransactionsButton(holdTimeout);
+    await this.organizationPage.waitForSignAllProgressModalToClose();
   }
 
   async clickOnCancelAllButton() {
