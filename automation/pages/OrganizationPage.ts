@@ -1709,6 +1709,35 @@ export class OrganizationPage extends BasePage {
     await this.click(this.signAllTransactionsButtonSelector);
   }
 
+  async waitForSignAllProgressModalToClose() {
+    // AppModal.vue is always mounted (never v-if) and hardcodes
+    // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
+    // per-instance. ActionController's Doherty-threshold delay (400ms) means the progress dialog
+    // - which stays open while a large batch (e.g. 100 transactions) signs, and shares the same
+    // testid - only appears ~400ms after the "Sign all" button is clicked. A single "nothing
+    // visible" check lands in that legitimate gap almost every time, regardless of batch size, so
+    // require it to hold for longer than 400ms across repeated checks before trusting it.
+    const visibleModalSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT * 4;
+    let stableChecks = 0;
+    while (stableChecks < 3) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) {
+        throw new Error(
+          'A modal sharing data-testid="modal-confirm-transaction" stayed visible after Sign All',
+        );
+      }
+      await this.window.waitForFunction(
+        (selector: string) => document.querySelector(selector) === null,
+        visibleModalSelector,
+        { timeout: remaining },
+      );
+      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
+      const stillNone = (await this.window.locator(visibleModalSelector).count()) === 0;
+      stableChecks = stillNone ? stableChecks + 1 : 0;
+    }
+  }
+
   private getConfirmGroupActionButtonSelector(modalTitle?: string) {
     if (!modalTitle) {
       return this.confirmGroupActionButtonSelector;
