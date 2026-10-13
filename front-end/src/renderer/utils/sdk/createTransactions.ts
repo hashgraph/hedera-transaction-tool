@@ -780,15 +780,15 @@ export function createRegisteredNodeUpdateTransaction(
     const newValue = data.adminKey;
     const oldValue = baseline !== null ? baseline.adminKey : null;
     if (oldValue === null || (newValue !== null && !compareKeys(oldValue, newValue))) {
-      transaction.setAdminKey(data.adminKey);
+      transaction.setAdminKey(newValue);
     }
   }
 
-  if (data.description && data.description.length > 0) {
+  if (data.description.length > 0) {
     const newValue = data.description;
     const oldValue = baseline !== null ? baseline.description : null;
     if (oldValue === null || oldValue !== newValue) {
-      transaction.setDescription(data.description);
+      transaction.setDescription(newValue);
     }
   }
 

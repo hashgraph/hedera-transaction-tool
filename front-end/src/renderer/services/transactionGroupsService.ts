@@ -62,6 +62,7 @@ export const addGroupWithDrafts = async (
         updated_at: new Date(),
         user_id: userId,
         transactionBytes: item.transactionBytes.toString(),
+        baselineBytes: item.baselineBytes?.toString() ?? null,
         type: getTransactionType(item.transactionBytes),
         description: item.description,
         details: details || null,
@@ -138,6 +139,7 @@ export async function updateGroup(
       user_id: userId,
       description: item.description,
       transactionBytes: item.transactionBytes.toString(),
+      baselineBytes: item.baselineBytes?.toString() ?? null,
       type: getTransactionType(item.transactionBytes),
     }));
 
