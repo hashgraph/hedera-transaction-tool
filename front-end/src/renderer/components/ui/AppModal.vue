@@ -8,6 +8,7 @@ const props = withDefaults(
     closeOnClickOutside?: boolean;
     scrollable?: boolean;
     loading?: boolean;
+    dataTestid?: string;
   }>(),
   {
     closeOnEscape: true,
@@ -57,7 +58,7 @@ onBeforeUnmount(() => {
     class="modal fade show"
     aria-labelledby="exampleModalLabel"
     :inert="!show"
-    data-testid="modal-confirm-transaction"
+    :data-testid="props.dataTestid ?? 'modal-confirm-transaction'"
     :style="{ display: show ? 'block' : 'none' }"
   >
     <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" ref="modalRef">
