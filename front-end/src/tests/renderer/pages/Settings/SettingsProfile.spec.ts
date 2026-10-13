@@ -872,7 +872,7 @@ describe('settings profile coverage', () => {
         await wrapper.find('[data-testid="button-regenerate-api-key"]').trigger('click');
         await flushPromises();
         await wrapper
-          .find('[data-testid="button-confirm-regenerate-api-key"]')
+          .find('[data-testid="regenerate-api-key-confirm"]')
           .trigger('click');
         await flushPromises();
 
@@ -907,7 +907,7 @@ describe('settings profile coverage', () => {
         await wrapper.find('[data-testid="button-regenerate-api-key"]').trigger('click');
         await flushPromises();
         await wrapper
-          .find('[data-testid="button-confirm-regenerate-api-key"]')
+          .find('[data-testid="regenerate-api-key-confirm"]')
           .trigger('click');
         await flushPromises();
 
@@ -939,7 +939,7 @@ describe('settings profile coverage', () => {
 
         await wrapper.find('[data-testid="button-revoke-api-key"]').trigger('click');
         await flushPromises();
-        await wrapper.find('[data-testid="button-confirm-revoke-api-key"]').trigger('click');
+        await wrapper.find('[data-testid="revoke-api-key-confirm"]').trigger('click');
         await flushPromises();
 
         expect(mocks.revokeApiKey).toHaveBeenCalledWith(ORG.serverUrl);
@@ -972,7 +972,7 @@ describe('settings profile coverage', () => {
 
         await wrapper.find('[data-testid="button-revoke-api-key"]').trigger('click');
         await flushPromises();
-        await wrapper.find('[data-testid="button-confirm-revoke-api-key"]').trigger('click');
+        await wrapper.find('[data-testid="revoke-api-key-confirm"]').trigger('click');
         await flushPromises();
 
         expect(mocks.toastError).toHaveBeenCalledWith('Revocation failed');

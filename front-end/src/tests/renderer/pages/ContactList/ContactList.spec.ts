@@ -307,7 +307,7 @@ describe('ContactList.vue', () => {
 
       await wrapper.find('[data-testid="btn-toggle-view-reports"]').trigger('click');
       await nextTick();
-      await wrapper.find('[data-testid="button-confirm-revoke-view-reports"]').trigger('click');
+      await wrapper.find('[data-testid="revoke-view-reports-confirm"]').trigger('click');
       await nextTick();
 
       expect(mocks.setCanViewReports).toHaveBeenCalledWith(
@@ -323,7 +323,7 @@ describe('ContactList.vue', () => {
 
       await wrapper.find('[data-testid="btn-toggle-view-reports"]').trigger('click');
       await nextTick();
-      await wrapper.find('[data-testid="button-confirm-revoke-view-reports"]').trigger('click');
+      await wrapper.find('[data-testid="revoke-view-reports-confirm"]').trigger('click');
       await flushPromises();
 
       expect(mocks.toastSuccess).toHaveBeenCalledWith(

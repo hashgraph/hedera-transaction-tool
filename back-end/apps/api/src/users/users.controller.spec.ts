@@ -1,3 +1,4 @@
+import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
 
@@ -6,6 +7,7 @@ import { Client, User, UserStatus } from '@entities';
 
 import { JwtOrApiKeyGuard } from '../guards';
 import { ApiKeysService } from '../api-keys/api-keys.service';
+import { ALLOW_NON_VERIFIED_USER } from '../decorators';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -73,23 +75,31 @@ describe('UsersController', () => {
 
       userService.getUsers.mockResolvedValue(result);
 
-      expect(await controller.getUsers(user)).toBe(result);
-      expect(userService.getUsers).toHaveBeenCalledWith(user);
+      expect(await controller.getUsers(user, false)).toBe(result);
+      expect(userService.getUsers).toHaveBeenCalledWith(user, false);
     });
 
     it('should return an empty array if no users exist', async () => {
       userService.getUsers.mockResolvedValue([]);
 
-      expect(await controller.getUsers(user)).toEqual([]);
+      expect(await controller.getUsers(user, false)).toEqual([]);
     });
 
     it('should pass non-admin requesting user to the service', async () => {
       const nonAdminUser = { ...user, admin: false };
       userService.getUsers.mockResolvedValue([]);
 
-      await controller.getUsers(nonAdminUser as User);
+      await controller.getUsers(nonAdminUser as User, false);
 
-      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser);
+      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser, false);
+    });
+
+    it('should pass the API-key auth flag through to the service', async () => {
+      userService.getUsers.mockResolvedValue([]);
+
+      await controller.getUsers(user, true);
+
+      expect(userService.getUsers).toHaveBeenCalledWith(user, true);
     });
   });
 
@@ -317,6 +327,17 @@ describe('UsersController', () => {
     });
 
     describe('getUserByPublicKey', () => {
+      it('is not reachable by non-verified users - no AllowNonVerifiedUser metadata', () => {
+        const reflector = new Reflector();
+
+        const allowed = reflector.get(
+          ALLOW_NON_VERIFIED_USER,
+          UsersController.prototype.getUserByPublicKey,
+        );
+
+        expect(allowed).toBeFalsy();
+      });
+
       it('should return an email if a public key is found', async () => {
         const publicKey = 'c12e815869ad5d9f5357636cf487fe8e30cc085043a49ee8d16ca69ddcffbed9';
         const email = 'user@example.com';

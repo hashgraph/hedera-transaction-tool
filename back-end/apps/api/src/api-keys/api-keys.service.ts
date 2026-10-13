@@ -9,12 +9,12 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 
 import { ApiKey, ApiKeyEvent, ApiKeyEventType, ApiKeyRevokedReason, User } from '@entities';
 
 import { NatsPublisherService } from '@app/common';
-import { emitApiKeyRevokedEmail } from '@app/common';
+import { emitApiKeyRevokedEmail, isEligibleForReportAccess } from '@app/common';
 
 const KEY_ID_BYTES = 12;
 const SECRET_BYTES = 32;
@@ -67,7 +67,17 @@ export class ApiKeysService {
       throw new ConflictException('A key already exists for this user - use regenerate instead.');
     }
 
-    return this.issueKey(user.id, user.id, ApiKeyEventType.CREATED, existing ?? undefined);
+    try {
+      return await this.issueKey(user.id, user.id, ApiKeyEventType.CREATED, existing ?? undefined);
+    } catch (err) {
+      // Two concurrent creates for a never-before-keyed user can both pass the
+      // check above and race on userId's unique constraint - map that to the
+      // same ConflictException the check above throws, instead of a raw 500.
+      if (err instanceof QueryFailedError && (err as any).code === '23505') {
+        throw new ConflictException('A key already exists for this user - use regenerate instead.');
+      }
+      throw err;
+    }
   }
 
   async regenerate(user: User): Promise<ApiKeyReveal> {
@@ -83,40 +93,53 @@ export class ApiKeysService {
 
   // Idempotent - revoking an already-revoked (or nonexistent) key is a no-op,
   // so callers (the permission-removal cascade, the inactivity auto-revoke in
-  // validateApiKey) don't need to check state first.
+  // validateApiKey) don't need to check state first. The UPDATE itself is the
+  // atomic claim (same pattern as revokeStaleKeys()): it's guarded by
+  // "revokedAt IS NULL", so if two callers race to revoke the same key for
+  // different reasons, only the one whose UPDATE lands first actually revokes
+  // it and sends the email - the loser's UPDATE affects zero rows and returns
+  // early.
   async revoke(
     userId: number,
     reason: ApiKeyRevokedReason,
     performedByUserId: number | null,
   ): Promise<void> {
-    const existing = await this.apiKeyRepo.findOne({
-      where: { userId },
-      relations: { user: true },
-    });
-    if (!existing || existing.revokedAt) return;
-
-    await this.dataSource.transaction(async manager => {
-      existing.revokedAt = new Date();
-      existing.revokedReason = reason;
-      await manager.save(existing);
+    const claimedId = await this.dataSource.transaction(async manager => {
+      const result = await manager
+        .createQueryBuilder()
+        .update(ApiKey)
+        .set({ revokedAt: new Date(), revokedReason: reason })
+        .where('"userId" = :userId', { userId })
+        .andWhere('"revokedAt" IS NULL')
+        .returning(['id'])
+        .execute();
+      const rows = result.raw as { id: number }[];
+      if (rows.length === 0) return null;
 
       const event = manager.create(ApiKeyEvent, {
-        apiKeyId: existing.id,
+        apiKeyId: rows[0].id,
         userId,
         performedBy: performedByUserId,
         eventType: ApiKeyEventType.REVOKED,
         reason,
       });
       await manager.save(event);
+
+      return rows[0].id;
     });
+    if (claimedId === null) return;
 
     if (!NON_NOTIFIED_REVOKE_REASONS.has(reason)) {
+      const apiKey = await this.apiKeyRepo.findOne({
+        where: { id: claimedId },
+        relations: { user: true },
+      });
       const additionalData: Record<string, unknown> = { reason };
       if (reason === ApiKeyRevokedReason.INACTIVITY) {
         additionalData.idleExpiryDays = this.idleExpiryDays();
       }
       await emitApiKeyRevokedEmail(this.notificationsPublisher, [
-        { email: existing.user.email, additionalData },
+        { email: apiKey!.user.email, additionalData },
       ]);
     }
   }
@@ -196,25 +219,13 @@ export class ApiKeysService {
   }
 
   private toStatus(apiKey: ApiKey | null): ApiKeyStatus {
-    if (!apiKey) {
-      return {
-        hasKey: false,
-        keyId: null,
-        createdAt: null,
-        lastUsedAt: null,
-        revokedAt: null,
-        revokedReason: null,
-        idleExpiryDays: this.idleExpiryDays(),
-      };
-    }
-
     return {
-      hasKey: true,
-      keyId: apiKey.keyId,
-      createdAt: apiKey.createdAt,
-      lastUsedAt: apiKey.lastUsedAt,
-      revokedAt: apiKey.revokedAt,
-      revokedReason: apiKey.revokedReason,
+      hasKey: !!apiKey,
+      keyId: apiKey?.keyId ?? null,
+      createdAt: apiKey?.createdAt ?? null,
+      lastUsedAt: apiKey?.lastUsedAt ?? null,
+      revokedAt: apiKey?.revokedAt ?? null,
+      revokedReason: apiKey?.revokedReason ?? null,
       idleExpiryDays: this.idleExpiryDays(),
     };
   }
@@ -241,7 +252,7 @@ export class ApiKeysService {
     // authenticates; see revokeStaleKeys() for the actual cutoff.
     if (apiKey.revokedAt) return null;
 
-    if (!apiKey.user.admin && !apiKey.user.canViewReports) return null;
+    if (!isEligibleForReportAccess(apiKey.user)) return null;
 
     await this.touchLastUsed(apiKey, clientIp);
 
@@ -287,7 +298,7 @@ export class ApiKeysService {
   }
 
   private assertEligible(user: User): void {
-    if (!user.admin && !user.canViewReports) {
+    if (!isEligibleForReportAccess(user)) {
       throw new ForbiddenException('Not eligible for a report API key.');
     }
   }

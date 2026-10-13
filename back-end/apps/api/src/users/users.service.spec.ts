@@ -124,7 +124,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(userRepository.find).toHaveBeenCalledWith({ relations: { clients: true } });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
@@ -139,7 +139,7 @@ describe('UsersService', () => {
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
       configService.get.mockReturnValue('1.1.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(0);
@@ -149,7 +149,7 @@ describe('UsersService', () => {
     it('should not load clients relation for non-admin users', async () => {
       userRepository.find.mockResolvedValue([user] as User[]);
 
-      const result = await service.getUsers(nonAdminUser);
+      const result = await service.getUsers(nonAdminUser, false);
 
       expect(userRepository.find).toHaveBeenCalledWith();
       expect(result[0]).not.toHaveProperty('updateAvailable');
@@ -160,7 +160,7 @@ describe('UsersService', () => {
       userRepository.find.mockResolvedValue(usersWithUndefinedClients as unknown as User[]);
       configService.get.mockReturnValue('1.1.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(0);
@@ -183,7 +183,7 @@ describe('UsersService', () => {
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toHaveLength(2);
       expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
@@ -205,7 +205,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toHaveLength(2);
       expect(result[0]).toHaveProperty('updateAvailable', false);
@@ -224,7 +224,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue(undefined);
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', undefined);
       expect(result[0]).toHaveProperty('updateAvailable', false);
@@ -255,7 +255,7 @@ describe('UsersService', () => {
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty('updateAvailable', true);
@@ -294,7 +294,7 @@ describe('UsersService', () => {
         ]),
       );
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(apiKeysService.getStatuses).toHaveBeenCalledWith([1, 2]);
       expect(result[0]).toHaveProperty('apiKeyStatus', statusForOne);
@@ -304,7 +304,17 @@ describe('UsersService', () => {
     it('should not attach apiKeyStatus for non-admin requesters', async () => {
       userRepository.find.mockResolvedValue([user] as User[]);
 
-      const result = await service.getUsers(nonAdminUser);
+      const result = await service.getUsers(nonAdminUser, false);
+
+      expect(apiKeysService.getStatuses).not.toHaveBeenCalled();
+      expect(result[0]).not.toHaveProperty('apiKeyStatus');
+    });
+
+    it('should not attach apiKeyStatus when the admin requester authenticated via API key', async () => {
+      userRepository.find.mockResolvedValue([{ ...user, clients: [] }] as User[]);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUsers(adminUser, true);
 
       expect(apiKeysService.getStatuses).not.toHaveBeenCalled();
       expect(result[0]).not.toHaveProperty('apiKeyStatus');

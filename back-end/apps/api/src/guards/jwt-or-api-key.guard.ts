@@ -65,6 +65,7 @@ export class JwtOrApiKeyGuard extends JwtAuthGuard {
     if (!user) throw new UnauthorizedException();
 
     request.user = user;
+    request.authViaApiKey = true;
     return true;
   }
 }

@@ -85,13 +85,19 @@ export class UsersService {
   }
 
   // Return an array of users, containing all current users of the organization.
-  async getUsers(requestingUser: User): Promise<User[]> {
+  // viaApiKey is true when the requester authenticated with the read-only
+  // report API key rather than a JWT - that key is meant to be narrowly
+  // scoped and easily shared with a third-party report tool, so it never
+  // gets other users' API key metadata even when the key owner is an admin.
+  async getUsers(requestingUser: User, viaApiKey: boolean): Promise<User[]> {
     // Only load clients relation when admin needs update info
     if (requestingUser.admin) {
       const users = await this.repo.find({ relations: { clients: true } });
       const latestSupported = this.configService.get<string>('LATEST_SUPPORTED_FRONTEND_VERSION');
       this.enrichUsersWithUpdateFlag(users, latestSupported);
-      await this.enrichUsersWithApiKeyStatus(users);
+      if (!viaApiKey) {
+        await this.enrichUsersWithApiKeyStatus(users);
+      }
       return users;
     }
 

@@ -26,12 +26,11 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
-import RevokeViewReportsModal from '@renderer/components/Contacts/RevokeViewReportsModal.vue';
-
 
 /* Stores */
 const user = useUserStore();
@@ -291,9 +290,16 @@ onBeforeMount(async () => {
 
         <ElevateContactModal v-model:show="isElevateToAdminModalShown" @elevate="handleElevate" />
 
-        <RevokeViewReportsModal
+        <AppConfirmModal
           v-model:show="isRevokeViewReportsModalShown"
-          @revoke="handleToggleViewReports"
+          icon="bin"
+          title="Revoke Report Access"
+          text="This Contact will no longer be able to hold a reports API key. Any existing key they
+            have will be revoked immediately."
+          button-text="Revoke"
+          button-color="danger"
+          data-testid="revoke-view-reports"
+          :callback="handleToggleViewReports"
         />
       </div>
     </div>

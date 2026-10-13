@@ -13,12 +13,12 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ErrorCodes, Serialize } from '@app/common';
+import { ErrorCodes, isEligibleForReportAccess, Serialize } from '@app/common';
 
 import { ApiKeyRevokedReason, User } from '@entities';
 
 import { AdminGuard, JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard } from '../guards';
-import { AllowApiKey, AllowNonVerifiedUser, GetUser } from '../decorators';
+import { AllowApiKey, AllowNonVerifiedUser, GetUser, IsApiKeyAuth } from '../decorators';
 import { ApiKeysService } from '../api-keys/api-keys.service';
 
 import {
@@ -55,8 +55,11 @@ export class UsersController {
   @AllowApiKey()
   @Get()
   @Serialize(UserWithClientsDto)
-  getUsers(@GetUser() requestingUser: User): Promise<User[]> {
-    return this.usersService.getUsers(requestingUser);
+  getUsers(
+    @GetUser() requestingUser: User,
+    @IsApiKeyAuth() viaApiKey: boolean,
+  ): Promise<User[]> {
+    return this.usersService.getUsers(requestingUser, viaApiKey);
   }
 
   @ApiOperation({
@@ -133,10 +136,10 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
     const before = await this.usersService.getUser({ id: userId });
-    const wasEligibleForKey = !!before && (before.admin || before.canViewReports);
+    const wasEligibleForKey = !!before && isEligibleForReportAccess(before);
 
     const updated = await this.usersService.updateUserById(userId, dto);
-    const stillEligibleForKey = updated.admin || updated.canViewReports;
+    const stillEligibleForKey = isEligibleForReportAccess(updated);
 
     // Must compare the merged before/after entity, not the dto in isolation: dto fields are
     // optional (partial update), so e.g. demoting admin alone (dto.admin === false) can only be

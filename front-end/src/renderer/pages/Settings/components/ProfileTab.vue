@@ -37,13 +37,12 @@ import {
 import { formatDateTime } from '@renderer/utils/dateTimeFormat.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
-import RegenerateApiKeyModal from './RegenerateApiKeyModal.vue';
-import RevokeApiKeyModal from './RevokeApiKeyModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -498,11 +497,27 @@ onBeforeMount(fetchApiKeyStatus);
         </template>
       </template>
 
-      <RegenerateApiKeyModal
+      <AppConfirmModal
         v-model:show="isRegenerateApiKeyModalShown"
-        @regenerate="handleRegenerateApiKey"
+        icon="bin"
+        title="Regenerate API Key"
+        text="Your current key will stop working immediately. Any third-party app using it will need
+          the new key to keep working."
+        button-text="Regenerate"
+        data-testid="regenerate-api-key"
+        :callback="handleRegenerateApiKey"
       />
-      <RevokeApiKeyModal v-model:show="isRevokeApiKeyModalShown" @revoke="handleRevokeApiKey" />
+      <AppConfirmModal
+        v-model:show="isRevokeApiKeyModalShown"
+        icon="bin"
+        title="Revoke API Key"
+        text="Are you sure you want to revoke this API key? Any third-party app using it will stop
+          working immediately. This cannot be undone."
+        button-text="Revoke"
+        button-color="danger"
+        data-testid="revoke-api-key"
+        :callback="handleRevokeApiKey"
+      />
     </div>
   </div>
 

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
 import { ApiKey, ApiKeyEvent, ApiKeyEventType, ApiKeyRevokedReason, User } from '@entities';
@@ -102,6 +102,25 @@ describe('ApiKeysService', () => {
         expect.objectContaining({ userId: 1 }),
       );
     });
+
+    it('maps a concurrent insert racing past the existence check to ConflictException', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+      const queryFailedError = Object.assign(
+        Object.create(QueryFailedError.prototype),
+        { code: '23505' },
+      );
+      dataSource.manager.save.mockRejectedValueOnce(queryFailedError);
+
+      await expect(service.create(user as User)).rejects.toThrow(ConflictException);
+    });
+
+    it('rethrows other database errors from a concurrent insert unchanged', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+      const otherError = new Error('connection lost');
+      dataSource.manager.save.mockRejectedValueOnce(otherError);
+
+      await expect(service.create(user as User)).rejects.toThrow(otherError);
+    });
   });
 
   describe('regenerate', () => {
@@ -154,44 +173,51 @@ describe('ApiKeysService', () => {
   });
 
   describe('revoke', () => {
+    const buildQueryBuilder = (raw: { id: number }[]) => {
+      const qb: any = {
+        update: jest.fn().mockReturnThis(),
+        set: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        returning: jest.fn().mockReturnThis(),
+        execute: jest.fn().mockResolvedValue({ raw }),
+      };
+      dataSource.manager.createQueryBuilder.mockReturnValue(qb);
+      return qb;
+    };
+
     it('does nothing when no key exists for the user', async () => {
-      apiKeyRepo.findOne.mockResolvedValue(null);
+      buildQueryBuilder([]);
 
       await service.revoke(1, ApiKeyRevokedReason.USER, 1);
 
-      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(dataSource.manager.save).not.toHaveBeenCalled();
+      expect(apiKeyRepo.findOne).not.toHaveBeenCalled();
       expect(notificationsPublisher.publish).not.toHaveBeenCalled();
     });
 
-    it('does nothing when the key is already revoked', async () => {
-      apiKeyRepo.findOne.mockResolvedValue({
-        id: 1,
-        userId: 1,
-        revokedAt: new Date(),
-        user: { email: 'already@example.com' },
-      } as ApiKey);
+    it('does nothing when the key is already revoked - the guarded UPDATE claims zero rows', async () => {
+      buildQueryBuilder([]);
 
       await service.revoke(1, ApiKeyRevokedReason.INACTIVITY, null);
 
-      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(dataSource.manager.save).not.toHaveBeenCalled();
       expect(notificationsPublisher.publish).not.toHaveBeenCalled();
     });
 
     it('revokes a live key and logs a REVOKED event', async () => {
-      const existing = {
-        id: 1,
-        userId: 1,
-        revokedAt: null,
-        revokedReason: null,
-        user: { email: 'owner@example.com' },
-      } as ApiKey;
-      apiKeyRepo.findOne.mockResolvedValue(existing);
+      const qb = buildQueryBuilder([{ id: 1 }]);
 
-      await service.revoke(1, ApiKeyRevokedReason.PERMISSION_REMOVED, 99);
+      await service.revoke(1, ApiKeyRevokedReason.USER, 99);
 
-      expect(existing.revokedAt).toBeInstanceOf(Date);
-      expect(existing.revokedReason).toBe(ApiKeyRevokedReason.PERMISSION_REMOVED);
-      expect(dataSource.manager.save).toHaveBeenCalledWith(existing);
+      expect(qb.where).toHaveBeenCalledWith('"userId" = :userId', { userId: 1 });
+      expect(qb.andWhere).toHaveBeenCalledWith('"revokedAt" IS NULL');
+      expect(qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          revokedAt: expect.any(Date),
+          revokedReason: ApiKeyRevokedReason.USER,
+        }),
+      );
       expect(dataSource.manager.create).toHaveBeenCalledWith(
         ApiKeyEvent,
         expect.objectContaining({
@@ -199,21 +225,26 @@ describe('ApiKeysService', () => {
           userId: 1,
           performedBy: 99,
           eventType: ApiKeyEventType.REVOKED,
-          reason: ApiKeyRevokedReason.PERMISSION_REMOVED,
+          reason: ApiKeyRevokedReason.USER,
         }),
       );
+      expect(dataSource.manager.save).toHaveBeenCalled();
     });
 
     it('emails the owner, including idleExpiryDays, when revoked for inactivity', async () => {
+      buildQueryBuilder([{ id: 1 }]);
       apiKeyRepo.findOne.mockResolvedValue({
         id: 1,
         userId: 1,
-        revokedAt: null,
         user: { email: 'owner@example.com' },
       } as ApiKey);
 
       await service.revoke(1, ApiKeyRevokedReason.INACTIVITY, null);
 
+      expect(apiKeyRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: { user: true },
+      });
       expect(notificationsPublisher.publish).toHaveBeenCalledWith(
         'notifications.queue.email.api-key-revoked',
         [
@@ -226,10 +257,10 @@ describe('ApiKeysService', () => {
     });
 
     it('emails the owner without idleExpiryDays when revoked for a non-inactivity reason', async () => {
+      buildQueryBuilder([{ id: 1 }]);
       apiKeyRepo.findOne.mockResolvedValue({
         id: 1,
         userId: 1,
-        revokedAt: null,
         user: { email: 'owner@example.com' },
       } as ApiKey);
 
@@ -244,16 +275,12 @@ describe('ApiKeysService', () => {
     it.each([ApiKeyRevokedReason.USER, ApiKeyRevokedReason.USER_REMOVED])(
       'does not email the owner when revoked for reason %s',
       async reason => {
-        apiKeyRepo.findOne.mockResolvedValue({
-          id: 1,
-          userId: 1,
-          revokedAt: null,
-          user: { email: 'owner@example.com' },
-        } as ApiKey);
+        buildQueryBuilder([{ id: 1 }]);
 
         await service.revoke(1, reason, 1);
 
         expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+        expect(apiKeyRepo.findOne).not.toHaveBeenCalled();
       },
     );
   });
