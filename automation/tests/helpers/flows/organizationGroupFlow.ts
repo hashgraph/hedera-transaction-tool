@@ -45,7 +45,6 @@ export async function executeOrganizationGroupFromCsvFile({
   await groupPage.closeGroupDraftModal();
   await groupPage.clickOnConfirmGroupTransactionButton();
   await groupPage.clickOnSignAllButton(numberOfTransactions >= 100 ? 3000 : 600);
-  // await groupPage.clickOnConfirmSignAllButton();
   await loginPage.waitForToastToDisappear();
 
   await transactionPage.clickOnTransactionsMenuButton();
