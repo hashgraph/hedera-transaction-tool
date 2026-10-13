@@ -424,7 +424,7 @@ export function getRegisteredNodeUpdateData(
   const registeredNodeId = transaction.registeredNodeId ?? baseline?.registeredNodeId ?? null;
   const description = transaction.description ?? baseline?.description ?? null;
   const adminKey = transaction.adminKey ?? baseline?.adminKey ?? null;
-  const serviceEndpoints = transaction.serviceEndpoints ?? [];
+  const serviceEndpoints = transaction.serviceEndpoints ?? baseline?.serviceEndpoints ?? [];
 
   const endpoints = serviceEndpoints.map(getComponentRegisteredEndpoint);
 
