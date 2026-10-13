@@ -210,9 +210,15 @@ const formatApiKeyDateTime = (value: string | null) => {
 const fetchApiKeyStatus = async () => {
   if (!isApiKeySectionVisible.value || !isLoggedInOrganization(user.selectedOrganization)) return;
 
+  const { serverUrl } = user.selectedOrganization;
   apiKeyLoading.value = true;
   try {
-    apiKeyStatus.value = await getApiKeyStatus(user.selectedOrganization.serverUrl);
+    const status = await getApiKeyStatus(serverUrl);
+    // The selected organization may have changed while this request was in flight -
+    // ignore a response that no longer belongs to the currently selected one.
+    if (!isLoggedInOrganization(user.selectedOrganization)) return;
+    if (user.selectedOrganization.serverUrl !== serverUrl) return;
+    apiKeyStatus.value = status;
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to load API key status'));
   } finally {
@@ -257,10 +263,14 @@ const handleRevokeApiKey = async () => {
   }
 };
 
-const handleCopyApiKey = () => {
+const handleCopyApiKey = async () => {
   if (!revealedApiKey.value) return;
-  navigator.clipboard.writeText(revealedApiKey.value);
-  toastManager.success('API key copied to clipboard');
+  try {
+    await navigator.clipboard.writeText(revealedApiKey.value);
+    toastManager.success('API key copied to clipboard');
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to copy API key to clipboard'));
+  }
 };
 
 const handleDismissRevealedApiKey = () => {
@@ -277,6 +287,15 @@ watch(newPassword, pass => {
     newPasswordInvalid.value = false;
   }
 });
+
+watch(
+  () => (isLoggedInOrganization(user.selectedOrganization) ? user.selectedOrganization.serverUrl : null),
+  () => {
+    revealedApiKey.value = null;
+    apiKeyStatus.value = null;
+    fetchApiKeyStatus();
+  },
+);
 
 /* Hooks */
 onBeforeMount(fetchApiKeyStatus);
@@ -412,11 +431,14 @@ onBeforeMount(fetchApiKeyStatus);
                 style="max-width: 60vw"
                 >{{ revealedApiKey }}</span
               >
-              <span
+              <button
+                type="button"
                 class="bi bi-copy cursor-pointer"
+                style="background: transparent; border: none; padding: 0; color: inherit"
+                aria-label="Copy API key"
                 data-testid="button-copy-api-key"
                 @click="handleCopyApiKey"
-              ></span>
+              ></button>
             </div>
             <div class="mt-4">
               <AppButton

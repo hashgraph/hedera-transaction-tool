@@ -221,7 +221,9 @@ describe('ContactDetails.vue', () => {
   test('shows a toggleable switch for report API access on non-admin contacts', () => {
     const wrapper = mountContactDetails();
 
-    expect(wrapper.find('[data-testid="switch-report-api-access"]').exists()).toBe(true);
+    const toggle = wrapper.find('[data-testid="switch-report-api-access"]');
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.attributes('aria-label')).toBe('Report API access');
   });
 
   function mountWithContact(overrideContact: Contact) {

@@ -303,6 +303,7 @@ watch(() => props.contact.userKeys, async () => {
         :key="contact.user.id"
         name="report-api-access"
         :checked="contact.user.canViewReports"
+        aria-label="Report API access"
         data-testid="switch-report-api-access"
         @update:checked="$emit('toggle-view-reports')"
       />

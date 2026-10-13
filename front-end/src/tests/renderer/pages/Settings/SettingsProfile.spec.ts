@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { reactive } from 'vue';
 
 import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 
@@ -48,9 +49,18 @@ vi.mock('vue-router', () => ({
   })),
 }));
 
-vi.mock('@renderer/stores/storeUser', () => ({
-  default: vi.fn(() => mocks.userStore),
-}));
+vi.mock('@renderer/stores/storeUser', () => {
+  // vi.mock factories run lazily (on first import of the mocked module), after this
+  // file's own top-level `reactive` import is live - unlike `vi.hoisted` callbacks.
+  // Reassigning mocks.userStore to the reactive-wrapped version means a later
+  // `mocks.userStore.selectedOrganization = x` mutates the same proxy the mounted
+  // component reads from, so watchers/computeds relying on it actually fire - same as
+  // the real Pinia store.
+  mocks.userStore = reactive(mocks.userStore);
+  return {
+    default: vi.fn(() => mocks.userStore),
+  };
+});
 
 vi.mock('@renderer/composables/useLoader', () => ({
   default: vi.fn(() => async (callback: () => Promise<void>) => callback()),
@@ -145,7 +155,20 @@ const ORG = {
 const STRONG_OLD = 'old-password';
 const STRONG_NEW = 'new-strong-password';
 
-const mountProfile = () => mount(ProfileTab, { global: { stubs } });
+// Now that the mocked user store is reactive (see the storeUser mock above), a
+// component left mounted from a prior test keeps its watchers live and reacts to
+// later tests' store mutations too, inflating mock call counts across the suite -
+// so every mounted wrapper must be unmounted before the next test runs.
+let activeWrapper: ReturnType<typeof mount> | null = null;
+afterEach(() => {
+  activeWrapper?.unmount();
+  activeWrapper = null;
+});
+
+const mountProfile = () => {
+  activeWrapper = mount(ProfileTab, { global: { stubs } });
+  return activeWrapper;
+};
 
 const setPasswords = async (wrapper: ReturnType<typeof mountProfile>, current: string, next: string) => {
   await wrapper.find('[data-testid="input-current-password"]').setValue(current);
@@ -807,6 +830,23 @@ describe('settings profile coverage', () => {
         expect(mocks.toastSuccess).toHaveBeenCalledWith('API key copied to clipboard');
       });
 
+      test('shows an error toast instead of a success toast when the clipboard write fails', async () => {
+        vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(
+          new Error('clipboard denied'),
+        );
+
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-copy-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.toastSuccess).not.toHaveBeenCalledWith('API key copied to clipboard');
+        expect(mocks.toastError).toHaveBeenCalledWith('clipboard denied');
+      });
+
       test('dismissing the revealed key falls back to the active-key summary', async () => {
         mocks.getApiKeyStatus.mockResolvedValueOnce({
           hasKey: false,
@@ -1018,6 +1058,97 @@ describe('settings profile coverage', () => {
 
       expect(mocks.toastError).toHaveBeenCalledWith('Could not reach server');
       expect(wrapper.find('[data-testid="p-no-api-key"]').exists()).toBe(true);
+    });
+
+    describe('switching organizations while mounted', () => {
+      test('resets the revealed key and reloads status for the newly selected organization', async () => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.createApiKey.mockResolvedValueOnce({ key: 'org-a-key' });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').text()).toBe('org-a-key');
+
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'other-org-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.userStore.selectedOrganization = {
+          ...ORG,
+          id: 'org-2',
+          serverUrl: 'https://other.example',
+          admin: true,
+          canViewReports: false,
+        };
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').exists()).toBe(false);
+        expect(mocks.getApiKeyStatus).toHaveBeenLastCalledWith('https://other.example');
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('other-org-key');
+      });
+
+      test('ignores a status response for an organization that is no longer selected', async () => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        let resolveFirstStatus: (value: unknown) => void = () => {};
+        mocks.getApiKeyStatus.mockReturnValueOnce(
+          new Promise(resolve => {
+            resolveFirstStatus = resolve;
+          }),
+        );
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'other-org-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.userStore.selectedOrganization = {
+          ...ORG,
+          id: 'org-2',
+          serverUrl: 'https://other.example',
+          admin: true,
+          canViewReports: false,
+        };
+        await flushPromises();
+
+        // The first (org-1) request finally resolves after org-2 is already selected -
+        // its stale result must not overwrite org-2's status.
+        resolveFirstStatus({
+          hasKey: true,
+          keyId: 'org-1-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('other-org-key');
+      });
     });
   });
 });

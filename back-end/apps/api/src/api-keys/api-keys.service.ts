@@ -250,9 +250,15 @@ export class ApiKeysService {
     // truth for that, so revokedAt, the status endpoint, and the revoked email
     // always agree. A key merely past idleExpiryDays but not yet swept still
     // authenticates; see revokeStaleKeys() for the actual cutoff.
-    if (apiKey.revokedAt) return null;
+    if (apiKey.revokedAt) {
+      await this.recordAuthFailure(apiKey, clientIp);
+      return null;
+    }
 
-    if (!isEligibleForReportAccess(apiKey.user)) return null;
+    if (!isEligibleForReportAccess(apiKey.user)) {
+      await this.recordAuthFailure(apiKey, clientIp);
+      return null;
+    }
 
     await this.touchLastUsed(apiKey, clientIp);
 
@@ -271,27 +277,64 @@ export class ApiKeysService {
     const createdAt = new Date();
 
     await this.dataSource.transaction(async manager => {
-      const row = existing ?? manager.create(ApiKey, { userId });
-      row.keyId = keyId;
-      row.secretHash = secretHash;
-      // Explicitly reassigned even on regenerate (an update, not an insert) so
-      // "created" reflects when THIS key version was issued, not when the row
-      // was first inserted - otherwise a regenerated key's idle clock would
-      // measure from the original row's creation instead of restarting.
-      row.createdAt = createdAt;
-      row.lastUsedAt = null;
-      row.lastUsedIp = null;
-      row.revokedAt = null;
-      row.revokedReason = null;
-      const saved = await manager.save(row);
+      if (existing) {
+        // Guarded by the row's keyId as it was read, not just its id: if another
+        // concurrent issuance for this same user (e.g. regenerating from two
+        // devices at once) already replaced this row's key, this affects zero
+        // rows instead of blindly overwriting it - so the loser gets an honest
+        // "try again" error instead of a reveal containing an already-dead secret.
+        const result = await manager
+          .createQueryBuilder()
+          .update(ApiKey)
+          .set({
+            keyId,
+            secretHash,
+            // Explicitly reassigned even on regenerate (an update, not an insert) so
+            // "created" reflects when THIS key version was issued, not when the row
+            // was first inserted - otherwise a regenerated key's idle clock would
+            // measure from the original row's creation instead of restarting.
+            createdAt,
+            lastUsedAt: null,
+            lastUsedIp: null,
+            revokedAt: null,
+            revokedReason: null,
+          })
+          .where('id = :id', { id: existing.id })
+          .andWhere('"keyId" = :oldKeyId', { oldKeyId: existing.keyId })
+          .execute();
 
-      const event = manager.create(ApiKeyEvent, {
-        apiKeyId: saved.id,
-        userId,
-        performedBy: performedByUserId,
-        eventType,
-      });
-      await manager.save(event);
+        if (result.affected === 0) {
+          throw new ConflictException(
+            'This key was just changed by another request - please try again.',
+          );
+        }
+
+        const event = manager.create(ApiKeyEvent, {
+          apiKeyId: existing.id,
+          userId,
+          performedBy: performedByUserId,
+          eventType,
+        });
+        await manager.save(event);
+      } else {
+        const row = manager.create(ApiKey, { userId });
+        row.keyId = keyId;
+        row.secretHash = secretHash;
+        row.createdAt = createdAt;
+        row.lastUsedAt = null;
+        row.lastUsedIp = null;
+        row.revokedAt = null;
+        row.revokedReason = null;
+        const saved = await manager.save(row);
+
+        const event = manager.create(ApiKeyEvent, {
+          apiKeyId: saved.id,
+          userId,
+          performedBy: performedByUserId,
+          eventType,
+        });
+        await manager.save(event);
+      }
     });
 
     return { key: `${KEY_PREFIX}_${keyId}_${secret}`, keyId, createdAt };

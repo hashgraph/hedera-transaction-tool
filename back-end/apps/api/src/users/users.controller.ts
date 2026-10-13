@@ -136,19 +136,24 @@ export class UsersController {
     @Body() dto: UpdateUserDto,
   ): Promise<User> {
     const before = await this.usersService.getUser({ id: userId });
-    const wasEligibleForKey = !!before && isEligibleForReportAccess(before);
+    if (!before) throw new BadRequestException(ErrorCodes.UNF);
 
-    const updated = await this.usersService.updateUserById(userId, dto);
-    const stillEligibleForKey = isEligibleForReportAccess(updated);
-
-    // Must compare the merged before/after entity, not the dto in isolation: dto fields are
-    // optional (partial update), so e.g. demoting admin alone (dto.admin === false) can only be
-    // known to remove eligibility by also knowing the current (possibly untouched) canViewReports.
-    if (wasEligibleForKey && !stillEligibleForKey) {
+    // Revoke BEFORE saving the permission change, not after: revoke() is idempotent
+    // (a no-op if there's no active key), so if the save below fails and the admin
+    // retries, re-revoking is harmless. The reverse order would leave a window where
+    // the permission change is already committed but the key isn't revoked yet - if
+    // revoke() then failed, the UI would show the update as having succeeded, with
+    // nothing to prompt a retry until some unrelated later change touched this user.
+    //
+    // Must compare the merged before/dto state, not the dto in isolation: dto fields
+    // are optional (partial update), so e.g. demoting admin alone (dto.admin ===
+    // false) can only be known to remove eligibility by also knowing the current
+    // (possibly untouched) canViewReports.
+    if (!isEligibleForReportAccess({ ...before, ...dto })) {
       await this.apiKeysService.revoke(userId, ApiKeyRevokedReason.PERMISSION_REMOVED, admin.id);
     }
 
-    return updated;
+    return this.usersService.updateUser(before, dto);
   }
 
   @ApiOperation({

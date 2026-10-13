@@ -56,7 +56,7 @@ export const config = ConfigModule.forRoot({
     // of silently shipping that.
     OTP_MAX_ATTEMPTS: Joi.number().positive().required(),
     OTP_VERIFIED_EXPIRATION: Joi.number().required(),
-    API_KEY_IDLE_EXPIRY_DAYS: Joi.number().optional().default(180),
+    API_KEY_IDLE_EXPIRY_DAYS: Joi.number().integer().positive().optional().default(180),
     REDIS_URL: Joi.string().required(),
     REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),

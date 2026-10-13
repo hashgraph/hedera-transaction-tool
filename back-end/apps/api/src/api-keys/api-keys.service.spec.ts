@@ -32,6 +32,20 @@ describe('ApiKeysService', () => {
     dataSource.transaction.mockImplementation(transactionMock);
   };
 
+  // Used by create()/regenerate() tests that reissue onto an existing row - that
+  // path goes through a guarded UPDATE (createQueryBuilder), not manager.save().
+  const buildIssueQueryBuilder = (result: { affected: number }) => {
+    const qb: any = {
+      update: jest.fn().mockReturnThis(),
+      set: jest.fn().mockReturnThis(),
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      execute: jest.fn().mockResolvedValue(result),
+    };
+    dataSource.manager.createQueryBuilder.mockReturnValue(qb);
+    return qb;
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -78,17 +92,35 @@ describe('ApiKeysService', () => {
         revokedReason: ApiKeyRevokedReason.PERMISSION_REMOVED,
       } as ApiKey;
       apiKeyRepo.findOne.mockResolvedValue(revokedKey);
+      const qb = buildIssueQueryBuilder({ affected: 1 });
 
       const result = await service.create(user as User);
 
       expect(result.key).toMatch(/^tt_[0-9a-f]{24}_.+$/);
-      expect(dataSource.manager.save).toHaveBeenCalledWith(
-        expect.objectContaining({ userId: 1, revokedAt: null, revokedReason: null }),
+      expect(qb.where).toHaveBeenCalledWith('id = :id', { id: 1 });
+      expect(qb.andWhere).toHaveBeenCalledWith('"keyId" = :oldKeyId', { oldKeyId: 'old-key-id' });
+      expect(qb.set).toHaveBeenCalledWith(
+        expect.objectContaining({ revokedAt: null, revokedReason: null }),
       );
       expect(dataSource.manager.create).toHaveBeenCalledWith(
         ApiKeyEvent,
-        expect.objectContaining({ eventType: ApiKeyEventType.CREATED }),
+        expect.objectContaining({ apiKeyId: 1, eventType: ApiKeyEventType.CREATED }),
       );
+    });
+
+    it('throws ConflictException when a concurrent issuance already replaced the revoked row', async () => {
+      const revokedKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'old-key-id',
+        secretHash: 'old-hash',
+        revokedAt: new Date('2026-01-01'),
+        revokedReason: ApiKeyRevokedReason.PERMISSION_REMOVED,
+      } as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(revokedKey);
+      buildIssueQueryBuilder({ affected: 0 });
+
+      await expect(service.create(user as User)).rejects.toThrow(ConflictException);
     });
 
     it('creates a key when none exists yet', async () => {
@@ -151,14 +183,16 @@ describe('ApiKeysService', () => {
         revokedReason: null,
       } as ApiKey;
       apiKeyRepo.findOne.mockResolvedValue(existing);
+      const qb = buildIssueQueryBuilder({ affected: 1 });
 
       const result = await service.regenerate(user as User);
 
       expect(result.key).toMatch(/^tt_[0-9a-f]{24}_.+$/);
       expect(result.keyId).not.toBe('old-key-id');
-      expect(dataSource.manager.save).toHaveBeenCalledWith(
+      expect(qb.where).toHaveBeenCalledWith('id = :id', { id: 1 });
+      expect(qb.andWhere).toHaveBeenCalledWith('"keyId" = :oldKeyId', { oldKeyId: 'old-key-id' });
+      expect(qb.set).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 1,
           lastUsedAt: null,
           lastUsedIp: null,
           revokedAt: null,
@@ -167,8 +201,26 @@ describe('ApiKeysService', () => {
       );
       expect(dataSource.manager.create).toHaveBeenCalledWith(
         ApiKeyEvent,
-        expect.objectContaining({ eventType: ApiKeyEventType.REGENERATED }),
+        expect.objectContaining({ apiKeyId: 1, eventType: ApiKeyEventType.REGENERATED }),
       );
+    });
+
+    it('throws ConflictException when two concurrent regenerate calls race', async () => {
+      const existing = {
+        id: 1,
+        userId: 1,
+        keyId: 'old-key-id',
+        secretHash: 'old-hash',
+        createdAt: new Date('2025-01-01'),
+        lastUsedAt: new Date('2025-06-01'),
+        lastUsedIp: '1.2.3.4',
+        revokedAt: null,
+        revokedReason: null,
+      } as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(existing);
+      buildIssueQueryBuilder({ affected: 0 });
+
+      await expect(service.regenerate(user as User)).rejects.toThrow(ConflictException);
     });
   });
 
@@ -390,7 +442,7 @@ describe('ApiKeysService', () => {
       expect(apiKeyRepo.update).not.toHaveBeenCalled();
     });
 
-    it('returns null when the user is neither admin nor report-eligible', async () => {
+    it('returns null and audits an auth failure when the user is neither admin nor report-eligible', async () => {
       const apiKey = {
         id: 1,
         userId: 1,
@@ -403,10 +455,20 @@ describe('ApiKeysService', () => {
       apiKeyRepo.findOne.mockResolvedValue(apiKey);
       jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
 
-      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`, '9.9.9.9');
 
       expect(result).toBeNull();
       expect(apiKeyRepo.update).not.toHaveBeenCalled();
+      expect(apiKeyEventRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apiKeyId: 1,
+          userId: 1,
+          performedBy: null,
+          eventType: ApiKeyEventType.AUTH_FAILED,
+          ipAddress: '9.9.9.9',
+        }),
+      );
+      expect(apiKeyEventRepo.save).toHaveBeenCalled();
     });
 
     it('still authenticates a key idle past idleExpiryDays but not yet swept', async () => {
@@ -428,7 +490,7 @@ describe('ApiKeysService', () => {
       expect(result).toBe(apiKey.user);
     });
 
-    it('rejects a key already revoked (e.g. by the stale sweep)', async () => {
+    it('rejects a key already revoked (e.g. by the stale sweep) and audits an auth failure', async () => {
       const apiKey = {
         id: 1,
         userId: 1,
@@ -443,10 +505,20 @@ describe('ApiKeysService', () => {
       apiKeyRepo.findOne.mockResolvedValue(apiKey);
       jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
 
-      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`, '9.9.9.9');
 
       expect(result).toBeNull();
       expect(apiKeyRepo.update).not.toHaveBeenCalled();
+      expect(apiKeyEventRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apiKeyId: 1,
+          userId: 1,
+          performedBy: null,
+          eventType: ApiKeyEventType.AUTH_FAILED,
+          ipAddress: '9.9.9.9',
+        }),
+      );
+      expect(apiKeyEventRepo.save).toHaveBeenCalled();
     });
 
     it('touches lastUsedAt/lastUsedIp on first use', async () => {

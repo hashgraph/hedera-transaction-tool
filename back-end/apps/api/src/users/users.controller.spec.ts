@@ -144,38 +144,67 @@ describe('UsersController', () => {
   describe('updateUser', () => {
     beforeEach(() => {
       apiKeysService.revoke.mockClear();
+      userService.updateUser.mockClear();
     });
 
     it('should return the updated user', async () => {
-      userService.updateUserById.mockResolvedValue(user);
+      userService.getUser.mockResolvedValue(user);
+      userService.updateUser.mockResolvedValue(user);
 
       expect(await controller.updateUser(user, 1, user)).toBe(user);
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.getUser.mockResolvedValue(user);
-      userService.updateUserById.mockRejectedValue(new Error());
+      userService.getUser.mockResolvedValue(null);
 
       await expect(controller.updateUser(user, 1, user)).rejects.toBeInstanceOf(Error);
       expect(apiKeysService.revoke).not.toHaveBeenCalled();
     });
 
-    it("revokes the user's API key when report access is removed", async () => {
+    it('propagates the error if saving the update fails', async () => {
+      userService.getUser.mockResolvedValue(user);
+      userService.updateUser.mockRejectedValue(new Error());
+
+      await expect(controller.updateUser(user, 1, user)).rejects.toBeInstanceOf(Error);
+    });
+
+    it("revokes the user's API key before saving when report access is removed", async () => {
       const before = { ...user, admin: true, canViewReports: false };
       const after = { ...user, admin: false, canViewReports: false };
       userService.getUser.mockResolvedValue(before);
-      userService.updateUserById.mockResolvedValue(after);
+      userService.updateUser.mockResolvedValue(after);
+
+      const callOrder: string[] = [];
+      apiKeysService.revoke.mockImplementation(async () => {
+        callOrder.push('revoke');
+      });
+      userService.updateUser.mockImplementation(async () => {
+        callOrder.push('updateUser');
+        return after;
+      });
 
       await controller.updateUser(user, 1, { admin: false });
 
       expect(apiKeysService.revoke).toHaveBeenCalledWith(1, 'permission_removed', user.id);
+      expect(callOrder).toEqual(['revoke', 'updateUser']);
+    });
+
+    it('does not save the update if revoking the API key fails', async () => {
+      const before = { ...user, admin: true, canViewReports: false };
+      userService.getUser.mockResolvedValue(before);
+      apiKeysService.revoke.mockRejectedValue(new Error('revoke failed'));
+
+      await expect(controller.updateUser(user, 1, { admin: false })).rejects.toThrow(
+        'revoke failed',
+      );
+      expect(userService.updateUser).not.toHaveBeenCalled();
     });
 
     it("does not revoke the user's API key when report access is retained", async () => {
       const before = { ...user, admin: true, canViewReports: true };
       const after = { ...user, admin: false, canViewReports: true };
       userService.getUser.mockResolvedValue(before);
-      userService.updateUserById.mockResolvedValue(after);
+      userService.updateUser.mockResolvedValue(after);
 
       await controller.updateUser(user, 1, { admin: false });
 
