@@ -16,7 +16,7 @@ import TransactionProcessor, {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
+import { computed, onMounted, reactive, ref, toRaw, watch, type Ref } from 'vue';
 import {
   Hbar,
   KeyList,
@@ -68,7 +68,7 @@ const emit = defineEmits<{
   (event: 'executed:success', data: ExecutedSuccessData): void;
   (event: 'submitted', id: number, body: string): void;
   (event: 'group:submitted', id: number): void;
-  (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'draft-loaded', transaction: Transaction, baseline: Transaction | null): void;
 }>();
 
 /* Stores */
@@ -91,6 +91,7 @@ const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | nul
 const baseGroupHandlerRef = ref<InstanceType<typeof BaseGroupHandler> | null>(null);
 
 const name = ref('');
+const baseline: Ref<Transaction | null> = ref(null);
 const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
@@ -143,16 +144,16 @@ const hasTransactionChanged = computed(() => {
     ) {
       result = true; // validStart was updated
     } else if (
-      hasStartTimestampChanged(
-        initialTransaction.value as Transaction,
-        transaction.value,
-        now,
-      )
+      hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value, now)
     ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart, startTimestamp and expirationTime
-      result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
+      result = !transactionsDataMatch(
+        initialTransaction.value as Transaction,
+        transaction.value,
+        baseline.value,
+      );
     }
   } else {
     result = true; // initialTransaction is not yet initialized
@@ -174,8 +175,13 @@ const isNodeCreationPrivRequired = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction, loadedDescription: string) => {
+const handleDraftLoaded = async (
+  transaction: Transaction,
+  loadedBaseline: Transaction | null,
+  loadedDescription: string,
+) => {
   initialTransaction.value = transaction;
+  baseline.value = loadedBaseline;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
 
@@ -183,7 +189,7 @@ const handleDraftLoaded = async (transaction: Transaction, loadedDescription: st
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
-  emit('draft-loaded', transaction);
+  emit('draft-loaded', transaction, loadedBaseline);
 };
 
 const handleCreate = async () => {
@@ -467,6 +473,7 @@ defineExpose({
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
       :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :baseline="baseline ?? null"
       :transaction-key="transactionKey"
       @fetched-description="handleFetchedDescription"
       @fetched-payer-account-id="handleFetchedPayerAccountId"

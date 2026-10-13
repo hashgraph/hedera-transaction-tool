@@ -219,6 +219,7 @@ function createGroupItem(accountId: string, seq: number): GroupItem {
     payerAccountId: request.value.accountIsPayer ? accountId : commonData.payerId,
     seq: seq.toString(),
     transactionBytes: transaction.toBytes(),
+    baselineBytes: null,
     type: getTransactionType(transaction),
     validStart: commonData.validStart,
   };
