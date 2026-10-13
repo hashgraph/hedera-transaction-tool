@@ -43,7 +43,7 @@ const handleLoadFromDraft = async () => {
   } else if (groupIndex) {
     const groupItem = transactionGroup.groupItems[Number(groupIndex)];
     transactionBytes = groupItem.transactionBytes.toString();
-    transactionBytes = groupItem.baselineBytes?.toString() ?? null;
+    baselineBytes = groupItem.baselineBytes?.toString() ?? null;
     description = groupItem.description || '';
   }
 
