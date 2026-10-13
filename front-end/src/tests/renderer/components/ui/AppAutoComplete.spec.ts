@@ -1307,14 +1307,18 @@ describe('AppAutoComplete', () => {
     );
     const input = wrapper.find('input');
     const el = input.element as HTMLInputElement;
+    const selectSpy = vi.spyOn(el, 'select');
     el.focus();
+    // Focus intentionally selects the current text on a timer. Wait for that
+    // initial focus behavior, then measure only the chevron interaction below.
+    await vi.waitFor(() => expect(selectSpy).toHaveBeenCalledOnce());
+    selectSpy.mockClear();
     await flushPromises();
     await input.trigger('keydown', { key: 'Escape' });
     await flushPromises();
     const dropdownBefore = wrapper.find('.autocomplete-custom').element as HTMLElement;
     expect(dropdownBefore.style.visibility).toBe('hidden');
 
-    const selectSpy = vi.spyOn(el, 'select');
     await wrapper.find('.autocomplete-chevron').trigger('click');
     await flushPromises();
 

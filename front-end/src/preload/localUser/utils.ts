@@ -5,7 +5,6 @@ export default {
   utils: {
     setDockBounce: (bounce: boolean) => ipcRenderer.send('utils:setDockBounce', bounce),
     openExternal: (url: string) => ipcRenderer.send('utils:openExternal', url),
-    openPath: (path: string) => ipcRenderer.send('utils:openPath', path),
     hash: (data: string, pseudoSalt: boolean = false): Promise<string> =>
       ipcRenderer.invoke('utils:hash', data, pseudoSalt),
     compareHash: (data: string, hash: string): Promise<boolean> =>
