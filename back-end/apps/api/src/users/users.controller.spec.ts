@@ -143,13 +143,11 @@ describe('UsersController', () => {
     });
 
     it('should throw an error if the user does not exist', async () => {
-      userService.updateUser.mockRejectedValue(new Error());
+      userService.getUser.mockResolvedValue(user);
+      userService.updateUserById.mockRejectedValue(new Error());
 
-      try {
-        await controller.updateUser(user, 1, user);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      await expect(controller.updateUser(user, 1, user)).rejects.toBeInstanceOf(Error);
+      expect(apiKeysService.revoke).not.toHaveBeenCalled();
     });
 
     it("revokes the user's API key when report access is removed", async () => {

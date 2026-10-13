@@ -5,6 +5,7 @@ import SMTPTransport from 'nodemailer/lib/smtp-transport';
 import { mockDeep } from 'jest-mock-extended';
 
 import {
+  generateApiKeyRevokedMessage,
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
@@ -38,6 +39,7 @@ jest.mock('@app/common', () => ({
   generateEmailContent: jest.fn(),
   generateUserRegisteredMessage: jest.fn(),
   generateResetPasswordMessage: jest.fn(),
+  generateApiKeyRevokedMessage: jest.fn(),
 }));
 
 describe('EmailService', () => {
@@ -595,6 +597,37 @@ describe('EmailService', () => {
       await service.processUserPasswordResetNotifications([]);
 
       expect(generateResetPasswordMessage).not.toHaveBeenCalled();
+      expect(transport.sendMail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('processApiKeyRevokedNotifications', () => {
+    it('sends a revoked-key email for valid events', async () => {
+      const events = [
+        { email: 'user@example.com', additionalData: { reason: 'inactivity', idleExpiryDays: 180 } },
+      ];
+
+      (generateApiKeyRevokedMessage as jest.Mock).mockReturnValue('<p>Key revoked</p>');
+      transport.sendMail.mockResolvedValue({ messageId: 'revoked-msg' });
+
+      await service.processApiKeyRevokedNotifications(events);
+
+      expect(generateApiKeyRevokedMessage).toHaveBeenCalledWith(events[0].additionalData);
+      expect(transport.sendMail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          from: expect.stringContaining('Transaction Tool'),
+          to: 'user@example.com',
+          subject: 'Report API Key Revoked',
+          html: '<p>Key revoked</p>',
+          text: 'Key revoked',
+        }),
+      );
+    });
+
+    it('should handle empty events array', async () => {
+      await service.processApiKeyRevokedNotifications([]);
+
+      expect(generateApiKeyRevokedMessage).not.toHaveBeenCalled();
       expect(transport.sendMail).not.toHaveBeenCalled();
     });
   });

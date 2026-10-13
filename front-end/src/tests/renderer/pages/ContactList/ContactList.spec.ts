@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     notifications: {} as Record<string, any[]>,
   },
   setCanViewReports: vi.fn().mockResolvedValue(undefined),
+  toastSuccess: vi.fn(),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -84,7 +85,7 @@ vi.mock('@renderer/utils', () => ({
 vi.mock('@renderer/utils/ToastManager', () => ({
   ToastManager: {
     inject: vi.fn(() => ({
-      success: vi.fn(),
+      success: mocks.toastSuccess,
     })),
   },
 }));
@@ -103,6 +104,7 @@ describe('ContactList.vue', () => {
     mocks.contactsStore.fetch.mockReset();
     mocks.notificationsStore.notifications = {};
     mocks.setCanViewReports.mockClear();
+    mocks.toastSuccess.mockClear();
   });
 
   function mountContactList() {
@@ -315,6 +317,22 @@ describe('ContactList.vue', () => {
       );
     });
 
+    test('shows a success toast and refetches contacts once access is revoked', async () => {
+      const wrapper = mountContactList();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="btn-toggle-view-reports"]').trigger('click');
+      await nextTick();
+      await wrapper.find('[data-testid="button-confirm-revoke-view-reports"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(
+        'Report access revoked successfully',
+        'view-reports-access-1',
+      );
+      expect(mocks.contactsStore.fetch).toHaveBeenCalled();
+    });
+
     test('skips the confirmation prompt when the contact has no API key', async () => {
       mocks.contactsStore.contacts[0].user.apiKeyStatus = { hasKey: false };
 
@@ -352,6 +370,57 @@ describe('ContactList.vue', () => {
         1,
         false,
       );
+    });
+  });
+
+  describe('granting report API access', () => {
+    beforeEach(() => {
+      mocks.userStore.selectedOrganization.admin = true;
+      mocks.contactsStore.contacts = [
+        {
+          user: {
+            id: 1,
+            email: 'no-access@example.com',
+            admin: false,
+            status: 'ACTIVE',
+            canViewReports: false,
+            apiKeyStatus: { hasKey: false },
+          },
+          userKeys: [{ id: 1, publicKey: 'key-1' }],
+          nickname: '',
+          nicknameId: null,
+        },
+      ];
+    });
+
+    test('grants access immediately without a confirmation prompt', async () => {
+      const wrapper = mountContactList();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="btn-toggle-view-reports"]').trigger('click');
+      await flushPromises();
+
+      const modal = wrapper.find('[data-testid="modal-confirm-transaction"]');
+      expect(modal.attributes('style')).toContain('display: none');
+      expect(mocks.setCanViewReports).toHaveBeenCalledWith(
+        'https://org.example.com',
+        1,
+        true,
+      );
+    });
+
+    test('shows a success toast and refetches contacts once access is granted', async () => {
+      const wrapper = mountContactList();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="btn-toggle-view-reports"]').trigger('click');
+      await flushPromises();
+
+      expect(mocks.toastSuccess).toHaveBeenCalledWith(
+        'Report access granted successfully',
+        'view-reports-access-1',
+      );
+      expect(mocks.contactsStore.fetch).toHaveBeenCalled();
     });
   });
 });

@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ConflictException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { mock, mockDeep } from 'jest-mock-extended';
 
 import { ApiKey, ApiKeyEvent, ApiKeyEventType, ApiKeyRevokedReason, User } from '@entities';
@@ -54,6 +54,13 @@ describe('ApiKeysService', () => {
   });
 
   describe('create', () => {
+    it('throws ForbiddenException for a user ineligible for a report API key', async () => {
+      const ineligibleUser = { id: 1, admin: false, canViewReports: false } as User;
+
+      await expect(service.create(ineligibleUser)).rejects.toThrow(ForbiddenException);
+      expect(apiKeyRepo.findOne).not.toHaveBeenCalled();
+    });
+
     it('throws ConflictException when a live key already exists', async () => {
       apiKeyRepo.findOne.mockResolvedValue({ id: 1, userId: 1, revokedAt: null } as ApiKey);
 
@@ -97,7 +104,284 @@ describe('ApiKeysService', () => {
     });
   });
 
+  describe('regenerate', () => {
+    it('throws ForbiddenException for a user ineligible for a report API key', async () => {
+      const ineligibleUser = { id: 1, admin: false, canViewReports: false } as User;
+
+      await expect(service.regenerate(ineligibleUser)).rejects.toThrow(ForbiddenException);
+      expect(apiKeyRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('throws NotFoundException when no key exists yet', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.regenerate(user as User)).rejects.toThrow(NotFoundException);
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+    });
+
+    it('reissues the existing key, invalidating the previous one', async () => {
+      const existing = {
+        id: 1,
+        userId: 1,
+        keyId: 'old-key-id',
+        secretHash: 'old-hash',
+        createdAt: new Date('2025-01-01'),
+        lastUsedAt: new Date('2025-06-01'),
+        lastUsedIp: '1.2.3.4',
+        revokedAt: null,
+        revokedReason: null,
+      } as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(existing);
+
+      const result = await service.regenerate(user as User);
+
+      expect(result.key).toMatch(/^tt_[0-9a-f]{24}_.+$/);
+      expect(result.keyId).not.toBe('old-key-id');
+      expect(dataSource.manager.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userId: 1,
+          lastUsedAt: null,
+          lastUsedIp: null,
+          revokedAt: null,
+          revokedReason: null,
+        }),
+      );
+      expect(dataSource.manager.create).toHaveBeenCalledWith(
+        ApiKeyEvent,
+        expect.objectContaining({ eventType: ApiKeyEventType.REGENERATED }),
+      );
+    });
+  });
+
+  describe('revoke', () => {
+    it('does nothing when no key exists for the user', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+
+      await service.revoke(1, ApiKeyRevokedReason.USER, 1);
+
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the key is already revoked', async () => {
+      apiKeyRepo.findOne.mockResolvedValue({
+        id: 1,
+        userId: 1,
+        revokedAt: new Date(),
+        user: { email: 'already@example.com' },
+      } as ApiKey);
+
+      await service.revoke(1, ApiKeyRevokedReason.INACTIVITY, null);
+
+      expect(dataSource.transaction).not.toHaveBeenCalled();
+      expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('revokes a live key and logs a REVOKED event', async () => {
+      const existing = {
+        id: 1,
+        userId: 1,
+        revokedAt: null,
+        revokedReason: null,
+        user: { email: 'owner@example.com' },
+      } as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(existing);
+
+      await service.revoke(1, ApiKeyRevokedReason.PERMISSION_REMOVED, 99);
+
+      expect(existing.revokedAt).toBeInstanceOf(Date);
+      expect(existing.revokedReason).toBe(ApiKeyRevokedReason.PERMISSION_REMOVED);
+      expect(dataSource.manager.save).toHaveBeenCalledWith(existing);
+      expect(dataSource.manager.create).toHaveBeenCalledWith(
+        ApiKeyEvent,
+        expect.objectContaining({
+          apiKeyId: 1,
+          userId: 1,
+          performedBy: 99,
+          eventType: ApiKeyEventType.REVOKED,
+          reason: ApiKeyRevokedReason.PERMISSION_REMOVED,
+        }),
+      );
+    });
+
+    it('emails the owner, including idleExpiryDays, when revoked for inactivity', async () => {
+      apiKeyRepo.findOne.mockResolvedValue({
+        id: 1,
+        userId: 1,
+        revokedAt: null,
+        user: { email: 'owner@example.com' },
+      } as ApiKey);
+
+      await service.revoke(1, ApiKeyRevokedReason.INACTIVITY, null);
+
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        'notifications.queue.email.api-key-revoked',
+        [
+          {
+            email: 'owner@example.com',
+            additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays: 180 },
+          },
+        ],
+      );
+    });
+
+    it('emails the owner without idleExpiryDays when revoked for a non-inactivity reason', async () => {
+      apiKeyRepo.findOne.mockResolvedValue({
+        id: 1,
+        userId: 1,
+        revokedAt: null,
+        user: { email: 'owner@example.com' },
+      } as ApiKey);
+
+      await service.revoke(1, ApiKeyRevokedReason.PERMISSION_REMOVED, 99);
+
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        'notifications.queue.email.api-key-revoked',
+        [{ email: 'owner@example.com', additionalData: { reason: ApiKeyRevokedReason.PERMISSION_REMOVED } }],
+      );
+    });
+
+    it.each([ApiKeyRevokedReason.USER, ApiKeyRevokedReason.USER_REMOVED])(
+      'does not email the owner when revoked for reason %s',
+      async reason => {
+        apiKeyRepo.findOne.mockResolvedValue({
+          id: 1,
+          userId: 1,
+          revokedAt: null,
+          user: { email: 'owner@example.com' },
+        } as ApiKey);
+
+        await service.revoke(1, reason, 1);
+
+        expect(notificationsPublisher.publish).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('getStatus', () => {
+    it('returns hasKey: false when the user has no key', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.getStatus(1);
+
+      expect(result).toEqual({
+        hasKey: false,
+        keyId: null,
+        createdAt: null,
+        lastUsedAt: null,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      });
+    });
+
+    it("returns the key's details when one exists", async () => {
+      const createdAt = new Date('2025-01-01');
+      const lastUsedAt = new Date('2025-02-01');
+      apiKeyRepo.findOne.mockResolvedValue({
+        keyId: 'abc',
+        createdAt,
+        lastUsedAt,
+        revokedAt: null,
+        revokedReason: null,
+      } as ApiKey);
+
+      const result = await service.getStatus(1);
+
+      expect(result).toEqual({
+        hasKey: true,
+        keyId: 'abc',
+        createdAt,
+        lastUsedAt,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      });
+    });
+  });
+
+  describe('getStatuses', () => {
+    it('returns an empty map without querying when given no user ids', async () => {
+      const result = await service.getStatuses([]);
+
+      expect(result.size).toBe(0);
+      expect(apiKeyRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('returns a status for every requested id, hasKey: false for those without a key', async () => {
+      apiKeyRepo.find.mockResolvedValue([
+        { userId: 1, keyId: 'abc', createdAt: new Date(), lastUsedAt: null, revokedAt: null, revokedReason: null } as ApiKey,
+      ]);
+
+      const result = await service.getStatuses([1, 2]);
+
+      expect(result.get(1)).toMatchObject({ hasKey: true, keyId: 'abc' });
+      expect(result.get(2)).toMatchObject({ hasKey: false, keyId: null });
+    });
+  });
+
   describe('validateApiKey', () => {
+    it('returns null for a key that does not match the expected format', async () => {
+      const result = await service.validateApiKey('not-a-valid-key');
+
+      expect(result).toBeNull();
+      expect(apiKeyRepo.findOne).not.toHaveBeenCalled();
+    });
+
+    it('returns null when no key with the given keyId exists', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+
+      const result = await service.validateApiKey(`tt_${'a'.repeat(24)}_secret`);
+
+      expect(result).toBeNull();
+    });
+
+    it('records an auth failure and returns null when the secret does not match', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: 'deadbeef',
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_wrong-secret`, '9.9.9.9');
+
+      expect(result).toBeNull();
+      expect(apiKeyEventRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          apiKeyId: 1,
+          userId: 1,
+          performedBy: null,
+          eventType: ApiKeyEventType.AUTH_FAILED,
+          ipAddress: '9.9.9.9',
+        }),
+      );
+      expect(apiKeyEventRepo.save).toHaveBeenCalled();
+      expect(apiKeyRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('returns null when the user is neither admin nor report-eligible', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        lastUsedAt: null,
+        revokedAt: null,
+        user: { admin: false, canViewReports: false },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      const result = await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+
+      expect(result).toBeNull();
+      expect(apiKeyRepo.update).not.toHaveBeenCalled();
+    });
+
     it('still authenticates a key idle past idleExpiryDays but not yet swept', async () => {
       const apiKey = {
         id: 1,
@@ -136,6 +420,85 @@ describe('ApiKeysService', () => {
 
       expect(result).toBeNull();
       expect(apiKeyRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('touches lastUsedAt/lastUsedIp on first use', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        lastUsedAt: null,
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      await service.validateApiKey(`tt_${apiKey.keyId}_secret`, '1.1.1.1');
+
+      expect(apiKeyRepo.update).toHaveBeenCalledWith(
+        1,
+        expect.objectContaining({ lastUsedIp: '1.1.1.1' }),
+      );
+    });
+
+    it('does not touch lastUsedAt again within the update throttle window', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        lastUsedAt: new Date(),
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+
+      expect(apiKeyRepo.update).not.toHaveBeenCalled();
+    });
+
+    it('touches lastUsedAt again once the throttle window has elapsed', async () => {
+      const apiKey = {
+        id: 1,
+        userId: 1,
+        keyId: 'a'.repeat(24),
+        secretHash: '',
+        lastUsedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as unknown as ApiKey;
+      apiKeyRepo.findOne.mockResolvedValue(apiKey);
+      jest.spyOn(service as any, 'secretMatches').mockReturnValue(true);
+
+      await service.validateApiKey(`tt_${apiKey.keyId}_secret`);
+
+      expect(apiKeyRepo.update).toHaveBeenCalled();
+    });
+
+    it('authenticates against the real secret hash end-to-end, without mocking secretMatches', async () => {
+      apiKeyRepo.findOne.mockResolvedValue(null);
+      const created = await service.create({ id: 1, admin: false, canViewReports: true } as User);
+
+      const issued = (dataSource.manager.save as jest.Mock).mock.calls
+        .map(([entity]) => entity)
+        .find(entity => entity && 'secretHash' in entity);
+      apiKeyRepo.findOne.mockResolvedValue({
+        ...issued,
+        revokedAt: null,
+        user: { admin: false, canViewReports: true },
+      } as ApiKey);
+
+      const result = await service.validateApiKey(created.key);
+      expect(result).toEqual({ admin: false, canViewReports: true });
+
+      const wrongResult = await service.validateApiKey(
+        `tt_${created.keyId}_${'0'.repeat(43)}`,
+      );
+      expect(wrongResult).toBeNull();
     });
   });
 
@@ -183,6 +546,40 @@ describe('ApiKeysService', () => {
         [
           {
             email: 'stale@example.com',
+            additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays: 180 },
+          },
+        ],
+      );
+    });
+
+    it('revokes and emails every claimed key when multiple keys are stale at once', async () => {
+      buildQueryBuilder([
+        { id: 1, userId: 2 },
+        { id: 3, userId: 4 },
+      ]);
+      apiKeyRepo.find.mockResolvedValue([
+        { id: 1, userId: 2, user: { email: 'first@example.com' } } as ApiKey,
+        { id: 3, userId: 4, user: { email: 'second@example.com' } } as ApiKey,
+      ]);
+
+      await service.revokeStaleKeys();
+
+      expect(apiKeyRepo.find).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { id: In([1, 3]) } }),
+      );
+      expect(dataSource.manager.save).toHaveBeenCalledWith([
+        expect.objectContaining({ apiKeyId: 1, userId: 2 }),
+        expect.objectContaining({ apiKeyId: 3, userId: 4 }),
+      ]);
+      expect(notificationsPublisher.publish).toHaveBeenCalledWith(
+        'notifications.queue.email.api-key-revoked',
+        [
+          {
+            email: 'first@example.com',
+            additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays: 180 },
+          },
+          {
+            email: 'second@example.com',
             additionalData: { reason: ApiKeyRevokedReason.INACTIVITY, idleExpiryDays: 180 },
           },
         ],
