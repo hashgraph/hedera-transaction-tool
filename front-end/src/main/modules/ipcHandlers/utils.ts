@@ -146,15 +146,15 @@ export default () => {
     }
   });
 
-  ipcMain.on(createChannelName('openExternal'), (_e, url: unknown) => {
+  ipcMain.on(createChannelName('openExternal'), async (_e, url: unknown) => {
     if (typeof url !== 'string') return;
 
     try {
       const parsedUrl = new URL(url);
       if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return;
-      void shell.openExternal(parsedUrl.href);
+      await shell.openExternal(parsedUrl.href);
     } catch {
-      // Ignore malformed URLs from the renderer.
+      // Ignore malformed URLs and launch failures
     }
   });
 
