@@ -353,47 +353,47 @@ export class TransactionPage extends BasePage {
   }
 
   async clickOnCreateAccountTransaction() {
-    await this.click(this.createAccountSublinkSelector);
+    await this.clickWithRetryOnDetach(this.createAccountSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnDeleteAccountTransaction() {
-    await this.click(this.deleteAccountSublinkSelector);
+    await this.clickWithRetryOnDetach(this.deleteAccountSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnUpdateAccountTransaction() {
-    await this.click(this.updateAccountSublinkSelector);
+    await this.clickWithRetryOnDetach(this.updateAccountSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnApproveAllowanceTransaction() {
-    await this.click(this.allowanceSublinkSelector);
+    await this.clickWithRetryOnDetach(this.allowanceSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnTransferTokensTransaction() {
-    await this.click(this.transferTokensSublinkSelector);
+    await this.clickWithRetryOnDetach(this.transferTokensSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnFileCreateTransaction() {
-    await this.click(this.createFileSublinkSelector);
+    await this.clickWithRetryOnDetach(this.createFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnReadCreateTransaction() {
-    await this.click(this.readFileSublinkSelector);
+    await this.clickWithRetryOnDetach(this.readFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnUpdateFileSublink() {
-    await this.click(this.updateFileSublinkSelector);
+    await this.clickWithRetryOnDetach(this.updateFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
   async clickOnAppendFileSublink() {
-    await this.click(this.appendFileSublinkSelector);
+    await this.clickWithRetryOnDetach(this.appendFileSublinkSelector);
     await this.logPayerOnFirstCreateTransactionScreen();
   }
 
