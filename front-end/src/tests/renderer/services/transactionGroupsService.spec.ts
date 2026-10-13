@@ -14,6 +14,7 @@ import { updateGroup } from '@renderer/services/transactionGroupsService';
 function storeItem(overrides: Partial<StoreGroupItem> = {}): StoreGroupItem {
   return {
     transactionBytes: new Uint8Array([1, 2, 3]),
+    baselineBytes: null,
     type: 'Transfer',
     seq: '0',
     keyList: [],

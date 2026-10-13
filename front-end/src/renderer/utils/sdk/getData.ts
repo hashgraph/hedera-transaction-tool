@@ -456,7 +456,7 @@ export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteD
 
 const transactionHandlers = new Map<
   new (...args: any[]) => Transaction,
-  (transaction: Transaction) => Record<string, any>
+  (transaction: Transaction, baseline: Transaction | null) => Record<string, any>
 >([
   [
     AccountCreateTransaction,
@@ -599,14 +599,14 @@ const transactionHandlers = new Map<
   ],
 ]);
 
-export function getAllData(transaction: Transaction) {
+export function getAllData(transaction: Transaction, baseline: Transaction | null) {
   const handler = transactionHandlers.get(
     transaction.constructor as new (...args: any[]) => ExtendedTransactionData & Transaction,
   );
   if (!handler) {
     throw new Error('Unsupported transaction type');
   }
-  return handler(transaction);
+  return handler(transaction, baseline);
 }
 
 export function hasStartTimestampChanged(
@@ -629,9 +629,9 @@ export function hasStartTimestampChanged(
     (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
 }
 
-export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {
-  const t1Data = getAllData(t1);
-  const t2Data = getAllData(t2);
+export function transactionsDataMatch(t1: Transaction, t2: Transaction, baseline: Transaction | null): boolean {
+  const t1Data = getAllData(t1, baseline);
+  const t2Data = getAllData(t2, baseline);
 
   clearComparisonFields(t1Data);
   clearComparisonFields(t2Data);
