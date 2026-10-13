@@ -43,7 +43,6 @@ const useWebsocketConnection = defineStore(
     async function setup() {
       if (!isUserLoggedIn(user.personal)) return;
 
-      const newSockets: typeof sockets.value = {};
       const serverUrls = user.organizations.map(o => o.serverUrl);
 
       for (const serverUrl of serverUrls) {
@@ -63,7 +62,6 @@ const useWebsocketConnection = defineStore(
             ? getLocalWebsocketPath(serverUrl)
             : serverUrl;
           const socket = connect(serverUrl, url);
-          newSockets[serverUrl] = socket;
           if (socket.connected) {
             orgConnection.setConnectionStatus(serverUrl, 'connected');
           }
@@ -76,7 +74,6 @@ const useWebsocketConnection = defineStore(
         }
       }
 
-      sockets.value = newSockets;
     }
 
     function connect(serverUrl: string, url: string) {
@@ -92,9 +89,7 @@ const useWebsocketConnection = defineStore(
       if (socket) {
         //@ts-expect-error - auth is missing in typings
         if (socket.auth?.token !== `bearer ${authToken}`) {
-          socket.off();
-          socket.disconnect();
-          connectionStates.value[serverUrl] = 'disconnected';
+          disconnect(serverUrl);
         } else {
           if (socket.connected) {
             connectionStates.value[serverUrl] = 'connected';
@@ -122,6 +117,7 @@ const useWebsocketConnection = defineStore(
         transports: ['websocket', 'polling'],
         withCredentials: true,
       });
+      sockets.value[serverUrl] = newSocket;
 
       listenConnection(newSocket, url, serverUrl);
 
@@ -188,7 +184,7 @@ const useWebsocketConnection = defineStore(
           active: socket?.active,
           error,
           serverUrl,
-          willRetry: socket?.active === true,
+          willRetry: socket?.active,
         });
 
         if (isVersionError(error.message)) {
@@ -224,7 +220,7 @@ const useWebsocketConnection = defineStore(
           connected: socket?.connected,
           reason,
           serverUrl,
-          willReconnect: socket?.active === true,
+          willReconnect: socket?.active,
         });
 
         if (socket?.active) {

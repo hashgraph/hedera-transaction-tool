@@ -10,13 +10,10 @@ import {
   getPrivateKey,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import {
-  getTransactionGroupById,
-  type IGroup,
-} from '@renderer/services/organization';
+import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
-import { saveFileToPath, showSaveDialog } from '@renderer/services/electronUtilsService.ts';
+import { exportFilesWithDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
 import { AppCache } from '@renderer/caches/AppCache.ts';
@@ -94,21 +91,18 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
       const zipBaseName = `${group.description.substring(0, 25) || 'transaction-group'}`;
 
       // Save the ZIP file to disk
-      const { filePath, canceled } = await showSaveDialog(
+      const exported = await exportFilesWithDialog(
+        [{ data: zipContent }],
         `${zipBaseName}.zip`,
         'Export transaction group',
         'Export',
         [{ name: 'Transaction Tool v1 ZIP archive', extensions: ['zip'] }],
         'Select the file to export the transaction group to:',
       );
-      if (canceled || !filePath) {
-        return null;
+
+      if (exported) {
+        toastManager.success('Transaction exported successfully');
       }
-
-      // write the zip file to disk
-      await saveFileToPath(zipContent, filePath);
-
-      toastManager.success('Transaction exported successfully');
     } catch {
       toastManager.error('Transactions not exported');
     } finally {

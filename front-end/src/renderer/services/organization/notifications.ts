@@ -1,4 +1,8 @@
-import type { INotificationReceiver, IUpdateNotificationReceiver } from '@shared/interfaces';
+import type {
+  INotificationReceiver,
+  IUpdateNotificationReceiver,
+  PaginatedResourceDto,
+} from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
 import { createLogger } from '@renderer/utils/logger';
@@ -29,9 +33,9 @@ export const getAllInAppNotifications = async (
           filterQuery = filterQuery += `&filter=isRead:eq:false`;
         }
 
-        const { data } = await axiosWithCredentials.get(
-          `${organizationServerUrl}/${controller}?${paginationQuery}&${filterQuery}`,
-        );
+        const { data } = await axiosWithCredentials.get<
+          PaginatedResourceDto<INotificationReceiver>
+        >(`${organizationServerUrl}/${controller}?${paginationQuery}&${filterQuery}`);
         const totalItems = data.totalItems;
 
         notifications.push(...data.items);
@@ -54,7 +58,10 @@ export const updateNotifications = async (
       const batchSize = 500;
       for (let i = 0; i < notificationsToUpdate.length; i += batchSize) {
         const batch = notificationsToUpdate.slice(i, i + batchSize);
-        await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}`, batch);
+        await axiosWithCredentials.patch<IUpdateNotificationReceiver[], void>(
+          `${organizationServerUrl}/${controller}`,
+          batch,
+        );
       }
     } catch (error) {
       logger.error('Failed to update notifications', { error });

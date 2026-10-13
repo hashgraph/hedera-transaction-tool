@@ -54,7 +54,7 @@ function setNext(next: Handler) {
   nextHandler.value = next;
 }
 
-function handle(req: Processable) {
+async function handle(req: Processable): Promise<void> {
   reset();
 
   request.value = req;

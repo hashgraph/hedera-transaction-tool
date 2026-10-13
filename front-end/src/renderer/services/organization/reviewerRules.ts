@@ -6,12 +6,15 @@ import type {
 } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import type { AxiosResponse } from 'axios';
 
 const controller = 'reviewer-groups/rules';
 
 export const getReviewerRules = (organizationServerUrl: string): Promise<IReviewerRule[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
+    const response: AxiosResponse<IReviewerRule[]> = await axiosWithCredentials.get(
+      `${organizationServerUrl}/${controller}`,
+    );
     return response.data;
   }, 'Failed to get reviewer rules');
 
@@ -20,7 +23,7 @@ export const getReviewerRuleChanges = (
   id: number,
 ): Promise<IRuleChangeRecord[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(
+    const response: AxiosResponse<IRuleChangeRecord[]> = await axiosWithCredentials.get(
       `${organizationServerUrl}/${controller}/${id}/changes`,
     );
     return response.data;

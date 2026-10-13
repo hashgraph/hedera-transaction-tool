@@ -148,8 +148,7 @@ vi.mock('@renderer/services/keyPairService', () => ({
 }));
 
 vi.mock('@renderer/services/electronUtilsService.ts', () => ({
-  saveFileToPath: vi.fn(),
-  showSaveDialog: vi.fn(),
+  exportFilesWithDialog: vi.fn(),
 }));
 
 vi.mock('@renderer/utils', () => ({

@@ -8,18 +8,18 @@ import SignTransactionFileModal from '@renderer/components/ExternalSigning/SignT
 
 const mocks = vi.hoisted(() => ({
   toastError: vi.fn(),
-  writeTransactionFile: vi.fn(),
+  exportTransactionFile: vi.fn(),
   signTransaction: vi.fn(),
   readTransactionFile: vi.fn(),
   filterItems: vi.fn(),
   collectMissingSignerKeys: vi.fn(),
   loggerError: vi.fn(),
   loggerDebug: vi.fn(),
+  currentNetwork: 'testnet',
 }));
 
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
-  readTransactionFile: mocks.readTransactionFile,
-  writeTransactionFile: mocks.writeTransactionFile,
+  exportTransactionFile: mocks.exportTransactionFile,
 }));
 
 vi.mock('@renderer/utils/transactionFileSigning.ts', () => ({
@@ -45,7 +45,11 @@ vi.mock('@renderer/stores/storeUser.ts', () => ({
 
 vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => ({
-    getMirrorNodeREST: () => 'https://mirror.testnet.hedera.com',
+    network: mocks.currentNetwork,
+    getMirrorNodeREST: (network: string) => `https://${network}`,
+    isCurrentNetwork: (network: string) =>
+      network.replace(/^https?:\/\//, '').replace(/\/$/, '') ===
+      mocks.currentNetwork.replace(/^https?:\/\//, '').replace(/\/$/, ''),
   }),
 }));
 
@@ -81,7 +85,7 @@ vi.mock('@renderer/utils', () => ({
 const ORIGINAL_HEX = '001122';
 const SIGNED_HEX = 'aabbcc';
 
-const ITEM = { transactionBytes: ORIGINAL_HEX };
+const ITEM = { transactionBytes: ORIGINAL_HEX, name: 'Transaction', description: '', creatorEmail: '' };
 const FILE = { network: 'testnet', items: [ITEM] };
 
 /* ── Mount helper ────────────────────────────────────────────────────────── */
@@ -98,10 +102,11 @@ const AppButtonStub = {
   template: '<button v-bind="$attrs" type="submit"><slot /></button>',
 };
 
-function mountModal() {
+function mountModal(file = FILE) {
   return mount(SignTransactionFileModal, {
     props: {
-      filePath: '/path/to/file.json',
+      suggestedName: 'original.tx2',
+      initialTransactionFile: file,
       show: true,
       'onUpdate:show': vi.fn(),
     },
@@ -121,10 +126,10 @@ function mountModal() {
 describe('SignTransactionFileModal – handleSignAll', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.readTransactionFile.mockResolvedValue(FILE);
+    mocks.currentNetwork = 'testnet';
     mocks.filterItems.mockResolvedValue({ needSigning: [ITEM], fullySigned: [] });
     mocks.collectMissingSignerKeys.mockResolvedValue(['pubkey1']);
-    mocks.writeTransactionFile.mockResolvedValue(undefined);
+    mocks.exportTransactionFile.mockResolvedValue(true);
   });
 
   test('shows error toast, does not write file, and does not show success modal when signing fails', async () => {
@@ -139,7 +144,7 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     expect(mocks.toastError).toHaveBeenCalledWith(
       'Decryption failed Please delete the private key and re-add it. For more help, contact your administrator.',
     );
-    expect(mocks.writeTransactionFile).not.toHaveBeenCalled();
+    expect(mocks.exportTransactionFile).not.toHaveBeenCalled();
     expect(mocks.loggerError).toHaveBeenCalledWith(
       'Failed to sign transaction file entry',
       expect.objectContaining({ error: expect.any(Error) }),
@@ -159,26 +164,38 @@ describe('SignTransactionFileModal – handleSignAll', () => {
 
     expect(mocks.toastError).not.toHaveBeenCalled();
     // File must be written with the updated (signed) bytes, not the original ones
-    expect(mocks.writeTransactionFile).toHaveBeenCalledTimes(1);
-    expect(mocks.writeTransactionFile).toHaveBeenCalledWith(
+    expect(mocks.exportTransactionFile).toHaveBeenCalledTimes(1);
+    expect(mocks.exportTransactionFile).toHaveBeenCalledWith(
       expect.objectContaining({
         items: [expect.objectContaining({ transactionBytes: SIGNED_HEX })],
       }),
-      '/path/to/file.json',
+      'original.tx2',
     );
     // Success modal must appear
     expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(true);
   });
 
+  test('does not show success when the user cancels the save dialog', async () => {
+    mocks.signTransaction.mockResolvedValue(new Uint8Array([0xde, 0xad]));
+    mocks.exportTransactionFile.mockResolvedValue(false);
+
+    const wrapper = mountModal();
+    await flushPromises();
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.exportTransactionFile).toHaveBeenCalledTimes(1);
+    expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(false);
+  });
+
   test('stops at first failure and does not sign subsequent items', async () => {
-    const item2 = { transactionBytes: 'ccddee' };
+    const item2 = { transactionBytes: 'ccddee', name: 'Second', description: '', creatorEmail: '' };
     const fileWith2Items = { network: 'testnet', items: [ITEM, item2] };
 
-    mocks.readTransactionFile.mockResolvedValue(fileWith2Items);
     mocks.filterItems.mockResolvedValue({ needSigning: [ITEM, item2], fullySigned: [] });
     mocks.signTransaction.mockRejectedValue(new Error('Decryption failed'));
 
-    const wrapper = mountModal();
+    const wrapper = mountModal(fileWith2Items);
     await flushPromises();
 
     await wrapper.find('form').trigger('submit');
@@ -186,6 +203,54 @@ describe('SignTransactionFileModal – handleSignAll', () => {
 
     // signTransaction attempted only once — loop exited on first failure
     expect(mocks.signTransaction).toHaveBeenCalledTimes(1);
-    expect(mocks.writeTransactionFile).not.toHaveBeenCalled();
+    expect(mocks.exportTransactionFile).not.toHaveBeenCalled();
+  });
+
+  test('blocks signing and asks the user to switch networks when they differ', async () => {
+    mocks.currentNetwork = 'mainnet';
+    const wrapper = mountModal();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain('This file is for Testnet');
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain('Switch to Testnet in Settings');
+    expect(wrapper.find('[data-testid="button-close-network-mismatch"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="button-confirm-network"]').exists()).toBe(false);
+  });
+
+  test('rejects a custom mirror endpoint from the file unless it matches Settings', async () => {
+    const wrapper = mountModal({
+      network: 'mirror.attacker.example',
+      items: [ITEM],
+    });
+    await flushPromises();
+
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalledWith('Unknown network in transaction file.');
+    expect(wrapper.find('[data-testid="button-close-network-mismatch"]').exists()).toBe(false);
+  });
+
+  test('reports an HTTP transaction-file endpoint as requiring HTTPS', async () => {
+    mountModal({ network: 'http://mainnet.example', items: [ITEM] });
+    await flushPromises();
+
+    expect(mocks.filterItems).not.toHaveBeenCalled();
+    expect(mocks.toastError).toHaveBeenCalledWith('Unknown network in transaction file.');
+  });
+
+  test('uses the exact custom mirror endpoint already configured in Settings', async () => {
+    mocks.currentNetwork = 'custom.mirror.example/v1';
+    mountModal({
+      network: 'https://custom.mirror.example/v1/',
+      items: [ITEM],
+    });
+    await flushPromises();
+
+    expect(mocks.filterItems).toHaveBeenCalledWith(
+      [ITEM],
+      ['pubkey1'],
+      'https://custom.mirror.example/v1',
+      expect.anything(),
+    );
   });
 });

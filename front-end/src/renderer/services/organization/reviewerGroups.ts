@@ -8,12 +8,15 @@ import type {
 } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
+import type { AxiosResponse } from 'axios';
 
 const controller = 'reviewer-groups';
 
 export const getReviewerGroups = (organizationServerUrl: string): Promise<IReviewerGroupSummary[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}`);
+    const response: AxiosResponse<IReviewerGroupSummary[]> = await axiosWithCredentials.get(
+      `${organizationServerUrl}/${controller}`,
+    );
     return response.data;
   }, 'Failed to get reviewer groups');
 
@@ -22,7 +25,9 @@ export const getReviewerGroup = (
   id: number,
 ): Promise<IReviewerGroupDetail> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(`${organizationServerUrl}/${controller}/${id}`);
+    const response: AxiosResponse<IReviewerGroupDetail> = await axiosWithCredentials.get(
+      `${organizationServerUrl}/${controller}/${id}`,
+    );
     return response.data;
   }, 'Failed to get reviewer group');
 
@@ -31,7 +36,7 @@ export const getReviewerGroupChanges = (
   id: number,
 ): Promise<IGroupChangeRecord[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(
+    const response: AxiosResponse<IGroupChangeRecord[]> = await axiosWithCredentials.get(
       `${organizationServerUrl}/${controller}/${id}/changes`,
     );
     return response.data;
@@ -73,6 +78,9 @@ export const updateReviewerGroup = (
   dto: IUpdateReviewerGroupRequest,
 ): Promise<IGroupChangeRecord> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.patch(`${organizationServerUrl}/${controller}/${id}`, dto);
+    const response: AxiosResponse<IGroupChangeRecord> = await axiosWithCredentials.patch(
+      `${organizationServerUrl}/${controller}/${id}`,
+      dto,
+    );
     return response.data;
   }, 'Failed to update reviewer group');

@@ -12,7 +12,7 @@ export const getUserKeys = async (
   organizationUserId: number,
 ): Promise<IUserKey[]> =>
   commonRequestHandler(async () => {
-    const response = await axiosWithCredentials.get(
+    const response = await axiosWithCredentials.get<IUserKey[]>(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}`,
     );
 
@@ -53,7 +53,7 @@ export const updateKey = async (
   index?: number,
 ) =>
   commonRequestHandler(async () => {
-    await axiosWithCredentials.patch(
+    await axiosWithCredentials.patch<{mnemonicHash: string, index?: number}, void>(
       `${organizationServerUrl}/${controller[0]}/${organizationUserId}/${controller[1]}/${keyId}`,
       {
         mnemonicHash,

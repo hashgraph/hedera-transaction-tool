@@ -1,9 +1,10 @@
 <script lang="ts" setup>
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import { ref, watch } from 'vue';
 import type { TransactionFile, TransactionFileItem } from '@shared/interfaces';
-import { readTransactionFile, writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { exportTransactionFile } from '@renderer/services/transactionFileService.ts';
 import {
   collectMissingSignerKeys,
   filterTransactionFileItemsToBeSigned,
@@ -18,10 +19,12 @@ import TransactionBrowser from '@renderer/components/ExternalSigning/Transaction
 import { ToastManager } from '@renderer/utils/ToastManager';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { createLogger } from '@renderer/utils/logger';
+import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
 
 /* Props */
 const props = defineProps<{
-  filePath: string | null;
+  suggestedName: string | null;
+  initialTransactionFile: TransactionFile | null;
 }>();
 
 /* Models */
@@ -37,6 +40,7 @@ const toastManager = ToastManager.inject();
 /* Injected */
 const appCache = AppCache.inject();
 const logger = createLogger('renderer.externalSigning.signTransactionFile');
+const commonNetworks = new Set<string>(Object.values(CommonNetwork));
 
 /* State */
 const transactionFile = ref<TransactionFile | null>(null);
@@ -44,6 +48,32 @@ const itemsToBeSigned = ref<TransactionFileItem[]>([]);
 const itemsFullySigned = ref<TransactionFileItem[]>([]);
 const itemsSignable = ref<TransactionFileItem[]>([]);
 const showSuccessModal = ref(false);
+const isAuditing = ref(false);
+const networkLabel = (networkName: string) =>
+  CommonNetworkNames[networkName as keyof typeof CommonNetworkNames] ?? networkName;
+
+async function auditFile() {
+  if (!transactionFile.value) return;
+  isAuditing.value = true;
+  try {
+    const mirrorNodeLink = network.getMirrorNodeREST(network.network);
+    const status = await filterTransactionFileItemsToBeSigned(
+      transactionFile.value.items,
+      user.publicKeys,
+      mirrorNodeLink,
+      appCache,
+    );
+    itemsToBeSigned.value = status.needSigning;
+    itemsFullySigned.value = status.fullySigned;
+    itemsSignable.value = status.needSigning.concat(status.fullySigned);
+  } catch (error) {
+    logger.error('Failed to analyze transactions in file', { error });
+    toastManager.error('Failed to analyze transactions. Try again later.');
+    show.value = false;
+  } finally {
+    isAuditing.value = false;
+  }
+}
 
 /* Handlers */
 async function handleSignAll() {
@@ -66,7 +96,7 @@ async function handleSignAll() {
         const missingSignerKeys = await collectMissingSignerKeys(
           sdkTransaction,
           user.publicKeys,
-          network.getMirrorNodeREST(transactionFile.value.network),
+          network.getMirrorNodeREST(network.network),
           appCache,
         );
 
@@ -104,7 +134,8 @@ async function handleSignAll() {
     }
 
     try {
-      await writeTransactionFile(updatedFile, props.filePath!);
+      const exported = await exportTransactionFile(updatedFile, props.suggestedName!);
+      if (!exported) return;
       showSuccessModal.value = true;
     } catch (error) {
       logger.error('Failed to update transaction file', { error });
@@ -117,31 +148,43 @@ async function handleSignAll() {
 watch(
   show,
   async () => {
-    if (show.value && props.filePath) {
+    if (show.value && props.suggestedName && props.initialTransactionFile) {
+      transactionFile.value = null;
+      isAuditing.value = false;
+      itemsToBeSigned.value = [];
+      itemsFullySigned.value = [];
+      itemsSignable.value = [];
       try {
-        transactionFile.value = await readTransactionFile(props.filePath);
-
-        const status = await filterTransactionFileItemsToBeSigned(
-          transactionFile.value.items,
-          user.publicKeys,
-          network.getMirrorNodeREST(transactionFile.value.network),
-          appCache,
-        );
-
-        itemsToBeSigned.value = status.needSigning;
-        itemsFullySigned.value = status.fullySigned;
-        itemsSignable.value = status.needSigning.concat(status.fullySigned);
+        transactionFile.value = props.initialTransactionFile;
+        if (
+          !network.isCurrentNetwork(transactionFile.value.network) &&
+          !commonNetworks.has(transactionFile.value.network)
+        ) {
+          throw new Error('Transaction file uses an unknown network');
+        }
+        if (network.isCurrentNetwork(transactionFile.value.network)) {
+          await auditFile();
+        }
       } catch (error) {
-        logger.error('Failed to read transaction file', {
+        logger.error('Invalid transaction file', {
           error,
         });
-        toastManager.error('Failed to read file');
+        const validationMessage = error instanceof Error ? error.message : '';
+        toastManager.error(
+          validationMessage.includes('HTTPS is required')
+            ? 'Transaction file network must use HTTPS.'
+            : validationMessage === 'Transaction file uses an unknown network'
+              ? 'Unknown network in transaction file.'
+              : 'Invalid transaction file',
+        );
         transactionFile.value = null;
+        isAuditing.value = false;
         itemsToBeSigned.value = [];
         show.value = false;
       }
     } else {
       transactionFile.value = null;
+      isAuditing.value = false;
       itemsToBeSigned.value = [];
       show.value = false;
     }
@@ -151,13 +194,53 @@ watch(
 </script>
 
 <template>
-  <template v-if="itemsSignable.length > 0">
+  <AppModal
+    v-if="transactionFile && !network.isCurrentNetwork(transactionFile.network)"
+    v-model:show="show"
+    class="modal-fit-content"
+  >
+    <form class="p-5" @submit.prevent="show = false">
+      <div>
+        <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
+      </div>
+
+      <div class="text-center">
+        <AppCustomIcon :name="'error'" style="height: 80px" />
+      </div>
+
+      <h3 class="text-center text-title text-bold mt-4">Network mismatch</h3>
+
+      <div class="text-center text-secondary mt-4">
+        <p>
+          This file is for {{ networkLabel(transactionFile.network) }}, but the app is currently set
+          to {{ networkLabel(network.network) }}.
+        </p>
+        <p>You cannot sign this file while the app is using a different network.</p>
+        <p>Switch to {{ networkLabel(transactionFile.network) }} in Settings, then try again.</p>
+      </div>
+
+      <div class="d-grid mt-5">
+        <AppButton color="primary" data-testid="button-close-network-mismatch" type="submit">
+          Close
+        </AppButton>
+      </div>
+    </form>
+  </AppModal>
+
+  <AppModal v-else-if="isAuditing" v-model:show="show" class="medium-modal">
+    <div class="p-5 d-flex justify-content-center"><AppLoader /></div>
+  </AppModal>
+
+  <template v-else-if="itemsSignable.length > 0">
     <AppModal v-model:show="show" class="full-screen-modal">
       <div class="p-5">
         <div class="d-flex align-items-center">
           <i class="bi bi-x-lg cursor-pointer me-5" @click="show = false" />
         </div>
         <form class="h-100" @submit.prevent="handleSignAll">
+          <p class="text-center text-secondary">
+            Signing transactions for network: {{ networkLabel(network.network) }}
+          </p>
           <h1 class="text-title text-semi-bold text-center mb-5">
             <template v-if="itemsToBeSigned.length === 0 && itemsFullySigned.length === 1">
               You have already signed this transaction
@@ -171,10 +254,7 @@ watch(
             <template v-else> You have {{ itemsToBeSigned.length }} transactions to sign </template>
           </h1>
           <div class="d-flex justify-content-end mb-5">
-            <AppButton
-              :disabled="itemsToBeSigned.length === 0"
-              color="primary"
-              type="submit"
+            <AppButton :disabled="itemsToBeSigned.length === 0" color="primary" type="submit"
               >Sign and Update File
             </AppButton>
           </div>
@@ -193,14 +273,14 @@ watch(
           <AppCustomIcon :name="'success'" style="height: 80px" />
         </div>
 
-        <h3 class="text-center text-title text-bold mt-4">Transaction file updated</h3>
+        <h3 class="text-center text-title text-bold mt-4">Transaction file saved</h3>
 
         <div class="text-center text-secondary mt-4">
           You have successfully signed {{ itemsToBeSigned.length }}
           {{ itemsToBeSigned.length > 1 ? 'transactions' : 'transaction' }}.
         </div>
         <div class="text-center text-small text-muted mt-4">
-          You may now send the file back to the person who sent it to you.
+          You may now send that file back to the person who sent it to you.
         </div>
 
         <div class="d-grid mt-5">
@@ -211,7 +291,7 @@ watch(
   </template>
 
   <template v-else>
-    <AppModal v-if="transactionFile" v-model:show="show" class="medium-modal">
+    <AppModal v-if="transactionFile && !isAuditing" v-model:show="show" class="medium-modal">
       <div class="p-5">
         <div class="d-flex align-items-center mb-5">
           <i class="bi bi-x-lg cursor-pointer" @click.prevent="show = false"></i>
@@ -219,11 +299,7 @@ watch(
         <div class="text-center">
           <AppCustomIcon :name="'error'" style="height: 80px" />
         </div>
-        <h3
-          class="text-center text-title text-bold mt-4"
-        >
-          No transaction to sign.
-        </h3>
+        <h3 class="text-center text-title text-bold mt-4">No transaction to sign.</h3>
         <div
           v-if="transactionFile && transactionFile.items.length > 0"
           class="text-center text-secondary mt-4"

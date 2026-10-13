@@ -7,7 +7,7 @@ import {
   type IGroupItem,
 } from '@renderer/services/organization/transactionGroup';
 import { axiosWithCredentials } from '@renderer/utils';
-import { AxiosError } from 'axios';
+import { AxiosError, type AxiosResponse } from 'axios';
 
 vi.mock('@renderer/utils', () => ({
   axiosWithCredentials: {
@@ -57,7 +57,7 @@ describe('transactionGroup service', () => {
       },
     };
 
-    vi.mocked(axiosWithCredentials.patch).mockResolvedValueOnce({ data: payload });
+    vi.mocked(axiosWithCredentials.patch).mockResolvedValueOnce({ data: payload } as AxiosResponse);
 
     await expect(cancelTransactionGroup(serverUrl, groupId, groupItems)).resolves.toEqual(payload);
     expect(axiosWithCredentials.patch).toHaveBeenCalledWith(

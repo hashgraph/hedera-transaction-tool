@@ -241,6 +241,10 @@ const useUserStore = defineStore('user', () => {
     return organizationTokens.value[organizationId || selectedOrganization.value?.id || ''] || null;
   };
 
+  const clearJwtToken = (organizationId: string): void => {
+    organizationTokens.value[organizationId] = null;
+  };
+
   /* AccountSetup */
   const setAccountSetupStarted = (value: boolean) => {
     accountSetupStarted.value = value;
@@ -283,6 +287,7 @@ const useUserStore = defineStore('user', () => {
     deleteOrganization,
     getJwtToken,
     getPassword,
+    clearJwtToken,
     login,
     logout,
     refetchAccounts,

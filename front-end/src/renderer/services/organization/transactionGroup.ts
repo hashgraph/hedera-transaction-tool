@@ -82,7 +82,7 @@ export const cancelTransactionGroup = async (
 ): Promise<CancelGroupResult> => {
   return commonRequestHandler(async () => {
     try {
-      const { data } = await axiosWithCredentials.patch<CancelGroupResult>(
+      const { data } = await axiosWithCredentials.patch<undefined, CancelGroupResult>(
         `${serverUrl}/transaction-groups/${groupId}/cancel`,
         undefined,
         { withCredentials: true },

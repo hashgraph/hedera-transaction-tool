@@ -1,155 +1,135 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as fsp from 'fs/promises';
-import { readTransactionFile, writeTransactionFile } from '@main/utils/transactionFile';
+import { exportTransactionFile, importTransactionFile } from '@main/utils/transactionFile';
+import { showTransactionOpenDialog, showTransactionSaveDialog } from '@main/modules/ipcHandlers/utils';
 import type { TransactionFile } from '@shared/interfaces';
 
 vi.mock('fs/promises');
+vi.mock('@main/modules/ipcHandlers/utils', () => ({
+  showTransactionOpenDialog: vi.fn(),
+  showTransactionSaveDialog: vi.fn(),
+}));
+vi.mock('@main/services/localUser/importV1', () => ({ filterForImportV1: vi.fn() }));
+import { filterForImportV1 } from '@main/services/localUser/importV1';
 
-const fileItems = [
-  {
-    name: 'Transaction 1',
-    description: 'First Create File transaction',
-    transactionBytes:
-      '0a88012a85010a80010a150a0808f7f2fdcc06100012070800100018ea0718001206080010001803188084af5f220308b401320e4372656174652066696c652074788a0144120b088d8f90cf061080fbb45e1a240a221220e88d731ad218447874d7470b797cac989d23107b4da129441665625cd5269ab022046e756c6c420946696c65206d656d6f1200',
-    creatorEmail: 'simon.vienot@icloud.com',
-  },
-  {
-    name: 'Transaction 2',
-    description: 'Second Create File transaction',
-    transactionBytes:
-      '0a88012a85010a80010a150a0808f7cff8cc06100012070800100018ea0718001206080010001803188084af5f220308b401320e4372656174652066696c652074788a0144120b088d8f90cf061080fbb45e1a240a221220e88d731ad218447874d7470b797cac989d23107b4da129441665625cd5269ab022046e756c6c420946696c65206d656d6f1200',
-    creatorEmail: 'simon.vienot@icloud.com',
-  },
-  {
-    name: 'Transaction 3',
-    description: 'Third Create File transaction',
-    transactionBytes:
-      '0a88012a85010a80010a150a0808f7acf3cc06100012070800100018ea0718001206080010001803188084af5f220308b401320e4372656174652066696c652074788a0144120b088d8f90cf061080fbb45e1a240a221220e88d731ad218447874d7470b797cac989d23107b4da129441665625cd5269ab022046e756c6c420946696c65206d656d6f1200',
-    creatorEmail: 'simon.vienot@icloud.com',
-  },
-];
-
-const emptyTransactionFile: TransactionFile = {
-  network: 'mainnet',
-  items: [],
-};
-
-const singleTransactionFile: TransactionFile = {
-  network: 'local-node',
-  items: [fileItems[0]],
-};
-
-const multipleTransactionFile: TransactionFile = {
-  network: 'local-node',
-  items: fileItems,
-};
+const transactionFile: TransactionFile = { network: 'testnet', items: [] };
 
 describe('transactionFile utils', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  beforeEach(() => vi.clearAllMocks());
+
+  it('reads only a tx2 path returned by the main-process open dialog', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(transactionFile));
+
+    const selected = await importTransactionFile(true);
+    expect(fsp.readFile).toHaveBeenCalledWith('/chosen/file.tx2', { encoding: 'utf8' });
+    expect(selected).toMatchObject({ kind: 'tx2', suggestedName: 'file.tx2', transactionFile });
   });
 
-  afterEach(() => {
-    vi.restoreAllMocks();
+  it('returns cancellation without reading a file', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: true, filePaths: [] });
+    await expect(importTransactionFile()).resolves.toBeNull();
+    expect(fsp.readFile).not.toHaveBeenCalled();
   });
 
-  describe('readTransactionFile', () => {
-    it('should read and parse a transaction file successfully', async () => {
-      const mockFilePath = '/path/to/transaction.json';
-      const mockTransactionFile = singleTransactionFile;
+  it('propagates file-read errors for the dialog-selected path', async () => {
+    const readError = new Error('EACCES: permission denied');
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockRejectedValue(readError);
 
-      vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(mockTransactionFile));
+    await expect(importTransactionFile(true)).rejects.toThrow(readError);
+    expect(fsp.readFile).toHaveBeenCalledWith('/chosen/file.tx2', { encoding: 'utf8' });
+  });
 
-      const result = await readTransactionFile(mockFilePath);
+  it('rejects invalid JSON in the dialog-selected file', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue('{not valid json');
 
-      expect(fsp.readFile).toHaveBeenCalledWith(mockFilePath, { encoding: 'utf8' });
-      expect(result).toEqual(mockTransactionFile);
-    });
+    await expect(importTransactionFile(true)).rejects.toThrow(SyntaxError);
+  });
 
-    it('should handle empty items array', async () => {
-      const mockFilePath = '/path/to/empty-transaction.json';
-      const mockTransactionFile = emptyTransactionFile;
+  it('accepts a custom network identifier without an explicit insecure scheme', async () => {
+    const customNetworkFile: TransactionFile = { network: 'custom.mirror.example/v1', items: [] };
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(customNetworkFile));
 
-      vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(mockTransactionFile));
-
-      const result = await readTransactionFile(mockFilePath);
-
-      expect(result).toEqual(mockTransactionFile);
-      expect(result.items).toHaveLength(0);
-    });
-
-    it('should handle multiple transaction items', async () => {
-      const mockFilePath = '/path/to/multi-transaction.json';
-
-      vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify(multipleTransactionFile));
-
-      const result = await readTransactionFile(mockFilePath);
-
-      expect(result.items).toHaveLength(3);
-      expect(result.items[0].name).toBe(fileItems[0].name);
-      expect(result.items[1].name).toBe(fileItems[1].name);
-      expect(result.items[2].name).toBe(fileItems[2].name);
-    });
-
-    it('should throw error when file cannot be read', async () => {
-      const mockFilePath = '/path/to/nonexistent.json';
-      const mockError = new Error('ENOENT: no such file or directory');
-
-      vi.mocked(fsp.readFile).mockRejectedValue(mockError);
-
-      await expect(readTransactionFile(mockFilePath)).rejects.toThrow(mockError);
-    });
-
-    it('should throw error when JSON is invalid', async () => {
-      const mockFilePath = '/path/to/invalid.json';
-      const invalidJson = '{invalid json content';
-
-      vi.mocked(fsp.readFile).mockResolvedValue(invalidJson);
-
-      await expect(readTransactionFile(mockFilePath)).rejects.toThrow();
+    await expect(importTransactionFile(true)).resolves.toMatchObject({
+      kind: 'tx2',
+      transactionFile: customNetworkFile,
     });
   });
 
-  describe('writeTransactionFile', () => {
-    it('should write transaction file successfully', async () => {
-      const mockFilePath = '/path/to/output.json';
-      const mockTransactionFile = singleTransactionFile;
+  it('rejects transaction files with an unsupported top-level shape', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ network: 'testnet' }));
 
-      vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file: unsupported format or network',
+    );
+  });
 
-      await writeTransactionFile(mockTransactionFile, mockFilePath);
+  it('rejects transaction files with a non-HTTPS network URL', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(JSON.stringify({ network: 'http://mirror.example', items: [] }));
 
-      expect(fsp.writeFile).toHaveBeenCalledWith(
-        mockFilePath,
-        JSON.stringify(mockTransactionFile),
-        { encoding: 'utf8' },
-      );
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file network: HTTPS is required',
+    );
+  });
+
+  it.each([
+    null,
+    { transactionBytes: 1, name: 'name', description: 'description', creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 1, description: 'description', creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 'name', description: 1, creatorEmail: 'email' },
+    { transactionBytes: 'bytes', name: 'name', description: 'description', creatorEmail: 1 },
+  ])('rejects malformed transaction items (%#)', async invalidItem => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/chosen/file.tx2'] });
+    vi.mocked(fsp.readFile).mockResolvedValue(
+      JSON.stringify({ network: 'testnet', items: [invalidItem] }),
+    );
+
+    await expect(importTransactionFile(true)).rejects.toThrow(
+      'Invalid transaction file: invalid transaction item',
+    );
+  });
+
+  it('parses a selected ZIP in the main process and returns no filesystem path', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/home/user/import.zip'] });
+    vi.mocked(filterForImportV1).mockResolvedValue({
+      candidates: [{
+        filePath: '/home/user/import.zip', transactionId: '0.0.123@1.2', transactionBytes: 'abcd', nodeSignatures: {},
+      }],
+      ignoredPaths: ['/home/user/import.zip'],
     });
 
-    it('should write multiple transaction items', async () => {
-      const mockFilePath = '/path/to/multi-output.json';
-      const mockTransactionFile = multipleTransactionFile;
-      vi.mocked(fsp.writeFile).mockResolvedValue(undefined);
-
-      await writeTransactionFile(mockTransactionFile, mockFilePath);
-
-      const expectedJson = JSON.stringify(mockTransactionFile);
-      expect(fsp.writeFile).toHaveBeenCalledWith(mockFilePath, expectedJson, { encoding: 'utf8' });
+    await expect(importTransactionFile()).resolves.toEqual({
+      kind: 'zip',
+      importResult: {
+        candidates: [{
+          filePath: 'import.zip', transactionId: '0.0.123@1.2', transactionBytes: 'abcd', nodeSignatures: {},
+        }],
+        ignoredPaths: ['import.zip'],
+      },
     });
+    expect(filterForImportV1).toHaveBeenCalledWith(['/home/user/import.zip']);
+  });
 
-    it('should throw error when file cannot be written', async () => {
-      const mockFilePath = '/invalid/path/output.json';
-      const mockTransactionFile: TransactionFile = {
-        network: 'testnet',
-        items: [],
-      };
-      const mockError = new Error('EACCES: permission denied');
+  it('rejects a file outside the supported transaction extensions', async () => {
+    vi.mocked(showTransactionOpenDialog).mockResolvedValue({ canceled: false, filePaths: ['/home/user/.bashrc'] });
+    await expect(importTransactionFile(true)).rejects.toThrow('Unsupported transaction file extension');
+    expect(fsp.readFile).not.toHaveBeenCalled();
+  });
 
-      vi.mocked(fsp.writeFile).mockRejectedValue(mockError);
+  it('exports only to the path returned by the main-process save dialog', async () => {
+    vi.mocked(showTransactionSaveDialog).mockResolvedValue({ canceled: false, filePath: '/chosen/export.tx2' });
+    await expect(exportTransactionFile(transactionFile, 'export.tx2')).resolves.toBe(true);
+    expect(fsp.writeFile).toHaveBeenCalledWith('/chosen/export.tx2', JSON.stringify(transactionFile), { encoding: 'utf8' });
+  });
 
-      await expect(writeTransactionFile(mockTransactionFile, mockFilePath)).rejects.toThrow(
-        mockError,
-      );
-    });
+  it('does not write when export is cancelled', async () => {
+    vi.mocked(showTransactionSaveDialog).mockResolvedValue({ canceled: true, filePath: '' });
+    await expect(exportTransactionFile(transactionFile, 'export.tx2')).resolves.toBe(false);
+    expect(fsp.writeFile).not.toHaveBeenCalled();
   });
 });

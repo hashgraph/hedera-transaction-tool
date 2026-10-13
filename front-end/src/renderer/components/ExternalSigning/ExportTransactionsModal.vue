@@ -3,7 +3,7 @@ import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import { ref } from 'vue';
 import type { ITransaction, TransactionFile } from '@shared/interfaces';
-import { writeTransactionFile } from '@renderer/services/transactionFileService.ts';
+import { exportTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { flattenNodeCollection } from '@renderer/utils/transactionFileSigning.ts';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -14,7 +14,6 @@ import {
   hexToUint8Array,
   isLoggedInOrganization,
 } from '@renderer/utils';
-import { showSaveDialog } from '@renderer/services/electronUtilsService.ts';
 import {
   type ITransactionNode,
   TransactionNodeCollection,
@@ -89,21 +88,15 @@ async function handleExport() {
   if (collectionTransactions.length > 0) {
     const baseName = generateTransactionExportFileName(collectionTransactions[0]);
 
-    // Show the save dialog to the user, allowing them to choose the file name and location
-    const { filePath, canceled } = await showSaveDialog(
-      `${baseName}.tx2`,
-      'Export transactions',
-      'Export',
-      [],
-      'Export transaction',
+    const tx2Content: TransactionFile = generateTransactionV2ExportContent(
+      collectionTransactions,
+      network.network,
     );
-
-    if (!canceled) {
-      const tx2Content: TransactionFile = generateTransactionV2ExportContent(
-        collectionTransactions,
-        network.network,
-      );
-      await writeTransactionFile(tx2Content, filePath);
+    try {
+      await exportTransactionFile(tx2Content, `${baseName}.tx2`);
+    } catch (error) {
+      logger.error('Failed to export transactions', { error });
+      toastManager.error('Failed to export transactions');
     }
   }
 }

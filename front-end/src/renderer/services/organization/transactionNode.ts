@@ -18,24 +18,30 @@ export const getTransactionNodes = async (
   statusFilter: TransactionStatus[],
   transactionTypeFilter: BackEndTransactionType[],
 ): Promise<ITransactionNode[]> =>
-  commonRequestHandler(async () => {
-    type Params = {
-      collection: string;
-      network: string;
-      status?: string;
-      transactionType?: string;
-    };
-    const params: Params = { collection, network };
-    if (statusFilter.length > 0) {
-      params.status = `${statusFilter}`;
-    }
-    if (transactionTypeFilter.length > 0) {
-      params.transactionType = `${transactionTypeFilter}`;
-    }
-    const r = await axiosWithCredentials.get(`${serverUrl}/transaction-nodes`, { params });
+  commonRequestHandler(
+    async () => {
+      type Params = {
+        collection: string;
+        network: string;
+        status?: string;
+        transactionType?: string;
+      };
+      const params: Params = { collection, network };
+      if (statusFilter.length > 0) {
+        params.status = `${statusFilter}`;
+      }
+      if (transactionTypeFilter.length > 0) {
+        params.transactionType = `${transactionTypeFilter}`;
+      }
+      const r = await axiosWithCredentials.get<ITransactionNode[]>(
+        `${serverUrl}/transaction-nodes`,
+        {
+          params,
+        },
+      );
 
-    return r.data;
-  },
+      return r.data;
+    },
     TRANSACTION_NODE_DEFAULT_MESSAGE,
     SESSION_EXPIRED_MESSAGE,
     TRANSACTION_NODE_STATUS_MESSAGES,
