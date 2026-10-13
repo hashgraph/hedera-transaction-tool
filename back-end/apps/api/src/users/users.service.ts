@@ -40,7 +40,7 @@ export class UsersService {
 
     if (user) {
       if (!user.deletedAt) throw new UnprocessableEntityException('Email already exists.');
-      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: undefined });
+      return this.updateUser(user, { email, password, status: UserStatus.NEW, deletedAt: null });
     }
 
     user = this.repo.create({
