@@ -773,11 +773,7 @@ export function createRegisteredNodeUpdateTransaction(
   setTransactionCommonData(transaction, data);
 
   if (data.registeredNodeId) {
-    const newValue = Long.fromString(data.registeredNodeId);
-    const oldValue = baseline !== null ? baseline.registeredNodeId : null;
-    if (oldValue === null || !oldValue.equals(newValue)) {
-      transaction.setRegisteredNodeId(newValue);
-    }
+    transaction.setRegisteredNodeId(Long.fromString(data.registeredNodeId));
   }
 
   if (data.adminKey) {

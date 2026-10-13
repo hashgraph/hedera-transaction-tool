@@ -234,6 +234,7 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
+    :baseline="baseline"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
