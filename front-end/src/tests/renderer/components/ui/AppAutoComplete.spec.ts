@@ -1308,6 +1308,10 @@ describe('AppAutoComplete', () => {
     const input = wrapper.find('input');
     const el = input.element as HTMLInputElement;
     el.focus();
+    // Real setTimeout wait (not flushPromises, which uses setImmediate) — Node doesn't
+    // guarantee setImmediate runs after a 0ms setTimeout, so this flushes handleFocus's
+    // own deferred select() before it can race the spy installed below.
+    await new Promise(resolve => setTimeout(resolve, 0));
     await flushPromises();
     await input.trigger('keydown', { key: 'Escape' });
     await flushPromises();
