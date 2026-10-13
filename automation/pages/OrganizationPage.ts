@@ -1706,7 +1706,11 @@ export class OrganizationPage extends BasePage {
       this.signAllTransactionsButtonSelector,
       this.LONG_TIMEOUT * 2,
     );
-    await this.click(this.signAllTransactionsButtonSelector);
+    const visibleSignAllButton = this.window
+      .getByTestId(this.signAllTransactionsButtonSelector)
+      .filter({ visible: true })
+      .first();
+    await visibleSignAllButton.click();
   }
 
   private getConfirmGroupActionButtonSelector(modalTitle?: string) {

@@ -58,7 +58,9 @@ export class BlacklistService {
       return true;
     }
 
-    return payload.iat <= cutoffTimestamp;
+    // JWT `iat` is only precise to one second. A token minted after a password
+    // change in that same second must remain valid, so the cutoff is exclusive.
+    return payload.iat < cutoffTimestamp;
   }
 
   private getJwtExpirationSeconds(): number {

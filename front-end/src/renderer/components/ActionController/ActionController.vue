@@ -148,6 +148,7 @@ watch(showReport, () => {
     :close-on-click-outside="false"
     :close-on-escape="false"
     class="small-modal"
+    data-testid="action-progress-modal"
   >
     <div class="p-4">
       <div class="text-center">
