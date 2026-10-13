@@ -388,7 +388,6 @@ export class GroupPage extends BasePage {
       await this.clickOnDetailsGroupButton(0);
       if (signAll) {
         await this.clickOnSignAllButton();
-        await this.clickOnConfirmSignAllButton();
       } else {
         await this.clickOnTransactionDetailsButton(0);
 
@@ -430,10 +429,6 @@ export class GroupPage extends BasePage {
     await this.waitForElementToBeVisible(this.moreDropdownButtonSelector, this.VERY_LONG_TIMEOUT);
     await this.click(this.moreDropdownButtonSelector);
     await this.click(this.cancelAllButtonSelector);
-  }
-
-  async clickOnConfirmSignAllButton() {
-    await this.organizationPage.clickOnConfirmSignAllButton();
   }
 
   async clickOnConfirmCancelAllButton() {

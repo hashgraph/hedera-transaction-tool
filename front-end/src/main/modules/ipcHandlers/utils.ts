@@ -146,9 +146,17 @@ export default () => {
     }
   });
 
-  ipcMain.on(createChannelName('openExternal'), (_e, url: string) => shell.openExternal(url));
+  ipcMain.on(createChannelName('openExternal'), async (_e, url: unknown) => {
+    if (typeof url !== 'string') return;
 
-  ipcMain.on(createChannelName('openPath'), (_e, path: string) => shell.openPath(path));
+    try {
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') return;
+      await shell.openExternal(parsedUrl.href);
+    } catch {
+      // Ignore malformed URLs and launch failures
+    }
+  });
 
   ipcMain.handle(
     createChannelName('test', 'setDialogMockState'),

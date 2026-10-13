@@ -103,7 +103,6 @@ export class OrganizationPage extends BasePage {
   nextTransactionButtonSelector = 'button-next-org-transaction';
   cancelAddingOrganizationButtonSelector = 'button-cancel-adding-org';
   signAllTransactionsButtonSelector = 'button-sign-group';
-  confirmSignAllButtonSelector = 'button-sign-all-confirm';
   confirmCancelAllButtonSelector = 'button-cancel-all-confirm';
   confirmGroupActionButtonSelector = 'button-confirm-group-action';
   confirmCancelButtonSelector = 'button-cancel-transaction-confirm';
@@ -1724,45 +1723,6 @@ export class OrganizationPage extends BasePage {
 
   async clickOnConfirmGroupActionButton(modalTitle?: string) {
     await this.click(this.getConfirmGroupActionButtonSelector(modalTitle), null, this.LONG_TIMEOUT);
-  }
-
-  async clickOnConfirmSignAllButton() {
-    // SignAllController is mounted in more than one place
-    // Make sure getByTestId does not resolve the wrong instance -- i.e.hidden button
-    // from a hidden controller instance.
-    const visibleConfirmButton = this.window
-      .getByTestId(this.confirmSignAllButtonSelector)
-      .filter({ visible: true })
-      .first();
-    await visibleConfirmButton.waitFor({ state: 'visible', timeout: 10000 });
-    await visibleConfirmButton.click();
-    // AppModal.vue is always mounted (never v-if) and hardcodes
-    // data-testid="modal-confirm-transaction" on every instance, just toggling display:block/none
-    // per-instance. Confirming "Sign all" closes the confirm dialog immediately, then
-    // ActionController's Doherty-threshold delay (400ms) means the progress dialog - which stays
-    // open while a large batch (e.g. 100 transactions) signs, and shares the same testid - only
-    // appears ~400ms later. A single "nothing visible" check lands in that legitimate gap almost
-    // every time, regardless of batch size, so require it to hold for longer than 400ms across
-    // repeated checks before trusting it instead of resolving on the first observation.
-    const noneVisibleSelector = `[data-testid="${this.confirmTransactionModalSelector}"][style*="display: block"]`;
-    const deadline = Date.now() + this.VERY_LONG_TIMEOUT * 4;
-    let stableChecks = 0;
-    while (stableChecks < 3) {
-      const remaining = deadline - Date.now();
-      if (remaining <= 0) {
-        throw new Error(
-          'A modal sharing data-testid="modal-confirm-transaction" stayed visible after confirming Sign All',
-        );
-      }
-      await this.window.waitForFunction(
-        (selector: string) => document.querySelector(selector) === null,
-        noneVisibleSelector,
-        { timeout: remaining },
-      );
-      await this.window.waitForTimeout(this.SHORT_TIMEOUT);
-      const stillNone = (await this.window.locator(noneVisibleSelector).count()) === 0;
-      stableChecks = stillNone ? stableChecks + 1 : 0;
-    }
   }
 
   async clickOnConfirmCancelButton() {

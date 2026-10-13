@@ -160,7 +160,7 @@ describe('registerUtilsListeners', () => {
   });
 
   test('Should register handlers for each util', () => {
-    const eventListeners = ['setDockBounce', 'openExternal', 'openPath'];
+    const eventListeners = ['setDockBounce', 'openExternal'];
     const eventHandlers = [
       'hash',
       'compareHash',
@@ -179,12 +179,22 @@ describe('registerUtilsListeners', () => {
     expect(eventHandlers.every(util => getIPCHandler(`utils:${util}`))).toBe(true);
   });
 
-  test('Should call open external on util:openExternal', async () => {
-    const url = 'some-url.com';
-
+  test.each([
+    ['http://example.com', 'http://example.com/'],
+    ['https://example.com/path', 'https://example.com/path'],
+    ['HTTPS://EXAMPLE.COM/path', 'https://example.com/path'],
+  ])('Should open an HTTP(S) URL on util:openExternal: %s', async (url, normalizedUrl) => {
     await invokeIPCListener('utils:openExternal', url);
-    expect(shell.openExternal).toHaveBeenCalledWith(url);
+    expect(shell.openExternal).toHaveBeenCalledWith(normalizedUrl);
   });
+
+  test.each(['file:///tmp/evil', 'smb://server/share', 'custom:payload', 'not a URL'])(
+    'Should reject a non-HTTP(S) URL on util:openExternal: %s',
+    async url => {
+      await invokeIPCListener('utils:openExternal', url);
+      expect(shell.openExternal).not.toHaveBeenCalled();
+    },
+  );
 
   test('Should save file to a path in util:saveFile', async () => {
     const windows = [{}];

@@ -99,7 +99,6 @@ test.describe('Organization Group Tx tests @organization-advanced', () => {
     const secondTxId = (await groupPage.getTransactionTimestamp(1, 100)) ?? '';
     await groupPage.clickOnConfirmGroupTransactionButton();
     await groupPage.clickOnSignAllButton();
-    await groupPage.clickOnConfirmSignAllButton();
     await loginPage.waitForToastToDisappear();
     await transactionPage.clickOnTransactionsMenuButton();
     await organizationPage.logoutFromOrganization();

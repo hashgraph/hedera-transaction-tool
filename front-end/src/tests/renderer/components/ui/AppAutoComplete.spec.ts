@@ -1307,18 +1307,19 @@ describe('AppAutoComplete', () => {
     );
     const input = wrapper.find('input');
     const el = input.element as HTMLInputElement;
+    const selectSpy = vi.spyOn(el, 'select');
     el.focus();
     // Real setTimeout wait (not flushPromises, which uses setImmediate) — Node doesn't
     // guarantee setImmediate runs after a 0ms setTimeout, so this flushes handleFocus's
     // own deferred select() before it can race the spy installed below.
     await new Promise(resolve => setTimeout(resolve, 0));
+    selectSpy.mockClear();
     await flushPromises();
     await input.trigger('keydown', { key: 'Escape' });
     await flushPromises();
     const dropdownBefore = wrapper.find('.autocomplete-custom').element as HTMLElement;
     expect(dropdownBefore.style.visibility).toBe('hidden');
 
-    const selectSpy = vi.spyOn(el, 'select');
     await wrapper.find('.autocomplete-chevron').trigger('click');
     await flushPromises();
 

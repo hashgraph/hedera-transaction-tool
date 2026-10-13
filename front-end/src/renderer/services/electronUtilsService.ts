@@ -9,9 +9,6 @@ export const setDockBounce = (bounce: boolean = true) =>
 /* Open external URL */
 export const openExternal = (url: string) => window.electronAPI.local.utils.openExternal(url);
 
-/* Open path */
-export const openPath = (path: string) => window.electronAPI.local.utils.openPath(path);
-
 /* Hash data */
 export const hashData = async (data: string, pseudoSalt: boolean = false) =>
   commonIPCHandler(async () => {

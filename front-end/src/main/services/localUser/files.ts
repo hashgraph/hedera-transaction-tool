@@ -10,6 +10,8 @@ import { createLogger } from '@main/modules/logger';
 
 const logger = createLogger('main.localUser.files');
 
+const isValidHederaFileId = (fileId: string) => /^\d+\.\d+\.\d+$/.test(fileId);
+
 export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
   const prisma = getPrismaClient();
 
@@ -22,6 +24,10 @@ export const getFiles = async (findArgs: Prisma.HederaFileFindManyArgs) => {
 };
 
 export const addFile = async (file: Prisma.HederaFileUncheckedCreateInput) => {
+  if (!isValidHederaFileId(file.file_id)) {
+    throw new Error('Invalid Hedera file ID');
+  }
+
   const prisma = getPrismaClient();
 
   const alreadyAddedCount = await prisma.hederaFile.count({
@@ -128,6 +134,10 @@ export const showStoredFileInTemp = async (userId: string, fileId: string) => {
 };
 
 export const showContentInTemp = async (content: Buffer, fileId: string) => {
+  if (!isValidHederaFileId(fileId)) {
+    throw new Error('Invalid Hedera file ID');
+  }
+
   const filePath = path.join(app.getPath('temp'), 'electronHederaFiles', `${fileId}.txt`);
 
   try {
