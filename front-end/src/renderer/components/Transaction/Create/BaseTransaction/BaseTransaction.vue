@@ -16,7 +16,7 @@ import TransactionProcessor, {
 } from '@renderer/components/Transaction/TransactionProcessor';
 import type { CreateTransactionFunc } from '.';
 
-import { computed, onMounted, reactive, ref, toRaw, watch, type Ref } from 'vue';
+import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
   Hbar,
   KeyList,
@@ -55,11 +55,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
-const { createTransaction, preCreateAssert, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest, baseline } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void | Promise<boolean | void>;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
+  baseline?: Transaction | null;
 }>();
 
 /* Emits */
@@ -91,7 +92,6 @@ const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | nul
 const baseGroupHandlerRef = ref<InstanceType<typeof BaseGroupHandler> | null>(null);
 
 const name = ref('');
-const baseline: Ref<Transaction | null> = ref(null);
 const description = ref('');
 const submitManually = ref(false);
 const reminder = ref<number | null>(null);
@@ -152,7 +152,7 @@ const hasTransactionChanged = computed(() => {
       result = !transactionsDataMatch(
         initialTransaction.value as Transaction,
         transaction.value,
-        baseline.value,
+        baseline ?? null,
       );
     }
   } else {
@@ -181,7 +181,6 @@ const handleDraftLoaded = async (
   loadedDescription: string,
 ) => {
   initialTransaction.value = transaction;
-  baseline.value = loadedBaseline;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
 
@@ -318,11 +317,14 @@ function handleInputValidation(e: Event) {
 
 const saveDraft = async (): Promise<void> => {
   const draftId = route.query.draftId?.toString();
-  const transactionBytes = getTransactionBytes();
+  const transaction = createTransaction({ ...data } as TransactionCommonData);
+  const transactionBytes = transaction.toBytes();
+  const baselineBytes = baseline?.toBytes() ?? null;
   if (draftId) {
     // Draft exists => this is an update
     await updateDraft(draftId, {
       transactionBytes: transactionBytes.toString(),
+      baselineBytes: baselineBytes?.toString() ?? null,
       description: description.value,
     });
     isDraftSaved.value = true;
@@ -330,15 +332,10 @@ const saveDraft = async (): Promise<void> => {
   } else {
     // Draft does not exist yet => this is an add
     assertUserLoggedIn(user.personal);
-    await addDraft(user.personal.id, transactionBytes, description.value);
+    await addDraft(user.personal.id, transactionBytes, baselineBytes, description.value);
     isDraftSaved.value = true;
     toastManager.success('Draft saved');
   }
-};
-
-const getTransactionBytes = () => {
-  const transaction = createTransaction({ ...data } as TransactionCommonData);
-  return transaction.toBytes();
 };
 
 /* Functions */
@@ -485,6 +482,7 @@ defineExpose({
       @addToGroup="handleGroupAction('add', $event)"
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :baseline="baseline ?? null"
       :description="description || ''"
       :has-data-changed="hasDataChanged"
     />

@@ -20,6 +20,7 @@ export const getDraft = async (id: string): Promise<TransactionDraft> =>
 export const addDraft = async (
   userId: string,
   transactionBytes: Uint8Array,
+  baselineBytes: Uint8Array | null,
   description: string,
   details?: string,
 ): Promise<TransactionDraft> => {
@@ -28,6 +29,7 @@ export const addDraft = async (
     updated_at: new Date(),
     user_id: userId,
     transactionBytes: transactionBytes.toString(),
+    baselineBytes: baselineBytes?.toString() ?? null,
     type: getTransactionType(transactionBytes),
     description: description || '',
     details: details || null,
