@@ -21,6 +21,7 @@ import { createTransactionId } from '@renderer/utils/sdk';
 
 export interface GroupItem {
   transactionBytes: Uint8Array;
+  baselineBytes: Uint8Array | null;
   type: string;
   seq: string;
   groupId?: string;
@@ -113,9 +114,11 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       const draft = drafts.find(draft => draft.id == item.transaction_draft_id);
       if (draft?.transactionBytes) {
         const transaction = getTransactionFromBytes(draft.transactionBytes);
+        const baseline = draft.baselineBytes !== null ? getTransactionFromBytes(draft.baselineBytes) : null;
         groupItemsToAdd.push({
           rowKey: crypto.randomUUID(),
           transactionBytes: transaction.toBytes(),
+          baselineBytes: baseline?.toBytes() ?? null,
           type: draft?.type,
           groupId: id,
           seq: item.seq,
@@ -171,6 +174,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       groupItem = {
         ...groupItem,
         transactionBytes: transaction.toBytes(),
+        baselineBytes: groupItem.baselineBytes,
         validStart: uniqueValidStart,
       };
     }
@@ -202,6 +206,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       newGroupItem = {
         ...newGroupItem,
         transactionBytes: transaction.toBytes(),
+        baselineBytes: newGroupItem.baselineBytes,
         validStart: uniqueValidStart,
       };
     }
@@ -240,9 +245,11 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
     );
     const transaction = Transaction.fromBytes(baseItem.transactionBytes);
     transaction.setTransactionId(createTransactionId(baseItem.payerAccountId, newDate));
+    const baseline = baseItem.baselineBytes !== null ? Transaction.fromBytes(baseItem.baselineBytes) : null;
     const newItem: RenderedGroupItem = {
       rowKey: crypto.randomUUID(),
       transactionBytes: transaction.toBytes(),
+      baselineBytes: baseline?.toBytes() ?? null,
       type: baseItem.type,
       description: baseItem.description,
       // seq is assigned authoritatively by sortAndSyncGroupItems below.

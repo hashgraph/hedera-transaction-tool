@@ -144,8 +144,8 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           const rawAmount = rowInfo[1] ?? '';
           const normalized = rawAmount.replace(/,/g, '');
           if (
-            !/^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)$/.test(rawAmount)
-            || BigInt(normalized) <= 0n
+            !/^(?:[0-9]+|[0-9]{1,3}(?:,[0-9]{3})+)$/.test(rawAmount) ||
+            BigInt(normalized) <= 0n
           ) {
             toastManager.error(
               `Invalid amount on CSV line ${index + 1}. Enter a positive number of tinybars.`,
@@ -174,6 +174,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           }
           transactionGroup.addGroupItem({
             transactionBytes,
+            baselineBytes: null,
             type: 'Transfer Transaction',
             seq: transactionGroup.groupItems.length.toString(),
             keyList: keys,

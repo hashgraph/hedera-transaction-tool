@@ -58,6 +58,7 @@ function createGroupItem(overrides: Partial<RenderedGroupItem> = {}): RenderedGr
   return {
     rowKey: `test-row-key-${nextTestRowKey++}`,
     transactionBytes: new Uint8Array([1, 2, 3]),
+    baselineBytes: null,
     type: 'Transfer',
     seq: '0',
     keyList: [],
