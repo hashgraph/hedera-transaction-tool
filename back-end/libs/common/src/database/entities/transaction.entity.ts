@@ -146,6 +146,8 @@ export class Transaction {
   @CreateDateColumn()
   createdAt!: Date;
 
+  // Misnomer: also stamped on CANCELED/ARCHIVED/EXPIRED transitions, not just real execution.
+  // Rename (e.g. statusClosedAt) next time a breaking schema change is already in flight.
   @Column({ nullable: true })
   executedAt?: Date;
 

@@ -451,7 +451,7 @@ watch(
                     )
                   "
                 >
-                  <span>Executed At</span>
+                  <span>Processed At</span>
                   <i
                     v-if="localSort.field === 'executed_at'"
                     class="bi text-title"
