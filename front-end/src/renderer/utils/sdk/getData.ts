@@ -412,15 +412,26 @@ export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeD
   };
 }
 
-export function getRegisteredNodeUpdateData(transaction: Transaction): RegisteredNodeUpdateData {
+export function getRegisteredNodeUpdateData(
+  transaction: Transaction,
+  baseline: Transaction | null,
+): RegisteredNodeUpdateData {
   assertTransactionType(transaction, RegisteredNodeUpdateTransaction);
+  if (baseline !== null) {
+    assertTransactionType(baseline, RegisteredNodeUpdateTransaction);
+  }
 
-  const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
+  const registeredNodeId = transaction.registeredNodeId ?? baseline?.registeredNodeId ?? null;
+  const description = transaction.description ?? baseline?.description ?? null;
+  const adminKey = transaction.adminKey ?? baseline?.adminKey ?? null;
+  const serviceEndpoints = transaction.serviceEndpoints ?? [];
+
+  const endpoints = serviceEndpoints.map(getComponentRegisteredEndpoint);
 
   return {
-    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
-    description: transaction.description ?? '',
-    adminKey: transaction.adminKey ?? null,
+    registeredNodeId: registeredNodeId?.toString() ?? '',
+    description: description ?? '',
+    adminKey: adminKey ?? null,
     serviceEndpoints: endpoints,
   };
 }
@@ -568,9 +579,9 @@ const transactionHandlers = new Map<
 
   [
     RegisteredNodeUpdateTransaction,
-    tx => ({
+    (tx, bl) => ({
       ...getTransactionCommonData(tx),
-      ...getRegisteredNodeUpdateData(tx),
+      ...getRegisteredNodeUpdateData(tx, bl),
     }),
   ],
 
