@@ -443,7 +443,7 @@ describe('UsersService', () => {
     expect(userRepository.save).toHaveBeenCalledWith({
       ...userCopy,
       status: 'NEW',
-      deletedAt: undefined,
+      deletedAt: null,
     });
   });
 
