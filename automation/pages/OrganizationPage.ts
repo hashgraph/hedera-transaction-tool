@@ -227,6 +227,20 @@ export class OrganizationPage extends BasePage {
     await this.click(this.signInOrganizationButtonSelector);
   }
 
+  /**
+   * Waits for the login form to be fully replaced by the post-login UI.
+   * `fillInLoginDetailsAndClickSignIn` returns as soon as sign-in is clicked and is
+   * also used by negative-login tests where the form intentionally stays visible,
+   * so it can't wait for this itself - callers expecting a successful login must
+   * wait explicitly before interacting with post-login UI (e.g. the transactions
+   * menu), otherwise they race the app's post-login navigation.
+   */
+  async waitForOrganizationLoginToComplete() {
+    await expect(this.getElement(this.emailForOrganizationInputSelector)).toBeHidden({
+      timeout: this.VERY_LONG_TIMEOUT,
+    });
+  }
+
   async isOrganizationLoginFormVisible() {
     return await this.isElementVisible(this.emailForOrganizationInputSelector);
   }

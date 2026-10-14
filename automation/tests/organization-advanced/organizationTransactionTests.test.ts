@@ -312,6 +312,7 @@ test.describe('Organization Transaction status/signing tests @organization-advan
     await organizationPage.logoutFromOrganization();
     for (const user of organizationPage.users) {
       await organizationPage.fillInLoginDetailsAndClickSignIn(user.email, user.password);
+      await organizationPage.waitForOrganizationLoginToComplete();
       await transactionPage.clickOnTransactionsMenuButton();
       await organizationPage.clickOnHistoryTab();
       const historyDetails = await organizationPage.getHistoryTransactionDetails(txId ?? '');
@@ -327,5 +328,6 @@ test.describe('Organization Transaction status/signing tests @organization-advan
 
     const user0 = organizationPage.users[0];
     await organizationPage.fillInLoginDetailsAndClickSignIn(user0.email, user0.password);
+    await organizationPage.waitForOrganizationLoginToComplete();
   });
 });
