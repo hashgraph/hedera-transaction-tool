@@ -78,7 +78,7 @@ catalogs:
   # @nestjs/passport, @nestjs/config, @nestjs/swagger) — their version match
   # is coincidental.
   nestjs-core:
-    '@nestjs/common': &nestjsCore 11.1.28
+    '@nestjs/common': &nestjsCore 11.2.7
     '@nestjs/core': *nestjsCore
     '@nestjs/microservices': *nestjsCore
     '@nestjs/platform-express': *nestjsCore
@@ -95,72 +95,38 @@ catalogs:
 
   # vitest/* packages ship together and always share a version.
   vitest:
-    vitest: &vitestVersion 4.1.5
+    vitest: &vitestVersion 4.1.11
     '@vitest/coverage-v8': *vitestVersion
 
 overrides:
-  '@prisma/adapter-better-sqlite3>better-sqlite3': 'catalog:'
   "protobufjs@<8.0.0": "7.6.5"
   "protobufjs@>=8.0.0": "8.7.1"
-  "follow-redirects": "1.16.0"
-  "lodash": "4.18.1"
-  "handlebars": "4.7.9"
-  "js-cookie": "3.0.8"
-  "path-to-regexp@>=8.0.0": "8.4.2"
+  "handlebars": "4.7.10"
   "serialize-javascript": "7.0.5"
-  "shell-quote": "1.10.0"
-  "brace-expansion@<2.0.0": "1.1.18"
-  "brace-expansion@>=2.0.0 <3.0.0": "2.1.4"
-  "brace-expansion@>=3.0.0": "5.0.9"
-  "picomatch@>=4.0.0": "4.0.4"
-  "flatted": "3.4.2"
-  "socket.io-parser": "4.2.7"
-  "js-yaml": "5.2.2"
-  "hono": "4.12.27"
-  "@hono/node-server": "2.0.10"
-  "tmp": "0.2.7"
-  "@xmldom/xmldom": "0.8.15"
-  "ajv@>=8.0.0": "8.20.0"
-  "tar": "7.5.21"
-  "fast-uri": "3.1.6"
-  "browserslist": "4.28.7"
+  "shell-quote": "1.12.0"
+  "brace-expansion@<2.0.0": "1.1.21"
+  "brace-expansion@>=2.0.0 <3.0.0": "2.1.7"
+  "brace-expansion@>=3.0.0": "5.0.12"
+  "js-yaml": "5.4.3"
+  "fast-uri": "3.1.8"
   "diff@<5.2.2": "5.2.2"
   "diff@>=6.0.0": "8.0.3"
-  "@tootallnate/once@<2.0.1": "2.0.1"
-  "form-data": "4.0.6"
   "ws@>=8.0.0": "8.21.0"
-  "undici@>=7.0.0": "7.29.0"
-  "@grpc/grpc-js@<1.12.7": "1.12.7"
-  "qs@>=6.11.1": "6.16.0"
+  "undici@>=7.0.0": "7.30.0"
+  "@grpc/grpc-js@<1.13.6": "1.13.6"
   "uuid@<11.1.1": "11.1.1"
-  "@babel/core": "7.29.6"
-  "esbuild@>=0.27.3": "0.28.1"
-  "cache-manager@>=7.2.10": "7.2.9"
-  "@cacheable/utils@>=2.5.1": "2.5.0"
-  "cacheable@>=2.5.1": "2.5.0"
-  "@cacheable/memory@>=2.2.1": "2.2.0"
-  "@cacheable/node-cache@>=3.1.2": "3.1.1"
-  "@cacheable/net@>=2.1.1": "2.1.0"
-  "ecto@>=5.0.1": "5.0.0"
-  "keyv@6.0.0": "5.6.0"
-  "@keyv/redis@6.0.0": "5.1.6"
-  "@keyv/etcd@6.0.0": "2.1.1"
-  "@keyv/memcache@6.0.0": "2.0.2"
-  "@keyv/mongo@6.0.0": "3.1.0"
-  "@keyv/postgres@6.0.0": "2.2.3"
-  "@keyv/sqlite@6.0.0": "4.0.8"
-  "@keyv/valkey@6.0.0": "1.0.11"
   "flat-cache@6.1.24": "4.0.1"
-  "file-entry-cache@11.1.6": "8.0.0"
-  "cacheable-request@13.0.20": "13.0.19"
-  "postcss": "8.5.25"
-  "body-parser": "2.3.0"
-  "immutable": "5.1.8"
-  "find-my-way": "9.7.0"
-  "valibot": "1.4.2"
-  "baseline-browser-mapping": "2.11.8"
-  "undici@<7.0.0": "6.28.0"
-  "nanoid": "3.3.18"
+  "undici@<7.0.0": "6.29.0"
+  "proxy-addr": "2.0.8"
+  "deepmerge-ts": "8.0.2"
+  "engine.io": "6.6.11"
+  "fast-copy@>=3.0.0 <4.0.0": "3.1.0"
+  "fast-copy@>=4.0.0": "4.1.2"
+  "image-size": "2.0.4"
+  "multer": "2.4.0"
+  "mysql2": "3.24.5"
+  "source-map-js": "1.2.2"
+  "http-cache-semantics": "4.3.0"
 
 # Refuse to resolve packages published fewer than 3 days ago (4320 minutes)
 # This blocks supply-chain attacks that race to publish malicious versions.
