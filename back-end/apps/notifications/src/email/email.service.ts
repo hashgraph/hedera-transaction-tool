@@ -7,6 +7,7 @@ import { SendMailOptions } from 'nodemailer';
 import {
   EmailDto,
   findEmailSubject,
+  generateApiKeyRevokedMessage,
   generateEmailContent,
   generateResetPasswordMessage,
   generateUserRegisteredMessage,
@@ -64,6 +65,15 @@ export class EmailService implements OnModuleDestroy {
       'Password Reset Token',
       generateResetPasswordMessage,
       'password reset',
+    );
+  }
+
+  async processApiKeyRevokedNotifications(events: EmailDto[]) {
+    await this.sendTransactionalEmails(
+      events,
+      'Report API Key Revoked',
+      generateApiKeyRevokedMessage,
+      'api key revoked',
     );
   }
 

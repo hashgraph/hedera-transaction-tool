@@ -78,6 +78,7 @@ vi.mock('@renderer/utils/clientVersion.ts', () => ({
 
 vi.mock('@renderer/utils/dateTimeFormat.ts', () => ({
   formatDatePart: vi.fn(() => 'Jan 1, 2026'),
+  formatDateTime: vi.fn(() => 'Jan 1, 2026 12:00 PM'),
 }));
 
 vi.mock('@renderer/caches/mirrorNode/AccountByPublicKeyCache.ts', () => {
@@ -120,6 +121,7 @@ describe('ContactDetails.vue', () => {
       id: 20,
       email: 'member@example.com',
       admin: false,
+      canViewReports: false,
       status: 'NONE',
       keys: [],
       clients: [],
@@ -137,6 +139,7 @@ describe('ContactDetails.vue', () => {
 
   beforeEach(() => {
     mocks.userStore.selectedOrganization.admin = true;
+    mocks.userStore.selectedOrganization.userId = 10;
     mocks.contactsStore.contacts = [contact];
     mocks.contactsStore.fetch.mockReset();
     mocks.contactsStore.fetchUserKeys.mockResolvedValue(undefined);
@@ -213,5 +216,147 @@ describe('ContactDetails.vue', () => {
     expect(
       regularWrapper.find('[data-testid="button-elevate-to-admin-from-contact-list"]').exists(),
     ).toBe(false);
+  });
+
+  test('shows a toggleable switch for report API access on non-admin contacts', () => {
+    const wrapper = mountContactDetails();
+
+    const toggle = wrapper.find('[data-testid="switch-report-api-access"]');
+    expect(toggle.exists()).toBe(true);
+    expect(toggle.attributes('aria-label')).toBe('Report API access');
+  });
+
+  function mountWithContact(overrideContact: Contact) {
+    mocks.contactsStore.contacts = [overrideContact];
+    return mount(ContactDetails, {
+      props: {
+        contact: overrideContact,
+        linkedAccounts: [],
+      },
+      global: {
+        stubs: {
+          AppButton: { template: '<button><slot /></button>' },
+          AppInput: { template: '<input />' },
+          ContactDetailsAssociatedAccounts: { template: '<div />' },
+          ContactDetailsLinkedAccounts: { template: '<div />' },
+          RenamePublicKeyModal: { template: '<div />' },
+        },
+      },
+    });
+  }
+
+  test('shows key status but no toggle when the contact is an admin', () => {
+    const adminContact: Contact = {
+      ...contact,
+      user: {
+        ...contact.user,
+        admin: true,
+        canViewReports: true,
+        apiKeyStatus: {
+          hasKey: true,
+          keyId: 'key-id',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        },
+      },
+    };
+
+    const wrapper = mountWithContact(adminContact);
+
+    expect(wrapper.find('[data-testid="switch-report-api-access"]').exists()).toBe(false);
+    expect(wrapper.text()).toContain('Report API access');
+    expect(wrapper.find('[data-testid="p-contact-api-key-id"]').exists()).toBe(true);
+  });
+
+  test('does not show key details for a revoked key, even though the row still exists', () => {
+    const revokedContact: Contact = {
+      ...contact,
+      user: {
+        ...contact.user,
+        canViewReports: true,
+        apiKeyStatus: {
+          hasKey: true,
+          keyId: 'key-id',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: '2026-01-02T00:00:00.000Z',
+          revokedAt: '2026-01-03T00:00:00.000Z',
+          revokedReason: 'inactivity',
+          idleExpiryDays: 180,
+        },
+      },
+    };
+
+    const wrapper = mountWithContact(revokedContact);
+
+    expect(wrapper.find('[data-testid="p-contact-api-key-id"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="p-contact-api-key-revoked"]').exists()).toBe(true);
+  });
+
+  test('shows "no key created" when the contact has report access but has never generated a key', () => {
+    const neverGeneratedContact: Contact = {
+      ...contact,
+      user: {
+        ...contact.user,
+        canViewReports: true,
+        apiKeyStatus: {
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        },
+      },
+    };
+
+    const wrapper = mountWithContact(neverGeneratedContact);
+
+    expect(wrapper.find('[data-testid="p-contact-no-api-key"]').exists()).toBe(true);
+    expect(wrapper.find('[data-testid="p-contact-api-key-id"]').exists()).toBe(false);
+    expect(wrapper.find('[data-testid="p-contact-api-key-revoked"]').exists()).toBe(false);
+  });
+
+  test('shows "key status unavailable" when the contact has report access but no status was returned', () => {
+    const unavailableStatusContact: Contact = {
+      ...contact,
+      user: {
+        ...contact.user,
+        canViewReports: true,
+        apiKeyStatus: undefined,
+      },
+    };
+
+    const wrapper = mountWithContact(unavailableStatusContact);
+
+    expect(wrapper.find('[data-testid="p-contact-api-key-unavailable"]').exists()).toBe(true);
+  });
+
+  test('emits toggle-view-reports when the switch is toggled', async () => {
+    const wrapper = mountContactDetails();
+
+    await wrapper.find('input[data-testid="switch-report-api-access"]').setValue(true);
+
+    expect(wrapper.emitted('toggle-view-reports')).toHaveLength(1);
+  });
+
+  test('hides the report API access section entirely for non-admin viewers', () => {
+    mocks.userStore.selectedOrganization.admin = false;
+
+    const wrapper = mountContactDetails();
+
+    expect(wrapper.text()).not.toContain('Report API access');
+    expect(wrapper.find('[data-testid="switch-report-api-access"]').exists()).toBe(false);
+  });
+
+  test('hides the report API access section for the viewer\'s own contact row', () => {
+    mocks.userStore.selectedOrganization.userId = contact.user.id;
+
+    const wrapper = mountContactDetails();
+
+    expect(wrapper.text()).not.toContain('Report API access');
   });
 });

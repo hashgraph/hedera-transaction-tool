@@ -5,12 +5,16 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { User, Client } from '@entities';
 
+import { ApiKeysModule } from '../api-keys/api-keys.module';
+import { JwtOrApiKeyGuard } from '../guards';
+
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, Client]),
+    ApiKeysModule,
     JwtModule.registerAsync({
       imports: [], // imports is required, but it doesn't appear to require ConfigModule, maybe because it isGlobal?
       useFactory: (configService: ConfigService) => ({
@@ -23,7 +27,7 @@ import { UsersService } from './users.service';
     }),
   ],
   controllers: [UsersController],
-  providers: [UsersService],
+  providers: [UsersService, JwtOrApiKeyGuard],
   exports: [UsersService],
 })
 export class UsersModule {}

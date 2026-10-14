@@ -31,19 +31,24 @@ export function createJwtBlacklistGuard(extractJwt: (req: unknown) => string | n
 
       const request = context.switchToHttp().getRequest();
 
+      let jwt: string | null;
       try {
-        const jwt = extractJwt(request);
-        if (!jwt) {
+        jwt = extractJwt(request);
+      } catch {
+        jwt = null;
+      }
+
+      if (!jwt) {
+        // No token to check means nothing to blacklist - defer to the
+        // auth guard that follows this one in the chain to reject the request.
+        return true;
+      }
+
+      try {
+        if (await this.blacklistService.isTokenBlacklisted(jwt)) {
           throw new UnauthorizedException();
         }
-
-        const isBlacklisted = await this.blacklistService.isTokenBlacklisted(jwt);
-
-        if (isBlacklisted) {
-          throw new UnauthorizedException();
-        } else {
-          return true;
-        }
+        return true;
       } catch {
         throw new UnauthorizedException();
       }

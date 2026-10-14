@@ -1,11 +1,13 @@
 import { HttpException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ExecutionContext } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
 import { FrontendVersionGuard } from './frontend-version.guard';
 
 describe('FrontendVersionGuard', () => {
   let guard: FrontendVersionGuard;
   let configService: ConfigService;
+  let reflector: Reflector;
   let loggerWarnSpy: jest.SpyInstance;
   let loggerErrorSpy: jest.SpyInstance;
 
@@ -18,6 +20,8 @@ describe('FrontendVersionGuard', () => {
           clientIp: '127.0.0.1',
         }),
       }),
+      getHandler: () => ({}),
+      getClass: () => ({}),
     } as unknown as ExecutionContext;
   };
 
@@ -27,7 +31,11 @@ describe('FrontendVersionGuard', () => {
       get: jest.fn().mockReturnValue('1.0.0'),
     } as unknown as ConfigService;
 
-    guard = new FrontendVersionGuard(configService);
+    reflector = {
+      getAllAndOverride: jest.fn().mockReturnValue(false),
+    } as unknown as Reflector;
+
+    guard = new FrontendVersionGuard(configService, reflector);
 
     // Spy on logger methods to verify logging behavior
     loggerWarnSpy = jest.spyOn((guard as any).logger, 'warn').mockImplementation();
@@ -36,6 +44,50 @@ describe('FrontendVersionGuard', () => {
 
   afterEach(() => {
     jest.restoreAllMocks();
+  });
+
+  describe('API key exemption', () => {
+    it('skips the version check when the route allows API keys and a key header is present', () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      const context = createMockContext({ 'x-api-key': 'tt_anything' });
+
+      const result = guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it('does not validate the key itself - a junk key is enough to skip the check here', () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      const context = createMockContext({ 'x-api-key': 'tt_totally_bogus' });
+
+      const result = guard.canActivate(context);
+
+      expect(result).toBe(true);
+    });
+
+    it('enforces the version check when the route allows API keys but no key header is present', () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      const context = createMockContext({ 'x-frontend-version': '2.0.0' });
+
+      const result = guard.canActivate(context);
+
+      expect(result).toBe(true);
+      expect(reflector.getAllAndOverride).toHaveBeenCalled();
+    });
+
+    it('enforces the version check when a key header is present but the route does not allow API keys', () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(false);
+      const context = createMockContext({ 'x-api-key': 'tt_anything' });
+
+      expect(() => guard.canActivate(context)).toThrow(HttpException);
+    });
+
+    it('rejects a route that allows API keys when no version header and no key header are present', () => {
+      (reflector.getAllAndOverride as jest.Mock).mockReturnValue(true);
+      const context = createMockContext({});
+
+      expect(() => guard.canActivate(context)).toThrow(HttpException);
+    });
   });
 
   describe('Version validation', () => {
@@ -255,6 +307,8 @@ describe('FrontendVersionGuard', () => {
             clientIp: '192.168.1.100',
           }),
         }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
       } as unknown as ExecutionContext;
 
       try {
@@ -277,6 +331,8 @@ describe('FrontendVersionGuard', () => {
             // No clientIp property - will fallback to 'unknown'
           }),
         }),
+        getHandler: () => ({}),
+        getClass: () => ({}),
       } as unknown as ExecutionContext;
 
       try {

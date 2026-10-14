@@ -384,11 +384,10 @@ export const getConnectedOrganization = async (
   }
 
   try {
-    const { id, email, admin, passwordTemporary, secretHashes, userKeys } = await getUserState(
-      organization.serverUrl,
-    );
+    const { id, email, admin, canViewReports, passwordTemporary, secretHashes, userKeys } =
+      await getUserState(organization.serverUrl);
 
-    const connectedOrganization: ConnectedOrganization = {
+    return {
       ...organization,
       isLoading: false,
       isServerActive: true,
@@ -396,11 +395,11 @@ export const getConnectedOrganization = async (
       userId: id,
       email,
       admin,
+      canViewReports,
       isPasswordTemporary: passwordTemporary,
       secretHashes,
       userKeys,
     };
-    return connectedOrganization;
   } catch {
     return activeLoginRequired;
   }
@@ -410,13 +409,13 @@ export const refetchUserState = async (organization: ConnectedOrganization | nul
   if (!organization || !isLoggedInOrganization(organization)) return organization;
 
   try {
-    const { id, email, admin, userKeys, secretHashes, passwordTemporary } = await getUserState(
-      organization.serverUrl,
-    );
+    const { id, email, admin, canViewReports, userKeys, secretHashes, passwordTemporary } =
+      await getUserState(organization.serverUrl);
 
     organization.userId = id;
     organization.email = email;
     organization.admin = admin;
+    organization.canViewReports = canViewReports;
     organization.userKeys = userKeys;
     organization.secretHashes = secretHashes;
     organization.isPasswordTemporary = passwordTemporary;

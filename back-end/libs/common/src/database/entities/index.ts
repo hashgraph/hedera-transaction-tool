@@ -20,3 +20,5 @@ export * from './rule-change-record.entity';
 export * from './transaction-entity.entity';
 export * from './transaction-reviewer-list.entity';
 export * from './transaction-reviewer-list-member.entity';
+export * from './api-key.entity';
+export * from './api-key-event.entity';

@@ -5,10 +5,12 @@ import { FindOptionsWhere, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
-import { Client, User, UserKey } from '@entities';
+import { ApiKeyRevokedReason, Client, User, UserKey } from '@entities';
 
 import * as bcrypt from 'bcryptjs';
 import * as argon2 from 'argon2';
+
+import { ApiKeysService, ApiKeyStatus } from '../api-keys/api-keys.service';
 
 import { UsersService } from './users.service';
 
@@ -27,6 +29,7 @@ describe('UsersService', () => {
   const clientRepository = mockDeep<Repository<Client>>();
   const configService = mockDeep<ConfigService>();
   const blacklistService = mockDeep<BlacklistService>();
+  const apiKeysService = mockDeep<ApiKeysService>();
 
   const email = 'some@email.com';
   const password = 'password';
@@ -56,12 +59,26 @@ describe('UsersService', () => {
           provide: BlacklistService,
           useValue: blacklistService,
         },
+        {
+          provide: ApiKeysService,
+          useValue: apiKeysService,
+        },
       ],
     }).compile();
 
     service = module.get<UsersService>(UsersService);
 
     jest.resetAllMocks();
+    apiKeysService.getStatuses.mockResolvedValue(new Map());
+    apiKeysService.getStatus.mockResolvedValue({
+      hasKey: false,
+      keyId: null,
+      createdAt: null,
+      lastUsedAt: null,
+      revokedAt: null,
+      revokedReason: null,
+      idleExpiryDays: 180,
+    });
   });
 
   it('should be defined', () => {
@@ -107,7 +124,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(true);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(userRepository.find).toHaveBeenCalledWith({ relations: { clients: true } });
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', '1.1.0');
@@ -122,7 +139,7 @@ describe('UsersService', () => {
       userRepository.find.mockResolvedValue(usersWithClients as User[]);
       configService.get.mockReturnValue('1.1.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(0);
@@ -132,7 +149,7 @@ describe('UsersService', () => {
     it('should not load clients relation for non-admin users', async () => {
       userRepository.find.mockResolvedValue([user] as User[]);
 
-      const result = await service.getUsers(nonAdminUser);
+      const result = await service.getUsers(nonAdminUser, false);
 
       expect(userRepository.find).toHaveBeenCalledWith();
       expect(result[0]).not.toHaveProperty('updateAvailable');
@@ -143,7 +160,7 @@ describe('UsersService', () => {
       userRepository.find.mockResolvedValue(usersWithUndefinedClients as unknown as User[]);
       configService.get.mockReturnValue('1.1.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toBeDefined();
       expect(result[0].clients).toHaveLength(0);
@@ -166,7 +183,7 @@ describe('UsersService', () => {
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toHaveLength(2);
       expect(result[0].clients[0]).toHaveProperty('updateAvailable', true);
@@ -188,7 +205,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue('1.1.0');
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result[0].clients).toHaveLength(2);
       expect(result[0]).toHaveProperty('updateAvailable', false);
@@ -207,7 +224,7 @@ describe('UsersService', () => {
       configService.get.mockReturnValue(undefined);
       jest.mocked(isUpdateAvailable).mockReturnValue(false);
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(isUpdateAvailable).toHaveBeenCalledWith('1.0.0', undefined);
       expect(result[0]).toHaveProperty('updateAvailable', false);
@@ -238,11 +255,69 @@ describe('UsersService', () => {
         .mocked(isUpdateAvailable)
         .mockImplementation((clientVersion: string) => clientVersion === '1.0.0');
 
-      const result = await service.getUsers(adminUser);
+      const result = await service.getUsers(adminUser, false);
 
       expect(result).toHaveLength(2);
       expect(result[0]).toHaveProperty('updateAvailable', true);
       expect(result[1]).toHaveProperty('updateAvailable', false);
+    });
+
+    it('should attach apiKeyStatus for each user when requester is admin', async () => {
+      const usersWithClients = [
+        { ...user, id: 1, clients: [] },
+        { ...user, id: 2, clients: [] },
+      ];
+      userRepository.find.mockResolvedValue(usersWithClients as User[]);
+      configService.get.mockReturnValue('1.1.0');
+      const statusForOne = {
+        hasKey: true,
+        keyId: 'abc',
+        createdAt: new Date(),
+        lastUsedAt: new Date(),
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      };
+      const statusForTwo = {
+        hasKey: false,
+        keyId: null,
+        createdAt: null,
+        lastUsedAt: null,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      };
+      apiKeysService.getStatuses.mockResolvedValue(
+        new Map<number, ApiKeyStatus>([
+          [1, statusForOne],
+          [2, statusForTwo],
+        ]),
+      );
+
+      const result = await service.getUsers(adminUser, false);
+
+      expect(apiKeysService.getStatuses).toHaveBeenCalledWith([1, 2]);
+      expect(result[0]).toHaveProperty('apiKeyStatus', statusForOne);
+      expect(result[1]).toHaveProperty('apiKeyStatus', statusForTwo);
+    });
+
+    it('should not attach apiKeyStatus for non-admin requesters', async () => {
+      userRepository.find.mockResolvedValue([user] as User[]);
+
+      const result = await service.getUsers(nonAdminUser, false);
+
+      expect(apiKeysService.getStatuses).not.toHaveBeenCalled();
+      expect(result[0]).not.toHaveProperty('apiKeyStatus');
+    });
+
+    it('should not attach apiKeyStatus when the admin requester authenticated via API key', async () => {
+      userRepository.find.mockResolvedValue([{ ...user, clients: [] }] as User[]);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUsers(adminUser, true);
+
+      expect(apiKeysService.getStatuses).not.toHaveBeenCalled();
+      expect(result[0]).not.toHaveProperty('apiKeyStatus');
     });
   });
 
@@ -398,6 +473,49 @@ describe('UsersService', () => {
       expect(result).toHaveProperty('updateAvailable', false);
     });
 
+    it('should attach apiKeyStatus when requester is admin, even for their own record', async () => {
+      const userWithClients = { ...user, id: 1, clients: [] };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+      const status = {
+        hasKey: true,
+        keyId: 'abc',
+        createdAt: new Date(),
+        lastUsedAt: null,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      };
+      apiKeysService.getStatus.mockResolvedValue(status);
+
+      const result = await service.getUserWithClients(1, adminUser);
+
+      expect(apiKeysService.getStatus).toHaveBeenCalledWith(1);
+      expect(result).toHaveProperty('apiKeyStatus', status);
+    });
+
+    it('should not attach apiKeyStatus when requester is the user themselves (non-admin)', async () => {
+      const userWithClients = { ...user, id: 1, clients: [] };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUserWithClients(1, selfUser);
+
+      expect(apiKeysService.getStatus).not.toHaveBeenCalled();
+      expect(result).not.toHaveProperty('apiKeyStatus');
+    });
+
+    it('should not attach apiKeyStatus when a non-admin requests another user', async () => {
+      const userWithClients = { ...user, id: 1, clients: [] };
+      userRepository.findOne.mockResolvedValue(userWithClients as User);
+      configService.get.mockReturnValue('1.1.0');
+
+      const result = await service.getUserWithClients(1, otherUser);
+
+      expect(apiKeysService.getStatus).not.toHaveBeenCalled();
+      expect(result).not.toHaveProperty('apiKeyStatus');
+    });
+
     it('should handle multiple clients with mixed update states for admin', async () => {
       const userWithClients = {
         ...user,
@@ -527,14 +645,16 @@ describe('UsersService', () => {
     });
   });
 
-  it('should remove user and soft-delete all associated keys', async () => {
+  it('should remove user, soft-delete all associated keys, and revoke the report API key', async () => {
     userRepository.findOne.mockResolvedValue(user as User);
     userRepository.manager.softDelete.mockResolvedValue({ affected: 2, raw: [], generatedMaps: [] });
 
-    await service.removeUser(1);
+    await service.removeUser(1, 2);
 
     // Verify keys are soft-deleted first
     expect(userRepository.manager.softDelete).toHaveBeenCalledWith(UserKey, { userId: 1 });
+    // Report API key is revoked before the user row is soft-deleted
+    expect(apiKeysService.revoke).toHaveBeenCalledWith(1, ApiKeyRevokedReason.USER_REMOVED, 2);
     // Then user is soft-deleted
     expect(userRepository.softRemove).toHaveBeenCalledWith(user);
     // Every JWT issued before removal is invalidated
@@ -545,16 +665,17 @@ describe('UsersService', () => {
     userRepository.findOne.mockResolvedValue(user as User);
     blacklistService.blacklistPreviousUserTokens.mockRejectedValueOnce(new Error('Redis unavailable'));
 
-    await expect(service.removeUser(1)).rejects.toThrow('Redis unavailable');
+    await expect(service.removeUser(1, 2)).rejects.toThrow('Redis unavailable');
 
     expect(userRepository.manager.softDelete).not.toHaveBeenCalled();
+    expect(apiKeysService.revoke).not.toHaveBeenCalled();
     expect(userRepository.softRemove).not.toHaveBeenCalled();
   });
 
   it('should throw if the user is not found', async () => {
     userRepository.findOne.mockResolvedValue(null);
 
-    await expect(service.removeUser(1)).rejects.toThrow(ErrorCodes.UNF);
+    await expect(service.removeUser(1, 2)).rejects.toThrow(ErrorCodes.UNF);
   });
 
   it('should return the email of the user who owns the public key', async () => {

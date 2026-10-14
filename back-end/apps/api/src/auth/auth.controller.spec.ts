@@ -66,6 +66,7 @@ describe('AuthController', () => {
       email: 'john@test.com',
       password: 'Doe',
       admin: false,
+      canViewReports: false,
       status: UserStatus.NEW,
       createdAt: new Date(),
       updatedAt: new Date(),

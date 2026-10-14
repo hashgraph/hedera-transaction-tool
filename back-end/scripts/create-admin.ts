@@ -36,8 +36,8 @@ import {
   CachedNodeAdminKey,
   NodeSnapshot,
   AccountSnapshot,
-  TransactionReviewerList,
-  TransactionReviewerListMember,
+  ApiKey,
+  ApiKeyEvent,
 } from '@entities';
 
 dotenv.config({
@@ -163,6 +163,8 @@ async function connectDatabase() {
       TransactionNodeSnapshot,
       TransactionReviewerList,
       TransactionReviewerListMember,
+      ApiKey,
+      ApiKeyEvent,
     ],
   });
 

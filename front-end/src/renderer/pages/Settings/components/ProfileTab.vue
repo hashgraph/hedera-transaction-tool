@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -10,6 +10,7 @@ import { HTX_USER } from '@shared/constants';
 
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import useLoader from '@renderer/composables/useLoader';
+import useDateTimeSetting from '@renderer/composables/user/useDateTimeSetting.ts';
 
 import { changePassword } from '@renderer/services/userService';
 import { changePassword as organizationChangePassword } from '@renderer/services/organization/auth';
@@ -17,7 +18,14 @@ import {
   encryptOrganizationPassword,
   updateOrganizationCredentials,
 } from '@renderer/services/organizationCredentials';
-import { logout } from '@renderer/services/organization';
+import {
+  createApiKey,
+  getApiKeyStatus,
+  logout,
+  regenerateApiKey,
+  revokeApiKey,
+  type ApiKeyStatus,
+} from '@renderer/services/organization';
 
 import {
   assertUserLoggedIn,
@@ -26,9 +34,12 @@ import {
   isPasswordStrong,
   isUserLoggedIn,
 } from '@renderer/utils';
+import { formatDateTime } from '@renderer/utils/dateTimeFormat.ts';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppPasswordInput from '@renderer/components/ui/AppPasswordInput.vue';
 import ResetDataModal from '@renderer/components/modals/ResetDataModal.vue';
@@ -40,6 +51,7 @@ const user = useUserStore();
 const router = useRouter();
 const withLoader = useLoader();
 const { getPasswordAsync } = usePersonalPassword();
+const { isUtcSelected } = useDateTimeSetting();
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -55,7 +67,34 @@ const isSuccessModalShown = ref(false);
 const isChangingPassword = ref(false);
 const isResetDataModalShown = ref(false);
 
+const apiKeyLoading = ref(true);
+const apiKeyStatus = ref<ApiKeyStatus | null>(null);
+const revealedApiKey = ref<string | null>(null);
+const isRegenerateApiKeyModalShown = ref(false);
+const isRevokeApiKeyModalShown = ref(false);
+
 /* Computed */
+const isApiKeySectionVisible = computed(
+  () =>
+    isLoggedInOrganization(user.selectedOrganization) &&
+    (user.selectedOrganization.admin || user.selectedOrganization.canViewReports),
+);
+
+const hasActiveApiKey = computed(() => !!apiKeyStatus.value?.keyId && !apiKeyStatus.value?.revokedAt);
+
+const apiKeyRevokedReasonLabel = computed(() => {
+  switch (apiKeyStatus.value?.revokedReason) {
+    case 'user':
+      return 'Revoked by you';
+    case 'permission_removed':
+      return 'Revoked — report access permission removed';
+    case 'inactivity':
+      return `Revoked — unused for ${apiKeyStatus.value?.idleExpiryDays} days`;
+    default:
+      return 'Revoked';
+  }
+});
+
 const displayEmail = computed(() => {
   const orgEmail = isLoggedInOrganization(user.selectedOrganization)
     ? user.selectedOrganization.email
@@ -162,6 +201,82 @@ const handleLogout = async () => {
   }
 };
 
+const formatApiKeyDateTime = (value: string | null) => {
+  if (!value) return 'Never';
+  const date = new Date(value);
+  return formatDateTime(date, isUtcSelected.value, true);
+};
+
+const fetchApiKeyStatus = async () => {
+  if (!isApiKeySectionVisible.value || !isLoggedInOrganization(user.selectedOrganization)) return;
+
+  const { serverUrl } = user.selectedOrganization;
+  apiKeyLoading.value = true;
+  try {
+    const status = await getApiKeyStatus(serverUrl);
+    // The selected organization may have changed while this request was in flight -
+    // ignore a response that no longer belongs to the currently selected one.
+    if (!isLoggedInOrganization(user.selectedOrganization)) return;
+    if (user.selectedOrganization.serverUrl !== serverUrl) return;
+    apiKeyStatus.value = status;
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to load API key status'));
+  } finally {
+    apiKeyLoading.value = false;
+  }
+};
+
+const handleGenerateApiKey = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
+
+  try {
+    const { key } = await createApiKey(user.selectedOrganization.serverUrl);
+    revealedApiKey.value = key;
+    await fetchApiKeyStatus();
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to create API key'));
+  }
+};
+
+const handleRegenerateApiKey = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
+
+  try {
+    const { key } = await regenerateApiKey(user.selectedOrganization.serverUrl);
+    revealedApiKey.value = key;
+    await fetchApiKeyStatus();
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to regenerate API key'));
+  }
+};
+
+const handleRevokeApiKey = async () => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return;
+
+  try {
+    await revokeApiKey(user.selectedOrganization.serverUrl);
+    revealedApiKey.value = null;
+    toastManager.success('API key revoked successfully');
+    await fetchApiKeyStatus();
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to revoke API key'));
+  }
+};
+
+const handleCopyApiKey = async () => {
+  if (!revealedApiKey.value) return;
+  try {
+    await navigator.clipboard.writeText(revealedApiKey.value);
+    toastManager.success('API key copied to clipboard');
+  } catch (error) {
+    toastManager.error(getErrorMessage(error, 'Failed to copy API key to clipboard'));
+  }
+};
+
+const handleDismissRevealedApiKey = () => {
+  revealedApiKey.value = null;
+};
+
 /* Watchers */
 watch(currentPassword, () => {
   currentPasswordInvalid.value = false;
@@ -172,6 +287,18 @@ watch(newPassword, pass => {
     newPasswordInvalid.value = false;
   }
 });
+
+watch(
+  () => (isLoggedInOrganization(user.selectedOrganization) ? user.selectedOrganization.serverUrl : null),
+  () => {
+    revealedApiKey.value = null;
+    apiKeyStatus.value = null;
+    fetchApiKeyStatus();
+  },
+);
+
+/* Hooks */
+onBeforeMount(fetchApiKeyStatus);
 </script>
 <template>
   <div
@@ -276,6 +403,144 @@ watch(newPassword, pass => {
         </div>
       </form>
     </AppModal>
+
+    <div v-if="isApiKeySectionVisible" class="p-4 border border-2 rounded-3 mt-5">
+      <h3 class="text-main">API Key</h3>
+      <p class="text-small text-secondary mt-3">
+        Use an API key to give a third-party tool read-only access to reports, instead of
+        sharing your account password. A key can only make GET requests against the signing
+        report endpoint.
+      </p>
+
+      <template v-if="apiKeyLoading">
+        <div class="mt-5">
+          <AppLoader />
+        </div>
+      </template>
+
+      <template v-else>
+        <template v-if="revealedApiKey">
+          <div class="container p-4 border rounded mt-4">
+            <p class="text-small text-semi-bold text-warning">
+              Copy this key now — it will not be shown again.
+            </p>
+            <div class="d-flex align-items-center gap-3 mt-3">
+              <span
+                class="d-inline-block text-truncate font-monospace"
+                data-testid="span-revealed-api-key"
+                style="max-width: 60vw"
+                >{{ revealedApiKey }}</span
+              >
+              <button
+                type="button"
+                class="bi bi-copy cursor-pointer"
+                style="background: transparent; border: none; padding: 0; color: inherit"
+                aria-label="Copy API key"
+                data-testid="button-copy-api-key"
+                @click="handleCopyApiKey"
+              ></button>
+            </div>
+            <div class="mt-4">
+              <AppButton
+                color="primary"
+                data-testid="button-dismiss-revealed-api-key"
+                @click="handleDismissRevealedApiKey"
+                >Done</AppButton
+              >
+            </div>
+          </div>
+        </template>
+
+        <template v-else-if="hasActiveApiKey && apiKeyStatus">
+          <div class="mt-4 row">
+            <div class="col-5">
+              <p class="text-main text-semi-bold">Created</p>
+            </div>
+            <div class="col-7">
+              <p class="text-secondary" data-testid="p-api-key-created-at">
+                {{ formatApiKeyDateTime(apiKeyStatus.createdAt) }}
+              </p>
+            </div>
+          </div>
+          <div class="mt-3 row">
+            <div class="col-5">
+              <p class="text-main text-semi-bold">Last used</p>
+            </div>
+            <div class="col-7">
+              <p class="text-secondary" data-testid="p-api-key-last-used-at">
+                {{ formatApiKeyDateTime(apiKeyStatus.lastUsedAt) }}
+              </p>
+            </div>
+          </div>
+          <div class="mt-3 row">
+            <div class="col-5">
+              <p class="text-main text-semi-bold">Key Reference</p>
+            </div>
+            <div class="col-7">
+              <p class="text-secondary" data-testid="p-api-key-id">{{ apiKeyStatus.keyId }}</p>
+            </div>
+          </div>
+          <div class="mt-4 d-flex gap-3">
+            <AppButton
+              color="secondary"
+              data-testid="button-regenerate-api-key"
+              @click="isRegenerateApiKeyModalShown = true"
+              >Regenerate</AppButton
+            >
+            <AppButton
+              color="danger"
+              data-testid="button-revoke-api-key"
+              @click="isRevokeApiKeyModalShown = true"
+              >Revoke</AppButton
+            >
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="mt-4">
+            <p
+              v-if="apiKeyStatus?.revokedAt"
+              class="text-small text-secondary"
+              data-testid="p-api-key-revoked-reason"
+            >
+              {{ apiKeyRevokedReasonLabel }}
+            </p>
+            <p v-else class="text-small text-secondary" data-testid="p-no-api-key">
+              You don't have an API key yet.
+            </p>
+            <AppButton
+              color="primary"
+              class="mt-3"
+              data-testid="button-generate-api-key"
+              @click="handleGenerateApiKey"
+              >Generate</AppButton
+            >
+          </div>
+        </template>
+      </template>
+
+      <AppConfirmModal
+        v-model:show="isRegenerateApiKeyModalShown"
+        icon="bin"
+        title="Regenerate API Key"
+        text="Your current key will stop working immediately. Any third-party app using it will need
+          the new key to keep working."
+        button-text="Regenerate"
+        data-testid="regenerate-api-key"
+        :callback="handleRegenerateApiKey"
+      />
+      <AppConfirmModal
+        v-model:show="isRevokeApiKeyModalShown"
+        icon="bin"
+        title="Revoke API Key"
+        text="Are you sure you want to revoke this API key? Any third-party app using it will stop
+          working immediately. This cannot be undone."
+        button-text="Revoke"
+        button-color="danger"
+        data-testid="revoke-api-key"
+        :callback="handleRevokeApiKey"
+      />
+    </div>
   </div>
 
   <div

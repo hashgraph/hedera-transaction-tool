@@ -42,6 +42,7 @@ describe('TransactionGroupsController', () => {
       email: 'John@test.com',
       password: 'Doe',
       admin: true,
+      canViewReports: false,
       status: UserStatus.NONE,
       createdAt: new Date(),
       updatedAt: new Date(),

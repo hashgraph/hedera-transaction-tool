@@ -13,12 +13,13 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { ErrorCodes, Serialize } from '@app/common';
+import { ErrorCodes, isEligibleForReportAccess, Serialize } from '@app/common';
 
-import { User } from '@entities';
+import { ApiKeyRevokedReason, User } from '@entities';
 
-import { AdminGuard, JwtAuthGuard, JwtBlackListAuthGuard, VerifiedUserGuard } from '../guards';
-import { AllowNonVerifiedUser, GetUser } from '../decorators';
+import { AdminGuard, JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard } from '../guards';
+import { AllowApiKey, AllowNonVerifiedUser, GetUser, IsApiKeyAuth } from '../decorators';
+import { ApiKeysService } from '../api-keys/api-keys.service';
 
 import {
   UpdateUserDto,
@@ -32,35 +33,47 @@ import { UsersService } from './users.service';
 
 @ApiTags('Users')
 @Controller('users')
-@UseGuards(JwtBlackListAuthGuard, JwtAuthGuard, VerifiedUserGuard)
+@UseGuards(JwtBlackListAuthGuard, JwtOrApiKeyGuard, VerifiedUserGuard)
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly apiKeysService: ApiKeysService,
+  ) {}
 
   @ApiOperation({
     summary: 'Get all users',
-    description: 'Get all users that are currently a part of the organization.',
+    description:
+      'Get all users that are currently a part of the organization. Accepts a JWT, or a ' +
+      'GET-only read-only API key (X-Api-Key header).',
   })
   @ApiResponse({
     status: 200,
     type: [UserWithClientsDto],
   })
+  @AllowApiKey()
   @Get()
   @Serialize(UserWithClientsDto)
-  getUsers(@GetUser() requestingUser: User): Promise<User[]> {
-    return this.usersService.getUsers(requestingUser);
+  getUsers(
+    @GetUser() requestingUser: User,
+    @IsApiKeyAuth() viaApiKey: boolean,
+  ): Promise<User[]> {
+    return this.usersService.getUsers(requestingUser, viaApiKey);
   }
 
   @ApiOperation({
     summary: 'Get the current user',
-    description: 'Get the user that is currently a part of the organization.',
+    description:
+      'Get the user that is currently a part of the organization. Accepts a JWT, or a ' +
+      'GET-only read-only API key (X-Api-Key header).',
   })
   @ApiResponse({
     status: 200,
     type: UserDto,
   })
   @AllowNonVerifiedUser()
+  @AllowApiKey()
   @Get('/me')
   @Serialize(UserDto)
   getMe(@GetUser() user: User): User {
@@ -105,7 +118,10 @@ export class UsersController {
 
   @ApiOperation({
     summary: 'Update user information',
-    description: 'Update the admin state of a user.',
+    description:
+      'Update the admin state and/or report-viewing permission of a user. Removing either ' +
+      "one, when it leaves the user with no path to report access, revokes that user's " +
+      'report API key.',
   })
   @ApiResponse({
     status: 200,
@@ -114,8 +130,30 @@ export class UsersController {
   @UseGuards(AdminGuard)
   @Patch('/:id')
   @Serialize(UserDto)
-  updateUser(@Param('id', ParseIntPipe) userId: number, @Body() dto: UpdateUserDto): Promise<User> {
-    return this.usersService.updateUserById(userId, dto);
+  async updateUser(
+    @GetUser() admin: User,
+    @Param('id', ParseIntPipe) userId: number,
+    @Body() dto: UpdateUserDto,
+  ): Promise<User> {
+    const before = await this.usersService.getUser({ id: userId });
+    if (!before) throw new BadRequestException(ErrorCodes.UNF);
+
+    // Revoke BEFORE saving the permission change, not after: revoke() is idempotent
+    // (a no-op if there's no active key), so if the save below fails and the admin
+    // retries, re-revoking is harmless. The reverse order would leave a window where
+    // the permission change is already committed but the key isn't revoked yet - if
+    // revoke() then failed, the UI would show the update as having succeeded, with
+    // nothing to prompt a retry until some unrelated later change touched this user.
+    //
+    // Must compare the merged before/dto state, not the dto in isolation: dto fields
+    // are optional (partial update), so e.g. demoting admin alone (dto.admin ===
+    // false) can only be known to remove eligibility by also knowing the current
+    // (possibly untouched) canViewReports.
+    if (!isEligibleForReportAccess({ ...before, ...dto })) {
+      await this.apiKeysService.revoke(userId, ApiKeyRevokedReason.PERMISSION_REMOVED, admin.id);
+    }
+
+    return this.usersService.updateUser(before, dto);
   }
 
   @ApiOperation({
@@ -130,7 +168,7 @@ export class UsersController {
   @Delete('/:id')
   removeUser(@GetUser() user: User, @Param('id', ParseIntPipe) id: number): Promise<boolean> {
     if (user.id === id) throw new BadRequestException(ErrorCodes.CRYFO);
-    return this.usersService.removeUser(id);
+    return this.usersService.removeUser(id, user.id);
   }
 
   @ApiOperation({

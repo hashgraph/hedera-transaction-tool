@@ -14,7 +14,7 @@ import useRedirectOnOnlyOrganization from '@renderer/composables/useRedirectOnOn
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 
-import { deleteUser, elevateUserToAdmin } from '@renderer/services/organization';
+import { deleteUser, elevateUserToAdmin, setCanViewReports } from '@renderer/services/organization';
 import { removeContact } from '@renderer/services/contactsService';
 import { getAll } from '@renderer/services/accountsService';
 
@@ -26,11 +26,11 @@ import {
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
 import ElevateContactModal from '@renderer/components/Contacts/ElevateContactModal.vue';
-
 
 /* Stores */
 const user = useUserStore();
@@ -48,6 +48,7 @@ const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTE
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const isElevateToAdminModalShown = ref(false);
+const isRevokeViewReportsModalShown = ref(false);
 const linkedAccounts = ref<HederaAccount[]>([]);
 
 /* Computed */
@@ -129,6 +130,36 @@ async function handleElevate() {
 
   toastManager.success('User elevate to admin successfully');
   selectedId.value = null;
+  await contacts.fetch();
+}
+
+function handleToggleViewReportsClick() {
+  const apiKeyStatus = contact.value?.user.apiKeyStatus;
+  const hasActiveApiKey = !!apiKeyStatus?.hasKey && !apiKeyStatus?.revokedAt;
+
+  if (contact.value?.user.canViewReports && hasActiveApiKey) {
+    isRevokeViewReportsModalShown.value = true;
+  } else {
+    handleToggleViewReports();
+  }
+}
+
+async function handleToggleViewReports() {
+  assertUserLoggedIn(user.personal);
+  assertIsLoggedInOrganization(user.selectedOrganization);
+  if (!contact.value) throw new Error('Contact is not selected');
+  if (!user.selectedOrganization.admin) {
+    throw new Error('User is not an admin');
+  }
+
+  const targetUserId = contact.value.user.id;
+  const nextValue = !contact.value.user.canViewReports;
+  await setCanViewReports(user.selectedOrganization.serverUrl, targetUserId, nextValue);
+
+  toastManager.success(
+    nextValue ? 'Report access granted successfully' : 'Report access revoked successfully',
+    `view-reports-access-${targetUserId}`,
+  );
   await contacts.fetch();
 }
 
@@ -245,6 +276,7 @@ onBeforeMount(async () => {
                 v-model:linked-accounts="linkedAccounts"
                 @remove="isDeleteContactModalShown = true"
                 @elevate-to-admin="isElevateToAdminModalShown = true"
+                @toggle-view-reports="handleToggleViewReportsClick"
               />
             </div>
           </Transition>
@@ -257,6 +289,18 @@ onBeforeMount(async () => {
         />
 
         <ElevateContactModal v-model:show="isElevateToAdminModalShown" @elevate="handleElevate" />
+
+        <AppConfirmModal
+          v-model:show="isRevokeViewReportsModalShown"
+          icon="bin"
+          title="Revoke Report Access"
+          text="This Contact will no longer be able to hold a reports API key. Any existing key they
+            have will be revoked immediately."
+          button-text="Revoke"
+          button-color="danger"
+          data-testid="revoke-view-reports"
+          :callback="handleToggleViewReports"
+        />
       </div>
     </div>
   </div>

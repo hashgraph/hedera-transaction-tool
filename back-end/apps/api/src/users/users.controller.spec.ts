@@ -1,4 +1,3 @@
-import { ExecutionContext } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { mockDeep } from 'jest-mock-extended';
@@ -6,7 +5,9 @@ import { mockDeep } from 'jest-mock-extended';
 import { BlacklistService, guardMock, VersionCheckResult } from '@app/common';
 import { Client, User, UserStatus } from '@entities';
 
-import { VerifiedUserGuard } from '../guards';
+import { JwtOrApiKeyGuard } from '../guards';
+import { ApiKeysService } from '../api-keys/api-keys.service';
+import { ALLOW_NON_VERIFIED_USER } from '../decorators';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -18,6 +19,7 @@ describe('UsersController', () => {
 
   const userService = mockDeep<UsersService>();
   const blacklistService = mockDeep<BlacklistService>();
+  const apiKeysService = mockDeep<ApiKeysService>();
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,9 +33,13 @@ describe('UsersController', () => {
           provide: BlacklistService,
           useValue: blacklistService,
         },
+        {
+          provide: ApiKeysService,
+          useValue: apiKeysService,
+        },
       ],
     })
-      .overrideGuard(VerifiedUserGuard)
+      .overrideGuard(JwtOrApiKeyGuard)
       .useValue(guardMock())
       .compile();
 
@@ -43,6 +49,7 @@ describe('UsersController', () => {
       email: 'John@test.com',
       password: 'Doe',
       admin: true,
+      canViewReports: false,
       status: UserStatus.NONE,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -62,42 +69,43 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 
-  it('should deny the public-key owner endpoint to non-verified users', () => {
-    const context = {
-      switchToHttp: () => ({
-        getRequest: () => ({ user: { status: UserStatus.NEW } }),
-      }),
-      getHandler: () => UsersController.prototype.getUserByPublicKey,
-    } as unknown as ExecutionContext;
-
-    const verifiedUserGuard = new VerifiedUserGuard(new Reflector());
-
-    expect(verifiedUserGuard.canActivate(context)).toBe(false);
-  });
-
   describe('getUsers', () => {
     it('should return an array of users', async () => {
       const result = [user];
 
       userService.getUsers.mockResolvedValue(result);
 
-      expect(await controller.getUsers(user)).toBe(result);
-      expect(userService.getUsers).toHaveBeenCalledWith(user);
+      expect(await controller.getUsers(user, false)).toBe(result);
+      expect(userService.getUsers).toHaveBeenCalledWith(user, false);
     });
 
     it('should return an empty array if no users exist', async () => {
       userService.getUsers.mockResolvedValue([]);
 
-      expect(await controller.getUsers(user)).toEqual([]);
+      expect(await controller.getUsers(user, false)).toEqual([]);
     });
 
     it('should pass non-admin requesting user to the service', async () => {
       const nonAdminUser = { ...user, admin: false };
       userService.getUsers.mockResolvedValue([]);
 
-      await controller.getUsers(nonAdminUser as User);
+      await controller.getUsers(nonAdminUser as User, false);
 
-      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser);
+      expect(userService.getUsers).toHaveBeenCalledWith(nonAdminUser, false);
+    });
+
+    it('should pass the API-key auth flag through to the service', async () => {
+      userService.getUsers.mockResolvedValue([]);
+
+      await controller.getUsers(user, true);
+
+      expect(userService.getUsers).toHaveBeenCalledWith(user, true);
+    });
+  });
+
+  describe('getMe', () => {
+    it('should return the current user', async () => {
+      expect(await controller.getMe(user)).toBe(user);
     });
   });
 
@@ -133,27 +141,74 @@ describe('UsersController', () => {
     });
   });
 
-  describe('getMe', () => {
-    it('should return the current user', async () => {
-      expect(await controller.getMe(user)).toBe(user);
-    });
-  });
-
   describe('updateUser', () => {
-    it('should return the updated user', async () => {
-      userService.updateUserById.mockResolvedValue(user);
+    beforeEach(() => {
+      apiKeysService.revoke.mockClear();
+      userService.updateUser.mockClear();
+    });
 
-      expect(await controller.updateUser(1, user)).toBe(user);
+    it('should return the updated user', async () => {
+      userService.getUser.mockResolvedValue(user);
+      userService.updateUser.mockResolvedValue(user);
+
+      expect(await controller.updateUser(user, 1, user)).toBe(user);
     });
 
     it('should throw an error if the user does not exist', async () => {
+      userService.getUser.mockResolvedValue(null);
+
+      await expect(controller.updateUser(user, 1, user)).rejects.toBeInstanceOf(Error);
+      expect(apiKeysService.revoke).not.toHaveBeenCalled();
+    });
+
+    it('propagates the error if saving the update fails', async () => {
+      userService.getUser.mockResolvedValue(user);
       userService.updateUser.mockRejectedValue(new Error());
 
-      try {
-        await controller.updateUser(1, user);
-      } catch (error) {
-        expect(error).toBeInstanceOf(Error);
-      }
+      await expect(controller.updateUser(user, 1, user)).rejects.toBeInstanceOf(Error);
+    });
+
+    it("revokes the user's API key before saving when report access is removed", async () => {
+      const before = { ...user, admin: true, canViewReports: false };
+      const after = { ...user, admin: false, canViewReports: false };
+      userService.getUser.mockResolvedValue(before);
+      userService.updateUser.mockResolvedValue(after);
+
+      const callOrder: string[] = [];
+      apiKeysService.revoke.mockImplementation(async () => {
+        callOrder.push('revoke');
+      });
+      userService.updateUser.mockImplementation(async () => {
+        callOrder.push('updateUser');
+        return after;
+      });
+
+      await controller.updateUser(user, 1, { admin: false });
+
+      expect(apiKeysService.revoke).toHaveBeenCalledWith(1, 'permission_removed', user.id);
+      expect(callOrder).toEqual(['revoke', 'updateUser']);
+    });
+
+    it('does not save the update if revoking the API key fails', async () => {
+      const before = { ...user, admin: true, canViewReports: false };
+      userService.getUser.mockResolvedValue(before);
+      apiKeysService.revoke.mockRejectedValue(new Error('revoke failed'));
+
+      await expect(controller.updateUser(user, 1, { admin: false })).rejects.toThrow(
+        'revoke failed',
+      );
+      expect(userService.updateUser).not.toHaveBeenCalled();
+    });
+
+    it("does not revoke the user's API key when report access is retained", async () => {
+      const before = { ...user, admin: true, canViewReports: true };
+      const after = { ...user, admin: false, canViewReports: true };
+      userService.getUser.mockResolvedValue(before);
+      userService.updateUser.mockResolvedValue(after);
+
+      await controller.updateUser(user, 1, { admin: false });
+
+      expect(apiKeysService.revoke).not.toHaveBeenCalled();
     });
   });
 
@@ -162,6 +217,7 @@ describe('UsersController', () => {
       userService.removeUser.mockResolvedValue(true);
 
       expect(await controller.removeUser(user, 2)).toBe(true);
+      expect(userService.removeUser).toHaveBeenCalledWith(2, user.id);
     });
 
     it('should throw an error if the user does not exist', async () => {
@@ -272,6 +328,7 @@ describe('UsersController', () => {
 
     const userService = mockDeep<UsersService>();
     const blacklistService = mockDeep<BlacklistService>();
+    const apiKeysService = mockDeep<ApiKeysService>();
 
     beforeEach(async () => {
       const module: TestingModule = await Test.createTestingModule({
@@ -285,9 +342,13 @@ describe('UsersController', () => {
             provide: BlacklistService,
             useValue: blacklistService,
           },
+          {
+            provide: ApiKeysService,
+            useValue: apiKeysService,
+          },
         ],
       })
-        .overrideGuard(VerifiedUserGuard)
+        .overrideGuard(JwtOrApiKeyGuard)
         .useValue(guardMock())
         .compile();
 
@@ -295,6 +356,17 @@ describe('UsersController', () => {
     });
 
     describe('getUserByPublicKey', () => {
+      it('is not reachable by non-verified users - no AllowNonVerifiedUser metadata', () => {
+        const reflector = new Reflector();
+
+        const allowed = reflector.get(
+          ALLOW_NON_VERIFIED_USER,
+          UsersController.prototype.getUserByPublicKey,
+        );
+
+        expect(allowed).toBeFalsy();
+      });
+
       it('should return an email if a public key is found', async () => {
         const publicKey = 'c12e815869ad5d9f5357636cf487fe8e30cc085043a49ee8d16ca69ddcffbed9';
         const email = 'user@example.com';

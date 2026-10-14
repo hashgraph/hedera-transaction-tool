@@ -1309,9 +1309,10 @@ describe('AppAutoComplete', () => {
     const el = input.element as HTMLInputElement;
     const selectSpy = vi.spyOn(el, 'select');
     el.focus();
-    // Focus intentionally selects the current text on a timer. Wait for that
-    // initial focus behavior, then measure only the chevron interaction below.
-    await vi.waitFor(() => expect(selectSpy).toHaveBeenCalledOnce());
+    // Real setTimeout wait (not flushPromises, which uses setImmediate) — Node doesn't
+    // guarantee setImmediate runs after a 0ms setTimeout, so this flushes handleFocus's
+    // own deferred select() before it can race the spy installed below.
+    await new Promise(resolve => setTimeout(resolve, 0));
     selectSpy.mockClear();
     await flushPromises();
     await input.trigger('keydown', { key: 'Escape' });

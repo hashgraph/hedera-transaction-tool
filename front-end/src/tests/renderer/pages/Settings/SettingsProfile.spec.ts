@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { reactive } from 'vue';
 
 import ProfileTab from '@renderer/pages/Settings/components/ProfileTab.vue';
 
@@ -19,6 +20,8 @@ const mocks = vi.hoisted(() => ({
       serverUrl: string;
       key: string;
       email?: string;
+      admin?: boolean;
+      canViewReports?: boolean;
     },
     logout: vi.fn(),
     refetchAccounts: vi.fn(),
@@ -33,6 +36,11 @@ const mocks = vi.hoisted(() => ({
   updateOrganizationCredentials: vi.fn(),
   organizationLogout: vi.fn(),
   toastError: vi.fn(),
+  toastSuccess: vi.fn(),
+  getApiKeyStatus: vi.fn(),
+  createApiKey: vi.fn(),
+  regenerateApiKey: vi.fn(),
+  revokeApiKey: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -41,12 +49,27 @@ vi.mock('vue-router', () => ({
   })),
 }));
 
-vi.mock('@renderer/stores/storeUser', () => ({
-  default: vi.fn(() => mocks.userStore),
-}));
+vi.mock('@renderer/stores/storeUser', () => {
+  // vi.mock factories run lazily (on first import of the mocked module), after this
+  // file's own top-level `reactive` import is live - unlike `vi.hoisted` callbacks.
+  // Reassigning mocks.userStore to the reactive-wrapped version means a later
+  // `mocks.userStore.selectedOrganization = x` mutates the same proxy the mounted
+  // component reads from, so watchers/computeds relying on it actually fire - same as
+  // the real Pinia store.
+  mocks.userStore = reactive(mocks.userStore);
+  return {
+    default: vi.fn(() => mocks.userStore),
+  };
+});
 
 vi.mock('@renderer/composables/useLoader', () => ({
   default: vi.fn(() => async (callback: () => Promise<void>) => callback()),
+}));
+
+vi.mock('@renderer/composables/user/useDateTimeSetting.ts', () => ({
+  default: vi.fn(() => ({
+    isUtcSelected: { value: false },
+  })),
 }));
 
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
@@ -70,12 +93,17 @@ vi.mock('@renderer/services/organizationCredentials', () => ({
 
 vi.mock('@renderer/services/organization', () => ({
   logout: mocks.organizationLogout,
+  getApiKeyStatus: mocks.getApiKeyStatus,
+  createApiKey: mocks.createApiKey,
+  regenerateApiKey: mocks.regenerateApiKey,
+  revokeApiKey: mocks.revokeApiKey,
 }));
 
 vi.mock('@renderer/utils/ToastManager', () => ({
   ToastManager: {
     inject: vi.fn(() => ({
       error: mocks.toastError,
+      success: mocks.toastSuccess,
     })),
   },
 }));
@@ -127,7 +155,20 @@ const ORG = {
 const STRONG_OLD = 'old-password';
 const STRONG_NEW = 'new-strong-password';
 
-const mountProfile = () => mount(ProfileTab, { global: { stubs } });
+// Now that the mocked user store is reactive (see the storeUser mock above), a
+// component left mounted from a prior test keeps its watchers live and reacts to
+// later tests' store mutations too, inflating mock call counts across the suite -
+// so every mounted wrapper must be unmounted before the next test runs.
+let activeWrapper: ReturnType<typeof mount> | null = null;
+afterEach(() => {
+  activeWrapper?.unmount();
+  activeWrapper = null;
+});
+
+const mountProfile = () => {
+  activeWrapper = mount(ProfileTab, { global: { stubs } });
+  return activeWrapper;
+};
 
 const setPasswords = async (wrapper: ReturnType<typeof mountProfile>, current: string, next: string) => {
   await wrapper.find('[data-testid="input-current-password"]').setValue(current);
@@ -148,6 +189,13 @@ describe('settings profile coverage', () => {
     vi.clearAllMocks();
     mocks.userStore.personal = { id: 'local-user-id', useKeychain: false, email: 'local@example.com' };
     mocks.userStore.selectedOrganization = null;
+
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: {
+        writeText: vi.fn(),
+      },
+    });
   });
 
   describe('local user (no organization) flow', () => {
@@ -623,6 +671,484 @@ describe('settings profile coverage', () => {
       const wrapper = mountProfile();
 
       expect(wrapper.text()).not.toContain('Email');
+    });
+  });
+
+  describe('API key management', () => {
+    test('hides the API key section for a local (non-organization) user', () => {
+      mocks.userStore.selectedOrganization = null;
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).not.toContain('API Key');
+      expect(mocks.getApiKeyStatus).not.toHaveBeenCalled();
+    });
+
+    test('hides the API key section for an org member without report access', () => {
+      mocks.userStore.selectedOrganization = { ...ORG, admin: false, canViewReports: false };
+
+      const wrapper = mountProfile();
+
+      expect(wrapper.text()).not.toContain('API Key');
+      expect(mocks.getApiKeyStatus).not.toHaveBeenCalled();
+    });
+
+    test('shows a loader while the key status is being fetched, for an admin', async () => {
+      mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+      let resolveStatus: (value: unknown) => void = () => {};
+      mocks.getApiKeyStatus.mockReturnValueOnce(
+        new Promise(resolve => {
+          resolveStatus = resolve;
+        }),
+      );
+
+      const wrapper = mountProfile();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="div-loader"]').exists()).toBe(true);
+
+      resolveStatus({
+        hasKey: false,
+        keyId: null,
+        createdAt: null,
+        lastUsedAt: null,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      });
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="div-loader"]').exists()).toBe(false);
+    });
+
+    test('shows the API key section for a member with report access, even without admin', async () => {
+      mocks.userStore.selectedOrganization = { ...ORG, admin: false, canViewReports: true };
+      mocks.getApiKeyStatus.mockResolvedValueOnce({
+        hasKey: false,
+        keyId: null,
+        createdAt: null,
+        lastUsedAt: null,
+        revokedAt: null,
+        revokedReason: null,
+        idleExpiryDays: 180,
+      });
+
+      const wrapper = mountProfile();
+      await flushPromises();
+
+      expect(wrapper.text()).toContain('API Key');
+      expect(mocks.getApiKeyStatus).toHaveBeenCalledWith(ORG.serverUrl);
+    });
+
+    describe('no existing key', () => {
+      beforeEach(() => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        mocks.getApiKeyStatus.mockResolvedValue({
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+      });
+
+      test('shows the empty-state message and a Generate button', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="p-no-api-key"]').text()).toBe(
+          "You don't have an API key yet.",
+        );
+        expect(wrapper.find('[data-testid="button-generate-api-key"]').exists()).toBe(true);
+      });
+
+      test('generating a key reveals it once and refreshes the status', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        mocks.createApiKey.mockResolvedValueOnce({ key: 'brand-new-key' });
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.createApiKey).toHaveBeenCalledWith(ORG.serverUrl);
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').text()).toBe(
+          'brand-new-key',
+        );
+        expect(mocks.getApiKeyStatus).toHaveBeenCalledTimes(2);
+      });
+
+      test('surfaces an error toast when key generation fails', async () => {
+        mocks.createApiKey.mockRejectedValueOnce(new Error('Server rejected request'));
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.toastError).toHaveBeenCalledWith('Server rejected request');
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').exists()).toBe(false);
+      });
+    });
+
+    describe('revealed key', () => {
+      beforeEach(() => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        mocks.getApiKeyStatus.mockResolvedValue({
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.createApiKey.mockResolvedValue({ key: 'brand-new-key' });
+      });
+
+      test('copies the revealed key to the clipboard', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-copy-api-key"]').trigger('click');
+
+        expect(navigator.clipboard.writeText).toHaveBeenCalledWith('brand-new-key');
+        expect(mocks.toastSuccess).toHaveBeenCalledWith('API key copied to clipboard');
+      });
+
+      test('shows an error toast instead of a success toast when the clipboard write fails', async () => {
+        vi.mocked(navigator.clipboard.writeText).mockRejectedValueOnce(
+          new Error('clipboard denied'),
+        );
+
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-copy-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.toastSuccess).not.toHaveBeenCalledWith('API key copied to clipboard');
+        expect(mocks.toastError).toHaveBeenCalledWith('clipboard denied');
+      });
+
+      test('dismissing the revealed key falls back to the active-key summary', async () => {
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        }).mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-dismiss-revealed-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('key-1');
+      });
+    });
+
+    describe('active key', () => {
+      beforeEach(() => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        mocks.getApiKeyStatus.mockResolvedValue({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: '2026-01-05T00:00:00.000Z',
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+      });
+
+      test('shows created/last-used/key-id details and no generate button', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="p-api-key-created-at"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="p-api-key-last-used-at"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('key-1');
+        expect(wrapper.find('[data-testid="button-generate-api-key"]').exists()).toBe(false);
+      });
+
+      test('regenerating replaces the key after confirmation', async () => {
+        mocks.regenerateApiKey.mockResolvedValueOnce({ key: 'regenerated-key' });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-regenerate-api-key"]').trigger('click');
+        await flushPromises();
+        await wrapper
+          .find('[data-testid="regenerate-api-key-confirm"]')
+          .trigger('click');
+        await flushPromises();
+
+        expect(mocks.regenerateApiKey).toHaveBeenCalledWith(ORG.serverUrl);
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').text()).toBe(
+          'regenerated-key',
+        );
+        expect(mocks.getApiKeyStatus).toHaveBeenCalledTimes(2);
+      });
+
+      test('cancelling the regenerate confirmation makes no service call', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-regenerate-api-key"]').trigger('click');
+        await flushPromises();
+        const cancelButton = wrapper
+          .findAll('button')
+          .find(btn => btn.text() === 'Cancel');
+        await cancelButton?.trigger('click');
+        await flushPromises();
+
+        expect(mocks.regenerateApiKey).not.toHaveBeenCalled();
+      });
+
+      test('surfaces an error toast when regeneration fails', async () => {
+        mocks.regenerateApiKey.mockRejectedValueOnce(new Error('Regeneration failed'));
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-regenerate-api-key"]').trigger('click');
+        await flushPromises();
+        await wrapper
+          .find('[data-testid="regenerate-api-key-confirm"]')
+          .trigger('click');
+        await flushPromises();
+
+        expect(mocks.toastError).toHaveBeenCalledWith('Regeneration failed');
+      });
+
+      test('revoking clears the key and refreshes the status after confirmation', async () => {
+        mocks.revokeApiKey.mockResolvedValueOnce(undefined);
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: '2026-01-05T00:00:00.000Z',
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        }).mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: '2026-01-05T00:00:00.000Z',
+          revokedAt: '2026-01-06T00:00:00.000Z',
+          revokedReason: 'user',
+          idleExpiryDays: 180,
+        });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-revoke-api-key"]').trigger('click');
+        await flushPromises();
+        await wrapper.find('[data-testid="revoke-api-key-confirm"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.revokeApiKey).toHaveBeenCalledWith(ORG.serverUrl);
+        expect(mocks.toastSuccess).toHaveBeenCalledWith('API key revoked successfully');
+        expect(wrapper.find('[data-testid="p-api-key-revoked-reason"]').text()).toBe(
+          'Revoked by you',
+        );
+      });
+
+      test('cancelling the revoke confirmation makes no service call', async () => {
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-revoke-api-key"]').trigger('click');
+        await flushPromises();
+        const cancelButton = wrapper
+          .findAll('button')
+          .find(btn => btn.text() === 'Cancel');
+        await cancelButton?.trigger('click');
+        await flushPromises();
+
+        expect(mocks.revokeApiKey).not.toHaveBeenCalled();
+      });
+
+      test('surfaces an error toast when revocation fails', async () => {
+        mocks.revokeApiKey.mockRejectedValueOnce(new Error('Revocation failed'));
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        await wrapper.find('[data-testid="button-revoke-api-key"]').trigger('click');
+        await flushPromises();
+        await wrapper.find('[data-testid="revoke-api-key-confirm"]').trigger('click');
+        await flushPromises();
+
+        expect(mocks.toastError).toHaveBeenCalledWith('Revocation failed');
+      });
+    });
+
+    describe('revoked key reasons', () => {
+      beforeEach(() => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+      });
+
+      test.each([
+        ['user', 'Revoked by you'],
+        ['permission_removed', 'Revoked — report access permission removed'],
+        ['inactivity', 'Revoked — unused for 180 days'],
+        ['something_unexpected', 'Revoked'],
+      ])('maps revokedReason "%s" to "%s"', async (revokedReason, expectedLabel) => {
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'key-1',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: '2026-01-06T00:00:00.000Z',
+          revokedReason,
+          idleExpiryDays: 180,
+        });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="p-api-key-revoked-reason"]').text()).toBe(
+          expectedLabel,
+        );
+      });
+    });
+
+    test('surfaces an error toast when the initial status fetch fails', async () => {
+      mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+      mocks.getApiKeyStatus.mockRejectedValueOnce(new Error('Could not reach server'));
+
+      const wrapper = mountProfile();
+      await flushPromises();
+
+      expect(mocks.toastError).toHaveBeenCalledWith('Could not reach server');
+      expect(wrapper.find('[data-testid="p-no-api-key"]').exists()).toBe(true);
+    });
+
+    describe('switching organizations while mounted', () => {
+      test('resets the revealed key and reloads status for the newly selected organization', async () => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: false,
+          keyId: null,
+          createdAt: null,
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.createApiKey.mockResolvedValueOnce({ key: 'org-a-key' });
+
+        const wrapper = mountProfile();
+        await flushPromises();
+        await wrapper.find('[data-testid="button-generate-api-key"]').trigger('click');
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').text()).toBe('org-a-key');
+
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'other-org-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.userStore.selectedOrganization = {
+          ...ORG,
+          id: 'org-2',
+          serverUrl: 'https://other.example',
+          admin: true,
+          canViewReports: false,
+        };
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="span-revealed-api-key"]').exists()).toBe(false);
+        expect(mocks.getApiKeyStatus).toHaveBeenLastCalledWith('https://other.example');
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('other-org-key');
+      });
+
+      test('ignores a status response for an organization that is no longer selected', async () => {
+        mocks.userStore.selectedOrganization = { ...ORG, admin: true, canViewReports: false };
+        let resolveFirstStatus: (value: unknown) => void = () => {};
+        mocks.getApiKeyStatus.mockReturnValueOnce(
+          new Promise(resolve => {
+            resolveFirstStatus = resolve;
+          }),
+        );
+
+        const wrapper = mountProfile();
+        await flushPromises();
+
+        mocks.getApiKeyStatus.mockResolvedValueOnce({
+          hasKey: true,
+          keyId: 'other-org-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        mocks.userStore.selectedOrganization = {
+          ...ORG,
+          id: 'org-2',
+          serverUrl: 'https://other.example',
+          admin: true,
+          canViewReports: false,
+        };
+        await flushPromises();
+
+        // The first (org-1) request finally resolves after org-2 is already selected -
+        // its stale result must not overwrite org-2's status.
+        resolveFirstStatus({
+          hasKey: true,
+          keyId: 'org-1-key',
+          createdAt: '2026-01-01T00:00:00.000Z',
+          lastUsedAt: null,
+          revokedAt: null,
+          revokedReason: null,
+          idleExpiryDays: 180,
+        });
+        await flushPromises();
+
+        expect(wrapper.find('[data-testid="p-api-key-id"]').text()).toBe('other-org-key');
+      });
     });
   });
 });

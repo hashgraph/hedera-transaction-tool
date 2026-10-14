@@ -31,3 +31,17 @@ export const isActiveUserKey = (key: UserKeyWithUser): boolean => {
 export const filterActiveUserKeys = <T extends UserKeyWithUser>(keys: T[]): T[] => {
   return keys.filter(isActiveUserKey);
 };
+
+/**
+ * Single source of truth for "can this user have/use a report API key":
+ * admins and anyone granted canViewReports. Shared by key issuance
+ * (ApiKeysService), key authentication (ApiKeysService.validateApiKey),
+ * the report-access route guard (ReportAccessGuard), and the
+ * permission-removal cascade (UsersController.updateUser) so the rule can't
+ * drift between those call sites.
+ */
+export const isEligibleForReportAccess = (
+  user: Pick<User, 'admin' | 'canViewReports'>,
+): boolean => {
+  return user.admin || user.canViewReports;
+};

@@ -54,5 +54,31 @@ describe('ToastManager', () => {
     expect(toastManager.countErrorEntries()).toBe(1);
     vi.useRealTimers();
   });
+
+  test('a new toast in the same group replaces the previous one for that group', () => {
+    const toastManager = new ToastManager();
+    toastManager.success('First message', 'group-1');
+    toastManager.success('Second message', 'group-1');
+
+    expect(toastManager.entries.value).toHaveLength(1);
+    expect(toastManager.findEntry('First message', 'success')).toBeNull();
+    expect(toastManager.findEntry('Second message', 'success')).not.toBeNull();
+  });
+
+  test('toasts without a group id do not replace each other', () => {
+    const toastManager = new ToastManager();
+    toastManager.success('First message');
+    toastManager.success('Second message');
+
+    expect(toastManager.entries.value).toHaveLength(2);
+  });
+
+  test('a grouped toast does not replace toasts from a different group', () => {
+    const toastManager = new ToastManager();
+    toastManager.success('First message', 'group-1');
+    toastManager.success('Second message', 'group-2');
+
+    expect(toastManager.entries.value).toHaveLength(2);
+  });
 });
 

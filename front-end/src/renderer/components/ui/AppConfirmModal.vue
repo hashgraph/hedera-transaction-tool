@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { ref, watch } from 'vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
+import AppCustomIcon, { type CustomIcon } from '@renderer/components/ui/AppCustomIcon.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 
 /* Props */
@@ -12,18 +12,22 @@ const props = withDefaults(
     callback?: ((...args: any[]) => void) | null;
     cancel?: ((...args: any[]) => void) | null;
     buttonText?: string;
+    buttonColor?: 'primary' | 'secondary' | 'danger';
     cancelButtonText?: string;
     loadingText?: string;
     loading?: boolean;
+    icon?: CustomIcon;
     dataTestid: string;
   }>(),
   {
     callback: null,
     cancel: null,
     buttonText: 'Confirm',
+    buttonColor: 'primary',
     cancelButtonText: 'Cancel',
     loadingText: '',
     loading: false,
+    icon: 'questionMark',
   },
 );
 
@@ -68,7 +72,7 @@ watch(show, () => {
         @click="handleCancel"
       ></i>
       <div class="text-center">
-        <AppCustomIcon :name="'questionMark'" style="height: 160px" />
+        <AppCustomIcon :name="props.icon" style="height: 160px" />
       </div>
       <h3 class="text-center text-title text-bold mt-4">{{ props.title }}</h3>
       <p class="text-center text-small text-secondary mt-4">{{ props.text }}</p>
@@ -82,7 +86,7 @@ watch(show, () => {
           >{{ props.cancelButtonText }}</AppButton
         >
         <AppButton
-          color="primary"
+          :color="props.buttonColor"
           :loading="props.loading"
           :loading-text="props.loadingText"
           :data-testid="`${props.dataTestid}-confirm`"

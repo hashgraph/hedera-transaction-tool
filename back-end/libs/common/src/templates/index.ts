@@ -10,6 +10,7 @@ import { generateTransactionExecutedContent } from '@app/common/templates/transa
 import { generateTransactionExpiredContent } from '@app/common/templates/transaction-expired';
 import { generateTransactionReadyForReviewContent } from '@app/common/templates/transaction-ready-for-review';
 
+export * from './api-key-revoked';
 export * from './layout';
 export * from './remind-signers';
 export * from './reset-password';
