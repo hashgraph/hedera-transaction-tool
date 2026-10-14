@@ -35,6 +35,7 @@ export enum ErrorCodes {
   IB = 'IB',
   TOS = 'TOS',
   IO = 'IO',
+  MNTG = 'MNTG',
 }
 
 export const ErrorMessages: { [key in ErrorCodes]: string } = {
@@ -75,4 +76,5 @@ export const ErrorMessages: { [key in ErrorCodes]: string } = {
   [ErrorCodes.IB]: 'Invalid body',
   [ErrorCodes.TOS]: 'Transaction is over the size limit and cannot be executed',
   [ErrorCodes.IO]: 'Invalid operation',
+  [ErrorCodes.MNTG]: 'Manual transactions cannot be added to a group',
 };
