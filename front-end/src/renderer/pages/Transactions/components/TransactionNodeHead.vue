@@ -125,7 +125,7 @@ const handleSort = (field: TransactionNodeSortField, direction: 'asc' | 'desc') 
         </div>
       </th>
 
-      <!-- Header #5 : Executed At-->
+      <!-- Header #5 : Processed At (backed by executedAt field) -->
       <th @contextmenu.prevent="showContextMenu">
         <div
           class="table-sort-link"
@@ -136,7 +136,7 @@ const handleSort = (field: TransactionNodeSortField, direction: 'asc' | 'desc') 
             )
           "
         >
-          <span>Executed At</span>
+          <span>Processed At</span>
           <i
             v-if="sort?.field === TransactionNodeSortField.EXECUTED_AT_DATE"
             class="bi text-title"

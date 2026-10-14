@@ -143,6 +143,19 @@ const isManualFlagVisible = computed(() => {
   return orgTransaction.value?.isManual && transactionIsInProgress.value;
 });
 
+const executedAtLabel = computed(() => {
+  switch (orgTransaction.value?.status) {
+    case TransactionStatus.CANCELED:
+      return 'Canceled at';
+    case TransactionStatus.ARCHIVED:
+      return 'Archived at';
+    case TransactionStatus.EXPIRED:
+      return 'Expired at';
+    default:
+      return 'Executed at';
+  }
+});
+
 const validStartDate = computed(() => {
   return sdkTransaction.value
     ? getTransactionValidStart(sdkTransaction.value as SDKTransaction)
@@ -418,7 +431,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                   v-if="orgTransaction?.executedAt || localTransaction?.executed_at"
                   :class="commonColClass"
                 >
-                  <h4 :class="detailItemLabelClass">Executed at</h4>
+                  <h4 :class="detailItemLabelClass">{{ executedAtLabel }}</h4>
                   <p :class="detailItemValueClass" data-testid="p-transaction-details-executed_at">
                     <DateTimeString
                       :date="
