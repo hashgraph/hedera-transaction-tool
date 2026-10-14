@@ -14,18 +14,24 @@ export class BasePage {
 
   async dismissVisibleToasts(): Promise<void> {
     const visibleToasts = this.window.locator('.toast:visible');
-    while (await visibleToasts.count()) {
+    const deadline = Date.now() + this.VERY_LONG_TIMEOUT;
+    while ((await visibleToasts.count()) && Date.now() < deadline) {
       const toast = visibleToasts.first();
       // Grab a handle to this specific toast before clicking. `.first()` is re-resolved on
       // every poll, so waiting on the locator itself only confirms "some toast is visible" -
       // if new toasts keep appearing (e.g. a burst of error toasts), it can always resolve to
       // a different, still-visible toast and never detect that the one we clicked is gone.
       const toastHandle = await toast.elementHandle();
-      await toast.click();
+      // Non-error toasts auto-dismiss on their own (~4s) regardless of this click. If a
+      // toast detaches mid-click, Playwright's default actionability wait retries the click
+      // against whatever `.first()` now resolves to, which can spin for the full default
+      // timeout when toasts keep appearing/disappearing. Bound the click and tolerate
+      // failure - we only need the toast gone, not that we were the ones who dismissed it.
+      await toast.click({ timeout: this.SHORT_TIMEOUT }).catch(() => undefined);
       if (toastHandle) {
-        await this.window.waitForFunction(el => !el.isConnected, toastHandle, {
-          timeout: this.LONG_TIMEOUT,
-        });
+        await this.window
+          .waitForFunction(el => !el.isConnected, toastHandle, { timeout: this.LONG_TIMEOUT })
+          .catch(() => undefined);
       }
     }
   }
