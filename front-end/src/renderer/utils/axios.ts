@@ -229,7 +229,8 @@ export class AxiosWithCredentials {
     const serverUrl = extractServerUrlFromRequest(requestUrl);
     if (serverUrl === null) throw error;
     const userStore = useUserStore();
-    const org = userStore.organizations.find(o => serverUrl.startsWith(o.serverUrl));
+    const requestOrigin = new URL(serverUrl).origin;
+    const org = userStore.organizations.find(o => new URL(o.serverUrl).origin === requestOrigin);
     if (org === undefined) throw error;
     userStore.clearJwtToken(org.id);
     const { success } = await reconnectOrganization(serverUrl);
