@@ -85,6 +85,33 @@ describe('TransactionGroupsService', () => {
       mockTransaction();
     });
 
+    it('should reject groups containing a manual transaction before creating transactions', async () => {
+      const dto: CreateTransactionGroupDto = {
+        description: 'description',
+        atomic: false,
+        sequential: false,
+        groupItems: [
+          {
+            seq: 1,
+            transaction: {
+              name: 'Manual transaction',
+              description: 'Description',
+              transactionBytes: Buffer.from('0xabc01'),
+              creatorKeyId: 1,
+              signature: Buffer.from('0xabc02'),
+              mirrorNetwork: 'testnet',
+              isManual: true,
+            },
+          },
+        ],
+      };
+
+      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(
+        'Manual transactions cannot be added to a group.',
+      );
+      expect(transactionsService.createTransactions).not.toHaveBeenCalled();
+    });
+
     it('should throw BadRequestException if the transaction block fails', async () => {
       transactionsService.createTransactions.mockResolvedValue([]);
       dataSource.manager.create.mockImplementation((_, data) => ({ ...data } as any));

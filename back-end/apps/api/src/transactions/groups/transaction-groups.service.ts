@@ -37,6 +37,10 @@ export class TransactionGroupsService {
     user: User,
     dto: CreateTransactionGroupDto,
   ): Promise<TransactionGroup> {
+    if (dto.groupItems.some(({ transaction }) => transaction.isManual)) {
+      throw new BadRequestException('Manual transactions cannot be added to a group.');
+    }
+
     const group = this.dataSource.manager.create(TransactionGroup, dto);
 
     // Extract all transaction DTOs
