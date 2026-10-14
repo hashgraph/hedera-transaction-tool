@@ -30,6 +30,9 @@ export interface GroupItem {
   payerAccountId: string;
   validStart: Date;
   description: string;
+  // Session-only: not yet persisted to the local draft DB (no Prisma column),
+  // so resuming a saved group draft after closing the app currently loses this.
+  isManual?: boolean;
 }
 
 /**
@@ -249,6 +252,7 @@ const useTransactionGroupStore = defineStore('transactionGroup', () => {
       approvers: baseItem.approvers,
       payerAccountId: baseItem.payerAccountId,
       validStart: newDate,
+      isManual: baseItem.isManual,
       ...deriveDisplay(transaction),
     };
 

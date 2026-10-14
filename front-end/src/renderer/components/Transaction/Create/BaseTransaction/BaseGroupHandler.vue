@@ -21,7 +21,7 @@ const props = defineProps<{
 const transactionGroup = useTransactionGroupStore();
 
 /* Emits */
-const emit = defineEmits(['fetchedDescription', 'fetchedPayerAccountId']);
+const emit = defineEmits(['fetchedDescription', 'fetchedPayerAccountId', 'fetchedIsManual']);
 
 /* Composables */
 const router = useRouter();
@@ -44,6 +44,7 @@ const buildActionData = (
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
+  isManual: boolean,
 ) => {
   const [type, transactionBytes, keys] = getTransactionData();
 
@@ -66,6 +67,7 @@ const buildActionData = (
     payerAccountId: payerId,
     validStart,
     description,
+    isManual,
   };
 };
 
@@ -75,10 +77,11 @@ const addGroupItem = (
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
+  isManual: boolean,
   path?: string,
 ) => {
   transactionGroup.addGroupItem(
-    buildActionData('add', description, payerId, validStart, observers, approvers),
+    buildActionData('add', description, payerId, validStart, observers, approvers, isManual),
   );
   path ? router.push(path) : router.push({ name: 'createTransactionGroup' });
 };
@@ -89,10 +92,11 @@ const editGroupItem = (
   validStart: Date,
   observers: number[],
   approvers: TransactionApproverDto[],
+  isManual: boolean,
   path?: string,
 ) => {
   transactionGroup.editGroupItem(
-    buildActionData('edit', description, payerId, validStart, observers, approvers),
+    buildActionData('edit', description, payerId, validStart, observers, approvers, isManual),
   );
   path ? router.push(path) : router.push({ name: 'createTransactionGroup' });
 };
@@ -110,6 +114,7 @@ onMounted(async () => {
       transactionGroup.groupItems[Number.parseInt(route.query.groupIndex as string)];
     emit('fetchedDescription', groupItem.description);
     emit('fetchedPayerAccountId', groupItem.payerAccountId);
+    emit('fetchedIsManual', groupItem.isManual ?? false);
   }
 });
 </script>

@@ -325,6 +325,12 @@ async function sendSignedTransactionsToOrganization() {
   }
 
   /* Submit transactions to the back end */
+  // Atomic/sequential groups can't contain manual transactions (TT-097/#3566):
+  // force every item non-manual rather than block the submission, so toggling
+  // "Sequential execution" off and on during composition never loses a user's
+  // manual selections.
+  const atomic = false;
+  const blocksManual = atomic || transactionGroup.sequential;
   const apiGroupItems = new Array<ApiGroupItem>();
   for (const [i, groupItem] of transactionGroup.groupItems.entries()) {
     const transaction = Transaction.fromBytes(groupItem.transactionBytes);
@@ -338,6 +344,7 @@ async function sendSignedTransactionsToOrganization() {
         signature: groupSignatureHex[i],
         creatorKeyId:
           user.selectedOrganization.userKeys.find(k => k.publicKey === keyToSignWith)?.id || -1,
+        isManual: blocksManual ? false : (groupItem.isManual ?? false),
       },
     });
   }
@@ -345,7 +352,7 @@ async function sendSignedTransactionsToOrganization() {
   const { id, transactionBytes } = await submitTransactionGroup(
     user.selectedOrganization.serverUrl,
     transactionGroup.description,
-    false,
+    atomic,
     transactionGroup.sequential,
     apiGroupItems,
   );

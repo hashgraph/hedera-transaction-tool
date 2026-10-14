@@ -111,6 +111,7 @@ describe('CreateTransactionGroup.vue', () => {
     mocks.toastError.mockReset();
     mocks.transactionGroupStore.description = '';
     mocks.transactionGroupStore.groupItems = [];
+    mocks.transactionGroupStore.sequential = false;
     mocks.transactionGroupStore.clearGroup.mockReset();
     mocks.transactionGroupStore.setModified.mockReset();
     mocks.transactionGroupStore.updateTransactionValidStarts.mockReset();
@@ -351,6 +352,34 @@ describe('CreateTransactionGroup.vue', () => {
 
       expect(duplicate.attributes('data-bs-title')).toBe('Duplicate Transaction');
       expect(del.attributes('data-bs-title')).toBe('Delete Transaction');
+    });
+
+    test('shows the Manual badge for a manual item in a non-sequential group', () => {
+      mocks.transactionGroupStore.sequential = false;
+      mocks.transactionGroupStore.groupItems = [{ ...baseItem, isManual: true }];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(wrapper.find('[data-testid="span-transaction-type-0"] .badge').text()).toBe('Manual');
+    });
+
+    test('omits the Manual badge for a non-manual item', () => {
+      mocks.transactionGroupStore.sequential = false;
+      mocks.transactionGroupStore.groupItems = [{ ...baseItem, isManual: false }];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(wrapper.find('[data-testid="span-transaction-type-0"] .badge').exists()).toBe(false);
+    });
+
+    test('hides the Manual badge once the group is switched to sequential, without clearing isManual', () => {
+      mocks.transactionGroupStore.sequential = true;
+      mocks.transactionGroupStore.groupItems = [{ ...baseItem, isManual: true }];
+
+      const wrapper = mountCreateTransactionGroup();
+
+      expect(wrapper.find('[data-testid="span-transaction-type-0"] .badge').exists()).toBe(false);
+      expect(mocks.transactionGroupStore.groupItems[0].isManual).toBe(true);
     });
   });
 });
