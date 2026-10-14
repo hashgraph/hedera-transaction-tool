@@ -103,7 +103,12 @@ vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.v
       },
     ) {
       if (mocks.loadedDraftTransaction) {
-        this.$emit('draft-loaded', mocks.loadedDraftTransaction, null, mocks.loadedDraftDescription);
+        this.$emit(
+          'draft-loaded',
+          mocks.loadedDraftTransaction,
+          mocks.loadedDraftBaseline,
+          mocks.loadedDraftDescription,
+        );
       }
     },
     template: '<div></div>',
