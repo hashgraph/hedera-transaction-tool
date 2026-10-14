@@ -107,7 +107,7 @@ describe('TransactionGroupsService', () => {
       };
 
       await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(
-        'Manual transactions cannot be added to a group.',
+        ErrorCodes.MNTG,
       );
       expect(transactionsService.createTransactions).not.toHaveBeenCalled();
     });

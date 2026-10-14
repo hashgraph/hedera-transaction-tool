@@ -38,7 +38,7 @@ export class TransactionGroupsService {
     dto: CreateTransactionGroupDto,
   ): Promise<TransactionGroup> {
     if (dto.groupItems.some(({ transaction }) => transaction.isManual)) {
-      throw new BadRequestException('Manual transactions cannot be added to a group.');
+      throw new BadRequestException(ErrorCodes.MNTG);
     }
 
     const group = this.dataSource.manager.create(TransactionGroup, dto);
