@@ -1,8 +1,10 @@
 <script setup lang="ts">
 
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 
 import { isLoggedInOrganization } from '@renderer/utils';
 
@@ -35,9 +37,23 @@ const reminder = defineModel<number | null>('reminder', { required: true });
 
 /* Stores */
 const user = useUserStore();
+const transactionGroup = useTransactionGroupStore();
+
+/* Composables */
+const route = useRoute();
 
 /* State */
 const showAddReminder = ref(false);
+
+/* Computed */
+const showSubmitManually = computed(() => {
+  if (!isLoggedInOrganization(user.selectedOrganization)) return false;
+  if (route.query.group !== 'true') return true;
+  // Atomic groups aren't yet creatable from the UI (always false in the draft
+  // store); sequential groups must not contain manual transactions, since a
+  // manual item submitted mid-execution would run out of order.
+  return !transactionGroup.sequential;
+});
 
 /* Watchers */
 watch(showAddReminder, show => {
@@ -65,32 +81,30 @@ watch(showAddReminder, show => {
 
     <div class="d-flex justify-content-between align-items-end flex-wrap gap-3 mt-3">
       <div class="d-flex gap-4">
-        <template
+        <div v-if="showSubmitManually">
+          <AppCheckBox
+            v-model:checked="submitManually"
+            label="Schedule manually"
+            name="submit-manually"
+            data-bs-toggle="tooltip"
+            data-bs-trigger="hover"
+            data-bs-placement="bottom"
+            data-bs-custom-class="wide-xxl-tooltip"
+            data-bs-title="Transaction will have to be submitted to the network manually."
+          />
+        </div>
+
+        <div
           v-if="
             !($route.query.group === 'true') && isLoggedInOrganization(user.selectedOrganization)
           "
         >
-          <div>
-            <AppCheckBox
-              v-model:checked="submitManually"
-              label="Schedule manually"
-              name="submit-manually"
-              data-bs-toggle="tooltip"
-              data-bs-trigger="hover"
-              data-bs-placement="bottom"
-              data-bs-custom-class="wide-xxl-tooltip"
-              data-bs-title="Transaction will have to be submitted to the network manually."
-            />
-          </div>
-
-          <div>
-            <AppCheckBox
-              v-model:checked="showAddReminder"
-              label="Add reminder"
-              name="add-reminder"
-            />
-          </div>
-        </template>
+          <AppCheckBox
+            v-model:checked="showAddReminder"
+            label="Add reminder"
+            name="add-reminder"
+          />
+        </div>
       </div>
       <template v-if="!($route.query.group === 'true')">
         <div class="flex-centered justify-content-end flex-wrap gap-3">

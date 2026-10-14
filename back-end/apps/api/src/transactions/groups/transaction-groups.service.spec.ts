@@ -85,31 +85,54 @@ describe('TransactionGroupsService', () => {
       mockTransaction();
     });
 
-    it('should reject groups containing a manual transaction before creating transactions', async () => {
+    const manualGroupItem = {
+      seq: 1,
+      transaction: {
+        name: 'Manual transaction',
+        description: 'Description',
+        transactionBytes: Buffer.from('0xabc01'),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+        isManual: true,
+      },
+    };
+
+    it.each([
+      ['atomic', { atomic: true, sequential: false }],
+      ['sequential', { atomic: false, sequential: true }],
+    ])(
+      'should reject %s groups containing a manual transaction before creating transactions',
+      async (_label, flags) => {
+        const dto: CreateTransactionGroupDto = {
+          description: 'description',
+          ...flags,
+          groupItems: [manualGroupItem],
+        };
+
+        await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(
+          ErrorCodes.MNTG,
+        );
+        expect(transactionsService.createTransactions).not.toHaveBeenCalled();
+      },
+    );
+
+    it('should allow manual transactions in groups that are neither atomic nor sequential', async () => {
       const dto: CreateTransactionGroupDto = {
         description: 'description',
         atomic: false,
         sequential: false,
-        groupItems: [
-          {
-            seq: 1,
-            transaction: {
-              name: 'Manual transaction',
-              description: 'Description',
-              transactionBytes: Buffer.from('0xabc01'),
-              creatorKeyId: 1,
-              signature: Buffer.from('0xabc02'),
-              mirrorNetwork: 'testnet',
-              isManual: true,
-            },
-          },
-        ],
+        groupItems: [manualGroupItem],
       };
 
-      await expect(service.createTransactionGroup(userWithKeys, dto)).rejects.toThrow(
-        ErrorCodes.MNTG,
-      );
-      expect(transactionsService.createTransactions).not.toHaveBeenCalled();
+      dataSource.manager.create.mockImplementation((_entity, data) => ({ ...data }) as any);
+      transactionsService.createTransactions.mockImplementation(async (dtos, _) => {
+        return dtos.map(d => d as unknown as Transaction);
+      });
+
+      await service.createTransactionGroup(userWithKeys, dto);
+
+      expect(transactionsService.createTransactions).toHaveBeenCalledTimes(1);
     });
 
     it('should throw BadRequestException if the transaction block fails', async () => {

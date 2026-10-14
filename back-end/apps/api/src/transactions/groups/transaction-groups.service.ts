@@ -37,7 +37,10 @@ export class TransactionGroupsService {
     user: User,
     dto: CreateTransactionGroupDto,
   ): Promise<TransactionGroup> {
-    if (dto.groupItems.some(({ transaction }) => transaction.isManual)) {
+    if (
+      (dto.atomic || dto.sequential) &&
+      dto.groupItems.some(({ transaction }) => transaction.isManual)
+    ) {
       throw new BadRequestException(ErrorCodes.MNTG);
     }
 
