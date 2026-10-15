@@ -1,4 +1,4 @@
-FROM node:24.20.0-alpine AS builder
+FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1 AS builder
 
 WORKDIR /usr/src/app
 
@@ -29,7 +29,7 @@ WORKDIR /usr/src/app/back-end
 RUN pnpm build:common && pnpm build:migrations
 
 # Production stage - minimal runtime image
-FROM node:24.20.0-alpine
+FROM node:24.21.0-alpine@sha256:ebfe2f90462722a7a4de65e91990e97fe0d401c70e0e762c5b53302f905ec1c1
 
 WORKDIR /usr/src/app
 
