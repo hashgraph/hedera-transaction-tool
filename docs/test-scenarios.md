@@ -43,10 +43,10 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 ### 1.3 Keychain Registration
 
-| #     | Scenario                                                             | Automated | Covered By |
-| ----- | -------------------------------------------------------------------- | --------- | ---------- |
-| 1.3.1 | "Sign in with Keychain" button is visible when OS keychain available | No        |            |
-| 1.3.2 | User can register using OS keychain                                  | No        |            |
+| #     | Scenario                                                             | Automated              | Covered By |
+| ----- | -------------------------------------------------------------------- | ----------------------- | ---------- |
+| 1.3.1 | "Sign in with Keychain" button is visible when OS keychain available | Yes as Component Test  | shows the "Sign in with Keychain" button when OS keychain is available |
+| 1.3.2 | User can register using OS keychain                                  | Yes as Component Test  | registers and logs in the static user when keychain access is granted |
 
 ---
 
@@ -914,7 +914,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | Area                            | Total Scenarios | Automated E2E | Automated Renderer Test | Backend | Skipped | Manual   | N/A     | Coverage % | Coverage % with Skipped |
 | ------------------------------- | --------------- | ------------- | ----------------------- | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
-| 1. Registration                 | 22              | 14            | 6                        | 0       | 0       | 2        | 0       | 91%        | 91%                     |
+| 1. Registration                 | 22              | 14            | 8                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 3. Settings                     | 78              | 60            | 14                       | 0       | 0       | 3        | 1       | 95%        | 95%                     |
 | 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
@@ -929,16 +929,16 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
 | 14. Error Handling / Edge Cases | 17              | 10            | 2                        | 3       | 0       | 2        | 0       | 88%        | 88%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **72**                   | **3**   | **5**   | **25**   | **2**   | **93%**    | **94%**                 |
+| **Total**                       | **472**         | **365**       | **74**                   | **3**   | **5**   | **23**   | **2**   | **94%**    | **95%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 88 Vitest renderer test cases (unit + component) across 17 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 72 + 3) / 472 = 93.22%`, rounded to `93%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 74 + 3) / 472 = 93.64%`, rounded to `94%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 72 + 3 + 5) / 472 = 94.28%`, rounded to `94%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 74 + 3 + 5) / 472 = 94.70%`, rounded to `95%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -970,8 +970,6 @@ These scenarios affect core access paths or org collaboration workflows that use
 
 | Area                        | Scenario # | Description                                                  | Why Important                                                                                  |
 | --------------------------- | ---------- | ------------------------------------------------------------ |------------------------------------------------------------------------------------------------|
-| **Keychain Auth**           | 1.3.1      | "Sign in with Keychain" button visible when OS keychain available | Users relying on OS keychain cannot register if broken                                    |
-| **Keychain Auth**           | 1.3.2      | User can register using OS keychain                          | Users relying on OS keychain cannot register if broken                                         |
 | **Profile / Auth**          | 3.5.8      | Keychain user sees reset application form instead of password change | Keychain users see a different profile view; breakage leaves them with no auth option  |
 | **Org Transaction List**    | 4.2.2      | Notification badges appear on relevant org transaction tabs  | Missing badges cause org users to miss signing obligations                                     |
 | **Org Transaction Details** | 6.3.4      | Signature status panel shows required vs completed signatures | Signers cannot see their outstanding obligations in detail view                               |
