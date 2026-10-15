@@ -11,6 +11,9 @@ describe('serviceEndpoint', () => {
 
       p1.setIpAddressV4(Uint8Array.from([127, 0, 0, 1]));
       expect(compareNodeServiceEndpoint(p1, p2)).toBe(false);
+
+      p2.setIpAddressV4(Uint8Array.from([127, 0, 0, 1]));
+      expect(compareNodeServiceEndpoint(p1, p2)).toBe(true);
     });
 
     test('setDomainName', () => {
@@ -20,6 +23,9 @@ describe('serviceEndpoint', () => {
 
       p1.setDomainName('example.com');
       expect(compareNodeServiceEndpoint(p1, p2)).toBe(false);
+
+      p2.setDomainName('example.com');
+      expect(compareNodeServiceEndpoint(p1, p2)).toBe(true);
     });
   });
 
@@ -30,5 +36,8 @@ describe('serviceEndpoint', () => {
 
     p1.setPort(4242);
     expect(compareNodeServiceEndpoint(p1, p2)).toBe(false);
+
+    p2.setPort(4242);
+    expect(compareNodeServiceEndpoint(p1, p2)).toBe(true);
   });
 });
