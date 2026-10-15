@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleAsyncOptions } from '@nestjs/typeorm';
-import { EntityClassOrSchema } from '@nestjs/typeorm/dist/interfaces/entity-class-or-schema.type';
 import { ConfigService } from '@nestjs/config';
 
 @Module({
@@ -57,7 +56,4 @@ import { ConfigService } from '@nestjs/config';
   ],
 })
 export class DatabaseModule {
-  static forFeature(entities: EntityClassOrSchema[], connectionName?: string) {
-    return TypeOrmModule.forFeature(entities, connectionName);
-  }
 }
