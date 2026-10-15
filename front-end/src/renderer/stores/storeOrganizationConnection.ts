@@ -17,6 +17,7 @@ const useOrganizationConnection = defineStore('organizationConnection', () => {
     status: ConnectionStatus,
     reason?: DisconnectReason,
   ): void {
+    const previousStatus = connectionStatuses.value[serverUrl];
     connectionStatuses.value[serverUrl] = status;
 
     if (status === 'disconnected' && reason) {
@@ -26,7 +27,9 @@ const useOrganizationConnection = defineStore('organizationConnection', () => {
       delete disconnectReasons.value[serverUrl];
     }
 
-    logger.info('Connection status updated', { serverUrl, status });
+    if (previousStatus !== status) {
+      logger.info('Connection status updated', { serverUrl, status });
+    }
   }
 
   function getConnectionStatus(serverUrl: string): ConnectionStatus | null {
