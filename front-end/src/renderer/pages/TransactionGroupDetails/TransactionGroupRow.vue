@@ -2,9 +2,9 @@
 import { computed, ref, watch } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 import { formatTransactionSummary } from '@renderer/utils/transactionSummary';
-import { type ITransactionFull, TransactionStatus, TransactionTypeName } from '@shared/interfaces';
+import { type ITransactionFull, TransactionStatus } from '@shared/interfaces';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
-import { formatTransactionType } from '@renderer/utils/sdk/transactions.ts';
+import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
@@ -111,20 +111,27 @@ const itemStatusLabel = computed((): string => {
   return result;
 });
 
+const decodedTransaction = computed(() => {
+  try {
+    return Transaction.fromBytes(hexToUint8Array(props.groupItem.transaction.transactionBytes));
+  } catch {
+    return null;
+  }
+});
+
 const transactionType = computed(() => {
-  const typeName = TransactionTypeName[props.groupItem.transaction.type];
-  return formatTransactionType(typeName, false, true);
+  return getDisplayTransactionType(
+    decodedTransaction.value ?? { backendType: props.groupItem.transaction.type },
+    false,
+    true,
+  );
 });
 
 const transactionSummary = computed(() => {
-  try {
-    const transaction = Transaction.fromBytes(
-      hexToUint8Array(props.groupItem.transaction.transactionBytes),
-    );
-    return formatTransactionSummary(transaction);
-  } catch {
+  if (!decodedTransaction.value) {
     return 'Summary unavailable — see details';
   }
+  return formatTransactionSummary(decodedTransaction.value);
 });
 
 /* Functions */
