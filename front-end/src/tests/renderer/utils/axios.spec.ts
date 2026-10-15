@@ -22,6 +22,10 @@ vi.mock('@renderer/utils/version', () => ({
   FRONTEND_VERSION: '1.0.0',
 }));
 
+vi.mock('@renderer/services/organization', () => ({
+  reconnectOrganization: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 const createAxiosError = (status: number, data: Record<string, unknown> = {}): AxiosError =>
   new AxiosError('request failed', 'ERR', undefined, undefined, {
     status,
@@ -194,6 +198,28 @@ describe('AxiosWithCredentials', () => {
     expect(response.data).toBe(responseData);
     expect(response.config.headers['Authorization']).toBe(`bearer ${jwtToken}`);
     expect(response.config.maxContentLength).toBe(config.maxContentLength);
+  });
+
+  test('401 recovery clears the token for the exact matching origin when organization hosts overlap by prefix', async () => {
+    mockOrgs.length = 0;
+    Object.keys(mockTokens).forEach(key => delete mockTokens[key]);
+
+    const victimOrigin = 'https://tt.example.com';
+    const attackerUrl = 'https://tt.example.com.attacker.io/users/me';
+    mockOrgs.push(
+      { serverUrl: victimOrigin, id: 'victim-org' },
+      { serverUrl: 'https://tt.example.com.attacker.io', id: 'attacker-org' },
+    );
+    mockTokens['victim-org'] = 'victim-token';
+    mockTokens['attacker-org'] = 'attacker-token';
+    mock.onGet(attackerUrl).replyOnce(401).onGet(attackerUrl).reply(successStatus, responseData);
+
+    await axiosWithCredentials.get(attackerUrl);
+
+    expect(mockTokens['victim-org']).toBe('victim-token');
+    expect(mockTokens['attacker-org']).toBeNull();
+    const { reconnectOrganization } = await import('@renderer/services/organization');
+    expect(reconnectOrganization).toHaveBeenCalledWith('https://tt.example.com.attacker.io');
   });
 
   test('post()', async () => {
