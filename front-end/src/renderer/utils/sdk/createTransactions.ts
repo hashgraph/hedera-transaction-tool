@@ -42,6 +42,7 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
+import { compareNodeServiceEndpoint } from '@renderer/utils/sdk/serviceEndpoints.ts';
 
 export type TransactionCommonData = {
   payerId: string;
@@ -544,8 +545,11 @@ const setNodeData = (
     transaction.setServiceEndpoints(txServiceEndpoints);
   }
 
-  if (oldData?.grpc_web_proxy_endpoint != data.grpcWebProxyEndpoint && txGrpcWebProxyEndpoint) {
-    transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
+  if (txGrpcWebProxyEndpoint !== null) {
+    const oldValue = oldData?.grpc_web_proxy_endpoint ?? null;
+    if (oldValue === null || !compareNodeServiceEndpoint(oldValue, txGrpcWebProxyEndpoint)) {
+      transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
+    }
   }
 
   if (data.certificateHash.length > 0) {
