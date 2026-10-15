@@ -76,7 +76,11 @@ export class AuthService {
 
   /* The user is already verified, return jwt */
   async login(user: User) {
-    const payload: JwtPayload = { userId: user.id, email: user.email };
+    const payload: JwtPayload = {
+      userId: user.id,
+      email: user.email,
+      credentialVersion: user.credentialVersion ?? 0,
+    };
     const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d` as StringValue;
 
     return this.jwtService.sign(payload, {
@@ -261,13 +265,17 @@ export class AuthService {
 
   /* Attempt to authenticate the token. */
   async authenticateWebsocketToken(accessToken: string): Promise<User> {
-    const { userId } = await this.jwtService.verifyAsync(accessToken);
+    const { userId, credentialVersion } = await this.jwtService.verifyAsync(accessToken);
     const result = await this.usersService.getUser({ id: userId });
-    if (result !== null) {
-      return result;
-    } else {
+    if (!result) {
       throw new UnauthorizedException('Cannot find user matching access token');
     }
+
+    if ((credentialVersion ?? 0) !== (result.credentialVersion ?? 0)) {
+      throw new UnauthorizedException('Access token was issued before the password changed');
+    }
+
+    return result;
   }
 
   /* Elevate user to admin */
