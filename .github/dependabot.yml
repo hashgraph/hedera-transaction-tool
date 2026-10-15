@@ -6,6 +6,16 @@ updates:
       interval: "daily"
     open-pull-requests-limit: 10
 
+  - package-ecosystem: "docker"
+    directories:
+      - "/back-end/typeorm"
+      - "/back-end/apps/chain"
+      - "/back-end/apps/api"
+      - "/back-end/apps/notifications"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+
   - package-ecosystem: npm
     directory: "/"
     schedule:
