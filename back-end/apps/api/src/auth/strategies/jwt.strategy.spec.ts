@@ -47,11 +47,39 @@ describe('JwtStrategy', () => {
     });
 
     it('should return a user when validate is called with a valid userId', async () => {
-      const user = { id: 1, email: 'test@test.com' };
+      const user = { id: 1, email: 'test@test.com', credentialVersion: 0 };
       mockUsersService.getUser.mockResolvedValue(user as User);
 
       const result = await jwtStrategy.validate({ userId: user.id, email: user.email });
       expect(result).toEqual(user);
+    });
+
+    it.each([
+      {
+        scenario: 'old-password login racing the password save',
+        tokenVersion: 0,
+        currentVersion: 1,
+      },
+      {
+        scenario: 'login between two rotations in the same second',
+        tokenVersion: 1,
+        currentVersion: 2,
+      },
+    ])('should reject a token from $scenario', async ({ tokenVersion, currentVersion }) => {
+      const user = {
+        id: 42,
+        email: 'test@test.com',
+        credentialVersion: currentVersion,
+      };
+      mockUsersService.getUser.mockResolvedValue(user as User);
+
+      await expect(
+        jwtStrategy.validate({
+          userId: 42,
+          email: user.email,
+          credentialVersion: tokenVersion,
+        }),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('should throw UnauthorizedException when no user is found', async () => {
