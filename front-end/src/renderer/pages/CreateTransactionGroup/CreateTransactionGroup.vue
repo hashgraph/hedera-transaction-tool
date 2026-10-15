@@ -452,7 +452,12 @@ onBeforeRouteLeave(async to => {
                 style="width: 13rem"
                 :data-testid="'span-transaction-type-' + index"
               >
-                {{ getDisplayTransactionType(groupItem.type, false, true) }}
+                <span>{{ getDisplayTransactionType(groupItem.type, false, true) }}</span>
+                <span
+                  v-if="groupItem.isManual && !transactionGroup.sequential"
+                  class="badge bg-info ms-2"
+                  >Manual</span
+                >
               </div>
               <div
                 class="text-truncate flex-grow-1 text-center"

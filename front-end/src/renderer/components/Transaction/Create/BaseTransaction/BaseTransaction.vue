@@ -281,6 +281,7 @@ const handleGroupAction = (action: 'add' | 'edit', path?: string) => {
     data.validStart,
     observers.value,
     approvers.value,
+    submitManually.value,
     path,
   );
 };
@@ -292,6 +293,10 @@ function handleFetchedDescription(fetchedDescription: string) {
 
 function handleFetchedPayerAccountId(fetchedPayerAccountId: string) {
   payerData.accountId.value = fetchedPayerAccountId;
+}
+
+function handleFetchedIsManual(fetchedIsManual: boolean) {
+  submitManually.value = fetchedIsManual;
 }
 
 function handleInputValidation(e: Event) {
@@ -465,6 +470,7 @@ defineExpose({
       :transaction-key="transactionKey"
       @fetched-description="handleFetchedDescription"
       @fetched-payer-account-id="handleFetchedPayerAccountId"
+      @fetched-is-manual="handleFetchedIsManual"
     />
 
     <BaseTransactionModal

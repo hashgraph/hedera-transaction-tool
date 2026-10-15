@@ -163,6 +163,7 @@ useRevealed(container, () => {
     <!-- Column #2 : Transaction Type -->
     <td>
       <span class="text-bold">{{ transactionType }}</span>
+      <span v-if="props.groupItem.transaction.isManual" class="badge bg-info ms-3">Manual</span>
       <div
         v-if="transactionSummary"
         class="text-small mt-1 transfer-summary"

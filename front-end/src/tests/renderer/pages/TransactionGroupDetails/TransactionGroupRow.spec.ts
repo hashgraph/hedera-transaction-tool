@@ -160,3 +160,18 @@ describe('group transfer summary', () => {
     expect(summary(wrapper)).toBe('Summary unavailable — see details');
   });
 });
+
+describe('manual badge', () => {
+  test('shows the Manual badge when the transaction is manual', async () => {
+    const wrapper = render(new AccountCreateTransaction());
+    const item = groupItem(new AccountCreateTransaction());
+    item.transaction.isManual = true;
+    await wrapper.setProps({ groupItem: item });
+    expect(wrapper.find('.badge.bg-info').text()).toBe('Manual');
+  });
+
+  test('omits the Manual badge when the transaction is not manual', () => {
+    const wrapper = render(new AccountCreateTransaction());
+    expect(wrapper.find('.badge.bg-info').exists()).toBe(false);
+  });
+});
