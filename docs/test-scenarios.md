@@ -839,7 +839,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                | Automated | Covered By |
 | ------ | ------------------------------------------------------- | --------- | ---------- |
-| 13.3.3 | Account setup in progress forces user to /account-setup | No        |            |
+| 13.3.3 | Account setup in progress blocks navigation away from /account-setup | Yes as Component Test | blocks navigation to any other route |
 
 ---
 
@@ -926,19 +926,19 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 13. Navigation and Layout       | 12              | 11            | 0                        | 0       | 0       | 1        | 0       | 92%        | 92%                     |
+| 13. Navigation and Layout       | 12              | 11            | 1                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 14. Error Handling / Edge Cases | 17              | 10            | 2                        | 3       | 0       | 2        | 0       | 88%        | 88%                     |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **74**                   | **3**   | **5**   | **23**   | **2**   | **94%**    | **95%**                 |
+| **Total**                       | **472**         | **365**       | **75**                   | **3**   | **5**   | **22**   | **2**   | **94%**    | **95%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 88 Vitest renderer test cases (unit + component) across 17 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 74 + 3) / 472 = 93.64%`, rounded to `94%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 75 + 3) / 472 = 93.86%`, rounded to `94%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 74 + 3 + 5) / 472 = 94.70%`, rounded to `95%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 75 + 3 + 5) / 472 = 94.92%`, rounded to `95%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -996,7 +996,6 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 
 | Area               | Scenario #     | Description                                                     | When to Test                                       |
 | ------------------ | -------------- | --------------------------------------------------------------- | -------------------------------------------------- |
-| **Route Guards**   | 13.3.3         | Account setup in progress forces user to /account-setup         | After auth flow or routing changes                 |
 | **Network Errors** | 14.4.1         | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
 | **Network Errors** | 14.4.3         | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
 | **Network Errors** | 14.4.4         | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
