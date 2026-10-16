@@ -127,7 +127,9 @@ async function fetchNodes(): Promise<ITransactionNode[]> {
 <template>
   <AppModal v-model:show="show">
     <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="show = false"></i>
+      <div class="text-start">
+        <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="show = false"></i>
+      </div>
       <div class="text-center">
         <AppCustomIcon :name="'questionMark'" style="height: 80px" />
       </div>
