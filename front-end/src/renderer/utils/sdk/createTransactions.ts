@@ -657,9 +657,7 @@ export function createNodeUpdateTransactionFromInfo(info: INodeInfoParsed): Node
   if (info.node_account_id !== null) {
     result.setAccountId(info.node_account_id);
   }
-  if (info.service_endpoints.length > 0) {
-    result.setServiceEndpoints(info.service_endpoints);
-  }
+  result.setServiceEndpoints(info.service_endpoints);
   result.setDeclineReward(info.decline_reward);
   if (info.grpc_web_proxy_endpoint !== null) {
     result.setGrpcWebProxyEndpoint(info.grpc_web_proxy_endpoint);
