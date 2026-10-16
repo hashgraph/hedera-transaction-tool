@@ -177,6 +177,7 @@ export function useGroupedNotifications() {
         };
       case NotificationType.USER_REGISTERED:
         return async () => {
+          await selectOrganization();
           await router.push({ name: 'contactList' });
         };
       default:
