@@ -44,7 +44,7 @@ catalog:
   '@typescript-eslint/eslint-plugin': 8.70.1
   '@typescript-eslint/parser': 8.70.1
   '@hiero-ledger/proto': 2.31.0
-  '@hiero-ledger/sdk': 2.88.0
+  '@hiero-ledger/sdk': 2.89.1
   '@types/bcrypt': 6.0.0
   '@types/better-sqlite3': 7.6.13
   '@types/jest': 30.0.0
