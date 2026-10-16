@@ -632,17 +632,45 @@ describe('UsersService', () => {
     await expect(service.updateUserById(1, {})).rejects.toThrow(ErrorCodes.UNF);
   });
 
-  it('should set new password the user', async () => {
-    userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
+  it('should migrate a legacy hash only if it is still the stored password', async () => {
+    const legacyHash = 'legacy-bcrypt-hash';
+    const migratedHash = 'migrated-argon2-hash';
+    jest.spyOn(service, 'hash').mockResolvedValue(migratedHash);
+    const identifiedUser = { ...user, id: 42, password: legacyHash } as User;
+    await service.migrateLegacyPasswordHash(identifiedUser, password);
 
-    await service.setPassword({ ...user } as User, password);
+    expect(userRepository.update).toHaveBeenCalledWith(
+      { id: 42, password: legacyHash },
+      { password: migratedHash, status: 'NONE' },
+    );
+    expect(blacklistService.blacklistPreviousUserTokens).not.toHaveBeenCalled();
+  });
 
-    expect(userRepository.save).toHaveBeenCalledWith({
-      ...user,
-      password: hashedPassword,
-      status: 'NONE',
-    });
+  it('should atomically change the password and increment the credential version on every rotation', async () => {
+    const identifiedUser = { ...user, id: 42, credentialVersion: 0 } as User;
+    jest.spyOn(service, 'hash').mockResolvedValue(hashedPassword);
+
+    await service.setPassword(identifiedUser, password);
+    await service.setPassword(identifiedUser, 'another password');
+
+    expect(userRepository.update).toHaveBeenCalledTimes(2);
+    for (const [, update] of userRepository.update.mock.calls) {
+      expect(update.password).toBe(hashedPassword);
+      expect(update.status).toBe('NONE');
+      expect(update.credentialVersion).toEqual(expect.any(Function));
+      expect((update.credentialVersion as () => string)()).toBe('"credentialVersion" + 1');
+    }
+  });
+
+  it('should not update the password if the credential update fails', async () => {
+    const identifiedUser = { ...user, id: 42 } as User;
+    jest.spyOn(service, 'hash').mockResolvedValue(hashedPassword);
+    userRepository.update.mockRejectedValueOnce(new Error('Database unavailable'));
+
+    await expect(
+      service.setPassword(identifiedUser, password),
+    ).rejects.toThrow('Database unavailable');
+    expect(userRepository.update).toHaveBeenCalledTimes(1);
   });
 
   it('should remove user, soft-delete all associated keys, and revoke the report API key', async () => {

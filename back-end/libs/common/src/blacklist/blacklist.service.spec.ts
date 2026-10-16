@@ -3,8 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { mockDeep } from 'jest-mock-extended';
 
-import { BlacklistService } from './blacklist.service';
-import { REDIS_CLIENT } from '../redis/redis-client.module';
+import { BlacklistService } from '@app/common';
+import { REDIS_CLIENT } from '@app/common';
 
 describe('BlacklistService', () => {
   let service: BlacklistService;

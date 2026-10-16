@@ -69,7 +69,7 @@ export class UsersService {
     }
 
     if (isBcrypt) {
-      await this.setPassword(user, password);
+      await this.migrateLegacyPasswordHash(user, password);
     }
 
     return user;
@@ -157,13 +157,28 @@ export class UsersService {
     return this.repo.save(user);
   }
 
-  // Set the password for the given user. This method is only accessible to a user that is
-  // logged in and authenticated, or has verified the email and OTP
+  // Upgrade a verified legacy hash during login without changing the credential version.
+  async migrateLegacyPasswordHash(user: User, password: string): Promise<void> {
+    // Migrate a legacy hash only if it is still current.
+    // compare-and-set is used to prevent a login already in process from overwriting a concurrent password reset.
+    await this.repo.update(
+      { id: user.id, password: user.password },
+      {
+        password: await this.getSaltedHash(password),
+        status: UserStatus.NONE,
+      },
+    );
+  }
+
+  // Change a user's password and invalidate existing sessions.
   async setPassword(user: User, newPassword: string): Promise<void> {
-    // Get the salted password, and set the status to none (no longer new)
-    await this.updateUser(user, {
-      password: await this.getSaltedHash(newPassword),
+    const passwordHash = await this.getSaltedHash(newPassword);
+    // Update the hash and version in one statement such that a concurrent login
+    // which validated the old hash will have a stale version and will be rejected.
+    await this.repo.update(user.id, {
+      password: passwordHash,
       status: UserStatus.NONE,
+      credentialVersion: () => '"credentialVersion" + 1',
     });
   }
 
