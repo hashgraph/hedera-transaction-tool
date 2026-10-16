@@ -731,11 +731,13 @@ onMounted(async () => {
 
           <AppModal v-model:show="isUnlinkAccountModalShown" class="common-modal">
             <div class="p-4">
-              <i
-                class="bi bi-x-lg d-inline-block cursor-pointer"
-                style="line-height: 16px"
-                @click="isUnlinkAccountModalShown = false"
-              ></i>
+              <div class="text-start">
+                <i
+                  class="bi bi-x-lg d-inline-block cursor-pointer"
+                  style="line-height: 16px"
+                  @click="isUnlinkAccountModalShown = false"
+                ></i>
+              </div>
               <div class="text-center">
                 <AppCustomIcon :name="'bin'" style="height: 160px" />
               </div>

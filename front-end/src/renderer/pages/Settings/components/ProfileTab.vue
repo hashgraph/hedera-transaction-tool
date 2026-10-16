@@ -80,7 +80,9 @@ const isApiKeySectionVisible = computed(
     (user.selectedOrganization.admin || user.selectedOrganization.canViewReports),
 );
 
-const hasActiveApiKey = computed(() => !!apiKeyStatus.value?.keyId && !apiKeyStatus.value?.revokedAt);
+const hasActiveApiKey = computed(
+  () => !!apiKeyStatus.value?.keyId && !apiKeyStatus.value?.revokedAt,
+);
 
 const apiKeyRevokedReasonLabel = computed(() => {
   switch (apiKeyStatus.value?.revokedReason) {
@@ -289,7 +291,8 @@ watch(newPassword, pass => {
 });
 
 watch(
-  () => (isLoggedInOrganization(user.selectedOrganization) ? user.selectedOrganization.serverUrl : null),
+  () =>
+    isLoggedInOrganization(user.selectedOrganization) ? user.selectedOrganization.serverUrl : null,
   () => {
     revealedApiKey.value = null;
     apiKeyStatus.value = null;
@@ -314,7 +317,9 @@ onBeforeMount(fetchApiKeyStatus);
       </div>
       <AppButton
         v-if="
-          (isUserLoggedIn(user.personal) && !user.personal.useKeychain && !user.selectedOrganization) ||
+          (isUserLoggedIn(user.personal) &&
+            !user.personal.useKeychain &&
+            !user.selectedOrganization) ||
           isLoggedInOrganization(user.selectedOrganization)
         "
         color="primary"
@@ -361,10 +366,12 @@ onBeforeMount(fetchApiKeyStatus);
     </form>
     <AppModal v-model:show="isConfirmModalShown" class="common-modal">
       <div class="p-4">
-        <i
-          class="bi bi-x-lg d-inline-block cursor-pointer"
-          @click="isConfirmModalShown = false"
-        ></i>
+        <div class="text-start">
+          <i
+            class="bi bi-x-lg d-inline-block cursor-pointer"
+            @click="isConfirmModalShown = false"
+          ></i>
+        </div>
         <div class="text-center">
           <AppCustomIcon :name="'questionMark'" style="height: 160px" />
         </div>
@@ -407,9 +414,8 @@ onBeforeMount(fetchApiKeyStatus);
     <div v-if="isApiKeySectionVisible" class="p-4 border border-2 rounded-3 mt-5">
       <h3 class="text-main">API Key</h3>
       <p class="text-small text-secondary mt-3">
-        Use an API key to give a third-party tool read-only access to reports, instead of
-        sharing your account password. A key can only make GET requests against the signing
-        report endpoint.
+        Use an API key to give a third-party tool read-only access to reports, instead of sharing
+        your account password. A key can only make GET requests against the signing report endpoint.
       </p>
 
       <template v-if="apiKeyLoading">
@@ -557,5 +563,4 @@ onBeforeMount(fetchApiKeyStatus);
     </form>
     <ResetDataModal v-model:show="isResetDataModalShown" @data:reset="handleResetData" />
   </div>
-
 </template>

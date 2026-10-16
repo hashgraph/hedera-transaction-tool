@@ -38,6 +38,7 @@ const useWebsocketConnection = defineStore(
     const connectionStates = ref<{
       [serverUrl: string]: 'connected' | 'disconnected' | 'connecting';
     }>({});
+    const socketAuthTokens = ref<{ [serverUrl: string]: string | null }>({});
 
     /* Actions */
     async function setup() {
@@ -87,8 +88,7 @@ const useWebsocketConnection = defineStore(
       const authToken = userStore.getJwtToken(org.id);
 
       if (socket) {
-        //@ts-expect-error - auth is missing in typings
-        if (socket.auth?.token !== `bearer ${authToken}`) {
+        if (socketAuthTokens.value[serverUrl] !== authToken) {
           disconnect(serverUrl);
         } else {
           if (socket.connected) {
@@ -118,6 +118,7 @@ const useWebsocketConnection = defineStore(
         withCredentials: true,
       });
       sockets.value[serverUrl] = newSocket;
+      socketAuthTokens.value[serverUrl] = authToken;
 
       listenConnection(newSocket, url, serverUrl);
 
@@ -130,6 +131,7 @@ const useWebsocketConnection = defineStore(
         socket.off();
         socket.disconnect();
         sockets.value[serverUrl] = null;
+        socketAuthTokens.value[serverUrl] = null;
       }
       connectionStates.value[serverUrl] = 'disconnected';
     }

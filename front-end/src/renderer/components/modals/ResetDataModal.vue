@@ -9,7 +9,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 
-
 /* Props */
 defineProps<{ show: boolean }>();
 
@@ -23,7 +22,7 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Handlers */
 const handleResetData = async () => {
@@ -44,7 +43,9 @@ const handleResetData = async () => {
     class="common-modal"
   >
     <div class="p-4">
-      <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="emit('update:show', false)"></i>
+      <div class="text-start">
+        <i class="bi bi-x-lg d-inline-block cursor-pointer" @click="emit('update:show', false)"></i>
+      </div>
       <div class="text-center">
         <AppCustomIcon :name="'bin'" style="height: 160px" />
       </div>
