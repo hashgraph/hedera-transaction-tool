@@ -215,6 +215,28 @@ describe('useWebsocketConnection', () => {
     });
   });
 
+  // ── connect — socket reuse vs. recreation on token change ──────────────────
+
+  describe('connect — socket reuse', () => {
+    test('reuses the existing socket when the auth token has not changed', () => {
+      store.connect(SERVER_URL, SERVER_URL);
+      store.connect(SERVER_URL, SERVER_URL);
+
+      expect(io).toHaveBeenCalledTimes(1);
+      expect(mockSocket.disconnect).not.toHaveBeenCalled();
+    });
+
+    test('disconnects and opens a new socket when the auth token changes', () => {
+      store.connect(SERVER_URL, SERVER_URL);
+
+      mockUserStore.getJwtToken.mockReturnValue('new-token');
+      store.connect(SERVER_URL, SERVER_URL);
+
+      expect(mockSocket.disconnect).toHaveBeenCalled();
+      expect(io).toHaveBeenCalledTimes(2);
+    });
+  });
+
   // ── existing isConnected tests ───────────────────────────────────────────────
 
   describe('isConnected', () => {
