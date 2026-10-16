@@ -872,9 +872,9 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 
 | #      | Scenario                                                       | Automated  | Covered By |
 | ------ | -------------------------------------------------------------- | ---------- | ---------- |
-| 14.4.1 | Graceful handling when organization server is unreachable      | No         |            |
+| 14.4.1 | Graceful handling when organization server is unreachable      | Yes (Unit) | `front-end/src/tests/renderer/services/organization/health.spec.ts` — healthCheck returns false (never throws) on refused/timeout/5xx; `front-end/src/tests/renderer/utils/userStoreHelpers.orgUnreachable.spec.ts` — getConnectedOrganization marks org inactive; `front-end/src/tests/renderer/components/ActionController/ActionReport.spec.ts` — "Server is unreachable" report |
 | 14.4.2 | WebSocket reconnection after disconnect                        | Yes (Unit) | `front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts` — reconnection cycle (disconnect + connect_error retry paths), listenConnection handlers |
-| 14.4.3 | Error displayed when Mirror Node is unavailable                | No         |            |
+| 14.4.3 | Error displayed when Mirror Node is unavailable                | Yes (Unit) | `front-end/src/tests/renderer/components/ActionController/ActionReport.spec.ts` — "Failed to contact mirror node" / 429 / 5xx reports |
 | 14.4.4 | Transaction fails gracefully when Hedera network returns error | Yes (Unit) | `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts` — executeTransaction handler propagates structured error when Hedera network returns a StatusError |
 
 ### 14.5 Form Validation Edge Cases
