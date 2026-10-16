@@ -261,12 +261,7 @@ export const getComponentServiceEndpoints = (
 };
 
 export function getNodeData(transaction: Transaction): NodeData {
-  if (
-    !(transaction instanceof NodeCreateTransaction) &&
-    !(transaction instanceof NodeUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+  assertTransactionType(transaction, NodeCreateTransaction);
 
   const gossipEndpoints = getComponentServiceEndpoints(transaction.gossipEndpoints || []);
   const serviceEndpoints = getComponentServiceEndpoints(transaction.serviceEndpoints || []);
@@ -287,11 +282,41 @@ export function getNodeData(transaction: Transaction): NodeData {
   };
 }
 
-export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
+export function getNodeUpdateData(
+  transaction: Transaction,
+  baseline: Transaction | null,
+): NodeUpdateData {
   assertTransactionType(transaction, NodeUpdateTransaction);
+  if (baseline !== null) {
+    assertTransactionType(baseline, NodeUpdateTransaction);
+  }
+
+  const nodeId = transaction.nodeId ?? baseline?.nodeId ?? null;
+  const accountId = transaction.accountId ?? baseline?.accountId ?? null;
+  const description = transaction.description ?? baseline?.description ?? null;
+  const gossipEndpoints = transaction.gossipEndpoints ?? baseline?.gossipEndpoints ?? [];
+  const grpcWebProxyEndpoint = transaction.grpcWebProxyEndpoint ?? baseline?.grpcWebProxyEndpoint ?? null;
+  const serviceEndpoints = transaction.serviceEndpoints ?? baseline?.serviceEndpoints ?? [];
+  const certificateHash = transaction.certificateHash ?? baseline?.certificateHash ?? null;
+  const adminKey = transaction.adminKey ?? baseline?.adminKey ?? null;
+  const declineReward = transaction.declineReward ?? baseline?.declineReward ?? null;
+  const associatedRegisteredNodes =
+    transaction.associatedRegisteredNodes ?? baseline?.associatedRegisteredNodes ?? [];
+
   return {
-    nodeId: transaction.nodeId?.toString() || '',
-    ...getNodeData(transaction),
+    nodeId: nodeId?.toString() ?? '',
+    nodeAccountId: accountId?.toString() ?? '',
+    description: description || '',
+    gossipEndpoints: getComponentServiceEndpoints(gossipEndpoints),
+    grpcWebProxyEndpoint: getComponentServiceEndpoint(grpcWebProxyEndpoint),
+    serviceEndpoints: getComponentServiceEndpoints(serviceEndpoints),
+    gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
+    certificateHash: certificateHash || Uint8Array.from([]),
+    adminKey: adminKey,
+    declineReward: declineReward ?? false,
+    associatedRegisteredNodes: [
+      ...new Set(associatedRegisteredNodes.map(id => id.toString()) ?? []),
+    ],
   };
 }
 
@@ -412,15 +437,26 @@ export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeD
   };
 }
 
-export function getRegisteredNodeUpdateData(transaction: Transaction): RegisteredNodeUpdateData {
+export function getRegisteredNodeUpdateData(
+  transaction: Transaction,
+  baseline: Transaction | null,
+): RegisteredNodeUpdateData {
   assertTransactionType(transaction, RegisteredNodeUpdateTransaction);
+  if (baseline !== null) {
+    assertTransactionType(baseline, RegisteredNodeUpdateTransaction);
+  }
 
-  const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
+  const registeredNodeId = transaction.registeredNodeId ?? baseline?.registeredNodeId ?? null;
+  const description = transaction.description ?? baseline?.description ?? null;
+  const adminKey = transaction.adminKey ?? baseline?.adminKey ?? null;
+  const serviceEndpoints = transaction.serviceEndpoints ?? baseline?.serviceEndpoints ?? [];
+
+  const endpoints = serviceEndpoints.map(getComponentRegisteredEndpoint);
 
   return {
-    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
-    description: transaction.description ?? '',
-    adminKey: transaction.adminKey ?? null,
+    registeredNodeId: registeredNodeId?.toString() ?? '',
+    description: description ?? '',
+    adminKey: adminKey ?? null,
     serviceEndpoints: endpoints,
   };
 }
@@ -456,7 +492,7 @@ export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteD
 
 const transactionHandlers = new Map<
   new (...args: any[]) => Transaction,
-  (transaction: Transaction) => Record<string, any>
+  (transaction: Transaction, baseline: Transaction | null) => Record<string, any>
 >([
   [
     AccountCreateTransaction,
@@ -543,10 +579,9 @@ const transactionHandlers = new Map<
 
   [
     NodeUpdateTransaction,
-    tx => ({
+    (tx, bl) => ({
       ...getTransactionCommonData(tx),
-      ...getNodeData(tx),
-      ...getNodeUpdateData(tx),
+      ...getNodeUpdateData(tx, bl),
     }),
   ],
 
@@ -568,9 +603,9 @@ const transactionHandlers = new Map<
 
   [
     RegisteredNodeUpdateTransaction,
-    tx => ({
+    (tx, bl) => ({
       ...getTransactionCommonData(tx),
-      ...getRegisteredNodeUpdateData(tx),
+      ...getRegisteredNodeUpdateData(tx, bl),
     }),
   ],
 
@@ -599,14 +634,14 @@ const transactionHandlers = new Map<
   ],
 ]);
 
-export function getAllData(transaction: Transaction) {
+export function getAllData(transaction: Transaction, baseline: Transaction | null) {
   const handler = transactionHandlers.get(
     transaction.constructor as new (...args: any[]) => ExtendedTransactionData & Transaction,
   );
   if (!handler) {
     throw new Error('Unsupported transaction type');
   }
-  return handler(transaction);
+  return handler(transaction, baseline);
 }
 
 export function hasStartTimestampChanged(
@@ -629,9 +664,9 @@ export function hasStartTimestampChanged(
     (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
 }
 
-export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {
-  const t1Data = getAllData(t1);
-  const t2Data = getAllData(t2);
+export function transactionsDataMatch(t1: Transaction, t2: Transaction, baseline: Transaction | null): boolean {
+  const t1Data = getAllData(t1, baseline);
+  const t2Data = getAllData(t2, baseline);
 
   clearComparisonFields(t1Data);
   clearComparisonFields(t2Data);

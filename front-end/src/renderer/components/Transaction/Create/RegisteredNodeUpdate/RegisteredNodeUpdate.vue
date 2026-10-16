@@ -4,12 +4,13 @@ import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransac
 import {
   type ComponentRegisteredServiceEndpoint,
   createRegisteredNodeUpdateTransaction,
+  createRegisteredNodeUpdateTransactionFromInfo,
   parseIpv4ToBytes,
   parsePort,
   type RegisteredNodeUpdateData,
 } from '@renderer/utils/sdk/createTransactions';
 
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, type Ref } from 'vue';
 import { Transaction, RegisteredNodeUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
@@ -43,13 +44,18 @@ const data = reactive<RegisteredNodeUpdateData>({
   serviceEndpoints: [],
 });
 
+const baseline: Ref<RegisteredNodeUpdateTransaction | null> = ref(null);
+
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
-    createRegisteredNodeUpdateTransaction({
-      ...common,
-      ...(data),
-    });
+    createRegisteredNodeUpdateTransaction(
+      {
+        ...common,
+        ...data,
+      },
+      baseline.value,
+    );
 });
 
 const createDisabled = computed(() => {
@@ -116,13 +122,15 @@ const decorateEndpointsWithUiIds = (
   endpoints.map(ep => (ep.uiId ? ep : { ...ep, uiId: makeUiId() }));
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const handleDraftLoaded = (transaction: Transaction, loadedBaseline: Transaction | null) => {
   if (transaction instanceof RegisteredNodeUpdateTransaction) {
     if (transaction.registeredNodeId) {
       nodeData.registeredNodeId.value = transaction.registeredNodeId.toNumber();
     }
   }
-  handleUpdateData(getRegisteredNodeUpdateData(transaction));
+  baseline.value =
+    loadedBaseline instanceof RegisteredNodeUpdateTransaction ? loadedBaseline : null;
+  handleUpdateData(getRegisteredNodeUpdateData(transaction, baseline.value));
 };
 
 const handleUpdateData = (newData: RegisteredNodeUpdateData) => {
@@ -194,12 +202,14 @@ watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
     data.description = '';
     data.adminKey = null;
     data.serviceEndpoints = [];
+    baseline.value = null;
   } else if (!route.query.draftId && !route.query.groupIndex) {
     data.description = registeredNodeInfo.description ?? '';
     data.adminKey = registeredNodeInfo.admin_key;
     data.serviceEndpoints = getComponentRegisteredEndpoints(
       registeredNodeInfo.service_endpoints,
     );
+    baseline.value = createRegisteredNodeUpdateTransactionFromInfo(registeredNodeInfo);
   }
 });
 // Only fields that change the network-required *signer set* should trigger
@@ -224,6 +234,7 @@ watch(
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
+    :baseline="baseline"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
