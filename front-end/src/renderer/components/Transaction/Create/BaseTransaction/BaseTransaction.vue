@@ -55,11 +55,12 @@ import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
 /* Props */
-const { createTransaction, preCreateAssert, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest, baseline } = defineProps<{
   createTransaction: CreateTransactionFunc;
   preCreateAssert?: () => boolean | void | Promise<boolean | void>;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
+  baseline?: Transaction | null;
 }>();
 
 /* Emits */
@@ -68,7 +69,7 @@ const emit = defineEmits<{
   (event: 'executed:success', data: ExecutedSuccessData): void;
   (event: 'submitted', id: number, body: string): void;
   (event: 'group:submitted', id: number): void;
-  (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'draft-loaded', transaction: Transaction, baseline: Transaction | null): void;
 }>();
 
 /* Stores */
@@ -143,16 +144,16 @@ const hasTransactionChanged = computed(() => {
     ) {
       result = true; // validStart was updated
     } else if (
-      hasStartTimestampChanged(
-        initialTransaction.value as Transaction,
-        transaction.value,
-        now,
-      )
+      hasStartTimestampChanged(initialTransaction.value as Transaction, transaction.value, now)
     ) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart, startTimestamp and expirationTime
-      result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
+      result = !transactionsDataMatch(
+        initialTransaction.value as Transaction,
+        transaction.value,
+        baseline ?? null,
+      );
     }
   } else {
     result = true; // initialTransaction is not yet initialized
@@ -174,7 +175,11 @@ const isNodeCreationPrivRequired = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction, loadedDescription: string) => {
+const handleDraftLoaded = async (
+  transaction: Transaction,
+  loadedBaseline: Transaction | null,
+  loadedDescription: string,
+) => {
   initialTransaction.value = transaction;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
@@ -183,7 +188,7 @@ const handleDraftLoaded = async (transaction: Transaction, loadedDescription: st
   payerData.accountId.value = txData.payerId;
   Object.assign(data, txData);
 
-  emit('draft-loaded', transaction);
+  emit('draft-loaded', transaction, loadedBaseline);
 };
 
 const handleCreate = async () => {
@@ -312,11 +317,14 @@ function handleInputValidation(e: Event) {
 
 const saveDraft = async (): Promise<void> => {
   const draftId = route.query.draftId?.toString();
-  const transactionBytes = getTransactionBytes();
+  const transaction = createTransaction({ ...data } as TransactionCommonData);
+  const transactionBytes = transaction.toBytes();
+  const baselineBytes = baseline?.toBytes() ?? null;
   if (draftId) {
     // Draft exists => this is an update
     await updateDraft(draftId, {
       transactionBytes: transactionBytes.toString(),
+      baselineBytes: baselineBytes?.toString() ?? null,
       description: description.value,
     });
     isDraftSaved.value = true;
@@ -324,15 +332,10 @@ const saveDraft = async (): Promise<void> => {
   } else {
     // Draft does not exist yet => this is an add
     assertUserLoggedIn(user.personal);
-    await addDraft(user.personal.id, transactionBytes, description.value);
+    await addDraft(user.personal.id, transactionBytes, baselineBytes, description.value);
     isDraftSaved.value = true;
     toastManager.success('Draft saved');
   }
-};
-
-const getTransactionBytes = () => {
-  const transaction = createTransaction({ ...data } as TransactionCommonData);
-  return transaction.toBytes();
 };
 
 /* Functions */
@@ -467,6 +470,7 @@ defineExpose({
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
       :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :baseline="baseline ?? null"
       :transaction-key="transactionKey"
       @fetched-description="handleFetchedDescription"
       @fetched-payer-account-id="handleFetchedPayerAccountId"
@@ -478,6 +482,7 @@ defineExpose({
       @addToGroup="handleGroupAction('add', $event)"
       @editGroupItem="handleGroupAction('edit', $event)"
       :get-transaction="() => createTransaction({ ...data } as TransactionCommonData)"
+      :baseline="baseline ?? null"
       :description="description || ''"
       :has-data-changed="hasDataChanged"
     />

@@ -86,7 +86,7 @@ describe('General utilities', () => {
   test('transactionsDataMatch: Returns true when matching identical transactions', () => {
     const t1 = Transaction.fromBytes(new Uint8Array(t1Bytes));
 
-    const match = transactionsDataMatch(t1, t1);
+    const match = transactionsDataMatch(t1, t1, null);
     expect(match).toBe(true);
   });
 
@@ -94,7 +94,7 @@ describe('General utilities', () => {
     const t1 = Transaction.fromBytes(new Uint8Array(t1Bytes));
     const t2 = Transaction.fromBytes(new Uint8Array(t2Bytes));
 
-    const match = transactionsDataMatch(t1, t2);
+    const match = transactionsDataMatch(t1, t2, null);
     expect(match).toBe(true);
   });
 
@@ -102,7 +102,7 @@ describe('General utilities', () => {
     const t2 = Transaction.fromBytes(new Uint8Array(t2Bytes));
     const t3 = Transaction.fromBytes(new Uint8Array(t3Bytes));
 
-    const match = transactionsDataMatch(t2, t3);
+    const match = transactionsDataMatch(t2, t3, null);
     expect(match).toBe(false);
   });
 
@@ -117,7 +117,7 @@ describe('General utilities', () => {
       .setFreezeType(FreezeType.FreezeUpgrade)
       .setStartTimestamp(Timestamp.fromDate(futureDate2));
 
-    const match = transactionsDataMatch(ft1, ft2);
+    const match = transactionsDataMatch(ft1, ft2, null);
     expect(match).toBe(true);
   });
 
@@ -131,7 +131,7 @@ describe('General utilities', () => {
       .setFreezeType(FreezeType.FreezeOnly)
       .setStartTimestamp(Timestamp.fromDate(futureDate));
 
-    const match = transactionsDataMatch(ft1, ft2);
+    const match = transactionsDataMatch(ft1, ft2, null);
     expect(match).toBe(false);
   });
 });

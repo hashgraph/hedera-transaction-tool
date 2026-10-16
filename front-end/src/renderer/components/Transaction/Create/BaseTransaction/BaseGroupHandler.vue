@@ -14,6 +14,7 @@ import { getTransactionType } from '@renderer/utils/sdk/transactions';
 /* Props */
 const props = defineProps<{
   createTransaction: () => Transaction;
+  baseline: Transaction | null;
   transactionKey: KeyList;
 }>();
 
@@ -47,6 +48,7 @@ const buildActionData = (
   isManual: boolean,
 ) => {
   const [type, transactionBytes, keys] = getTransactionData();
+  const baselineBytes = props.baseline?.toBytes() ?? null;
 
   const route = router.currentRoute.value;
   const groupIndex = Number(route.query?.groupIndex?.toString() || 0);
@@ -57,6 +59,7 @@ const buildActionData = (
 
   return {
     transactionBytes: transactionBytes,
+    baselineBytes: baselineBytes,
     type,
     accountId: '',
     seq,

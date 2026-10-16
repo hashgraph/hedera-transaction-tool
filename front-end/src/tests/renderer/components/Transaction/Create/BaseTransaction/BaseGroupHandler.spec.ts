@@ -50,6 +50,7 @@ function mountHandler() {
   return mount(BaseGroupHandler, {
     props: {
       createTransaction: createTransferTransaction,
+      baseline: null,
       transactionKey: new KeyList(),
     },
   });

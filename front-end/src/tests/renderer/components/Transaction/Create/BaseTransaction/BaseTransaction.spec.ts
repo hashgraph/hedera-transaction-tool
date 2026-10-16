@@ -9,6 +9,7 @@ import { AccountId, Hbar, Timestamp, TransactionId, TransferTransaction } from '
 let mockRouteQuery: Record<string, string | undefined> = {};
 const mocks = vi.hoisted(() => ({
   loadedDraftTransaction: null as TransferTransaction | null,
+  loadedDraftBaseline: null as TransferTransaction | null,
   loadedDraftDescription: '',
   infoControlsDescription: null as string | null,
   infoControlsDelayMs: 0,
@@ -96,12 +97,18 @@ vi.mock('@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.v
         $emit: (
           event: 'draft-loaded',
           tx: TransferTransaction,
+          bl: TransferTransaction | null,
           description: string,
         ) => void;
       },
     ) {
       if (mocks.loadedDraftTransaction) {
-        this.$emit('draft-loaded', mocks.loadedDraftTransaction, mocks.loadedDraftDescription);
+        this.$emit(
+          'draft-loaded',
+          mocks.loadedDraftTransaction,
+          mocks.loadedDraftBaseline,
+          mocks.loadedDraftDescription,
+        );
       }
     },
     template: '<div></div>',

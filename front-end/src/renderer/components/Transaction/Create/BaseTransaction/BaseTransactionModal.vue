@@ -25,11 +25,11 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 
-
 /* Props */
 const props = defineProps<{
   skip?: boolean;
   getTransaction: () => Transaction;
+  baseline: Transaction | null;
   description: string;
   hasDataChanged: boolean;
 }>();
@@ -92,6 +92,8 @@ const handleSingleTransaction = async () => {
   const transactionBytes = getTransactionBytes();
   if (!transactionBytes) return;
 
+  const baselineBytes = props.baseline?.toBytes() ?? null;
+
   try {
     if (route.query.draftId) {
       const loadedDraft = await getDraft(route.query.draftId.toString());
@@ -99,21 +101,26 @@ const handleSingleTransaction = async () => {
       if (getTransactionFromBytes(loadedDraft.transactionBytes).toBytes() != transactionBytes) {
         await updateDraft(loadedDraft.id, {
           transactionBytes: transactionBytes.toString(),
+          baselineBytes: baselineBytes?.toString() ?? null,
           description: props.description,
         });
         toastManager.success('Draft updated');
         await router.push(redirectPath.value);
       }
     } else {
-      await sendAddDraft(user.personal.id, transactionBytes);
+      await sendAddDraft(user.personal.id, transactionBytes, baselineBytes);
     }
   } catch (error) {
     logger.error('Failed to save draft', { error });
   }
 };
 
-async function sendAddDraft(userId: string, transactionBytes: Uint8Array) {
-  await addDraft(userId, transactionBytes, props.description);
+async function sendAddDraft(
+  userId: string,
+  transactionBytes: Uint8Array,
+  baselineBytes: Uint8Array | null,
+) {
+  await addDraft(userId, transactionBytes, baselineBytes, props.description);
   toastManager.success('Draft saved');
   await router.push(redirectPath.value);
 }
