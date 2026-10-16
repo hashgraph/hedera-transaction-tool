@@ -660,7 +660,9 @@ export function createNodeUpdateTransactionFromInfo(info: INodeInfoParsed): Node
   if (info.node_account_id !== null) {
     result.setAccountId(info.node_account_id);
   }
-  result.setServiceEndpoints(info.service_endpoints);
+  if (info.service_endpoints.length > 0) {
+    result.setServiceEndpoints(info.service_endpoints);
+  }
   if (info.node_cert_hash !== null) {
     result.setCertificateHash(hexToUint8Array(info.node_cert_hash));
   }
