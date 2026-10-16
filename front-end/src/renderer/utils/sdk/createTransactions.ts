@@ -44,7 +44,7 @@ import {
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
 
-import { uint8ToHex } from '@renderer/utils';
+import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
 import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
@@ -645,6 +645,9 @@ export function createNodeUpdateTransaction(
 export function createNodeUpdateTransactionFromInfo(info: INodeInfoParsed): NodeUpdateTransaction {
   const result = new NodeUpdateTransaction();
 
+  if (info.node_id !== null) {
+    result.setNodeId(Long.fromNumber(info.node_id));
+  }
   if (info.admin_key !== null) {
     result.setAdminKey(info.admin_key);
   }
@@ -658,13 +661,14 @@ export function createNodeUpdateTransactionFromInfo(info: INodeInfoParsed): Node
     result.setAccountId(info.node_account_id);
   }
   result.setServiceEndpoints(info.service_endpoints);
+  if (info.node_cert_hash !== null) {
+    result.setCertificateHash(hexToUint8Array(info.node_cert_hash));
+  }
   result.setDeclineReward(info.decline_reward);
   if (info.grpc_web_proxy_endpoint !== null) {
     result.setGrpcWebProxyEndpoint(info.grpc_web_proxy_endpoint);
   }
-  if (info.associated_registered_nodes.length) {
-    result.setAssociatedRegisteredNodes(info.associated_registered_nodes);
-  }
+  result.setAssociatedRegisteredNodes(info.associated_registered_nodes);
 
   return result;
 }
