@@ -36,7 +36,6 @@ Failures in any of these will block the release.
 - [ ] 5.13.3 User can add account-based keys at various depths
 
 **7. Transaction Groups**
-- [ ] 7.5.5 Export group as .tx (V1 format)
 - [ ] 7.6.2 User can navigate between transactions in the group
 
 ## Tier 4 — Lower Priority (Periodic Verification)
