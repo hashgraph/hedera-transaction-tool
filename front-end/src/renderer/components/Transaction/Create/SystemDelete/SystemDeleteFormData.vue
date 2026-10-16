@@ -30,7 +30,7 @@ const handleSystemDataUpdate = (data: SystemData) => {
 };
 </script>
 <template>
-  <SystemDataFormData :data="data" @update:data="handleSystemDataUpdate" required />
+  <SystemDataFormData :data="data" @update:data="handleSystemDataUpdate" />
 
   <div class="row mt-6">
     <div class="form-group col-4 col-xxxl-3">
