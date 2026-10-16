@@ -21,7 +21,7 @@ function handleFileOnBlur() {
 }
 
 function handleContractOnBlur() {
-  emit('update:data', { ...props.data, fileId: formatContractId(props.data.fileId) });
+  emit('update:data', { ...props.data, contractId: formatContractId(props.data.contractId) });
 }
 
 /* Misc */
