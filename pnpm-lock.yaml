@@ -16,8 +16,8 @@ catalogs:
       specifier: 2.31.0
       version: 2.31.0
     '@hiero-ledger/sdk':
-      specifier: 2.88.0
-      version: 2.88.0
+      specifier: 2.89.1
+      version: 2.89.1
     '@types/bcrypt':
       specifier: 6.0.0
       version: 6.0.0
@@ -185,7 +185,7 @@ importers:
         version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1(supports-color@8.1.1))(protobufjs@8.7.1)(strip-ansi@7.1.2)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.88.0(bn.js@5.2.3)(supports-color@8.1.1)
+        version: 2.89.1(bn.js@5.2.3)(supports-color@8.1.1)
       '@playwright/test':
         specifier: 1.64.0
         version: 1.64.0
@@ -288,7 +288,7 @@ importers:
         version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1(supports-color@8.1.1))(protobufjs@8.7.1)(strip-ansi@7.1.2)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.88.0(bn.js@5.2.3)(supports-color@8.1.1)
+        version: 2.89.1(bn.js@5.2.3)(supports-color@8.1.1)
       '@keyv/redis':
         specifier: 5.1.6
         version: 5.1.6(keyv@5.6.0)
@@ -587,14 +587,14 @@ importers:
         specifier: 4.0.0
         version: 4.0.0(electron@42.10.0(supports-color@8.1.1))
       '@hiero-ledger/cryptography':
-        specifier: 1.21.0
-        version: 1.21.0(supports-color@8.1.1)
+        specifier: 1.22.0
+        version: 1.22.0(supports-color@8.1.1)
       '@hiero-ledger/proto':
         specifier: 'catalog:'
         version: 2.31.0(ansi-regex@6.2.2)(ansi-styles@6.2.3)(debug@4.4.1(supports-color@8.1.1))(protobufjs@8.7.1)(strip-ansi@7.1.2)
       '@hiero-ledger/sdk':
         specifier: 'catalog:'
-        version: 2.88.0(bn.js@5.2.3)(supports-color@8.1.1)
+        version: 2.89.1(bn.js@5.2.3)(supports-color@8.1.1)
       '@prisma/adapter-better-sqlite3':
         specifier: 7.10.0
         version: 7.10.0
@@ -1468,8 +1468,8 @@ packages:
     peerDependencies:
       bn.js: ^5.2.1
 
-  '@hiero-ledger/cryptography@1.21.0':
-    resolution: {integrity: sha512-q3LR+OgJMDNRund2CTsvFRHab5EKypm81v+0yM/rGWRq0igPRbd/SGzs2X7Q6n/UvZYT+bKI8gnrXzafbN2TCA==}
+  '@hiero-ledger/cryptography@1.22.0':
+    resolution: {integrity: sha512-eQ9F35Zs2hQPNM27ljGhLFiA5K3JdPP2pD3sMvlrbaQvAg/QD9Cgb522C6Nq+seLi0AetIWvU8N8xnHV44b5/Q==}
     engines: {node: '>=20.19.0'}
     peerDependencies:
       expo-crypto: '*'
@@ -1487,8 +1487,8 @@ packages:
       protobufjs: 8.7.1
       strip-ansi: 7.1.2
 
-  '@hiero-ledger/sdk@2.88.0':
-    resolution: {integrity: sha512-jFd27eytqGymCpc9QglqMGsDUNVM2PVS59+Sq2JtPirz9AoeJLYyR/h5USPYIS6BgWjeY3etmvve/JiRL/oc9g==}
+  '@hiero-ledger/sdk@2.89.1':
+    resolution: {integrity: sha512-eSgLnemOmI79H6QmSNxgNPYaLZ8AIf/IL22Gktz94lnfYv2P6JG0JtG6Je2yMEy+CiOZgL4TaFkr1YBwKWcHuQ==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       bn.js: 5.2.3
@@ -9722,7 +9722,7 @@ snapshots:
       - expo-crypto
       - react-native
 
-  '@hiero-ledger/cryptography@1.21.0(supports-color@8.1.1)':
+  '@hiero-ledger/cryptography@1.22.0(supports-color@8.1.1)':
     dependencies:
       '@noble/ciphers': 2.2.0
       '@noble/curves': 2.2.0
@@ -9758,10 +9758,10 @@ snapshots:
       protobufjs: 8.7.1
       strip-ansi: 7.1.2
 
-  '@hiero-ledger/sdk@2.88.0(bn.js@5.2.3)(supports-color@8.1.1)':
+  '@hiero-ledger/sdk@2.89.1(bn.js@5.2.3)(supports-color@8.1.1)':
     dependencies:
       '@grpc/grpc-js': 1.13.6
-      '@hiero-ledger/cryptography': 1.21.0(supports-color@8.1.1)
+      '@hiero-ledger/cryptography': 1.22.0(supports-color@8.1.1)
       '@hiero-ledger/proto': 2.31.0(ansi-regex@6.2.2)(ansi-styles@7.0.0)(debug@4.4.1(supports-color@8.1.1))(protobufjs@8.7.1)(strip-ansi@7.1.2)
       ansi-regex: 6.2.2
       ansi-styles: 7.0.0
