@@ -546,7 +546,7 @@ const setNodeData = (
   if (isAccountId(data.nodeAccountId)) {
     const newValue = AccountId.fromString(data.nodeAccountId);
     const oldValue = baseline !== null ? baseline.accountId : null
-    if (oldValue === null || (newValue !== null && newValue.equals(oldValue))) {
+    if (oldValue === null || (newValue !== null && !newValue.equals(oldValue))) {
       transaction.setAccountId(newValue);
     }
   }
