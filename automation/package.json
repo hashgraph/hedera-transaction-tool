@@ -62,7 +62,7 @@
     "playwright": "1.64.0",
     "playwright-core": "1.64.0",
     "prettier": "catalog:",
-    "uuid": "14.0.2"
+    "uuid": "14.0.3"
   },
   "devDependencies": {
     "@types/async-retry": "1.4.9",
