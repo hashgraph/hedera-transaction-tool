@@ -261,12 +261,7 @@ export const getComponentServiceEndpoints = (
 };
 
 export function getNodeData(transaction: Transaction): NodeData {
-  if (
-    !(transaction instanceof NodeCreateTransaction) &&
-    !(transaction instanceof NodeUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+  assertTransactionType(transaction, NodeCreateTransaction);
 
   const gossipEndpoints = getComponentServiceEndpoints(transaction.gossipEndpoints || []);
   const serviceEndpoints = getComponentServiceEndpoints(transaction.serviceEndpoints || []);
@@ -287,11 +282,41 @@ export function getNodeData(transaction: Transaction): NodeData {
   };
 }
 
-export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
+export function getNodeUpdateData(
+  transaction: Transaction,
+  baseline: Transaction | null,
+): NodeUpdateData {
   assertTransactionType(transaction, NodeUpdateTransaction);
+  if (baseline !== null) {
+    assertTransactionType(baseline, NodeUpdateTransaction);
+  }
+
+  const nodeId = transaction.nodeId ?? baseline?.nodeId ?? null;
+  const accountId = transaction.accountId ?? baseline?.accountId ?? null;
+  const description = transaction.description ?? baseline?.description ?? null;
+  const gossipEndpoints = transaction.gossipEndpoints ?? baseline?.gossipEndpoints ?? [];
+  const grpcWebProxyEndpoint = transaction.grpcWebProxyEndpoint ?? baseline?.grpcWebProxyEndpoint ?? null;
+  const serviceEndpoints = transaction.serviceEndpoints ?? baseline?.serviceEndpoints ?? [];
+  const certificateHash = transaction.certificateHash ?? baseline?.certificateHash ?? null;
+  const adminKey = transaction.adminKey ?? baseline?.adminKey ?? null;
+  const declineReward = transaction.declineReward ?? baseline?.declineReward ?? null;
+  const associatedRegisteredNodes =
+    transaction.associatedRegisteredNodes ?? baseline?.associatedRegisteredNodes ?? [];
+
   return {
-    nodeId: transaction.nodeId?.toString() || '',
-    ...getNodeData(transaction),
+    nodeId: nodeId?.toString() ?? '',
+    nodeAccountId: accountId?.toString() ?? '',
+    description: description || '',
+    gossipEndpoints: getComponentServiceEndpoints(gossipEndpoints),
+    grpcWebProxyEndpoint: getComponentServiceEndpoint(grpcWebProxyEndpoint),
+    serviceEndpoints: getComponentServiceEndpoints(serviceEndpoints),
+    gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
+    certificateHash: certificateHash || Uint8Array.from([]),
+    adminKey: adminKey,
+    declineReward: declineReward ?? false,
+    associatedRegisteredNodes: [
+      ...new Set(associatedRegisteredNodes.map(id => id.toString()) ?? []),
+    ],
   };
 }
 
@@ -554,10 +579,9 @@ const transactionHandlers = new Map<
 
   [
     NodeUpdateTransaction,
-    tx => ({
+    (tx, bl) => ({
       ...getTransactionCommonData(tx),
-      ...getNodeData(tx),
-      ...getNodeUpdateData(tx),
+      ...getNodeUpdateData(tx, bl),
     }),
   ],
 
