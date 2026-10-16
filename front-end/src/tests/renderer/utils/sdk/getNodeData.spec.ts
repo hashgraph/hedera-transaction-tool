@@ -47,6 +47,9 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     const parsed = getNodeData(tx);
     expect(parsed.associatedRegisteredNodes).toEqual(['1', '7', '12']);
   });
+});
+
+describe('getNodeUpdateData — associatedRegisteredNodes', () => {
 
   test('NodeUpdate where the field was never set returns []', () => {
     const updateData: NodeUpdateData = { ...baseData, nodeId: '3' };
