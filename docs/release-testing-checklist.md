@@ -11,10 +11,6 @@ Failures in any of these will block the release.
 
 ## Tier 2 — High Priority (Should Pass)
 
-**1. Registration**
-- [ ] 1.3.1 "Sign in with Keychain" button is visible when OS keychain available
-- [ ] 1.3.2 User can register using OS keychain
-
 **3. Settings**
 - [ ] 3.5.8 Keychain user sees reset application form instead of password change
 
