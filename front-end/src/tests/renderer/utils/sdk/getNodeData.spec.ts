@@ -9,7 +9,7 @@ import {
   type NodeData,
   type NodeUpdateData,
 } from '@renderer/utils/sdk/createTransactions';
-import { getNodeData } from '@renderer/utils/sdk/getData';
+import { getNodeData, getNodeUpdateData } from '@renderer/utils/sdk/getData';
 
 const common = {
   payerId: '0.0.2',
@@ -54,7 +54,7 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     // SDK leaves the field as null when never set on an update; getNodeData
     // must normalize null to [] so callers always get an array.
     expect(tx.associatedRegisteredNodes).toBeNull();
-    const parsed = getNodeData(tx);
+    const parsed = getNodeUpdateData(tx, null);
     expect(parsed.associatedRegisteredNodes).toEqual([]);
   });
 
@@ -62,14 +62,14 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     const tx = new NodeUpdateTransaction();
     tx.setNodeId(Long.fromNumber(3));
     tx.setAssociatedRegisteredNodes([]);
-    expect(getNodeData(tx).associatedRegisteredNodes).toEqual([]);
+    expect(getNodeUpdateData(tx, null).associatedRegisteredNodes).toEqual([]);
   });
 
   test('NodeUpdate with values returns them as decimal strings', () => {
     const tx = new NodeUpdateTransaction();
     tx.setNodeId(Long.fromNumber(3));
     tx.setAssociatedRegisteredNodes([Long.fromNumber(5), Long.fromNumber(8)]);
-    expect(getNodeData(tx).associatedRegisteredNodes).toEqual(['5', '8']);
+    expect(getNodeUpdateData(tx, null).associatedRegisteredNodes).toEqual(['5', '8']);
   });
 
   test('throws on non-Node transactions (sanity check on the assertion path)', () => {
