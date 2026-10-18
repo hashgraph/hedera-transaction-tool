@@ -1,12 +1,12 @@
 import { assertTransactionKeysReviewable } from '@renderer/utils/transactionKeyReview';
-import type { ITransaction, ITransactionFull, TransactionFile } from '@shared/interfaces';
+import type { ITransaction, TransactionFile } from '@shared/interfaces';
 import { type PrivateKey, Transaction } from '@hiero-ledger/sdk';
 import { hexToUint8Array } from '@renderer/utils/index.ts';
 import { javaFormatArrayHashCode } from '@shared/utils/byteUtils.ts';
 import { format } from 'date-fns';
 
 export const generateTransactionV1ExportContent = async (
-  orgTransaction: ITransactionFull,
+  orgTransaction: ITransaction,
   key: PrivateKey,
   defaultDescription?: string,
 ) => {

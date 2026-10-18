@@ -16,7 +16,6 @@ import { decryptPrivateKey } from '@renderer/services/keyPairService.ts';
 import { exportFilesWithDialog } from '@renderer/services/electronUtilsService.ts';
 import JSZip from 'jszip';
 import type { ActionReport } from '@renderer/components/ActionController/ActionReport';
-import { AppCache } from '@renderer/caches/AppCache.ts';
 
 /* Props */
 const props = defineProps<{
@@ -27,7 +26,6 @@ const activate = defineModel<boolean>('activate', { required: true });
 
 /* Injected */
 const toastManager = ToastManager.inject();
-const transactionCache = AppCache.inject().backendTransaction;
 
 /* Stores */
 const user = useUserStore();
@@ -67,11 +65,10 @@ const handleExportAll = async (personalPassword: string | null): Promise<ActionR
 
       const zip = new JSZip(); // Prepare a new ZIP archive
 
+      // The group's embedded transactions already include everything the export needs
+      // (bytes, description, createdAt, creatorEmail), so no per-item fetch is required.
       for (const item of group.groupItems) {
-        const orgTransaction = await transactionCache.lookup(
-          item.transactionId,
-          user.selectedOrganization.serverUrl,
-        );
+        const orgTransaction = item.transaction;
 
         const baseName = generateTransactionExportFileName(orgTransaction);
 

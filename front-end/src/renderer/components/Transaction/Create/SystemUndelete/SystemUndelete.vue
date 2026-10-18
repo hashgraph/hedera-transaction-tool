@@ -17,6 +17,28 @@ const data = reactive<SystemUndeleteData>({
   contractId: '',
 });
 
+/* Functions */
+// The SDK models the target as a oneof (file XOR contract), so exactly one must be provided.
+const hasExactlyOneTarget = () => isFileId(data.fileId) !== isContractId(data.contractId);
+
+const assertExactlyOneTarget = () => {
+  const hasFile = data.fileId.trim() !== '';
+  const hasContract = data.contractId.trim() !== '';
+
+  if (hasFile && hasContract) {
+    throw new Error('Provide either a File ID or a Contract ID, not both');
+  }
+  if (hasFile && !isFileId(data.fileId)) {
+    throw new Error('Invalid File ID');
+  }
+  if (hasContract && !isContractId(data.contractId)) {
+    throw new Error('Invalid Contract ID');
+  }
+  if (!hasFile && !hasContract) {
+    throw new Error('File ID or Contract ID is required');
+  }
+};
+
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
@@ -27,7 +49,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => {
-  return !isFileId(data.fileId) || !isContractId(data.contractId);
+  return !hasExactlyOneTarget();
 });
 
 /* Handlers */
@@ -39,15 +61,8 @@ const handleUpdateData = (newData: SystemUndeleteData) => {
   Object.assign(data, newData);
 };
 
-/* Functions */
 const preCreateAssert = () => {
-  if (!isFileId(data.fileId)) {
-    throw new Error('Invalid File ID');
-  }
-
-  if (!isContractId(data.contractId)) {
-    throw new Error('Invalid Contract ID');
-  }
+  assertExactlyOneTarget();
 };
 
 /* Watchers */

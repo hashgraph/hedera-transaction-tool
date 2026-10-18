@@ -22,5 +22,5 @@ const handleSystemDataUpdate = (data: SystemData) => {
 };
 </script>
 <template>
-  <SystemDataFormData :data="data" @update:data="handleSystemDataUpdate" required />
+  <SystemDataFormData :data="data" @update:data="handleSystemDataUpdate" />
 </template>
