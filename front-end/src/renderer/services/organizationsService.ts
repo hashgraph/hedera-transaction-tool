@@ -29,15 +29,18 @@ export const updateOrganization = async (
 export const deleteOrganization = async (id: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.deleteOrganization(id);
-  }, `Failed to delete transaction with id: ${id}`);
+  }, `Failed to delete organization with id: ${id}`);
 
-/* Get local organization websocket endpoint */
-export const getLocalWebsocketPath = (serverUrl: string) => {
+/* Resolve the organization websocket URL. */
+export const getOrganizationWebsocketUrl = (serverUrl: string) => {
   const url = new URL(serverUrl);
 
   const NOTIFICATIONS_SERVICE_PORT = 3020; // See docker-compose.yml in the back-end folder
+  const hostname = url.hostname.toLowerCase();
+  const isLoopbackHost =
+    hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 
-  if (url.port) {
+  if (isLoopbackHost && url.port) {
     return `ws://localhost:${NOTIFICATIONS_SERVICE_PORT}`;
   }
 

@@ -12,7 +12,7 @@ const loginMock = vi.fn<(...args: unknown[]) => unknown>();
 const wsSetupMock = vi.fn();
 const setConnectionStatusMock = vi.fn();
 const refetchUserStateMock = vi.fn();
-const getLocalWebsocketPathMock = vi.fn((u: string) => u + '/ws');
+const getOrganizationWebsocketUrlMock = vi.fn((u: string) => u + '/ws');
 const getAuthTokenMock = vi.fn<() => string>(() => 'existing-token');
 const getOrganizationCredentialsMock =
   vi.fn<(...args: unknown[]) => Promise<unknown>>().mockResolvedValue(null);
@@ -58,7 +58,7 @@ vi.mock('@renderer/stores/storeOrganizationConnection', () => ({
 }));
 
 vi.mock('@renderer/services/organizationsService', () => ({
-  getLocalWebsocketPath: (u: string) => getLocalWebsocketPathMock(u),
+  getOrganizationWebsocketUrl: (u: string) => getOrganizationWebsocketUrlMock(u),
 }));
 
 vi.mock('@renderer/services/organizationCredentials', () => ({
