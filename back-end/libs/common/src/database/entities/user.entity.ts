@@ -33,7 +33,7 @@ export class User {
   password!: string;
 
   @Column({ default: 0 })
-  credentialVersion?: number;
+  credentialVersion!: number;
 
   @Column({ default: false })
   admin!: boolean;

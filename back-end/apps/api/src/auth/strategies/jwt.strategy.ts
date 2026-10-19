@@ -39,10 +39,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.usersService.getUser({ id: userId });
 
     if (!user) throw new UnauthorizedException();
-    // Tokens issued before the credential version changed are no longer valid.
-    // We treat a missing credentialVersion as version 0 for tokens issued before this version was
-    // field was introduced; the first password change invalidates those too.
-    if ((credentialVersion ?? 0) !== (user.credentialVersion ?? 0)) {
+    // Legacy tokens without a version remain valid for version-0 accounts.
+    // The first password rotation invalidates those tokens too.
+    if ((credentialVersion ?? 0) !== user.credentialVersion) {
       throw new UnauthorizedException();
     }
 

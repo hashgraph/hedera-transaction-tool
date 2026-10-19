@@ -74,7 +74,7 @@ describe('AuthService', () => {
   }
 
   async function invokeLogin(production: boolean) {
-    const user = { id: 1, email: '' };
+    const user = { id: 1, email: '', credentialVersion: 0 };
     const JWT_EXPIRATION = 2;
 
     //@ts-expect-error - incorrect overload expected

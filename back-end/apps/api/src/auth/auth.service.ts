@@ -79,7 +79,7 @@ export class AuthService {
     const payload: JwtPayload = {
       userId: user.id,
       email: user.email,
-      credentialVersion: user.credentialVersion ?? 0,
+      credentialVersion: user.credentialVersion,
     };
     const expiresIn = `${this.configService.get('JWT_EXPIRATION')}d` as StringValue;
 
@@ -271,7 +271,7 @@ export class AuthService {
       throw new UnauthorizedException('Cannot find user matching access token');
     }
 
-    if ((credentialVersion ?? 0) !== (result.credentialVersion ?? 0)) {
+    if ((credentialVersion ?? 0) !== result.credentialVersion) {
       throw new UnauthorizedException('Access token was issued before the password changed');
     }
 

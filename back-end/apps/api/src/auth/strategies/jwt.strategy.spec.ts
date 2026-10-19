@@ -50,7 +50,7 @@ describe('JwtStrategy', () => {
       const user = { id: 1, email: 'test@test.com', credentialVersion: 0 };
       mockUsersService.getUser.mockResolvedValue(user as User);
 
-      const result = await jwtStrategy.validate({ userId: user.id, email: user.email });
+      const result = await jwtStrategy.validate({ userId: user.id, email: user.email, credentialVersion: undefined });
       expect(result).toEqual(user);
     });
 
@@ -109,7 +109,7 @@ describe('JwtStrategy', () => {
     it('should return a user when the token is within the current JWT_EXPIRATION', async () => {
       const iat = 1_700_000_000;
       const expirationDays = 7;
-      const user = { id: 1, email: 'test@test.com' };
+      const user = { id: 1, email: 'test@test.com', credentialVersion: 0 };
       mockConfigService.get.mockReturnValue(expirationDays);
       mockUsersService.getUser.mockResolvedValue(user as User);
       const nowSpy = jest
