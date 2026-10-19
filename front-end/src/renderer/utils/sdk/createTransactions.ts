@@ -594,7 +594,7 @@ const setNodeData = (
     }
   }
 
-  const oldDeclineReward = baseline?.declineReward ?? false;
+  const oldDeclineReward = baseline?.declineReward ?? null;
   if (oldDeclineReward !== data.declineReward) {
     transaction.setDeclineReward(data.declineReward);
   }
