@@ -46,7 +46,7 @@ catalog:
   '@hiero-ledger/proto': 2.31.0
   '@hiero-ledger/sdk': 2.88.0
   '@types/bcrypt': 6.0.0
-  '@types/better-sqlite3': 7.6.13
+  '@types/better-sqlite3': 9.6.0
   '@types/jest': 30.0.0
   '@types/node': 26.6.3
   '@types/semver': 7.8.0
