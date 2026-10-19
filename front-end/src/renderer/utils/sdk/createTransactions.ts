@@ -601,7 +601,7 @@ const setNodeData = (
 
   const newAssociatedNodes = data.associatedRegisteredNodes.map(l => Long.fromString(l));
   const oldAssociatedNodes = baseline?.associatedRegisteredNodes ?? [];
-  if (oldAssociatedNodes === null || !sortAndCompareLongs(oldAssociatedNodes, newAssociatedNodes)) {
+  if (baseline === null || !sortAndCompareLongs(oldAssociatedNodes, newAssociatedNodes)) {
     transaction.setAssociatedRegisteredNodes(newAssociatedNodes);
   }
 };
