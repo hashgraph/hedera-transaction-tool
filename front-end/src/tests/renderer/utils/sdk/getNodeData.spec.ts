@@ -51,13 +51,20 @@ describe('getNodeData — associatedRegisteredNodes', () => {
 
 describe('getNodeUpdateData — associatedRegisteredNodes', () => {
 
-  test('NodeUpdate where the field was never set returns []', () => {
+  test('NodeUpdate where the field was never set returns [] - without baseline', () => {
     const updateData: NodeUpdateData = { ...baseData, nodeId: '3' };
     const tx = createNodeUpdateTransaction({ ...common, ...updateData }, null);
-    // SDK leaves the field as null when never set on an update; getNodeData
-    // must normalize null to [] so callers always get an array.
-    expect(tx.associatedRegisteredNodes).toBeNull();
+    expect(tx.associatedRegisteredNodes).toEqual([]);
     const parsed = getNodeUpdateData(tx, null);
+    expect(parsed.associatedRegisteredNodes).toEqual([]);
+  });
+
+  test('NodeUpdate where the field was never set returns [] - with baseline', () => {
+    const updateData: NodeUpdateData = { ...baseData, nodeId: '3' };
+    const blankBaseline = new NodeUpdateTransaction();
+    const tx = createNodeUpdateTransaction({ ...common, ...updateData }, blankBaseline);
+    expect(tx.associatedRegisteredNodes).toBeNull();
+    const parsed = getNodeUpdateData(tx, blankBaseline);
     expect(parsed.associatedRegisteredNodes).toEqual([]);
   });
 
