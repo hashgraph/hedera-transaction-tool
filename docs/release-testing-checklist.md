@@ -27,13 +27,9 @@ Failures in any of these will block the release.
 ## Tier 3 — Medium Priority (Verify When Changed)
 
 **7. Transaction Groups**
-- [ ] 7.5.5 Export group as .tx (V1 format)
 - [ ] 7.6.2 User can navigate between transactions in the group
 
 ## Tier 4 — Lower Priority (Periodic Verification)
-
-**13. Navigation and Layout**
-- [ ] 13.3.3 Account setup in progress forces user to /account-setup
 
 **14. Error Handling / Edge Cases**
 - [ ] 14.4.1 Graceful handling when organization server is unreachable
