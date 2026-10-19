@@ -29,7 +29,7 @@ export const updateOrganization = async (
 export const deleteOrganization = async (id: string) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.organizations.deleteOrganization(id);
-  }, `Failed to delete transaction with id: ${id}`);
+  }, `Failed to delete organization with id: ${id}`);
 
 /* Get local organization websocket endpoint */
 export const getLocalWebsocketPath = (serverUrl: string) => {
