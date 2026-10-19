@@ -15,6 +15,14 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      node-images:
+        patterns:
+          - "node"
+    ignore:
+      # Major Node upgrades are planned and performed manually.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/"
