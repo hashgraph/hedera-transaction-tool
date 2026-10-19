@@ -142,7 +142,7 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.declineReward = false;
     data.associatedRegisteredNodes = [];
     baseline.value = null;
-  } else if (!route.query.draftId) {
+  } else if (!route.query.draftId && !route.query.groupIndex) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
     data.description = nodeInfo.description || '';
