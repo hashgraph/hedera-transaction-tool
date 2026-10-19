@@ -927,18 +927,18 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 1                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 14. Error Handling / Edge Cases | 17              | 10            | 2                        | 3       | 0       | 2        | 0       | 88%        | 88%                     |
+| 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **83**                   | **3**   | **5**   | **14**   | **2**   | **96%**    | **97%**                 |
+| **Total**                       | **472**         | **365**       | **85**                   | **3**   | **5**   | **12**   | **2**   | **96%**    | **97%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 92 Vitest renderer test cases (unit + component) across 18 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 83 + 3) / 472 = 95.55%`, rounded to `96%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 85 + 3) / 472 = 95.97%`, rounded to `96%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 83 + 3 + 5) / 472 = 96.61%`, rounded to `97%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 85 + 3 + 5) / 472 = 97.03%`, rounded to `97%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -992,13 +992,11 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 
 | Area               | Scenario #     | Description                                                     | When to Test                                       |
 | ------------------ | -------------- | --------------------------------------------------------------- | -------------------------------------------------- |
-| **Network Errors** | 14.4.1         | Graceful handling when organization server is unreachable       | After infrastructure or org connectivity changes   |
-| **Network Errors** | 14.4.3         | Error displayed when Mirror Node is unavailable                 | After Mirror Node integration changes              |
 | **Network Errors** | 14.4.4         | Transaction fails gracefully when Hedera network returns error  | After Hedera SDK or transaction submission changes |
 
 ### Priority Areas for Additional Automation
 
-1. **Error Handling / Edge Cases (88%)** - Remaining network failures (14.4.1, 14.4.3), loading-state coverage. Note: 14.4.2 is covered by unit tests (`front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts`) and 14.4.4 by `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts`. 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
+1. **Error Handling / Edge Cases (100%)** - Loading-state coverage. Note: 14.4.1 and 14.4.3 are covered by renderer unit tests, 14.4.2 is covered by unit tests (`front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts`) and 14.4.4 by `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts`. 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
 2. **Transactions List (94%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
 3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
 4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)

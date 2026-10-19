@@ -28,9 +28,3 @@ Failures in any of these will block the release.
 
 **7. Transaction Groups**
 - [ ] 7.6.2 User can navigate between transactions in the group
-
-## Tier 4 — Lower Priority (Periodic Verification)
-
-**14. Error Handling / Edge Cases**
-- [ ] 14.4.1 Graceful handling when organization server is unreachable
-- [ ] 14.4.3 Error displayed when Mirror Node is unavailable
