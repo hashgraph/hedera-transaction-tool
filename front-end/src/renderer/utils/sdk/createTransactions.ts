@@ -535,12 +535,10 @@ const setNodeData = (
   const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
   const txGrpcWebProxyEndpoint = getServiceEndpoint(data.grpcWebProxyEndpoint);
 
-  if (data.description.length > 0) {
-    const newValue = data.description;
-    const oldValue = baseline !== null ? baseline.description : null;
-    if (oldValue === null || oldValue !== newValue) {
-      transaction.setDescription(newValue);
-    }
+  const newDescription = data.description;
+  const oldDescription = baseline?.description ?? '';
+  if (oldDescription !== newDescription) {
+    transaction.setDescription(data.description);
   }
 
   if (isAccountId(data.nodeAccountId)) {
