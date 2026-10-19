@@ -38,6 +38,7 @@ const handleRegisteredNodeDataUpdate = (data: RegisteredNodeData) => {
       maxlength="2"
       class="form-control is-fill"
       placeholder="Enter Registered Node ID"
+      data-testid="input-registered-node-id"
     />
   </div>
 

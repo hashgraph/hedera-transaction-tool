@@ -16,6 +16,7 @@ import { useRoute } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import {
+  compareKeys,
   exceedsUtf8ByteLimit,
   getComponentRegisteredEndpoints,
   getRegisteredNodeUpdateData,
@@ -52,11 +53,30 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
     });
 });
 
+const hasAnyChange = computed(() => {
+  const info = nodeData.registeredNodeInfo.value;
+  if (!info) return false;
+
+  if ((data.description ?? '') !== (info.description ?? '')) return true;
+
+  if (data.adminKey && info.admin_key) {
+    if (!compareKeys(data.adminKey, info.admin_key)) return true;
+  } else if (data.adminKey || info.admin_key) {
+    return true;
+  }
+
+  // uiId is render-only, so strip it before comparing
+  const strip = (eps: ComponentRegisteredServiceEndpoint[]) =>
+    JSON.stringify(eps.map(({ uiId: _uiId, ...rest }) => rest));
+  return (
+    strip(data.serviceEndpoints) !== strip(getComponentRegisteredEndpoints(info.service_endpoints))
+  );
+});
+
 const createDisabled = computed(() => {
   return (
     nodeData.registeredNodeInfo.value === null ||
-    data.adminKey === null ||
-    data.serviceEndpoints.length === 0 ||
+    !hasAnyChange.value ||
     data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS ||
     exceedsUtf8ByteLimit(data.description, MAX_DESCRIPTION_BYTES) ||
     createServiceEndpointsDisabled.value
@@ -140,14 +160,6 @@ const handleExecutedSuccess = async () => {
 
 /* Functions */
 const preCreateAssert = () => {
-  if (!data.adminKey) {
-    throw new Error('Admin Key Required');
-  }
-
-  if (data.serviceEndpoints.length === 0) {
-    throw new Error('At least one Service Endpoint is required');
-  }
-
   if (data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS) {
     throw new Error(
       `A registered node may have at most ${MAX_SERVICE_ENDPOINTS} service endpoints`,

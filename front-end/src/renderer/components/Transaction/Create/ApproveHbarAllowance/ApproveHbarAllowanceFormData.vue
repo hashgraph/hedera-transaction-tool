@@ -140,9 +140,7 @@ const columnClass = 'col-4 col-xxxl-3';
 
   <div class="row mt-6">
     <div class="form-group" :class="[columnClass]">
-      <label class="form-label"
-        >Amount {{ HbarUnit.Hbar._symbol }} <span class="text-danger">*</span></label
-      >
+      <label class="form-label">Amount {{ HbarUnit.Hbar._symbol }}</label>
       <AppHbarInput
         :model-value="data.amount"
         @update:model-value="

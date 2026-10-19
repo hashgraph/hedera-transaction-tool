@@ -48,7 +48,13 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
 });
 
 const createDisabled = computed(() => {
-  return !data.adminKey;
+  return (
+    !data.nodeAccountId ||
+    data.gossipEndpoints.length === 0 ||
+    data.serviceEndpoints.length === 0 ||
+    !data.gossipCaCertificate ||
+    !data.adminKey
+  );
 });
 
 /* Handlers */

@@ -339,6 +339,7 @@ watch(
         @blur="handleIpOrDomainBlur('gossip')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
+        data-testid="input-gossip-ip-or-domain"
       />
     </div>
 
@@ -349,11 +350,17 @@ watch(
         @input="formatPort($event, 'gossip')"
         class="form-control is-fill"
         placeholder="Enter Port"
+        data-testid="input-gossip-port"
       />
     </div>
 
     <div class="col-4 col-xxxl-3">
-      <AppButton color="primary" type="button" @click="handleAddEndpoint('gossip')">
+      <AppButton
+        color="primary"
+        type="button"
+        @click="handleAddEndpoint('gossip')"
+        data-testid="button-add-gossip-endpoint"
+      >
         Add Gossip Endpoint
       </AppButton>
     </div>
@@ -401,6 +408,7 @@ watch(
           @click="handleDeleteEndpoint(index, 'gossipEndpoints')"
           log-label="delete-gossip-endpoint"
           :log-metadata="{ index, ipOrDomain: endpoint.ipAddressV4 || endpoint.domainName, port: endpoint.port }"
+          :data-testid="`button-delete-gossip-endpoint-${index}`"
           >Delete
         </AppButton>
       </div>
@@ -419,6 +427,7 @@ watch(
         @blur="handleIpOrDomainBlur('service')"
         class="form-control is-fill"
         placeholder="Enter Domain Name or IP Address"
+        data-testid="input-service-ip-or-domain"
       />
     </div>
 
@@ -429,11 +438,16 @@ watch(
         @input="formatPort($event, 'service')"
         class="form-control is-fill"
         placeholder="Enter Port"
+        data-testid="input-service-port"
       />
     </div>
 
     <div class="col-4 col-xxxl-3">
-      <AppButton color="primary" type="button" @click="handleAddEndpoint('service')"
+      <AppButton
+        color="primary"
+        type="button"
+        @click="handleAddEndpoint('service')"
+        data-testid="button-add-service-endpoint"
         >Add Service Endpoint
       </AppButton>
     </div>
@@ -471,6 +485,7 @@ watch(
           @click="handleDeleteEndpoint(index, 'serviceEndpoints')"
           log-label="delete-service-endpoint"
           :log-metadata="{ index, ipOrDomain: endpoint.ipAddressV4 || endpoint.domainName, port: endpoint.port }"
+          :data-testid="`button-delete-service-endpoint-${index}`"
           >Delete
         </AppButton>
       </div>

@@ -124,6 +124,7 @@ function handleDeleteEndpoint(index: number) {
       :filled="true"
       placeholder="Enter Description"
       :class="[isDescriptionTooLong ? 'is-invalid' : '']"
+      data-testid="input-registered-description"
     />
     <div
       class="text-micro mt-1"

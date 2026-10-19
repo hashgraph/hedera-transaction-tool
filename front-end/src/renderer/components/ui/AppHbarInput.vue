@@ -23,7 +23,7 @@ const appInputValue = ref(formatHbar(props.modelValue));
 
 /* Handlers */
 const handleUpdateValue = async (value: string) => {
-  value = value.trim();
+  value = sanitizeAmount(value);
   setInputValue(value);
 
   if (value === '' || value === '.' || value === '0') {
@@ -69,14 +69,28 @@ const handleKeyDown = (e: KeyboardEvent) => {
   }
 };
 
+const handleBlur = () => {
+  // A blank (or lone '.') amount is 0, so always show it
+  setInputValue(formatHbar(props.modelValue));
+};
+
 /* Functions */
+// Typing is already filtered in handleKeyDown; this covers paste/autofill
+function sanitizeAmount(value: string) {
+  const digitsAndDots = value.trim().replace(/[^0-9.]/g, '');
+  const firstDot = digitsAndDots.indexOf('.');
+  return firstDot === -1
+    ? digitsAndDots
+    : digitsAndDots.slice(0, firstDot + 1) + digitsAndDots.slice(firstDot + 1).replace(/\./g, '');
+}
+
 function setValue(value: Hbar) {
   setInputValue(formatHbar(value));
   appInputValue.value = formatHbar(value);
 }
 
 function setInputValue(value: string) {
-  if (appInputRef.value?.inputRef?.value) {
+  if (appInputRef.value?.inputRef) {
     appInputRef.value.inputRef.value = value;
   }
 }
@@ -97,6 +111,7 @@ watch(
     :model-value="appInputValue"
     @update:model-value="handleUpdateValue"
     @keydown="handleKeyDown"
+    @blur="handleBlur"
     type="text"
     :filled="Boolean(filled)"
     :placeholder="placeholder"
