@@ -628,6 +628,15 @@ describe('AuthService', () => {
     await expect(service.authenticateWebsocketToken(token)).rejects.toThrow(UnauthorizedException);
   });
 
+  it('should reject a legacy websocket token after a password rotation with HTTP 401', async () => {
+    jwtService.verifyAsync.mockResolvedValue({ userId: 2 });
+    userService.getUser.mockResolvedValue({ id: 2, credentialVersion: 1 } as User);
+
+    await expect(service.authenticateWebsocketToken('legacy-token')).rejects.toMatchObject({
+      status: 401,
+    });
+  });
+
   it('should not authenticate access token if user is not found', async () => {
     const token = 'token';
 
