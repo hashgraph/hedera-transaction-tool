@@ -4,6 +4,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { io } from 'socket.io-client';
 import { isUserLoggedIn } from '@renderer/utils';
 import useWebsocketConnection from '@renderer/stores/storeWebsocketConnection';
+import { getOrganizationWebsocketUrl } from '@renderer/services/organizationsService';
 
 const mockOrgConnection = {
   getConnectionStatus: vi.fn(() => null as string | null),
@@ -357,6 +358,16 @@ describe('useWebsocketConnection', () => {
       await store.setup();
 
       expect(io).toHaveBeenCalledTimes(1);
+    });
+
+    test('uses the shared URL resolver for organization URLs containing localhost', async () => {
+      const serverUrl = 'https://tool.mylocalhosting.com:8443';
+      mockUserStore.organizations = [{ id: 'org-1', serverUrl }];
+
+      await store.setup();
+
+      expect(getOrganizationWebsocketUrl).toHaveBeenCalledWith(serverUrl);
+      expect(io).toHaveBeenCalledWith(serverUrl, expect.any(Object));
     });
 
     test('calls setConnectionStatus connected when socket.connected is true at setup time', async () => {
