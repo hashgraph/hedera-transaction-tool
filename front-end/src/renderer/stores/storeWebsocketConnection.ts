@@ -8,7 +8,7 @@ import useVersionCheck from '@renderer/composables/useVersionCheck';
 
 import { organizationUpdateTimestamps } from '@renderer/stores/versionState';
 
-import { getLocalWebsocketPath } from '@renderer/services/organizationsService';
+import { getOrganizationWebsocketUrl } from '@renderer/services/organizationsService';
 
 import { createLogger, isUserLoggedIn } from '@renderer/utils';
 import { FRONTEND_VERSION } from '@renderer/utils/version';
@@ -59,9 +59,7 @@ const useWebsocketConnection = defineStore(
         }
 
         try {
-          const url = serverUrl.includes('localhost')
-            ? getLocalWebsocketPath(serverUrl)
-            : serverUrl;
+          const url = getOrganizationWebsocketUrl(serverUrl);
           const socket = connect(serverUrl, url);
           if (socket.connected) {
             orgConnection.setConnectionStatus(serverUrl, 'connected');

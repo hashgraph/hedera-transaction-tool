@@ -23,7 +23,7 @@ vi.mock('@renderer/stores/storeOrganizationConnection', () => ({
   default: vi.fn(() => mockOrgConnection),
 }));
 vi.mock('@renderer/services/organizationsService', () => ({
-  getLocalWebsocketPath: vi.fn((url: string) => url),
+  getOrganizationWebsocketUrl: vi.fn((url: string) => url),
 }));
 vi.mock('@renderer/utils', () => ({
   createLogger: () => ({
@@ -74,6 +74,7 @@ describe('useWebsocketConnection', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     vi.clearAllMocks();
+    mockUserStore.organizations = [{ id: 'org-1', serverUrl: SERVER_URL }];
 
     // Restore defaults that individual tests may override
     vi.mocked(isUserLoggedIn).mockReturnValue(true);
