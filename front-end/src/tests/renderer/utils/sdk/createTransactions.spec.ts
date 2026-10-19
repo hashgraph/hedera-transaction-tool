@@ -1274,9 +1274,9 @@ describe('createNodeUpdateTransaction', () => {
     ).toBe(true);
     expect(t.adminKey !== null && compareKeys(t.adminKey, data.adminKey!)).toBe(true);
     expect(t.declineReward).toBe(data.declineReward);
+    expect(t.associatedRegisteredNodes).not.toBeNull();
     expect(
-      JSON.stringify(t.associatedRegisteredNodes),
-      JSON.stringify(data.associatedRegisteredNodes),
+      compareLongs(t.associatedRegisteredNodes!, mapStringToLongs(data.associatedRegisteredNodes)),
     );
   });
 
@@ -1423,6 +1423,22 @@ describe('createNodeUpdateTransaction', () => {
     const modifiedData = { ...data, associatedRegisteredNodes: ['3', '4'] };
     const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-    expect(t.associatedRegisteredNodes).toEqual([Long.fromNumber(3), Long.fromNumber(4)]);
+    expect(t.associatedRegisteredNodes).not.toBeNull();
+    expect(
+      compareLongs(t.associatedRegisteredNodes!, [Long.fromNumber(3), Long.fromNumber(4)]),
+    ).toBe(true);
+
   });
 });
+
+function compareLongs(l1: Long[], l2: Long[]): boolean {
+  if (l1.length !== l2.length) return false;
+  for (let i = 0; i < l1.length; i += 1) {
+    if (!l1[i].eq(l2[i])) return false;
+  }
+  return true;
+}
+
+function mapStringToLongs(values: string[]): Long[] {
+  return values.map(value => Long.fromString(value, true));
+}
