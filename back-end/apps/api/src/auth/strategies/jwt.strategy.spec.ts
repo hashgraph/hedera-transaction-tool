@@ -46,12 +46,52 @@ describe('JwtStrategy', () => {
       jwtStrategy = module.get<JwtStrategy>(JwtStrategy);
     });
 
-    it('should return a user when validate is called with a valid userId', async () => {
-      const user = { id: 1, email: 'test@test.com' };
+    it.each([
+      { scenario: 'legacy token for an unrotated user', tokenVersion: undefined, currentVersion: 0 },
+      { scenario: 'token with the current credential version', tokenVersion: 3, currentVersion: 3 },
+    ])('should accept a $scenario', async ({ tokenVersion, currentVersion }) => {
+      const user = { id: 1, email: 'test@test.com', credentialVersion: currentVersion };
       mockUsersService.getUser.mockResolvedValue(user as User);
 
-      const result = await jwtStrategy.validate({ userId: user.id, email: user.email });
+      const result = await jwtStrategy.validate({
+        userId: user.id,
+        email: user.email,
+        credentialVersion: tokenVersion,
+      });
       expect(result).toEqual(user);
+    });
+
+    it.each([
+      {
+        scenario: 'legacy login before a password rotation',
+        tokenVersion: undefined,
+        currentVersion: 1,
+      },
+      {
+        scenario: 'old-password login racing the password save',
+        tokenVersion: 0,
+        currentVersion: 1,
+      },
+      {
+        scenario: 'login between two rotations in the same second',
+        tokenVersion: 1,
+        currentVersion: 2,
+      },
+    ])('should reject a token from $scenario', async ({ tokenVersion, currentVersion }) => {
+      const user = {
+        id: 42,
+        email: 'test@test.com',
+        credentialVersion: currentVersion,
+      };
+      mockUsersService.getUser.mockResolvedValue(user as User);
+
+      await expect(
+        jwtStrategy.validate({
+          userId: 42,
+          email: user.email,
+          credentialVersion: tokenVersion,
+        }),
+      ).rejects.toMatchObject({ status: 401 });
     });
 
     it('should throw UnauthorizedException when no user is found', async () => {
@@ -81,7 +121,7 @@ describe('JwtStrategy', () => {
     it('should return a user when the token is within the current JWT_EXPIRATION', async () => {
       const iat = 1_700_000_000;
       const expirationDays = 7;
-      const user = { id: 1, email: 'test@test.com' };
+      const user = { id: 1, email: 'test@test.com', credentialVersion: 0 };
       mockConfigService.get.mockReturnValue(expirationDays);
       mockUsersService.getUser.mockResolvedValue(user as User);
       const nowSpy = jest

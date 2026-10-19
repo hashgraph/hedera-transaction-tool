@@ -70,6 +70,7 @@ describe('TransactionsController', () => {
       id: 1,
       email: 'John@test.com',
       password: 'Doe',
+      credentialVersion: 0,
       admin: true,
       canViewReports: false,
       status: UserStatus.NONE,

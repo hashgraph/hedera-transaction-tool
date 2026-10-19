@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate({ userId, iat }: JwtPayload): Promise<User> {
+  async validate({ userId, iat, credentialVersion }: JwtPayload): Promise<User> {
     // Re-check age against the *current* JWT_EXPIRATION instead of trusting only
     // the token's own exp claim, which was computed from whatever JWT_EXPIRATION
     // was at issuance. This lets lowering JWT_EXPIRATION retroactively cut off
@@ -39,6 +39,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const user = await this.usersService.getUser({ id: userId });
 
     if (!user) throw new UnauthorizedException();
+    // Legacy tokens without a version remain valid for version-0 accounts.
+    // The first password rotation invalidates those tokens too.
+    if ((credentialVersion ?? 0) !== user.credentialVersion) {
+      throw new UnauthorizedException();
+    }
 
     return user;
   }

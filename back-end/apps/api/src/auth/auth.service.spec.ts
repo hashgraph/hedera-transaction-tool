@@ -74,7 +74,7 @@ describe('AuthService', () => {
   }
 
   async function invokeLogin(production: boolean) {
-    const user = { id: 1, email: '' };
+    const user = { id: 1, email: '', credentialVersion: 0 };
     const JWT_EXPIRATION = 2;
 
     //@ts-expect-error - incorrect overload expected
@@ -295,7 +295,19 @@ describe('AuthService', () => {
     const { user } = await invokeLogin(false);
 
     expect(jwtService.sign).toHaveBeenCalledWith(
-      { userId: user.id, email: user.email },
+      { userId: user.id, email: user.email, credentialVersion: 0 },
+      expect.any(Object),
+    );
+  });
+
+  it('should include the current credential version in a new access token', async () => {
+    const user = { id: 42, email: 'user@example.com', credentialVersion: 3 };
+    jest.spyOn(jwtService, 'sign').mockReturnValue('token');
+
+    await service.login(user as User);
+
+    expect(jwtService.sign).toHaveBeenCalledWith(
+      { userId: 42, email: 'user@example.com', credentialVersion: 3 },
       expect.any(Object),
     );
   });
@@ -598,12 +610,31 @@ describe('AuthService', () => {
 
   it('should authenticate access token', async () => {
     const token = 'token';
+    const user = { id: 2, credentialVersion: 1 } as User;
 
-    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({ userId: '2' });
+    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({ userId: '2', credentialVersion: 1 });
+    userService.getUser.mockResolvedValue(user);
 
-    await service.authenticateWebsocketToken(token);
+    await expect(service.authenticateWebsocketToken(token)).resolves.toBe(user);
 
     expect(userService.getUser).toHaveBeenCalledWith({ id: '2' });
+  });
+
+  it('should reject a stale credential version for websocket authentication', async () => {
+    const token = 'token';
+    jest.spyOn(jwtService, 'verifyAsync').mockResolvedValue({ userId: 2, credentialVersion: 0 });
+    userService.getUser.mockResolvedValue({ id: 2, credentialVersion: 1 } as User);
+
+    await expect(service.authenticateWebsocketToken(token)).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('should reject a legacy websocket token after a password rotation with HTTP 401', async () => {
+    jwtService.verifyAsync.mockResolvedValue({ userId: 2 });
+    userService.getUser.mockResolvedValue({ id: 2, credentialVersion: 1 } as User);
+
+    await expect(service.authenticateWebsocketToken('legacy-token')).rejects.toMatchObject({
+      status: 401,
+    });
   });
 
   it('should not authenticate access token if user is not found', async () => {

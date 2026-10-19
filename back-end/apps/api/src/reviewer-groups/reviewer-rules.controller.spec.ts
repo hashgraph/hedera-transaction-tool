@@ -19,6 +19,7 @@ describe('ReviewerRulesController', () => {
     id: 1,
     email: 'admin@test.com',
     password: 'hash',
+    credentialVersion: 0,
     admin: true,
     canViewReports: false,
     status: UserStatus.NONE,

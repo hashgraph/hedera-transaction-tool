@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsWhere, Repository, SelectQueryBuilder, UpdateQueryBuilder } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import { BlacklistService, ErrorCodes, checkFrontendVersion, isUpdateAvailable } from '@app/common';
@@ -26,6 +26,8 @@ describe('UsersService', () => {
   let service: UsersService;
 
   const userRepository = mockDeep<Repository<User>>();
+  const queryBuilder = mockDeep<SelectQueryBuilder<User>>();
+  const passwordUpdate = mockDeep<UpdateQueryBuilder<User>>();
   const clientRepository = mockDeep<Repository<Client>>();
   const configService = mockDeep<ConfigService>();
   const blacklistService = mockDeep<BlacklistService>();
@@ -69,6 +71,11 @@ describe('UsersService', () => {
     service = module.get<UsersService>(UsersService);
 
     jest.resetAllMocks();
+    userRepository.createQueryBuilder.mockReturnValue(queryBuilder);
+    queryBuilder.update.mockReturnValue(passwordUpdate);
+    passwordUpdate.set.mockReturnThis();
+    passwordUpdate.where.mockReturnThis();
+    passwordUpdate.returning.mockReturnThis();
     apiKeysService.getStatuses.mockResolvedValue(new Map());
     apiKeysService.getStatus.mockResolvedValue({
       hasKey: false,
@@ -632,17 +639,71 @@ describe('UsersService', () => {
     await expect(service.updateUserById(1, {})).rejects.toThrow(ErrorCodes.UNF);
   });
 
-  it('should set new password the user', async () => {
-    userRepository.findOne.mockResolvedValue(user as User);
-    jest.spyOn(service, 'hash').mockImplementation(async () => hashedPassword);
+  it('should migrate a legacy hash only if it is still the stored password', async () => {
+    const legacyHash = 'legacy-bcrypt-hash';
+    const migratedHash = 'migrated-argon2-hash';
+    jest.spyOn(service, 'hash').mockResolvedValue(migratedHash);
+    const identifiedUser = { ...user, id: 42, password: legacyHash } as User;
+    await service.migrateLegacyPasswordHash(identifiedUser, password);
 
-    await service.setPassword({ ...user } as User, password);
+    expect(userRepository.update).toHaveBeenCalledWith(
+      { id: 42, password: legacyHash },
+      { password: migratedHash, status: 'NONE' },
+    );
+    expect(blacklistService.blacklistPreviousUserTokens).not.toHaveBeenCalled();
+  });
 
-    expect(userRepository.save).toHaveBeenCalledWith({
-      ...user,
-      password: hashedPassword,
+  it('should atomically change the password and increment the credential version on every rotation', async () => {
+    const identifiedUser = { ...user, id: 42, credentialVersion: 0 } as User;
+    const rotatedHash = 'rotated-password-hash';
+    jest.spyOn(service, 'hash').mockResolvedValue(rotatedHash);
+    const updatedAt = new Date();
+    passwordUpdate.execute
+      .mockResolvedValueOnce({
+        raw: [{ password: rotatedHash, status: 'NONE', credentialVersion: 4, updatedAt }],
+        affected: 1,
+        generatedMaps: [],
+      })
+      .mockResolvedValueOnce({
+        raw: [{ password: rotatedHash, status: 'NONE', credentialVersion: 5, updatedAt }],
+        affected: 1,
+        generatedMaps: [],
+      });
+
+    await service.setPassword(identifiedUser, password);
+    expect(identifiedUser).toMatchObject({
+      password: rotatedHash,
       status: 'NONE',
+      credentialVersion: 4,
+      updatedAt,
     });
+    await service.setPassword(identifiedUser, 'another password');
+    expect(identifiedUser.credentialVersion).toBe(5);
+
+    expect(passwordUpdate.execute).toHaveBeenCalledTimes(2);
+    expect(passwordUpdate.where).toHaveBeenCalledWith({ id: 42 });
+    expect(passwordUpdate.returning).toHaveBeenCalledWith([
+      'password',
+      'status',
+      'credentialVersion',
+      'updatedAt',
+    ]);
+    for (const [update] of passwordUpdate.set.mock.calls) {
+      expect(update.password).toBe(rotatedHash);
+      expect(update.status).toBe('NONE');
+      expect(update.credentialVersion).toEqual(expect.any(Function));
+      expect((update.credentialVersion as () => string)()).toBe('"credentialVersion" + 1');
+    }
+  });
+
+  it('should leave the user object unchanged if the credential update fails', async () => {
+    const identifiedUser = { ...user, id: 42 } as User;
+    const originalUser = { ...identifiedUser };
+    jest.spyOn(service, 'hash').mockResolvedValue(hashedPassword);
+    passwordUpdate.execute.mockRejectedValueOnce(new Error('Database unavailable'));
+
+    await expect(service.setPassword(identifiedUser, password)).rejects.toThrow('Database unavailable');
+    expect(identifiedUser).toEqual(originalUser);
   });
 
   it('should remove user, soft-delete all associated keys, and revoke the report API key', async () => {

@@ -12,7 +12,7 @@ import { TransactionComment } from './transaction-comment.entity';
 import { TransactionObserver } from './transaction-observer.entity';
 import { TransactionSigner } from './transaction-signer.entity';
 import { Notification, NotificationPreferences } from './notifications';
-import { NotificationReceiver } from './notifications/notification-receiver.entity';
+import { NotificationReceiver } from '@app/common/database/entities/notifications';
 import { Client } from './client.entity';
 
 export enum UserStatus {
@@ -31,6 +31,9 @@ export class User {
 
   @Column()
   password!: string;
+
+  @Column({ default: 0 })
+  credentialVersion!: number;
 
   @Column({ default: false })
   admin!: boolean;
