@@ -175,11 +175,24 @@ export class UsersService {
     const passwordHash = await this.getSaltedHash(newPassword);
     // Update the hash and version in one statement such that a concurrent login
     // which validated the old hash will have a stale version and will be rejected.
-    await this.repo.update(user.id, {
-      password: passwordHash,
-      status: UserStatus.NONE,
-      credentialVersion: () => '"credentialVersion" + 1',
-    });
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(User)
+      .set({
+        password: passwordHash,
+        status: UserStatus.NONE,
+        credentialVersion: () => '"credentialVersion" + 1',
+      })
+      .where({ id: user.id })
+      .returning(['password', 'status', 'credentialVersion', 'updatedAt'])
+      .execute();
+
+    const updatedUser = result.raw[0];
+    if (!updatedUser) throw new BadRequestException(ErrorCodes.UNF);
+
+    // Preserve caller's User object. We use the version returned by the atomic update
+    // instead of the local value (which may be stale because of a concurrent update).
+    Object.assign(user, updatedUser);
   }
 
   // Remove a user from the organization.
