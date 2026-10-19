@@ -73,10 +73,26 @@ const hasAnyChange = computed(() => {
   );
 });
 
+// The SDK can't represent clearing these back out once set: `setAdminKey`
+// rejects null, and an empty `serviceEndpoint` list is rejected by the
+// consensus node (HIP-1137 requires at least one). So once a registered node
+// has either, Update must stay disabled rather than silently submit a
+// transaction that doesn't apply the clear the UI implies.
+const clearsExistingAdminKey = computed(
+  () => Boolean(nodeData.registeredNodeInfo.value?.admin_key) && !data.adminKey,
+);
+const clearsExistingServiceEndpoints = computed(
+  () =>
+    (nodeData.registeredNodeInfo.value?.service_endpoints?.length ?? 0) > 0 &&
+    data.serviceEndpoints.length === 0,
+);
+
 const createDisabled = computed(() => {
   return (
     nodeData.registeredNodeInfo.value === null ||
     !hasAnyChange.value ||
+    clearsExistingAdminKey.value ||
+    clearsExistingServiceEndpoints.value ||
     data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS ||
     exceedsUtf8ByteLimit(data.description, MAX_DESCRIPTION_BYTES) ||
     createServiceEndpointsDisabled.value
@@ -160,6 +176,14 @@ const handleExecutedSuccess = async () => {
 
 /* Functions */
 const preCreateAssert = () => {
+  if (clearsExistingAdminKey.value) {
+    throw new Error('Admin Key cannot be removed once set');
+  }
+
+  if (clearsExistingServiceEndpoints.value) {
+    throw new Error('A registered node must have at least one service endpoint');
+  }
+
   if (data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS) {
     throw new Error(
       `A registered node may have at most ${MAX_SERVICE_ENDPOINTS} service endpoints`,

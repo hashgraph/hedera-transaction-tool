@@ -52,7 +52,7 @@ const createDisabled = computed(() => {
     !data.nodeAccountId ||
     data.gossipEndpoints.length === 0 ||
     data.serviceEndpoints.length === 0 ||
-    !data.gossipCaCertificate ||
+    (data.gossipCaCertificate?.length ?? 0) === 0 ||
     !data.adminKey
   );
 });
@@ -88,7 +88,7 @@ const preCreateAssert = () => {
     throw new Error('Service Endpoints Required');
   }
 
-  if (!data.gossipCaCertificate) {
+  if ((data.gossipCaCertificate?.length ?? 0) === 0) {
     throw new Error('Gossip CA Certificate Required');
   }
 

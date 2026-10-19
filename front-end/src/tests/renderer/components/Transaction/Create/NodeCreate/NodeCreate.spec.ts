@@ -105,4 +105,25 @@ describe('NodeCreate.vue — createDisabled', () => {
 
     expect(readCreateDisabled(wrapper)).toBe(false);
   });
+
+  // `gossipCaCertificate` starts as `Uint8Array.from([])`, which is truthy,
+  // so a plain `!data.gossipCaCertificate` check never actually gates on it
+  // being empty — this locks in the byte-length check instead.
+  test('stays disabled while every other required field is set but the certificate is empty', async () => {
+    const wrapper = await mountNodeCreate();
+
+    await wrapper.find('input[placeholder="Enter Node Account ID"]').setValue('0.0.5');
+
+    await wrapper.find('[data-testid="input-gossip-ip-or-domain"]').setValue('10.0.0.1');
+    await wrapper.find('[data-testid="input-gossip-port"]').setValue('50111');
+    await wrapper.find('[data-testid="button-add-gossip-endpoint"]').trigger('click');
+
+    await wrapper.find('[data-testid="input-service-ip-or-domain"]').setValue('10.0.0.2');
+    await wrapper.find('[data-testid="input-service-port"]').setValue('50211');
+    await wrapper.find('[data-testid="button-add-service-endpoint"]').trigger('click');
+
+    await wrapper.find('[data-testid="stub-admin-key"]').trigger('click');
+
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
 });

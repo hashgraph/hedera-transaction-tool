@@ -2,7 +2,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { ref } from 'vue';
-import { PrivateKey } from '@hiero-ledger/sdk';
+import { GeneralServiceEndpoint, PrivateKey } from '@hiero-ledger/sdk';
 
 // Forces `@renderer/utils`'s barrel to fully resolve before anything below
 // reaches it from the `@renderer/utils/sdk/createTransactions` side (which
@@ -57,7 +57,11 @@ const stubs = {
     props: ['modelKey', 'label', 'isRequired'],
     emits: ['update:modelKey'],
     data: () => ({ adminKey }),
-    template: '<button data-testid="stub-admin-key" @click="$emit(\'update:modelKey\', adminKey)" />',
+    template:
+      '<div>' +
+      '<button data-testid="stub-admin-key" @click="$emit(\'update:modelKey\', adminKey)" />' +
+      '<button data-testid="stub-admin-key-clear" @click="$emit(\'update:modelKey\', null)" />' +
+      '</div>',
   },
 };
 
@@ -142,6 +146,34 @@ describe('RegisteredNodeUpdate.vue — a resolved registered node and at least o
 
     await description.setValue('new description');
     await description.setValue('');
+
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  // `RegisteredNodeUpdateTransaction.setAdminKey` rejects `null`, so the SDK
+  // can't represent "remove the admin key". Clearing a previously-set admin
+  // key must stay disabled rather than submit an update that silently leaves
+  // it untouched.
+  test('stays disabled when a previously-set admin key is cleared', async () => {
+    const wrapper = await mountResolved(resolvedNode({ admin_key: adminKey }));
+
+    await wrapper.find('[data-testid="stub-admin-key-clear"]').trigger('click');
+
+    expect(readCreateDisabled(wrapper)).toBe(true);
+  });
+
+  // An empty `serviceEndpoint` replacement list is rejected by the consensus
+  // node (HIP-1137 requires at least one), so removing the last existing
+  // endpoint must stay disabled rather than submit an update that can't
+  // apply the removal.
+  test('stays disabled when the last existing service endpoint is removed', async () => {
+    const endpoint = new GeneralServiceEndpoint()
+      .setIpAddress(new Uint8Array([10, 0, 0, 1]))
+      .setPort(443)
+      .setRequiresTls(true);
+    const wrapper = await mountResolved(resolvedNode({ service_endpoints: [endpoint] }));
+
+    await wrapper.find('[data-testid="button-delete-registered-endpoint-0"]').trigger('click');
 
     expect(readCreateDisabled(wrapper)).toBe(true);
   });

@@ -1249,6 +1249,20 @@ describe('Registered node creators', () => {
       });
       expect(tx.registeredNodeId).toBeNull();
     });
+
+    // Unlike Create, Update distinguishes "leave unchanged" (not called) from
+    // "clear" (called with ''), so an empty description must still be sent
+    // explicitly rather than silently dropped.
+    test('explicitly clears the description when set to empty', () => {
+      const tx = createRegisteredNodeUpdateTransaction({
+        ...common,
+        registeredNodeId: '12',
+        adminKey: null,
+        description: '',
+        serviceEndpoints: [],
+      });
+      expect(tx.description).toBe('');
+    });
   });
 
   describe('createRegisteredNodeDeleteTransaction', () => {

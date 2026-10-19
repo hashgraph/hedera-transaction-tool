@@ -774,9 +774,9 @@ export function createRegisteredNodeUpdateTransaction(
     transaction.setAdminKey(data.adminKey);
   }
 
-  if (data.description && data.description.length > 0) {
-    transaction.setDescription(data.description);
-  }
+  // Update (unlike Create) distinguishes "leave unchanged" (not called) from
+  // "clear" (called with ''), so always pass the current form value through.
+  transaction.setDescription(data.description);
 
   const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
   if (endpoints.length > 0) {
