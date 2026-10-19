@@ -18,7 +18,6 @@ import {
   MirrorNodeServiceEndpoint,
   NodeCreateTransaction,
   NodeDeleteTransaction,
-  NodeUpdateTransaction,
   PrivateKey,
   RegisteredNodeCreateTransaction,
   RegisteredNodeDeleteTransaction,
@@ -34,7 +33,7 @@ import {
 import Long from 'long';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed } from '@shared/interfaces';
 
 import {
   createAccountCreateTransaction,
@@ -66,6 +65,8 @@ import {
   type NodeData,
   type NodeUpdateData,
   getRegisteredServiceEndpoints,
+  getServiceEndpoint,
+  getServiceEndpoints,
   type RegisteredEndpointType,
   type RegisteredNodeUpdateData,
   type TransactionCommonData,
@@ -74,12 +75,17 @@ import {
   getFreezeData,
   getNodeData,
   getNodeDeleteData,
-  getNodeUpdateData,
   getSystemDeleteData,
   getSystemUndeleteData,
 } from '@renderer/utils/sdk/getData';
 import { compareKeys } from '@renderer/utils';
 import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
+import {
+  compareNodeServiceEndpoint,
+  compareNodeServiceEndpoints,
+} from '@renderer/utils/sdk/serviceEndpoints.ts';
+
+const uint8ArrayToHex = (bytes: Uint8Array) => Buffer.from(bytes).toString('hex');
 
 describe('createTransactions file contents', () => {
   const common: TransactionCommonData = {
@@ -120,50 +126,8 @@ describe('createTransactions file contents', () => {
     };
   }
 
-  function makeOldNodeInfo(overrides: Partial<INodeInfoParsed> = {}): INodeInfoParsed {
-    return {
-      admin_key: null,
-      description: '',
-      file_id: null,
-      memo: null,
-      node_id: 3,
-      node_account_id: AccountId.fromString('0.0.3'),
-      node_cert_hash: null,
-      public_key: null,
-      service_endpoints: [],
-      timestamp: null,
-      max_stake: null,
-      min_stake: null,
-      stake: null,
-      stake_not_rewarded: null,
-      stake_rewarded: null,
-      staking_period: null,
-      reward_rate_start: null,
-      decline_reward: false,
-      grpc_web_proxy_endpoint: null,
-      associated_registered_nodes: [],
-      ...overrides,
-    };
-  }
-
   function longs(values: number[]) {
     return values.map(v => Long.fromNumber(v));
-  }
-
-  // Compare a Long[] field by decimal string. Proto-decoded Longs come back as
-  // `unsigned: true` (since the proto field is uint64), while Long.fromNumber
-  // gives signed Longs. We don't care about that flag — the numeric value is
-  // what matters, so flatten to strings for the assertion.
-  function longStrings(value: Long[] | null | undefined): string[] {
-    return (value ?? []).map(v => v.toString());
-  }
-
-  function makeUpdateData(overrides: Partial<NodeUpdateData> = {}): NodeUpdateData {
-    return {
-      ...makeNodeData(),
-      nodeId: '3',
-      ...overrides,
-    };
   }
 
   /* ------------------------------------------------------------------ */
@@ -696,139 +660,6 @@ describe('createTransactions file contents', () => {
     });
   });
 
-  describe('createNodeUpdateTransaction — associatedRegisteredNodes', () => {
-    test('unchanged list does not set the SDK field (left as null = no change on the wire)', () => {
-      const tx = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: ['1', '2'] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      expect(tx.associatedRegisteredNodes).toBeNull();
-    });
-
-    test('clearing a previously non-empty list sets the SDK field to []', () => {
-      const tx = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: [] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      expect(tx.associatedRegisteredNodes).toEqual([]);
-    });
-
-    test('modifying the list sets the new Longs', () => {
-      const tx = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: ['3', '4'] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      expect(tx.associatedRegisteredNodes).toEqual(longs([3, 4]));
-    });
-
-    test('adding to a previously empty list sets the new Longs', () => {
-      const tx = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: ['5'] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [] }),
-      );
-      expect(tx.associatedRegisteredNodes).toEqual(longs([5]));
-    });
-
-    test('no oldData and empty list leaves the SDK field null (no-op update)', () => {
-      const tx = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: [] }),
-        },
-        null,
-      );
-      expect(tx.associatedRegisteredNodes).toBeNull();
-    });
-  });
-
-  // End-to-end: build → freeze → serialize → deserialize → inspect. This
-  // exercises the full path that produces a real transaction, and proves the
-  // field actually survives proto encoding (and gets decoded into the right
-  // shape on the other end). Anything that asserts only on the in-memory SDK
-  // object would miss a wire-format regression.
-  describe('NodeCreate proto roundtrip — associatedRegisteredNodes', () => {
-    function freezeAndRoundtrip(tx: NodeCreateTransaction): NodeCreateTransaction {
-      tx.setNodeAccountIds([new AccountId(0, 0, 3)]);
-      tx.freeze();
-      const decoded = Transaction.fromBytes(tx.toBytes());
-      expect(decoded).toBeInstanceOf(NodeCreateTransaction);
-      return decoded as NodeCreateTransaction;
-    }
-
-    test('values survive a build → freeze → fromBytes round trip', () => {
-      const built = createNodeCreateTransaction({
-        ...common,
-        ...makeNodeData({ associatedRegisteredNodes: ['1', '7', '12'] }),
-      });
-      const decoded = freezeAndRoundtrip(built);
-      expect(longStrings(decoded.associatedRegisteredNodes)).toEqual(['1', '7', '12']);
-    });
-
-    test('empty list round-trips as an empty list on the wire', () => {
-      const built = createNodeCreateTransaction({ ...common, ...makeNodeData() });
-      const decoded = freezeAndRoundtrip(built);
-      expect(decoded.associatedRegisteredNodes).toEqual([]);
-    });
-  });
-
-  describe('NodeUpdate proto roundtrip — associatedRegisteredNodes', () => {
-    function freezeAndRoundtrip(tx: NodeUpdateTransaction): NodeUpdateTransaction {
-      tx.setNodeAccountIds([new AccountId(0, 0, 3)]);
-      tx.freeze();
-      const decoded = Transaction.fromBytes(tx.toBytes());
-      expect(decoded).toBeInstanceOf(NodeUpdateTransaction);
-      return decoded as NodeUpdateTransaction;
-    }
-
-    test('unchanged list: the wrapper is absent (null after decode) — "no change" on the wire', () => {
-      const built = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: ['1', '2'] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      const decoded = freezeAndRoundtrip(built);
-      expect(decoded.associatedRegisteredNodes).toBeNull();
-    });
-
-    test('cleared list: the wrapper is present with an empty array — "clear" on the wire', () => {
-      const built = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: [] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      const decoded = freezeAndRoundtrip(built);
-      expect(decoded.associatedRegisteredNodes).toEqual([]);
-    });
-
-    test('modified list: new values are present after decode', () => {
-      const built = createNodeUpdateTransaction(
-        {
-          ...common,
-          ...makeUpdateData({ associatedRegisteredNodes: ['3', '4'] }),
-        },
-        makeOldNodeInfo({ associated_registered_nodes: [1, 2] }),
-      );
-      const decoded = freezeAndRoundtrip(built);
-      expect(longStrings(decoded.associatedRegisteredNodes)).toEqual(['3', '4']);
-    });
-  });
-
   const HASH = 'ab'.repeat(48);
 
   function freezeData(overrides: Partial<FreezeData> = {}): FreezeData {
@@ -1090,52 +921,6 @@ describe('createTransactions file contents', () => {
       expect(parsed.certificateHash.length).toBe(0);
       expect(parsed.declineReward).toBe(false);
     });
-
-    test('NodeUpdate with no old data writes the full payload and node id', () => {
-      const tx = roundtrip(
-        createNodeUpdateTransaction({ ...common, ...nodeData, nodeId: '5' }, null),
-      );
-      expect(tx).toBeInstanceOf(NodeUpdateTransaction);
-      const parsed = getNodeUpdateData(tx);
-      expect(parsed.nodeId).toBe('5');
-      expect(parsed.nodeAccountId).toBe('0.0.5');
-      expect(parsed.serviceEndpoints).toEqual(nodeData.serviceEndpoints);
-      expect(parsed.adminKey?.toString()).toBe(adminKey.toString());
-    });
-
-    test('NodeUpdate only writes fields that differ from the current node info', () => {
-      const old = {
-        admin_key: adminKey,
-        description: 'my node',
-        file_id: null,
-        memo: null,
-        node_id: 5,
-        node_account_id: AccountId.fromString('0.0.5'),
-        node_cert_hash: null,
-        public_key: null,
-        service_endpoints: [],
-        timestamp: null,
-        max_stake: null,
-        min_stake: null,
-        stake: null,
-        stake_not_rewarded: null,
-        stake_rewarded: null,
-        staking_period: null,
-        reward_rate_start: null,
-        decline_reward: true,
-        grpc_web_proxy_endpoint: null,
-        associated_registered_nodes: [2, 4],
-      };
-      const tx = createNodeUpdateTransaction(
-        { ...common, ...nodeData, description: 'renamed', nodeId: '5' },
-        old,
-      );
-      expect(tx.description).toBe('renamed');
-      expect(tx.accountId).toBeNull();
-      expect(tx.adminKey).toBeNull();
-      expect(tx.declineReward).toBeNull();
-      expect(tx.associatedRegisteredNodes).toBeNull();
-    });
   });
 
   /* ------------------------------------------------------------------ */
@@ -1279,130 +1064,359 @@ describe('createTransactions file contents', () => {
       });
     });
   });
+});
 
-  describe('createRegisteredNodeUpdateTransaction', () => {
-    const commonData: TransactionCommonData = {
-      payerId: '0.0.1001',
-      validStart: new Date(Date.now() + 60_000),
-      maxTransactionFee: new Hbar(2),
-      transactionMemo: '',
-    };
+describe('createRegisteredNodeUpdateTransaction', () => {
+  const commonData: TransactionCommonData = {
+    payerId: '0.0.1001',
+    validStart: new Date(Date.now() + 60_000),
+    maxTransactionFee: new Hbar(2),
+    transactionMemo: '',
+  };
 
-    const registeredNodeUpdateData: RegisteredNodeUpdateData = {
-      registeredNodeId: '41',
-      description: 'Nice node description',
-      adminKey: PrivateKey.generateECDSA().publicKey,
+  const registeredNodeUpdateData: RegisteredNodeUpdateData = {
+    registeredNodeId: '41',
+    description: 'Nice node description',
+    adminKey: PrivateKey.generateECDSA().publicKey,
+    serviceEndpoints: [
+      {
+        ipAddressV4: null,
+        port: '42',
+        domainName: 'example.com',
+        type: 'blockNode',
+        requiresTls: false,
+        endpointApis: [43],
+      },
+    ],
+  };
+
+  const data: TransactionCommonData & RegisteredNodeUpdateData = {
+    ...commonData,
+    ...registeredNodeUpdateData,
+  };
+
+  test('createRegisteredNodeUpdateTransaction() without baseline', () => {
+    const t = createRegisteredNodeUpdateTransaction(data, null);
+
+    expect(t.transactionId?.accountId?.toString()).toBe(commonData.payerId);
+    expect(t.transactionId?.validStart?.toDate()?.getTime()).toBe(commonData.validStart.getTime());
+    expect(t.maxTransactionFee!.toBigNumber().eq(commonData.maxTransactionFee.toBigNumber())).toBe(
+      true,
+    );
+    expect(t.transactionMemo).toBe(commonData.transactionMemo);
+
+    expect(t.registeredNodeId?.toString()).toBe(registeredNodeUpdateData.registeredNodeId);
+    expect(t.description).toBe(registeredNodeUpdateData.description);
+    expect(t.adminKey !== null && compareKeys(t.adminKey, registeredNodeUpdateData.adminKey!)).toBe(
+      true,
+    );
+
+    expect(t.serviceEndpoints).not.toBe(null);
+    expect(
+      t.serviceEndpoints !== null &&
+        compareServiceEndpoints(
+          t.serviceEndpoints,
+          getRegisteredServiceEndpoints(registeredNodeUpdateData.serviceEndpoints),
+        ),
+    ).toBe(true);
+  });
+
+  test('createRegisteredNodeUpdateTransaction() with baseline', () => {
+    const baseline = createRegisteredNodeUpdateTransaction(data, null);
+    const t = createRegisteredNodeUpdateTransaction(data, baseline);
+
+    expect(t.transactionId?.accountId?.toString()).toBe(commonData.payerId);
+    expect(t.transactionId?.validStart?.toDate()?.getTime()).toBe(commonData.validStart.getTime());
+    expect(t.maxTransactionFee!.toBigNumber().eq(commonData.maxTransactionFee.toBigNumber())).toBe(
+      true,
+    );
+    expect(t.transactionMemo).toBe(commonData.transactionMemo);
+
+    expect(t.registeredNodeId?.toString()).toBe(registeredNodeUpdateData.registeredNodeId);
+    expect(t.description).toBe(null);
+    expect(t.adminKey).toBe(null);
+    expect(t.serviceEndpoints).toBe(null);
+  });
+
+  test('with description changed', () => {
+    const baseline = createRegisteredNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, description: 'Another description' };
+    const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
+
+    expect(t.description).toBe(modifiedData.description);
+  });
+
+  test('with adminKey changed', () => {
+    const baseline = createRegisteredNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, adminKey: PrivateKey.generateECDSA().publicKey };
+    const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
+
+    expect(t.adminKey !== null && compareKeys(t.adminKey, modifiedData.adminKey)).toBe(true);
+  });
+
+  test('with serviceEndpoints changed', () => {
+    const baseline = createRegisteredNodeUpdateTransaction(data, null);
+    const modifiedData = {
+      ...data,
       serviceEndpoints: [
         {
           ipAddressV4: null,
           port: '42',
           domainName: 'example.com',
-          type: 'blockNode',
+          type: 'blockNode' as RegisteredEndpointType,
           requiresTls: false,
           endpointApis: [43],
         },
+        {
+          ipAddressV4: null,
+          port: '1212',
+          domainName: 'test.com',
+          type: 'mirrorNode' as RegisteredEndpointType,
+          requiresTls: true,
+        },
       ],
     };
+    const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
 
-    const data: TransactionCommonData & RegisteredNodeUpdateData = {
-      ...commonData,
-      ...registeredNodeUpdateData,
+    expect(
+      t.serviceEndpoints !== null &&
+        compareServiceEndpoints(
+          t.serviceEndpoints,
+          getRegisteredServiceEndpoints(modifiedData.serviceEndpoints),
+        ),
+    ).toBe(true);
+  });
+});
+
+describe('createNodeUpdateTransaction', () => {
+  const commonData: TransactionCommonData = {
+    payerId: '0.0.1001',
+    validStart: new Date(Date.now() + 60_000),
+    maxTransactionFee: new Hbar(2),
+    transactionMemo: '',
+  };
+
+  const nodeUpdateData: NodeUpdateData = {
+    nodeId: '1',
+    nodeAccountId: '0.0.1003',
+    description: 'Nice node description',
+    gossipEndpoints: [
+      {
+        ipAddressV4: '127.0.0.1',
+        port: '4343',
+        domainName: null,
+      },
+      {
+        ipAddressV4: null,
+        port: '4444',
+        domainName: 'example.com',
+      },
+    ],
+    serviceEndpoints: [
+      {
+        ipAddressV4: '127.0.0.1',
+        port: '4343',
+        domainName: null,
+      },
+      {
+        ipAddressV4: null,
+        port: '4444',
+        domainName: 'example.com',
+      },
+    ],
+    grpcWebProxyEndpoint: {
+      ipAddressV4: '127.0.0.1',
+      port: '4343',
+      domainName: null,
+    },
+    gossipCaCertificate: new Uint8Array([42, 42]),
+    certificateHash: new Uint8Array([43, 43]),
+    adminKey: PrivateKey.generateECDSA().publicKey,
+    declineReward: true,
+    associatedRegisteredNodes: ['1', '2', '3', '4'],
+  };
+
+  const data: TransactionCommonData & NodeUpdateData = {
+    ...commonData,
+    ...nodeUpdateData,
+  };
+
+  test('createNodeUpdateTransaction() without baseline', () => {
+    const t = createNodeUpdateTransaction(data, null);
+
+    expect(t.nodeId !== null && t.nodeId.equals(Long.fromString(data.nodeId))).toBe(true);
+    expect(t.accountId?.toString()).toBe(data.nodeAccountId.toString());
+    expect(t.description).toBe(data.description);
+    expect(
+      t.gossipEndpoints !== null &&
+        compareNodeServiceEndpoints(t.gossipEndpoints, getServiceEndpoints(data.gossipEndpoints)),
+    ).toBe(true);
+    expect(
+      t.serviceEndpoints !== null &&
+        compareNodeServiceEndpoints(t.serviceEndpoints, getServiceEndpoints(data.serviceEndpoints)),
+    ).toBe(true);
+    expect(
+      t.grpcWebProxyEndpoint !== null &&
+        compareNodeServiceEndpoint(
+          t.grpcWebProxyEndpoint,
+          getServiceEndpoint(data.grpcWebProxyEndpoint)!,
+        ),
+    ).toBe(true);
+    expect(
+      t.certificateHash !== null &&
+        uint8ArrayToHex(t.certificateHash) === uint8ArrayToHex(data.certificateHash),
+    ).toBe(true);
+    expect(t.adminKey !== null && compareKeys(t.adminKey, data.adminKey!)).toBe(true);
+    expect(t.declineReward).toBe(data.declineReward);
+    expect(
+      JSON.stringify(t.associatedRegisteredNodes),
+      JSON.stringify(data.associatedRegisteredNodes),
+    );
+  });
+
+  test('createNodeUpdateTransaction() with baseline', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const t = createNodeUpdateTransaction(data, baseline);
+
+    expect(t.nodeId !== null && t.nodeId.equals(Long.fromString(data.nodeId))).toBe(true);
+    expect(t.accountId).toBe(null);
+    expect(t.description).toBe(null);
+    expect(t.gossipEndpoints).toBe(null);
+    expect(t.serviceEndpoints).toBe(null);
+    expect(t.grpcWebProxyEndpoint).toBe(null);
+    expect(t.certificateHash).toBe(null);
+    expect(t.adminKey).toBe(null);
+    expect(t.declineReward).toBe(null);
+    expect(t.associatedRegisteredNodes).toBe(null);
+  });
+
+  test('with accountId changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, nodeAccountId: '0.0.1010' };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
+
+    expect(t.accountId?.toString()).toBe(modifiedData.nodeAccountId);
+  });
+
+  test('with description changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, description: 'Another description' };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
+
+    expect(t.description).toBe(modifiedData.description);
+  });
+
+  test('with gossipEndpoints changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = {
+      ...data,
+      gossipEndpoints: [
+        {
+          ipAddressV4: null,
+          port: '4343',
+          domainName: 'example.com',
+        },
+      ],
     };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-    test('createRegisteredNodeUpdateTransaction() without baseline', () => {
-      const t = createRegisteredNodeUpdateTransaction(data, null);
+    expect(
+      t.gossipEndpoints !== null &&
+        compareNodeServiceEndpoints(
+          t.gossipEndpoints,
+          getServiceEndpoints(modifiedData.gossipEndpoints),
+        ),
+    );
+  });
 
-      expect(t.transactionId?.accountId?.toString()).toBe(commonData.payerId);
-      expect(t.transactionId?.validStart?.toDate()?.getTime()).toBe(
-        commonData.validStart.getTime(),
-      );
-      expect(
-        t.maxTransactionFee!.toBigNumber().eq(commonData.maxTransactionFee.toBigNumber()),
-      ).toBe(true);
-      expect(t.transactionMemo).toBe(commonData.transactionMemo);
+  test('with serviceEndpoints changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = {
+      ...data,
+      serviceEndpoints: [
+        {
+          ipAddressV4: null,
+          port: '4343',
+          domainName: 'example.com',
+        },
+      ],
+    };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-      expect(t.registeredNodeId?.toString()).toBe(registeredNodeUpdateData.registeredNodeId);
-      expect(t.description).toBe(registeredNodeUpdateData.description);
-      expect(
-        t.adminKey !== null && compareKeys(t.adminKey, registeredNodeUpdateData.adminKey!),
-      ).toBe(true);
+    expect(
+      t.serviceEndpoints !== null &&
+        compareNodeServiceEndpoints(
+          t.serviceEndpoints,
+          getServiceEndpoints(modifiedData.serviceEndpoints),
+        ),
+    );
+  });
 
-      expect(t.serviceEndpoints).not.toBe(null);
-      expect(
-        t.serviceEndpoints !== null &&
-          compareServiceEndpoints(
-            t.serviceEndpoints,
-            getRegisteredServiceEndpoints(registeredNodeUpdateData.serviceEndpoints),
-          ),
-      ).toBe(true);
-    });
+  test('with grpcWebProxyEndpoint changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = {
+      ...data,
+      grpcWebProxyEndpoint: {
+        ipAddressV4: null,
+        port: '4343',
+        domainName: 'example.com',
+      },
+    };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-    test('createRegisteredNodeUpdateTransaction() with baseline', () => {
-      const baseline = createRegisteredNodeUpdateTransaction(data, null);
-      const t = createRegisteredNodeUpdateTransaction(data, baseline);
+    expect(
+      t.grpcWebProxyEndpoint !== null &&
+        compareNodeServiceEndpoint(
+          t.grpcWebProxyEndpoint,
+          getServiceEndpoint(modifiedData.grpcWebProxyEndpoint)!,
+        ),
+    );
+  });
 
-      expect(t.transactionId?.accountId?.toString()).toBe(commonData.payerId);
-      expect(t.transactionId?.validStart?.toDate()?.getTime()).toBe(
-        commonData.validStart.getTime(),
-      );
-      expect(
-        t.maxTransactionFee!.toBigNumber().eq(commonData.maxTransactionFee.toBigNumber()),
-      ).toBe(true);
-      expect(t.transactionMemo).toBe(commonData.transactionMemo);
+  test('with gossipCaCertificate changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, gossipCaCertificate: new Uint8Array([6, 7, 8]) };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-      expect(t.registeredNodeId?.toString()).toBe(registeredNodeUpdateData.registeredNodeId);
-      expect(t.description).toBe(null);
-      expect(t.adminKey).toBe(null);
-      expect(t.serviceEndpoints).toBe(null);
-    });
+    expect(
+      t.gossipCaCertificate !== null &&
+        uint8ArrayToHex(t.gossipCaCertificate) ===
+          uint8ArrayToHex(modifiedData.gossipCaCertificate),
+    ).toBe(true);
+  });
 
-    test('with description changed', () => {
-      const baseline = createRegisteredNodeUpdateTransaction(data, null);
-      const modifiedData = { ...data, description: 'Another description' };
-      const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
+  test('with certificateHash changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, certificateHash: new Uint8Array([9, 10, 11]) };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-      expect(t.description).toBe(modifiedData.description);
-    });
+    expect(
+      t.certificateHash !== null &&
+        uint8ArrayToHex(t.certificateHash) === uint8ArrayToHex(modifiedData.certificateHash),
+    ).toBe(true);
+  });
 
-    test('with adminKey changed', () => {
-      const baseline = createRegisteredNodeUpdateTransaction(data, null);
-      const modifiedData = { ...data, adminKey: PrivateKey.generateECDSA().publicKey };
-      const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
+  test('with adminKey changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, adminKey: PrivateKey.generateECDSA().publicKey };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-      expect(t.adminKey !== null && compareKeys(t.adminKey, modifiedData.adminKey)).toBe(true);
-    });
+    expect(t.adminKey !== null && compareKeys(t.adminKey, modifiedData.adminKey)).toBe(true);
+  });
 
-    test('with serviceEndpoints changed', () => {
-      const baseline = createRegisteredNodeUpdateTransaction(data, null);
-      const modifiedData = {
-        ...data,
-        serviceEndpoints: [
-          {
-            ipAddressV4: null,
-            port: '42',
-            domainName: 'example.com',
-            type: 'blockNode' as RegisteredEndpointType,
-            requiresTls: false,
-            endpointApis: [43],
-          },
-          {
-            ipAddressV4: null,
-            port: '1212',
-            domainName: 'test.com',
-            type: 'mirrorNode' as RegisteredEndpointType,
-            requiresTls: true,
-          },
-        ],
-      };
-      const t = createRegisteredNodeUpdateTransaction(modifiedData, baseline);
+  test('with declineReward changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, declineReward: false };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
 
-      expect(
-        t.serviceEndpoints !== null &&
-          compareServiceEndpoints(
-            t.serviceEndpoints,
-            getRegisteredServiceEndpoints(modifiedData.serviceEndpoints),
-          ),
-      ).toBe(true);
-    });
+    expect(t.declineReward).toBe(modifiedData.declineReward);
+  });
+
+  test('with associatedRegisteredNodes changed', () => {
+    const baseline = createNodeUpdateTransaction(data, null);
+    const modifiedData = { ...data, associatedRegisteredNodes: ['3', '4'] };
+    const t = createNodeUpdateTransaction(modifiedData, baseline);
+
+    expect(t.associatedRegisteredNodes).toEqual([Long.fromNumber(3), Long.fromNumber(4)]);
   });
 });

@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import type {
-  ComponentServiceEndpoint,
-  NodeUpdateData,
+import {
+  type ComponentServiceEndpoint,
+  createNodeUpdateTransactionFromInfo,
+  type NodeUpdateData,
 } from '@renderer/utils/sdk/createTransactions';
 import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, reactive, ref, watch, type Ref } from 'vue';
 import { NodeUpdateTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
@@ -14,7 +15,13 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
-import { compareKeys, getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
+import {
+  compareKeys,
+  getComponentServiceEndpoint,
+  getComponentServiceEndpoints,
+  getNodeUpdateData,
+  hexToUint8Array,
+} from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
@@ -42,6 +49,8 @@ const data = reactive<NodeUpdateData>({
   associatedRegisteredNodes: [],
 });
 
+const baseline: Ref<NodeUpdateTransaction | null> = ref(null);
+
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
@@ -50,7 +59,7 @@ const createTransaction = computed<CreateTransactionFunc>(() => {
         ...common,
         ...(data as NodeUpdateData),
       },
-      nodeData.nodeInfo?.value || null,
+      baseline.value,
     );
 });
 
@@ -94,7 +103,7 @@ const createDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const handleDraftLoaded = (transaction: Transaction, loadedBaseline: Transaction | null) => {
   if (transaction instanceof NodeUpdateTransaction) {
     if (transaction.nodeId) {
       nodeData.nodeId.value = transaction.nodeId.toNumber();
@@ -103,7 +112,8 @@ const handleDraftLoaded = (transaction: Transaction) => {
       newNodeAccountData.accountId.value = transaction.accountId.toString();
     }
   }
-  handleUpdateData(getNodeUpdateData(transaction));
+  baseline.value = loadedBaseline instanceof NodeUpdateTransaction ? loadedBaseline : null;
+  handleUpdateData(getNodeUpdateData(transaction, baseline.value));
 };
 
 const handleUpdateData = (newData: NodeUpdateData) => {
@@ -131,18 +141,20 @@ watch(nodeData.nodeInfo, nodeInfo => {
     data.adminKey = null;
     data.declineReward = false;
     data.associatedRegisteredNodes = [];
+    baseline.value = null;
   } else if (!route.query.draftId) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
     data.description = nodeInfo.description || '';
     data.gossipEndpoints = [];
-    data.serviceEndpoints = [];
+    data.serviceEndpoints = getComponentServiceEndpoints(nodeInfo.service_endpoints);
     data.grpcWebProxyEndpoint = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
     data.gossipCaCertificate = Uint8Array.from([]);
-    data.certificateHash = Uint8Array.from([]);
+    data.certificateHash = hexToUint8Array(nodeInfo.node_cert_hash ?? '');
     data.adminKey = nodeInfo.admin_key;
     data.declineReward = nodeInfo.decline_reward;
     data.associatedRegisteredNodes = nodeInfo.associated_registered_nodes.map(String);
+    baseline.value = createNodeUpdateTransactionFromInfo(nodeInfo);
   }
 });
 watch(
@@ -157,6 +169,7 @@ watch(
     ref="baseTransactionRef"
     :create-transaction="createTransaction"
     :create-disabled="createDisabled"
+    :baseline="baseline"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
   >
