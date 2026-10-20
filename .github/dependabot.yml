@@ -5,6 +5,10 @@ updates:
     schedule:
       interval: "daily"
     open-pull-requests-limit: 10
+    groups:
+      dependencies:
+        patterns:
+          - "*"
 
   - package-ecosystem: "docker"
     directories:
@@ -15,6 +19,14 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    groups:
+      dependencies:
+        patterns:
+          - "*"
+    ignore:
+      # Major Node upgrades are planned and performed manually.
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: "/"
@@ -135,3 +147,6 @@ updates:
           - "ts-loader"
           - "tsx"
           - "sass"
+      all:
+        patterns:
+          - "*"
