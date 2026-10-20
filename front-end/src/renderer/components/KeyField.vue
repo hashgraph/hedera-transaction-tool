@@ -48,7 +48,7 @@ const emit = defineEmits(['update:modelKey']);
 
 /* Misc */
 enum Tabs {
-  SIGNLE = 'Single',
+  SINGLE = 'Single',
   COMPLEX = 'Complex',
 }
 
@@ -62,7 +62,7 @@ const toastManager = ToastManager.inject();
 const publicKeyOwnerCache = AppCache.inject().backendPublicKeyOwner;
 
 /* State */
-const currentTab = ref(Tabs.SIGNLE);
+const currentTab = ref(Tabs.SINGLE);
 const publicKeyInputRef = ref<InstanceType<typeof AppPublicKeyInput> | null>(null);
 const selectedComplexKey = ref<ComplexKey | null>(null);
 const savedComplexKeys = ref<ComplexKey[]>([]);
@@ -92,6 +92,13 @@ const loadSavedComplexKeys = async () => {
 };
 
 /* Handlers */
+// currentTab is purely a view filter over modelKey — switching tabs never
+// mutates modelKey itself. Each tab's template already hides any selection
+// that doesn't match its type (see the Single-tab input-clearing watcher
+// below, and the Complex tab's `v-if="modelKey instanceof KeyList"`), so
+// browsing to the "wrong" tab just shows nothing selected there; the real
+// key is only ever changed by an explicit action (typing/picking a public
+// key, creating/editing/selecting/deselecting a complex key).
 const handleTabChange = (tab: Tabs) => {
   currentTab.value = tab;
 };
@@ -194,20 +201,9 @@ const handleSaveComplexKeyButtonClick = () => {
 };
 
 /* Watchers */
-watch(currentTab, tab => {
-  if (tab === Tabs.COMPLEX) {
-    if (props.modelKey instanceof KeyList) {
-      return;
-    } else if (selectedComplexKey.value) {
-      emit('update:modelKey', decodeKeyList(selectedComplexKey.value.protobufEncoded));
-    } else {
-      emit('update:modelKey', null);
-    }
-  } else {
-    emit('update:modelKey', null);
-  }
-});
-
+// Keeps the formatted/identifier display in sync whenever the parent hands
+// in a new single key (e.g. mirrored from account info, loaded from a
+// draft, or set via the handlers above).
 watch(
   () => props.modelKey,
   async newKey => {
@@ -220,18 +216,52 @@ watch(
   { immediate: true },
 );
 
+// modelKey is the single source of truth for which tab should be showing:
+// whenever the parent hands in a PublicKey or KeyList, snap currentTab to
+// match it (covers both user edits looping back through the parent, and the
+// parent setting a key from elsewhere, e.g. a mirrored account key or a
+// loaded draft). A null modelKey leaves currentTab as-is, since null means
+// "no key yet" in whichever mode is currently active, not "switch modes".
+// Deliberately keyed on modelKey alone (not publicKeyInputRef, see below):
+// switching tabs mounts/unmounts the public-key input, which changes
+// publicKeyInputRef without modelKey changing — if that were a trigger here
+// too, the user's own tab click would immediately get reverted back to
+// whichever tab matches the (unchanged) modelKey.
+watch(
+  () => props.modelKey,
+  newKey => {
+    if (!ush.isUserLoggedIn(user.personal)) return;
+
+    if (newKey instanceof PublicKey) {
+      currentTab.value = Tabs.SINGLE;
+    } else if (newKey instanceof KeyList) {
+      currentTab.value = Tabs.COMPLEX;
+    }
+  },
+  { immediate: true },
+);
+
+// Keeps the Single-tab input's raw DOM value in sync with a PublicKey
+// modelKey (or blank otherwise). Needs publicKeyInputRef as a trigger too,
+// since the input may not exist yet the moment modelKey changes (e.g. it's
+// still mounting after the watcher above just switched tabs) — this re-fires
+// once the ref becomes available and writes the value then.
 watch([() => props.modelKey, publicKeyInputRef], ([newKey, newInputRef]) => {
   if (!ush.isUserLoggedIn(user.personal)) return;
 
-  if (newKey instanceof PublicKey && newInputRef?.inputRef?.inputRef) {
-    newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
-  } else if (newKey instanceof KeyList) {
-    currentTab.value = Tabs.COMPLEX;
-  } else if (newInputRef?.inputRef?.inputRef) {
+  if (newKey instanceof PublicKey) {
+    if (newInputRef?.inputRef?.inputRef) {
+      newInputRef.inputRef.inputRef.value = newKey.toStringRaw();
+    }
+  } else if (!(newKey instanceof KeyList) && newInputRef?.inputRef?.inputRef) {
     newInputRef.inputRef.inputRef.value = '';
   }
 });
 
+// Re-links the Edit/saved-key UI to a matching saved ComplexKey whenever the
+// incoming KeyList coincidentally matches one (e.g. a draft or mirrored key
+// that happens to equal a saved key), skipped mid-update since
+// handleComplexKeyUpdate manages selectedComplexKey itself during a save.
 watch([() => props.modelKey, savedComplexKeys], ([newKey]) => {
   if (updateInFlight.value) return;
   if (newKey instanceof KeyList) {
@@ -272,7 +302,7 @@ onMounted(loadSavedComplexKeys);
       </template>
     </div>
     <div>
-      <template v-if="currentTab === Tabs.SIGNLE">
+      <template v-if="currentTab === Tabs.SINGLE">
         <div class="mt-5">
           <p class="text-purple text-small cursor-pointer" @click="addPublicKeyModalShown = true">
             <span class="bi bi-plus-lg" data-testid="span-select-key"></span><span>Select Key</span>
