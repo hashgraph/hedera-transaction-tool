@@ -116,6 +116,8 @@ async function handle(req: Processable) {
 
       try {
         const signature = await sign(publicKey);
+        // User cancelled the password prompt: stop quietly, not a failure
+        if (signature === null) return;
         const { id, transactionBytes } = await submit(publicKey, signature);
 
         const results = await Promise.allSettled([
@@ -159,7 +161,7 @@ async function sign(publicKey: string) {
   const password = await getPasswordAsync({
     subHeading: 'Enter your application password to sign the transaction',
   });
-  if (password === false) throw new Error('Password is required to sign');
+  if (password === false) return null;
   if (!request.value) throw new Error('Request is required to sign');
   if (!transaction.value) throw new Error('Transaction is required to sign');
 

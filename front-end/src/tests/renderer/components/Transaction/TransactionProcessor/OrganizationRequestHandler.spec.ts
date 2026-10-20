@@ -281,19 +281,19 @@ describe('OrganizationRequestHandler.vue', () => {
 
     // Regression test: this used to throw "Password is required to sign" unconditionally
     // instead of prompting the user for it.
-    test('aborts the submission and emits fail, without calling the backend, when the user cancels the password prompt', async () => {
+    test('aborts quietly, without calling the backend or emitting fail, when the user cancels the password prompt', async () => {
       mocks.getPasswordAsync.mockResolvedValueOnce(false);
 
       const wrapper = mountHandler();
-      await expect(
-        (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
-          buildRequest(),
-        ),
-      ).rejects.toThrow('Password is required to sign');
+      await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
+        buildRequest(),
+      );
 
       expect(decryptPrivateKeyMock).not.toHaveBeenCalled();
       expect(submitTransactionMock).not.toHaveBeenCalled();
-      expect(wrapper.emitted('transaction:submit:fail')).toBeTruthy();
+      expect(wrapper.emitted('transaction:submit:fail')).toBeFalsy();
+      expect(wrapper.emitted('transaction:submit:success')).toBeFalsy();
+      expect(wrapper.emitted('loading:end')).toBeTruthy();
     });
   });
 });
