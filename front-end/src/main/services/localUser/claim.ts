@@ -76,9 +76,10 @@ export const updateClaim = async (
 
 /* Remove claims from the database */
 export const removeClaims = async (userId: string, claimKeys: string[]): Promise<boolean> => {
-  const prisma = getPrismaClient();
-
+  if (!Array.isArray(claimKeys)) throw new Error('Claim keys must be an array');
   claimKeys.forEach(assertMutableClaim);
+
+  const prisma = getPrismaClient();
 
   await prisma.claim.deleteMany({
     where: {
@@ -108,6 +109,7 @@ export const getUseKeychainClaim = async () => {
   return flag.claim_value === 'true';
 };
 
-const assertMutableClaim = (claimKey: string) => {
+const assertMutableClaim = (claimKey: unknown) => {
+  if (typeof claimKey !== 'string') throw new Error('Claim key must be a string');
   if (claimKey === USE_KEYCHAIN) throw new Error('Security claims are immutable');
 };

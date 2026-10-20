@@ -73,6 +73,20 @@ test('IPC tampering cannot change password encryption for keys or organization c
       'Security claims are immutable',
     );
   }
+  for (const payload of [
+    { equals: USE_KEYCHAIN },
+    { not: 'ordinary_claim' },
+    {},
+    null,
+    undefined,
+  ]) {
+    for (const channel of ['claim:add', 'claim:update', 'claim:remove']) {
+      const args = channel === 'claim:remove' ? [user.id, [payload]] : [user.id, payload, 'true'];
+      await expect(invokeIPCHandler(channel, ...args)).rejects.toThrow(
+        'Claim key must be a string',
+      );
+    }
+  }
   await storeKeyPair(
     { user_id: user.id, index: 0, public_key: 'public', private_key: 'secret', type: 'ED25519' },
     'password',
