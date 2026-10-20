@@ -61,12 +61,10 @@ describe('Claim Service', () => {
       expect(result).toEqual(claim);
     });
 
-    test('should log a message if the claim already exists', async () => {
+    test('should reject duplicate claims', async () => {
       prisma.claim.count.mockResolvedValue(1);
-
-      await addClaim('user1', 'key1', 'value1');
-
-      expect(mockLogger.info).toHaveBeenCalledWith('Claim already exists, claim will be overwritten');
+      await expect(addClaim('user1', 'key1', 'value1')).rejects.toThrow('Claim already exists');
+      expect(prisma.claim.create).not.toHaveBeenCalled();
     });
   });
 
@@ -173,54 +171,21 @@ describe('Claim Service', () => {
   });
 
   describe('getUseKeychainClaim', () => {
-    beforeEach(() => {
-      vi.resetAllMocks();
-    });
-
-    test('should return true if the claim value is "true"', async () => {
-      prisma.claim.findMany.mockResolvedValueOnce([
-        {
-          id: 'someId',
-          user_id: 'user1',
-          claim_key: USE_KEYCHAIN,
-          claim_value: 'true',
-          created_at: now,
-          updated_at: now,
-        },
-      ]);
-
-      const result = await getUseKeychainClaim();
-
-      expect(prisma.claim.findMany).toHaveBeenCalledWith({
-        where: { claim_key: USE_KEYCHAIN },
+    test.each(['true', 'false'])('reads canonical value %s', async value => {
+      prisma.user.findUnique.mockResolvedValue({ id: 'static' } as any);
+      prisma.claim.findUnique.mockResolvedValue({ claim_value: value } as any);
+      expect(await getUseKeychainClaim()).toBe(value === 'true');
+      expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { email: 'keychain@mode' } });
+      expect(prisma.claim.findUnique).toHaveBeenCalledWith({
+        where: { user_id_claim_key: { user_id: 'static', claim_key: USE_KEYCHAIN } },
       });
-      expect(result).toEqual(true);
     });
 
-    test('should return false if the claim value is "false"', async () => {
-      prisma.claim.findMany.mockResolvedValueOnce([
-        {
-          id: 'someId',
-          user_id: 'user1',
-          claim_key: USE_KEYCHAIN,
-          claim_value: 'false',
-          created_at: now,
-          updated_at: now,
-        },
-      ]);
-
-      const result = await getUseKeychainClaim();
-
-      expect(prisma.claim.findMany).toHaveBeenCalledWith({
-        where: { claim_key: USE_KEYCHAIN },
-      });
-      expect(result).toEqual(false);
-    });
-
-    test('should return false if the claim does not exist', async () => {
-      prisma.claim.findMany.mockResolvedValueOnce([]);
-
+    test('rejects missing and malformed configuration', async () => {
       await expect(getUseKeychainClaim()).rejects.toThrow('Keychain mode not initialized');
+      prisma.user.findUnique.mockResolvedValue({ id: 'static' } as any);
+      prisma.claim.findUnique.mockResolvedValue({ claim_value: 'invalid' } as any);
+      await expect(getUseKeychainClaim()).rejects.toThrow('Invalid keychain mode');
     });
   });
 });
