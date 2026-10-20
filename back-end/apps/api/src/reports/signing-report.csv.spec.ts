@@ -13,6 +13,9 @@ function row(overrides: Partial<SigningReportItemDto> = {}): SigningReportItemDt
     userId: 7,
     userEmail: 'alice@example.com',
     signedAt: '2026-01-01T00:00:03.000Z',
+    tool: 'tool-x',
+    version: '1.2.3',
+    recorderId: 9,
     signingStatus: SigningStatus.SIGNED,
     ...overrides,
   };
@@ -21,7 +24,7 @@ function row(overrides: Partial<SigningReportItemDto> = {}): SigningReportItemDt
 describe('toCsv', () => {
   it('emits a header row even with no data', () => {
     expect(toCsv([])).toBe(
-      'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signedAt,signingStatus\r\n',
+      'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signedAt,tool,version,recorderId,signingStatus\r\n',
     );
   });
 
@@ -30,15 +33,15 @@ describe('toCsv', () => {
     const lines = csv.trimEnd().split('\r\n');
     expect(lines).toHaveLength(2);
     expect(lines[1]).toBe(
-      '0.0.1001@1700000000.000000000,2026-01-01T00:00:00.000Z,2026-01-01T00:00:01.000Z,2026-01-01T00:00:02.000Z,ACCOUNT,0.0.100,pk_alice,7,alice@example.com,2026-01-01T00:00:03.000Z,SIGNED',
+      '0.0.1001@1700000000.000000000,2026-01-01T00:00:00.000Z,2026-01-01T00:00:01.000Z,2026-01-01T00:00:02.000Z,ACCOUNT,0.0.100,pk_alice,7,alice@example.com,2026-01-01T00:00:03.000Z,tool-x,1.2.3,9,SIGNED',
     );
   });
 
   it('renders null/absent fields as empty', () => {
-    const csv = toCsv([row({ executedAt: null, userId: null, userEmail: null, signedAt: null })]);
+    const csv = toCsv([row({ executedAt: null, userId: null, userEmail: null, signedAt: null, tool: null, version: null, recorderId: null })]);
     const line = csv.trimEnd().split('\r\n')[1];
     expect(line).toContain(',ACCOUNT,'); // executedAt blank before entityType
-    expect(line.endsWith(',,,,SIGNED')).toBe(true); // userId, userEmail, signedAt blank
+    expect(line.endsWith(',,,,,,,SIGNED')).toBe(true); // userId, userEmail, signedAt, tool, version, recorderId blank
   });
 
   it('escapes commas, quotes, and newlines per RFC 4180', () => {

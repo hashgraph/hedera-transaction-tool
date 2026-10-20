@@ -313,16 +313,23 @@ export class SigningReportService {
 
     const txIds = transactions.map(tx => tx.id);
 
-    // transactionId -> (userKeyId -> when it signed)
+    // transactionId -> (userKeyId -> its signer record)
     const signers = await this.transactionSignerRepo.find({
       where: { transactionId: In(txIds) },
-      select: { transactionId: true, userKeyId: true, createdAt: true },
+      select: {
+        transactionId: true,
+        userKeyId: true,
+        createdAt: true,
+        tool: true,
+        version: true,
+        recorderId: true,
+      },
     });
-    const signedAtByTx = new Map<number, Map<number, Date>>();
+    const signerByTx = new Map<number, Map<number, TransactionSigner>>();
     for (const signer of signers) {
-      let byKey = signedAtByTx.get(signer.transactionId);
-      if (!byKey) signedAtByTx.set(signer.transactionId, (byKey = new Map()));
-      byKey.set(signer.userKeyId, signer.createdAt);
+      let byKey = signerByTx.get(signer.transactionId);
+      if (!byKey) signerByTx.set(signer.transactionId, (byKey = new Map()));
+      byKey.set(signer.userKeyId, signer);
     }
 
     // transactionId -> the account/node key sources to report
@@ -341,7 +348,7 @@ export class SigningReportService {
     const entries: SigningReportItemDto[] = [];
 
     for (const tx of transactions) {
-      const txSignedAt = signedAtByTx.get(tx.id) ?? new Map<number, Date>();
+      const txSigners = signerByTx.get(tx.id) ?? new Map<number, TransactionSigner>();
 
       for (const source of sourcesByTx.get(tx.id) ?? []) {
         const seen = new Set<string>();
@@ -355,7 +362,7 @@ export class SigningReportService {
           // For the user report, only include keys that belong to the queried user.
           if (options.userFilter !== undefined && owner?.userId !== options.userFilter) continue;
 
-          const signedAt = owner ? (txSignedAt.get(owner.userKeyId) ?? null) : null;
+          const signer = owner ? (txSigners.get(owner.userKeyId) ?? null) : null;
 
           entries.push({
             transactionId: tx.transactionId,
@@ -367,8 +374,11 @@ export class SigningReportService {
             publicKey,
             userId: owner?.userId ?? null,
             userEmail: owner?.userEmail ?? null,
-            signedAt: signedAt ? signedAt.toISOString() : null,
-            signingStatus: signedAt ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
+            signedAt: signer ? signer.createdAt.toISOString() : null,
+            tool: signer?.tool ?? null,
+            version: signer?.version ?? null,
+            recorderId: signer?.recorderId ?? null,
+            signingStatus: signer ? SigningStatus.SIGNED : SigningStatus.NOT_SIGNED,
           });
         }
       }

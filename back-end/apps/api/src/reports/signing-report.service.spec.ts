@@ -122,7 +122,14 @@ function makeTx(
 const SIGNED_AT = new Date('2026-06-01T00:00:05.000Z');
 
 function makeSigner(transactionId: number, userKeyId: number): TransactionSigner {
-  return { transactionId, userKeyId, createdAt: SIGNED_AT } as TransactionSigner;
+  return {
+    transactionId,
+    userKeyId,
+    createdAt: SIGNED_AT,
+    tool: 'tool-x',
+    version: '1.2.3',
+    recorderId: 9,
+  } as TransactionSigner;
 }
 
 // QueryBuilder mock where every chain method returns `this`.
@@ -229,6 +236,9 @@ describe('SigningReportService', () => {
           userId: 7,
           userEmail: 'alice@example.com',
           signedAt: SIGNED_AT.toISOString(),
+          tool: 'tool-x',
+          version: '1.2.3',
+          recorderId: 9,
           signingStatus: SigningStatus.SIGNED,
         },
         {
@@ -242,6 +252,9 @@ describe('SigningReportService', () => {
           userId: 8,
           userEmail: 'bob@example.com',
           signedAt: null,
+          tool: null,
+          version: null,
+          recorderId: null,
           signingStatus: SigningStatus.NOT_SIGNED,
         },
       ]);
