@@ -9,7 +9,6 @@ import AppButton from '@renderer/components/ui/AppButton.vue';
 const props = defineProps<{
   description: string;
   saveDraft: () => Promise<void>;
-  isExecuted: boolean;
 }>();
 
 /* Composables */
