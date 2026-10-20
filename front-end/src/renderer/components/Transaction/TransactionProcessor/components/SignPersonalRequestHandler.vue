@@ -5,6 +5,7 @@ import { computed, ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { flattenKeyList } from '@renderer/services/keyPairService';
 import { signTransaction } from '@renderer/services/transactionService';
@@ -20,6 +21,9 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -63,8 +67,10 @@ async function sign() {
   if (!request.value) throw new Error('Request is required to sign');
   if (!transaction.value) throw new Error('Transaction is required to sign');
   assertUserLoggedIn(user.personal);
-  const password = user.getPassword();
-  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
+  const password = await getPasswordAsync({
+    subHeading: 'Enter your application password to sign the transaction',
+  });
+  if (password === false) return;
 
   emit('transaction:sign:begin');
 

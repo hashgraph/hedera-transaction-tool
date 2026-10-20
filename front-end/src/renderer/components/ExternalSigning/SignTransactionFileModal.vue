@@ -20,6 +20,7 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import { createLogger } from '@renderer/utils/logger';
 import { CommonNetwork, CommonNetworkNames } from '@shared/enums';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 /* Props */
 const props = defineProps<{
@@ -36,6 +37,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const toastManager = ToastManager.inject();
+const { getPasswordAsync } = usePersonalPassword();
 
 /* Injected */
 const appCache = AppCache.inject();
@@ -78,8 +80,10 @@ async function auditFile() {
 /* Handlers */
 async function handleSignAll() {
   assertUserLoggedIn(user.personal);
-  const password = user.getPassword();
-  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
+  const password = await getPasswordAsync({
+    subHeading: 'Enter your application password to sign the transactions',
+  });
+  if (password === false) return;
 
   if (transactionFile.value) {
     const updatedFile: TransactionFile = {
