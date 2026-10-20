@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@shared/interfaces';
+import type { Key } from '@hiero-ledger/sdk';
 import type {
   AccountData,
   AccountUpdateData,
@@ -48,29 +49,73 @@ const isKeyStructureModalShown = ref(false);
 const multipleAccountInput = ref('');
 const multipleAccounts = ref(false);
 const accountIsPayer = ref(false);
+// The key the user has explicitly chosen for the multi-account key field.
+// undefined means "untouched" (no choice made yet); null is a real choice
+// (e.g. deselecting a complex key, or clearing an invalid public key) and
+// must not be treated the same as untouched.
+const explicitKey = ref<Key | null | undefined>(undefined);
 
 /* Computed */
+// Expands the free-text "X.X.XXXX, X, X-X" input into the concrete list of
+// account ids the transaction will target.
 const selectedMultipleAccounts = computed(() =>
   splitMultipleAccounts(multipleAccountInput.value, network.client),
 );
 
+// A mirror-fetched key is only ever a default suggestion: it populates the
+// field until the user explicitly chooses a key (including clearing it),
+// and can never overwrite that choice afterwards (e.g. when the first
+// account changes again). Browsing the Single/Complex tabs in KeyField
+// without changing anything doesn't count as a choice — KeyField treats tabs
+// as a pure view filter, so explicitKey is untouched by that alone.
+const effectiveMultipleAccountsKey = computed(() =>
+  explicitKey.value === undefined ? firstAccount.key.value : explicitKey.value,
+);
+
+// Single source of truth for the multi-account v-model exposed to the
+// parent: null while in single-account mode (parent falls back to `data`),
+// otherwise the live combination of the parsed account list, payer flag,
+// and whichever key currently applies (mirrored or explicit).
+const derivedMultipleAccountsData = computed<AccountUpdateDataMultiple | null>(() => {
+  if (!multipleAccounts.value) return null;
+
+  return {
+    accountIds: selectedMultipleAccounts.value,
+    accountIsPayer: accountIsPayer.value,
+    key: effectiveMultipleAccountsKey.value,
+  };
+});
+
 /* Handlers */
+// Bubbles up from AccountDataFormData's `update:data`, which it only emits
+// while multipleAccountsData is falsy (i.e. multipleAccounts.value is
+// false) — so this is always the single-account field-change path.
 const handleAccountDataUpdate = (data: AccountData) => {
-  if (!multipleAccounts.value) {
-    emit('update:data', {
-      ...props.data,
-      ...data,
-    });
-  } else if (multipleAccountsData.value) {
-    multipleAccountsData.value = {
-      ...multipleAccountsData.value,
-      key: data.ownerKey,
-    };
-  }
+  emit('update:data', {
+    ...props.data,
+    ...data,
+  });
+};
+
+// The actual path a key change takes in multi-account mode: KeyField emits
+// up through AccountDataFormData's handleUpdateKey, which (since
+// multiple-accounts-data is set) emits `update:multiple-accounts-data`
+// instead of `update:data`. Every call here is a genuine user choice — even
+// `data.key === null` (KeyField only emits null for a real action: clearing
+// an invalid public key, deselecting a complex key, or starting a "Create
+// new" build — never from merely switching tabs) — so assigning it directly
+// (out of its undefined default) is what lets effectiveMultipleAccountsKey
+// stop mirroring the first account's key.
+const handleMultipleAccountsDataUpdate = (data: AccountUpdateDataMultiple) => {
+  explicitKey.value = data.key;
 };
 
 /* Watchers */
-watch(multipleAccounts, multiple => {
+// Entering or leaving multi-account mode is a hard reset: clear the
+// single-account id (and tell the parent so its mirrored accountInfo/key
+// state resets too), the account list input, and any explicit key choice —
+// otherwise leftover state from one mode would leak into the other.
+watch(multipleAccounts, () => {
   emit('update:data', {
     ...props.data,
     accountId: '',
@@ -79,39 +124,24 @@ watch(multipleAccounts, multiple => {
   firstAccount.accountId.value = '';
   accountIsPayer.value = false;
   multipleAccountInput.value = '';
-
-  if (!multiple) {
-    multipleAccountsData.value = null;
-  } else {
-    multipleAccountsData.value = {
-      accountIds: [],
-      accountIsPayer: false,
-      key: null,
-    };
-  }
+  explicitKey.value = undefined;
 });
 
-watch([selectedMultipleAccounts, accountIsPayer], ([accountIds, isPayer]) => {
-  multipleAccountsData.value = {
-    accountIds,
-    accountIsPayer: isPayer,
-    key: multipleAccountsData.value?.key || null,
-  };
-
+// `firstAccount` (a separate useAccountId composable) mirrors just the first
+// id in the parsed list, purely so we can fetch its key as the default
+// suggestion (effectiveMultipleAccountsKey) and show it in the key structure
+// modal, without fetching account info for every selected account.
+watch(selectedMultipleAccounts, accountIds => {
   firstAccount.accountId.value = accountIds[0]?.split('-')[0] || '';
 });
 
-watch(
-  () => firstAccount.accountInfo.value,
-  info => {
-    if (info?.key && multipleAccountsData.value) {
-      multipleAccountsData.value = {
-        ...multipleAccountsData.value,
-        key: info.key,
-      };
-    }
-  },
-);
+// Pushes the locally-derived multi-account state up into the v-model so
+// AccountUpdate.vue (and ultimately the transaction builder) sees it.
+// immediate so the parent gets null right away on mount rather than waiting
+// for a change.
+watch(derivedMultipleAccountsData, data => (multipleAccountsData.value = data), {
+  immediate: true,
+});
 
 /* Misc */
 const columnClass = 'col-4 col-xxxl-3';
@@ -190,7 +220,7 @@ const columnClass = 'col-4 col-xxxl-3';
     :data="data"
     :multiple-accounts-data="multipleAccountsData"
     @update:data="handleAccountDataUpdate"
-    @update:multiple-accounts-data="multipleAccountsData = $event"
+    @update:multiple-accounts-data="handleMultipleAccountsDataUpdate"
   />
 
   <KeyStructureModal

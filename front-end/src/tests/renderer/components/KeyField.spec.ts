@@ -1,6 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { defineComponent, h } from 'vue';
 import { Key, KeyList, PrivateKey } from '@hiero-ledger/sdk';
 import { proto } from '@hiero-ledger/proto';
 import type { ComplexKey } from '@prisma/client';
@@ -142,11 +143,14 @@ describe('KeyField.vue — complex key pre-fetch and pass-through', () => {
     mocks.getComplexKeys.mockResolvedValue([]);
   });
 
-  function mountField(props: Record<string, unknown> = {}) {
+  function mountField(
+    props: Record<string, unknown> = {},
+    stubOverrides: Record<string, unknown> = {},
+  ) {
     return mount(KeyField, {
       props: { modelKey: null, ...props },
       global: {
-        stubs: globalStubs,
+        stubs: { ...globalStubs, ...stubOverrides },
         config: { errorHandler: () => {} },
       },
     });
@@ -417,6 +421,97 @@ describe('KeyField.vue — complex key pre-fetch and pass-through', () => {
       const listItem = wrapper.find('[data-testid="key-list-item"]');
       expect(listItem.text()).toContain('Pending Edit');
       expect(listItem.text()).not.toContain('Unsaved Key List');
+    });
+  });
+
+  describe('single-key tab sync (modelKey becomes a PublicKey)', () => {
+    it('switches back to the Single tab without clearing the key when modelKey becomes a PublicKey', async () => {
+      const wrapper = mountField({ modelKey: new KeyList([pk1, pk2]) });
+      await flushPromises();
+
+      // Starts on the Complex tab because the initial modelKey is a KeyList.
+      expect(wrapper.findComponent(ComplexKeyModalStub).exists()).toBe(true);
+      expect(wrapper.find('[data-testid="input-public-key"]').exists()).toBe(false);
+
+      await wrapper.setProps({ modelKey: pk1 });
+      await flushPromises();
+
+      expect(wrapper.findComponent(ComplexKeyModalStub).exists()).toBe(false);
+      expect(wrapper.find('[data-testid="input-public-key"]').exists()).toBe(true);
+      expect(wrapper.emitted('update:modelKey')).toBeUndefined();
+    });
+
+    it('stays on the Single tab and keeps the key when modelKey is already a PublicKey on mount', async () => {
+      const wrapper = mountField({ modelKey: pk1 });
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="input-public-key"]').exists()).toBe(true);
+      expect(wrapper.findComponent(ComplexKeyModalStub).exists()).toBe(false);
+      expect(wrapper.emitted('update:modelKey')).toBeUndefined();
+    });
+
+    it('writes the raw public key into the Single-tab input once it (re)mounts', async () => {
+      const el = document.createElement('input');
+      const AppPublicKeyInputRefStub = defineComponent({
+        name: 'AppPublicKeyInput',
+        props: ['filled', 'label'],
+        emits: ['update:model-value'],
+        setup(_, { expose }) {
+          expose({ inputRef: { inputRef: el } });
+          return () => h('input', { 'data-testid': 'public-key-input' });
+        },
+      });
+
+      const wrapper = mountField(
+        { modelKey: new KeyList([pk1, pk2]) },
+        { AppPublicKeyInput: AppPublicKeyInputRefStub },
+      );
+      await flushPromises();
+
+      await wrapper.setProps({ modelKey: pk1 });
+      await flushPromises();
+
+      expect(el.value).toBe(pk1.toStringRaw());
+    });
+
+    it('does not clear the key when the user manually clicks the Single tab while a KeyList is selected', async () => {
+      const wrapper = mountField({ modelKey: new KeyList([pk1, pk2]) });
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-single"]').trigger('click');
+      await flushPromises();
+
+      // Switching tabs is a pure view filter: the Single tab shows nothing
+      // selected (its input stays blank since modelKey isn't a PublicKey),
+      // but the KeyList itself is left untouched until the user takes an
+      // explicit action (typing/picking a key, etc.).
+      expect(wrapper.emitted('update:modelKey')).toBeUndefined();
+      expect(wrapper.find('[data-testid="input-public-key"]').exists()).toBe(true);
+      expect(wrapper.findComponent(ComplexKeyModalStub).exists()).toBe(false);
+    });
+
+    it('does not clear the key when the user manually clicks the Complex tab while a PublicKey is selected', async () => {
+      const wrapper = mountField({ modelKey: pk1 });
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-complex"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.emitted('update:modelKey')).toBeUndefined();
+      expect(wrapper.findComponent(ComplexKeyModalStub).exists()).toBe(true);
+      expect(wrapper.find('[data-testid="key-list-item"]').exists()).toBe(false);
+    });
+
+    it('shows the key again, without re-emitting, when clicking back to the tab it already matches', async () => {
+      const wrapper = mountField({ modelKey: pk1 });
+      await flushPromises();
+
+      await wrapper.find('[data-testid="tab-complex"]').trigger('click');
+      await wrapper.find('[data-testid="tab-single"]').trigger('click');
+      await flushPromises();
+
+      expect(wrapper.emitted('update:modelKey')).toBeUndefined();
+      expect(wrapper.find('[data-testid="input-public-key"]').exists()).toBe(true);
     });
   });
 });

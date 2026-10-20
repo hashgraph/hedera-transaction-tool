@@ -83,7 +83,7 @@ const columnClass = 'col-4 col-xxxl-3';
     <div class="form-group col-8 col-xxxl-6">
       <KeyField
         :is-required="Boolean(multipleAccountsData)"
-        :model-key="multipleAccountsData?.key || data.ownerKey"
+        :model-key="multipleAccountsData ? multipleAccountsData.key : data.ownerKey"
         @update:model-key="handleUpdateKey($event)"
       />
     </div>
