@@ -1,6 +1,6 @@
 import { Claim, Prisma } from '@prisma/client';
 
-import { USE_KEYCHAIN } from '@shared/constants';
+import { STATIC_USER, USE_KEYCHAIN } from '@shared/constants';
 
 import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
@@ -13,6 +13,7 @@ export const addClaim = async (
   claimKey: string,
   claimValue: string,
 ): Promise<Claim> => {
+  assertMutableClaim(claimKey);
   const prisma = getPrismaClient();
 
   const alreadyAddedCount = await prisma.claim.count({
@@ -22,7 +23,7 @@ export const addClaim = async (
     },
   });
 
-  if (alreadyAddedCount > 0) logger.info('Claim already exists, claim will be overwritten');
+  if (alreadyAddedCount > 0) throw new Error('Claim already exists');
 
   return await prisma.claim.create({
     data: {
@@ -51,6 +52,7 @@ export const updateClaim = async (
   claimKey: string,
   claimValue: string,
 ): Promise<Claim> => {
+  assertMutableClaim(claimKey);
   const prisma = getPrismaClient();
 
   const claim = await prisma.claim.findFirst({
@@ -76,6 +78,8 @@ export const updateClaim = async (
 export const removeClaims = async (userId: string, claimKeys: string[]): Promise<boolean> => {
   const prisma = getPrismaClient();
 
+  claimKeys.forEach(assertMutableClaim);
+
   await prisma.claim.deleteMany({
     where: {
       user_id: userId,
@@ -88,14 +92,22 @@ export const removeClaims = async (userId: string, claimKeys: string[]): Promise
   return true;
 };
 
-/* Get use key chain claim */
+/* Read the application's single, initialized encryption mode. */
 export const getUseKeychainClaim = async () => {
-  const flags = await getClaims({
-    where: {
-      claim_key: USE_KEYCHAIN,
-    },
-  });
-  if (flags.length === 0) throw new Error('Keychain mode not initialized');
+  const prisma = getPrismaClient();
+  const user = await prisma.user.findUnique({ where: { email: STATIC_USER } });
+  const flag =
+    user &&
+    (await prisma.claim.findUnique({
+      where: { user_id_claim_key: { user_id: user.id, claim_key: USE_KEYCHAIN } },
+    }));
+  if (!flag) throw new Error('Keychain mode not initialized');
+  if (flag.claim_value !== 'true' && flag.claim_value !== 'false') {
+    throw new Error('Invalid keychain mode');
+  }
+  return flag.claim_value === 'true';
+};
 
-  return flags[0].claim_value === 'true';
+const assertMutableClaim = (claimKey: string) => {
+  if (claimKey === USE_KEYCHAIN) throw new Error('Security claims are immutable');
 };
