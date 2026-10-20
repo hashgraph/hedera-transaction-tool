@@ -111,7 +111,6 @@ watch(showAddReminder, show => {
           <SaveDraftButton
             v-if="props.saveDraft && typeof isProcessed === 'boolean'"
             :description="description || ''"
-            :is-executed="isProcessed"
             :save-draft="props.saveDraft"
           />
           <AppButton
