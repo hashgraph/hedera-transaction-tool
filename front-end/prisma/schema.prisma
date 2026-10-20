@@ -185,6 +185,8 @@ model Claim {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   user        User     @relation(fields: [user_id], references: [id])
+
+  @@unique([user_id, claim_key])
 }
 
 model Mnemonic {
