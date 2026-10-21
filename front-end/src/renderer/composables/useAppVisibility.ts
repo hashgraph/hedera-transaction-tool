@@ -90,6 +90,5 @@ export default function useAppVisibility(options: UseAppVisibilityOptions = {}) 
 
   return {
     isCheckingTokens,
-    checkTokenValidity,
   };
 }

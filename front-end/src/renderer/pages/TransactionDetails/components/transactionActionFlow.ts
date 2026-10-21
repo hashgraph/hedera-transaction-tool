@@ -1,5 +1,3 @@
-export type TransactionAction = 'cancel' | 'archive' | 'schedule' | 'remindSigners';
-
 interface ExecuteTransactionActionFlowParams {
   execute: () => Promise<void>;
   refresh: () => Promise<void>;
