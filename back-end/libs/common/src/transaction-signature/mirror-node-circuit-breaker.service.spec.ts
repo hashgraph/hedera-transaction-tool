@@ -16,7 +16,9 @@ describe('MirrorNodeCircuitBreaker', () => {
     jest.restoreAllMocks();
 
     // Return the default value (second argument) for config lookups
-    configService.get.mockImplementation((_key: string, defaultValue?: any) => defaultValue);
+    (configService.get as jest.Mock).mockImplementation(
+      (_key: string, defaultValue?: any) => defaultValue,
+    );
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [

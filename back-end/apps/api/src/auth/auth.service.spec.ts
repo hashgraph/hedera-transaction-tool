@@ -221,7 +221,7 @@ describe('AuthService', () => {
   it('should omit the reset email URL when APP_URL is unset', async () => {
     const email = 'some@email.com';
     userService.getUser.mockResolvedValue({ email } as User);
-    configService.get.mockReturnValue(undefined);
+    (configService.get as jest.Mock).mockReturnValue(undefined);
     //@ts-expect-error - incorrect overload expected
     jest.mocked(randomInt).mockReturnValue(1234);
 
@@ -446,7 +446,7 @@ describe('AuthService', () => {
 
   it('should not create otp if opt secret not set', async () => {
     const email = '';
-    configService.get.mockReturnValue(undefined);
+    (configService.get as jest.Mock).mockReturnValue(undefined);
 
     await service.createOtp(email);
   });

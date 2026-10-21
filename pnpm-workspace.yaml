@@ -78,7 +78,7 @@ catalogs:
   # @nestjs/passport, @nestjs/config, @nestjs/swagger) — their version match
   # is coincidental.
   nestjs-core:
-    '@nestjs/common': &nestjsCore 11.2.7
+    '@nestjs/common': &nestjsCore 12.0.1
     '@nestjs/core': *nestjsCore
     '@nestjs/microservices': *nestjsCore
     '@nestjs/platform-express': *nestjsCore

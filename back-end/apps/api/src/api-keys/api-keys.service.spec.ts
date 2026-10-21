@@ -17,7 +17,9 @@ describe('ApiKeysService', () => {
   const apiKeyEventRepo = mockDeep<Repository<ApiKeyEvent>>();
   const dataSource = mockDeep<DataSource>();
   const notificationsPublisher = mock<NatsPublisherService>();
-  const configService = mock<ConfigService>();
+  const configService = {
+    get: jest.fn(),
+  } as unknown as jest.Mocked<ConfigService>;
 
   const user: Partial<User> = {
     id: 1,
