@@ -9,7 +9,7 @@ import { invokeIPCHandler } from '../../_utils_';
 import registerClaimHandlers from '@main/modules/ipcHandlers/localUser/claim';
 import registerSafeStorageHandlers from '@main/modules/ipcHandlers/localUser/safeStorage';
 import { setPrismaClient } from '@main/db/prisma';
-import { getUseKeychainClaim } from '@main/services/localUser/claim';
+import { addClaim, getUseKeychainClaim } from '@main/services/localUser/claim';
 import { storeKeyPair } from '@main/services/localUser/keyPairs';
 import { addOrganizationCredentials } from '@main/services/localUser/organizationCredentials';
 import { decrypt } from '@main/utils/crypto';
@@ -148,4 +148,18 @@ test('initialization can recover an existing static user without replacing it', 
   await invokeIPCHandler('safeStorage:initializeUseKeychain', false);
   expect(await prisma.user.findUnique({ where: { id: user.id } })).toEqual(user);
   expect(await getUseKeychainClaim()).toBe(false);
+});
+
+test('concurrent ordinary claim creation relies on the unique constraint', async () => {
+  const user = await prisma.user.create({
+    data: { email: 'claims@example.com', password: 'hash' },
+  });
+  const results = await Promise.allSettled([
+    addClaim(user.id, 'ordinary', 'first'),
+    addClaim(user.id, 'ordinary', 'second'),
+  ]);
+  expect(results.filter(result => result.status === 'fulfilled')).toHaveLength(1);
+  const rejected = results.find(result => result.status === 'rejected');
+  expect(rejected?.reason).toEqual(new Error('Claim already exists'));
+  expect(await prisma.claim.count({ where: { user_id: user.id, claim_key: 'ordinary' } })).toBe(1);
 });

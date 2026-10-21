@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import {
   addClaim,
   getClaims,
@@ -46,15 +47,11 @@ describe('Claim Service', () => {
         updated_at: now,
       };
 
-      prisma.claim.count.mockResolvedValue(0);
       prisma.claim.findMany.mockResolvedValue([claim]);
       prisma.claim.create.mockResolvedValue(claim);
 
       const result = await addClaim('user1', 'key1', 'value1');
 
-      expect(prisma.claim.count).toHaveBeenCalledWith({
-        where: { user_id: 'user1', claim_key: 'key1' },
-      });
       expect(prisma.claim.create).toHaveBeenCalledWith({
         data: { user_id: 'user1', claim_key: 'key1', claim_value: 'value1' },
       });
@@ -62,9 +59,23 @@ describe('Claim Service', () => {
     });
 
     test('should reject duplicate claims', async () => {
-      prisma.claim.count.mockResolvedValue(1);
+      prisma.claim.create.mockRejectedValue(
+        new Prisma.PrismaClientKnownRequestError('Unique constraint failed', {
+          code: 'P2002',
+          clientVersion: 'test',
+        }),
+      );
       await expect(addClaim('user1', 'key1', 'value1')).rejects.toThrow('Claim already exists');
-      expect(prisma.claim.create).not.toHaveBeenCalled();
+      expect(prisma.claim.create).toHaveBeenCalledOnce();
+    });
+
+    test('should propagate unrelated database errors', async () => {
+      const error = new Prisma.PrismaClientKnownRequestError('Foreign key constraint failed', {
+        code: 'P2003',
+        clientVersion: 'test',
+      });
+      prisma.claim.create.mockRejectedValue(error);
+      await expect(addClaim('user1', 'key1', 'value1')).rejects.toBe(error);
     });
   });
 

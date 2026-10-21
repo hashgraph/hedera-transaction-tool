@@ -6,6 +6,7 @@ import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
 
 const logger = createLogger('main.localUser.claim');
+const UNIQUE_CONSTRAINT_VIOLATION = 'P2002';
 
 /* Add a claim to the database */
 export const addClaim = async (
@@ -16,22 +17,24 @@ export const addClaim = async (
   assertMutableClaim(claimKey);
   const prisma = getPrismaClient();
 
-  const alreadyAddedCount = await prisma.claim.count({
-    where: {
-      user_id: userId,
-      claim_key: claimKey,
-    },
-  });
-
-  if (alreadyAddedCount > 0) throw new Error('Claim already exists');
-
-  return await prisma.claim.create({
-    data: {
-      user_id: userId,
-      claim_key: claimKey,
-      claim_value: claimValue,
-    },
-  });
+  try {
+    return await prisma.claim.create({
+      data: {
+        user_id: userId,
+        claim_key: claimKey,
+        claim_value: claimValue,
+      },
+    });
+  } catch (error) {
+    // cf. Prisma error codes defined at: https://www.prisma.io/docs/orm/v6/reference/error-reference
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === UNIQUE_CONSTRAINT_VIOLATION
+    ) {
+      throw new Error('Claim already exists');
+    }
+    throw error;
+  }
 };
 
 /* Get claims from the database */
