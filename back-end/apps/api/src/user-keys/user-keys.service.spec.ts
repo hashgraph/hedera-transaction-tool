@@ -2,7 +2,7 @@ import { mockDeep } from 'jest-mock-extended';
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException } from '@nestjs/common';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, UpdateResult } from 'typeorm';
+import { QueryFailedError, Repository, UpdateResult } from 'typeorm';
 
 import { ErrorCodes, MAX_USER_KEYS } from '@app/common';
 import { attachKeys } from '@app/common/utils';
@@ -178,6 +178,38 @@ describe('UserKeysService', () => {
 
       expect(repo.recover).toHaveBeenCalled();
       expect(repo.save).toHaveBeenCalled();
+    });
+
+    it.each(['save', 'recover'] as const)('maps a public-key conflict during %s to PU error code', async operation => {
+      user.keys = [];
+      const key = { ...dto, userId: user.id, deletedAt: operation === 'recover' ? new Date() : null } as UserKey;
+      repo.findOne.mockResolvedValue(key);
+      const error = new QueryFailedError('query', [], Object.assign(new Error('duplicate'), {
+        code: '23505', constraint: 'UQ_user_key_active_public_key',
+      }));
+      repo[operation].mockRejectedValueOnce(error);
+
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.PU);
+    });
+
+    it('does not map unrelated unique violations to ownership conflicts', async () => {
+      user.keys = [];
+      repo.findOne.mockResolvedValue({ ...dto, userId: user.id } as UserKey);
+      repo.save.mockRejectedValueOnce(new QueryFailedError('query', [], Object.assign(new Error('duplicate'), {
+        code: '23505', constraint: 'PK_fc283fee4f4e9c467b434199258',
+      })));
+
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.FSUK);
+    });
+
+    it('maps unexpected recovery failures to FSUK without saving', async () => {
+      user.keys = [];
+      repo.findOne.mockResolvedValue({ ...dto, userId: user.id, deletedAt: new Date() } as UserKey);
+      repo.save.mockClear();
+      repo.recover.mockRejectedValueOnce(new Error('DB error'));
+
+      await expect(service.uploadKey(user, dto)).rejects.toThrow(ErrorCodes.FSUK);
+      expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('should throw BadRequestException if repo.save fails', async () => {
