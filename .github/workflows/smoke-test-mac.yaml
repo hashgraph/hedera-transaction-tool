@@ -2,15 +2,16 @@
 
 name: macOS Smoke Test
 
-# Validates the signing and notarization pipeline against any branch, tag, or
-# commit without creating a release. Use this to confirm secrets/certs are
-# working before cutting a release, or to debug electron-builder config changes.
+# Validates the signing and notarization pipeline against any branch or tag
+# in this repository (not pull request refs or fork commits) without creating
+# a release. Use this to confirm secrets/certs are working before cutting a
+# release, or to debug electron-builder config changes.
 
 on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Branch, tag, or commit SHA to build from"
+        description: "Branch or tag in this repository to build from"
         required: false
         default: main
 
@@ -33,11 +34,27 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: Validate ref is a branch or tag in this repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REF: ${{ inputs.ref || 'main' }}
+        run: |
+          set -euo pipefail
+          if gh api "repos/${{ github.repository }}/branches/${REF}" >/dev/null 2>&1; then
+            echo "ref '${REF}' is a branch in this repository"
+          elif gh api "repos/${{ github.repository }}/git/ref/tags/${REF}" >/dev/null 2>&1; then
+            echo "ref '${REF}' is a tag in this repository"
+          else
+            echo "::error::Refusing to build ref '${REF}'. This workflow only builds branches and tags that exist in this repository (not pull request refs or fork commits), because the job has access to production code-signing and notarization secrets." >&2
+            exit 1
+          fi
+
       - name: Checkout Repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.ref || 'main' }}
           token: ${{ secrets.HEDERA_BOT_TOKEN }}
+          persist-credentials: false
 
       - name: Install pnpm
         uses: step-security/action-setup@8beec6731697ff7a074963eaa56f6d8e02e1c399 # v6.1.0
