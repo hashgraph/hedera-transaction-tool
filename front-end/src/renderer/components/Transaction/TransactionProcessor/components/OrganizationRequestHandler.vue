@@ -10,6 +10,7 @@ import useNetwork from '@renderer/stores/storeNetwork';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useDraft from '@renderer/composables/useDraft';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
 import { addApprovers, addObservers, submitTransaction } from '@renderer/services/organization';
@@ -44,6 +45,7 @@ const network = useNetwork();
 /* Composables */
 const toastManager = ToastManager.inject()
 const draft = useDraft();
+const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
 const request = ref<TransactionRequest | null>(null);
@@ -114,6 +116,8 @@ async function handle(req: Processable) {
 
       try {
         const signature = await sign(publicKey);
+        // User cancelled the password prompt: stop quietly, not a failure
+        if (signature === null) return;
         const { id, transactionBytes } = await submit(publicKey, signature);
 
         const results = await Promise.allSettled([
@@ -154,8 +158,10 @@ async function handle(req: Processable) {
 /* Functions */
 async function sign(publicKey: string) {
   assertUserLoggedIn(user.personal);
-  const password = user.getPassword();
-  if (!password && !user.personal.useKeychain) throw new Error('Password is required to sign');
+  const password = await getPasswordAsync({
+    subHeading: 'Enter your application password to sign the transaction',
+  });
+  if (password === false) return null;
   if (!request.value) throw new Error('Request is required to sign');
   if (!transaction.value) throw new Error('Transaction is required to sign');
 

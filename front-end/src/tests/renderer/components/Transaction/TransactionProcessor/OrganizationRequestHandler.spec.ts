@@ -3,6 +3,14 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
 
+const mocks = vi.hoisted(() => ({
+  getPasswordAsync: vi.fn(),
+}));
+
+vi.mock('@renderer/composables/usePersonalPassword', () => ({
+  default: vi.fn(() => ({ getPasswordAsync: mocks.getPasswordAsync })),
+}));
+
 vi.mock('@renderer/services/keyPairService', () => ({
   decryptPrivateKey: vi.fn().mockResolvedValue('priv-key-raw'),
 }));
@@ -54,7 +62,6 @@ vi.mock('@renderer/stores/storeUser', () => ({
     },
     keyPairs: [{ public_key: 'pubkey-1' }],
     personal: { id: 'user-1', useKeychain: false },
-    getPassword: () => 'password',
   })),
 }));
 
@@ -67,8 +74,10 @@ import { TransactionRequest } from '@renderer/components/Transaction/Transaction
 import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { RequestError } from '@renderer/utils';
 import { submitTransaction } from '@renderer/services/organization';
+import { decryptPrivateKey } from '@renderer/services/keyPairService';
 
 const submitTransactionMock = vi.mocked(submitTransaction);
+const decryptPrivateKeyMock = vi.mocked(decryptPrivateKey);
 
 function buildRequest(bytesFactory?: (n: number) => Uint8Array) {
   return TransactionRequest.fromData({
@@ -94,6 +103,10 @@ describe('OrganizationRequestHandler.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
     submitTransactionMock.mockReset();
+    decryptPrivateKeyMock.mockReset().mockResolvedValue('priv-key-raw');
+    // Simulates a password already cached from a prior prompt, so signing
+    // proceeds without needing the modal by default.
+    mocks.getPasswordAsync.mockReset().mockResolvedValue('password');
   });
 
   describe('happy path', () => {
@@ -248,6 +261,38 @@ describe('OrganizationRequestHandler.vue', () => {
       ).rejects.toBe(err);
 
       expect(wrapper.emitted('loading:begin')).toBeTruthy();
+      expect(wrapper.emitted('loading:end')).toBeTruthy();
+    });
+  });
+
+  describe('password handling', () => {
+    test('signs using the password returned by the prompt when none is cached', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce('typed-password');
+      submitTransactionMock.mockResolvedValue({ id: 1, transactionBytes: 'bytes-hex' });
+
+      const wrapper = mountHandler();
+      await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
+        buildRequest(),
+      );
+
+      expect(decryptPrivateKeyMock).toHaveBeenCalledWith('user-1', 'typed-password', 'pubkey-1');
+      expect(wrapper.emitted('transaction:submit:success')).toBeTruthy();
+    });
+
+    // Regression test: this used to throw "Password is required to sign" unconditionally
+    // instead of prompting the user for it.
+    test('aborts quietly, without calling the backend or emitting fail, when the user cancels the password prompt', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(false);
+
+      const wrapper = mountHandler();
+      await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
+        buildRequest(),
+      );
+
+      expect(decryptPrivateKeyMock).not.toHaveBeenCalled();
+      expect(submitTransactionMock).not.toHaveBeenCalled();
+      expect(wrapper.emitted('transaction:submit:fail')).toBeFalsy();
+      expect(wrapper.emitted('transaction:submit:success')).toBeFalsy();
       expect(wrapper.emitted('loading:end')).toBeTruthy();
     });
   });

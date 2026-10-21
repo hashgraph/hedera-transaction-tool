@@ -7,6 +7,7 @@ import { PrivateKey } from '@hiero-ledger/sdk';
 import { ENCRYPTED_KEY_ALREADY_IMPORTED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
 import {
   calculateRecoveryPhraseHashCode,
@@ -45,6 +46,9 @@ const emit = defineEmits<{
 
 /* Stores */
 const user = useUserStore();
+
+/* Composables */
+const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
 const decryptPassword = ref<string>(props.defaultPassword || '');
@@ -116,8 +120,8 @@ async function decrypt() {
 
   if (key) {
     try {
-      await storeKey(key);
-      emit('stored');
+      const stored = await storeKey(key);
+      if (stored) emit('stored');
     } catch (error) {
       decrypting.value = false;
       throw error;
@@ -130,11 +134,15 @@ async function storeKey(key: {
   privateKey: string;
   recoveryPhraseHashCode: number | null;
   index: number | null;
-}) {
+}): Promise<boolean> {
   assertUserLoggedIn(user.personal);
-  const personalPassword = user.getPassword();
-  if (!personalPassword && !user.personal.useKeychain)
-    throw new Error('Personal password not found');
+  const personalPassword = await getPasswordAsync({
+    subHeading: 'Enter your application password to store the decrypted key',
+  });
+  if (personalPassword === false) {
+    decrypting.value = false;
+    return false;
+  }
 
   const privateKey = PrivateKey.fromStringDer(key.privateKey);
   const publicKey = privateKey.publicKey;
@@ -143,7 +151,7 @@ async function storeKey(key: {
     user.keyPairs.some(k => k.public_key === publicKey.toStringRaw()) ||
     decryptedKeys.value.includes(publicKey.toStringRaw())
   )
-    return;
+    return true;
 
   const matchedRecoveryPhraseHashCode =
     key.recoveryPhraseHashCode !== null &&
@@ -178,6 +186,7 @@ async function storeKey(key: {
 
   decryptedKeys.value.push(publicKey.toStringRaw());
   recoveredKeys.value.push({ publicKey: keyPair.public_key, index: keyPair.index || -1 });
+  return true;
 }
 
 function reset() {

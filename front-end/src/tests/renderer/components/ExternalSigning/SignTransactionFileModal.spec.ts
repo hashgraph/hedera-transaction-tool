@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => ({
   loggerError: vi.fn(),
   loggerDebug: vi.fn(),
   currentNetwork: 'testnet',
+  getPasswordAsync: vi.fn(),
+}));
+
+vi.mock('@renderer/composables/usePersonalPassword', () => ({
+  default: vi.fn(() => ({ getPasswordAsync: mocks.getPasswordAsync })),
 }));
 
 vi.mock('@renderer/services/transactionFileService.ts', () => ({
@@ -130,6 +135,8 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     mocks.filterItems.mockResolvedValue({ needSigning: [ITEM], fullySigned: [] });
     mocks.collectMissingSignerKeys.mockResolvedValue(['pubkey1']);
     mocks.exportTransactionFile.mockResolvedValue(true);
+    // Simulates a user on OS keychain, so signing proceeds without a password prompt by default.
+    mocks.getPasswordAsync.mockResolvedValue(null);
   });
 
   test('shows error toast, does not write file, and does not show success modal when signing fails', async () => {
@@ -252,5 +259,42 @@ describe('SignTransactionFileModal – handleSignAll', () => {
       'https://custom.mirror.example/v1',
       expect.anything(),
     );
+  });
+
+  describe('password prompt', () => {
+    test('prompts for the application password and signs with it when none is cached', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce('typed-password');
+      mocks.signTransaction.mockResolvedValue(new Uint8Array([0xde, 0xad]));
+
+      const wrapper = mountModal();
+      await flushPromises();
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(mocks.signTransaction).toHaveBeenCalledWith(
+        expect.any(Uint8Array),
+        ['pubkey1'],
+        'user-1',
+        'typed-password',
+        false,
+      );
+      expect(mocks.exportTransactionFile).toHaveBeenCalledTimes(1);
+    });
+
+    // Regression test: this used to throw "Password is required to sign" instead
+    // of prompting, surfacing as an unhandled-error toast with no way to recover.
+    test('quietly aborts without signing, writing, or showing an error when the user cancels the password prompt', async () => {
+      mocks.getPasswordAsync.mockResolvedValueOnce(false);
+
+      const wrapper = mountModal();
+      await flushPromises();
+      await wrapper.find('form').trigger('submit');
+      await flushPromises();
+
+      expect(mocks.signTransaction).not.toHaveBeenCalled();
+      expect(mocks.exportTransactionFile).not.toHaveBeenCalled();
+      expect(mocks.toastError).not.toHaveBeenCalled();
+      expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(false);
+    });
   });
 });
