@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { computed } from 'vue';
 import ActionController from '@renderer/components/ActionController/ActionController.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { createLogger, createTransactionId } from '@renderer/utils';
@@ -52,7 +52,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
     let txValidDuration = '';
     let memo = '';
     let validStart: Date | null = null;
-    const maxTransactionFee = ref<Hbar>(new Hbar(2));
+    const maxTransactionFee = new Hbar(2);
 
     for (const [index, row] of rows.entries()) {
       const rowInfo =
@@ -136,7 +136,7 @@ async function handleImportCsv(): Promise<ActionReport | null> {
           const transaction = new TransferTransaction()
             .setTransactionValidDuration(txValidDuration ? Number.parseInt(txValidDuration) : 180)
             .setMaxTransactionFee(
-              transactionFee ? new Hbar(transactionFee, HbarUnit.Tinybar) : maxTransactionFee.value,
+              transactionFee ? new Hbar(transactionFee, HbarUnit.Tinybar) : maxTransactionFee,
             );
 
           transaction.setTransactionId(createTransactionId(feePayer, validStart));
