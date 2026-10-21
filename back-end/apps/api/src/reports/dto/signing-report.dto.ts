@@ -123,6 +123,25 @@ export class SigningReportItemDto {
   })
   signedAt!: string | null;
 
+  @ApiProperty({
+    nullable: true,
+    description: 'The tool that recorded the signature (from the signer record); null if not signed',
+  })
+  tool!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    description: 'Version of the tool that recorded the signature; null if not signed',
+  })
+  version!: string | null;
+
+  @ApiProperty({
+    nullable: true,
+    description:
+      'ID of the user who recorded the signature, which may differ from the key owner; null if not signed or not recorded',
+  })
+  recorderId!: number | null;
+
   @ApiProperty({ enum: SigningStatus })
   signingStatus!: SigningStatus;
 }

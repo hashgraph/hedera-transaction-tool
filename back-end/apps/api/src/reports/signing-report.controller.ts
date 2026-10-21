@@ -45,7 +45,7 @@ export class SigningReportController {
         schema: {
           type: 'string',
           example:
-            'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signingStatus',
+            'transactionId,createdAt,validStart,executedAt,entityType,entityId,publicKey,userId,userEmail,signedAt,tool,version,recorderId,signingStatus',
         },
       },
       'application/json': {

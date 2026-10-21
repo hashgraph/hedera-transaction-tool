@@ -51,6 +51,9 @@ describe('SigningReportController', () => {
       userId: 7,
       userEmail: 'alice@example.com',
       signedAt: '2026-01-01T00:00:03.000Z',
+      tool: 'tool-x',
+      version: '1.2.3',
+      recorderId: 9,
       signingStatus: SigningStatus.SIGNED,
     },
   ];
