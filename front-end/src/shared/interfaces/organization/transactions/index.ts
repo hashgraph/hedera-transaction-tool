@@ -112,8 +112,6 @@ export interface IGroup {
   groupItems: IGroupItem[];
 }
 
-export type IDefaultNetworks = 'mainnet' | 'testnet' | 'previewnet' | 'local-node';
-
 /** Request/Response DTOs */
 export interface ISignatureImport {
   id: number; // Database ID of the transaction to which the signatures belong. In a bulk transaction (File Append with multiple transactions inside), this ID refers to the parent transaction.

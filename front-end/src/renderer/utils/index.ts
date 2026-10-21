@@ -44,7 +44,6 @@ export * from './sdk';
 export * from './transactionSignatureModels';
 export * from './autoFocus';
 export * from './clickLogging';
-export * from './localServices';
 export * from './transactionFile';
 export * from './logger';
 

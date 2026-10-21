@@ -97,17 +97,6 @@ export const getPublicKeyAndType = (
   return { publicKey, keyType };
 };
 
-export const normalizePublicKey = (key: Key) => {
-  const protoBuffKey = key._toProtobufKey();
-
-  if (protoBuffKey.ed25519) {
-    return PublicKey.fromBytesED25519(protoBuffKey.ed25519).toStringRaw();
-  } else if (protoBuffKey.ECDSASecp256k1) {
-    return PublicKey.fromBytesECDSA(protoBuffKey.ECDSASecp256k1).toStringRaw();
-  }
-  return '';
-};
-
 export const ableToSign = (publicKeys: string[], key: Key) => {
   if (key instanceof KeyList) {
     const keys = key.toArray();
@@ -309,17 +298,6 @@ export const getPrivateKey = (
       : PrivateKey.fromStringED25519(privateKeyString);
 
   return privateKey;
-};
-
-export const isExpired = (transaction: Transaction) => {
-  if (!transaction.transactionId?.validStart) {
-    return true;
-  }
-
-  const validStart = transaction.transactionId.validStart.toDate();
-  const duration = transaction.transactionValidDuration;
-
-  return new Date().getTime() >= validStart.getTime() + duration * 1_000;
 };
 
 export const getTransactionBodySignatureWithoutNodeAccountId = (

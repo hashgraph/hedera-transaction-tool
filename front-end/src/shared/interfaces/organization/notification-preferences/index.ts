@@ -1,5 +1,3 @@
-import type { IUser } from '../user';
-
 import { NotificationType } from '../notification-receiver';
 
 export interface INotificationPreferencesCore {
@@ -8,10 +6,6 @@ export interface INotificationPreferencesCore {
   type: NotificationType;
   email: boolean;
   inApp: boolean;
-}
-
-export interface INotificationPreferences extends INotificationPreferencesCore {
-  user: IUser;
 }
 
 export interface IUpdateNotificationPreferencesDto {
