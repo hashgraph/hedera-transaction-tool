@@ -3,13 +3,17 @@ import { ref, watch } from 'vue';
 
 import { networkMapping } from '@shared/constants';
 
+import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
+
 import { useGroupedNotifications } from './composables';
 import { setDockBounce } from '@renderer/services/electronUtilsService';
 
 /* Composables */
-const { groupedNotifications, totalCount } = useGroupedNotifications();
+const { groupedNotifications, totalCount, pendingNetworkHost, confirmNetwork, cancelNetwork } =
+  useGroupedNotifications();
 
 /* State */
+const showNetworkConfirm = ref(false);
 const isRinging = ref<boolean>(false);
 
 /* Functions */
@@ -23,6 +27,10 @@ const triggerRingAnimation = () => {
 };
 
 /* Watchers */
+watch(pendingNetworkHost, host => {
+  showNetworkConfirm.value = host !== null;
+});
+
 let previousTotalCount = totalCount.value;
 watch(totalCount, newCount => {
   if (newCount > previousTotalCount) {
@@ -101,5 +109,16 @@ watch(totalCount, newCount => {
         </template>
       </ul>
     </div>
+    <AppConfirmModal
+      v-model:show="showNetworkConfirm"
+      title="Switch to custom network?"
+      :text="`This notification wants to switch the app to the custom network ${pendingNetworkHost}. That host will provide account, key and node data and receive the transactions you sign. Only continue if you recognize and trust it.`"
+      button-text="Switch Network"
+      button-color="danger"
+      icon="error"
+      :callback="confirmNetwork"
+      :cancel="cancelNetwork"
+      data-testid="modal-notification-network-switch"
+    />
   </div>
 </template>

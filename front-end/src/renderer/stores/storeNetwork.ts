@@ -25,6 +25,7 @@ export interface NetworkStore {
   setNetwork: (newNetwork: Network) => Promise<void>;
   getMirrorNodeREST: (network: Network) => string;
   isCurrentNetwork: (network: Network) => boolean;
+  normalizeCustomMirrorNodeURL: (network: Network) => string;
 }
 
 const useNetworkStore = defineStore('network', (): NetworkStore => {
@@ -165,6 +166,7 @@ const useNetworkStore = defineStore('network', (): NetworkStore => {
     setNetwork,
     getMirrorNodeREST,
     isCurrentNetwork,
+    normalizeCustomMirrorNodeURL,
   };
 });
 

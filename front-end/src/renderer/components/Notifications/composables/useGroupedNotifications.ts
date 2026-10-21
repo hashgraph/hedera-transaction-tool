@@ -3,10 +3,13 @@ import { useRouter } from 'vue-router';
 
 import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
 import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@shared/constants';
+import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications';
+
+const UNKNOWN_NETWORK = 'Unknown';
 
 /* Types */
 interface GroupedNotificationInfo {
@@ -31,6 +34,8 @@ export function useGroupedNotifications() {
 
   /* State */
   const previousNotifications = ref<Record<string, INotificationReceiver[]>>({});
+  const pendingNetworkHost = ref<string | null>(null);
+  let resolveConfirmation: ((confirmed: boolean) => void) | null = null;
 
   /* Computed */
   const groupedNotifications = computed(() => {
@@ -54,7 +59,7 @@ export function useGroupedNotifications() {
 
         const serverGroup = grouped[nicknamedServerUrl];
 
-        const network = notification.notification.additionalData?.network || 'Unknown';
+        const network = notification.notification.additionalData?.network || UNKNOWN_NETWORK;
         const type = notification.notification.type;
 
         // Initialize array for this network if it doesn't exist
@@ -135,8 +140,50 @@ export function useGroupedNotifications() {
     }
   };
 
+  /**
+   * The network string is server-supplied. Built-in networks switch directly; a custom host
+   * is only applied after the user confirms it, and anything malformed is refused.
+   */
+  const ensureNetwork = async (target: string): Promise<boolean> => {
+    // Notification carried no network; nothing to switch to
+    if (target === UNKNOWN_NETWORK) return true;
+
+    if ((Object.values(CommonNetwork)).includes(target)) {
+      if (network.network !== target) await network.setNetwork(target);
+      return true;
+    }
+
+    if (network.isCurrentNetwork(target)) return true;
+
+    let host: string;
+    try {
+      const normalized = network.normalizeCustomMirrorNodeURL(target);
+      if (normalized !== `https://${target.toLowerCase()}`) return false;
+      host = new URL(normalized).host;
+    } catch {
+      return false;
+    }
+
+    if (!(await requestNetworkConfirmation(host))) return false;
+    await network.setNetwork(target);
+    return true;
+  };
+
+  const requestNetworkConfirmation = (host: string) =>
+    new Promise<boolean>(resolve => {
+      pendingNetworkHost.value = host;
+      resolveConfirmation = resolve;
+    });
+
+  const settleConfirmation = (confirmed: boolean) => {
+    resolveConfirmation?.(confirmed);
+    resolveConfirmation = null;
+    pendingNetworkHost.value = null;
+  };
+
   const getActionFromGroupItem = (notification: GroupedNotificationInfo, serverUrl: string) => {
-    const selectOrganization = async () => {
+    // Returns false when the user should not be navigated (network switch refused/canceled)
+    const selectOrganization = async (): Promise<boolean> => {
       const currentServerUrl = user.selectedOrganization?.serverUrl;
       if (currentServerUrl !== serverUrl) {
         const organization = user.organizations.find(o => o.serverUrl === serverUrl);
@@ -145,20 +192,18 @@ export function useGroupedNotifications() {
         }
       }
 
-      if (network.network !== notification.network) {
-        await network.setNetwork(notification.network);
-      }
+      return await ensureNetwork(notification.network);
     };
 
     switch (notification.type) {
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
         return async () => {
-          await selectOrganization();
+          if (!(await selectOrganization())) return;
           await router.push({ name: 'transactions', query: { tab: readyForExecutionTitle } });
         };
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return async () => {
-          await selectOrganization();
+          if (!(await selectOrganization())) return;
           await router.push({ name: 'transactions', query: { tab: readyToSignTitle } });
         };
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
@@ -166,18 +211,18 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_FAILED:
         return async () => {
-          await selectOrganization();
+          if (!(await selectOrganization())) return;
           await router.push({ name: 'transactions', query: { tab: historyTitle } });
         };
       case NotificationType.TRANSACTION_APPROVED:
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
         return async () => {
-          await selectOrganization();
+          if (!(await selectOrganization())) return;
           await notificationsStore.markAsRead(notification.type);
         };
       case NotificationType.USER_REGISTERED:
         return async () => {
-          await selectOrganization();
+          if (!(await selectOrganization())) return;
           await router.push({ name: 'contactList' });
         };
       default:
@@ -198,5 +243,8 @@ export function useGroupedNotifications() {
     groupedNotifications: computed(() => groupedNotifications.value.grouped),
     totalCount: computed(() => groupedNotifications.value.totalCount),
     hasNew: computed(() => groupedNotifications.value.hasNew),
+    pendingNetworkHost,
+    confirmNetwork: () => settleConfirmation(true),
+    cancelNetwork: () => settleConfirmation(false),
   };
 }
