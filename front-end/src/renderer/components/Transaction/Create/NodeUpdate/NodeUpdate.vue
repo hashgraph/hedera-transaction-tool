@@ -119,19 +119,23 @@ const handleExecutedSuccess = async () => {
 
 /* Watchers */
 watch(nodeData.nodeInfo, nodeInfo => {
+  const isBrandNewDraft = !route.query.draftId && !route.query.groupIndex;
+
   if (!nodeInfo) {
-    data.nodeAccountId = '';
-    newNodeAccountData.accountId.value = '';
-    data.description = '';
-    data.gossipEndpoints = [];
-    data.serviceEndpoints = [];
-    data.gossipCaCertificate = Uint8Array.from([]);
-    data.grpcWebProxyEndpoint = null;
-    data.certificateHash = Uint8Array.from([]);
-    data.adminKey = null;
-    data.declineReward = false;
-    data.associatedRegisteredNodes = [];
-  } else if (!route.query.draftId) {
+    if (isBrandNewDraft) {
+      data.nodeAccountId = '';
+      newNodeAccountData.accountId.value = '';
+      data.description = '';
+      data.gossipEndpoints = [];
+      data.serviceEndpoints = [];
+      data.gossipCaCertificate = Uint8Array.from([]);
+      data.grpcWebProxyEndpoint = null;
+      data.certificateHash = Uint8Array.from([]);
+      data.adminKey = null;
+      data.declineReward = false;
+      data.associatedRegisteredNodes = [];
+    }
+  } else if (isBrandNewDraft) {
     data.nodeAccountId = nodeInfo.node_account_id?.toString() || '';
     newNodeAccountData.accountId.value = data.nodeAccountId;
     data.description = nodeInfo.description || '';

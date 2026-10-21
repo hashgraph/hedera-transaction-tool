@@ -131,15 +131,17 @@ watch(accountData.accountInfo, accountInfo => {
     route.query.group === 'true' ? !route.query.groupIndex : !route.query.draftId;
 
   if (!accountInfo) {
-    data.receiverSignatureRequired = false;
-    data.maxAutomaticTokenAssociations = 0;
-    data.stakeType = 'None';
-    data.stakedAccountId = '';
-    data.stakedNodeId = null;
-    data.declineStakingReward = false;
-    data.accountMemo = '';
-    data.ownerKey = null;
-    ownerKeyManuallySet.value = false;
+    if (isBrandNewDraft) {
+      data.receiverSignatureRequired = false;
+      data.maxAutomaticTokenAssociations = 0;
+      data.stakeType = 'None';
+      data.stakedAccountId = '';
+      data.stakedNodeId = null;
+      data.declineStakingReward = false;
+      data.accountMemo = '';
+      data.ownerKey = null;
+      ownerKeyManuallySet.value = false;
+    }
   } else if (isBrandNewDraft) {
     data.receiverSignatureRequired = accountInfo.receiverSignatureRequired;
     data.maxAutomaticTokenAssociations = accountInfo.maxAutomaticTokenAssociations || 0;
