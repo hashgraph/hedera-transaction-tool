@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-import { NotificationAdditionalData, NotificationType } from '@entities';
+import type { NotificationAdditionalData, NotificationType } from '@entities';
 
 export class NotificationDto {
   @Expose()

@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-import { AttestationSignature, ChangeRequestStatus, GroupChangeType, GroupSnapshot } from '@entities';
+import type { AttestationSignature, ChangeRequestStatus, GroupChangeType, GroupSnapshot } from '@entities';
 
 export class GroupChangeRecordDto {
   @Expose() id!: number;

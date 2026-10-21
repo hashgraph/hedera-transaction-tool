@@ -13,8 +13,8 @@ import {
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
-  PaginatedResourceDto,
-  Pagination,
+  type PaginatedResourceDto,
+  type Pagination,
   PaginationParams,
   Serialize,
   transformAndValidateDto,

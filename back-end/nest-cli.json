@@ -4,7 +4,7 @@
   "sourceRoot": "apps/api/src",
   "compilerOptions": {
     "deleteOutDir": true,
-    "webpack": true,
+    "builder": "rspack",
     "tsConfigPath": "apps/api/tsconfig.app.json",
     "plugins": [
       "@nestjs/swagger"

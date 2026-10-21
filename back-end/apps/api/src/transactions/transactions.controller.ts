@@ -22,14 +22,14 @@ import * as semver from 'semver';
 
 import {
   ErrorCodes,
-  Filtering,
+  type Filtering,
   FilteringParams,
   OnlyOwnerKey,
-  PaginatedResourceDto,
-  Pagination,
+  type PaginatedResourceDto,
+  type Pagination,
   PaginationParams,
   Serialize,
-  Sorting,
+  type Sorting,
   SortingParams,
   transformAndValidateDto,
   withPaginatedResponse,

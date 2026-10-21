@@ -18,7 +18,7 @@ import {
   Filtering,
   FilteringParams,
   PaginatedResourceDto,
-  Pagination,
+  type Pagination,
   PaginationParams,
   Serialize,
   Sorting,

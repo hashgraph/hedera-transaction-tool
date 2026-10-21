@@ -3,7 +3,7 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import {
   PaginatedResourceDto,
-  Pagination,
+  type Pagination,
   PaginationParams,
   Serialize,
   withPaginatedResponse,

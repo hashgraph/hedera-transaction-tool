@@ -1,6 +1,6 @@
 import { Expose } from 'class-transformer';
 
-import { AttestationSignature, ChangeRequestStatus, ReviewerAction, RulePayload } from '@entities';
+import type { AttestationSignature, ChangeRequestStatus, ReviewerAction, RulePayload } from '@entities';
 
 export class RuleChangeRecordDto {
   @Expose() id!: number;
