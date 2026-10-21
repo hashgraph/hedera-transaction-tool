@@ -32,6 +32,7 @@ export class UserKey {
 
   @Column({ length: 128 })
   @Index()
+  @Index('UQ_user_key_active_public_key', { unique: true, where: '"deletedAt" IS NULL' })
   publicKey!: string;
 
   @DeleteDateColumn()
