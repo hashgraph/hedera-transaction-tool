@@ -128,6 +128,7 @@ overrides:
   "mysql2": "3.24.5"
   "source-map-js": "1.2.2"
   "http-cache-semantics": "4.3.0"
+  "node-abi": "4.38.0"
 
 # Refuse to resolve packages published fewer than 3 days ago (4320 minutes)
 # This blocks supply-chain attacks that race to publish malicious versions.
