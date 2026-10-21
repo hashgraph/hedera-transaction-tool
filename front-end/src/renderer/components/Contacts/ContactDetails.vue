@@ -76,6 +76,15 @@ const isApiKeyActive = computed(
   () => !!props.contact.user.apiKeyStatus?.hasKey && !props.contact.user.apiKeyStatus?.revokedAt,
 );
 
+const userKeysAndMappings = computed(() => {
+  return props.contact.userKeys.map(uk => ({
+    ...uk,
+    publicKeyMapping: extractIdentifier(
+      publicKeysMapping.value[PublicKey.fromString(uk.publicKey).toStringRaw()],
+    ),
+  }));
+});
+
 /* Helpers */
 const formatApiKeyDateTime = (value: string | null) => {
   if (!value) return 'Never';
@@ -360,18 +369,8 @@ watch(() => props.contact.userKeys, async () => {
     </div>
   </div>
   <hr class="separator my-4" />
-  <div
-    class="fill-remaining overflow-x-hidden pe-3"
-  >
-    <template
-      v-for="(key, index) in contact.userKeys.map(uk => ({
-        ...uk,
-        publicKeyMapping: extractIdentifier(
-          publicKeysMapping[PublicKey.fromString(uk.publicKey).toStringRaw()],
-        ),
-      }))"
-      :key="key.publicKey"
-    >
+  <div class="fill-remaining overflow-x-hidden pe-3">
+    <template v-for="(key, index) in userKeysAndMappings" :key="key.publicKey">
       <div class="p-4">
         <hr v-if="index != 0" class="separator mb-4" />
         <div class="mt-4 row">
