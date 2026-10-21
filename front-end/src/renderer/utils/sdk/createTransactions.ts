@@ -1,4 +1,8 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type {
+  IAccountInfoParsed,
+  INodeInfoParsed,
+  IRegisteredNodeInfoParsed,
+} from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -43,6 +47,7 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
 import { compareNodeServiceEndpoint } from '@renderer/utils/sdk/serviceEndpoints.ts';
+import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
 
 export type TransactionCommonData = {
   payerId: string;
@@ -169,14 +174,14 @@ export interface ComponentRegisteredServiceEndpoint extends ComponentServiceEndp
 }
 
 export type RegisteredNodeData = {
-  description: string;
+  description: string | null;
   adminKey: Key | null;
   serviceEndpoints: ComponentRegisteredServiceEndpoint[];
 };
 
 export type RegisteredNodeUpdateData = {
   registeredNodeId: string;
-  description: string;
+  description: string | null;
   adminKey: Key | null;
   serviceEndpoints: ComponentRegisteredServiceEndpoint[];
 };
@@ -762,6 +767,7 @@ export function createRegisteredNodeCreateTransaction(
 
 export function createRegisteredNodeUpdateTransaction(
   data: TransactionCommonData & RegisteredNodeUpdateData,
+  oldData: IRegisteredNodeInfoParsed | null,
 ): RegisteredNodeUpdateTransaction {
   const transaction = new RegisteredNodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
@@ -770,17 +776,21 @@ export function createRegisteredNodeUpdateTransaction(
     transaction.setRegisteredNodeId(Long.fromString(data.registeredNodeId));
   }
 
-  if (data.adminKey) {
+  if (data.adminKey && oldData?.admin_key) {
+    !compareKeys(oldData.admin_key, data.adminKey) && transaction.setAdminKey(data.adminKey);
+  } else if (data.adminKey) {
     transaction.setAdminKey(data.adminKey);
   }
 
-  if (data.description && data.description.length > 0) {
+  if (data.description !== null && data.description !== (oldData?.description ?? null)) {
     transaction.setDescription(data.description);
   }
 
-  const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
-  if (endpoints.length > 0) {
-    transaction.setServiceEndpoints(endpoints);
+  if (data.serviceEndpoints.length > 0) {
+    const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
+    if (!oldData || !compareServiceEndpoints(oldData.service_endpoints, endpoints)) {
+      transaction.setServiceEndpoints(endpoints);
+    }
   }
 
   return transaction;

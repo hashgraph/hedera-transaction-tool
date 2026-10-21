@@ -114,7 +114,7 @@ function handleDeleteEndpoint(index: number) {
   <div class="form-group mt-6 col-8 col-xxxl-6">
     <label class="form-label">Registered Node Description</label>
     <AppInput
-      :model-value="data.description"
+      :model-value="data.description ?? ''"
       @update:model-value="
         emit('update:data', {
           ...data,

@@ -419,7 +419,7 @@ export function getRegisteredNodeUpdateData(transaction: Transaction): Registere
 
   return {
     registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
-    description: transaction.description ?? '',
+    description: transaction.description,
     adminKey: transaction.adminKey ?? null,
     serviceEndpoints: endpoints,
   };

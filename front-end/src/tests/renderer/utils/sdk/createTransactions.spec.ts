@@ -34,7 +34,7 @@ import {
 import Long from 'long';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 import {
   createAccountCreateTransaction,
@@ -66,6 +66,7 @@ import {
   type NodeData,
   type NodeUpdateData,
   type TransactionCommonData,
+  getRegisteredServiceEndpoints,
 } from '@renderer/utils/sdk/createTransactions';
 import {
   getFreezeData,
@@ -1224,13 +1225,16 @@ describe('Registered node creators', () => {
   describe('createRegisteredNodeUpdateTransaction', () => {
     test('sets the registered node id and updated fields', () => {
       const tx = roundtrip(
-        createRegisteredNodeUpdateTransaction({
-          ...common,
-          registeredNodeId: '12',
-          adminKey,
-          description: 'renamed',
-          serviceEndpoints: [ep()],
-        }),
+        createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey,
+            description: 'renamed',
+            serviceEndpoints: [ep()],
+          },
+          null,
+        ),
       );
       expect(tx).toBeInstanceOf(RegisteredNodeUpdateTransaction);
       expect(tx.registeredNodeId?.toString()).toBe('12');
@@ -1240,14 +1244,102 @@ describe('Registered node creators', () => {
     });
 
     test('leaves the id unset when empty', () => {
-      const tx = createRegisteredNodeUpdateTransaction({
-        ...common,
-        registeredNodeId: '',
-        adminKey: null,
-        description: '',
-        serviceEndpoints: [],
-      });
+      const tx = createRegisteredNodeUpdateTransaction(
+        {
+          ...common,
+          registeredNodeId: '',
+          adminKey: null,
+          description: '',
+          serviceEndpoints: [],
+        },
+        null,
+      );
       expect(tx.registeredNodeId).toBeNull();
+    });
+
+    describe('diffing against live mirror data (oldData)', () => {
+      const oldData: IRegisteredNodeInfoParsed = {
+        admin_key: adminKey,
+        created_timestamp: null,
+        description: 'original description',
+        registered_node_id: 12,
+        service_endpoints: getRegisteredServiceEndpoints([ep()]),
+        timestamp: { from: undefined, to: undefined },
+      };
+
+      test('omits fields that match oldData (nothing changed)', () => {
+        const tx = createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey,
+            description: oldData.description,
+            serviceEndpoints: [ep()],
+          },
+          oldData,
+        );
+        expect(tx.adminKey).toBeNull();
+        expect(tx.description).toBeNull();
+        expect(tx.serviceEndpoints).toBeNull();
+      });
+
+      test('emits an explicit clear when description is changed to empty', () => {
+        const tx = createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey,
+            description: '',
+            serviceEndpoints: [ep()],
+          },
+          oldData,
+        );
+        expect(tx.description).toBe('');
+      });
+
+      test('never-touched description (null) is never diffed/emitted', () => {
+        const tx = createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey,
+            description: null,
+            serviceEndpoints: [ep()],
+          },
+          oldData,
+        );
+        expect(tx.description).toBeNull();
+      });
+
+      test('emits adminKey only when it differs from oldData', () => {
+        const newKey = PrivateKey.generateED25519().publicKey;
+        const tx = createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey: newKey,
+            description: oldData.description,
+            serviceEndpoints: [ep()],
+          },
+          oldData,
+        );
+        expect(tx.adminKey?.toString()).toBe(newKey.toString());
+      });
+
+      test('emits serviceEndpoints only when they differ from oldData', () => {
+        const tx = createRegisteredNodeUpdateTransaction(
+          {
+            ...common,
+            registeredNodeId: '12',
+            adminKey,
+            description: oldData.description,
+            serviceEndpoints: [ep({ port: '9999' })],
+          },
+          oldData,
+        );
+        expect(tx.serviceEndpoints).not.toBeNull();
+        expect(tx.serviceEndpoints?.[0]).not.toBeNull();
+      });
     });
   });
 

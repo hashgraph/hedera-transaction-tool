@@ -38,7 +38,7 @@ const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null
 
 const data = reactive<RegisteredNodeUpdateData>({
   registeredNodeId: '',
-  description: '',
+  description: null,
   adminKey: null,
   serviceEndpoints: [],
 });
@@ -46,10 +46,13 @@ const data = reactive<RegisteredNodeUpdateData>({
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
-    createRegisteredNodeUpdateTransaction({
-      ...common,
-      ...(data),
-    });
+    createRegisteredNodeUpdateTransaction(
+      {
+        ...common,
+        ...data,
+      },
+      nodeData.registeredNodeInfo.value,
+    );
 });
 
 const createDisabled = computed(() => {
@@ -58,7 +61,7 @@ const createDisabled = computed(() => {
     data.adminKey === null ||
     data.serviceEndpoints.length === 0 ||
     data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS ||
-    exceedsUtf8ByteLimit(data.description, MAX_DESCRIPTION_BYTES) ||
+    exceedsUtf8ByteLimit(data.description ?? '', MAX_DESCRIPTION_BYTES) ||
     createServiceEndpointsDisabled.value
   );
 });
@@ -189,14 +192,31 @@ const preCreateAssert = () => {
 };
 
 /* Watchers */
+// Overlay model: a field is only filled from live mirror data while it's
+// still at its "untouched" value (null description/adminKey, empty endpoint
+// list). Once a field has a value — whether from the mirror, a loaded draft,
+// or the user typing — this never overwrites it. That makes the merge order
+// with draft loading irrelevant: whichever side sets a field first wins, and
+// an explicit clear (description === '') is preserved rather than refilled.
 watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
   if (registeredNodeInfo === null) {
-    data.description = '';
-    data.adminKey = null;
-    data.serviceEndpoints = [];
-  } else if (!route.query.draftId && !route.query.groupIndex) {
-    data.description = registeredNodeInfo.description ?? '';
+    // Only reset when there's no draft/group item backing this form — a
+    // transient mirror lookup failure must not wipe already-loaded data.
+    if (!route.query.draftId && !route.query.groupIndex) {
+      data.description = null;
+      data.adminKey = null;
+      data.serviceEndpoints = [];
+    }
+    return;
+  }
+
+  if (data.description === null) {
+    data.description = registeredNodeInfo.description;
+  }
+  if (data.adminKey === null) {
     data.adminKey = registeredNodeInfo.admin_key;
+  }
+  if (data.serviceEndpoints.length === 0) {
     data.serviceEndpoints = getComponentRegisteredEndpoints(
       registeredNodeInfo.service_endpoints,
     );
