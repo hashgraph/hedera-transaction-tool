@@ -2,14 +2,16 @@ import { mockDeep } from 'vitest-mock-extended';
 
 import { getIPCHandler, invokeIPCHandler } from '../../../_utils_';
 
-import { STATIC_USER, USE_KEYCHAIN } from '@shared/constants';
+import { STATIC_USER } from '@shared/constants';
 
 import registerSafeStorageHandlers from '@main/modules/ipcHandlers/localUser/safeStorage';
 
-import { Claim } from '@prisma/client';
 import { safeStorage } from 'electron';
-import { addClaim, getClaims } from '@main/services/localUser/claim';
-import { login, register } from '@main/services/localUser/auth';
+import { getUseKeychainClaim } from '@main/services/localUser/claim';
+import { login } from '@main/services/localUser/auth';
+
+import { initializeUseKeychain } from '@main/services/localUser/encryptionMode';
+vi.mock('@main/services/localUser/encryptionMode', () => mockDeep());
 
 vi.mock('@main/services/localUser', () => mockDeep());
 vi.mock('@main/services/localUser/claim', () => mockDeep());
@@ -39,55 +41,46 @@ describe('IPC handlers Safe Storage', () => {
   });
 
   test('Should initialize initializeUseKeychain handler', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([]);
-    vi.mocked(register).mockResolvedValueOnce({
-      id: STATIC_USER,
-      email: STATIC_USER,
-      password: STATIC_USER,
-      created_at: new Date(),
-      updated_at: new Date(),
-    });
-
     await invokeIPCHandler('safeStorage:initializeUseKeychain', false);
-    expect(register).toHaveBeenCalledWith(STATIC_USER, STATIC_USER);
-    expect(addClaim).toHaveBeenCalledWith(STATIC_USER, USE_KEYCHAIN, 'false');
+    expect(initializeUseKeychain).toHaveBeenCalledWith(false);
   });
 
-  test('Should throw if initializeUseKeychain handler is already called', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
-
+  test('Should forward initialization errors', async () => {
+    vi.mocked(initializeUseKeychain).mockRejectedValueOnce(
+      new Error('Keychain mode already initialized'),
+    );
     await expect(invokeIPCHandler('safeStorage:initializeUseKeychain', false)).rejects.toThrow(
       'Keychain mode already initialized',
     );
   });
 
-  test('Should set up getUseKeychain handler if initialized', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
-    let result = await invokeIPCHandler('safeStorage:getUseKeychain');
-    expect(result).toEqual(true);
-
-    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'false' } as Claim]);
-    result = await invokeIPCHandler('safeStorage:getUseKeychain');
-    expect(result).toEqual(false);
+  test('Should read the canonical mode', async () => {
+    vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+    expect(await invokeIPCHandler('safeStorage:getUseKeychain')).toBe(true);
+    vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(false);
+    expect(await invokeIPCHandler('safeStorage:getUseKeychain')).toBe(false);
   });
 
-  test('Should getUseKeychain throw if NOT initialized', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([]);
-
+  test('Should reject an uninitialized mode', async () => {
+    vi.mocked(getUseKeychainClaim).mockRejectedValueOnce(
+      new Error('Keychain mode not initialized'),
+    );
     await expect(invokeIPCHandler('safeStorage:getUseKeychain')).rejects.toThrow(
       'Keychain mode not initialized',
     );
   });
 
   test('Should set up getStaticUser handler', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([{ claim_value: 'true' } as Claim]);
+    vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
 
     await invokeIPCHandler('safeStorage:getStaticUser');
     expect(login).toHaveBeenCalledWith(STATIC_USER, STATIC_USER);
   });
 
   test('Should getStaticUser throw if NOT initialized', async () => {
-    vi.mocked(getClaims).mockResolvedValueOnce([]);
+    vi.mocked(getUseKeychainClaim).mockRejectedValueOnce(
+      new Error('Keychain mode not initialized'),
+    );
 
     await expect(invokeIPCHandler('safeStorage:getStaticUser')).rejects.toThrow(
       'Keychain mode not initialized',
