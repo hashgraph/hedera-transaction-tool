@@ -36,6 +36,10 @@ const nodeData = useRegisteredNodeId();
 /* State */
 const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
 
+// `description` starts `null`, not `''` — `null` means "untouched" and is
+// what lets the overlay watcher below (and the diff in
+// createRegisteredNodeUpdateTransaction) tell "never typed anything" apart
+// from "user cleared it". Don't coalesce this default to `''`.
 const data = reactive<RegisteredNodeUpdateData>({
   registeredNodeId: '',
   description: null,
@@ -46,6 +50,9 @@ const data = reactive<RegisteredNodeUpdateData>({
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
   return common =>
+    // Pass the *live* mirror data directly as oldData — no persisted baseline.
+    // createRegisteredNodeUpdateTransaction diffs against it and only emits
+    // fields that actually changed.
     createRegisteredNodeUpdateTransaction(
       {
         ...common,
@@ -61,6 +68,10 @@ const createDisabled = computed(() => {
     data.adminKey === null ||
     data.serviceEndpoints.length === 0 ||
     data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS ||
+    // `?? ''` is just for the byte-length check here — an untouched (null)
+    // description is 0 bytes either way, so this doesn't re-introduce the
+    // null/'' ambiguity anywhere it matters (`data.description` itself is
+    // left untouched).
     exceedsUtf8ByteLimit(data.description ?? '', MAX_DESCRIPTION_BYTES) ||
     createServiceEndpointsDisabled.value
   );

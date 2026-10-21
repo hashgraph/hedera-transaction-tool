@@ -419,6 +419,11 @@ export function getRegisteredNodeUpdateData(transaction: Transaction): Registere
 
   return {
     registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
+    // Deliberately NOT `transaction.description ?? ''` — `null` (field unset
+    // in the bytes, i.e. the user never touched it) must stay distinguishable
+    // from `''` (field explicitly set to empty, i.e. the user cleared it).
+    // RegisteredNodeUpdate.vue's mirror-overlay watcher relies on that to
+    // decide whether live mirror data may still fill the field in.
     description: transaction.description,
     adminKey: transaction.adminKey ?? null,
     serviceEndpoints: endpoints,

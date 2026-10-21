@@ -131,6 +131,9 @@ watch(accountData.accountInfo, accountInfo => {
     route.query.group === 'true' ? !route.query.groupIndex : !route.query.draftId;
 
   if (!accountInfo) {
+    // Guarded the same as the non-null branch below: a lookup failure (or
+    // the id field being cleared) must not wipe a loaded draft/group item's
+    // data just because the mirror has nothing to show right now.
     if (isBrandNewDraft) {
       data.receiverSignatureRequired = false;
       data.maxAutomaticTokenAssociations = 0;

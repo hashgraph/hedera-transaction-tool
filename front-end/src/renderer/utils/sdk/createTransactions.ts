@@ -765,6 +765,12 @@ export function createRegisteredNodeCreateTransaction(
   return transaction;
 }
 
+// `oldData` is the *live* mirror-node snapshot (fetched at build time), not a
+// persisted baseline — same pattern as createAccountUpdateTransaction /
+// createNodeUpdateTransaction. Only fields that actually differ from it are
+// set on the transaction, so a field the user never touched stays unset in
+// the wire bytes (round-trips to `null`, see getRegisteredNodeUpdateData)
+// instead of silently re-submitting whatever the mirror happened to prefill.
 export function createRegisteredNodeUpdateTransaction(
   data: TransactionCommonData & RegisteredNodeUpdateData,
   oldData: IRegisteredNodeInfoParsed | null,
@@ -782,6 +788,11 @@ export function createRegisteredNodeUpdateTransaction(
     transaction.setAdminKey(data.adminKey);
   }
 
+  // `data.description === null` means the form field was never touched (see
+  // RegisteredNodeUpdate.vue's overlay watcher) — never diff/emit in that
+  // case, even if oldData's description happens to be non-empty. That's what
+  // lets a real edit back down to `''` (an explicit clear) still get emitted
+  // below, since `''` !== null.
   if (data.description !== null && data.description !== (oldData?.description ?? null)) {
     transaction.setDescription(data.description);
   }

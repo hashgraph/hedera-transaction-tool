@@ -119,9 +119,15 @@ const handleExecutedSuccess = async () => {
 
 /* Watchers */
 watch(nodeData.nodeInfo, nodeInfo => {
+  // `groupIndex` matters here, not just `draftId` — group items never set
+  // draftId (BaseDraftLoad reads them straight off the group), so without
+  // this a reopened group item's fields get overwritten by live mirror data
+  // below as soon as the lookup resolves.
   const isBrandNewDraft = !route.query.draftId && !route.query.groupIndex;
 
   if (!nodeInfo) {
+    // Guarded the same as the non-null branch below: a lookup failure must
+    // not wipe a loaded draft/group item's data.
     if (isBrandNewDraft) {
       data.nodeAccountId = '';
       newNodeAccountData.accountId.value = '';
