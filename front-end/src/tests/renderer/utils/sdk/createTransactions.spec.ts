@@ -1230,7 +1230,7 @@ describe('Registered node creators', () => {
           adminKey,
           description: 'renamed',
           serviceEndpoints: [ep()],
-        }),
+        }, null),
       );
       expect(tx).toBeInstanceOf(RegisteredNodeUpdateTransaction);
       expect(tx.registeredNodeId?.toString()).toBe('12');
@@ -1240,13 +1240,16 @@ describe('Registered node creators', () => {
     });
 
     test('leaves the id unset when empty', () => {
-      const tx = createRegisteredNodeUpdateTransaction({
-        ...common,
-        registeredNodeId: '',
-        adminKey: null,
-        description: '',
-        serviceEndpoints: [],
-      });
+      const tx = createRegisteredNodeUpdateTransaction(
+        {
+          ...common,
+          registeredNodeId: '',
+          adminKey: null,
+          description: '',
+          serviceEndpoints: [],
+        },
+        null,
+      );
       expect(tx.registeredNodeId).toBeNull();
     });
   });

@@ -45,11 +45,15 @@ const data = reactive<RegisteredNodeUpdateData>({
 
 /* Computed */
 const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createRegisteredNodeUpdateTransaction({
-      ...common,
-      ...(data),
-    });
+  return common => {
+    return createRegisteredNodeUpdateTransaction(
+      {
+        ...common,
+        ...data,
+      },
+      nodeData.registeredNodeInfo.value,
+    );
+  };
 });
 
 const createDisabled = computed(() => {
