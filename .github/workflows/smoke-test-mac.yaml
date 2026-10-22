@@ -40,6 +40,10 @@ jobs:
           REF: ${{ inputs.ref || 'main' }}
         run: |
           set -euo pipefail
+          if [[ ! "${REF}" =~ ^[A-Za-z0-9._/-]+$ ]] || [[ "${REF}" == -* ]] || [[ "${REF}" == *..* ]]; then
+            echo "::error::Invalid ref '${REF}'. Refs may only contain letters, numbers, '.', '_', '-', and '/'." >&2
+            exit 1
+          fi
           if gh api "repos/${{ github.repository }}/branches/${REF}" >/dev/null 2>&1; then
             echo "ref '${REF}' is a branch in this repository"
           elif gh api "repos/${{ github.repository }}/git/ref/tags/${REF}" >/dev/null 2>&1; then
