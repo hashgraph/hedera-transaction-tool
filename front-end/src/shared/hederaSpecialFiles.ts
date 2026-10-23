@@ -57,54 +57,94 @@ export function decodeProto(fileId: HederaSpecialFileId, bytes: Uint8Array) {
     throw new Error('File ID is not Hedera special file');
   }
 
-  const decoded = specialFilesMapping[fileId].protoType?.decode(bytes);
+  const protoType = specialFilesMapping[fileId].protoType;
+  const decoded = protoType.decode(bytes);
 
+  // We a round-trip Protobuf decode/re-encode on the file content. If we do not get the
+  // same result, we add a warning to the contents to warn the user because if typically means
+  // that there are additional or duplicate fields in the Protobuf.
+  // It is in theory possible that this also fails due to a different field order in
+  // encoding -- we would then get a false positive.
+  const hasHiddenData = decoded !== undefined && !reEncodesTo(protoType, decoded, bytes);
+
+  let formatted: string;
   if (decoded instanceof proto.NodeAddressBook) {
-    return stringifyNodeAddressBook(decoded);
+    formatted = stringifyNodeAddressBook(decoded);
   } else if (decoded instanceof proto.CurrentAndNextFeeSchedule) {
-    return stringifyCurrentAndNextFeeSchedule(decoded);
+    formatted = stringifyCurrentAndNextFeeSchedule(decoded);
   } else if (decoded instanceof proto.ExchangeRateSet) {
-    return stringifyExchangeRetSet(decoded);
+    formatted = stringifyExchangeRetSet(decoded);
   } else if (decoded instanceof proto.ServicesConfigurationList) {
-    return stringifyServicesConfigurationList(decoded);
+    formatted = stringifyServicesConfigurationList(decoded);
   } else if (decoded instanceof proto.ThrottleDefinitions) {
-    return stringifyThrottleDefinitions(decoded);
+    formatted = stringifyThrottleDefinitions(decoded);
   } else {
-    return JSON.stringify(decoded, null, 2);
+    formatted = JSON.stringify(decoded, null, 2);
   }
+
+  // Include a warning notice when the decoded view does not account for every byte of the contents.
+  // And display the original content bytes too.
+  const review = {
+    ...JSON.parse(formatted),
+    ...(hasHiddenData
+      ? {
+          warning:
+            'Contents include data not shown above (unknown or duplicate fields, or non-canonical encoding). The exact bytes are listed below.',
+        }
+      : {}),
+    originalBytesHex: Buffer.from(bytes).toString('hex'),
+  };
+
+  return escapeReviewText(JSON.stringify(review, null, 2));
+}
+
+/** Check whether re-encoding the decoded Protobuf reproduces the original bytes, i.e. nothing was dropped. */
+function reEncodesTo(
+  protoType: { encode(message: any): { finish(): Uint8Array } },
+  decoded: unknown,
+  bytes: Uint8Array,
+) {
+  return Buffer.from(protoType.encode(decoded).finish()).equals(Buffer.from(bytes));
+}
+
+/** Keep invisible formatting and non-ASCII characters visible in review text. */
+export function escapeReviewText(text: string): string {
+  return text.replace(
+    /[\x00-\x08\x0B-\x1F\x7F-\uFFFF]/g,
+    character => `\\u${character.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  );
 }
 
 function stringifyNodeAddressBook(nodeAddressBook: proto.INodeAddressBook) {
   const nodeAddressBookFormatted = nodeAddressBook.nodeAddress;
 
   nodeAddressBookFormatted?.forEach(nodeAddress => {
-    if (nodeAddress.nodeCertHash) {
-      // Service Endpoint
-      nodeAddress.serviceEndpoint?.forEach(e => {
-        if (e.ipAddressV4) {
-          e.ipAddressV4 = e.ipAddressV4.join('.') as any;
-        }
-      });
-
-      // Node Cert Hash
-      nodeAddress.nodeCertHash = Buffer.from(nodeAddress.nodeCertHash).toString('utf-8') as any;
-
-      // Node Account ID
-      if (nodeAddress.nodeAccountId) {
-        nodeAddress.nodeAccountId = AccountId._fromProtobuf(
-          nodeAddress.nodeAccountId,
-        ).toString() as any;
+    // Service Endpoint
+    nodeAddress.serviceEndpoint?.forEach(e => {
+      if (e.ipAddressV4) {
+        e.ipAddressV4 = e.ipAddressV4.join('.') as any;
       }
+    });
 
-      // Node Account ID
-      if (nodeAddress.nodeId) {
-        nodeAddress.nodeId = nodeAddress.nodeId.toString() as any;
-      }
+    // Node Cert Hash
+    nodeAddress.nodeCertHash =
+      `0x${Buffer.from(nodeAddress.nodeCertHash ?? []).toString('hex')}` as any;
 
-      // Node Account ID
-      if (nodeAddress.stake) {
-        nodeAddress.stake = nodeAddress.stake.toString() as any;
-      }
+    // Node Account ID
+    if (nodeAddress.nodeAccountId) {
+      nodeAddress.nodeAccountId = AccountId._fromProtobuf(
+        nodeAddress.nodeAccountId,
+      ).toString() as any;
+    }
+
+    // Node Account ID
+    if (nodeAddress.nodeId) {
+      nodeAddress.nodeId = nodeAddress.nodeId.toString() as any;
+    }
+
+    // Node Account ID
+    if (nodeAddress.stake) {
+      nodeAddress.stake = nodeAddress.stake.toString() as any;
     }
   });
 
@@ -215,11 +255,18 @@ function stringifyExchangeRetSet(exchangeRateSet: proto.IExchangeRateSet) {
 function stringifyServicesConfigurationList(
   servicesConfigurationList: proto.IServicesConfigurationList,
 ) {
-  // const nameValues = servicesConfigurationList.nameValue?.map(
-  //   nv => `${nv.name}=${nv.value}${nv.data && nv.data.length > 0 ? ` data=${nv.data}` : ''}`,
-  // );
-  const nameValues = servicesConfigurationList.nameValue?.map(nv => `${nv.name}=${nv.value}`);
-  return nameValues?.join('\n');
+  return JSON.stringify(
+    {
+      nameValue:
+        servicesConfigurationList.nameValue?.map(setting => ({
+          name: setting.name ?? '',
+          value: setting.value ?? '',
+          data: Buffer.from(setting.data ?? []).toString('base64'),
+        })) ?? [],
+    },
+    null,
+    2,
+  );
 }
 
 function stringifyThrottleDefinitions(throttleDefinitions: proto.IThrottleDefinitions) {
@@ -287,7 +334,10 @@ function encodeNodeAddressBook(content: Uint8Array) {
 
       // Node Cert Hash
       if (typeof nodeAddress.nodeCertHash === 'string') {
-        nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(nodeAddress.nodeCertHash, 'utf-8'));
+        const hash = nodeAddress.nodeCertHash as string;
+        nodeAddress.nodeCertHash = new Uint8Array(
+          hash.startsWith('0x') ? Buffer.from(hash.slice(2), 'hex') : Buffer.from(hash, 'utf-8'),
+        );
       }
 
       // Service Endpoints
@@ -330,6 +380,20 @@ function encodeExchangeRates(content: Uint8Array) {
 }
 
 function encodeServicesConfigurationList(content: Uint8Array) {
+  const json = parseBytesToJson<
+    { nameValue?: Array<{ name: string; value: string; data?: string }> } | string
+  >(content);
+  if (typeof json === 'object' && json !== null) {
+    return proto.ServicesConfigurationList.encode(
+      proto.ServicesConfigurationList.create({
+        nameValue: json.nameValue?.map(setting => ({
+          name: setting.name,
+          value: setting.value,
+          data: Buffer.from(setting.data ?? '', 'base64'),
+        })),
+      }),
+    ).finish();
+  }
   let stringContent = Buffer.from(content).toString();
   stringContent = stringContent.slice(1, stringContent.length - 1);
 
