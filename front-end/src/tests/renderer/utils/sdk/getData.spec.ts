@@ -1,7 +1,21 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest';
 
-import { stringifyIpAddressBytes } from '@renderer/utils/sdk/getData';
+import {
+  AccountId,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  FileAppendTransaction,
+  Transaction,
+  TransactionId,
+} from '@hiero-ledger/sdk';
+
+import {
+  getFileCreateTransactionData,
+  getFileUpdateTransactionData,
+  getFileAppendTransactionData,
+  stringifyIpAddressBytes,
+} from '@renderer/utils/sdk/getData';
 
 describe('stringifyIpAddressBytes', () => {
   test('returns empty string for null', () => {
@@ -27,9 +41,7 @@ describe('stringifyIpAddressBytes', () => {
     });
 
     test('formats all-max IPv4 address', () => {
-      expect(stringifyIpAddressBytes(new Uint8Array([255, 255, 255, 255]))).toBe(
-        '255.255.255.255',
-      );
+      expect(stringifyIpAddressBytes(new Uint8Array([255, 255, 255, 255]))).toBe('255.255.255.255');
     });
   });
 
@@ -74,8 +86,8 @@ describe('stringifyIpAddressBytes', () => {
     test('chooses the first run when two runs have equal length', () => {
       // 2001:db8:0:0:1:0:0:1 — two runs of two zeros; first wins → 2001:db8::1:0:0:1
       const bytes = new Uint8Array([
-        0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00,
-        0x00, 0x01,
+        0x20, 0x01, 0x0d, 0xb8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x01,
       ]);
       expect(stringifyIpAddressBytes(bytes)).toBe('2001:db8::1:0:0:1');
     });
@@ -83,10 +95,31 @@ describe('stringifyIpAddressBytes', () => {
     test('omits leading zeros in each group', () => {
       // 0001:0002:0003:0004:0005:0006:0007:0008 → 1:2:3:4:5:6:7:8
       const bytes = new Uint8Array([
-        0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07,
-        0x00, 0x08,
+        0x00, 0x01, 0x00, 0x02, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0x00, 0x06, 0x00, 0x07, 0x00,
+        0x08,
       ]);
       expect(stringifyIpAddressBytes(bytes)).toBe('1:2:3:4:5:6:7:8');
     });
+  });
+});
+
+describe('file draft contents', () => {
+  test.each([
+    ['create', FileCreateTransaction, getFileCreateTransactionData],
+    ['update', FileUpdateTransaction, getFileUpdateTransactionData],
+    ['append', FileAppendTransaction, getFileAppendTransactionData],
+  ] as const)('preserves binary bytes when restoring %s', (_name, TransactionClass, getData) => {
+    const contents = Uint8Array.of(0x0a, 0x00, 0xff, 0xfe, 0x80);
+    const transaction = new TransactionClass()
+      .setContents(contents)
+      .setTransactionId(TransactionId.generate('0.0.1234'))
+      .setNodeAccountIds([AccountId.fromString('0.0.3')])
+      .freeze();
+    const restored = getData(Transaction.fromBytes(transaction.toBytes()));
+    expect(restored.contents).toBeInstanceOf(Uint8Array);
+    expect(Array.from(restored.contents as Uint8Array)).toEqual(Array.from(contents));
+    expect(Array.from(new TransactionClass().setContents(restored.contents!).contents!)).toEqual(
+      Array.from(contents),
+    );
   });
 });

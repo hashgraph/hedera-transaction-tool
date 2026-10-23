@@ -60,18 +60,16 @@ describe('FileContentFormData', () => {
       expect(manualTextarea.element.value).toBe(draftContents);
     });
 
-    test('does not restore Uint8Array contents as uploaded file state', async () => {
+    test('decodes restored Uint8Array contents from a special-file draft', async () => {
       const wrapper = mount(FileContentFormData, {
         props: { fileId: '0.0.101', contents: BIN_BYTES },
       });
 
       await flushPromises();
 
-      expect(decodeProtoMock).not.toHaveBeenCalled();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
-      expect(
-        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
-      ).toBe('');
+      expect(decodeProtoMock).toHaveBeenCalledWith('0.0.101', BIN_BYTES);
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(DECODED_PROTO_JSON);
+      expect(wrapper.emitted('update:contents')).toBeUndefined();
     });
 
     test('does not emit restored Uint8Array contents from props', async () => {
@@ -82,10 +80,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(wrapper.emitted('update:contents')).toBeUndefined();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
-      expect(
-        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
-      ).toBe('');
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe('hello');
     });
 
     test('clears displayed content when persisted contents are null', async () => {
