@@ -55,6 +55,8 @@ import type {
   TransferHbarData,
 } from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
+import { isHederaSpecialFileId } from '@shared/hederaSpecialFiles';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
 
 export type ExtendedTransactionData = TransactionCommonData &
@@ -163,6 +165,38 @@ export const getAccountDeleteData = (transaction: AccountDeleteTransaction): Acc
   };
 };
 
+// Serialized transactions do not retain whether contents were typed or uploaded.
+// Restore editable text only when the textarea can preserve every original byte.
+function restoreFileContents(contents: Uint8Array | null, fileId?: string): Uint8Array | string {
+  if (!contents?.length) return '';
+  if (contents.length > DISPLAY_FILE_SIZE_LIMIT) return contents;
+
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(contents);
+    // Textareas normalize carriage returns; other control bytes indicate binary content.
+    if (/[\x00-\x08\x0B-\x1F\x7F]|\p{Cf}/u.test(text)) return contents;
+    const encoded = new TextEncoder().encode(text);
+    if (
+      encoded.length === contents.length &&
+      encoded.every((byte, index) => byte === contents[index])
+    ) {
+      if (isHederaSpecialFileId(fileId)) {
+        // Draft saving precedes protobuf encoding. Manually entered special-file
+        // JSON is therefore still UTF-8 text, while uploaded protobuf stays binary.
+        const json = JSON.parse(text);
+        const isJsonObject = json !== null && typeof json === 'object' && !Array.isArray(json);
+        const isSettingsString =
+          (fileId === '0.0.121' || fileId === '0.0.122') && typeof json === 'string';
+        if (!isJsonObject && !isSettingsString) return contents;
+      }
+      return text;
+    }
+  } catch {
+    // Invalid UTF-8 or special-file JSON must remain binary rather than acquire replacement characters.
+  }
+  return contents;
+}
+
 export const getFileInfoTransactionData = (
   transaction: FileCreateTransaction | FileUpdateTransaction,
 ): FileData => {
@@ -179,7 +213,10 @@ export const getFileInfoTransactionData = (
   }
   return {
     ownerKey: transaction.keys ? new KeyList(transaction.keys) : null,
-    contents: transaction.contents ?? '',
+    contents: restoreFileContents(
+      transaction.contents,
+      transaction instanceof FileUpdateTransaction ? transaction.fileId?.toString() : undefined,
+    ),
     fileMemo: transaction.fileMemo || '',
     expirationTime,
   };
@@ -201,7 +238,7 @@ export const getFileAppendTransactionData = (transaction: FileAppendTransaction)
     fileId: transaction.fileId?.toString() || '',
     chunkSize: transaction.chunkSize || 0,
     maxChunks: transaction.maxChunks || 9999999999999,
-    contents: transaction.contents ?? '',
+    contents: restoreFileContents(transaction.contents, transaction.fileId?.toString()),
   };
 };
 

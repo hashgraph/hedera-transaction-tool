@@ -123,3 +123,35 @@ describe('file draft contents', () => {
     );
   });
 });
+
+describe('lossless file draft restoration', () => {
+  test.each([
+    ['invalid UTF-8', Uint8Array.of(0xff, 0xfe, 0x80)],
+    ['embedded null', new TextEncoder().encode('hello\0world')],
+    ['carriage returns', new TextEncoder().encode('hello\r\nworld')],
+    ['UTF-8 BOM', Uint8Array.of(0xef, 0xbb, 0xbf, 0x68, 0x69)],
+  ])('retains original bytes for %s', (_name, contents) => {
+    for (const [TransactionClass, getData] of [
+      [FileCreateTransaction, getFileCreateTransactionData],
+      [FileUpdateTransaction, getFileUpdateTransactionData],
+      [FileAppendTransaction, getFileAppendTransactionData],
+    ] as const) {
+      const restored = getData(new TransactionClass().setContents(contents));
+      expect(restored.contents).toBeInstanceOf(Uint8Array);
+      expect(Array.from(restored.contents as Uint8Array)).toEqual(Array.from(contents));
+    }
+  });
+
+  test.each([
+    [FileUpdateTransaction, getFileUpdateTransactionData],
+    [FileAppendTransaction, getFileAppendTransactionData],
+  ] as const)(
+    'retains special-file bytes even when they resemble printable text (%s)',
+    (TransactionClass, getData) => {
+      const contents = new TextEncoder().encode('hello');
+      const restored = getData(new TransactionClass().setFileId('0.0.101').setContents(contents));
+      expect(restored.contents).toBeInstanceOf(Uint8Array);
+      expect(Array.from(restored.contents as Uint8Array)).toEqual(Array.from(contents));
+    },
+  );
+});
