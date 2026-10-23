@@ -199,6 +199,10 @@ export function stringifyHbarOrTinybar(hbar: Hbar): string {
  * Detached copies of what the user is about to sign. Server pushes can replace the reactive
  * transaction or group while a modal is open; signing a snapshot taken when the user clicks Sign
  * means we only sign what was checked and shown.
+ *
+ * These are shallow copies, which is enough because signing only uses `transactionBytes` (an
+ * immutable string, parsed at sign time) and the transaction id. Nested fields such as signers
+ * are still shared with the live object and must not be relied on for signing.
  */
 export function snapshotTransaction<T extends ITransaction>(tx: T): T {
   return { ...toRaw(tx) };
