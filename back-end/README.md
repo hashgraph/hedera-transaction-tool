@@ -20,7 +20,7 @@ To setup the frontend application, Follow the complete setup process below..
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
 
-  - Required version: `>= 24.20.0 <25`
+  - Required version: `>= 24.22.1 <25`
   - Verify installation:
 
     ```bash
