@@ -1,6 +1,19 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
+import {
+  AccountId,
+  FileCreateTransaction,
+  FileUpdateTransaction,
+  FileAppendTransaction,
+  Transaction,
+  TransactionId,
+} from '@hiero-ledger/sdk';
+import {
+  getFileCreateTransactionData,
+  getFileUpdateTransactionData,
+  getFileAppendTransactionData,
+} from '@renderer/utils/sdk/getData';
 
 import FileContentFormData from '@renderer/components/Transaction/Create/FileData/FileContentFormData.vue';
 
@@ -42,6 +55,65 @@ describe('FileContentFormData', () => {
   });
 
   describe('persisted contents props', () => {
+    test.each([
+      ['create', FileCreateTransaction, getFileCreateTransactionData],
+      ['update', FileUpdateTransaction, getFileUpdateTransactionData],
+      ['append', FileAppendTransaction, getFileAppendTransactionData],
+    ] as const)(
+      'restores serialized %s text drafts in editable mode',
+      async (_name, TransactionClass, getData) => {
+        const contents = 'hello\nHedera café 🌍';
+        const transaction = new TransactionClass()
+          .setContents(contents)
+          .setTransactionId(TransactionId.generate('0.0.1234'))
+          .setNodeAccountIds([AccountId.fromString('0.0.3')])
+          .freeze();
+        const restored = getData(Transaction.fromBytes(transaction.toBytes()));
+        const wrapper = mount(FileContentFormData, {
+          props: { fileId: '0.0.12345', contents: restored.contents },
+        });
+        await flushPromises();
+
+        const textarea = wrapper.get<HTMLTextAreaElement>('[data-testid="textarea-file-content"]');
+        expect(textarea.element.disabled).toBe(false);
+        expect(textarea.element.value).toBe(contents);
+        expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+        expect(wrapper.emitted('update:contents')).toBeUndefined();
+
+        await textarea.setValue('edited contents');
+        expect(wrapper.emitted('update:contents')?.at(-1)).toEqual(['edited contents']);
+      },
+    );
+
+    test.each([
+      ['update', FileUpdateTransaction, getFileUpdateTransactionData],
+      ['append', FileAppendTransaction, getFileAppendTransactionData],
+    ] as const)('restores manually entered special-file JSON in a serialized %s draft', async (_name, TransactionClass, getData) => {
+      const contents = '{\n  "nodeAddress": [{"nodeId": "1", "nodeAccountId": "0.0.3"}]\n}';
+      const transaction = new TransactionClass()
+        .setFileId('0.0.101')
+        .setContents(contents)
+        .setTransactionId(TransactionId.generate('0.0.1234'))
+        .setNodeAccountIds([AccountId.fromString('0.0.3')])
+        .freeze();
+      const restored = getData(Transaction.fromBytes(transaction.toBytes()));
+      const wrapper = mount(FileContentFormData, { props: { fileId: '', contents: '' } });
+      // Draft data arrives after the initially empty form has mounted.
+      await wrapper.setProps({ fileId: restored.fileId, contents: restored.contents });
+      await flushPromises();
+
+      const textarea = wrapper.get<HTMLTextAreaElement>('[data-testid="textarea-file-content"]');
+      expect(textarea.element.disabled).toBe(false);
+      expect(textarea.element.value).toBe(contents);
+      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
+      expect(decodeProtoMock).not.toHaveBeenCalled();
+      expect(new TextEncoder().encode(restored.contents as string)).toEqual(new TextEncoder().encode(contents));
+
+      const edited = '{"nodeAddress": []}';
+      await textarea.setValue(edited);
+      expect(wrapper.emitted('update:contents')?.at(-1)).toEqual([edited]);
+    });
+
     test('displays existing string file content loaded from a pre-existing draft', async () => {
       const draftContents = 'persisted text contents from draft';
 
@@ -60,18 +132,16 @@ describe('FileContentFormData', () => {
       expect(manualTextarea.element.value).toBe(draftContents);
     });
 
-    test('does not restore Uint8Array contents as uploaded file state', async () => {
+    test('decodes restored Uint8Array contents from a special-file draft', async () => {
       const wrapper = mount(FileContentFormData, {
         props: { fileId: '0.0.101', contents: BIN_BYTES },
       });
 
       await flushPromises();
 
-      expect(decodeProtoMock).not.toHaveBeenCalled();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
-      expect(
-        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
-      ).toBe('');
+      expect(decodeProtoMock).toHaveBeenCalledWith('0.0.101', BIN_BYTES);
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe(DECODED_PROTO_JSON);
+      expect(wrapper.emitted('update:contents')).toBeUndefined();
     });
 
     test('does not emit restored Uint8Array contents from props', async () => {
@@ -82,10 +152,7 @@ describe('FileContentFormData', () => {
       await flushPromises();
 
       expect(wrapper.emitted('update:contents')).toBeUndefined();
-      expect(wrapper.find('[data-testid="textarea-file-read-content"]').exists()).toBe(false);
-      expect(
-        wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
-      ).toBe('');
+      expect(wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-read-content"]').element.value).toBe('hello');
     });
 
     test('clears displayed content when persisted contents are null', async () => {

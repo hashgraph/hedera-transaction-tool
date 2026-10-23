@@ -44,8 +44,8 @@ const displayedFileText = computedAsync(async () => {
 }, null);
 
 /* Watchers */
-watch(file, () => {
-  manualContent.value = '';
+watch(file, value => {
+  if (value) manualContent.value = '';
 });
 watch(
   () => props.fileId,
@@ -57,10 +57,9 @@ watch(
   },
 );
 watch([file, manualContent], () => {
-  emit(
-    'update:contents',
-    manualContent.value.length > 0 ? manualContent.value : file.value?.content || null,
-  );
+  const contents =
+    manualContent.value.length > 0 ? manualContent.value : file.value?.content || null;
+  if (contents !== props.contents) emit('update:contents', contents);
 });
 
 watch(
@@ -73,9 +72,15 @@ watch(
       manualContent.value = contents;
       file.value = null;
     } else {
-      // contents is Uint8Array, meaning user has uploaded a file
       manualContent.value = '';
-      // we don't set file.value here because the file is already set when user uploads a file
+      if (file.value?.content !== contents) {
+        // Drafts retain the bytes but do not retain the original upload's filename.
+        file.value = {
+          meta: new File([new Uint8Array(contents)], 'Restored contents.bin'),
+          content: contents,
+          loadPercentage: 100,
+        };
+      }
     }
   },
   { immediate: true },
