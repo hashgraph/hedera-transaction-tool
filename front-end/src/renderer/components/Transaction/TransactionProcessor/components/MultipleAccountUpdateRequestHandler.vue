@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { freeze } from '@renderer/services/transactionService';
 import {
   MultipleAccountUpdateRequest,
   TransactionRequest,
@@ -268,9 +269,15 @@ async function signGroupItems(groupItems: GroupItem[], description: string) {
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
+  /* Freezes each transaction so the creator signs the exact bytes the server will store */
+  const frozenItems: GroupItem[] = [];
+  for (const item of groupItems) {
+    frozenItems.push({ ...item, transactionBytes: await freeze(item.transactionBytes) });
+  }
+
   await submitGroup(
-    groupItems,
-    groupItems.map(g => uint8ToHex(privateKey.sign(g.transactionBytes))),
+    frozenItems,
+    frozenItems.map(g => uint8ToHex(privateKey.sign(g.transactionBytes))),
     keyToSignWith,
     description,
   );

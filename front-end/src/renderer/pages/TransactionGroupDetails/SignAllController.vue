@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
   collectMissingKeys,
   collectRequiredKeys,
   signItems,
+  snapshotGroup,
 } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
@@ -34,14 +35,32 @@ const user = useUserStore();
 
 /* State */
 const progressText = ref<string>('');
+// Snapshot taken when signing is initiated. A server push can replace props.groupOrId
+// while the password modal is open; we only ever sign what the user was looking at.
+let groupToSign: IGroup | number | null = null;
+
+/* Watchers */
+watch(
+  activate,
+  value => {
+    if (value) {
+      const current = props.groupOrId;
+      groupToSign =
+        current !== null && typeof current === 'object' ? snapshotGroup(current) : current;
+    }
+  },
+  { flush: 'sync' },
+);
 
 /* Handlers */
 const handleSignAll = async (userPersonalPassword: string | null): Promise<ActionReport | null> => {
   let result: ActionReport | null = null;
-  if (props.groupOrId !== null) {
-    const groupId = typeof props.groupOrId == 'number' ? props.groupOrId : props.groupOrId.id;
+  const target = groupToSign;
+  groupToSign = null;
+  if (target !== null) {
+    const groupId = typeof target == 'number' ? target : target.id;
     try {
-      result = await performSignAll(userPersonalPassword);
+      result = await performSignAll(target, userPersonalPassword);
     } finally {
       await props.callback(groupId, result === null);
     }
@@ -52,21 +71,22 @@ const handleSignAll = async (userPersonalPassword: string | null): Promise<Actio
 };
 
 const performSignAll = async (
+  groupOrId: IGroup | number | null,
   userPersonalPassword: string | null,
 ): Promise<ActionReport | null> => {
   let result: ActionReport | null;
 
   progressText.value = '';
-  if (props.groupOrId !== null) {
+  if (groupOrId !== null) {
     // 1) fetches group items (if needed)
     let group: IGroup;
-    if (typeof props.groupOrId === 'number') {
+    if (typeof groupOrId === 'number') {
       assertIsLoggedInOrganization(user.selectedOrganization);
       const serverUrl = user.selectedOrganization.serverUrl;
       progressText.value = 'Loading group items…';
-      group = await getTransactionGroupById(serverUrl, props.groupOrId);
+      group = await getTransactionGroupById(serverUrl, groupOrId);
     } else {
-      group = props.groupOrId;
+      group = groupOrId;
     }
 
     // 2) collects required keys for signable transactions only

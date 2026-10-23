@@ -26,6 +26,14 @@ export class TransactionDto {
   @Expose()
   transactionBytes!: Buffer;
 
+  /**
+   * The transaction bytes as created, before anyone added signatures. These are the bytes the
+   * creator `signature` is made over.
+   */
+  @Transform(({ obj }) => obj.unsignedTransactionBytes?.toString('hex'))
+  @Expose()
+  unsignedTransactionBytes!: Buffer;
+
   @Expose()
   status!: TransactionStatus;
 

@@ -10,14 +10,17 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import {
   assertIsLoggedInOrganization,
+  getCreatorSignatureStatus,
   getStatusFromCode,
   hexToUint8Array,
+  isLoggedInOrganization,
   isSignableTransaction,
 } from '@renderer/utils';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import useNetwork from '@renderer/stores/storeNetwork.ts';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import useRevealed from '@renderer/composables/useRevealed.ts';
+import CreatorSignaturePill from '@renderer/components/CreatorSignaturePill.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 
 /* Props */
@@ -44,6 +47,12 @@ const canSign = ref(false);
 const container = ref<HTMLElement | null>(null);
 
 /* Computed */
+const creatorSignatureStatus = computed(() =>
+  isLoggedInOrganization(user.selectedOrganization)
+    ? getCreatorSignatureStatus(props.groupItem.transaction, user.selectedOrganization.userKeys)
+    : 'verified',
+);
+
 const itemStatusBadgeClass = computed((): string => {
   let result: string;
   const status = props.groupItem.transaction.status;
@@ -171,6 +180,7 @@ useRevealed(container, () => {
     <td>
       <span class="text-bold">{{ transactionType }}</span>
       <span v-if="props.groupItem.transaction.isManual" class="badge bg-info ms-3">Manual</span>
+      <CreatorSignaturePill :status="creatorSignatureStatus" class="ms-2" />
       <div
         v-if="transactionSummary"
         class="text-small mt-1 transfer-summary"

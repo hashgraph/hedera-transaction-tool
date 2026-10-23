@@ -21,7 +21,7 @@ import useTransactionGroupStore from '@renderer/stores/storeTransactionGroup';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 
-import { execute, signTransaction, storeTransaction } from '@renderer/services/transactionService';
+import { execute, freeze, signTransaction, storeTransaction } from '@renderer/services/transactionService';
 import { decryptPrivateKey, flattenKeyList } from '@renderer/services/keyPairService';
 import { deleteDraft } from '@renderer/services/transactionDraftsService';
 import { addGroupItem, editGroupItem } from '@renderer/services/transactionGroupsService';
@@ -307,21 +307,24 @@ async function sendSignedTransactionsToOrganization() {
   /* Verifies there is actual transaction to process */
   if (!transactionGroup.groupItems[0].transactionBytes) throw new Error('No Transactions provided');
 
-  /* User Serializes each Transaction */
-  const groupBytesHex = new Array<string>();
+  /* Freezes each transaction so the creator signs the exact bytes the server will store */
+  const frozenBytes = new Array<Uint8Array>();
   for (const groupItem of transactionGroup.groupItems) {
-    groupBytesHex.push(uint8ToHex(groupItem.transactionBytes));
+    frozenBytes.push(await freeze(groupItem.transactionBytes));
   }
 
-  /* Signs the unfrozen transaction */
+  /* User Serializes each Transaction */
+  const groupBytesHex = frozenBytes.map(bytes => uint8ToHex(bytes));
+
+  /* Signs the frozen transaction */
   const keyToSignWith = user.keyPairs[0].public_key;
 
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, personalPassword, keyToSignWith);
   const privateKey = getPrivateKey(keyToSignWith, privateKeyRaw);
 
   const groupSignatureHex = new Array<string>();
-  for (const groupItem of transactionGroup.groupItems) {
-    groupSignatureHex.push(uint8ToHex(privateKey.sign(groupItem.transactionBytes)));
+  for (const bytes of frozenBytes) {
+    groupSignatureHex.push(uint8ToHex(privateKey.sign(bytes)));
   }
 
   /* Submit transactions to the back end */

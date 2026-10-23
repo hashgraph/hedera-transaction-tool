@@ -1,6 +1,14 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import useUserStore from '@renderer/stores/storeUser.ts';
+import {
+  assertIsLoggedInOrganization,
+  getGroupCreatorSignatureStatus,
+  type CreatorSignatureStatus,
+} from '@renderer/utils';
+import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import CreatorSignatureConfirmModal from '@renderer/components/CreatorSignatureConfirmModal.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 
 /* Props */
@@ -13,12 +21,30 @@ const emit = defineEmits<{
   (event: 'transactionGroupSigned', payload: { groupId: number; signed: boolean }): void;
 }>();
 
+/* Stores */
+const user = useUserStore();
+
 /* State */
 const signAllStarted = ref<boolean>(false);
+const showUnverifiedConfirm = ref(false);
+const creatorSignatureStatus = ref<CreatorSignatureStatus>('verified');
+const group = ref<IGroup | null>(null);
 
 /* Handlers */
-const handleClick = () => {
-  signAllStarted.value = true;
+const handleClick = async () => {
+  assertIsLoggedInOrganization(user.selectedOrganization);
+
+  group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, props.groupId);
+  creatorSignatureStatus.value = getGroupCreatorSignatureStatus(
+    group.value,
+    user.selectedOrganization.userKeys,
+  );
+
+  if (creatorSignatureStatus.value === 'verified') {
+    signAllStarted.value = true;
+  } else {
+    showUnverifiedConfirm.value = true;
+  }
 };
 
 const didSignAll = async (groupId: number, signed: boolean) => {
@@ -39,9 +65,15 @@ const didSignAll = async (groupId: number, signed: boolean) => {
     Sign All
   </AppButton>
 
+  <CreatorSignatureConfirmModal
+    v-model:show="showUnverifiedConfirm"
+    group
+    :status="creatorSignatureStatus"
+    :callback="() => (signAllStarted = true)"
+  />
   <SignAllController
     v-model:activate="signAllStarted"
-    :groupOrId="props.groupId"
+    :groupOrId="group ?? props.groupId"
     :callback="didSignAll"
   />
 </template>

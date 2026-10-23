@@ -1,9 +1,14 @@
 <script lang="ts" setup>
 import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
-import { assertIsLoggedInOrganization } from '@renderer/utils';
+import {
+  assertIsLoggedInOrganization,
+  getCreatorSignatureStatus,
+  type CreatorSignatureStatus,
+} from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import CreatorSignatureConfirmModal from '@renderer/components/CreatorSignatureConfirmModal.vue';
 import SignTransactionController from '@renderer/pages/TransactionDetails/SignTransactionController.vue';
 import type { ITransactionFull } from '@shared/interfaces';
 
@@ -27,6 +32,8 @@ const user = useUserStore();
 /* State */
 const signStarted = ref<boolean>(false);
 const transaction = ref<ITransactionFull | null>(null);
+const showUnverifiedConfirm = ref(false);
+const creatorSignatureStatus = ref<CreatorSignatureStatus>('verified');
 
 /* Handlers */
 const handleClick = async () => {
@@ -37,7 +44,16 @@ const handleClick = async () => {
     user.selectedOrganization.serverUrl,
   );
 
-  signStarted.value = true;
+  creatorSignatureStatus.value = getCreatorSignatureStatus(
+    transaction.value,
+    user.selectedOrganization.userKeys,
+  );
+
+  if (creatorSignatureStatus.value === 'verified') {
+    signStarted.value = true;
+  } else {
+    showUnverifiedConfirm.value = true;
+  }
 };
 
 const didSign = async (signed: boolean) => {
@@ -68,6 +84,11 @@ const didSign = async (signed: boolean) => {
     Sign
   </AppButton>
 
+  <CreatorSignatureConfirmModal
+    v-model:show="showUnverifiedConfirm"
+    :status="creatorSignatureStatus"
+    :callback="() => (signStarted = true)"
+  />
   <SignTransactionController
     v-model:activate="signStarted"
     :callback="didSign"

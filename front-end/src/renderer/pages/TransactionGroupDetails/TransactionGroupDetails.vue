@@ -27,6 +27,9 @@ import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 import {
   assertIsLoggedInOrganization,
+  getGroupCreatorSignatureStatus,
+  snapshotGroup,
+  type CreatorSignatureStatus,
   hexToUint8Array,
   isLoggedInOrganization,
   isSignableTransaction,
@@ -44,6 +47,7 @@ import BreadCrumb from '@renderer/components/BreadCrumb.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards.ts';
 import TransactionGroupRow from '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue';
+import CreatorSignatureConfirmModal from '@renderer/components/CreatorSignatureConfirmModal.vue';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelAllController.vue';
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
@@ -136,6 +140,10 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 });
 
 const signAllStarted = ref(false);
+const showUnverifiedSignConfirm = ref(false);
+/* Taken when the user clicks Sign All: what gets checked, shown in the warning and signed */
+const groupToSign = ref<IGroup | null>(null);
+const signCreatorSignatureStatus = ref<CreatorSignatureStatus>('verified');
 const goNextAfterSignAll = ref(false);
 const cancelAllStarted = ref(false);
 const exportAllStarted = ref(false);
@@ -268,8 +276,20 @@ const handleAction = async (value: ActionButton) => {
       break;
     case sign:
     case signAndNext:
-      signAllStarted.value = true;
       goNextAfterSignAll.value = value === signAndNext;
+      if (group.value !== null) {
+        assertIsLoggedInOrganization(user.selectedOrganization);
+        groupToSign.value = snapshotGroup(group.value);
+        signCreatorSignatureStatus.value = getGroupCreatorSignatureStatus(
+          groupToSign.value,
+          user.selectedOrganization.userKeys,
+        );
+      }
+      if (signCreatorSignatureStatus.value === 'verified') {
+        signAllStarted.value = true;
+      } else {
+        showUnverifiedSignConfirm.value = true;
+      }
       break;
     case cancel:
       cancelAllStarted.value = true;
@@ -540,10 +560,16 @@ async function fetchGroupOnNotif(groupId: string | number) {
               :callback="fetchGroup"
               :groupOrId="group"
             />
+            <CreatorSignatureConfirmModal
+              v-model:show="showUnverifiedSignConfirm"
+              group
+              :status="signCreatorSignatureStatus"
+              :callback="() => (signAllStarted = true)"
+            />
             <SignAllController
               v-model:activate="signAllStarted"
               :callback="didSignAll"
-              :groupOrId="group"
+              :groupOrId="groupToSign"
             />
             <ExportAllController
               v-model:activate="exportAllStarted"

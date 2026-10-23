@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed } from 'vue';
+import { computed, watch } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
@@ -7,6 +7,7 @@ import {
   collectMissingKeys,
   collectRequiredKeys,
   signItems,
+  snapshotTransaction,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
@@ -32,6 +33,22 @@ const user = useUserStore();
 const appCache = AppCache.inject();
 const toastManager = ToastManager.inject();
 
+/* State */
+// Snapshot taken when signing is initiated. A server push can replace props.transaction
+// while the password modal is open; we only ever sign what the user was looking at.
+let transactionToSign: ITransactionFull | null = null;
+
+/* Watchers */
+watch(
+  activate,
+  value => {
+    if (value) {
+      transactionToSign = props.transaction ? snapshotTransaction(props.transaction) : null;
+    }
+  },
+  { flush: 'sync' },
+);
+
 /* Computed */
 const progressText = computed(() =>
   props.transaction ? `Signing transaction ${props.transaction.transactionId}` : '',
@@ -41,19 +58,20 @@ const progressText = computed(() =>
 const handleSign = async (personalPassword: string | null): Promise<ActionReport | null> => {
   let result: ActionReport | null = null;
   try {
-    if (props.transaction !== null) {
-      result = await performSign(props.transaction, personalPassword);
+    if (transactionToSign !== null) {
+      result = await performSign(transactionToSign, personalPassword);
     } else {
       result = makeBugReport('Sign', 'Cannot sign: transaction is undefined');
     }
   } finally {
     // We clear transaction cache
-    if (props.transaction && user.selectedOrganization) {
+    if (transactionToSign && user.selectedOrganization) {
       appCache.backendTransaction.forgetTransaction(
-        props.transaction,
+        transactionToSign,
         user.selectedOrganization.serverUrl,
       );
     }
+    transactionToSign = null;
     await props.callback(result === null);
   }
   return result;

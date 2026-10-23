@@ -5,6 +5,8 @@ import { setActivePinia, createPinia } from 'pinia';
 
 const mocks = vi.hoisted(() => ({
   getPasswordAsync: vi.fn(),
+  sign: vi.fn(() => new Uint8Array([0xab])),
+  freeze: vi.fn(async (bytes: Uint8Array) => bytes),
 }));
 
 vi.mock('@renderer/composables/usePersonalPassword', () => ({
@@ -19,6 +21,10 @@ vi.mock('@renderer/services/organization', () => ({
   submitTransaction: vi.fn(),
   addObservers: vi.fn().mockResolvedValue(undefined),
   addApprovers: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('@renderer/services/transactionService', () => ({
+  freeze: mocks.freeze,
 }));
 
 vi.mock('@renderer/composables/useDraft', () => ({
@@ -39,8 +45,8 @@ vi.mock('@renderer/utils', async importOriginal => {
     ...actual,
     assertIsLoggedInOrganization: vi.fn(),
     assertUserLoggedIn: vi.fn(),
-    getPrivateKey: vi.fn(() => ({ sign: () => new Uint8Array([0xab]) })),
-    uint8ToHex: vi.fn(() => 'hex'),
+    getPrivateKey: vi.fn(() => ({ sign: mocks.sign })),
+    uint8ToHex: vi.fn((bytes: Uint8Array) => Array.from(bytes).join(',')),
   };
 });
 
@@ -107,6 +113,40 @@ describe('OrganizationRequestHandler.vue', () => {
     // Simulates a password already cached from a prior prompt, so signing
     // proceeds without needing the modal by default.
     mocks.getPasswordAsync.mockReset().mockResolvedValue('password');
+    mocks.sign.mockClear();
+    mocks.freeze.mockReset().mockImplementation(async (bytes: Uint8Array) => bytes);
+  });
+
+  describe('freeze before signing', () => {
+    test('signs and submits the frozen bytes, not the original ones', async () => {
+      const original = new Uint8Array([0]);
+      const frozen = new Uint8Array([9, 9, 9]);
+      mocks.freeze.mockResolvedValue(frozen);
+      submitTransactionMock.mockResolvedValue({ id: 1, transactionBytes: 'b' });
+
+      const wrapper = mountHandler();
+      await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
+        buildRequest(),
+      );
+
+      expect(mocks.freeze).toHaveBeenCalledWith(original);
+      expect(mocks.sign).toHaveBeenCalledWith(frozen);
+      // args: serverUrl, name, description, transactionBytes (hex), network, signature
+      expect(submitTransactionMock.mock.calls[0][3]).toBe('9,9,9');
+    });
+
+    test('does not submit when freezing fails', async () => {
+      const err = new Error('freeze failed');
+      mocks.freeze.mockRejectedValue(err);
+
+      const wrapper = mountHandler();
+      await expect(
+        (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(buildRequest()),
+      ).rejects.toBe(err);
+
+      expect(mocks.sign).not.toHaveBeenCalled();
+      expect(submitTransactionMock).not.toHaveBeenCalled();
+    });
   });
 
   describe('happy path', () => {

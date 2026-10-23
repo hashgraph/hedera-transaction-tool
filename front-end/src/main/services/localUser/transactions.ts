@@ -86,7 +86,9 @@ export const getClient = () => {
 export const freezeTransaction = async (transactionBytes: Uint8Array) => {
   const transaction = Transaction.fromBytes(transactionBytes);
 
-  transaction.freezeWith(client);
+  if (!transaction.isFrozen()) {
+    transaction.freezeWith(client);
+  }
 
   return transaction.toBytes();
 };
