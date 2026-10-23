@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import type {
-  ComponentServiceEndpoint,
-  NodeUpdateData,
-} from '@renderer/utils/sdk/createTransactions';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-
 import { computed, reactive, ref, watch } from 'vue';
-import { NodeUpdateTransaction, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { NodeUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
-import { createNodeUpdateTransaction } from '@renderer/utils/sdk/createTransactions';
+import {
+  type ComponentServiceEndpoint,
+  createNodeUpdateTransaction,
+  type NodeUpdateData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk/createTransactions';
 import { compareKeys, getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -26,7 +26,7 @@ const nodeData = useNodeId();
 const newNodeAccountData = useAccountId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<NodeUpdateData>({
   nodeAccountId: '',
@@ -43,17 +43,6 @@ const data = reactive<NodeUpdateData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createNodeUpdateTransaction(
-      {
-        ...common,
-        ...(data as NodeUpdateData),
-      },
-      nodeData.nodeInfo?.value || null,
-    );
-});
-
 const hasAnyChange = computed(() => {
   const nodeInfo = nodeData.nodeInfo?.value || null;
   if (!nodeInfo) return false;
@@ -94,7 +83,17 @@ const createDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): NodeUpdateTransaction => {
+  return createNodeUpdateTransaction(
+    {
+      ...commonData,
+      ...(data as NodeUpdateData),
+    },
+    nodeData.nodeInfo?.value || null,
+  );
+};
+
+const handleDraftLoaded = (transaction: NodeUpdateTransaction) => {
   if (transaction instanceof NodeUpdateTransaction) {
     if (transaction.nodeId) {
       nodeData.nodeId.value = transaction.nodeId.toNumber();
@@ -155,6 +154,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="NodeUpdateTransaction"
     :create-transaction="createTransaction"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

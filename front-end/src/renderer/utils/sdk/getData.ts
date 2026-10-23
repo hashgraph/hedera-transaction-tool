@@ -124,16 +124,14 @@ const getAccountData = (transaction: Transaction): AccountData => {
   };
 };
 
-export const getAccountCreateData = (transaction: Transaction): AccountCreateData => {
-  assertTransactionType(transaction, AccountCreateTransaction);
+export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
   return {
     initialBalance: transaction.initialBalance || new Hbar(0),
     ...getAccountData(transaction),
   };
 };
 
-export const getAccountUpdateData = (transaction: Transaction): AccountUpdateData => {
-  assertTransactionType(transaction, AccountUpdateTransaction);
+export const getAccountUpdateData = (transaction: AccountUpdateTransaction): AccountUpdateData => {
   return {
     accountId: transaction.accountId?.toString() || '',
     ...getAccountData(transaction),
@@ -141,9 +139,8 @@ export const getAccountUpdateData = (transaction: Transaction): AccountUpdateDat
 };
 
 export const getApproveHbarAllowanceTransactionData = (
-  transaction: Transaction,
+  transaction: AccountAllowanceApproveTransaction,
 ): ApproveHbarAllowanceData => {
-  assertTransactionType(transaction, AccountAllowanceApproveTransaction);
   if (transaction.hbarApprovals.length > 0) {
     const hbarApproval = transaction.hbarApprovals[0];
     return {
@@ -159,21 +156,16 @@ export const getApproveHbarAllowanceTransactionData = (
   };
 };
 
-export const getAccountDeleteData = (transaction: Transaction): AccountDeleteData => {
-  assertTransactionType(transaction, AccountDeleteTransaction);
+export const getAccountDeleteData = (transaction: AccountDeleteTransaction): AccountDeleteData => {
   return {
     accountId: transaction.accountId?.toString() || '',
     transferAccountId: transaction.transferAccountId?.toString() || '',
   };
 };
 
-export const getFileInfoTransactionData = (transaction: Transaction): FileData => {
-  if (
-    !(transaction instanceof FileCreateTransaction) &&
-    !(transaction instanceof FileUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+export const getFileInfoTransactionData = (
+  transaction: FileCreateTransaction | FileUpdateTransaction,
+): FileData => {
   let expirationTime: Date | null = null;
 
   if (transaction.expirationTime) {
@@ -193,20 +185,18 @@ export const getFileInfoTransactionData = (transaction: Transaction): FileData =
   };
 };
 
-export const getFileCreateTransactionData = (transaction: Transaction): FileCreateData => {
+export const getFileCreateTransactionData = (transaction: FileCreateTransaction): FileCreateData => {
   return getFileInfoTransactionData(transaction);
 };
 
-export const getFileUpdateTransactionData = (transaction: Transaction): FileUpdateData => {
-  assertTransactionType(transaction, FileUpdateTransaction);
+export const getFileUpdateTransactionData = (transaction: FileUpdateTransaction): FileUpdateData => {
   return {
     fileId: transaction.fileId?.toString() || '',
     ...getFileInfoTransactionData(transaction),
   };
 };
 
-export const getFileAppendTransactionData = (transaction: Transaction): FileAppendData => {
-  assertTransactionType(transaction, FileAppendTransaction);
+export const getFileAppendTransactionData = (transaction: FileAppendTransaction): FileAppendData => {
   return {
     fileId: transaction.fileId?.toString() || '',
     chunkSize: transaction.chunkSize || 0,
@@ -215,8 +205,7 @@ export const getFileAppendTransactionData = (transaction: Transaction): FileAppe
   };
 };
 
-export const getFreezeData = (transaction: Transaction): FreezeData => {
-  assertTransactionType(transaction, FreezeTransaction);
+export const getFreezeData = (transaction: FreezeTransaction): FreezeData => {
   return {
     freezeType: transaction.freezeType?._code || -1,
     startTimestamp: transaction.startTimestamp?.toDate() || new Date(),
@@ -225,8 +214,7 @@ export const getFreezeData = (transaction: Transaction): FreezeData => {
   };
 };
 
-export const getTransferHbarData = (transaction: Transaction): TransferHbarData => {
-  assertTransactionType(transaction, TransferTransaction);
+export const getTransferHbarData = (transaction: TransferTransaction): TransferHbarData => {
   return {
     transfers: transaction.hbarTransfersList,
   };
@@ -287,16 +275,14 @@ export function getNodeData(transaction: Transaction): NodeData {
   };
 }
 
-export function getNodeUpdateData(transaction: Transaction): NodeUpdateData {
-  assertTransactionType(transaction, NodeUpdateTransaction);
+export function getNodeUpdateData(transaction: NodeUpdateTransaction): NodeUpdateData {
   return {
     nodeId: transaction.nodeId?.toString() || '',
     ...getNodeData(transaction),
   };
 }
 
-export function getNodeDeleteData(transaction: Transaction): NodeDeleteData {
-  assertTransactionType(transaction, NodeDeleteTransaction);
+export function getNodeDeleteData(transaction: NodeDeleteTransaction): NodeDeleteData {
   return {
     nodeId: transaction.nodeId?.toString() || '',
   };
@@ -398,12 +384,8 @@ export const getComponentRegisteredEndpoints = (endpoints: RegisteredServiceEndp
   return endpoints.map(endpoint => getComponentRegisteredEndpoint(endpoint));
 };
 
-export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeData {
-  assertTransactionType(transaction, RegisteredNodeCreateTransaction);
-
-  const endpoints = (transaction.serviceEndpoints ?? []).map(
-    getComponentRegisteredEndpoint,
-  );
+export function getRegisteredNodeData(transaction: RegisteredNodeCreateTransaction): RegisteredNodeData {
+  const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
 
   return {
     description: transaction.description ?? '',
@@ -412,9 +394,9 @@ export function getRegisteredNodeData(transaction: Transaction): RegisteredNodeD
   };
 }
 
-export function getRegisteredNodeUpdateData(transaction: Transaction): RegisteredNodeUpdateData {
-  assertTransactionType(transaction, RegisteredNodeUpdateTransaction);
-
+export function getRegisteredNodeUpdateData(
+  transaction: RegisteredNodeUpdateTransaction,
+): RegisteredNodeUpdateData {
   const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
 
   return {
@@ -425,8 +407,9 @@ export function getRegisteredNodeUpdateData(transaction: Transaction): Registere
   };
 }
 
-export function getRegisteredNodeDeleteData(transaction: Transaction): RegisteredNodeDeleteData {
-  assertTransactionType(transaction, RegisteredNodeDeleteTransaction);
+export function getRegisteredNodeDeleteData(
+  transaction: RegisteredNodeDeleteTransaction,
+): RegisteredNodeDeleteData {
   return {
     registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
   };
@@ -441,172 +424,110 @@ export function getSystemData(
   };
 }
 
-export function getSystemDeleteData(transaction: Transaction): SystemDeleteData {
-  assertTransactionType(transaction, SystemDeleteTransaction);
+export function getSystemDeleteData(transaction: SystemDeleteTransaction): SystemDeleteData {
   return {
     ...getSystemData(transaction),
     expirationTime: transaction.expirationTime?.toDate() || null,
   };
 }
 
-export function getSystemUndeleteData(transaction: Transaction): SystemUndeleteData {
-  assertTransactionType(transaction, SystemUndeleteTransaction);
+export function getSystemUndeleteData(transaction: SystemUndeleteTransaction): SystemUndeleteData {
   return getSystemData(transaction);
 }
 
-const transactionHandlers = new Map<
-  new (...args: any[]) => Transaction,
-  (transaction: Transaction) => Record<string, any>
->([
-  [
-    AccountCreateTransaction,
-    tx => ({
+export function getAllData(tx: Transaction) {
+  if (tx instanceof AccountCreateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getAccountData(tx),
       ...getAccountCreateData(tx),
-    }),
-  ],
-
-  [
-    AccountUpdateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof AccountUpdateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getAccountUpdateData(tx),
-    }),
-  ],
-
-  [
-    AccountAllowanceApproveTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof AccountAllowanceApproveTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getApproveHbarAllowanceTransactionData(tx),
-    }),
-  ],
-
-  [
-    AccountDeleteTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof AccountDeleteTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getAccountDeleteData(tx),
-    }),
-  ],
-
-  [
-    FileCreateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof FileCreateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getFileInfoTransactionData(tx),
       ...getFileCreateTransactionData(tx),
-    }),
-  ],
-
-  [
-    FileUpdateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof FileUpdateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getFileInfoTransactionData(tx),
       ...getFileUpdateTransactionData(tx),
-    }),
-  ],
-
-  [
-    FileAppendTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof FileAppendTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getFileAppendTransactionData(tx),
-    }),
-  ],
-
-  [
-    FreezeTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof FreezeTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getFreezeData(tx),
-    }),
-  ],
-
-  [
-    TransferTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof TransferTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getTransferHbarData(tx),
-    }),
-  ],
-
-  [
-    NodeCreateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof NodeCreateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getNodeData(tx),
-    }),
-  ],
-
-  [
-    NodeUpdateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof NodeUpdateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getNodeData(tx),
       ...getNodeUpdateData(tx),
-    }),
-  ],
-
-  [
-    NodeDeleteTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof NodeDeleteTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getNodeDeleteData(tx),
-    }),
-  ],
-
-  [
-    RegisteredNodeCreateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof RegisteredNodeCreateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeData(tx),
-    }),
-  ],
-
-  [
-    RegisteredNodeUpdateTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof RegisteredNodeUpdateTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeUpdateData(tx),
-    }),
-  ],
-
-  [
-    RegisteredNodeDeleteTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof RegisteredNodeDeleteTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getRegisteredNodeDeleteData(tx),
-    }),
-  ],
-
-  [
-    SystemDeleteTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof SystemDeleteTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getSystemDeleteData(tx),
-    }),
-  ],
-
-  [
-    SystemUndeleteTransaction,
-    tx => ({
+    };
+  } else if (tx instanceof SystemUndeleteTransaction) {
+    return {
       ...getTransactionCommonData(tx),
       ...getSystemUndeleteData(tx),
-    }),
-  ],
-]);
-
-export function getAllData(transaction: Transaction) {
-  const handler = transactionHandlers.get(
-    transaction.constructor as new (...args: any[]) => ExtendedTransactionData & Transaction,
-  );
-  if (!handler) {
+    };
+  } else {
     throw new Error('Unsupported transaction type');
   }
-  return handler(transaction);
 }
 
 export function hasStartTimestampChanged(

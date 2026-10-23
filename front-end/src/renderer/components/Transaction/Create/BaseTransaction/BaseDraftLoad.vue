@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="ts" generic="T extends Transaction" setup>
 import { onMounted } from 'vue';
 import { type Transaction } from '@hiero-ledger/sdk';
 
@@ -10,9 +10,17 @@ import { getDraft } from '@renderer/services/transactionDraftsService';
 
 import { getTransactionFromBytes } from '@renderer/utils';
 
+/* Types */
+export type TransactionCtor<T extends Transaction> = { new (): T };
+
+/* Props */
+const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
+}>();
+
 /* Emits */
 const emit = defineEmits<{
-  (event: 'draft-loaded', transaction: Transaction, description: string): void;
+  (event: 'draft-loaded', transaction: T, description: string): void;
 }>();
 
 /* Stores */
@@ -46,7 +54,11 @@ const handleLoadFromDraft = async () => {
 
   if (transactionBytes) {
     const transaction = getTransactionFromBytes(transactionBytes);
-    emit('draft-loaded', transaction, description);
+    if (transaction instanceof props.transactionCtor) {
+      emit('draft-loaded', transaction, description);
+    } else {
+      throw Error('Unexpected type of transaction');
+    }
   }
 };
 

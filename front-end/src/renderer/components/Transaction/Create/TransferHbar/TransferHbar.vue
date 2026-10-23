@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@shared/interfaces';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { TransferHbarData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Hbar, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { Hbar, TransferTransaction } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { AppCache } from '@renderer/caches/AppCache';
 
-import { createTransferHbarTransaction, getTransferHbarData } from '@renderer/utils/sdk';
+import {
+  createTransferHbarTransaction,
+  getTransferHbarData,
+  type TransactionCommonData,
+  type TransferHbarData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import TransferHbarFormData from '@renderer/components/Transaction/Create/TransferHbar/TransferHbarFormData.vue';
@@ -24,7 +28,7 @@ const user = useUserStore();
 const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<TransferHbarData>({
   transfers: [],
@@ -34,14 +38,6 @@ const accountInfos = ref<{
 }>({});
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createTransferHbarTransaction({
-      ...common,
-      ...(data as TransferHbarData),
-    });
-});
-
 const createDisabled = computed(() => {
   return (
     !totalBalance.value.toBigNumber().isEqualTo(0) ||
@@ -81,7 +77,14 @@ const anyTransfersExceedingBalance = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): TransferTransaction => {
+  return createTransferHbarTransaction({
+    ...commonData,
+    ...(data as TransferHbarData),
+  });
+};
+
+const handleDraftLoaded = async (transaction: TransferTransaction) => {
   handleUpdateData(getTransferHbarData(transaction));
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
     if (!accountInfos.value[accountId]) {
@@ -123,6 +126,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="TransferTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

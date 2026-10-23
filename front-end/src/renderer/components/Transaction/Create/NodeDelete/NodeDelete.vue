@@ -1,23 +1,23 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { NodeDeleteData } from '@renderer/utils/sdk/createTransactions';
-
 import { computed, reactive } from 'vue';
-import { NodeDeleteTransaction, Transaction } from '@hiero-ledger/sdk';
+import { NodeDeleteTransaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useNodeId from '@renderer/composables/useNodeId';
 
-import { createNodeDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
+import {
+  createNodeDeleteTransaction,
+  type NodeDeleteData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk/createTransactions';
 
 import { getNodeDeleteData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeDeleteFormData from '@renderer/components/Transaction/Create/NodeDelete/NodeDeleteFormData.vue';
 
-
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const nodeData = useNodeId();
 
 /* State */
@@ -26,20 +26,19 @@ const data = reactive<NodeDeleteData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createNodeDeleteTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return !nodeData.nodeInfo?.value;
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): NodeDeleteTransaction => {
+  return createNodeDeleteTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: NodeDeleteTransaction) => {
   if (transaction instanceof NodeDeleteTransaction) {
     if (transaction.nodeId) {
       nodeData.nodeId.value = transaction.nodeId.toNumber();
@@ -56,11 +55,11 @@ const handleUpdateData = (newData: NodeDeleteData) => {
 const handleExecutedSuccess = async () => {
   toastManager.success(`Node ${data.nodeId} Deleted`);
 };
-
 </script>
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="NodeDeleteTransaction"
     :create-transaction="createTransaction"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

@@ -774,6 +774,9 @@ importers:
       vue:
         specifier: 3.5.44
         version: 3.5.44(typescript@6.0.3)
+      vue-component-type-helpers:
+        specifier: 3.3.13
+        version: 3.3.13
       vue-tsc:
         specifier: 3.3.13
         version: 3.3.13(typescript@6.0.3)
@@ -8421,8 +8424,8 @@ packages:
   vscode-uri@3.2.0:
     resolution: {integrity: sha512-m2gXo3bn0G1kT9InzMf07fTbqMbGtyckj3bH5ktLO+1Ssv+yiATZ4dhwaQv9UZWxJh6E9IFGnQyjgWVDWVBDrg==}
 
-  vue-component-type-helpers@3.3.11:
-    resolution: {integrity: sha512-LwcxzeliO9fkQcpJG0PoX8X5kmAhKmH9wkpDLxNabwzkQ9Zeib2YVHwFV4pcWmMLfXVfjr/dSV+DaJ3cIPgSNA==}
+  vue-component-type-helpers@3.3.13:
+    resolution: {integrity: sha512-02KCxSmKDhIITjKyJ4QT5csP6L0WoRborLqY/34a40+S9uvMvdNgMV0yVjO3p2Gkz3ZoPmFz/0JsGHacwJYTxw==}
 
   vue-demi@0.14.10:
     resolution: {integrity: sha512-nMZBOwuzabUO0nLgIcc6rycZEebF6eeUfaiQx9+WSk8e29IbLvPU9feI6tqW4kTo3hvoYAJkMh8n8D0fuISphg==}
@@ -11821,7 +11824,7 @@ snapshots:
       '@vue/compiler-dom': 3.5.44
       js-beautify: 2.0.3
       vue: 3.5.44(typescript@6.0.3)
-      vue-component-type-helpers: 3.3.11
+      vue-component-type-helpers: 3.3.13
     optionalDependencies:
       '@vue/server-renderer': 3.5.44
 
@@ -17215,7 +17218,7 @@ snapshots:
 
   vscode-uri@3.2.0: {}
 
-  vue-component-type-helpers@3.3.11: {}
+  vue-component-type-helpers@3.3.13: {}
 
   vue-demi@0.14.10(vue@3.5.44(typescript@6.0.3)):
     dependencies:

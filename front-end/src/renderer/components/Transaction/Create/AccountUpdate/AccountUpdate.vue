@@ -1,16 +1,21 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@shared/interfaces';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountUpdateData, AccountUpdateDataMultiple } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { AccountId, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { AccountId, AccountUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { isAccountId } from '@renderer/utils';
-import { createAccountUpdateTransaction, getAccountUpdateData } from '@renderer/utils/sdk';
+import {
+  type AccountUpdateData,
+  type AccountUpdateDataMultiple,
+  createAccountUpdateTransaction,
+  getAccountUpdateData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk';
 
 import { MultipleAccountUpdateRequest } from '../../TransactionProcessor';
 
@@ -22,7 +27,7 @@ const route = useRoute();
 const accountData = useAccountId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 const data = reactive<AccountUpdateData>({
   accountId: '',
   receiverSignatureRequired: false,
@@ -42,14 +47,6 @@ const multipleAccountsData = ref<AccountUpdateDataMultiple | null>(null);
 const ownerKeyManuallySet = ref(false);
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createAccountUpdateTransaction(
-      { ...common, ...data },
-      accountData.accountInfo.value,
-    );
-});
-
 const createDisabled = computed(() => {
   const noSingleAccount = !accountData.accountId.value || !accountData.isValid.value;
   const noMultipleAccounts =
@@ -72,7 +69,17 @@ const customRequest = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): AccountUpdateTransaction => {
+  return createAccountUpdateTransaction(
+    {
+      ...commonData,
+      ...data,
+    },
+    accountData.accountInfo.value,
+  );
+};
+
+const handleDraftLoaded = (transaction: AccountUpdateTransaction) => {
   handleUpdateData(getAccountUpdateData(transaction));
 };
 
@@ -169,6 +176,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="AccountUpdateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

@@ -1,20 +1,17 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { NodeData } from '@renderer/utils/sdk/createTransactions';
-
 import { computed, reactive, ref, watch } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { NodeCreateTransaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getNodeData, isUserLoggedIn } from '@renderer/utils';
-import { createNodeCreateTransaction } from '@renderer/utils/sdk/createTransactions';
+import { getNodeData, isUserLoggedIn, type TransactionCommonData } from '@renderer/utils';
+import { createNodeCreateTransaction, type NodeData } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeFormData from '@renderer/components/Transaction/Create/NodeCreate/NodeFormData.vue';
-
 
 /* Stores */
 const user = useUserStore();
@@ -23,7 +20,7 @@ const user = useUserStore();
 const toastManager = ToastManager.inject();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<NodeData>({
   nodeAccountId: '',
@@ -39,20 +36,19 @@ const data = reactive<NodeData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createNodeCreateTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return !data.adminKey;
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): NodeCreateTransaction => {
+  return createNodeCreateTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: NodeCreateTransaction) => {
   handleUpdateData(getNodeData(transaction));
 };
 
@@ -104,6 +100,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="NodeCreateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

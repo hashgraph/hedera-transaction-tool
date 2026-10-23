@@ -63,7 +63,11 @@ describe('BaseDraftLoad', () => {
     mocks.getDraft.mockResolvedValue({ transactionBytes: '0x1234', description: 'draft description' });
     mocks.getTransactionFromBytes.mockReturnValue(transaction);
 
-    const wrapper = mount(BaseDraftLoad);
+    const wrapper = mount(BaseDraftLoad, {
+      props: {
+        transactionCtor: TransactionType,
+      },
+    });
     await flushPromises();
 
     expect(mocks.getDraft).toHaveBeenCalledWith('draft-1');

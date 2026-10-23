@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import {
   type ComponentRegisteredServiceEndpoint,
@@ -7,10 +6,12 @@ import {
   parseIpv4ToBytes,
   parsePort,
   type RegisteredNodeUpdateData,
+  type TransactionCommonData,
 } from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Transaction, RegisteredNodeUpdateTransaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { RegisteredNodeUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -34,7 +35,7 @@ const toastManager = ToastManager.inject();
 const nodeData = useRegisteredNodeId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<RegisteredNodeUpdateData>({
   registeredNodeId: '',
@@ -44,14 +45,6 @@ const data = reactive<RegisteredNodeUpdateData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createRegisteredNodeUpdateTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return (
     nodeData.registeredNodeInfo.value === null ||
@@ -116,11 +109,16 @@ const decorateEndpointsWithUiIds = (
   endpoints.map(ep => (ep.uiId ? ep : { ...ep, uiId: makeUiId() }));
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
-  if (transaction instanceof RegisteredNodeUpdateTransaction) {
-    if (transaction.registeredNodeId) {
-      nodeData.registeredNodeId.value = transaction.registeredNodeId.toNumber();
-    }
+const createTransaction = (commonData: TransactionCommonData): RegisteredNodeUpdateTransaction => {
+  return createRegisteredNodeUpdateTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: RegisteredNodeUpdateTransaction) => {
+  if (transaction.registeredNodeId) {
+    nodeData.registeredNodeId.value = transaction.registeredNodeId.toNumber();
   }
   handleUpdateData(getRegisteredNodeUpdateData(transaction));
 };
@@ -197,9 +195,7 @@ watch(nodeData.registeredNodeInfo, registeredNodeInfo => {
   } else if (!route.query.draftId && !route.query.groupIndex) {
     data.description = registeredNodeInfo.description ?? '';
     data.adminKey = registeredNodeInfo.admin_key;
-    data.serviceEndpoints = getComponentRegisteredEndpoints(
-      registeredNodeInfo.service_endpoints,
-    );
+    data.serviceEndpoints = getComponentRegisteredEndpoints(registeredNodeInfo.service_endpoints);
   }
 });
 // Only fields that change the network-required *signer set* should trigger
@@ -221,6 +217,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="RegisteredNodeUpdateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

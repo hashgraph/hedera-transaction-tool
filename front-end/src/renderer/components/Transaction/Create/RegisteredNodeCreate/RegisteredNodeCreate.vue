@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type {
-  ComponentRegisteredServiceEndpoint,
-  RegisteredNodeData,
-} from '@renderer/utils/sdk/createTransactions';
-
 import { computed, reactive, ref, watch } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { RegisteredNodeCreateTransaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { exceedsUtf8ByteLimit, getRegisteredNodeData, isUserLoggedIn } from '@renderer/utils';
 import {
+  exceedsUtf8ByteLimit,
+  getRegisteredNodeData,
+  isUserLoggedIn,
+  type TransactionCommonData,
+} from '@renderer/utils';
+import {
+  type ComponentRegisteredServiceEndpoint,
   createRegisteredNodeCreateTransaction,
   parseIpv4ToBytes,
   parsePort,
+  type RegisteredNodeData,
 } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -34,7 +36,7 @@ const user = useUserStore();
 const toastManager = ToastManager.inject();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<RegisteredNodeData>({
   description: '',
@@ -43,14 +45,6 @@ const data = reactive<RegisteredNodeData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createRegisteredNodeCreateTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return !data.adminKey || data.serviceEndpoints.length === 0;
 });
@@ -77,7 +71,14 @@ const decorateEndpointsWithUiIds = (
   endpoints.map(ep => (ep.uiId ? ep : { ...ep, uiId: makeUiId() }));
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): RegisteredNodeCreateTransaction => {
+  return createRegisteredNodeCreateTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: RegisteredNodeCreateTransaction) => {
   handleUpdateData(getRegisteredNodeData(transaction));
 };
 
@@ -107,7 +108,9 @@ const preCreateAssert = () => {
   }
 
   if (data.serviceEndpoints.length > MAX_SERVICE_ENDPOINTS) {
-    throw new Error(`A registered node may have at most ${MAX_SERVICE_ENDPOINTS} service endpoints`);
+    throw new Error(
+      `A registered node may have at most ${MAX_SERVICE_ENDPOINTS} service endpoints`,
+    );
   }
 
   if (data.description && exceedsUtf8ByteLimit(data.description, MAX_DESCRIPTION_BYTES)) {
@@ -137,9 +140,7 @@ const preCreateAssert = () => {
       ep.endpointDescription &&
       exceedsUtf8ByteLimit(ep.endpointDescription, MAX_DESCRIPTION_BYTES)
     ) {
-      throw new Error(
-        `Endpoint ${i + 1}: description must be ≤ ${MAX_DESCRIPTION_BYTES} bytes`,
-      );
+      throw new Error(`Endpoint ${i + 1}: description must be ≤ ${MAX_DESCRIPTION_BYTES} bytes`);
     }
   });
 
@@ -166,6 +167,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="RegisteredNodeCreateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

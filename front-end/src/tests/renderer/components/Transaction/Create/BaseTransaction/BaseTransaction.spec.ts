@@ -144,6 +144,7 @@ function createTransferTransaction(validStart: Date, memo = '', payer = '0.0.2')
 function mountBase() {
   return mount(BaseTransaction, {
     props: {
+      transactionCtor: TransferTransaction,
       createTransaction: ({ validStart, transactionMemo, payerId }) =>
         createTransferTransaction(validStart, transactionMemo, payerId || '0.0.2'),
     },

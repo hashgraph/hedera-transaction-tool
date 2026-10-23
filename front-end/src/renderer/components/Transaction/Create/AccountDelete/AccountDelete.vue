@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@shared/interfaces';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { AccountDeleteData } from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -14,11 +12,17 @@ import useAccountId from '@renderer/composables/useAccountId';
 import { remove } from '@renderer/services/accountsService';
 
 import { isAccountId, isUserLoggedIn, safeAwait } from '@renderer/utils';
-import { createAccountDeleteTransaction, getAccountDeleteData } from '@renderer/utils/sdk';
+import {
+  type AccountDeleteData,
+  type TransactionCommonData,
+  createAccountDeleteTransaction,
+  getAccountDeleteData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import AccountDeleteFormData from '@renderer/components/Transaction/Create/AccountDelete/AccountDeleteFormData.vue';
 import AccountDeleteConfirmModal from '@renderer/components/Transaction/Create/AccountDelete/AccountDeleteConfirmModal.vue';
+import { AccountDeleteTransaction } from '@hiero-ledger/sdk';
 
 /* Stores */
 const user = useUserStore();
@@ -29,7 +33,7 @@ const accountData = useAccountId();
 const transferAccountData = useAccountId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<AccountDeleteData>({
   accountId: '',
@@ -39,14 +43,6 @@ const isConfirmModalShown = ref(false);
 const isConfirmed = ref(false);
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createAccountDeleteTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return (
     !accountData.isValid.value ||
@@ -57,7 +53,14 @@ const createDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): AccountDeleteTransaction => {
+  return createAccountDeleteTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: AccountDeleteTransaction) => {
   handleUpdateData(getAccountDeleteData(transaction));
 };
 
@@ -120,6 +123,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="AccountDeleteTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

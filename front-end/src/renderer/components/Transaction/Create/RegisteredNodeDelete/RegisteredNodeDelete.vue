@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import RegisteredNodeDeleteFormData from '@renderer/components/Transaction/Create/RegisteredNodeDelete/RegisteredNodeDeleteFormData.vue';
-import type { RegisteredNodeDeleteData } from '@renderer/utils/sdk/createTransactions';
-import { createRegisteredNodeDeleteTransaction } from '@renderer/utils/sdk/createTransactions';
+import {
+  createRegisteredNodeDeleteTransaction,
+  type RegisteredNodeDeleteData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk/createTransactions';
 
 import { computed, reactive } from 'vue';
-import { RegisteredNodeDeleteTransaction, Transaction } from '@hiero-ledger/sdk';
+import { RegisteredNodeDeleteTransaction } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useRegisteredNodeId from '@renderer/composables/useRegisteredNodeId';
@@ -23,20 +25,19 @@ const data = reactive<RegisteredNodeDeleteData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createRegisteredNodeDeleteTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => {
   return nodeData.registeredNodeInfo.value === null;
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): RegisteredNodeDeleteTransaction => {
+  return createRegisteredNodeDeleteTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: RegisteredNodeDeleteTransaction) => {
   if (
     transaction instanceof RegisteredNodeDeleteTransaction &&
     transaction.registeredNodeId !== null
@@ -61,6 +62,7 @@ const handleExecutedSuccess = async () => {
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="RegisteredNodeDeleteTransaction"
     :create-transaction="createTransaction"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

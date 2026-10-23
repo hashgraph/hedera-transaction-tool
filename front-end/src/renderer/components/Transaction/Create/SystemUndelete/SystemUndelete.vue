@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { SystemUndeleteData } from '@renderer/utils/sdk';
-
 import { computed, reactive } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import { SystemUndeleteTransaction } from '@hiero-ledger/sdk';
 
-import { isContractId, isFileId } from '@renderer/utils';
-import { createSystemUndeleteTransaction, getSystemUndeleteData } from '@renderer/utils/sdk';
+import { isContractId, isFileId, type TransactionCommonData } from '@renderer/utils';
+import {
+  createSystemUndeleteTransaction,
+  getSystemUndeleteData,
+  type SystemUndeleteData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import SystemUndeleteFormData from './SystemUndeleteFormData.vue';
@@ -40,20 +41,19 @@ const assertExactlyOneTarget = () => {
 };
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createSystemUndeleteTransaction({
-      ...common,
-      ...data,
-    });
-});
-
 const createDisabled = computed(() => {
   return !hasExactlyOneTarget();
 });
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): SystemUndeleteTransaction => {
+  return createSystemUndeleteTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: SystemUndeleteTransaction) => {
   handleUpdateData(getSystemUndeleteData(transaction));
 };
 
@@ -69,6 +69,7 @@ const preCreateAssert = () => {
 </script>
 <template>
   <BaseTransaction
+    :transaction-ctor="SystemUndeleteTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
