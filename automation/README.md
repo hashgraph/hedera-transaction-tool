@@ -8,7 +8,7 @@ This folder contains automated test tooling for Hedera Transaction Tool:
 
 ## Prerequisites
 
-- Node.js `>= 24.20.0 <25`
+- Node.js `>= 24.22.1 <25`
 - `pnpm`
 - One of:
   - a built Hedera Transaction Tool executable (launch mode), or
