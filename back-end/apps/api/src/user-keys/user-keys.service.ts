@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsRelations, FindOptionsWhere, Repository } from 'typeorm';
+import { FindOptionsRelations, FindOptionsWhere, QueryFailedError, Repository } from 'typeorm';
 
 import {
   attachKeys,
@@ -65,12 +65,19 @@ export class UserKeysService {
       userKey.user = user;
     }
 
-    if (userKey.deletedAt) {
-      await this.repo.recover(userKey);
-    }
     try {
+      if (userKey.deletedAt) {
+        await this.repo.recover(userKey);
+      }
       return await this.repo.save(userKey);
     } catch (error) {
+      if (
+        error instanceof QueryFailedError &&
+        error.driverError.code === '23505' &&
+        error.driverError.constraint === 'UQ_user_key_active_public_key'
+      ) {
+        throw new BadRequestException(ErrorCodes.PU);
+      }
       this.logger.error('Failed to save user key', (error as any)?.stack ?? (error as any)?.message ?? String(error));
       throw new BadRequestException(ErrorCodes.FSUK);
     }
