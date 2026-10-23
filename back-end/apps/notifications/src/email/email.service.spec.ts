@@ -2,7 +2,6 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, SendMailOptions, Transporter } from 'nodemailer';
 import SMTPTransport from 'nodemailer/lib/smtp-transport';
-import { mockDeep } from 'jest-mock-extended';
 
 import {
   generateApiKeyRevokedMessage,
@@ -48,7 +47,10 @@ describe('EmailService', () => {
     sendMail: jest.fn(),
   };
 
-  const configService = mockDeep<ConfigService>();
+  const configService = {
+    getOrThrow: jest.fn(),
+    get: jest.fn(),
+  } as unknown as jest.Mocked<ConfigService>;
 
   beforeEach(async () => {
     jest.resetAllMocks();

@@ -3,6 +3,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { createAdapter } from '@socket.io/redis-streams-adapter';
 import { Redis } from 'ioredis';
 import { LEGACY_IOREDIS_OPTIONS } from '@app/common';
+import { Server } from 'socket.io';
 
 jest.mock('ioredis', () => {
   return {
@@ -40,7 +41,7 @@ describe('RedisIoAdapter', () => {
       adapter: jest.fn(),
     };
 
-    jest.spyOn(IoAdapter.prototype, 'createIOServer').mockReturnValue(mockServer);
+    jest.spyOn(IoAdapter.prototype, 'createIOServer').mockReturnValue(mockServer as unknown as Server);
 
     const server = redisIoAdapter.createIOServer(port);
 

@@ -29,9 +29,13 @@ describe('UsersService', () => {
   const queryBuilder = mockDeep<SelectQueryBuilder<User>>();
   const passwordUpdate = mockDeep<UpdateQueryBuilder<User>>();
   const clientRepository = mockDeep<Repository<Client>>();
-  const configService = mockDeep<ConfigService>();
   const blacklistService = mockDeep<BlacklistService>();
   const apiKeysService = mockDeep<ApiKeysService>();
+
+  const configService = {
+    getOrThrow: jest.fn(),
+    get: jest.fn(),
+  } as unknown as jest.Mocked<ConfigService>;
 
   const email = 'some@email.com';
   const password = 'password';

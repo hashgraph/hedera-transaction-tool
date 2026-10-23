@@ -9,7 +9,10 @@ import { UsersService } from '../../users/users.service';
 import { JwtStrategy } from './jwt.strategy';
 
 const mockUsersService = mockDeep<UsersService>();
-const mockConfigService = mockDeep<ConfigService>();
+const mockConfigService = {
+  getOrThrow: jest.fn(),
+  get: jest.fn(),
+} as unknown as jest.Mocked<ConfigService>;
 
 describe('JwtStrategy', () => {
   let jwtStrategy: JwtStrategy;

@@ -36,7 +36,10 @@ describe('WebsocketGateway', () => {
   let gateway: WebsocketGateway;
   const authService = mockDeep<ClientProxy>();
   const blacklistService = mockDeep<BlacklistService>();
-  const configService = mockDeep<ConfigService>();
+  const configService = {
+    getOrThrow: jest.fn(),
+    get: jest.fn(),
+  } as unknown as jest.Mocked<ConfigService>;
   const authWebsocket: Partial<AuthWebsocket> = {
     user: {
       id: 1,

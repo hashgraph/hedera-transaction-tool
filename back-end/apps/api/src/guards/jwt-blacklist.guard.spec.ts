@@ -1,5 +1,5 @@
-import { CanActivate, HttpArgumentsHost } from '@nestjs/common/interfaces';
-import { ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common';
+import { HttpArgumentsHost } from '@nestjs/common/internal';
 import { Reflector } from '@nestjs/core';
 import { mockDeep } from 'jest-mock-extended';
 

@@ -17,7 +17,7 @@
   "dependencies": {
     "@socket.io/redis-streams-adapter": "0.3.1",
     "nodemailer": "10.1.2",
-    "socket.io": "4.8.4"
+    "socket.io": "4.8.3"
   },
   "devDependencies": {
     "@types/nodemailer": "8.0.2"
