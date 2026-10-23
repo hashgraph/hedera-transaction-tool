@@ -206,6 +206,53 @@ describe('Hedera Special Files utilities', () => {
     expect(review.originalBytesHex).toBe(Buffer.from(bytes).toString('hex'));
   });
 
+  describe.each(['0.0.101', '0.0.102'] as const)('%s certificate hash input', fileId => {
+    test.each(['0xffZZ', '0xf', '0x123', '0xgg', '0xff\n', '0xff ff'])(
+      'rejects malformed hexadecimal %j',
+      nodeCertHash => {
+        const content = JSONtoUInt8Array({ nodeAddress: [{ nodeCertHash }] });
+        expect(() => encodeHederaSpecialFile(content, fileId)).toThrow('nodeCertHash must contain');
+      },
+    );
+
+    test.each([
+      ['0x', []],
+      ['0xff00', [255, 0]],
+      ['0xAbCD', [171, 205]],
+      ['legacy text', Array.from(new TextEncoder().encode('legacy text'))],
+    ] as const)('preserves bytes for %j', (nodeCertHash, expected) => {
+      const content = JSONtoUInt8Array({ nodeAddress: [{ nodeCertHash }] });
+      const bytes = encodeHederaSpecialFile(content, fileId);
+      const decoded = proto.NodeAddressBook.decode(bytes);
+      expect(Array.from(decoded.nodeAddress[0].nodeCertHash ?? [])).toEqual(expected);
+    });
+  });
+
+  describe.each(['0.0.121', '0.0.122'] as const)('%s settings data input', fileId => {
+    test.each(['!!!!', '/w', '/w=', '/w===', '/w==junk', '/w==\n', '_w==', '/x==', 123, null])(
+      'rejects malformed base64 %j',
+      data => {
+        const content = JSONtoUInt8Array({ nameValue: [{ name: 'key', value: 'value', data }] });
+        expect(() => encodeHederaSpecialFile(content, fileId)).toThrow(
+          'Setting.data must be a standard padded base64 string',
+        );
+      },
+    );
+
+    test.each([
+      ['', []],
+      ['/w==', [255]],
+      ['/wA=', [255, 0]],
+      ['/wAB', [255, 0, 1]],
+      [undefined, []],
+    ] as const)('preserves bytes for %j', (data, expected) => {
+      const content = JSONtoUInt8Array({ nameValue: [{ name: 'key', value: 'value', data }] });
+      const bytes = encodeHederaSpecialFile(content, fileId);
+      const decoded = proto.ServicesConfigurationList.decode(bytes);
+      expect(Array.from(decoded.nameValue[0].data ?? [])).toEqual(expected);
+    });
+  });
+
   test('review JSON can be re-encoded for configuration and address-book validation', () => {
     for (const fileId of ['0.0.121', '0.0.101'] as const) {
       const bytes =
