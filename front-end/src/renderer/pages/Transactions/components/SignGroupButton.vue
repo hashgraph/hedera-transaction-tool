@@ -4,6 +4,7 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
   getGroupCreatorSignatureStatus,
+  snapshotGroup,
   type CreatorSignatureStatus,
 } from '@renderer/utils';
 import { getTransactionGroupById, type IGroup } from '@renderer/services/organization';
@@ -34,7 +35,9 @@ const group = ref<IGroup | null>(null);
 const handleClick = async () => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, props.groupId);
+  group.value = snapshotGroup(
+    await getTransactionGroupById(user.selectedOrganization.serverUrl, props.groupId),
+  );
   creatorSignatureStatus.value = getGroupCreatorSignatureStatus(
     group.value,
     user.selectedOrganization.userKeys,

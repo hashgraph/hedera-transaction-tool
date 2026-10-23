@@ -1,12 +1,11 @@
 <script lang="ts" setup>
-import { ref, watch } from 'vue';
+import { ref } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
   collectMissingKeys,
   collectRequiredKeys,
   signItems,
-  snapshotGroup,
 } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
@@ -35,28 +34,13 @@ const user = useUserStore();
 
 /* State */
 const progressText = ref<string>('');
-// Snapshot taken when signing is initiated. A server push can replace props.groupOrId
-// while the password modal is open; we only ever sign what the user was looking at.
-let groupToSign: IGroup | number | null = null;
-
-/* Watchers */
-watch(
-  activate,
-  value => {
-    if (value) {
-      const current = props.groupOrId;
-      groupToSign =
-        current !== null && typeof current === 'object' ? snapshotGroup(current) : current;
-    }
-  },
-  { flush: 'sync' },
-);
 
 /* Handlers */
 const handleSignAll = async (userPersonalPassword: string | null): Promise<ActionReport | null> => {
   let result: ActionReport | null = null;
-  const target = groupToSign;
-  groupToSign = null;
+  // The caller passes a snapshot taken when signing was initiated, so a server push
+  // cannot change what the user is about to sign while the password modal is open.
+  const target = props.groupOrId;
   if (target !== null) {
     const groupId = typeof target == 'number' ? target : target.id;
     try {
@@ -71,90 +55,86 @@ const handleSignAll = async (userPersonalPassword: string | null): Promise<Actio
 };
 
 const performSignAll = async (
-  groupOrId: IGroup | number | null,
+  groupOrId: IGroup | number,
   userPersonalPassword: string | null,
 ): Promise<ActionReport | null> => {
   let result: ActionReport | null;
 
   progressText.value = '';
-  if (groupOrId !== null) {
-    // 1) fetches group items (if needed)
-    let group: IGroup;
-    if (typeof groupOrId === 'number') {
-      assertIsLoggedInOrganization(user.selectedOrganization);
-      const serverUrl = user.selectedOrganization.serverUrl;
-      progressText.value = 'Loading group items…';
-      group = await getTransactionGroupById(serverUrl, groupOrId);
-    } else {
-      group = groupOrId;
-    }
-
-    // 2) collects required keys for signable transactions only
-    const signableTransactions = group.groupItems
-      .map(item => item.transaction)
-      .filter(tx => isSignableStatus(tx.status));
-    progressText.value = 'Collecting required keys…';
-    const allSignatureItems = await collectRequiredKeys(signableTransactions, appCache);
-
-    // Only process transactions the current user hasn't signed yet
-    const signatureItems = allSignatureItems.filter(item => item.publicKeys.length > 0);
-    const remainingCount = signatureItems.length;
-
-    if (remainingCount === 0) {
-      toastManager.info('All transactions are already signed');
-      return null;
-    }
-
-    const missingKeys = collectMissingKeys(signatureItems);
-    const missingKeyCount = missingKeys.length;
-    if (missingKeyCount > 0) {
-      // User needs to setup some private keys in Settings
-      result = {
-        status: ActionStatus.Error,
-        title: 'Sign All',
-        what: missingKeyCount == 1 ? 'Key is missing' : `${missingKeyCount} keys are missing`,
-        next:
-          missingKeyCount == 1
-            ? 'Go to Settings and add the missing key'
-            : 'Go to Settings and add the missing keys',
-      };
-    } else {
-      // 4) performs required signing
-      progressText.value = `Signing ${remainingCount} transactions…`;
-      const rejectedItems = await signItems(signatureItems, userPersonalPassword);
-      const rejectedItemCount = rejectedItems.length;
-      if (rejectedItemCount > 0) {
-        // Some signatures have not been done
-        const signedItemCount = remainingCount - rejectedItemCount;
-        if (signedItemCount > 0) {
-          // Operation is partial
-          result = {
-            status: ActionStatus.Error,
-            title: 'Sign All',
-            what: `${signedItemCount} transactions signed, but ${rejectedItemCount} transactions were not signed`,
-            next: 'Check status for unsigned transactions',
-          };
-        } else {
-          // Nothing signed => sign all fully rejected
-          result = {
-            status: ActionStatus.Error,
-            title: 'Sign All',
-            what: 'Transactions were not signed',
-            next: 'Check status of transactions',
-          };
-        }
-      } else {
-        // All remaining unsigned transactions were signed
-        const msg =
-          remainingCount === 1
-            ? 'Remaining 1 transaction was signed'
-            : `Remaining ${remainingCount} transactions were signed`;
-        toastManager.success(msg);
-        result = null;
-      }
-    }
+  // 1) fetches group items (if needed)
+  let group: IGroup;
+  if (typeof groupOrId === 'number') {
+    assertIsLoggedInOrganization(user.selectedOrganization);
+    const serverUrl = user.selectedOrganization.serverUrl;
+    progressText.value = 'Loading group items…';
+    group = await getTransactionGroupById(serverUrl, groupOrId);
   } else {
-    result = makeBugReport('Sign All', 'Failed to sign transactions');
+    group = groupOrId;
+  }
+
+  // 2) collects required keys for signable transactions only
+  const signableTransactions = group.groupItems
+    .map(item => item.transaction)
+    .filter(tx => isSignableStatus(tx.status));
+  progressText.value = 'Collecting required keys…';
+  const allSignatureItems = await collectRequiredKeys(signableTransactions, appCache);
+
+  // Only process transactions the current user hasn't signed yet
+  const signatureItems = allSignatureItems.filter(item => item.publicKeys.length > 0);
+  const remainingCount = signatureItems.length;
+
+  if (remainingCount === 0) {
+    toastManager.info('All transactions are already signed');
+    return null;
+  }
+
+  const missingKeys = collectMissingKeys(signatureItems);
+  const missingKeyCount = missingKeys.length;
+  if (missingKeyCount > 0) {
+    // User needs to setup some private keys in Settings
+    result = {
+      status: ActionStatus.Error,
+      title: 'Sign All',
+      what: missingKeyCount == 1 ? 'Key is missing' : `${missingKeyCount} keys are missing`,
+      next:
+        missingKeyCount == 1
+          ? 'Go to Settings and add the missing key'
+          : 'Go to Settings and add the missing keys',
+    };
+  } else {
+    // 4) performs required signing
+    progressText.value = `Signing ${remainingCount} transactions…`;
+    const rejectedItems = await signItems(signatureItems, userPersonalPassword);
+    const rejectedItemCount = rejectedItems.length;
+    if (rejectedItemCount > 0) {
+      // Some signatures have not been done
+      const signedItemCount = remainingCount - rejectedItemCount;
+      if (signedItemCount > 0) {
+        // Operation is partial
+        result = {
+          status: ActionStatus.Error,
+          title: 'Sign All',
+          what: `${signedItemCount} transactions signed, but ${rejectedItemCount} transactions were not signed`,
+          next: 'Check status for unsigned transactions',
+        };
+      } else {
+        // Nothing signed => sign all fully rejected
+        result = {
+          status: ActionStatus.Error,
+          title: 'Sign All',
+          what: 'Transactions were not signed',
+          next: 'Check status of transactions',
+        };
+      }
+    } else {
+      // All remaining unsigned transactions were signed
+      const msg =
+        remainingCount === 1
+          ? 'Remaining 1 transaction was signed'
+          : `Remaining ${remainingCount} transactions were signed`;
+      toastManager.success(msg);
+      result = null;
+    }
   }
 
   return result;

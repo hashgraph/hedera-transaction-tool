@@ -1,10 +1,12 @@
 // @vitest-environment happy-dom
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
+import { h } from 'vue';
 
 const mocks = vi.hoisted(() => ({
   getStatus: vi.fn(),
   lookup: vi.fn(),
+  controllerProps: { transaction: null },
 }));
 
 vi.mock('@renderer/stores/storeUser.ts', () => ({
@@ -25,18 +27,34 @@ import SignSingleButton from '@renderer/pages/Transactions/components/SignSingle
 
 const tx = { id: 7, transactionBytes: 'aa' };
 
-function render() {
+function render(extraProps: { refreshTransaction?: boolean } = {}) {
   return mount(SignSingleButton, {
-    props: { transactionId: 7 },
+    props: { transactionId: 7, ...extraProps },
     global: {
       stubs: {
         AppButton: { template: '<button @click="$emit(\'click\', $event)"><slot /></button>' },
         SignTransactionController: {
-          props: ['activate', 'transaction'],
-          template: '<div data-testid="controller" :data-active="String(activate)" />',
+          props: ['activate', 'transaction', 'callback'],
+          emits: ['update:activate'],
+          setup(props: { transaction: unknown; callback: unknown }, { emit }: any) {
+            mocks.controllerProps.emitActivate = (v: boolean) => emit('update:activate', v);
+            return () => {
+              mocks.controllerProps.transaction = props.transaction;
+              mocks.controllerProps.callback = props.callback;
+              return h('div', {
+                'data-testid': 'controller',
+                'data-active': String(props.activate),
+              });
+            };
+          },
         },
         CreatorSignatureConfirmModal: {
           props: ['show', 'status', 'callback'],
+          emits: ['update:show'],
+          setup(_: unknown, { emit }: any) {
+            mocks.controllerProps.emitShow = (v: boolean) => emit('update:show', v);
+            return {};
+          },
           template:
             '<div data-testid="confirm" :data-show="String(show)" :data-status="status" @click="callback()" />',
         },
@@ -49,6 +67,7 @@ describe('SignSingleButton.vue', () => {
   beforeEach(() => {
     mocks.lookup.mockReset().mockResolvedValue(tx);
     mocks.getStatus.mockReset();
+    mocks.controllerProps.transaction = null;
   });
 
   test('starts signing directly when the creator signature is verified', async () => {
@@ -96,5 +115,76 @@ describe('SignSingleButton.vue', () => {
     await flushPromises();
 
     expect(mocks.getStatus).toHaveBeenCalledWith(tx, [{ id: 1, publicKey: 'pk' }]);
+  });
+
+  test('hands the controller a snapshot, not the cached transaction object', async () => {
+    mocks.getStatus.mockReturnValue('verified');
+    const cached = { id: 7, transactionBytes: 'aa' };
+    mocks.lookup.mockResolvedValue(cached);
+    const wrapper = render();
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+
+    const passed = mocks.controllerProps.transaction as typeof cached;
+    expect(passed).toEqual(cached);
+    expect(passed).not.toBe(cached);
+
+    // A later in-place update of the cache entry must not alter what will be signed
+    cached.transactionBytes = 'bb';
+    expect(passed.transactionBytes).toBe('aa');
+  });
+
+  test('emits the signed transaction after a successful sign without refresh', async () => {
+    mocks.getStatus.mockReturnValue('verified');
+    const wrapper = render();
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    await mocks.controllerProps.callback(true);
+
+    expect(wrapper.emitted('transactionSigned')).toHaveLength(1);
+  });
+
+  test('does not emit when signing did not complete', async () => {
+    mocks.getStatus.mockReturnValue('verified');
+    const wrapper = render();
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    await mocks.controllerProps.callback(false);
+
+    expect(wrapper.emitted('transactionSigned')).toBeUndefined();
+  });
+
+  test('emits a freshly looked-up transaction when refreshTransaction is set', async () => {
+    mocks.getStatus.mockReturnValue('verified');
+    const refreshed = { id: 7, transactionBytes: 'refreshed' };
+    const wrapper = render({ refreshTransaction: true });
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    mocks.lookup.mockResolvedValue(refreshed);
+    await mocks.controllerProps.callback(true);
+
+    expect(wrapper.emitted('transactionSigned')).toEqual([[{ transaction: refreshed }]]);
+  });
+
+  test('closes the confirmation and resets signing from child v-model updates', async () => {
+    mocks.getStatus.mockReturnValue('unverifiable');
+    const wrapper = render();
+
+    await wrapper.get('button').trigger('click');
+    await flushPromises();
+    mocks.controllerProps.emitShow(false);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="confirm"]').attributes('data-show')).toBe('false');
+
+    mocks.controllerProps.emitActivate(true);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('true');
+    mocks.controllerProps.emitActivate(false);
+    await flushPromises();
+    expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('false');
   });
 });

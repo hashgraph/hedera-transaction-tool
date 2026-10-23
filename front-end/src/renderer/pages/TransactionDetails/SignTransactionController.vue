@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { computed, watch } from 'vue';
+import { computed } from 'vue';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
@@ -7,7 +7,6 @@ import {
   collectMissingKeys,
   collectRequiredKeys,
   signItems,
-  snapshotTransaction,
 } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { type ITransactionFull } from '@shared/interfaces';
@@ -33,22 +32,6 @@ const user = useUserStore();
 const appCache = AppCache.inject();
 const toastManager = ToastManager.inject();
 
-/* State */
-// Snapshot taken when signing is initiated. A server push can replace props.transaction
-// while the password modal is open; we only ever sign what the user was looking at.
-let transactionToSign: ITransactionFull | null = null;
-
-/* Watchers */
-watch(
-  activate,
-  value => {
-    if (value) {
-      transactionToSign = props.transaction ? snapshotTransaction(props.transaction) : null;
-    }
-  },
-  { flush: 'sync' },
-);
-
 /* Computed */
 const progressText = computed(() =>
   props.transaction ? `Signing transaction ${props.transaction.transactionId}` : '',
@@ -56,6 +39,9 @@ const progressText = computed(() =>
 
 /* Handlers */
 const handleSign = async (personalPassword: string | null): Promise<ActionReport | null> => {
+  // The caller passes a snapshot taken when signing was initiated, so a server push
+  // cannot change what the user is about to sign while the password modal is open.
+  const transactionToSign = props.transaction;
   let result: ActionReport | null = null;
   try {
     if (transactionToSign !== null) {
@@ -71,7 +57,6 @@ const handleSign = async (personalPassword: string | null): Promise<ActionReport
         user.selectedOrganization.serverUrl,
       );
     }
-    transactionToSign = null;
     await props.callback(result === null);
   }
   return result;

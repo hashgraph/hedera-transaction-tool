@@ -4,6 +4,7 @@ import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   assertIsLoggedInOrganization,
   getCreatorSignatureStatus,
+  snapshotTransaction,
   type CreatorSignatureStatus,
 } from '@renderer/utils';
 import { AppCache } from '@renderer/caches/AppCache.ts';
@@ -39,9 +40,8 @@ const creatorSignatureStatus = ref<CreatorSignatureStatus>('verified');
 const handleClick = async () => {
   assertIsLoggedInOrganization(user.selectedOrganization);
 
-  transaction.value = await transactionCache.lookup(
-    props.transactionId,
-    user.selectedOrganization.serverUrl,
+  transaction.value = snapshotTransaction(
+    await transactionCache.lookup(props.transactionId, user.selectedOrganization.serverUrl),
   );
 
   creatorSignatureStatus.value = getCreatorSignatureStatus(
