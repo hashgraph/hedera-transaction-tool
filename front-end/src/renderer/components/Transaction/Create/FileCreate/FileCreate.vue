@@ -111,9 +111,9 @@ const preCreateAssert = () => {
 
 /* Watchers */
 watch(
-  () => baseTransactionRef.value?.payerData.isValid,
+  () => baseTransactionRef.value?.payerInfo.isValid,
   isValid => {
-    const payer = baseTransactionRef.value?.payerData;
+    const payer = baseTransactionRef.value?.payerInfo;
     if (isValid && payer?.key && !data.ownerKey && !route.query.draftId) {
       data.ownerKey = payer.key;
     }

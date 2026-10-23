@@ -30,7 +30,7 @@ const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(
 // HIP-1300: forward the currently selected fee payer to the form so the
 // chunk-size input can grow to 128 KB for privileged accounts.
 const currentPayerId = computed<string | null>(
-  () => baseTransactionRef.value?.payerData?.accountId ?? null,
+  () => baseTransactionRef.value?.payerInfo.payerId ?? null,
 );
 
 const data = reactive<FileAppendData>({

@@ -74,6 +74,7 @@ const emit = defineEmits<{
   (event: 'submitted', id: number, body: string): void;
   (event: 'group:submitted', id: number): void;
   (event: 'draft-loaded', transaction: T): void;
+  (event: 'payer-id-changed', payerId: string | null): void;
 }>();
 
 /* Stores */
@@ -170,6 +171,15 @@ const isNodeCreationPrivRequired = computed(() => {
     initialTransaction.value instanceof NodeCreateTransaction ||
     initialTransaction.value instanceof RegisteredNodeCreateTransaction
   );
+});
+
+const payerInfo = computed(() => {
+  return {
+    payerId: payerData.accountId.value,
+    isValid: payerData.isValid.value,
+    key: payerData.key.value,
+    accountInfo: payerData.accountInfo.value
+  };
 });
 
 /* Handlers */
@@ -381,7 +391,7 @@ watch([() => payerData.key.value], updateTransactionKey, { immediate: true });
 
 /* Exposes */
 defineExpose({
-  payerData,
+  payerInfo,
   submit: handleCreate,
   updateTransactionKey,
 });
