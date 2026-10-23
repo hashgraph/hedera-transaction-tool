@@ -335,9 +335,17 @@ function encodeNodeAddressBook(content: Uint8Array) {
       // Node Cert Hash
       if (typeof nodeAddress.nodeCertHash === 'string') {
         const hash = nodeAddress.nodeCertHash as string;
-        nodeAddress.nodeCertHash = new Uint8Array(
-          hash.startsWith('0x') ? Buffer.from(hash.slice(2), 'hex') : Buffer.from(hash, 'utf-8'),
-        );
+        if (hash.startsWith('0x')) {
+          const hex = hash.slice(2);
+          if (hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) {
+            throw new Error(
+              'nodeCertHash must contain an even number of hexadecimal digits after 0x',
+            );
+          }
+          nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(hex, 'hex'));
+        } else {
+          nodeAddress.nodeCertHash = new Uint8Array(Buffer.from(hash, 'utf-8'));
+        }
       }
 
       // Service Endpoints
@@ -386,11 +394,18 @@ function encodeServicesConfigurationList(content: Uint8Array) {
   if (typeof json === 'object' && json !== null) {
     return proto.ServicesConfigurationList.encode(
       proto.ServicesConfigurationList.create({
-        nameValue: json.nameValue?.map(setting => ({
-          name: setting.name,
-          value: setting.value,
-          data: Buffer.from(setting.data ?? '', 'base64'),
-        })),
+        nameValue: json.nameValue?.map(setting => {
+          const data = setting.data === undefined ? '' : setting.data;
+          if (typeof data !== 'string') {
+            throw new Error('Setting.data must be a standard padded base64 string');
+          }
+          const bytes = Buffer.from(data, 'base64');
+          // Buffer accepts malformed input; require the exact format emitted by the decoder.
+          if (bytes.toString('base64') !== data) {
+            throw new Error('Setting.data must be a standard padded base64 string');
+          }
+          return { name: setting.name, value: setting.value, data: bytes };
+        }),
       }),
     ).finish();
   }
