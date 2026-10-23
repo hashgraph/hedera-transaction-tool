@@ -11,7 +11,12 @@ import {
   getUserShouldApprove,
   sendApproverChoice,
 } from '@renderer/services/organization';
-import { isUserLoggedIn } from '@renderer/utils';
+import {
+  getGroupCreatorSignatureStatus,
+  isSignableTransaction,
+  isUserLoggedIn,
+  snapshotGroup,
+} from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 
 const toastManager = new ToastManager();
@@ -156,6 +161,8 @@ vi.mock('@renderer/utils', () => ({
   assertUserLoggedIn: vi.fn(),
   getErrorMessage: vi.fn((error: unknown, fallback: string) =>
     error instanceof Error ? error.message : fallback),
+  getGroupCreatorSignatureStatus: vi.fn(() => 'verified'),
+  snapshotGroup: vi.fn(),
   getPrivateKey: vi.fn(),
   getStatusFromCode: vi.fn(),
   getTransactionBodySignatureWithoutNodeAccountId: vi.fn(),
@@ -251,6 +258,9 @@ const mountGroupDetails = async (
         BreadCrumb: true,
         TransactionId: true,
         TransactionGroupRow: true,
+        SignAllController: true,
+        SplitSignButtonDropdown: true,
+        CreatorSignatureConfirmModal: true,
       },
     },
   });
@@ -409,6 +419,83 @@ describe('TransactionGroupDetails.vue', () => {
 
     expect(toastManager.findEntry('1 transaction(s) canceled successfully', 'success')).not.toBeNull();
     expect(toastManager.findEntry('refresh failed', 'error')).not.toBeNull();
+  });
+
+  describe('Sign All click', () => {
+    const swappedGroup = {
+      ...groupResponse,
+      groupItems: [
+        {
+          ...groupResponse.groupItems[0],
+          transaction: { ...groupResponse.groupItems[0].transaction, id: 999 },
+        },
+      ],
+    };
+
+    const clickSignAll = async (wrapper: Awaited<ReturnType<typeof mountGroupDetails>>) => {
+      const submitEvent = new Event('submit', { cancelable: true });
+      Object.defineProperty(submitEvent, 'submitter', { value: { textContent: 'Sign All' } });
+      wrapper.find('form').element.dispatchEvent(submitEvent);
+      await flushPromises();
+    };
+
+    const swapGroupOnServer = async (wrapper: Awaited<ReturnType<typeof mountGroupDetails>>) => {
+      vi.mocked(getTransactionGroupById).mockResolvedValue(swappedGroup as any);
+      const refetch = wrapper.findComponent({ name: 'CancelAllController' }).props('callback') as (
+        id: number,
+      ) => Promise<void>;
+      await refetch(groupResponse.id);
+      await flushPromises();
+    };
+
+    beforeEach(() => {
+      vi.mocked(snapshotGroup).mockImplementation(group => ({
+        ...group,
+        groupItems: group.groupItems.map(item => ({ ...item })),
+      }));
+      vi.mocked(isSignableTransaction).mockResolvedValue(true);
+    });
+
+    test('signs a snapshot taken at the click even if the group is refetched afterwards', async () => {
+      vi.mocked(getGroupCreatorSignatureStatus).mockReturnValue('verified');
+      const wrapper = await mountGroupDetails();
+
+      await clickSignAll(wrapper);
+      await swapGroupOnServer(wrapper);
+
+      const controller = wrapper.findComponent({ name: 'SignAllController' });
+      expect(controller.props('activate')).toBe(true);
+      const signed = controller.props('groupOrId') as typeof groupResponse;
+      expect(signed.groupItems[0].transaction.id).toBe(groupResponse.groupItems[0].transaction.id);
+    });
+
+    test('asks for confirmation instead of signing when a creator signature does not verify', async () => {
+      vi.mocked(getGroupCreatorSignatureStatus).mockReturnValue('data-missing');
+      const wrapper = await mountGroupDetails();
+
+      await clickSignAll(wrapper);
+
+      const modal = wrapper.findComponent({ name: 'CreatorSignatureConfirmModal' });
+      expect(modal.props('show')).toBe(true);
+      expect(modal.props('status')).toBe('data-missing');
+      expect(wrapper.findComponent({ name: 'SignAllController' }).props('activate')).toBe(false);
+    });
+
+    test('signs the clicked snapshot, not a group swapped in while the warning is open', async () => {
+      vi.mocked(getGroupCreatorSignatureStatus).mockReturnValue('unverifiable');
+      const wrapper = await mountGroupDetails();
+
+      await clickSignAll(wrapper);
+      await swapGroupOnServer(wrapper);
+      const modal = wrapper.findComponent({ name: 'CreatorSignatureConfirmModal' });
+      (modal.props('callback') as () => void)();
+      await flushPromises();
+
+      const controller = wrapper.findComponent({ name: 'SignAllController' });
+      expect(controller.props('activate')).toBe(true);
+      const signed = controller.props('groupOrId') as typeof groupResponse;
+      expect(signed.groupItems[0].transaction.id).toBe(groupResponse.groupItems[0].transaction.id);
+    });
   });
 
   test('calls sendApproverChoice for each item when reject all is confirmed', async () => {

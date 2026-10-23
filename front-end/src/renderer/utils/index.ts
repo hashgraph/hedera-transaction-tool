@@ -1,3 +1,4 @@
+import { toRaw } from 'vue';
 import type { AccountInfo, ITransaction } from '@shared/interfaces';
 import type { HederaAccount } from '@prisma/client';
 
@@ -8,9 +9,11 @@ import pLimit from 'p-limit';
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
+import useContactsStore from '@renderer/stores/storeContacts';
 
 import { getOne } from '@renderer/services/accountsService';
-import { uploadSignatures } from '@renderer/services/organization';
+import { uploadSignatures, type IGroup } from '@renderer/services/organization';
+import { isSignableStatus } from './transactionStatusGuards';
 
 import {
   assertIsLoggedInOrganization,
@@ -19,6 +22,7 @@ import {
   isUserLoggedIn,
 } from './userStoreHelpers';
 import { isAccountId } from './validator';
+import { verifyCreatorSignature } from './sdk';
 import { usersPublicRequiredToSign } from '@renderer/utils/transactionSignatureModels';
 import type { AppCache } from '@renderer/caches/AppCache';
 import type { PublicKeyOwnerCache } from '@renderer/caches/backend/PublicKeyOwnerCache.ts';
@@ -189,6 +193,115 @@ export function stringifyHbarOrTinybar(hbar: Hbar): string {
   const displayUnit = showTinybars ? HbarUnit.Tinybar._symbol : HbarUnit.Hbar._symbol;
 
   return `${displayAmount} ${displayUnit}`;
+}
+
+/**
+ * Detached copies of what the user is about to sign. Server pushes can replace the reactive
+ * transaction or group while a modal is open; signing a snapshot taken when the user clicks Sign
+ * means we only sign what was checked and shown.
+ *
+ * These are shallow copies, which is enough because signing only uses `transactionBytes` (an
+ * immutable string, parsed at sign time) and the transaction id. Nested fields such as signers
+ * are still shared with the live object and must not be relied on for signing.
+ */
+export function snapshotTransaction<T extends ITransaction>(tx: T): T {
+  return { ...toRaw(tx) };
+}
+
+export function snapshotGroup(group: IGroup): IGroup {
+  const raw = toRaw(group);
+  return { ...raw, groupItems: raw.groupItems.map(item => ({ ...toRaw(item) })) };
+}
+
+export type CreatorSignatureStatus =
+  | 'verified'
+  | 'unverifiable'
+  | 'creator-unavailable'
+  | 'data-missing';
+
+/**
+ * Checks that the transaction served by the organization is the one its creator signed.
+ *
+ * Returns:
+ * - 'data-missing': the response has no signed bytes or no signature. The server always stores
+ *   both, so this is treated as a serious problem, not as a legacy transaction.
+ * - 'verified': the signature checks out against the creator's key.
+ * - 'creator-unavailable': the creator's key isn't among the current users' keys, e.g. the user
+ *   or key was removed. Nothing can be checked and only an administrator can resolve it.
+ * - 'unverifiable': the signature doesn't verify. Transactions created before the creator
+ *   signature was stored correctly always land here, so this means "unverifiable", not "tampered".
+ *
+ * The creator key is looked up by `tx.creatorKeyId` (own keys, then contacts) rather than read from
+ * the transaction, so the server can't vouch for its own key. This is a limited guarantee: contacts
+ * also come from the server, so only own keys are an independent source of trust. Stronger
+ * protection would need locally pinned creator keys.
+ *
+ * The legacy case can be dropped when the minimum supported version is raised; see
+ * docs/deferred-cleanup.md.
+ */
+export function getCreatorSignatureStatus(
+  tx: ITransaction,
+  ownKeys: { id: number; publicKey: string }[],
+): CreatorSignatureStatus {
+  if (!tx.unsignedTransactionBytes || !tx.signature) {
+    logger.error('Transaction is missing its creator signature data', {
+      transactionId: tx.transactionId,
+    });
+    return 'data-missing';
+  }
+
+  const creatorKey =
+    ownKeys.find(k => k.id === tx.creatorKeyId) ??
+    useContactsStore()
+      .contacts.flatMap(c => c.userKeys)
+      .find(k => k.id === tx.creatorKeyId);
+  if (!creatorKey) return 'creator-unavailable';
+
+  try {
+    return verifyCreatorSignature(
+      creatorKey.publicKey,
+      hexToUint8Array(tx.transactionBytes),
+      hexToUint8Array(tx.unsignedTransactionBytes),
+      hexToUint8Array(tx.signature),
+    )
+      ? 'verified'
+      : 'unverifiable';
+  } catch (error) {
+    logger.error('Creator signature check failed', { transactionId: tx.transactionId, error });
+    return 'unverifiable';
+  }
+}
+
+const CREATOR_SIGNATURE_SEVERITY: CreatorSignatureStatus[] = [
+  'verified',
+  'creator-unavailable',
+  'unverifiable',
+  'data-missing',
+];
+
+/** Returns the most severe of the given statuses ('verified' if there are none). */
+export function worstCreatorSignatureStatus(
+  statuses: CreatorSignatureStatus[],
+): CreatorSignatureStatus {
+  return statuses.reduce(
+    (worst, status) =>
+      CREATOR_SIGNATURE_SEVERITY.indexOf(status) > CREATOR_SIGNATURE_SEVERITY.indexOf(worst)
+        ? status
+        : worst,
+    'verified' as CreatorSignatureStatus,
+  );
+}
+
+/** Worst creator signature status among the group's transactions that can still be signed. */
+export function getGroupCreatorSignatureStatus(
+  group: IGroup,
+  ownKeys: { id: number; publicKey: string }[],
+): CreatorSignatureStatus {
+  return worstCreatorSignatureStatus(
+    group.groupItems
+      .filter(item => isSignableStatus(item.transaction.status))
+      .map(item => getCreatorSignatureStatus(item.transaction, ownKeys)),
+  );
 }
 
 export async function collectRequiredKeys(

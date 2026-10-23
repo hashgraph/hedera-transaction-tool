@@ -14,7 +14,14 @@ import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import SignSingleButton from '@renderer/pages/Transactions/components/SignSingleButton.vue';
 import SignGroupButton from '@renderer/pages/Transactions/components/SignGroupButton.vue';
-import { getStatusFromCode, isLoggedInOrganization } from '@renderer/utils';
+import {
+  getCreatorSignatureStatus,
+  getGroupCreatorSignatureStatus,
+  getStatusFromCode,
+  isLoggedInOrganization,
+} from '@renderer/utils';
+import CreatorSignaturePill from '@renderer/components/CreatorSignaturePill.vue';
+import { getTransactionGroupById } from '@renderer/services/organization';
 import useUserStore from '@renderer/stores/storeUser.ts';
 import {
   type ITransactionNode,
@@ -62,6 +69,30 @@ const freezeType = computedAsync(async () => {
   }
   return null;
 }, null);
+
+const creatorSignatureStatus = computedAsync(async () => {
+  if (
+    props.collection !== TransactionNodeCollection.READY_TO_SIGN ||
+    !isLoggedInOrganization(user.selectedOrganization)
+  ) {
+    return 'verified' as const;
+  }
+  const ownKeys = user.selectedOrganization.userKeys;
+  if (props.node.groupId) {
+    try {
+      const group = await getTransactionGroupById(
+        user.selectedOrganization.serverUrl,
+        props.node.groupId,
+      );
+      return getGroupCreatorSignatureStatus(group, ownKeys);
+    } catch {
+      return 'verified' as const;
+    }
+  }
+  const tx = await transactionAudit.transaction.value;
+  if (tx === null || tx instanceof Error) return 'verified' as const;
+  return getCreatorSignatureStatus(tx, ownKeys);
+}, 'verified' as const);
 
 const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
@@ -252,6 +283,12 @@ watch(
       {{ transactionType }}
       <span v-if="props.node.isManual" class="badge bg-info ms-3">Manual</span>
       <span v-if="isExternal" class="badge bg-info ms-2">External</span>
+      <CreatorSignaturePill
+        :status="creatorSignatureStatus"
+        :group="Boolean(props.node.groupId)"
+        class="ms-2"
+        :data-testid="`span-transaction-node-creator-signature-${index}`"
+      />
     </td>
 
     <!-- Column #3 : Description -->

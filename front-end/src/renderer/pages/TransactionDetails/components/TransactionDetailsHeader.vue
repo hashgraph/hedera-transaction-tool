@@ -18,13 +18,18 @@ import useNextTransactionV2 from '@renderer/stores/storeNextTransactionV2.ts';
 import { getUserShouldApprove } from '@renderer/services/organization';
 
 import {
+  assertIsLoggedInOrganization,
+  type CreatorSignatureStatus,
+  getCreatorSignatureStatus,
   getErrorMessage,
   hexToUint8Array,
   isLoggedInOrganization,
+  snapshotTransaction,
   usersPublicRequiredToSign,
 } from '@renderer/utils';
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
+import CreatorSignatureConfirmModal from '@renderer/components/CreatorSignatureConfirmModal.vue';
 import AppDropDown from '@renderer/components/ui/AppDropDown.vue';
 import NextTransactionCursor from '@renderer/components/NextTransactionCursor.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
@@ -115,6 +120,10 @@ const loadingStates = reactive<{ [key: string]: string | null }>({
 });
 
 const signStarted = ref(false);
+const showUnverifiedSignConfirm = ref(false);
+/* Taken when the user clicks Sign: what gets checked, shown in the warning and signed */
+const transactionToSign = ref<ITransactionFull | null>(null);
+const signCreatorSignatureStatus = ref<CreatorSignatureStatus>('verified');
 const goNextAfterSign = ref(false);
 const approveStarted = ref(false);
 const isApproved = ref(false);
@@ -152,8 +161,20 @@ const handleAction = async (value: ActionButton) => {
       break;
     case sign:
     case signAndNext:
-      signStarted.value = true;
       goNextAfterSign.value = value === signAndNext;
+      if (props.organizationTransaction !== null) {
+        assertIsLoggedInOrganization(user.selectedOrganization);
+        transactionToSign.value = snapshotTransaction(props.organizationTransaction);
+        signCreatorSignatureStatus.value = getCreatorSignatureStatus(
+          transactionToSign.value,
+          user.selectedOrganization.userKeys,
+        );
+      }
+      if (signCreatorSignatureStatus.value === 'verified') {
+        signStarted.value = true;
+      } else {
+        showUnverifiedSignConfirm.value = true;
+      }
       break;
     case cancel:
       cancelStarted.value = true;
@@ -352,10 +373,15 @@ const computeVisibleButtons = (
     </div>
   </form>
 
+  <CreatorSignatureConfirmModal
+    v-model:show="showUnverifiedSignConfirm"
+    :status="signCreatorSignatureStatus"
+    :callback="() => (signStarted = true)"
+  />
   <SignTransactionController
     v-model:activate="signStarted"
     :callback="didSign"
-    :transaction="props.organizationTransaction"
+    :transaction="transactionToSign"
   />
   <ApproveTransactionController
     v-model:activate="approveStarted"

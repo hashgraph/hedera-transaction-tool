@@ -557,6 +557,45 @@ describe('TransactionsService', () => {
       client.close();
     });
 
+    it('should store the exact signed bytes as the unsigned transaction bytes', async () => {
+      const client = Client.forTestnet();
+      const sdkTransaction = new AccountCreateTransaction()
+        .setTransactionId(
+          new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),
+        )
+        .freezeWith(client);
+
+      const dto: CreateTransactionDto = {
+        name: 'Transaction 1',
+        description: 'Description',
+        transactionBytes: Buffer.from(sdkTransaction.toBytes()),
+        creatorKeyId: 1,
+        signature: Buffer.from('0xabc02'),
+        mirrorNetwork: 'testnet',
+      };
+
+      jest.mocked(attachKeys).mockImplementationOnce(async (usr: User) => {
+        usr.keys = userKeys;
+      });
+      jest.spyOn(PublicKey.prototype, 'verify').mockReturnValueOnce(true);
+      jest.mocked(isExpired).mockReturnValueOnce(false);
+      jest.mocked(isTransactionBodyOverMaxSize).mockReturnValueOnce(false);
+      transactionsRepo.find.mockResolvedValueOnce([]);
+      jest.spyOn(MirrorNetworkGRPC, 'fromBaseURL').mockReturnValueOnce(MirrorNetworkGRPC.TESTNET);
+      jest.mocked(getClientFromNetwork).mockResolvedValueOnce(client);
+      transactionsRepo.create.mockImplementationOnce(
+        ((input: DeepPartial<Transaction>) => ({ ...input }) as Transaction) as any,
+      );
+
+      await service.createTransaction(dto, user as User);
+
+      expect(transactionsRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ unsignedTransactionBytes: dto.transactionBytes }),
+      );
+
+      client.close();
+    });
+
     it('should create a manual transaction', async () => {
       const sdkTransaction = new AccountCreateTransaction().setTransactionId(
         new TransactionId(AccountId.fromString('0.0.1'), Timestamp.fromDate(new Date())),

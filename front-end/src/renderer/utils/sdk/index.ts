@@ -28,6 +28,7 @@ import { getNetworkNodes } from '@renderer/services/mirrorNodeDataService';
 
 import { hexToUint8Array, isAccountId, isContractId, uint8ToHex } from '..';
 import { getNodeAddressBook } from '@renderer/services/sdkService';
+import { areByteArraysEqual } from '@shared/utils/byteUtils';
 
 export * from './createTransactions';
 export * from './getData';
@@ -343,7 +344,6 @@ export const formatAccountId = (accountId: string) => {
 
 export const formatContractId = (contractId: string) => {
   if (isContractId(contractId)) {
-
     return ContractId.fromString(contractId).toString();
   } else {
     return contractId;
@@ -405,7 +405,7 @@ export const getSignatureMapForPublicKeys = (publicKeys: string[], transaction: 
 
 export type FormattedMap = {
   [nodeAccountId: string]: { [transactionId: string]: { [publicKey: string]: string } };
-}
+};
 
 export const formatSignatureMap = (signatureMap: SignatureMap) => {
   const result: FormattedMap = {};
@@ -432,4 +432,43 @@ export const parseHbar = (hbar: number | null, unit: HbarUnit): Hbar | null => {
   }
 
   return Hbar.from(hbar, unit);
+};
+
+/**
+ * Parses frozen bytes into a transaction with all signatures removed, so two copies of the same
+ * transaction compare equal no matter who has signed since. Returns null if it isn't frozen.
+ */
+const parseWithoutSignatures = (bytes: Uint8Array): Transaction | null => {
+  const transaction = Transaction.fromBytes(bytes);
+  if (!transaction.isFrozen()) return null;
+  transaction.removeAllSignatures();
+  return transaction;
+};
+
+/**
+ * Checks that the creator signed the transaction the organization serves us.
+ *
+ * `unsignedTransactionBytes` are the exact bytes the creator signed. The signature must verify
+ * against them, and `transactionBytes` (which collects other signers' signatures) must be the same
+ * transaction. Both must be frozen: transactions signed unfrozen by older clients can't be
+ * matched to the served ones and are reported as not verified.
+ */
+export const verifyCreatorSignature = (
+  creatorPublicKey: PublicKey | string,
+  transactionBytes: Uint8Array,
+  unsignedTransactionBytes: Uint8Array,
+  signature: Uint8Array,
+): boolean => {
+  const publicKey =
+    creatorPublicKey instanceof PublicKey
+      ? creatorPublicKey
+      : PublicKey.fromString(creatorPublicKey);
+
+  if (!publicKey.verify(unsignedTransactionBytes, signature)) return false;
+
+  const served = parseWithoutSignatures(transactionBytes);
+  const signed = parseWithoutSignatures(unsignedTransactionBytes);
+  if (!served || !signed) return false;
+
+  return areByteArraysEqual(served.toBytes(), signed.toBytes());
 };

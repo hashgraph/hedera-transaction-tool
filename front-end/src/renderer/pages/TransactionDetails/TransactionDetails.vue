@@ -37,8 +37,10 @@ import {
   getStatusFromCode,
   getUInt8ArrayFromBytesString,
   hexToUint8Array,
+  getCreatorSignatureStatus,
   isLoggedInOrganization,
   openTransactionInHashscan,
+  type CreatorSignatureStatus,
   type SignatureAudit,
 } from '@renderer/utils';
 
@@ -58,6 +60,8 @@ import TransactionId from '@renderer/components/ui/TransactionId.vue';
 import ExpiringBadge from '@renderer/pages/TransactionDetails/components/ExpiringBadge.vue';
 import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import { isSignableStatus } from '@renderer/utils/transactionStatusGuards';
+import { CREATOR_SIGNATURE_TEXT } from '@renderer/utils/creatorSignatureText';
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -120,6 +124,23 @@ const creator = computed(() => {
       )
     : null;
 });
+
+const creatorSignatureStatus = computed<CreatorSignatureStatus>(() => {
+  if (
+    orgTransaction.value === null ||
+    !isLoggedInOrganization(user.selectedOrganization) ||
+    !isSignableStatus(orgTransaction.value.status)
+  ) {
+    return 'verified';
+  }
+  return getCreatorSignatureStatus(orgTransaction.value, user.selectedOrganization.userKeys);
+});
+
+const creatorSignatureMessage = computed(() =>
+  creatorSignatureStatus.value === 'verified'
+    ? ''
+    : CREATOR_SIGNATURE_TEXT[creatorSignatureStatus.value].message,
+);
 
 const showExternal = computed(() => {
   return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
@@ -423,6 +444,20 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                         )
                       "
                     />
+                  </p>
+                </div>
+
+                <!-- Creator signature could not be verified -->
+                <div v-if="creatorSignatureStatus !== 'verified'" :class="commonColClass">
+                  <h4 :class="detailItemLabelClass">Creator Signature</h4>
+                  <p
+                    :class="[
+                      detailItemValueClass,
+                      creatorSignatureStatus === 'data-missing' ? 'text-danger' : 'text-warning',
+                    ]"
+                    data-testid="p-transaction-details-creator-signature-unverified"
+                  >
+                    {{ creatorSignatureMessage }}
                   </p>
                 </div>
 

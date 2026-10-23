@@ -16,6 +16,10 @@ A tiered checklist of manual test cases to verify before approving a release. Ca
 
 Full catalog of test scenarios used to create manual testing issues. Referenced during the Final Release pre-requisites step.
 
+## deferred-cleanup.md
+
+Compatibility shims and follow-ups that are waiting on something, such as the next minimum supported version bump or a release. Check it when planning either.
+
 ## API
 
 Coming soon.

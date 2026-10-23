@@ -9,7 +9,11 @@ import { cancelTransaction, executeTransaction } from '@renderer/services/organi
 import { exportTransactionFile } from '@renderer/services/transactionFileService.ts';
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
-import { usersPublicRequiredToSign } from '@renderer/utils';
+import {
+  getCreatorSignatureStatus,
+  snapshotTransaction,
+  usersPublicRequiredToSign,
+} from '@renderer/utils';
 
 const toastManager = new ToastManager();
 
@@ -111,6 +115,8 @@ vi.mock('@renderer/utils', () => ({
   assertIsLoggedInOrganization: vi.fn(),
   assertUserLoggedIn: vi.fn(),
   generateTransactionExportFileName: vi.fn(),
+  getCreatorSignatureStatus: vi.fn(),
+  snapshotTransaction: vi.fn(),
   generateTransactionV1ExportContent: vi.fn(),
   generateTransactionV2ExportContent: vi.fn(),
   getErrorMessage: vi.fn((error: unknown, fallback: string) =>
@@ -184,6 +190,8 @@ const mountHeader = (
         NextTransactionCursor: true,
         SplitSignButtonDropdown: true,
         BreadCrumb: true,
+        SignTransactionController: true,
+        CreatorSignatureConfirmModal: true,
       },
     },
   });
@@ -222,6 +230,72 @@ describe('TransactionDetailsHeader.vue', () => {
       'Unsupported key type: transaction cannot be reviewed or signed',
       'error',
     )).not.toBeNull();
+  });
+
+  describe('Sign click', () => {
+    const clickSign = async (wrapper: ReturnType<typeof mountHeader>) => {
+      const submitEvent = new Event('submit', { cancelable: true });
+      Object.defineProperty(submitEvent, 'submitter', { value: { textContent: 'Sign' } });
+      wrapper.find('form').element.dispatchEvent(submitEvent);
+      await flushPromises();
+    };
+
+    beforeEach(() => {
+      vi.mocked(snapshotTransaction).mockImplementation(tx => ({ ...tx }));
+    });
+
+    test('starts signing a snapshot taken at the click when the creator signature verifies', async () => {
+      vi.mocked(getCreatorSignatureStatus).mockReturnValue('verified');
+      const wrapper = mountHeader({ transactionBytes: 'aa' });
+      await flushPromises();
+
+      await clickSign(wrapper);
+      await wrapper.setProps({
+        organizationTransaction: { ...defaultTransaction, transactionBytes: 'swapped' },
+      });
+      await flushPromises();
+
+      const controller = wrapper.findComponent({ name: 'SignTransactionController' });
+      expect(controller.props('activate')).toBe(true);
+      expect(controller.props('transaction')).toMatchObject({ transactionBytes: 'aa' });
+      expect(getCreatorSignatureStatus).toHaveBeenCalledWith(
+        expect.objectContaining({ transactionBytes: 'aa' }),
+        expect.anything(),
+      );
+    });
+
+    test('asks for confirmation instead of signing when the creator signature does not verify', async () => {
+      vi.mocked(getCreatorSignatureStatus).mockReturnValue('unverifiable');
+      const wrapper = mountHeader({ transactionBytes: 'aa' });
+      await flushPromises();
+
+      await clickSign(wrapper);
+
+      const modal = wrapper.findComponent({ name: 'CreatorSignatureConfirmModal' });
+      expect(modal.props('show')).toBe(true);
+      expect(modal.props('status')).toBe('unverifiable');
+      expect(wrapper.findComponent({ name: 'SignTransactionController' }).props('activate')).toBe(
+        false,
+      );
+    });
+
+    test('signs the clicked snapshot, not a transaction swapped in while the warning is open', async () => {
+      vi.mocked(getCreatorSignatureStatus).mockReturnValue('unverifiable');
+      const wrapper = mountHeader({ transactionBytes: 'aa' });
+      await flushPromises();
+
+      await clickSign(wrapper);
+      await wrapper.setProps({
+        organizationTransaction: { ...defaultTransaction, transactionBytes: 'swapped' },
+      });
+      const modal = wrapper.findComponent({ name: 'CreatorSignatureConfirmModal' });
+      (modal.props('callback') as () => void)();
+      await flushPromises();
+
+      const controller = wrapper.findComponent({ name: 'SignTransactionController' });
+      expect(controller.props('activate')).toBe(true);
+      expect(controller.props('transaction')).toMatchObject({ transactionBytes: 'aa' });
+    });
   });
 
   test('shows success toast after successful cancel', async () => {

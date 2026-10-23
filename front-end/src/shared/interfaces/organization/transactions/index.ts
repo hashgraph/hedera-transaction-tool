@@ -71,6 +71,8 @@ export interface ITransaction {
   type: BackEndTransactionType;
   description: string;
   transactionBytes: string;
+  /** Bytes as created, before any signatures; `signature` is made over these. Not sent by older servers. */
+  unsignedTransactionBytes?: string;
   status: TransactionStatus;
   statusCode?: number;
   signature: string;

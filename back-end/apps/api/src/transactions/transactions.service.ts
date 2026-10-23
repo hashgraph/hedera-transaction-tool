@@ -1201,7 +1201,9 @@ export class TransactionsService {
       transactionId: transactionId.toString(),
       transactionHash: encodeUint8Array(transactionHash),
       transactionBytes: sdkTransaction.toBytes(),
-      unsignedTransactionBytes: sdkTransaction.toBytes(),
+      // The exact bytes the creator signed (possibly unfrozen, from older clients), so clients
+      // can verify the signature against them
+      unsignedTransactionBytes: dto.transactionBytes,
       creatorKeyId: dto.creatorKeyId,
       signature: dto.signature,
       mirrorNetwork: dto.mirrorNetwork,
