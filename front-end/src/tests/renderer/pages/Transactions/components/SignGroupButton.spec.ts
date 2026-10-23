@@ -3,11 +3,21 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { h } from 'vue';
 
-const mocks = vi.hoisted(() => ({
-  getGroupStatus: vi.fn(),
-  getGroup: vi.fn(),
-  controllerProps: { groupOrId: null },
-}));
+interface GroupControllerProps {
+  groupOrId: unknown;
+  callback?: (groupId: number, signed: boolean) => void;
+  emitActivate?: (activate: boolean) => void;
+  emitShow?: (show: boolean) => void;
+}
+
+const mocks = vi.hoisted(() => {
+  const controllerProps: GroupControllerProps = { groupOrId: null };
+  return {
+    getGroupStatus: vi.fn(),
+    getGroup: vi.fn(),
+    controllerProps,
+  };
+});
 
 vi.mock('@renderer/stores/storeUser.ts', () => ({
   default: () => ({
@@ -34,10 +44,7 @@ function render() {
         SignAllController: {
           props: ['activate', 'groupOrId', 'callback'],
           emits: ['update:activate'],
-          setup(
-            props: { activate: boolean; groupOrId: unknown; callback: unknown },
-            { emit }: any,
-          ) {
+          setup(props: any, { emit }: any) {
             mocks.controllerProps.emitActivate = (v: boolean) => emit('update:activate', v);
             return () => {
               mocks.controllerProps.groupOrId = props.groupOrId;
@@ -149,8 +156,8 @@ describe('SignGroupButton.vue', () => {
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    await mocks.controllerProps.callback(3, false);
-    await mocks.controllerProps.callback(3, true);
+    await mocks.controllerProps.callback!(3, false);
+    await mocks.controllerProps.callback!(3, true);
 
     expect(wrapper.emitted('transactionGroupSigned')).toEqual([[{ groupId: 3, signed: true }]]);
   });
@@ -161,14 +168,14 @@ describe('SignGroupButton.vue', () => {
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    mocks.controllerProps.emitShow(false);
+    mocks.controllerProps.emitShow!(false);
     await flushPromises();
     expect(wrapper.get('[data-testid="confirm"]').attributes('data-show')).toBe('false');
 
-    mocks.controllerProps.emitActivate(true);
+    mocks.controllerProps.emitActivate!(true);
     await flushPromises();
     expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('true');
-    mocks.controllerProps.emitActivate(false);
+    mocks.controllerProps.emitActivate!(false);
     await flushPromises();
     expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('false');
   });

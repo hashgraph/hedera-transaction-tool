@@ -3,11 +3,21 @@ import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mount, flushPromises } from '@vue/test-utils';
 import { h } from 'vue';
 
-const mocks = vi.hoisted(() => ({
-  getStatus: vi.fn(),
-  lookup: vi.fn(),
-  controllerProps: { transaction: null },
-}));
+interface SingleControllerProps {
+  transaction: unknown;
+  callback?: (signed: boolean) => void;
+  emitActivate?: (activate: boolean) => void;
+  emitShow?: (show: boolean) => void;
+}
+
+const mocks = vi.hoisted(() => {
+  const controllerProps: SingleControllerProps = { transaction: null };
+  return {
+    getStatus: vi.fn(),
+    lookup: vi.fn(),
+    controllerProps,
+  };
+});
 
 vi.mock('@renderer/stores/storeUser.ts', () => ({
   default: () => ({
@@ -36,7 +46,7 @@ function render(extraProps: { refreshTransaction?: boolean } = {}) {
         SignTransactionController: {
           props: ['activate', 'transaction', 'callback'],
           emits: ['update:activate'],
-          setup(props: { transaction: unknown; callback: unknown }, { emit }: any) {
+          setup(props: any, { emit }: any) {
             mocks.controllerProps.emitActivate = (v: boolean) => emit('update:activate', v);
             return () => {
               mocks.controllerProps.transaction = props.transaction;
@@ -141,7 +151,7 @@ describe('SignSingleButton.vue', () => {
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    await mocks.controllerProps.callback(true);
+    await mocks.controllerProps.callback!(true);
 
     expect(wrapper.emitted('transactionSigned')).toHaveLength(1);
   });
@@ -152,7 +162,7 @@ describe('SignSingleButton.vue', () => {
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    await mocks.controllerProps.callback(false);
+    await mocks.controllerProps.callback!(false);
 
     expect(wrapper.emitted('transactionSigned')).toBeUndefined();
   });
@@ -165,7 +175,7 @@ describe('SignSingleButton.vue', () => {
     await wrapper.get('button').trigger('click');
     await flushPromises();
     mocks.lookup.mockResolvedValue(refreshed);
-    await mocks.controllerProps.callback(true);
+    await mocks.controllerProps.callback!(true);
 
     expect(wrapper.emitted('transactionSigned')).toEqual([[{ transaction: refreshed }]]);
   });
@@ -176,14 +186,14 @@ describe('SignSingleButton.vue', () => {
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
-    mocks.controllerProps.emitShow(false);
+    mocks.controllerProps.emitShow!(false);
     await flushPromises();
     expect(wrapper.get('[data-testid="confirm"]').attributes('data-show')).toBe('false');
 
-    mocks.controllerProps.emitActivate(true);
+    mocks.controllerProps.emitActivate!(true);
     await flushPromises();
     expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('true');
-    mocks.controllerProps.emitActivate(false);
+    mocks.controllerProps.emitActivate!(false);
     await flushPromises();
     expect(wrapper.get('[data-testid="controller"]').attributes('data-active')).toBe('false');
   });
