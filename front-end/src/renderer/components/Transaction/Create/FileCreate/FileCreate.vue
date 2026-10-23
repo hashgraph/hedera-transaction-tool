@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { Prisma } from '@prisma/client';
 import type { ExecutedSuccessData } from '@renderer/components/Transaction/TransactionProcessor';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileCreateData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { FileCreateTransaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -15,16 +14,21 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import { add } from '@renderer/services/filesService';
 
-import { isUserLoggedIn, createFileInfo, getEntityIdFromTransactionReceipt } from '@renderer/utils';
 import {
-  createFileCreateTransaction,
+  createFileInfo,
+  getEntityIdFromTransactionReceipt,
+  isUserLoggedIn,
+  type TransactionCommonData,
+} from '@renderer/utils';
+import {
   createFileCreateDataOnlyTransaction,
+  createFileCreateTransaction,
+  type FileCreateData,
   getFileCreateTransactionData,
 } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileCreateFormData from './FileCreateFormData.vue';
-
 
 /* Stores */
 const user = useUserStore();
@@ -35,7 +39,7 @@ const route = useRoute();
 const toastManager = ToastManager.inject();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<FileCreateData>({
   ownerKey: null,
@@ -47,18 +51,17 @@ const fileName = ref('');
 const description = ref('');
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createFileCreateTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(() => !data.ownerKey);
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): FileCreateTransaction => {
+  return createFileCreateTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: FileCreateTransaction) => {
   handleUpdateData(getFileCreateTransactionData(transaction));
 };
 
@@ -108,11 +111,11 @@ const preCreateAssert = () => {
 
 /* Watchers */
 watch(
-  () => baseTransactionRef.value?.payerData.isValid.value,
+  () => baseTransactionRef.value?.payerData.isValid,
   isValid => {
     const payer = baseTransactionRef.value?.payerData;
-    if (isValid && payer?.key.value && !data.ownerKey && !route.query.draftId) {
-      data.ownerKey = payer.key.value;
+    if (isValid && payer?.key && !data.ownerKey && !route.query.draftId) {
+      data.ownerKey = payer.key;
     }
   },
 );
@@ -126,6 +129,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="FileCreateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

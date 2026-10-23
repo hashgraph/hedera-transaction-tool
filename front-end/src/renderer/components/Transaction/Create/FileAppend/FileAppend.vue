@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileAppendData } from '@renderer/utils/sdk';
-
 import { computed, onMounted, reactive, ref } from 'vue';
-import { Key, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { FileAppendTransaction, Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isFileId, isLoggedInOrganization } from '@renderer/utils';
-import { createFileAppendTransaction, getFileAppendTransactionData } from '@renderer/utils/sdk';
+import { isFileId, isLoggedInOrganization, type TransactionCommonData } from '@renderer/utils';
+import {
+  createFileAppendTransaction,
+  type FileAppendData,
+  getFileAppendTransactionData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FileAppendFormData from './FileAppendFormData.vue';
@@ -22,13 +24,13 @@ const user = useUserStore();
 const route = useRoute();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 /* Computed */
 // HIP-1300: forward the currently selected fee payer to the form so the
 // chunk-size input can grow to 128 KB for privileged accounts.
 const currentPayerId = computed<string | null>(
-  () => baseTransactionRef.value?.payerData?.accountId?.value ?? null,
+  () => baseTransactionRef.value?.payerData?.accountId ?? null,
 );
 
 const data = reactive<FileAppendData>({
@@ -40,20 +42,19 @@ const data = reactive<FileAppendData>({
 const signatureKey = ref<Key | null>(null);
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createFileAppendTransaction({
-      ...common,
-      ...(data),
-    });
-});
-
 const createDisabled = computed(
   () => (!isLoggedInOrganization(user.selectedOrganization) && !signatureKey.value) || !data.fileId,
 );
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (commonData: TransactionCommonData): FileAppendTransaction => {
+  return createFileAppendTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = (transaction: FileAppendTransaction) => {
   handleUpdateData(getFileAppendTransactionData(transaction));
 };
 
@@ -82,6 +83,7 @@ onMounted(() => {
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="FileAppendTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

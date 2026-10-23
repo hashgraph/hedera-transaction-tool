@@ -1,11 +1,15 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FileUpdateData } from '@renderer/utils/sdk';
-import { createFileUpdateTransaction, getFileUpdateTransactionData } from '@renderer/utils/sdk';
+import {
+  createFileUpdateTransaction,
+  type FileUpdateData,
+  getFileUpdateTransactionData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk';
 
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { Key, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { FileUpdateTransaction, Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 
@@ -22,7 +26,7 @@ const user = useUserStore();
 const route = useRoute();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<FileUpdateData>({
   fileId: '',
@@ -34,20 +38,12 @@ const data = reactive<FileUpdateData>({
 const signatureKey = ref<Key | null>(null);
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createFileUpdateTransaction({
-      ...common,
-      ...(data as FileUpdateData),
-    });
-});
-
 const createDisabled = computed(
   () => (!isLoggedInOrganization(user.selectedOrganization) && !signatureKey.value) || !data.fileId,
 );
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const handleDraftLoaded = (transaction: FileUpdateTransaction) => {
   handleUpdateData(getFileUpdateTransactionData(transaction));
 };
 
@@ -56,6 +52,13 @@ const handleUpdateData = (newData: FileUpdateData) => {
 };
 
 /* Functions */
+const createTransaction = (commonData: TransactionCommonData): FileUpdateTransaction => {
+  return createFileUpdateTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
 const preCreateAssert = useFileTransactionAssert(data, signatureKey);
 
 /* Hooks */
@@ -76,6 +79,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="FileUpdateTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

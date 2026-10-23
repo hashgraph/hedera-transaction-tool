@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { FreezeData } from '@renderer/utils/sdk';
-
 import { computed, reactive } from 'vue';
-import { Transaction } from '@hiero-ledger/sdk';
+import { FreezeTransaction } from '@hiero-ledger/sdk';
 
-import { createFreezeTransaction, getFreezeData } from '@renderer/utils/sdk';
+import {
+  createFreezeTransaction,
+  getFreezeData,
+  type FreezeData,
+  type TransactionCommonData,
+} from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import FreezeFormData from '@renderer/components/Transaction/Create/Freeze/FreezeFormData.vue';
@@ -20,21 +22,12 @@ const data = reactive<FreezeData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createFreezeTransaction({
-      ...common,
-      ...(data),
-    });
-});
 
 // Start time is required if freeze type is FreezeOnly, FreezeUpgrade, or TelemetryUpgrade (not yet supported)
 // FileId and FileHash are required if freeze type is PrepareUpgrade, FreezeUpgrade, or TelemetryUpgrade (not yet supported)
 const createDisabled = computed(() => {
   const missingFileInfo =
-    !isAccountId(data.fileId) ||
-    typeof data.fileHash !== 'string' ||
-    data.fileHash.trim() === '';
+    !isAccountId(data.fileId) || typeof data.fileHash !== 'string' || data.fileHash.trim() === '';
 
   const needsFileInfo = data.freezeType === 2 || data.freezeType === 3;
   const needsStartTimestamp = data.freezeType === 1 || data.freezeType === 3;
@@ -47,8 +40,15 @@ const createDisabled = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction) => {
-  handleUpdateData(await getFreezeData(transaction));
+const createTransaction = (commonData: TransactionCommonData): FreezeTransaction => {
+  return createFreezeTransaction({
+    ...commonData,
+    ...data,
+  });
+};
+
+const handleDraftLoaded = async (transaction: FreezeTransaction) => {
+  handleUpdateData(getFreezeData(transaction));
 };
 
 const handleUpdateData = (newData: FreezeData) => {
@@ -58,6 +58,7 @@ const handleUpdateData = (newData: FreezeData) => {
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="FreezeTransaction"
     :create-disabled="createDisabled"
     :create-transaction="createTransaction"
     @draft-loaded="handleDraftLoaded"

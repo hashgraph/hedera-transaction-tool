@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script lang="ts" generic="T extends Transaction" setup>
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   applyNanoOffset,
@@ -14,7 +14,6 @@ import TransactionProcessor, {
   type ExecutedSuccessData,
   TransactionRequest,
 } from '@renderer/components/Transaction/TransactionProcessor';
-import type { CreateTransactionFunc } from '.';
 
 import { computed, onMounted, reactive, ref, toRaw, watch } from 'vue';
 import {
@@ -43,7 +42,9 @@ import BaseTransactionModal from '@renderer/components/Transaction/Create/BaseTr
 import TransactionHeaderControls from '@renderer/components/Transaction/TransactionHeaderControls.vue';
 import TransactionInfoControls from '@renderer/components/Transaction/TransactionInfoControls.vue';
 import TransactionIdControls from '@renderer/components/Transaction/TransactionIdControls.vue';
-import BaseDraftLoad from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
+import BaseDraftLoad, {
+  type TransactionCtor,
+} from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 import BaseGroupHandler from '@renderer/components/Transaction/Create/BaseTransaction/BaseGroupHandler.vue';
 import BaseApproversObserverData from '@renderer/components/Transaction/Create/BaseTransaction/BaseApproversObserverData.vue';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
@@ -54,9 +55,13 @@ import useNextTransactionV2, {
 import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
 
+/* Types */
+export type CreateTransactionFunc<T> = (commonData: TransactionCommonData) => T;
+
 /* Props */
 const { createTransaction, preCreateAssert, customRequest } = defineProps<{
-  createTransaction: CreateTransactionFunc;
+  transactionCtor: TransactionCtor<T>;
+  createTransaction: CreateTransactionFunc<T>;
   preCreateAssert?: () => boolean | void | Promise<boolean | void>;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
@@ -68,7 +73,7 @@ const emit = defineEmits<{
   (event: 'executed:success', data: ExecutedSuccessData): void;
   (event: 'submitted', id: number, body: string): void;
   (event: 'group:submitted', id: number): void;
-  (event: 'draft-loaded', transaction: Transaction): void;
+  (event: 'draft-loaded', transaction: T): void;
 }>();
 
 /* Stores */
@@ -122,7 +127,7 @@ const approvers = ref<TransactionApproverDto[]>([]);
 const isProcessed = ref(false);
 const groupActionTaken = ref(false);
 const memoError = ref(false);
-const initialTransaction = ref<Transaction | null>(null);
+const initialTransaction = ref<T | null>(null);
 const initialDescription = ref('');
 const transactionKey = ref<KeyList>(new KeyList([]));
 
@@ -142,17 +147,11 @@ const hasTransactionChanged = computed(() => {
       (initialValidStart.compare(now) > 0 || validStart.compare(now) > 0)
     ) {
       result = true; // validStart was updated
-    } else if (
-      hasStartTimestampChanged(
-        initialTransaction.value as Transaction,
-        transaction.value,
-        now,
-      )
-    ) {
+    } else if (hasStartTimestampChanged(initialTransaction.value, transaction.value, now)) {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart, startTimestamp and expirationTime
-      result = !transactionsDataMatch(initialTransaction.value as Transaction, transaction.value);
+      result = !transactionsDataMatch(initialTransaction.value, transaction.value);
     }
   } else {
     result = true; // initialTransaction is not yet initialized
@@ -174,7 +173,7 @@ const isNodeCreationPrivRequired = computed(() => {
 });
 
 /* Handlers */
-const handleDraftLoaded = async (transaction: Transaction, loadedDescription: string) => {
+const handleDraftLoaded = async (transaction: T, loadedDescription: string): Promise<void> => {
   initialTransaction.value = transaction;
   description.value = loadedDescription;
   initialDescription.value = loadedDescription;
@@ -463,7 +462,7 @@ defineExpose({
       :save-draft="saveDraft"
     />
 
-    <BaseDraftLoad @draft-loaded="handleDraftLoaded" />
+    <BaseDraftLoad :transaction-ctor="transactionCtor" @draft-loaded="handleDraftLoaded" />
     <BaseGroupHandler
       ref="baseGroupHandlerRef"
       :create-transaction="() => createTransaction({ ...data } as TransactionCommonData)"

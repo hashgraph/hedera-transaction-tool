@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import type { IAccountInfoParsed } from '@shared/interfaces';
-import type { CreateTransactionFunc } from '@renderer/components/Transaction/Create/BaseTransaction';
-import type { ApproveHbarAllowanceData } from '@renderer/utils/sdk';
 
 import { computed, reactive, ref, watch } from 'vue';
-import { Hbar, Transaction } from '@hiero-ledger/sdk';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import { AccountAllowanceApproveTransaction, Hbar } from '@hiero-ledger/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
 import { isAccountId } from '@renderer/utils';
 import {
+  type ApproveHbarAllowanceData,
   createApproveHbarAllowanceTransaction,
   getApproveHbarAllowanceTransactionData,
+  type TransactionCommonData,
 } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -22,7 +23,7 @@ const ownerData = useAccountId();
 const spenderData = useAccountId();
 
 /* State */
-const baseTransactionRef = ref<InstanceType<typeof BaseTransaction> | null>(null);
+const baseTransactionRef = ref<ComponentExposed<typeof BaseTransaction> | null>(null);
 
 const data = reactive<ApproveHbarAllowanceData>({
   ownerAccountId: '',
@@ -31,18 +32,19 @@ const data = reactive<ApproveHbarAllowanceData>({
 });
 
 /* Computed */
-const createTransaction = computed<CreateTransactionFunc>(() => {
-  return common =>
-    createApproveHbarAllowanceTransaction({
-      ...common,
-      ...(data as ApproveHbarAllowanceData),
-    });
-});
-
 const createDisabled = computed(() => !spenderData.key.value || !ownerData.key.value);
 
 /* Handlers */
-const handleDraftLoaded = (transaction: Transaction) => {
+const createTransaction = (
+  commonData: TransactionCommonData,
+): AccountAllowanceApproveTransaction => {
+  return createApproveHbarAllowanceTransaction({
+    ...commonData,
+    ...(data as ApproveHbarAllowanceData),
+  });
+};
+
+const handleDraftLoaded = (transaction: AccountAllowanceApproveTransaction) => {
   handleUpdateData(getApproveHbarAllowanceTransactionData(transaction));
 };
 
@@ -73,6 +75,7 @@ watch(
 <template>
   <BaseTransaction
     ref="baseTransactionRef"
+    :transaction-ctor="AccountAllowanceApproveTransaction"
     :create-transaction="createTransaction"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"

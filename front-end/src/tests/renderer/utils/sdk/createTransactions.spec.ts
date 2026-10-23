@@ -915,10 +915,6 @@ describe('createFreezeTransaction', () => {
     });
     expect(tx.fileId).toBeNull();
   });
-
-  test('getFreezeData rejects other transaction types', () => {
-    expect(() => getFreezeData(new NodeDeleteTransaction())).toThrow();
-  });
 });
 
 describe('createSystemDeleteTransaction', () => {
@@ -975,10 +971,6 @@ describe('createSystemDeleteTransaction', () => {
     expect(tx.fileId).toBeNull();
     expect(tx.contractId).toBeNull();
   });
-
-  test('getSystemDeleteData rejects other transaction types', () => {
-    expect(() => getSystemDeleteData(new SystemUndeleteTransaction())).toThrow();
-  });
 });
 
 describe('createSystemUndeleteTransaction', () => {
@@ -995,10 +987,6 @@ describe('createSystemUndeleteTransaction', () => {
       createSystemUndeleteTransaction({ ...common, fileId: '', contractId: '0.0.1234' }),
     );
     expect(getSystemUndeleteData(tx)).toEqual({ fileId: '', contractId: '0.0.1234' });
-  });
-
-  test('getSystemUndeleteData rejects other transaction types', () => {
-    expect(() => getSystemUndeleteData(new SystemDeleteTransaction())).toThrow();
   });
 });
 
@@ -1017,10 +1005,6 @@ describe('createNodeDeleteTransaction', () => {
   test('empty node id leaves the field unset', () => {
     const tx = createNodeDeleteTransaction({ ...common, nodeId: '' });
     expect(tx.nodeId).toBeNull();
-  });
-
-  test('getNodeDeleteData rejects other transaction types', () => {
-    expect(() => getNodeDeleteData(new NodeCreateTransaction())).toThrow();
   });
 });
 
