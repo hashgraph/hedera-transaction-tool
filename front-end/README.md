@@ -8,7 +8,7 @@ and is at your own risk.
 # Prerequisites
 
 - [**Node.js**](https://nodejs.org/en/download/package-manager)
-  - Required version: `>= 24.20.0 <25`
+  - Required version: `>= 24.22.1 <25`
   - Verify installation:
 
     ```bash
