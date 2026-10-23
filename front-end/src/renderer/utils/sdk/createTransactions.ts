@@ -1,4 +1,8 @@
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type {
+  IAccountInfoParsed,
+  INodeInfoParsed,
+  IRegisteredNodeInfoParsed,
+} from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -40,9 +44,14 @@ import {
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
 
+import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { compareNodeServiceEndpoint } from '@renderer/utils/sdk/serviceEndpoints.ts';
+import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
+import {
+  compareNodeServiceEndpoint,
+  compareNodeServiceEndpoints,
+} from '@renderer/utils/sdk/serviceEndpoints.ts';
 
 export type TransactionCommonData = {
   payerId: string;
@@ -520,87 +529,148 @@ export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | n
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,
   data: NodeData,
-  oldData?: INodeInfoParsed | null,
+  baseline: NodeUpdateTransaction | null,
 ) => {
   const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
   const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
   const txGrpcWebProxyEndpoint = getServiceEndpoint(data.grpcWebProxyEndpoint);
 
-  if (oldData?.description !== data.description) {
+  const newDescription = data.description;
+  const oldDescription = baseline?.description ?? '';
+  if (oldDescription !== newDescription) {
     transaction.setDescription(data.description);
   }
 
-  if (
-    isAccountId(data.nodeAccountId) &&
-    data.nodeAccountId !== oldData?.node_account_id?.toString()
-  ) {
-    transaction.setAccountId(data.nodeAccountId);
+  if (isAccountId(data.nodeAccountId)) {
+    const newValue = AccountId.fromString(data.nodeAccountId);
+    const oldValue = baseline !== null ? baseline.accountId : null
+    if (oldValue === null || (newValue !== null && !newValue.equals(oldValue))) {
+      transaction.setAccountId(newValue);
+    }
   }
 
   if (txGossipEndpoints.length > 0) {
-    transaction.setGossipEndpoints(txGossipEndpoints);
+    const oldValue = baseline !== null ? baseline.gossipEndpoints : null;
+    if (oldValue === null || !compareNodeServiceEndpoints(oldValue, txGossipEndpoints)) {
+      transaction.setGossipEndpoints(txGossipEndpoints);
+    }
   }
 
   if (txServiceEndpoints.length > 0) {
-    transaction.setServiceEndpoints(txServiceEndpoints);
+    const oldValue = baseline !== null ? baseline.serviceEndpoints : null;
+    if (oldValue === null || !compareNodeServiceEndpoints(oldValue, txServiceEndpoints)) {
+      transaction.setServiceEndpoints(txServiceEndpoints);
+    }
   }
 
   if (txGrpcWebProxyEndpoint !== null) {
-    const oldValue = oldData?.grpc_web_proxy_endpoint ?? null;
+    const oldValue = baseline !== null ? baseline.grpcWebProxyEndpoint : null;
     if (oldValue === null || !compareNodeServiceEndpoint(oldValue, txGrpcWebProxyEndpoint)) {
       transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
     }
   }
 
   if (data.certificateHash.length > 0) {
-    transaction.setCertificateHash(data.certificateHash);
+    const newValue = data.certificateHash;
+    const oldValue = baseline !== null ? baseline.certificateHash : null;
+    if (oldValue === null || uint8ToHex(oldValue) !== uint8ToHex(newValue)) {
+      transaction.setCertificateHash(newValue);
+    }
   }
 
   if (data.gossipCaCertificate.length > 0) {
-    transaction.setGossipCaCertificate(data.gossipCaCertificate);
+    const newValue = data.gossipCaCertificate;
+    const oldValue = baseline !== null ? baseline.gossipCaCertificate : null;
+    if (oldValue === null || uint8ToHex(oldValue) !== uint8ToHex(newValue)) {
+      transaction.setGossipCaCertificate(newValue);
+    }
   }
 
-  if (data.adminKey && oldData?.admin_key) {
-    !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
-  } else if (data.adminKey) {
-    transaction.setAdminKey(data.adminKey);
+  if (data.adminKey) {
+    const newValue = data.adminKey;
+    const oldValue = baseline !== null ? baseline.adminKey : null;
+    if (oldValue === null || !compareKeys(oldValue, newValue)) {
+      transaction.setAdminKey(newValue);
+    }
   }
 
-  if (oldData?.decline_reward !== data.declineReward) {
+  const oldDeclineReward = baseline?.declineReward ?? null;
+  if (oldDeclineReward !== data.declineReward) {
     transaction.setDeclineReward(data.declineReward);
   }
 
-  const oldAssociated = (oldData?.associated_registered_nodes ?? []).map(String).sort().join(',');
-  const newAssociated = data.associatedRegisteredNodes.slice().sort().join(',');
-  if (oldAssociated !== newAssociated) {
-    transaction.setAssociatedRegisteredNodes(
-      data.associatedRegisteredNodes.map(id => Long.fromString(id)),
-    );
+  const newAssociatedNodes = data.associatedRegisteredNodes.map(l => Long.fromString(l));
+  const oldAssociatedNodes = baseline?.associatedRegisteredNodes ?? [];
+  if (baseline === null || !sortAndCompareLongs(oldAssociatedNodes, newAssociatedNodes)) {
+    transaction.setAssociatedRegisteredNodes(newAssociatedNodes);
   }
 };
+
+function sortAndCompareLongs(a1: Long[], a2: Long[]): boolean {
+  if (a1.length != a2.length) return false;
+  const sorted1 = a1.slice().sort((l1, l2) => l1.compare(l2));
+  const sorted2 = a2.slice().sort((l1, l2) => l1.compare(l2));
+  for (let i = 0; i < a1.length; i += 1) {
+    if (!sorted1[i].eq(sorted2[i])) return false;
+  }
+  return true;
+}
 
 /* Node Create */
 export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
   const transaction = new NodeCreateTransaction();
   setTransactionCommonData(transaction, data);
-  setNodeData(transaction, data);
+  setNodeData(transaction, data, null);
   return transaction;
 }
 
 /* Node Update */
 export function createNodeUpdateTransaction(
   data: TransactionCommonData & NodeUpdateData,
-  oldData: INodeInfoParsed | null,
+  baseline: NodeUpdateTransaction | null,
 ) {
   const transaction = new NodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
-  setNodeData(transaction, data, oldData);
+  setNodeData(transaction, data, baseline);
 
   if (data.nodeId) {
     transaction.setNodeId(Long.fromString(data.nodeId));
   }
 
   return transaction;
+}
+
+export function createNodeUpdateTransactionFromInfo(info: INodeInfoParsed): NodeUpdateTransaction {
+  const result = new NodeUpdateTransaction();
+
+  if (info.node_id !== null) {
+    result.setNodeId(Long.fromNumber(info.node_id));
+  }
+  if (info.admin_key !== null) {
+    result.setAdminKey(info.admin_key);
+  }
+  if (info.description !== null) {
+    result.setDescription(info.description);
+  }
+  if (info.node_id !== null) {
+    result.setNodeId(Long.fromNumber(info.node_id));
+  }
+  if (info.node_account_id !== null) {
+    result.setAccountId(info.node_account_id);
+  }
+  if (info.service_endpoints.length > 0) {
+    result.setServiceEndpoints(info.service_endpoints);
+  }
+  if (info.node_cert_hash !== null) {
+    result.setCertificateHash(hexToUint8Array(info.node_cert_hash));
+  }
+  result.setDeclineReward(info.decline_reward);
+  if (info.grpc_web_proxy_endpoint !== null) {
+    result.setGrpcWebProxyEndpoint(info.grpc_web_proxy_endpoint);
+  }
+  result.setAssociatedRegisteredNodes(info.associated_registered_nodes);
+
+  return result;
 }
 
 /* HIP-1137 — Registered Node */
@@ -762,6 +832,7 @@ export function createRegisteredNodeCreateTransaction(
 
 export function createRegisteredNodeUpdateTransaction(
   data: TransactionCommonData & RegisteredNodeUpdateData,
+  baseline: RegisteredNodeUpdateTransaction | null
 ): RegisteredNodeUpdateTransaction {
   const transaction = new RegisteredNodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
@@ -771,19 +842,51 @@ export function createRegisteredNodeUpdateTransaction(
   }
 
   if (data.adminKey) {
-    transaction.setAdminKey(data.adminKey);
+    const newValue = data.adminKey;
+    const oldValue = baseline !== null ? baseline.adminKey : null;
+    if (oldValue === null || (newValue !== null && !compareKeys(oldValue, newValue))) {
+      transaction.setAdminKey(newValue);
+    }
   }
 
-  if (data.description && data.description.length > 0) {
-    transaction.setDescription(data.description);
+  if (data.description.length > 0) {
+    const newValue = data.description;
+    const oldValue = baseline !== null ? baseline.description : null;
+    if (oldValue === null || oldValue !== newValue) {
+      transaction.setDescription(newValue);
+    }
   }
 
-  const endpoints = getRegisteredServiceEndpoints(data.serviceEndpoints);
-  if (endpoints.length > 0) {
-    transaction.setServiceEndpoints(endpoints);
+  if (data.serviceEndpoints.length > 0) {
+    const newValue = getRegisteredServiceEndpoints(data.serviceEndpoints);
+    const oldValue = baseline !== null ? baseline.serviceEndpoints : null;
+    if (oldValue === null || !compareServiceEndpoints(oldValue, newValue)) {
+      transaction.setServiceEndpoints(newValue);
+    }
   }
 
   return transaction;
+}
+
+export function createRegisteredNodeUpdateTransactionFromInfo(
+  info: IRegisteredNodeInfoParsed,
+): RegisteredNodeUpdateTransaction {
+  const result = new RegisteredNodeUpdateTransaction();
+
+  if (info.admin_key !== null) {
+    result.setAdminKey(info.admin_key);
+  }
+  if (info.description !== null) {
+    result.setDescription(info.description);
+  }
+  if (info.registered_node_id !== null) {
+    result.setRegisteredNodeId(info.registered_node_id);
+  }
+  if (info.service_endpoints.length > 0) {
+    result.setServiceEndpoints(info.service_endpoints);
+  }
+
+  return result;
 }
 
 export function createRegisteredNodeDeleteTransaction(

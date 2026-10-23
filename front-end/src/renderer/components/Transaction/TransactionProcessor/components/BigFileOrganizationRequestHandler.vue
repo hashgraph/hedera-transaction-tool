@@ -168,6 +168,7 @@ function createGroupItem(transaction: Transaction, transactionKey: Key, seq: str
     payerAccountId: payerId,
     seq,
     transactionBytes: transactionBytes,
+    baselineBytes: null,
     type: getTransactionType(transaction),
     validStart: validStart,
   };
