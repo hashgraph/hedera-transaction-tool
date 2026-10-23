@@ -179,7 +179,7 @@ export const getFileInfoTransactionData = (
   }
   return {
     ownerKey: transaction.keys ? new KeyList(transaction.keys) : null,
-    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+    contents: transaction.contents ?? '',
     fileMemo: transaction.fileMemo || '',
     expirationTime,
   };
@@ -201,7 +201,7 @@ export const getFileAppendTransactionData = (transaction: FileAppendTransaction)
     fileId: transaction.fileId?.toString() || '',
     chunkSize: transaction.chunkSize || 0,
     maxChunks: transaction.maxChunks || 9999999999999,
-    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+    contents: transaction.contents ?? '',
   };
 };
 
