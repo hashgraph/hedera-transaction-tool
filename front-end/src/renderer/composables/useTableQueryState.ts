@@ -3,7 +3,7 @@ import { useRouter } from 'vue-router';
 /**
  * Composable that reads `page`, `sort`, and `order` from the current URL query
  * parameters at setup time and provides a helper to write them back via
- * `router.replace()` (no new history entry).
+ * `router.replace()` (no new history entry), so table state is bookmarkable/shareable.
  *
  * @param validSortValues - Allowed sort-field strings (used for validation).
  * @param defaultSort     - The default sort field string (omitted from URL).

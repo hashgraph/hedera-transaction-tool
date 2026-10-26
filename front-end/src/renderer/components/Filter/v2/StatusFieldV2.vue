@@ -6,7 +6,17 @@ import MultipleSelectFilterFieldV2 from '@renderer/components/Filter/v2/Multiple
 const statusFilter = defineModel<TransactionStatus[]>('statusFilter', { required: true });
 
 /* Misc */
-const itemAndLabels = Object.values(TransactionStatus).map(status => ({
+// This field is only used in the History tab, which can only ever return transactions in a
+// terminal state (see TRANSACTION_STATUS_COLLECTIONS.HISTORY on the back-end).
+const allowedStatuses = [
+  TransactionStatus.EXECUTED,
+  TransactionStatus.EXPIRED,
+  TransactionStatus.FAILED,
+  TransactionStatus.CANCELED,
+  TransactionStatus.ARCHIVED,
+];
+
+const itemAndLabels = allowedStatuses.map(status => ({
   item: status,
   label: status
     .toLocaleLowerCase()
