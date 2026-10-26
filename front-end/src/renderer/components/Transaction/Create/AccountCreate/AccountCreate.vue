@@ -13,7 +13,13 @@ import { useRoute } from 'vue-router';
 
 import { add } from '@renderer/services/accountsService';
 
-import { isAccountId, isUserLoggedIn, getEntityIdFromTransactionReceipt } from '@renderer/utils';
+import {
+  isAccountId,
+  isUserLoggedIn,
+  getEntityIdFromTransactionReceipt,
+  getAccountData,
+  getTransactionCommonData,
+} from '@renderer/utils';
 import {
   createAccountCreateTransaction,
   getAccountCreateData,
@@ -66,6 +72,14 @@ const createTransaction = (commonData: TransactionCommonData): AccountCreateTran
     ...commonData,
     ...(data as AccountCreateData),
   });
+};
+
+const getAllData = (tx: AccountCreateTransaction): AccountCreateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getAccountData(tx),
+    ...getAccountCreateData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: AccountCreateTransaction) => {
@@ -136,6 +150,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="AccountCreateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

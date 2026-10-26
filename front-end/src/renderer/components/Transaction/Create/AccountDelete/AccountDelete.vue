@@ -11,7 +11,7 @@ import useAccountId from '@renderer/composables/useAccountId';
 
 import { remove } from '@renderer/services/accountsService';
 
-import { isAccountId, isUserLoggedIn, safeAwait } from '@renderer/utils';
+import { getTransactionCommonData, isAccountId, isUserLoggedIn, safeAwait } from '@renderer/utils';
 import {
   type AccountDeleteData,
   type TransactionCommonData,
@@ -58,6 +58,13 @@ const createTransaction = (commonData: TransactionCommonData): AccountDeleteTran
     ...commonData,
     ...data,
   });
+};
+
+const getAllData = (tx: AccountDeleteTransaction): AccountDeleteData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getAccountDeleteData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: AccountDeleteTransaction) => {
@@ -125,6 +132,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="AccountDeleteTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

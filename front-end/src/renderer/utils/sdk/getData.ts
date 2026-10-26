@@ -101,7 +101,7 @@ export const assertTransactionType: AssertType = (transaction, type) => {
   }
 };
 
-const getAccountData = (transaction: Transaction): AccountData => {
+export const getAccountData = (transaction: Transaction): AccountData => {
   if (
     !(transaction instanceof AccountCreateTransaction) &&
     !(transaction instanceof AccountUpdateTransaction)
@@ -435,101 +435,6 @@ export function getSystemUndeleteData(transaction: SystemUndeleteTransaction): S
   return getSystemData(transaction);
 }
 
-export function getAllData(tx: Transaction) {
-  if (tx instanceof AccountCreateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getAccountData(tx),
-      ...getAccountCreateData(tx),
-    };
-  } else if (tx instanceof AccountUpdateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getAccountUpdateData(tx),
-    };
-  } else if (tx instanceof AccountAllowanceApproveTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getApproveHbarAllowanceTransactionData(tx),
-    };
-  } else if (tx instanceof AccountDeleteTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getAccountDeleteData(tx),
-    };
-  } else if (tx instanceof FileCreateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getFileInfoTransactionData(tx),
-      ...getFileCreateTransactionData(tx),
-    };
-  } else if (tx instanceof FileUpdateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getFileInfoTransactionData(tx),
-      ...getFileUpdateTransactionData(tx),
-    };
-  } else if (tx instanceof FileAppendTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getFileAppendTransactionData(tx),
-    };
-  } else if (tx instanceof FreezeTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getFreezeData(tx),
-    };
-  } else if (tx instanceof TransferTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getTransferHbarData(tx),
-    };
-  } else if (tx instanceof NodeCreateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getNodeData(tx),
-    };
-  } else if (tx instanceof NodeUpdateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getNodeData(tx),
-      ...getNodeUpdateData(tx),
-    };
-  } else if (tx instanceof NodeDeleteTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getNodeDeleteData(tx),
-    };
-  } else if (tx instanceof RegisteredNodeCreateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getRegisteredNodeData(tx),
-    };
-  } else if (tx instanceof RegisteredNodeUpdateTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getRegisteredNodeUpdateData(tx),
-    };
-  } else if (tx instanceof RegisteredNodeDeleteTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getRegisteredNodeDeleteData(tx),
-    };
-  } else if (tx instanceof SystemDeleteTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getSystemDeleteData(tx),
-    };
-  } else if (tx instanceof SystemUndeleteTransaction) {
-    return {
-      ...getTransactionCommonData(tx),
-      ...getSystemUndeleteData(tx),
-    };
-  } else {
-    throw new Error('Unsupported transaction type');
-  }
-}
-
 export function hasStartTimestampChanged(
   initial: Transaction | null,
   current: Transaction,
@@ -550,10 +455,7 @@ export function hasStartTimestampChanged(
     (initialStart.compare(now) > 0 || currentStart.compare(now) > 0);
 }
 
-export function transactionsDataMatch(t1: Transaction, t2: Transaction): boolean {
-  const t1Data = getAllData(t1);
-  const t2Data = getAllData(t2);
-
+export function transactionsDataMatch(t1Data: Record<string, unknown>, t2Data: Record<string, unknown>): boolean {
   clearComparisonFields(t1Data);
   clearComparisonFields(t2Data);
 

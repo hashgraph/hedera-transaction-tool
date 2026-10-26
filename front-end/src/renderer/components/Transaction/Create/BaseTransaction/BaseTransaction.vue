@@ -1,4 +1,4 @@
-<script lang="ts" generic="T extends Transaction" setup>
+<script lang="ts" generic="T extends Transaction, D extends Record<string, unknown>" setup>
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import {
   applyNanoOffset,
@@ -57,11 +57,13 @@ import { addDraft, updateDraft } from '@renderer/services/transactionDraftsServi
 
 /* Types */
 export type CreateTransactionFunc<T> = (commonData: TransactionCommonData) => T;
+export type GetAllData<T, D> = (transaction: T) => D;
 
 /* Props */
-const { createTransaction, preCreateAssert, customRequest } = defineProps<{
+const { createTransaction, preCreateAssert, customRequest, getAllData } = defineProps<{
   transactionCtor: TransactionCtor<T>;
   createTransaction: CreateTransactionFunc<T>;
+  getAllData: GetAllData<T, D>;
   preCreateAssert?: () => boolean | void | Promise<boolean | void>;
   createDisabled?: boolean;
   customRequest?: CustomRequest;
@@ -152,7 +154,9 @@ const hasTransactionChanged = computed(() => {
       result = true; // startTimestamp was manually updated to a future time
     } else {
       // whether tx data match, excluding validStart, startTimestamp and expirationTime
-      result = !transactionsDataMatch(initialTransaction.value, transaction.value);
+      const initialData = getAllData(initialTransaction.value);
+      const currentData = getAllData(transaction.value);
+      result = !transactionsDataMatch(initialData, currentData);
     }
   } else {
     result = true; // initialTransaction is not yet initialized
@@ -178,7 +182,7 @@ const payerInfo = computed(() => {
     payerId: payerData.accountId.value,
     isValid: payerData.isValid.value,
     key: payerData.key.value,
-    accountInfo: payerData.accountInfo.value
+    accountInfo: payerData.accountInfo.value,
   };
 });
 

@@ -3,7 +3,9 @@ import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransac
 import {
   createFileUpdateTransaction,
   type FileUpdateData,
+  getFileInfoTransactionData,
   getFileUpdateTransactionData,
+  getTransactionCommonData,
   type TransactionCommonData,
 } from '@renderer/utils/sdk';
 
@@ -59,6 +61,13 @@ const createTransaction = (commonData: TransactionCommonData): FileUpdateTransac
   });
 };
 
+const getAllData = (tx: FileUpdateTransaction): FileUpdateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getFileInfoTransactionData(tx),
+    ...getFileUpdateTransactionData(tx),
+  };
+};
 const preCreateAssert = useFileTransactionAssert(data, signatureKey);
 
 /* Hooks */
@@ -81,6 +90,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="FileUpdateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

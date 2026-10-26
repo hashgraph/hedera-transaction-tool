@@ -13,7 +13,7 @@ import { RegisteredNodeDeleteTransaction } from '@hiero-ledger/sdk';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useRegisteredNodeId from '@renderer/composables/useRegisteredNodeId';
 
-import { getRegisteredNodeDeleteData } from '@renderer/utils';
+import { getRegisteredNodeDeleteData, getTransactionCommonData } from '@renderer/utils';
 
 /* Composables */
 const toastManager = ToastManager.inject();
@@ -37,6 +37,12 @@ const createTransaction = (commonData: TransactionCommonData): RegisteredNodeDel
   });
 };
 
+const getAllData = (tx: RegisteredNodeDeleteTransaction): RegisteredNodeDeleteData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getRegisteredNodeDeleteData(tx),
+  };
+};
 const handleDraftLoaded = (transaction: RegisteredNodeDeleteTransaction) => {
   if (
     transaction instanceof RegisteredNodeDeleteTransaction &&
@@ -64,6 +70,7 @@ const handleExecutedSuccess = async () => {
     ref="baseTransactionRef"
     :transaction-ctor="RegisteredNodeDeleteTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"

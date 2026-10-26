@@ -1,8 +1,16 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { ref } from 'vue';
-import { AccountId, Hbar, Timestamp, TransactionId, TransferTransaction } from '@hiero-ledger/sdk';
+import {
+  AccountId,
+  Hbar,
+  Timestamp,
+  Transaction,
+  TransactionId,
+  TransferTransaction,
+} from '@hiero-ledger/sdk';
+import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction/BaseTransaction.vue';
 
 // Module-level route query the mocked `useRoute` reads. Each test sets this
 // before mounting so getInitialValidStart() sees the desired param.
@@ -130,8 +138,6 @@ vi.mock('@renderer/components/Transaction/TransactionProcessor', () => ({
   TransactionRequest: class {},
 }));
 
-import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction/BaseTransaction.vue';
-
 function createTransferTransaction(validStart: Date, memo = '', payer = '0.0.2') {
   return new TransferTransaction()
     .setTransactionMemo(memo)
@@ -147,6 +153,13 @@ function mountBase() {
       transactionCtor: TransferTransaction,
       createTransaction: ({ validStart, transactionMemo, payerId }) =>
         createTransferTransaction(validStart, transactionMemo, payerId || '0.0.2'),
+      getAllData: (tx: Transaction) => {
+        return {
+          validStart: tx.transactionId?.validStart,
+          transactionMemo: tx.transactionMemo,
+          payerId: tx.transactionId?.accountId || '0.0.2',
+        };
+      },
     },
   });
 }
