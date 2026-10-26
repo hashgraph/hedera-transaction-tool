@@ -29,7 +29,7 @@ describe('IPC handlers Files', () => {
   const fileIds = ['filed1'];
 
   test('Should register handlers for each event', () => {
-    const events = ['getAll', 'add', 'remove', 'update', 'showStoredFileInTemp', 'decodeProto'];
+    const events = ['getAll', 'add', 'remove', 'update', 'showStoredFileInTemp', 'decodeProto', 'hasHiddenData'];
     expect(events.every(e => getIPCHandler(`files:${e}`))).toBe(true);
   });
 

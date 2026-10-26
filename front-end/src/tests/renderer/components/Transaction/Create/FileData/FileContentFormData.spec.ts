@@ -28,11 +28,13 @@ const TXT_BYTES = new Uint8Array([0x68, 0x65, 0x6c, 0x6c, 0x6f]);
 
 describe('FileContentFormData', () => {
   let decodeProtoMock: ReturnType<typeof vi.fn>;
+  let noticeMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     decodeProtoMock = vi.fn().mockResolvedValue(DECODED_PROTO_JSON);
+    noticeMock = vi.fn().mockResolvedValue(false);
     (window as any).electronAPI = {
-      local: { files: { decodeProto: decodeProtoMock } },
+      local: { files: { decodeProto: decodeProtoMock, hasHiddenData: noticeMock } },
     };
   });
 
@@ -106,6 +108,47 @@ describe('FileContentFormData', () => {
       expect(
         wrapper.find<HTMLTextAreaElement>('[data-testid="textarea-file-content"]').element.value,
       ).toBe('');
+    });
+  });
+
+  describe('hidden data notice', () => {
+    const uploadBin = async () => {
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.101', contents: null },
+      });
+      const appUpload = wrapper.findComponent({ name: 'AppUploadFile' });
+      await appUpload.vm.$emit('update:file', makeFile('addressBook.bin', BIN_BYTES));
+      await flushPromises();
+      return wrapper;
+    };
+
+    test('shows the notice below the textarea when the contents are not canonical', async () => {
+      noticeMock.mockResolvedValue(true);
+      const wrapper = await uploadBin();
+
+      expect(noticeMock).toHaveBeenCalledWith('0.0.101', BIN_BYTES);
+      const notice = wrapper.find('[data-testid="file-contents-hidden-data-notice"]');
+      expect(notice.text()).toContain('not shown in the decoded view');
+      expect(notice.text()).not.toContain('Download');
+      const html = wrapper.html();
+      expect(html.indexOf('textarea-file-read-content')).toBeLessThan(
+        html.indexOf('file-contents-hidden-data-notice'),
+      );
+    });
+
+    test('shows no notice for canonical contents', async () => {
+      const wrapper = await uploadBin();
+      expect(wrapper.find('[data-testid="file-contents-hidden-data-notice"]').exists()).toBe(false);
+    });
+
+    test('does not check non-special files', async () => {
+      const wrapper = mount(FileContentFormData, {
+        props: { fileId: '0.0.12345', contents: null },
+      });
+      const appUpload = wrapper.findComponent({ name: 'AppUploadFile' });
+      await appUpload.vm.$emit('update:file', makeFile('test.txt', TXT_BYTES));
+      await flushPromises();
+      expect(noticeMock).not.toHaveBeenCalled();
     });
   });
 

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
+import { computedAsync } from '@vueuse/core';
 import AppModal from '@renderer/components/ui/AppModal.vue';
-import { isHederaSpecialFileId, decodeProto } from '@shared/hederaSpecialFiles';
+import { isHederaSpecialFileId, escapeReviewText } from '@shared/hederaSpecialFiles';
 import { exportFilesWithDialog } from '@renderer/services/electronUtilsService';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -22,33 +23,55 @@ const toastManager = ToastManager.inject();
 
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
-const displayContent = computed<string | null>(() => {
-  if (!props.contents?.length) return '';
+const isDecoding = ref(false);
 
-  if (props.fileId && isHederaSpecialFileId(props.fileId)) {
+const displayContent = computedAsync<string | null>(
+  async () => {
+    if (!props.contents?.length) return '';
+
+    if (props.fileId && isHederaSpecialFileId(props.fileId)) {
+      try {
+        const decoded = await window.electronAPI.local.files.decodeProto(
+          props.fileId,
+          props.contents,
+        );
+        return escapeReviewText(decoded ?? '');
+      } catch {
+        return null;
+      }
+    }
+
     try {
-      return decodeProto(props.fileId, props.contents) ?? '';
+      const text = new TextDecoder('utf-8', { fatal: true }).decode(props.contents);
+      if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\p{Cf}/u.test(text)) {
+        return null;
+      }
+      return text;
     } catch {
       return null;
     }
-  }
+  },
+  null,
+  { evaluating: isDecoding },
+);
 
-  try {
-    const text = new TextDecoder('utf-8', { fatal: true }).decode(props.contents);
-    if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]|\p{Cf}/u.test(text)) {
-      return null;
-    }
-    return text;
-  } catch {
-    return null;
+const hasHiddenData = computedAsync<boolean>(async () => {
+  if (!props.contents?.length || !props.fileId || !isHederaSpecialFileId(props.fileId)) {
+    return false;
   }
-});
+  try {
+    return await window.electronAPI.local.files.hasHiddenData(props.fileId, props.contents);
+  } catch {
+    return false;
+  }
+}, false);
 
 const isDecoded = computed(
   () =>
     !!(
       props.fileId &&
       isHederaSpecialFileId(props.fileId) &&
+      !isDecoding.value &&
       displayContent.value !== null &&
       displayContent.value !== ''
     ),
@@ -98,17 +121,25 @@ const handleDownload = async () => {
         <h5 class="text-title text-bold text-center flex-grow-1 m-0">{{ props.title }}</h5>
         <span style="width: 1em"></span>
       </div>
-      <!-- Content -->
+      <!-- Warning notice -->
       <div
-        class="border rounded p-3"
-        style="background-color: rgba(0, 0, 0, 0.04)"
+        v-if="isDecoded && hasHiddenData"
+        class="alert alert-warning text-small mb-3"
+        role="alert"
+        data-testid="file-contents-hidden-data-notice"
       >
+        This content includes data that is not shown in the decoded view (e.g. unknown or duplicate
+        fields, or non-canonical encoding). Download the original content to inspect the exact
+        bytes.
+      </div>
+      <!-- Content -->
+      <div class="border rounded p-3" style="background-color: rgba(0, 0, 0, 0.04)">
+        <p v-if="isDecoding" class="m-0 text-small">Loading contents…</p>
         <pre
-          v-if="displayContent !== null"
+          v-else-if="displayContent !== null"
           class="m-0 overflow-auto text-small"
           style="max-height: 55vh; white-space: pre-wrap; word-break: break-all"
-          >{{ displayContent || '(empty)' }}</pre
-        >
+          >{{ displayContent || '(empty)' }}</pre>
         <p v-else class="m-0 text-small">Binary content — cannot display</p>
       </div>
       <!-- Footer -->

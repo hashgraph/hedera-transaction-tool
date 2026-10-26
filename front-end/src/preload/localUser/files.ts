@@ -22,5 +22,7 @@ export default {
       ipcRenderer.invoke('files:showStoredFileInTemp', userId, fileId),
     decodeProto: (fileId: HederaSpecialFileId, bytes: Uint8Array): Promise<string | undefined> =>
       ipcRenderer.invoke('files:decodeProto', fileId, bytes),
+    hasHiddenData: (fileId: HederaSpecialFileId, bytes: Uint8Array): Promise<boolean> =>
+      ipcRenderer.invoke('files:hasHiddenData', fileId, bytes),
   },
 };
