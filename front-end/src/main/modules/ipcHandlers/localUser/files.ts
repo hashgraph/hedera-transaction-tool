@@ -5,7 +5,7 @@ import {
   showStoredFileInTemp,
   updateFile,
 } from '@main/services/localUser/files';
-import { decodeProto } from '@shared/hederaSpecialFiles';
+import { decodeProto, hasHiddenData } from '@shared/hederaSpecialFiles';
 import { createIPCChannel, renameFunc } from '@main/utils/electronInfra';
 
 export default () => {
@@ -17,5 +17,6 @@ export default () => {
     renameFunc(removeFiles, 'remove'),
     renameFunc(showStoredFileInTemp, 'showStoredFileInTemp'),
     renameFunc(decodeProto, 'decodeProto'),
+    renameFunc(hasHiddenData, 'hasHiddenData'),
   ]);
 };

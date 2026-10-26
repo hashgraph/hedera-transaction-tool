@@ -55,6 +55,17 @@ const displayContent = computedAsync<string | null>(
   { evaluating: isDecoding },
 );
 
+const hasHiddenData = computedAsync<boolean>(async () => {
+  if (!props.contents?.length || !props.fileId || !isHederaSpecialFileId(props.fileId)) {
+    return false;
+  }
+  try {
+    return await window.electronAPI.local.files.hasHiddenData(props.fileId, props.contents);
+  } catch {
+    return false;
+  }
+}, false);
+
 const isDecoded = computed(
   () =>
     !!(
@@ -109,6 +120,17 @@ const handleDownload = async () => {
         <i class="bi bi-x-lg cursor-pointer" @click="handleShowUpdate(false)"></i>
         <h5 class="text-title text-bold text-center flex-grow-1 m-0">{{ props.title }}</h5>
         <span style="width: 1em"></span>
+      </div>
+      <!-- Warning notice -->
+      <div
+        v-if="isDecoded && hasHiddenData"
+        class="alert alert-warning text-small mb-3"
+        role="alert"
+        data-testid="file-contents-hidden-data-notice"
+      >
+        This content includes data that is not shown in the decoded view (e.g. unknown or duplicate
+        fields, or non-canonical encoding). Download the original content to inspect the exact
+        bytes.
       </div>
       <!-- Content -->
       <div class="border rounded p-3" style="background-color: rgba(0, 0, 0, 0.04)">

@@ -53,19 +53,7 @@ const specialFilesMapping = {
 };
 
 export function decodeProto(fileId: HederaSpecialFileId, bytes: Uint8Array) {
-  if (specialFilesMapping[fileId] === undefined) {
-    throw new Error('File ID is not Hedera special file');
-  }
-
-  const protoType = specialFilesMapping[fileId].protoType;
-  const decoded = protoType.decode(bytes);
-
-  // We a round-trip Protobuf decode/re-encode on the file content. If we do not get the
-  // same result, we add a warning to the contents to warn the user because if typically means
-  // that there are additional or duplicate fields in the Protobuf.
-  // It is in theory possible that this also fails due to a different field order in
-  // encoding -- we would then get a false positive.
-  const hasHiddenData = decoded !== undefined && !reEncodesTo(protoType, decoded, bytes);
+  const { decoded } = decodeBytes(fileId, bytes);
 
   let formatted: string;
   if (decoded instanceof proto.NodeAddressBook) {
@@ -82,20 +70,28 @@ export function decodeProto(fileId: HederaSpecialFileId, bytes: Uint8Array) {
     formatted = JSON.stringify(decoded, null, 2);
   }
 
-  // Include a warning notice when the decoded view does not account for every byte of the contents.
-  // And display the original content bytes too.
-  const review = {
-    ...JSON.parse(formatted),
-    ...(hasHiddenData
-      ? {
-          warning:
-            'Contents include data not shown above (unknown or duplicate fields, or non-canonical encoding). The exact bytes are listed below.',
-        }
-      : {}),
-    originalBytesHex: Buffer.from(bytes).toString('hex'),
-  };
+  return escapeReviewText(formatted);
+}
 
-  return escapeReviewText(JSON.stringify(review, null, 2));
+/**
+ * Returns true when the decoded view does not account for every byte of the content.
+ *
+ * A Protobuf decode/re-encode round-trip is performed on the content. If the result differs from
+ * the original bytes, there are typically additional or duplicate fields in the Protobuf, or the
+ * encoding is not canonical (e.g. different field order).
+ */
+export function hasHiddenData(fileId: HederaSpecialFileId, bytes: Uint8Array): boolean {
+  const { protoType, decoded } = decodeBytes(fileId, bytes);
+  return !reEncodesTo(protoType, decoded, bytes);
+}
+
+function decodeBytes(fileId: HederaSpecialFileId, bytes: Uint8Array) {
+  if (specialFilesMapping[fileId] === undefined) {
+    throw new Error('File ID is not Hedera special file');
+  }
+
+  const protoType = specialFilesMapping[fileId].protoType;
+  return { protoType, decoded: protoType.decode(bytes) };
 }
 
 /** Check whether re-encoding the decoded Protobuf reproduces the original bytes, i.e. nothing was dropped. */

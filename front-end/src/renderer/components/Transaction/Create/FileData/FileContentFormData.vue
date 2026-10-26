@@ -43,6 +43,15 @@ const displayedFileText = computedAsync(async () => {
   return new TextDecoder().decode(file.value.content);
 }, null);
 
+const hasHiddenData = computedAsync(async () => {
+  if (file.value === null || file.value.content.length === 0) return false;
+  if (!isHederaSpecialFileId(props.fileId)) return false;
+  const { data, error } = await safeAwait(
+    window.electronAPI.local.files.hasHiddenData(props.fileId, file.value.content),
+  );
+  return error ? false : data === true;
+}, false);
+
 /* Watchers */
 watch(file, () => {
   manualContent.value = '';
@@ -120,6 +129,14 @@ watch(
         rows="10"
         data-testid="textarea-file-content"
       ></textarea>
+      <p
+        v-if="Boolean(file) && hasHiddenData"
+        class="text-micro text-semi-bold text-warning mt-2 mb-0"
+        data-testid="file-contents-hidden-data-notice"
+      >
+        This content includes data that is not shown in the decoded view (e.g. unknown or duplicate
+        fields, or non-canonical encoding). Check the uploaded file.
+      </p>
     </div>
   </div>
 </template>

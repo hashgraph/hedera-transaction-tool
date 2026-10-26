@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { proto } from '@hiero-ledger/proto';
 import { Long } from '@hiero-ledger/sdk';
 
-import { decodeProto } from '@shared/hederaSpecialFiles';
+import { decodeProto, hasHiddenData } from '@shared/hederaSpecialFiles';
 
 import FileContentsModal from '@renderer/components/FileContentsModal.vue';
 
@@ -39,7 +39,15 @@ describe('FileContentsModal.vue', () => {
     decodeProtoMock
       .mockReset()
       .mockImplementation(async (fileId, contents) => decodeProto(fileId, contents));
-    (window as any).electronAPI = { local: { files: { decodeProto: decodeProtoMock } } };
+    (window as any).electronAPI = {
+      local: {
+        files: {
+          decodeProto: decodeProtoMock,
+          hasHiddenData: async (fileId: any, contents: any) =>
+            hasHiddenData(fileId, contents),
+        },
+      },
+    };
   });
 
   afterEach(() => {
@@ -121,6 +129,22 @@ describe('FileContentsModal.vue', () => {
     expect(wrapper.find('pre').text()).toBe(decoded);
     expect(wrapper.text()).toContain('Decoded');
     expect(wrapper.text()).not.toContain('Binary content');
+  });
+
+  it('shows the hidden data notice above the contents for noncanonical encodings', async () => {
+    // Setting { name: "k", value: "x" }, with value encoded before name.
+    const wrapper = await mountModal(Buffer.from('0a061201780a016b', 'hex'), '0.0.121');
+    const notice = wrapper.find('[data-testid="file-contents-hidden-data-notice"]');
+    expect(notice.text()).toContain('non-canonical encoding');
+    expect(notice.text()).toContain('Download the original contents');
+    const html = wrapper.html();
+    expect(html.indexOf('file-contents-hidden-data-notice')).toBeLessThan(html.indexOf('<pre'));
+    expect(wrapper.find('pre').text()).not.toContain('originalBytesHex');
+  });
+
+  it('shows no hidden data notice for canonical encodings', async () => {
+    const wrapper = await mountModal(Buffer.from('0a060a016b120178', 'hex'), '0.0.121');
+    expect(wrapper.find('[data-testid="file-contents-hidden-data-notice"]').exists()).toBe(false);
   });
 
   it('keeps newer contents when an earlier decode finishes late', async () => {

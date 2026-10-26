@@ -7,6 +7,7 @@ import { JSONtoUInt8Array } from '@main/utils';
 import {
   decodeProto,
   encodeHederaSpecialFile,
+  hasHiddenData,
   isHederaSpecialFileId,
 } from '@shared/hederaSpecialFiles';
 import { HederaSpecialFileId } from '@shared/interfaces';
@@ -51,7 +52,7 @@ import {
   nonFormattedDecode as nonFormattedDecodeSpecialFile,
 } from '../_constants_/nonSpecialFile';
 
-function expectedReview(text: string, fileId: number, bytes: Uint8Array | number[]) {
+function expectedReview(text: string, fileId: number) {
   let value;
   if (fileId === 121 || fileId === 122) {
     value = {
@@ -68,16 +69,7 @@ function expectedReview(text: string, fileId: number, bytes: Uint8Array | number
       }
     }
   }
-  return JSON.stringify(
-    { ...value, originalBytesHex: Buffer.from(bytes).toString('hex') },
-    null,
-    2,
-  );
-}
-
-function withoutReviewMetadata(review: string) {
-  const { warning: _warning, originalBytesHex: _hex, ...content } = JSON.parse(review);
-  return JSON.stringify(content, null, 2);
+  return JSON.stringify(value, null, 2);
 }
 
 describe('Hedera Special Files utilities', () => {
@@ -129,41 +121,8 @@ describe('Hedera Special Files utilities', () => {
     },
   );
 
-  test.each(['0.0.101', '0.0.102'] as const)(
-    '%s distinguishes account-ID encodings that format identically',
-    fileId => {
-      // Empty AccountID, explicit accountNum: 0, and explicit empty alias.
-      // Each survives protobuf round-tripping, but all format as 0.0.0.
-      const encodings = ['0a023200', '0a0432021800', '0a0432022200'];
-      const reviews = encodings.map(hex => {
-        const bytes = Buffer.from(hex, 'hex');
-        expect(proto.NodeAddressBook.encode(proto.NodeAddressBook.decode(bytes)).finish()).toEqual(
-          bytes,
-        );
-        const review = decodeProto(fileId, bytes);
-        const parsed = JSON.parse(review);
-        expect(parsed.nodeAddress[0].nodeAccountId).toBe('0.0.0');
-        expect(parsed).not.toHaveProperty('warning');
-        expect(parsed.originalBytesHex).toBe(hex);
-        return review;
-      });
-
-      expect(new Set(reviews).size).toBe(encodings.length);
-      expect(new Set(reviews.map(withoutReviewMetadata)).size).toBe(1);
-    },
-  );
-
-  test('includes original bytes without a warning for canonically encoded contents', () => {
-    const bytes = proto.ServicesConfigurationList.encode({
-      nameValue: [{ name: 'key', value: 'value' }],
-    }).finish();
-    const review = JSON.parse(decodeProto('0.0.121', bytes));
-    expect(review).not.toHaveProperty('warning');
-    expect(review.originalBytesHex).toBe(Buffer.from(bytes).toString('hex'));
-  });
-
   test.each(['0.0.121', '0.0.122'] as const)(
-    '%s flags noncanonical field order while preserving the original bytes',
+    '%s flags noncanonical field order',
     fileId => {
       // Setting { name: "k", value: "x" }, with value encoded before name.
       // Both fields are known and occur once; only the encoding order differs.
@@ -177,12 +136,10 @@ describe('Hedera Special Files utilities', () => {
 
       const review = decodeProto(fileId, noncanonical);
       const canonicalReview = decodeProto(fileId, canonical);
-      expect(withoutReviewMetadata(review)).toBe(withoutReviewMetadata(canonicalReview));
+      expect(review).toBe(canonicalReview);
       expect(JSON.parse(review).nameValue).toEqual([{ name: 'k', value: 'x', data: '' }]);
-      expect(JSON.parse(review).warning).toContain('non-canonical encoding');
-      expect(JSON.parse(review).originalBytesHex).toBe(noncanonical.toString('hex'));
-      expect(JSON.parse(canonicalReview)).not.toHaveProperty('warning');
-      expect(JSON.parse(canonicalReview).originalBytesHex).toBe(canonical.toString('hex'));
+      expect(hasHiddenData(fileId, noncanonical)).toBe(true);
+      expect(hasHiddenData(fileId, canonical)).toBe(false);
     },
   );
 
@@ -194,8 +151,8 @@ describe('Hedera Special Files utilities', () => {
     const unknownField = Uint8Array.from([...bytes, 0x78, 0x01]);
     const review = JSON.parse(decodeProto('0.0.121', unknownField));
     expect(review.nameValue).toEqual(JSON.parse(decodeProto('0.0.121', bytes)).nameValue);
-    expect(review.warning).toContain('not shown');
-    expect(review.originalBytesHex).toBe(Buffer.from(unknownField).toString('hex'));
+    expect(hasHiddenData('0.0.121', unknownField)).toBe(true);
+    expect(hasHiddenData('0.0.121', bytes)).toBe(false);
   });
 
   test('flags duplicate scalar fields where only the last value is kept', () => {
@@ -203,7 +160,7 @@ describe('Hedera Special Files utilities', () => {
     const bytes = Uint8Array.from([0x0a, 0x06, 0x0a, 0x01, 0x61, 0x0a, 0x01, 0x62]);
     const review = JSON.parse(decodeProto('0.0.121', bytes));
     expect(review.nameValue[0].name).toBe('b');
-    expect(review.originalBytesHex).toBe(Buffer.from(bytes).toString('hex'));
+    expect(hasHiddenData('0.0.121', bytes)).toBe(true);
   });
 
   describe.each(['0.0.101', '0.0.102'] as const)('%s certificate hash input', fileId => {
@@ -265,9 +222,8 @@ describe('Hedera Special Files utilities', () => {
             }).finish();
       const review = decodeProto(fileId, bytes);
       const encoded = encodeHederaSpecialFile(JSONtoUInt8Array(review), fileId);
-      // The address-book encoder writes an explicit `stake: 0`, which the hidden-data notice flags.
-      const before = JSON.parse(withoutReviewMetadata(review));
-      const after = JSON.parse(withoutReviewMetadata(decodeProto(fileId, encoded)));
+      const before = JSON.parse(review);
+      const after = JSON.parse(decodeProto(fileId, encoded));
       // Re-encoding may explicitly write default fields; validation must retain all values.
       expect(after).toEqual(before);
     }
@@ -290,8 +246,8 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer101),
     );
 
-    expect(decoded_101).toBe(expectedReview(string101, 101, buffer101));
-    expect(JSON.parse(decoded_101)).not.toHaveProperty('warning');
+    expect(decoded_101).toBe(expectedReview(string101, 101));
+    expect(hasHiddenData('0.0.101', Uint8Array.from(buffer101))).toBe(false);
 
     /* File 102 */
     const file_102 = new FileId(102);
@@ -301,7 +257,7 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer102),
     );
 
-    expect(decoded_102).toBe(expectedReview(string102, 102, buffer102));
+    expect(decoded_102).toBe(expectedReview(string102, 102));
 
     /* File 111 */
     const file_111 = new FileId(111);
@@ -311,7 +267,7 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer111),
     );
 
-    expect(decoded_111).toBe(expectedReview(string111, 111, buffer111));
+    expect(decoded_111).toBe(expectedReview(string111, 111));
 
     /* File 112 */
     const file_112 = new FileId(112);
@@ -321,7 +277,7 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer112),
     );
 
-    expect(decoded_112).toBe(expectedReview(string112, 112, buffer112));
+    expect(decoded_112).toBe(expectedReview(string112, 112));
 
     /* File 121 */
     const file_121 = new FileId(121);
@@ -331,7 +287,7 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer121),
     );
 
-    expect(decoded_121).toBe(expectedReview(string121, 121, buffer121));
+    expect(decoded_121).toBe(expectedReview(string121, 121));
 
     /* File 122 */
     const file_122 = new FileId(122);
@@ -341,7 +297,7 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer122),
     );
 
-    expect(decoded_122).toBe(expectedReview(string122, 122, buffer122));
+    expect(decoded_122).toBe(expectedReview(string122, 122));
 
     /* File 123 */
     const file_123 = new FileId(123);
@@ -351,16 +307,13 @@ describe('Hedera Special Files utilities', () => {
       Uint8Array.from(buffer123),
     );
 
-    expect(decoded_123).toBe(expectedReview(string123, 123, buffer123));
+    expect(decoded_123).toBe(expectedReview(string123, 123));
   });
 
   test('decodeProto: simply string returned on non-special file provided', () => {
     const decoded = decodeProto('*' as HederaSpecialFileId, accountId.toBytes());
 
-    expect(JSON.parse(decoded)).toEqual({
-      ...JSON.parse(nonFormattedDecodeSpecialFile),
-      originalBytesHex: Buffer.from(accountId.toBytes()).toString('hex'),
-    });
+    expect(JSON.parse(decoded)).toEqual(JSON.parse(nonFormattedDecodeSpecialFile));
   });
 
   test('decodeProto: returns undefined if id of non-special file is provided', () => {
@@ -382,7 +335,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_101.toString() as HederaSpecialFileId, encoded_101)).toBe(
-      expectedReview(string101, 101, encoded_101),
+      expectedReview(string101, 101),
     );
 
     /* File 102 */
@@ -395,7 +348,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_102.toString() as HederaSpecialFileId, encoded_102)).toBe(
-      expectedReview(string102, 102, encoded_102),
+      expectedReview(string102, 102),
     );
 
     /* File 111 */
@@ -408,7 +361,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_111.toString() as HederaSpecialFileId, encoded_111)).toBe(
-      expectedReview(string111, 111, encoded_111),
+      expectedReview(string111, 111),
     );
 
     /* File 112 */
@@ -421,7 +374,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_112.toString() as HederaSpecialFileId, encoded_112)).toBe(
-      expectedReview(string112, 112, encoded_112),
+      expectedReview(string112, 112),
     );
 
     /* File 121 */
@@ -434,7 +387,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_121.toString() as HederaSpecialFileId, encoded_121)).toBe(
-      expectedReview(string121, 121, encoded_121),
+      expectedReview(string121, 121),
     );
 
     /* File 122 */
@@ -447,7 +400,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_122.toString() as HederaSpecialFileId, encoded_122)).toBe(
-      expectedReview(string122, 122, encoded_122),
+      expectedReview(string122, 122),
     );
 
     /* File 123 */
@@ -460,7 +413,7 @@ describe('Hedera Special Files utilities', () => {
     );
 
     expect(decodeProto(fileId_123.toString() as HederaSpecialFileId, encoded_123)).toBe(
-      expectedReview(string123, 123, encoded_123),
+      expectedReview(string123, 123),
     );
   });
 
