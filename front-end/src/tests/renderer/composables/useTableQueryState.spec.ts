@@ -1,15 +1,14 @@
 // @vitest-environment node
 import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { ref } from 'vue';
 
-const mockReplace = vi.fn();
-let mockQuery: Record<string, string> = {};
+const mockReplace = vi.fn().mockResolvedValue(undefined);
+const mockRoute = ref<{ query: Record<string, string> }>({ query: {} });
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
-    currentRoute: {
-      value: {
-        query: mockQuery,
-      },
+    get currentRoute() {
+      return mockRoute;
     },
     replace: mockReplace,
   }),
@@ -21,103 +20,107 @@ const VALID_SORTS = ['created_at', 'type', 'description'] as const;
 const DEFAULT_SORT = 'created_at';
 const DEFAULT_ORDER: 'asc' | 'desc' = 'desc';
 
+function setQuery(query: Record<string, string>) {
+  mockRoute.value = { query };
+}
+
 describe('useTableQueryState', () => {
   beforeEach(() => {
-    mockQuery = {};
+    setQuery({});
     mockReplace.mockClear();
   });
 
   describe('initial values — no query params', () => {
     test('returns page 1 when no page param', () => {
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialPage).toBe(1);
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(page.value).toBe(1);
     });
 
     test('returns default sort field when no sort param', () => {
-      const { initialSortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortField).toBe('created_at');
+      const { sortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortField.value).toBe('created_at');
     });
 
     test('returns default sort direction when no order param', () => {
-      const { initialSortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortDirection).toBe('desc');
+      const { sortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortDirection.value).toBe('desc');
     });
   });
 
   describe('initial values — valid query params', () => {
     test('reads page from URL', () => {
-      mockQuery = { page: '3' };
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialPage).toBe(3);
+      setQuery({ page: '3' });
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(page.value).toBe(3);
     });
 
     test('reads sort field from URL', () => {
-      mockQuery = { sort: 'type' };
-      const { initialSortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortField).toBe('type');
+      setQuery({ sort: 'type' });
+      const { sortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortField.value).toBe('type');
     });
 
     test('reads order from URL', () => {
-      mockQuery = { order: 'asc' };
-      const { initialSortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortDirection).toBe('asc');
+      setQuery({ order: 'asc' });
+      const { sortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortDirection.value).toBe('asc');
     });
 
     test('reads all params together', () => {
-      mockQuery = { tab: 'History', sort: 'description', order: 'asc', page: '5' };
-      const { initialPage, initialSortField, initialSortDirection } = useTableQueryState(
+      setQuery({ tab: 'History', sort: 'description', order: 'asc', page: '5' });
+      const { page, sortField, sortDirection } = useTableQueryState(
         VALID_SORTS,
         DEFAULT_SORT,
         DEFAULT_ORDER,
       );
-      expect(initialPage).toBe(5);
-      expect(initialSortField).toBe('description');
-      expect(initialSortDirection).toBe('asc');
+      expect(page.value).toBe(5);
+      expect(sortField.value).toBe('description');
+      expect(sortDirection.value).toBe('asc');
     });
   });
 
   describe('initial values — invalid query params', () => {
     test('falls back to 1 for non-numeric page', () => {
-      mockQuery = { page: 'abc' };
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialPage).toBe(1);
+      setQuery({ page: 'abc' });
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(page.value).toBe(1);
     });
 
     test('falls back to 1 for page 0', () => {
-      mockQuery = { page: '0' };
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialPage).toBe(1);
+      setQuery({ page: '0' });
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(page.value).toBe(1);
     });
 
     test('falls back to 1 for negative page', () => {
-      mockQuery = { page: '-3' };
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialPage).toBe(1);
+      setQuery({ page: '-3' });
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(page.value).toBe(1);
     });
 
     test('falls back to default sort for unknown sort field', () => {
-      mockQuery = { sort: 'BOGUS' };
-      const { initialSortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortField).toBe('created_at');
+      setQuery({ sort: 'BOGUS' });
+      const { sortField } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortField.value).toBe('created_at');
     });
 
     test('falls back to default order for invalid order', () => {
-      mockQuery = { order: 'sideways' };
-      const { initialSortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
-      expect(initialSortDirection).toBe('desc');
+      setQuery({ order: 'sideways' });
+      const { sortDirection } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      expect(sortDirection.value).toBe('desc');
     });
 
     test('falls back to 1 for float page', () => {
-      mockQuery = { page: '2.5' };
-      const { initialPage } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
+      setQuery({ page: '2.5' });
+      const { page } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
       // parseInt('2.5') === 2, which is valid
-      expect(initialPage).toBe(2);
+      expect(page.value).toBe(2);
     });
   });
 
   describe('syncToUrl', () => {
     test('calls router.replace with default values omitted', () => {
-      mockQuery = { tab: 'History' };
+      setQuery({ tab: 'History' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(1, 'created_at', 'desc');
@@ -128,7 +131,7 @@ describe('useTableQueryState', () => {
     });
 
     test('includes page when > 1', () => {
-      mockQuery = { tab: 'Drafts' };
+      setQuery({ tab: 'Drafts' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(3, 'created_at', 'desc');
@@ -139,7 +142,7 @@ describe('useTableQueryState', () => {
     });
 
     test('includes sort and order when sort differs from default', () => {
-      mockQuery = { tab: 'History' };
+      setQuery({ tab: 'History' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(1, 'type', 'asc');
@@ -150,7 +153,7 @@ describe('useTableQueryState', () => {
     });
 
     test('includes sort and order when only order differs from default', () => {
-      mockQuery = { tab: 'History' };
+      setQuery({ tab: 'History' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(1, 'created_at', 'asc');
@@ -162,7 +165,7 @@ describe('useTableQueryState', () => {
     });
 
     test('includes all params when all differ from defaults', () => {
-      mockQuery = { tab: 'History' };
+      setQuery({ tab: 'History' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(5, 'description', 'asc');
@@ -173,7 +176,7 @@ describe('useTableQueryState', () => {
     });
 
     test('preserves tab param from current route', () => {
-      mockQuery = { tab: 'Ready to Sign' };
+      setQuery({ tab: 'Ready to Sign' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(2, 'type', 'desc');
@@ -183,7 +186,7 @@ describe('useTableQueryState', () => {
     });
 
     test('works without tab param', () => {
-      mockQuery = {};
+      setQuery({});
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       syncToUrl(2, 'type', 'asc');
@@ -194,7 +197,7 @@ describe('useTableQueryState', () => {
     });
 
     test('always includes order when sort is present', () => {
-      mockQuery = { tab: 'History' };
+      setQuery({ tab: 'History' });
       const { syncToUrl } = useTableQueryState(VALID_SORTS, DEFAULT_SORT, DEFAULT_ORDER);
 
       // sort differs from default, order is same as default
@@ -203,6 +206,27 @@ describe('useTableQueryState', () => {
       const call = mockReplace.mock.calls[0][0];
       expect(call.query.sort).toBe('type');
       expect(call.query.order).toBe('desc');
+    });
+  });
+
+  describe('external navigation', () => {
+    test('resyncs page/sort/order when the URL changes from outside syncToUrl', async () => {
+      setQuery({ tab: 'History', page: '3', sort: 'type', order: 'asc' });
+      const { page, sortField, sortDirection } = useTableQueryState(
+        VALID_SORTS,
+        DEFAULT_SORT,
+        DEFAULT_ORDER,
+      );
+
+      expect(page.value).toBe(3);
+
+      // e.g. a notification click navigating to the same tab with a reset query
+      setQuery({ tab: 'History' });
+      await Promise.resolve();
+
+      expect(page.value).toBe(1);
+      expect(sortField.value).toBe(DEFAULT_SORT);
+      expect(sortDirection.value).toBe(DEFAULT_ORDER);
     });
   });
 });
