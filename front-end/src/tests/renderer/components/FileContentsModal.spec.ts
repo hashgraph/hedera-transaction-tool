@@ -136,7 +136,7 @@ describe('FileContentsModal.vue', () => {
     const wrapper = await mountModal(Buffer.from('0a061201780a016b', 'hex'), '0.0.121');
     const notice = wrapper.find('[data-testid="file-contents-hidden-data-notice"]');
     expect(notice.text()).toContain('non-canonical encoding');
-    expect(notice.text()).toContain('Download the original contents');
+    expect(notice.text()).toContain('Download the original content');
     const html = wrapper.html();
     expect(html.indexOf('file-contents-hidden-data-notice')).toBeLessThan(html.indexOf('<pre'));
     expect(wrapper.find('pre').text()).not.toContain('originalBytesHex');
