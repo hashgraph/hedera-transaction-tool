@@ -34,7 +34,7 @@ import {
 import Long from 'long';
 
 import { MEMO_MAX_LENGTH } from '@shared/constants';
-import type { IAccountInfoParsed, INodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 import {
   createAccountCreateTransaction,
@@ -66,6 +66,8 @@ import {
   type NodeData,
   type NodeUpdateData,
   type TransactionCommonData,
+  getRegisteredServiceEndpoints,
+  type RegisteredEndpointType,
 } from '@renderer/utils/sdk/createTransactions';
 import {
   getFreezeData,
@@ -75,6 +77,8 @@ import {
   getSystemDeleteData,
   getSystemUndeleteData,
 } from '@renderer/utils/sdk/getData';
+import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
+import { compareKeys } from '@renderer/utils';
 
 const common: TransactionCommonData = {
   payerId: '0.0.2',
@@ -1206,31 +1210,105 @@ describe('Registered node creators', () => {
   });
 
   describe('createRegisteredNodeUpdateTransaction', () => {
-    test('sets the registered node id and updated fields', () => {
-      const tx = roundtrip(
-        createRegisteredNodeUpdateTransaction({
-          ...common,
-          registeredNodeId: '12',
-          adminKey,
-          description: 'renamed',
-          serviceEndpoints: [ep()],
-        }),
-      );
+
+    const registeredNodeUpdateData = {
+      registeredNodeId: '12',
+      adminKey,
+      description: 'renamed',
+      serviceEndpoints: [ep()],
+    };
+    const data = {
+      ...common,
+      ...registeredNodeUpdateData,
+    };
+    const currentNodeInfo: IRegisteredNodeInfoParsed = {
+      admin_key: data.adminKey,
+      created_timestamp: null,
+      description: data.description,
+      registered_node_id: Number(data.registeredNodeId),
+      service_endpoints: getRegisteredServiceEndpoints(data.serviceEndpoints),
+      timestamp: { from: undefined, to: undefined },
+    };
+
+    test('sets the registered node id and updated fields - without currentNodeInfo', () => {
+      const tx = roundtrip(createRegisteredNodeUpdateTransaction(data, null));
       expect(tx).toBeInstanceOf(RegisteredNodeUpdateTransaction);
       expect(tx.registeredNodeId?.toString()).toBe('12');
       expect(tx.description).toBe('renamed');
       expect(tx.adminKey?.toString()).toBe(adminKey.toString());
-      expect(tx.serviceEndpoints).toHaveLength(1);
+      expect(
+        tx.serviceEndpoints !== null &&
+          compareServiceEndpoints(
+            tx.serviceEndpoints,
+            getRegisteredServiceEndpoints(registeredNodeUpdateData.serviceEndpoints),
+          ),
+      ).toBe(true);
+    });
+
+    test('sets the registered node id and updated fields - with currentNodeInfo', () => {
+      const tx = roundtrip(createRegisteredNodeUpdateTransaction(data, currentNodeInfo));
+      expect(tx).toBeInstanceOf(RegisteredNodeUpdateTransaction);
+      expect(tx.registeredNodeId?.toString()).toBe('12');
+      expect(tx.description).toBe(null);
+      expect(tx.adminKey).toBe(null);
+      expect(tx.serviceEndpoints).toBe(null);
+    });
+
+    test('with description changed', () => {
+      const modifiedData = { ...data, description: 'Another description' };
+      const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo));
+      expect(tx.description).toBe(modifiedData.description);
+    });
+
+    test('with adminKey changed', () => {
+      const modifiedData = { ...data, adminKey: PrivateKey.generateECDSA().publicKey };
+      const t = createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo);
+      expect(t.adminKey !== null && compareKeys(t.adminKey, modifiedData.adminKey)).toBe(true);
+    });
+
+    test('with serviceEndpoints changed', () => {
+      const modifiedData = {
+        ...data,
+        serviceEndpoints: [
+          {
+            ipAddressV4: null,
+            port: '42',
+            domainName: 'example.com',
+            type: 'blockNode' as RegisteredEndpointType,
+            requiresTls: false,
+            endpointApis: [43],
+          },
+          {
+            ipAddressV4: null,
+            port: '1212',
+            domainName: 'test.com',
+            type: 'mirrorNode' as RegisteredEndpointType,
+            requiresTls: true,
+          },
+        ],
+      };
+      const t = createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo);
+
+      expect(
+        t.serviceEndpoints !== null &&
+          compareServiceEndpoints(
+            t.serviceEndpoints,
+            getRegisteredServiceEndpoints(modifiedData.serviceEndpoints),
+          ),
+      ).toBe(true);
     });
 
     test('leaves the id unset when empty', () => {
-      const tx = createRegisteredNodeUpdateTransaction({
-        ...common,
-        registeredNodeId: '',
-        adminKey: null,
-        description: '',
-        serviceEndpoints: [],
-      });
+      const tx = createRegisteredNodeUpdateTransaction(
+        {
+          ...common,
+          registeredNodeId: '',
+          adminKey: null,
+          description: '',
+          serviceEndpoints: [],
+        },
+        null,
+      );
       expect(tx.registeredNodeId).toBeNull();
     });
   });

@@ -56,25 +56,7 @@ import type {
 } from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { uint8ToHex } from '..';
-
-export type ExtendedTransactionData = TransactionCommonData &
-  (
-    | AccountCreateData
-    | AccountUpdateData
-    | AccountDeleteData
-    | ApproveHbarAllowanceData
-    | FileCreateData
-    | FileUpdateData
-    | FileAppendData
-    | FreezeData
-    | TransferHbarData
-    | NodeData
-    | NodeUpdateData
-    | NodeDeleteData
-    | RegisteredNodeData
-    | SystemDeleteData
-    | SystemUndeleteData
-  );
+import type { IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -396,14 +378,21 @@ export function getRegisteredNodeData(transaction: RegisteredNodeCreateTransacti
 
 export function getRegisteredNodeUpdateData(
   transaction: RegisteredNodeUpdateTransaction,
+  currentNodeInfo: IRegisteredNodeInfoParsed | null,
 ): RegisteredNodeUpdateData {
-  const endpoints = (transaction.serviceEndpoints ?? []).map(getComponentRegisteredEndpoint);
 
+  const registeredNodeId =
+    transaction.registeredNodeId?.toString() ??
+    currentNodeInfo?.registered_node_id?.toString() ??
+    '';
+  const description = transaction.description ?? currentNodeInfo?.description ?? '';
+  const adminKey = transaction.adminKey ?? currentNodeInfo?.admin_key ?? null;
+  const endpoints = transaction.serviceEndpoints ?? currentNodeInfo?.service_endpoints ?? [];
   return {
-    registeredNodeId: transaction.registeredNodeId?.toString() ?? '',
-    description: transaction.description ?? '',
-    adminKey: transaction.adminKey ?? null,
-    serviceEndpoints: endpoints,
+    registeredNodeId,
+    description,
+    adminKey,
+    serviceEndpoints: endpoints.map(getComponentRegisteredEndpoint),
   };
 }
 

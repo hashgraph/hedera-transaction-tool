@@ -111,16 +111,19 @@ const decorateEndpointsWithUiIds = (
 
 /* Handlers */
 const createTransaction = (commonData: TransactionCommonData): RegisteredNodeUpdateTransaction => {
-  return createRegisteredNodeUpdateTransaction({
-    ...commonData,
-    ...data,
-  });
+  return createRegisteredNodeUpdateTransaction(
+    {
+      ...commonData,
+      ...data,
+    },
+    nodeData.registeredNodeInfo.value,
+  );
 };
 
 const getAllData = (tx: RegisteredNodeUpdateTransaction): RegisteredNodeUpdateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getRegisteredNodeUpdateData(tx),
+    ...getRegisteredNodeUpdateData(tx, nodeData.registeredNodeInfo.value),
   };
 };
 
@@ -128,7 +131,7 @@ const handleDraftLoaded = (transaction: RegisteredNodeUpdateTransaction) => {
   if (transaction.registeredNodeId) {
     nodeData.registeredNodeId.value = transaction.registeredNodeId.toNumber();
   }
-  handleUpdateData(getRegisteredNodeUpdateData(transaction));
+  handleUpdateData(getRegisteredNodeUpdateData(transaction, nodeData.registeredNodeInfo.value));
 };
 
 const handleUpdateData = (newData: RegisteredNodeUpdateData) => {
