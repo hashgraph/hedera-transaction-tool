@@ -32,7 +32,6 @@ export const config = ConfigModule.forRoot({
     POSTGRES_SYNCHRONIZE: Joi.boolean().required(),
     NATS_URL: Joi.string().required(),
     REDIS_URL: Joi.string().required(),
-    REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
   }),
 });
 

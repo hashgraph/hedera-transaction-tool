@@ -58,7 +58,6 @@ export const config = ConfigModule.forRoot({
     OTP_VERIFIED_EXPIRATION: Joi.number().required(),
     API_KEY_IDLE_EXPIRY_DAYS: Joi.number().integer().positive().optional().default(180),
     REDIS_URL: Joi.string().required(),
-    REDIS_DEFAULT_TTL_MS: Joi.number().optional(),
     LATEST_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     MINIMUM_SUPPORTED_FRONTEND_VERSION: Joi.string().required(),
     FRONTEND_REPO_URL: Joi.string().required(),
