@@ -168,6 +168,7 @@ describe('Services Local User Transactions', () => {
       const frozenTransactionBytes = new Uint8Array([4, 5, 6]);
 
       const transactionMock = {
+        isFrozen: vi.fn().mockReturnValue(false),
         freezeWith: vi.fn(),
         toBytes: vi.fn().mockReturnValue(frozenTransactionBytes),
       };
@@ -182,6 +183,22 @@ describe('Services Local User Transactions', () => {
       expect(transactionMock.freezeWith).toHaveBeenCalled();
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(frozenTransactionBytes);
+    });
+
+    test('Should not freeze an already frozen transaction again', async () => {
+      const transactionMock = {
+        isFrozen: vi.fn().mockReturnValue(true),
+        freezeWith: vi.fn(),
+        toBytes: vi.fn().mockReturnValue(new Uint8Array([4, 5, 6])),
+      };
+
+      vi.spyOn(SDK.Transaction, 'fromBytes').mockReturnValue(
+        transactionMock as unknown as SDK.Transaction,
+      );
+
+      await freezeTransaction(new Uint8Array([1, 2, 3]));
+
+      expect(transactionMock.freezeWith).not.toHaveBeenCalled();
     });
   });
 

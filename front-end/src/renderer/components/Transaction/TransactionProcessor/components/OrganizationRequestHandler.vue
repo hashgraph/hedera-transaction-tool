@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { freeze } from '@renderer/services/transactionService';
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import { TransactionRequest, type Handler, type Processable } from '..';
 
@@ -169,7 +170,10 @@ async function sign(publicKey: string) {
   const privateKeyRaw = await decryptPrivateKey(user.personal.id, password, publicKey);
   const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
-  /* Signs the unfrozen transaction */
+  /* Freezes the transaction so the creator signs the exact bytes the server will store */
+  request.value.transactionBytes = await freeze(request.value.transactionBytes);
+
+  /* Signs the frozen transaction */
   const signatureBytes = privateKey.sign(request.value.transactionBytes);
   const signature = uint8ToHex(signatureBytes);
 

@@ -39,18 +39,21 @@ const progressText = computed(() =>
 
 /* Handlers */
 const handleSign = async (personalPassword: string | null): Promise<ActionReport | null> => {
+  // The caller passes a snapshot taken when signing was initiated, so a server push
+  // cannot change what the user is about to sign while the password modal is open.
+  const transactionToSign = props.transaction;
   let result: ActionReport | null = null;
   try {
-    if (props.transaction !== null) {
-      result = await performSign(props.transaction, personalPassword);
+    if (transactionToSign !== null) {
+      result = await performSign(transactionToSign, personalPassword);
     } else {
       result = makeBugReport('Sign', 'Cannot sign: transaction is undefined');
     }
   } finally {
     // We clear transaction cache
-    if (props.transaction && user.selectedOrganization) {
+    if (transactionToSign && user.selectedOrganization) {
       appCache.backendTransaction.forgetTransaction(
-        props.transaction,
+        transactionToSign,
         user.selectedOrganization.serverUrl,
       );
     }

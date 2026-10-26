@@ -7,11 +7,13 @@ import type { IGroup } from '@renderer/services/organization';
 import SignAllController from '@renderer/pages/TransactionGroupDetails/SignAllController.vue';
 import { ActionStatus } from '@renderer/components/ActionController/ActionReport.ts';
 import { collectRequiredKeys, collectMissingKeys, signItems } from '@renderer/utils';
+import { getTransactionGroupById } from '@renderer/services/organization';
 
 /* ── ActionController stub ──────────────────────────────────────────────── */
 
 const capture = vi.hoisted(() => ({
   callback: null as ((pw: string | null) => Promise<unknown>) | null,
+  emit: null as ((event: string, ...args: unknown[]) => void) | null,
 }));
 
 vi.mock('@renderer/components/ActionController/ActionController.vue', () => ({
@@ -29,8 +31,9 @@ vi.mock('@renderer/components/ActionController/ActionController.vue', () => ({
       'progressIconName',
       'personalPasswordRequired',
     ],
-    setup(props: any) {
+    setup(props: any, { emit }: any) {
       capture.callback = props.actionCallback;
+      capture.emit = emit;
     },
     template: '<div />',
   },
@@ -42,7 +45,12 @@ const toastSuccess = vi.fn();
 const toastInfo = vi.fn();
 
 vi.mock('vue-toast-notification', () => ({
-  useToast: vi.fn(() => ({ success: toastSuccess, info: toastInfo, error: vi.fn(), warning: vi.fn() })),
+  useToast: vi.fn(() => ({
+    success: toastSuccess,
+    info: toastInfo,
+    error: vi.fn(),
+    warning: vi.fn(),
+  })),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -62,6 +70,10 @@ vi.mock('@renderer/utils', () => ({
   collectRequiredKeys: vi.fn(),
   collectMissingKeys: vi.fn(() => []),
   signItems: vi.fn(() => Promise.resolve([])),
+  snapshotGroup: (group: { groupItems: object[] }) => ({
+    ...group,
+    groupItems: group.groupItems.map(item => ({ ...item })),
+  }),
 }));
 
 vi.mock('@renderer/services/organization', () => ({
@@ -90,7 +102,11 @@ const makeGroup = (txs: ReturnType<typeof makeTx>[]): IGroup => ({
   groupItems: txs.map((tx, i) => ({ seq: i + 1, transactionId: tx.id, transaction: tx })),
 });
 
-const sigItem = (id: number) => ({ transactionId: id, transaction: {} as any, publicKeys: ['pub-key'] });
+const sigItem = (id: number) => ({
+  transactionId: id,
+  transaction: {} as any,
+  publicKeys: ['pub-key'],
+});
 const signedItem = (id: number) => ({ transactionId: id, transaction: {} as any, publicKeys: [] });
 
 /* ── Tests ──────────────────────────────────────────────────────────────── */
@@ -104,16 +120,23 @@ describe('SignAllController', () => {
     mockCallback.mockResolvedValue(undefined);
   });
 
-  const mountAndCapture = (groupOrId: IGroup | number | null) => {
-    mount(SignAllController, {
+  const mountController = (groupOrId: IGroup | number | null) => {
+    const wrapper = mount(SignAllController, {
       props: { groupOrId, callback: mockCallback, activate: false },
     });
     if (!capture.callback) throw new Error('ActionController stub did not capture actionCallback');
-    return capture.callback;
+    return { wrapper, signAll: capture.callback };
+  };
+
+  // Mounts and simulates the user clicking Sign All
+  const mountAndCapture = async (groupOrId: IGroup | number | null) => {
+    const { wrapper, signAll } = mountController(groupOrId);
+    await wrapper.setProps({ activate: true });
+    return signAll;
   };
 
   test('returns bug report when groupOrId is null', async () => {
-    const signAll = mountAndCapture(null);
+    const signAll = await mountAndCapture(null);
     const result = (await signAll(null)) as any;
 
     expect(result?.status).toBe(ActionStatus.Error);
@@ -131,7 +154,7 @@ describe('SignAllController', () => {
       ];
       vi.mocked(collectRequiredKeys).mockResolvedValue([signedItem(1), signedItem(3)]);
 
-      const signAll = mountAndCapture(makeGroup(txs));
+      const signAll = await mountAndCapture(makeGroup(txs));
       await signAll(null);
       await flushPromises();
 
@@ -144,7 +167,7 @@ describe('SignAllController', () => {
     test('shows info toast and returns null when all items are already signed', async () => {
       vi.mocked(collectRequiredKeys).mockResolvedValue([signedItem(1), signedItem(2)]);
 
-      const signAll = mountAndCapture(
+      const signAll = await mountAndCapture(
         makeGroup([
           makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES),
           makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES),
@@ -160,7 +183,9 @@ describe('SignAllController', () => {
     test('does not call collectMissingKeys or signItems when remainingCount is 0', async () => {
       vi.mocked(collectRequiredKeys).mockResolvedValue([signedItem(1)]);
 
-      const signAll = mountAndCapture(makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]));
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
       await signAll(null);
       await flushPromises();
 
@@ -174,7 +199,9 @@ describe('SignAllController', () => {
       vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(1)]);
       vi.mocked(collectMissingKeys).mockReturnValue(['key-a', 'key-b']);
 
-      const signAll = mountAndCapture(makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]));
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
       const result = (await signAll(null)) as any;
       await flushPromises();
 
@@ -186,7 +213,9 @@ describe('SignAllController', () => {
       vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(1)]);
       vi.mocked(collectMissingKeys).mockReturnValue(['key-a']);
 
-      const signAll = mountAndCapture(makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]));
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
       const result = (await signAll(null)) as any;
       await flushPromises();
 
@@ -201,7 +230,7 @@ describe('SignAllController', () => {
       vi.mocked(collectMissingKeys).mockReturnValue([]);
       vi.mocked(signItems).mockResolvedValue([]);
 
-      const signAll = mountAndCapture(
+      const signAll = await mountAndCapture(
         makeGroup([
           makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES),
           makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES),
@@ -219,7 +248,9 @@ describe('SignAllController', () => {
       vi.mocked(collectMissingKeys).mockReturnValue([]);
       vi.mocked(signItems).mockResolvedValue([]);
 
-      const signAll = mountAndCapture(makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]));
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
       await signAll(null);
       await flushPromises();
 
@@ -231,7 +262,7 @@ describe('SignAllController', () => {
       vi.mocked(collectMissingKeys).mockReturnValue([]);
       vi.mocked(signItems).mockResolvedValue([sigItem(3)]);
 
-      const signAll = mountAndCapture(
+      const signAll = await mountAndCapture(
         makeGroup([
           makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES),
           makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES),
@@ -252,7 +283,7 @@ describe('SignAllController', () => {
       vi.mocked(collectMissingKeys).mockReturnValue([]);
       vi.mocked(signItems).mockResolvedValue(items);
 
-      const signAll = mountAndCapture(
+      const signAll = await mountAndCapture(
         makeGroup([
           makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES),
           makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES),
@@ -263,6 +294,76 @@ describe('SignAllController', () => {
 
       expect(result?.status).toBe(ActionStatus.Error);
       expect(result?.what).toBe('Transactions were not signed');
+    });
+  });
+
+  describe('group target', () => {
+    const txIdsSigned = () => vi.mocked(collectRequiredKeys).mock.calls[0][0].map((t: any) => t.id);
+
+    test('signs the group held by the prop when signing starts', async () => {
+      vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(1)]);
+      vi.mocked(signItems).mockResolvedValue([]);
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
+
+      const result = await signAll(null);
+
+      expect(result).toBeNull();
+      expect(getTransactionGroupById).not.toHaveBeenCalled();
+      expect(txIdsSigned()).toEqual([1]);
+      expect(mockCallback).toHaveBeenCalledWith(1, true);
+    });
+
+    test('signs the prop value even if it was replaced before activation', async () => {
+      vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(2)]);
+      const { wrapper, signAll } = mountController(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
+
+      await wrapper.setProps({
+        groupOrId: makeGroup([makeTx(2, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      });
+      await wrapper.setProps({ activate: true });
+      await signAll(null);
+
+      expect(txIdsSigned()).toEqual([2]);
+    });
+
+    test('fetches the group when only an id was provided', async () => {
+      vi.mocked(getTransactionGroupById).mockResolvedValue(
+        makeGroup([makeTx(5, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
+      vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(5)]);
+      vi.mocked(signItems).mockResolvedValue([]);
+      const signAll = await mountAndCapture(7);
+
+      const result = await signAll(null);
+
+      expect(result).toBeNull();
+      expect(getTransactionGroupById).toHaveBeenCalledWith('https://org.example.com', 7);
+      expect(txIdsSigned()).toEqual([5]);
+      expect(mockCallback).toHaveBeenCalledWith(7, true);
+    });
+
+    test('reports failure to the callback when signing is rejected', async () => {
+      vi.mocked(collectRequiredKeys).mockResolvedValue([sigItem(1)]);
+      vi.mocked(signItems).mockResolvedValueOnce([sigItem(1)]);
+      const signAll = await mountAndCapture(
+        makeGroup([makeTx(1, TransactionStatus.WAITING_FOR_SIGNATURES)]),
+      );
+
+      await signAll(null);
+
+      expect(mockCallback).toHaveBeenCalledWith(1, false);
+    });
+
+    test('forwards activate updates from the action controller', () => {
+      const { wrapper } = mountController(null);
+
+      capture.emit!('update:activate', true);
+
+      expect(wrapper.emitted('update:activate')).toEqual([[true]]);
     });
   });
 });
