@@ -16,6 +16,7 @@ describe('TransactionDto', () => {
       transactionId: 'tx-123',
       description: 'desc',
       transactionBytes: Buffer.from('deadbeef', 'hex'),
+      unsignedTransactionBytes: Buffer.from('deadbeef', 'hex'),
       status: 'PENDING',
       statusCode: 0,
       signature: Buffer.from('beef', 'hex'),
@@ -34,6 +35,7 @@ describe('TransactionDto', () => {
     expect(dto).toBeInstanceOf(TransactionDto);
     // transforms set transactionBytes/signature to hex strings
     expect(dto.transactionBytes).toBe('deadbeef');
+    expect(dto.unsignedTransactionBytes).toBe('deadbeef');
     expect(dto.signature).toBe('beef');
 
     // dates should be converted to Date
@@ -76,6 +78,37 @@ describe('TransactionDto', () => {
 
     expect(dto).toBeInstanceOf(TransactionDto);
     expect(dto.groupItem).toBeUndefined();
+
+    const errors = validateSync(dto, { forbidUnknownValues: false });
+    expect(errors.length).toBe(0);
+  });
+
+  test('maps plain object -> TransactionDto with unsignedTransactionBytes and creatorKey omitted', () => {
+    const plain = {
+      id: 44,
+      name: 'Payment3',
+      type: 'PAYMENT',
+      transactionId: 'tx-125',
+      description: 'desc3',
+      transactionBytes: Buffer.from('cc', 'hex'),
+      status: 'PENDING',
+      statusCode: 0,
+      signature: Buffer.from('dd', 'hex'),
+      validStart: '2024-01-01T00:00:00.000Z',
+      isManual: false,
+      createdAt: '2024-01-03T00:00:00.000Z',
+      updatedAt: '2024-01-05T00:00:00.000Z',
+      // unsignedTransactionBytes omitted
+      // creatorKey omitted
+    };
+
+    const dto = plainToInstance(TransactionDto, plain, { enableImplicitConversion: true });
+
+    expect(dto).toBeInstanceOf(TransactionDto);
+    expect(dto.unsignedTransactionBytes).toBeUndefined();
+    expect((dto as any).creatorKeyId).toBeUndefined();
+    expect((dto as any).creatorId).toBeUndefined();
+    expect((dto as any).creatorEmail).toBeUndefined();
 
     const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
