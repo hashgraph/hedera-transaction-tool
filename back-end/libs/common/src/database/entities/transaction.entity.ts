@@ -183,6 +183,9 @@ export class Transaction {
 
   @OneToMany(() => TransactionNodeSnapshot, (tns) => tns.transaction)
   transactionNodeSnapshots!: TransactionNodeSnapshot[];
+
+  // Computed from a join (transaction-groups/transaction-nodes queries); not a DB column.
+  hasRejection?: boolean;
 }
 
 export const transactionProperties: (keyof Transaction)[] = [

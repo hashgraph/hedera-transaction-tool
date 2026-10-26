@@ -138,6 +138,8 @@ export class TransactionGroupsService {
         updatedAt: row.tx_updated_at,
       });
 
+      transaction.hasRejection = row.has_rejection;
+
       return this.dataSource.manager.create(TransactionGroupItem, {
         seq: row.gi_seq,
         groupId: id,

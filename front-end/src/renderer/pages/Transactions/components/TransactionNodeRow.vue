@@ -27,7 +27,7 @@ import {
   type ITransactionNode,
   TransactionNodeCollection,
 } from '@shared/interfaces/ITransactionNode.ts';
-import { FEATURE_EXTERNAL_BADGE_ENABLED } from '@shared/constants';
+import { FEATURE_EXTERNAL_BADGE_ENABLED, FEATURE_REVIEWER_ENABLED } from '@shared/constants';
 
 /* Props */
 const props = defineProps<{
@@ -289,6 +289,14 @@ watch(
         class="ms-2"
         :data-testid="`span-transaction-node-creator-signature-${index}`"
       />
+      <span
+        v-if="FEATURE_REVIEWER_ENABLED && props.node.status === TransactionStatus.READY_FOR_REVIEW"
+        class="badge bg-warning ms-2"
+        >Pending Review</span
+      >
+      <span v-if="FEATURE_REVIEWER_ENABLED && props.node.hasRejection" class="badge bg-danger ms-2"
+        >Rejected</span
+      >
     </td>
 
     <!-- Column #3 : Description -->

@@ -12,6 +12,7 @@ import {
 } from '@shared/interfaces';
 import {
   draftsTitle,
+  FEATURE_REVIEWER_ENABLED,
   historyTitle,
   inProgressTitle,
   readyForExecutionTitle,
@@ -70,7 +71,7 @@ useSetDynamicLayout(LOGGED_IN_LAYOUT);
 /* State */
 const organizationTabs: TabItem[] = [
   { title: draftsTitle },
-  { title: readyForReviewTitle },
+  ...(FEATURE_REVIEWER_ENABLED ? [{ title: readyForReviewTitle }] : []),
   { title: readyToSignTitle },
   { title: inProgressTitle },
   { title: readyForExecutionTitle },
@@ -294,6 +295,7 @@ async function findPrimaryTabTitle(): Promise<string> {
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return historyTitle;
   if (user.selectedOrganization.isPasswordTemporary) return historyTitle;
+  if (!FEATURE_REVIEWER_ENABLED) return readyToSignTitle;
 
   const nodes = await getTransactionNodes(
     user.selectedOrganization.serverUrl,

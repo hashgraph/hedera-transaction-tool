@@ -592,7 +592,8 @@ export class TransactionsService {
 
         if (
           transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
-          transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
+          transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION &&
+          transaction.status !== TransactionStatus.READY_FOR_REVIEW
         )
           throw new BadRequestException(ErrorCodes.TNRS);
 

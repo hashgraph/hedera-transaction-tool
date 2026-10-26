@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 import { formatTransactionSummary } from '@renderer/utils/transactionSummary';
 import { type ITransactionFull, TransactionStatus } from '@shared/interfaces';
+import { FEATURE_REVIEWER_ENABLED } from '@shared/constants';
 import type { IGroupItem } from '@renderer/services/organization/transactionGroup';
 import { getDisplayTransactionType } from '@renderer/utils/sdk/transactions.ts';
 import AppButton from '@renderer/components/ui/AppButton.vue';
@@ -181,6 +182,11 @@ useRevealed(container, () => {
       <span class="text-bold">{{ transactionType }}</span>
       <span v-if="props.groupItem.transaction.isManual" class="badge bg-info ms-3">Manual</span>
       <CreatorSignaturePill :status="creatorSignatureStatus" class="ms-2" />
+      <span
+        v-if="FEATURE_REVIEWER_ENABLED && props.groupItem.transaction.hasRejection"
+        class="badge bg-danger ms-2"
+        >Rejected</span
+      >
       <div
         v-if="transactionSummary"
         class="text-small mt-1 transfer-summary"

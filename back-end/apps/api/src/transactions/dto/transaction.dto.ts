@@ -6,6 +6,38 @@ import { TransactionSignerUserKeyDto } from './transaction-signer.dto';
 import { TransactionObserverDto } from './transaction-observer.dto';
 import { TransactionGroupItemDto } from './transaction-group-item.dto';
 
+export class TransactionReviewerListMemberDto {
+  @Expose()
+  userId!: number;
+
+  @Expose()
+  accepted!: boolean | null;
+
+  @Expose()
+  note!: string | null;
+
+  @Expose()
+  actionedAt!: Date | null;
+}
+
+export class TransactionReviewerListDto {
+  @Expose()
+  id!: number;
+
+  @Expose()
+  name!: string | null;
+
+  @Expose()
+  description!: string | null;
+
+  @Expose()
+  threshold!: number;
+
+  @Expose()
+  @Type(() => TransactionReviewerListMemberDto)
+  members!: TransactionReviewerListMemberDto[];
+}
+
 export class TransactionDto {
   @Expose()
   id!: number;
@@ -77,6 +109,9 @@ export class TransactionDto {
   @Expose()
   @Type(() => TransactionGroupItemDto)
   groupItem?: TransactionGroupItemDto;
+
+  @Expose()
+  hasRejection?: boolean;
 }
 
 export class TransactionFullDto extends TransactionDto {
@@ -91,4 +126,8 @@ export class TransactionFullDto extends TransactionDto {
   @Expose()
   @Type(() => TransactionObserverDto)
   observers!: TransactionObserverDto[];
+
+  @Expose()
+  @Type(() => TransactionReviewerListDto)
+  reviewerLists?: TransactionReviewerListDto[];
 }

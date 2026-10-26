@@ -27,19 +27,22 @@ describe('TransactionDetailsStatusStepper.vue', () => {
     ).not.toThrow();
   });
 
-  test('includes the Awaiting Approval step when approvers are present', () => {
+  test('includes the Awaiting Approval step when reviewer lists are present', () => {
     const wrapper = mount(TransactionDetailsStatusStepper, {
       props: {
-        transaction: { ...baseTransaction, approvers: [{ id: 1, createdAt: new Date().toISOString() }] },
+        transaction: {
+          ...baseTransaction,
+          reviewerLists: [{ id: 1, name: null, description: null, threshold: 1, members: [] }],
+        },
       },
     });
 
     expect(wrapper.text()).toContain('Awaiting Approval');
   });
 
-  test('omits the Awaiting Approval step when approvers is undefined', () => {
+  test('omits the Awaiting Approval step when reviewerLists is undefined', () => {
     const wrapper = mount(TransactionDetailsStatusStepper, {
-      props: { transaction: { ...baseTransaction, approvers: undefined } },
+      props: { transaction: { ...baseTransaction, reviewerLists: undefined } },
     });
 
     expect(wrapper.text()).not.toContain('Awaiting Approval');

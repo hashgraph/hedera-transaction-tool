@@ -28,7 +28,10 @@ import {
   TransactionNodeSortField,
 } from '@renderer/utils/sortTransactionNodes.ts';
 import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFilterV2.vue';
-import { TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import PendingReviewFieldV2, {
+  type PendingReviewFilterItem,
+} from '@renderer/components/Filter/v2/PendingReviewFieldV2.vue';
+import { FEATURE_REVIEWER_ENABLED, TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
@@ -134,12 +137,26 @@ const sort = ref<{
 });
 const statusFilter = ref<TransactionStatus[]>([]);
 const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
+const pendingReviewFilter = ref<PendingReviewFilterItem[]>([]);
 
 /* Computed */
+// Ready-to-Sign always receives READY_FOR_REVIEW transactions from the back-end (see
+// transaction-node-collections.constants.ts) so signers never have to leave the tab to find
+// what they can sign — but they're hidden here by default until the signer opts in.
+const visibleNodes = computed(() => {
+  if (props.collection !== TransactionNodeCollection.READY_TO_SIGN) {
+    return nodes.value;
+  }
+  if (pendingReviewFilter.value.includes('PENDING_REVIEW')) {
+    return nodes.value;
+  }
+  return nodes.value.filter(n => n.status !== TransactionStatus.READY_FOR_REVIEW);
+});
+
 const pageItems = computed(() => {
   const startIndex = (currentPage.value - 1) * pageSize.value;
   const endIndex = startIndex + pageSize.value;
-  return nodes.value.slice(startIndex, endIndex);
+  return visibleNodes.value.slice(startIndex, endIndex);
 });
 
 const loadErrorMessage = computed(() => {
@@ -167,7 +184,7 @@ const loadErrorMessage = computed(() => {
 /* Handlers */
 const routeToDetails = async (node: ITransactionNode) => {
   const nodeIds: TransactionNodeId[] = [];
-  for (const n of nodes.value) {
+  for (const n of visibleNodes.value) {
     if (n.transactionId) {
       nodeIds.push({ transactionId: n.transactionId });
     } else if (n.groupId) {
@@ -258,7 +275,7 @@ function sortNodes(): void {
 }
 
 function clampPage(): void {
-  const totalPages = Math.max(1, Math.ceil(nodes.value.length / pageSize.value));
+  const totalPages = Math.max(1, Math.ceil(visibleNodes.value.length / pageSize.value));
   if (currentPage.value > totalPages) {
     currentPage.value = totalPages;
   }
@@ -302,6 +319,13 @@ watch([statusFilter, transactionTypeFilter], () => {
   fetchNodes();
 }, { deep: true });
 
+// Client-side only — the back-end already sent every row this signer is eligible for, so
+// toggling this filter just changes what's shown, no refetch needed.
+watch(pendingReviewFilter, () => {
+  currentPage.value = 1;
+  clampPage();
+}, { deep: true });
+
 /* Hooks */
 onMounted(fetchNodes);
 </script>
@@ -314,11 +338,17 @@ onMounted(fetchNodes);
         v-model:transaction-type-filter="transactionTypeFilter"
       />
     </div>
+    <div
+      v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN && FEATURE_REVIEWER_ENABLED"
+      class="mt-3 mb-3"
+    >
+      <PendingReviewFieldV2 v-model:pending-review-filter="pendingReviewFilter" />
+    </div>
     <template v-if="isLoading">
       <AppLoader class="h-100" />
     </template>
     <template v-else>
-      <template v-if="nodes.length > 0">
+      <template v-if="visibleNodes.length > 0">
         <table class="table-custom">
           <thead>
             <TransactionNodeHead v-model:sort="sort" :collection="props.collection" />
@@ -345,7 +375,7 @@ onMounted(fetchNodes);
               <AppPager
                 v-model:current-page="currentPage"
                 v-model:per-page="pageSize"
-                :total-items="nodes.length"
+                :total-items="visibleNodes.length"
               />
             </tr>
           </tfoot>

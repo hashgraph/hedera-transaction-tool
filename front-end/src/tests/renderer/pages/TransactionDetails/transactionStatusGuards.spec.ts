@@ -74,6 +74,12 @@ describe('transactionStatusGuards', () => {
     expect(isApprovableStatus(TransactionStatus.WAITING_FOR_EXECUTION)).toBe(true);
   });
 
+  test('READY_FOR_REVIEW is in-progress and signable (non-blocking) but not approvable', () => {
+    expect(isInProgressStatus(TransactionStatus.READY_FOR_REVIEW)).toBe(true);
+    expect(isSignableStatus(TransactionStatus.READY_FOR_REVIEW)).toBe(true);
+    expect(isApprovableStatus(TransactionStatus.READY_FOR_REVIEW)).toBe(false);
+  });
+
   test('null returns false for all guards', () => {
     expect(isInProgressStatus(null)).toBe(false);
     expect(isSignableStatus(null)).toBe(false);

@@ -15,6 +15,8 @@ import {
   TransactionStatus,
   TransactionObserver,
   TransactionType,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
 } from '@entities';
 
 type TransactionFilters = {
@@ -27,7 +29,9 @@ type Roles = {
   signer?: boolean;
   creator?: boolean;
   observer?: boolean;
+  reviewer?: boolean;
   onlyUnsigned?: boolean;
+  onlyUnreviewed?: boolean;
 };
 
 interface WhereClauseResult {
@@ -170,6 +174,22 @@ function buildEligibilityConditions(
     `);
   }
 
+  if (roles.reviewer) {
+    const userParam = addParam(user.id);
+    const onlyUnreviewed = roles.onlyUnreviewed ?? false;
+    eligibilityConditions.push(`
+      EXISTS (
+        SELECT 1
+        FROM ${sql.table(TransactionReviewerList)} trl
+        JOIN ${sql.table(TransactionReviewerListMember)} trlm
+          ON trlm.${sql.col(TransactionReviewerListMember, 'listId')} = trl.${sql.col(TransactionReviewerList, 'id')}
+        WHERE trl.${sql.col(TransactionReviewerList, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+          AND trlm.${sql.col(TransactionReviewerListMember, 'userId')} = ${userParam}
+          ${onlyUnreviewed ? `AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} IS NULL` : ''}
+      )
+    `);
+  }
+
   return eligibilityConditions;
 }
 
@@ -246,6 +266,12 @@ export function getTransactionNodesQuery(
               t.${sql.col(Transaction, 'transactionId')} AS sdk_transaction_id,
               t.${sql.col(Transaction, 'type')} AS transaction_type,
               t.${sql.col(Transaction, 'isManual')} AS is_manual,
+              CASE t.${sql.col(Transaction, 'status')}
+                  WHEN '${TransactionStatus.READY_FOR_REVIEW}' THEN 1
+                  WHEN '${TransactionStatus.WAITING_FOR_SIGNATURES}' THEN 2
+                  WHEN '${TransactionStatus.WAITING_FOR_EXECUTION}' THEN 3
+                  ELSE NULL
+              END AS tx_active_priority,
               ROW_NUMBER() OVER (
                 PARTITION BY gi.${sql.col(TransactionGroupItem, 'groupId')}
                 ORDER BY t.${sql.col(Transaction, 'createdAt')} DESC
@@ -260,6 +286,7 @@ export function getTransactionNodesQuery(
                    group_id,
                    COUNT(DISTINCT tx_status) AS distinct_statuses,
                    MAX(tx_status) AS uniform_status,
+                   MIN(tx_active_priority) AS min_active_priority,
                    COUNT(DISTINCT tx_status_code) AS distinct_status_codes,
                    MAX(tx_status_code) AS uniform_status_code,
                    MIN(tx_valid_start) AS min_valid_start,
@@ -297,6 +324,9 @@ export function getTransactionNodesQuery(
           CASE
               WHEN rt.group_id IS NULL THEN rt.tx_status
               WHEN ga.distinct_statuses = 1 THEN ga.uniform_status
+              WHEN ga.min_active_priority = 1 THEN '${TransactionStatus.READY_FOR_REVIEW}'
+              WHEN ga.min_active_priority = 2 THEN '${TransactionStatus.WAITING_FOR_SIGNATURES}'
+              WHEN ga.min_active_priority = 3 THEN '${TransactionStatus.WAITING_FOR_EXECUTION}'
               ELSE NULL
               END AS status,
           CASE
@@ -316,7 +346,27 @@ export function getTransactionNodesQuery(
               SELECT COUNT(DISTINCT transaction_id)::int
               FROM eligible_transactions et_inner
               WHERE et_inner.group_id = rt.group_id
-          ) AS group_collected_count
+          ) AS group_collected_count,
+          CASE
+              WHEN rt.group_id IS NULL THEN EXISTS (
+                  SELECT 1
+                  FROM ${sql.table(TransactionReviewerList)} trl
+                  JOIN ${sql.table(TransactionReviewerListMember)} trlm
+                    ON trlm.${sql.col(TransactionReviewerListMember, 'listId')} = trl.${sql.col(TransactionReviewerList, 'id')}
+                  WHERE trl.${sql.col(TransactionReviewerList, 'transactionId')} = rt.transaction_id
+                    AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} = false
+              )
+              ELSE EXISTS (
+                  SELECT 1
+                  FROM eligible_transactions et_rejections
+                  JOIN ${sql.table(TransactionReviewerList)} trl
+                    ON trl.${sql.col(TransactionReviewerList, 'transactionId')} = et_rejections.transaction_id
+                  JOIN ${sql.table(TransactionReviewerListMember)} trlm
+                    ON trlm.${sql.col(TransactionReviewerListMember, 'listId')} = trl.${sql.col(TransactionReviewerList, 'id')}
+                  WHERE et_rejections.group_id = rt.group_id
+                    AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} = false
+              )
+              END AS has_rejection
       FROM representative_transactions rt
                LEFT JOIN ${sql.table(TransactionGroup)} tg
                          ON tg.${sql.col(TransactionGroup, 'id')} = rt.group_id
@@ -351,6 +401,7 @@ export interface TransactionGroupItemsRow {
   tx_is_manual: boolean;
   tx_creator_key_user_id: number;
   tx_creator_email: string;
+  has_rejection: boolean;
 }
 
 export function getTransactionGroupItemsQuery(
@@ -389,7 +440,15 @@ export function getTransactionGroupItemsQuery(
       t.${sql.col(Transaction, 'type')} AS tx_type,
       t.${sql.col(Transaction, 'isManual')} AS tx_is_manual,
       ck.${sql.col(UserKey, 'userId')} AS tx_creator_key_user_id,
-      c.${sql.col(User, 'email')} AS tx_creator_email
+      c.${sql.col(User, 'email')} AS tx_creator_email,
+      EXISTS (
+          SELECT 1
+          FROM ${sql.table(TransactionReviewerList)} trl
+          JOIN ${sql.table(TransactionReviewerListMember)} trlm
+            ON trlm.${sql.col(TransactionReviewerListMember, 'listId')} = trl.${sql.col(TransactionReviewerList, 'id')}
+          WHERE trl.${sql.col(TransactionReviewerList, 'transactionId')} = t.${sql.col(Transaction, 'id')}
+            AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} = false
+      ) AS has_rejection
     FROM ${sql.table(Transaction)} t
     INNER JOIN ${sql.table(TransactionGroupItem)} gi
       ON gi.${sql.col(TransactionGroupItem, 'transactionId')} = t.${sql.col(Transaction, 'id')}

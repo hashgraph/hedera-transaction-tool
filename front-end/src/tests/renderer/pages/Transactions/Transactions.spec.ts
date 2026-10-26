@@ -16,6 +16,11 @@ const mocks = vi.hoisted(() => ({
   },
 }));
 
+vi.mock('@shared/constants', async () => {
+  const actual = await vi.importActual('@shared/constants');
+  return { ...actual, FEATURE_REVIEWER_ENABLED: true };
+});
+
 vi.mock('vue-router', () => ({
   useRouter: vi.fn(() => ({
     currentRoute: {

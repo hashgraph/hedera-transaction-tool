@@ -13,6 +13,7 @@ export interface ITransactionNode {   //   Single   Group
   isManual?: boolean;                 //      x
   groupItemCount?: number;            //              x
   groupCollectedCount?: number;       //              x
+  hasRejection?: boolean;             //      x       x
 }
 
 export enum TransactionNodeCollection {
@@ -41,5 +42,6 @@ export enum TransactionNodeCollection {
     transactionType  | tx type            | undefined            |
     isManual         | tx is manual       | undefined            |
     groupItemCount   | 0                  | group item count     |
+    hasRejection     | tx has rejection   | any item rejected    |
 
  */
