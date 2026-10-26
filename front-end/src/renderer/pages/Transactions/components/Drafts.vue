@@ -68,11 +68,7 @@ const generatedClass = computed(() => {
 });
 
 /* Handlers */
-const handleSort = async (field: string, direction: 'asc' | 'desc') => {
-  sortField.value = field;
-  sortDirection.value = direction;
-  currentPage.value = 1;
-
+const sortList = (field: string, direction: 'asc' | 'desc') => {
   switch (field) {
     case 'created_at': {
       const cmp = (
@@ -154,6 +150,14 @@ const handleSort = async (field: string, direction: 'asc' | 'desc') => {
       break;
     }
   }
+};
+
+const handleSort = async (field: string, direction: 'asc' | 'desc') => {
+  sortField.value = field;
+  sortDirection.value = direction;
+  currentPage.value = 1;
+
+  sortList(field, direction);
 };
 
 const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
@@ -290,7 +294,7 @@ async function fetchDrafts() {
     groups.value = await getGroups(createFindGroupArgs());
     totalItems.value = draftsCount + groupsCount;
     list.value = [...drafts.value, ...groups.value];
-    await handleSort(sortField.value, sortDirection.value);
+    sortList(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }
@@ -385,6 +389,14 @@ onUnmounted(() => {
 watch([currentPage, pageSize], async () => {
   syncToUrl(currentPage.value, sortField.value, sortDirection.value, pageSize.value);
   await fetchDrafts();
+});
+
+// Picks up sort changes that came from outside the table (e.g. navigating here via a
+// notification resets the URL's sort to the default). Calls sortList directly rather than
+// handleSort, since handleSort also resets currentPage, which would drop a page param that
+// has nothing to do with this sort change.
+watch([sortField, sortDirection], ([field, direction]) => {
+  sortList(field, direction);
 });
 
 watch(

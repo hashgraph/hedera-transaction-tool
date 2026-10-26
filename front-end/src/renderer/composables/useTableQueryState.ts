@@ -86,6 +86,13 @@ export default function useTableQueryState(
       newQuery.perPage = String(newPageSize);
     }
 
+    page.value = newPage;
+    sortField.value = newSortField;
+    sortDirection.value = newSortDirection;
+    if (newPageSize != null) {
+      pageSize.value = newPageSize;
+    }
+
     syncingSelf = true;
     Promise.resolve(router.replace({ query: newQuery })).finally(() => {
       syncingSelf = false;
