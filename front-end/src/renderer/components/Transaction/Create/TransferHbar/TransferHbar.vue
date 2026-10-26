@@ -11,6 +11,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 
 import {
   createTransferHbarTransaction,
+  getTransactionCommonData,
   getTransferHbarData,
   type TransactionCommonData,
   type TransferHbarData,
@@ -84,6 +85,13 @@ const createTransaction = (commonData: TransactionCommonData): TransferTransacti
   });
 };
 
+const getAllData = (tx: TransferTransaction): TransferHbarData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getTransferHbarData(tx),
+  };
+};
+
 const handleDraftLoaded = async (transaction: TransferTransaction) => {
   handleUpdateData(getTransferHbarData(transaction));
   for (const accountId of data.transfers.map(t => t.accountId.toString())) {
@@ -128,6 +136,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="TransferTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

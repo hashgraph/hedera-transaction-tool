@@ -10,6 +10,7 @@ import useUserStore from '@renderer/stores/storeUser';
 import {
   exceedsUtf8ByteLimit,
   getRegisteredNodeData,
+  getTransactionCommonData,
   isUserLoggedIn,
   type TransactionCommonData,
 } from '@renderer/utils';
@@ -76,6 +77,13 @@ const createTransaction = (commonData: TransactionCommonData): RegisteredNodeCre
     ...commonData,
     ...data,
   });
+};
+
+const getAllData = (tx: RegisteredNodeCreateTransaction): RegisteredNodeData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getRegisteredNodeData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: RegisteredNodeCreateTransaction) => {
@@ -169,6 +177,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="RegisteredNodeCreateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

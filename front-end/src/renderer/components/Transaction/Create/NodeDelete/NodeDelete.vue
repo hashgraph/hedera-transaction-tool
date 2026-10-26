@@ -11,7 +11,7 @@ import {
   type TransactionCommonData,
 } from '@renderer/utils/sdk/createTransactions';
 
-import { getNodeDeleteData } from '@renderer/utils';
+import { getNodeDeleteData, getTransactionCommonData } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeDeleteFormData from '@renderer/components/Transaction/Create/NodeDelete/NodeDeleteFormData.vue';
@@ -38,6 +38,13 @@ const createTransaction = (commonData: TransactionCommonData): NodeDeleteTransac
   });
 };
 
+const getAllData = (tx: NodeDeleteTransaction): NodeDeleteData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getNodeDeleteData(tx),
+  };
+};
+
 const handleDraftLoaded = (transaction: NodeDeleteTransaction) => {
   if (transaction instanceof NodeDeleteTransaction) {
     if (transaction.nodeId) {
@@ -61,6 +68,7 @@ const handleExecutedSuccess = async () => {
     ref="baseTransactionRef"
     :transaction-ctor="NodeDeleteTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"

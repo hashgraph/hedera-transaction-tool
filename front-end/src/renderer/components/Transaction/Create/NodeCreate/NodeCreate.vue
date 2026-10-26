@@ -7,7 +7,12 @@ import { ToastManager } from '@renderer/utils/ToastManager';
 
 import useUserStore from '@renderer/stores/storeUser';
 
-import { getNodeData, isUserLoggedIn, type TransactionCommonData } from '@renderer/utils';
+import {
+  getNodeData,
+  getTransactionCommonData,
+  isUserLoggedIn,
+  type TransactionCommonData,
+} from '@renderer/utils';
 import { createNodeCreateTransaction, type NodeData } from '@renderer/utils/sdk/createTransactions';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -46,6 +51,13 @@ const createTransaction = (commonData: TransactionCommonData): NodeCreateTransac
     ...commonData,
     ...data,
   });
+};
+
+const getAllData = (tx: NodeCreateTransaction): NodeData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getNodeData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: NodeCreateTransaction) => {
@@ -102,6 +114,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="NodeCreateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

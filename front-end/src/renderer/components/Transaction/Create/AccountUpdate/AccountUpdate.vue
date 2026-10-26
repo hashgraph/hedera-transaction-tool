@@ -8,7 +8,7 @@ import { AccountId, AccountUpdateTransaction } from '@hiero-ledger/sdk';
 import { useRoute } from 'vue-router';
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { isAccountId } from '@renderer/utils';
+import { getTransactionCommonData, isAccountId } from '@renderer/utils';
 import {
   type AccountUpdateData,
   type AccountUpdateDataMultiple,
@@ -77,6 +77,13 @@ const createTransaction = (commonData: TransactionCommonData): AccountUpdateTran
     },
     accountData.accountInfo.value,
   );
+};
+
+const getAllData = (tx: AccountUpdateTransaction): AccountUpdateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getAccountUpdateData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: AccountUpdateTransaction) => {
@@ -178,6 +185,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="AccountUpdateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     :custom-request="customRequest"

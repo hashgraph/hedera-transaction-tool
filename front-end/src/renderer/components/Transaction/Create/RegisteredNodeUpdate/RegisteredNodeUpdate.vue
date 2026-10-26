@@ -20,6 +20,7 @@ import {
   exceedsUtf8ByteLimit,
   getComponentRegisteredEndpoints,
   getRegisteredNodeUpdateData,
+  getTransactionCommonData,
 } from '@renderer/utils';
 import RegisteredNodeUpdateFormData from './RegisteredNodeUpdateFormData.vue';
 import useRegisteredNodeId from '@renderer/composables/useRegisteredNodeId.ts';
@@ -114,6 +115,13 @@ const createTransaction = (commonData: TransactionCommonData): RegisteredNodeUpd
     ...commonData,
     ...data,
   });
+};
+
+const getAllData = (tx: RegisteredNodeUpdateTransaction): RegisteredNodeUpdateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getRegisteredNodeUpdateData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: RegisteredNodeUpdateTransaction) => {
@@ -219,6 +227,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="RegisteredNodeUpdateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"

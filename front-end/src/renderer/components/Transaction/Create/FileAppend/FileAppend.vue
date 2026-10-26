@@ -7,7 +7,12 @@ import useUserStore from '@renderer/stores/storeUser';
 
 import { useRoute } from 'vue-router';
 
-import { isFileId, isLoggedInOrganization, type TransactionCommonData } from '@renderer/utils';
+import {
+  getTransactionCommonData,
+  isFileId,
+  isLoggedInOrganization,
+  type TransactionCommonData,
+} from '@renderer/utils';
 import {
   createFileAppendTransaction,
   type FileAppendData,
@@ -54,6 +59,13 @@ const createTransaction = (commonData: TransactionCommonData): FileAppendTransac
   });
 };
 
+const getAllData = (tx: FileAppendTransaction): FileAppendData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getFileAppendTransactionData(tx),
+  };
+};
+
 const handleDraftLoaded = (transaction: FileAppendTransaction) => {
   handleUpdateData(getFileAppendTransactionData(transaction));
 };
@@ -85,6 +97,7 @@ onMounted(() => {
     ref="baseTransactionRef"
     :transaction-ctor="FileAppendTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

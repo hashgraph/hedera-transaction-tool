@@ -17,6 +17,8 @@ import { add } from '@renderer/services/filesService';
 import {
   createFileInfo,
   getEntityIdFromTransactionReceipt,
+  getFileInfoTransactionData,
+  getTransactionCommonData,
   isUserLoggedIn,
   type TransactionCommonData,
 } from '@renderer/utils';
@@ -59,6 +61,14 @@ const createTransaction = (commonData: TransactionCommonData): FileCreateTransac
     ...commonData,
     ...data,
   });
+};
+
+const getAllData = (tx: FileCreateTransaction): FileCreateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getFileInfoTransactionData(tx),
+    ...getFileCreateTransactionData(tx),
+  };
 };
 
 const handleDraftLoaded = (transaction: FileCreateTransaction) => {
@@ -131,6 +141,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="FileCreateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

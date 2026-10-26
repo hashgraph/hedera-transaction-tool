@@ -7,7 +7,7 @@ import { AccountAllowanceApproveTransaction, Hbar } from '@hiero-ledger/sdk';
 
 import useAccountId from '@renderer/composables/useAccountId';
 
-import { isAccountId } from '@renderer/utils';
+import { getTransactionCommonData, isAccountId } from '@renderer/utils';
 import {
   type ApproveHbarAllowanceData,
   createApproveHbarAllowanceTransaction,
@@ -44,6 +44,13 @@ const createTransaction = (
   });
 };
 
+const getAllData = (tx: AccountAllowanceApproveTransaction): ApproveHbarAllowanceData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getApproveHbarAllowanceTransactionData(tx),
+  };
+};
+
 const handleDraftLoaded = (transaction: AccountAllowanceApproveTransaction) => {
   handleUpdateData(getApproveHbarAllowanceTransactionData(transaction));
 };
@@ -77,6 +84,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="AccountAllowanceApproveTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

@@ -2,7 +2,12 @@
 import { computed, reactive } from 'vue';
 import { SystemDeleteTransaction } from '@hiero-ledger/sdk';
 
-import { isContractId, isFileId, type TransactionCommonData } from '@renderer/utils';
+import {
+  getTransactionCommonData,
+  isContractId,
+  isFileId,
+  type TransactionCommonData,
+} from '@renderer/utils';
 import {
   createSystemDeleteTransaction,
   getSystemDeleteData,
@@ -54,6 +59,13 @@ const createTransaction = (commonData: TransactionCommonData): SystemDeleteTrans
   });
 };
 
+const getAllData = (tx: SystemDeleteTransaction): SystemDeleteData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getSystemDeleteData(tx),
+  };
+};
+
 const handleDraftLoaded = (transaction: SystemDeleteTransaction) => {
   handleUpdateData(getSystemDeleteData(transaction));
 };
@@ -76,6 +88,7 @@ const preCreateAssert = () => {
   <BaseTransaction
     :transaction-ctor="SystemDeleteTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :pre-create-assert="preCreateAssert"
     :create-disabled="createDisabled"
     @draft-loaded="handleDraftLoaded"

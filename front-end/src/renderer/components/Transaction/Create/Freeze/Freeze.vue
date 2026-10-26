@@ -7,6 +7,7 @@ import {
   getFreezeData,
   type FreezeData,
   type TransactionCommonData,
+  getTransactionCommonData,
 } from '@renderer/utils/sdk';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
@@ -47,6 +48,13 @@ const createTransaction = (commonData: TransactionCommonData): FreezeTransaction
   });
 };
 
+const getAllData = (tx: FreezeTransaction): FreezeData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getFreezeData(tx),
+  };
+};
+
 const handleDraftLoaded = async (transaction: FreezeTransaction) => {
   handleUpdateData(getFreezeData(transaction));
 };
@@ -61,6 +69,7 @@ const handleUpdateData = (newData: FreezeData) => {
     :transaction-ctor="FreezeTransaction"
     :create-disabled="createDisabled"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     @draft-loaded="handleDraftLoaded"
   >
     <FreezeFormData :data="data as FreezeData" @update:data="handleUpdateData" />

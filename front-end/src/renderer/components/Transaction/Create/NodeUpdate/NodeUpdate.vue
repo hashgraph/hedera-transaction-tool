@@ -14,7 +14,13 @@ import {
   type NodeUpdateData,
   type TransactionCommonData,
 } from '@renderer/utils/sdk/createTransactions';
-import { compareKeys, getComponentServiceEndpoint, getNodeUpdateData } from '@renderer/utils';
+import {
+  compareKeys,
+  getComponentServiceEndpoint,
+  getNodeData,
+  getNodeUpdateData,
+  getTransactionCommonData,
+} from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
@@ -93,6 +99,13 @@ const createTransaction = (commonData: TransactionCommonData): NodeUpdateTransac
   );
 };
 
+const getAllData = (tx: NodeUpdateTransaction): NodeUpdateData => {
+  return {
+    ...getTransactionCommonData(tx),
+    ...getNodeData(tx),
+    ...getNodeUpdateData(tx),
+  };
+};
 const handleDraftLoaded = (transaction: NodeUpdateTransaction) => {
   if (transaction instanceof NodeUpdateTransaction) {
     if (transaction.nodeId) {
@@ -156,6 +169,7 @@ watch(
     ref="baseTransactionRef"
     :transaction-ctor="NodeUpdateTransaction"
     :create-transaction="createTransaction"
+    :get-all-data="getAllData"
     :create-disabled="createDisabled"
     @executed:success="handleExecutedSuccess"
     @draft-loaded="handleDraftLoaded"
