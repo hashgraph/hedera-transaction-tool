@@ -1221,7 +1221,7 @@ describe('Registered node creators', () => {
       ...common,
       ...registeredNodeUpdateData,
     };
-    const currentNodeInfo: IRegisteredNodeInfoParsed = {
+    const registeredNodeInfo: IRegisteredNodeInfoParsed = {
       admin_key: data.adminKey,
       created_timestamp: null,
       description: data.description,
@@ -1246,7 +1246,7 @@ describe('Registered node creators', () => {
     });
 
     test('sets the registered node id and updated fields - with currentNodeInfo', () => {
-      const tx = roundtrip(createRegisteredNodeUpdateTransaction(data, currentNodeInfo));
+      const tx = roundtrip(createRegisteredNodeUpdateTransaction(data, registeredNodeInfo));
       expect(tx).toBeInstanceOf(RegisteredNodeUpdateTransaction);
       expect(tx.registeredNodeId?.toString()).toBe('12');
       expect(tx.description).toBe(null);
@@ -1254,15 +1254,69 @@ describe('Registered node creators', () => {
       expect(tx.serviceEndpoints).toBe(null);
     });
 
-    test('with description changed', () => {
-      const modifiedData = { ...data, description: 'Another description' };
-      const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo));
-      expect(tx.description).toBe(modifiedData.description);
+    describe('with description changed', () => {
+
+      describe('with current: null', () => {
+        const currentInfo = { ...registeredNodeInfo, description: null };
+
+        test('new: empty => null', () => {
+          const modifiedData = { ...data, description: '' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe(null);
+        });
+
+        test('new: abc => abc', () => {
+          const modifiedData = { ...data, description: 'abc' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe('abc');
+        });
+      });
+
+      describe('with current: empty', () => {
+        const currentInfo = { ...registeredNodeInfo, description: '' };
+
+        test('new: empty => null', () => {
+          const modifiedData = { ...data, description: '' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe(null);
+        });
+
+        test('new: abc => abc', () => {
+          const modifiedData = { ...data, description: 'abc' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe('abc');
+        });
+      });
+
+      describe('with current: abc', () => {
+        const currentInfo = { ...registeredNodeInfo, description: 'abc' };
+
+        test('new: empty => empty', () => {
+          const modifiedData = { ...data, description: '' };
+          const tx1 = createRegisteredNodeUpdateTransaction(modifiedData, currentInfo);
+          expect(tx1.description).toBe('');
+          const tx2 = roundtrip(tx1);
+          expect(tx2.description).toBe(null); // roundtrip() transforms '' into null (?)
+        });
+
+        test('new: abc => null', () => {
+          const modifiedData = { ...data, description: 'abc' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe(null);
+        });
+
+        test('new: cde => cde', () => {
+          const modifiedData = { ...data, description: 'cde' };
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe('cde');
+        });
+
+      });
     });
 
     test('with adminKey changed', () => {
       const modifiedData = { ...data, adminKey: PrivateKey.generateECDSA().publicKey };
-      const t = createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo);
+      const t = createRegisteredNodeUpdateTransaction(modifiedData, registeredNodeInfo);
       expect(t.adminKey !== null && compareKeys(t.adminKey, modifiedData.adminKey)).toBe(true);
     });
 
@@ -1287,7 +1341,7 @@ describe('Registered node creators', () => {
           },
         ],
       };
-      const t = createRegisteredNodeUpdateTransaction(modifiedData, currentNodeInfo);
+      const t = createRegisteredNodeUpdateTransaction(modifiedData, registeredNodeInfo);
 
       expect(
         t.serviceEndpoints !== null &&
