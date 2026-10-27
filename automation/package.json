@@ -76,7 +76,7 @@
     "ts-loader": "catalog:",
     "tsx": "4.23.15",
     "typescript": "catalog:",
-    "webpack": "5.112.0",
+    "webpack": "5.112.2",
     "webpack-cli": "7.2.3"
   },
   "engines": {
