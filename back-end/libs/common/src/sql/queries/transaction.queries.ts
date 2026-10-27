@@ -357,13 +357,17 @@ export function getTransactionNodesQuery(
                     AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} = false
               )
               ELSE EXISTS (
+                  -- Scoped to every transaction in the group via TransactionGroupItem, not
+                  -- eligible_transactions: that CTE can exclude group members the current
+                  -- signer has already signed (onlyUnsigned), which would otherwise make a
+                  -- rejection disappear once the signer acts on the rejected item itself.
                   SELECT 1
-                  FROM eligible_transactions et_rejections
+                  FROM ${sql.table(TransactionGroupItem)} gi_rejections
                   JOIN ${sql.table(TransactionReviewerList)} trl
-                    ON trl.${sql.col(TransactionReviewerList, 'transactionId')} = et_rejections.transaction_id
+                    ON trl.${sql.col(TransactionReviewerList, 'transactionId')} = gi_rejections.${sql.col(TransactionGroupItem, 'transactionId')}
                   JOIN ${sql.table(TransactionReviewerListMember)} trlm
                     ON trlm.${sql.col(TransactionReviewerListMember, 'listId')} = trl.${sql.col(TransactionReviewerList, 'id')}
-                  WHERE et_rejections.group_id = rt.group_id
+                  WHERE gi_rejections.${sql.col(TransactionGroupItem, 'groupId')} = rt.group_id
                     AND trlm.${sql.col(TransactionReviewerListMember, 'accepted')} = false
               )
               END AS has_rejection

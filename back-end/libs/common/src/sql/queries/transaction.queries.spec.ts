@@ -843,6 +843,38 @@ describe('getTransactionNodesForUser - Integration', () => {
       expect(result[0].group_id).toBe(group.id);
       expect(result[0].has_rejection).toBe(true);
     });
+
+    it('should still report has_rejection after the current signer signs the rejected item (onlyUnsigned: true)', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      const txA = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      const list = await createTestReviewerList(dataSource, txA, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, { accepted: false });
+
+      // User already signed the rejected transaction; the other group member is still unsigned.
+      await createTransactionSigner(dataSource, txA, user.keys[0]);
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, {
+        ...signerRoles,
+        onlyUnsigned: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].group_id).toBe(group.id);
+      expect(result[0].has_rejection).toBe(true);
+    });
   });
 
   describe('getTransactionGroupItemsQuery - has_rejection', () => {
