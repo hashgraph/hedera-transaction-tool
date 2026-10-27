@@ -17,13 +17,13 @@ import {
 import {
   compareKeys,
   getComponentServiceEndpoint,
-  getNodeData,
   getNodeUpdateData,
   getTransactionCommonData,
 } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
+import type { INodeInfoParsed } from '@shared/interfaces';
 
 /* Composables */
 const route = useRoute();
@@ -95,27 +95,30 @@ const createTransaction = (commonData: TransactionCommonData): NodeUpdateTransac
       ...commonData,
       ...(data as NodeUpdateData),
     },
-    nodeData.nodeInfo?.value || null,
+    nodeData.nodeInfo.value,
   );
 };
 
 const getAllData = (tx: NodeUpdateTransaction): NodeUpdateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getNodeData(tx),
-    ...getNodeUpdateData(tx),
+    ...getNodeUpdateData(tx, nodeData.nodeInfo.value),
   };
 };
-const handleDraftLoaded = (transaction: NodeUpdateTransaction) => {
-  if (transaction instanceof NodeUpdateTransaction) {
-    if (transaction.nodeId) {
-      nodeData.nodeId.value = transaction.nodeId.toNumber();
-    }
-    if (transaction.accountId) {
-      newNodeAccountData.accountId.value = transaction.accountId.toString();
-    }
+
+const handleDraftLoaded = async (transaction: NodeUpdateTransaction) => {
+  let nodeInfo: INodeInfoParsed | null;
+  if (transaction.nodeId) {
+    nodeInfo = await nodeData.fetchNodeInfo(transaction.nodeId.toNumber());
+    nodeData.nodeId.value = transaction.nodeId.toNumber();
+  } else {
+    nodeInfo = null;
+    nodeData.nodeId.value = null;
   }
-  handleUpdateData(getNodeUpdateData(transaction));
+  if (transaction.accountId) {
+    newNodeAccountData.accountId.value = transaction.accountId.toString();
+  }
+  handleUpdateData(getNodeUpdateData(transaction, nodeInfo));
 };
 
 const handleUpdateData = (newData: NodeUpdateData) => {

@@ -57,7 +57,7 @@ import type {
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
-import type { IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type { INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -254,37 +254,48 @@ export const getComponentServiceEndpoints = (
   return result.filter((i) => i !== null)
 };
 
-export function getNodeData(transaction: Transaction): NodeData {
-  if (
-    !(transaction instanceof NodeCreateTransaction) &&
-    !(transaction instanceof NodeUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+export function getNodeData(
+  transaction: NodeCreateTransaction | NodeUpdateTransaction,
+  currentNodeInfo: INodeInfoParsed | null,
+): NodeData {
 
-  const gossipEndpoints = getComponentServiceEndpoints(transaction.gossipEndpoints || []);
-  const serviceEndpoints = getComponentServiceEndpoints(transaction.serviceEndpoints || []);
-  const grpcWebProxyEndpoint = getComponentServiceEndpoint(transaction.grpcWebProxyEndpoint);
+  const nodeAccountId =
+    transaction.accountId?.toString() ?? currentNodeInfo?.node_account_id?.toString() ?? '';
+  const description = transaction.description ?? currentNodeInfo?.description ?? '';
+  const gossipEndpoints = transaction.gossipEndpoints ?? [];
+  const serviceEndpoints = transaction.serviceEndpoints ?? currentNodeInfo?.service_endpoints ?? [];
+  const grpcWebProxyEndpoint =
+    transaction.grpcWebProxyEndpoint ?? currentNodeInfo?.grpc_web_proxy_endpoint ?? null;
+  const certificateHash = transaction.certificateHash ?? Uint8Array.from([]);
+  const adminKey = transaction.adminKey ?? currentNodeInfo?.admin_key ?? null;
+  const declineReward = transaction.declineReward ?? currentNodeInfo?.decline_reward ?? false;
+  const associatedRegisteredNodes =
+    transaction.associatedRegisteredNodes ?? currentNodeInfo?.associated_registered_nodes ?? [];
+
   return {
-    nodeAccountId: transaction.accountId?.toString() || '',
-    description: transaction.description || '',
-    gossipEndpoints: gossipEndpoints || [],
-    grpcWebProxyEndpoint,
-    serviceEndpoints: serviceEndpoints || [],
+    nodeAccountId,
+    description,
+    gossipEndpoints: getComponentServiceEndpoints(gossipEndpoints),
+    grpcWebProxyEndpoint:
+      grpcWebProxyEndpoint !== null ? getComponentServiceEndpoint(grpcWebProxyEndpoint) : null,
+    serviceEndpoints: getComponentServiceEndpoints(serviceEndpoints),
     gossipCaCertificate: transaction.gossipCaCertificate || Uint8Array.from([]),
-    certificateHash: transaction.certificateHash || Uint8Array.from([]),
-    adminKey: transaction.adminKey,
-    declineReward: transaction.declineReward || false,
+    certificateHash,
+    adminKey,
+    declineReward,
     associatedRegisteredNodes: [
-      ...new Set(transaction.associatedRegisteredNodes?.map(id => id.toString()) ?? []),
+      ...new Set(associatedRegisteredNodes.map(id => id.toString()) ?? []),
     ],
   };
 }
 
-export function getNodeUpdateData(transaction: NodeUpdateTransaction): NodeUpdateData {
+export function getNodeUpdateData(
+  transaction: NodeUpdateTransaction,
+  currentNodeInfo: INodeInfoParsed | null,
+): NodeUpdateData {
   return {
-    nodeId: transaction.nodeId?.toString() || '',
-    ...getNodeData(transaction),
+    nodeId: transaction.nodeId?.toString() ?? currentNodeInfo?.node_id?.toString() ?? '',
+    ...getNodeData(transaction, currentNodeInfo),
   };
 }
 

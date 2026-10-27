@@ -42,7 +42,10 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
-import { compareNodeServiceEndpoint } from '@renderer/utils/sdk/serviceEndpoints.ts';
+import {
+  compareNodeServiceEndpoint,
+  compareNodeServiceEndpoints,
+} from '@renderer/utils/sdk/serviceEndpoints.ts';
 import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
 
 export type TransactionCommonData = {
@@ -488,10 +491,7 @@ export const getServiceEndpoints = (data: ComponentServiceEndpoint[]): ServiceEn
     .filter((endpoint): endpoint is ServiceEndpoint => endpoint !== null);
 };
 
-export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | null) => {
-  if (!serviceEndpoint) {
-    return null;
-  }
+export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint) => {
   const ipAddressV4 =
     serviceEndpoint.ipAddressV4
       ?.trim()
@@ -521,35 +521,53 @@ export const getServiceEndpoint = (serviceEndpoint: ComponentServiceEndpoint | n
 const setNodeData = (
   transaction: NodeCreateTransaction | NodeUpdateTransaction,
   data: NodeData,
-  oldData?: INodeInfoParsed | null,
+  currentNodeInfo?: INodeInfoParsed | null,
 ) => {
-  const txGossipEndpoints = getServiceEndpoints(data.gossipEndpoints);
-  const txServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
-  const txGrpcWebProxyEndpoint = getServiceEndpoint(data.grpcWebProxyEndpoint);
 
-  if (oldData?.description !== data.description) {
-    transaction.setDescription(data.description);
+  // const newDescription = data.description;
+  // const oldDescription = baseline?.description ?? '';
+  // if (oldDescription !== newDescription) {
+  //   transaction.setDescription(data.description);
+  // }
+  if (data.description.length > 0) {
+    const newValue = data.description;
+    const oldValue = currentNodeInfo?.description ?? null;
+    if (oldValue !== newValue) {
+      transaction.setDescription(newValue);
+    }
+  } else {
+    const oldValue = currentNodeInfo?.description ?? null;
+    if (oldValue !== null && oldValue !== '') {
+      transaction.setDescription('');
+    }
   }
 
-  if (
-    isAccountId(data.nodeAccountId) &&
-    data.nodeAccountId !== oldData?.node_account_id?.toString()
-  ) {
-    transaction.setAccountId(data.nodeAccountId);
+
+  if (isAccountId(data.nodeAccountId)) {
+    const newValue = AccountId.fromString(data.nodeAccountId);
+    const oldValue = currentNodeInfo?.node_account_id ?? null;
+    if (oldValue === null || (newValue !== null && !newValue.equals(oldValue))) {
+      transaction.setAccountId(newValue);
+    }
   }
 
-  if (txGossipEndpoints.length > 0) {
-    transaction.setGossipEndpoints(txGossipEndpoints);
+  if (data.gossipEndpoints.length > 0) {
+    transaction.setGossipEndpoints(getServiceEndpoints(data.gossipEndpoints));
   }
 
-  if (txServiceEndpoints.length > 0) {
-    transaction.setServiceEndpoints(txServiceEndpoints);
+  if (data.serviceEndpoints.length > 0) {
+    const newValue = getServiceEndpoints(data.serviceEndpoints);
+    const oldValue = currentNodeInfo?.service_endpoints ?? null;
+    if (oldValue === null || !compareNodeServiceEndpoints(oldValue, newValue)) {
+      transaction.setServiceEndpoints(newValue);
+    }
   }
 
-  if (txGrpcWebProxyEndpoint !== null) {
-    const oldValue = oldData?.grpc_web_proxy_endpoint ?? null;
-    if (oldValue === null || !compareNodeServiceEndpoint(oldValue, txGrpcWebProxyEndpoint)) {
-      transaction.setGrpcWebProxyEndpoint(txGrpcWebProxyEndpoint);
+  if (data.grpcWebProxyEndpoint !== null) {
+    const newValue = getServiceEndpoint(data.grpcWebProxyEndpoint);
+    const oldValue = currentNodeInfo?.grpc_web_proxy_endpoint ?? null;
+    if (newValue !== null && (oldValue === null || !compareNodeServiceEndpoint(oldValue, newValue))) {
+      transaction.setGrpcWebProxyEndpoint(newValue);
     }
   }
 
@@ -561,41 +579,66 @@ const setNodeData = (
     transaction.setGossipCaCertificate(data.gossipCaCertificate);
   }
 
-  if (data.adminKey && oldData?.admin_key) {
-    !compareKeys(data.adminKey, oldData?.admin_key) && transaction.setAdminKey(data.adminKey);
-  } else if (data.adminKey) {
-    transaction.setAdminKey(data.adminKey);
+  if (data.adminKey) {
+    const newValue = data.adminKey;
+    const oldValue = currentNodeInfo?.admin_key ?? null;
+    if (oldValue === null || !compareKeys(oldValue, newValue)) {
+      transaction.setAdminKey(newValue);
+    }
   }
 
-  if (oldData?.decline_reward !== data.declineReward) {
-    transaction.setDeclineReward(data.declineReward);
+  const newDeclineReward = data.declineReward;
+  const oldDeclineReward = currentNodeInfo?.decline_reward ?? null;
+  if (oldDeclineReward === null || oldDeclineReward !== newDeclineReward) {
+    transaction.setDeclineReward(newDeclineReward);
   }
 
-  const oldAssociated = (oldData?.associated_registered_nodes ?? []).map(String).sort().join(',');
-  const newAssociated = data.associatedRegisteredNodes.slice().sort().join(',');
-  if (oldAssociated !== newAssociated) {
-    transaction.setAssociatedRegisteredNodes(
-      data.associatedRegisteredNodes.map(id => Long.fromString(id)),
-    );
+  if (data.associatedRegisteredNodes.length > 0) {
+    const newAssociatedNodes = data.associatedRegisteredNodes.map(l => Long.fromString(l));
+    const oldAssociatedNodes =
+      currentNodeInfo?.associated_registered_nodes.map(n => Long.fromNumber(n)) ?? null;
+    if (
+      oldAssociatedNodes === null ||
+      !sortAndCompareLongs(oldAssociatedNodes, newAssociatedNodes)
+    ) {
+      transaction.setAssociatedRegisteredNodes(newAssociatedNodes);
+    }
+  } else {
+    const oldAssociatedNodes =
+      currentNodeInfo?.associated_registered_nodes.map(n => Long.fromNumber(n)) ?? null;
+    if (oldAssociatedNodes !== null && oldAssociatedNodes.length > 0) {
+      transaction.setAssociatedRegisteredNodes([]);
+    }
   }
 };
+
+function sortAndCompareLongs(a1: Long[], a2: Long[]): boolean {
+  if (a1.length != a2.length) return false;
+  const sorted1 = a1.slice().sort((l1, l2) => l1.compare(l2));
+  const sorted2 = a2.slice().sort((l1, l2) => l1.compare(l2));
+  for (let i = 0; i < a1.length; i += 1) {
+    if (!sorted1[i].eq(sorted2[i])) return false;
+  }
+  return true;
+}
+
 
 /* Node Create */
 export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
   const transaction = new NodeCreateTransaction();
   setTransactionCommonData(transaction, data);
-  setNodeData(transaction, data);
+  setNodeData(transaction, data, null);
   return transaction;
 }
 
 /* Node Update */
 export function createNodeUpdateTransaction(
   data: TransactionCommonData & NodeUpdateData,
-  oldData: INodeInfoParsed | null,
+  currentNodeInfo: INodeInfoParsed | null,
 ) {
   const transaction = new NodeUpdateTransaction();
   setTransactionCommonData(transaction, data);
-  setNodeData(transaction, data, oldData);
+  setNodeData(transaction, data, currentNodeInfo);
 
   if (data.nodeId) {
     transaction.setNodeId(Long.fromString(data.nodeId));
