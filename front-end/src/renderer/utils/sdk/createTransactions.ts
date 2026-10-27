@@ -612,7 +612,7 @@ const setNodeData = (
   }
 };
 
-function sortAndCompareLongs(a1: Long[], a2: Long[]): boolean {
+export function sortAndCompareLongs(a1: Long[], a2: Long[]): boolean {
   if (a1.length != a2.length) return false;
   const sorted1 = a1.slice().sort((l1, l2) => l1.compare(l2));
   const sorted2 = a2.slice().sort((l1, l2) => l1.compare(l2));
