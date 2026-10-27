@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import { type INotificationReceiver, NotificationType } from '@shared/interfaces';
-import { readyToSignTitle, historyTitle, readyForExecutionTitle } from '@shared/constants';
+import { readyForReviewTitle, readyToSignTitle, historyTitle, readyForExecutionTitle } from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -115,8 +115,8 @@ export function useGroupedNotifications() {
     switch (type) {
       case NotificationType.TRANSACTION_INDICATOR_EXECUTABLE:
         return `Transaction${suffix} ready for execution`;
-      case NotificationType.TRANSACTION_INDICATOR_APPROVE:
-        return `Transaction${suffix} ready for approval`;
+      case NotificationType.TRANSACTION_INDICATOR_REVIEW:
+        return `Transaction${suffix} ready for review`;
       case NotificationType.TRANSACTION_APPROVED:
         return `Transaction${suffix} approved`;
       case NotificationType.TRANSACTION_INDICATOR_EXECUTED:
@@ -126,6 +126,7 @@ export function useGroupedNotifications() {
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
         return `Transaction${suffix} expired`;
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
+      case NotificationType.TRANSACTION_REVIEWER_REJECTION:
         return `Transaction${suffix} rejected`;
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
         return `Transaction${suffix} cancelled`;
@@ -201,6 +202,11 @@ export function useGroupedNotifications() {
           if (!(await selectOrganization())) return;
           await router.push({ name: 'transactions', query: { tab: readyForExecutionTitle } });
         };
+      case NotificationType.TRANSACTION_INDICATOR_REVIEW:
+        return async () => {
+          if (!(await selectOrganization())) return;
+          await router.push({ name: 'transactions', query: { tab: readyForReviewTitle } });
+        };
       case NotificationType.TRANSACTION_INDICATOR_SIGN:
         return async () => {
           if (!(await selectOrganization())) return;
@@ -216,6 +222,7 @@ export function useGroupedNotifications() {
         };
       case NotificationType.TRANSACTION_APPROVED:
       case NotificationType.TRANSACTION_APPROVAL_REJECTION:
+      case NotificationType.TRANSACTION_REVIEWER_REJECTION:
         return async () => {
           if (!(await selectOrganization())) return;
           await notificationsStore.markAsRead(notification.type);

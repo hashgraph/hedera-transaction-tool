@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => ({
   notificationsStore: {
     notifications: {} as Record<string, any[]>,
   },
-  routerQuery: {} as Record<string, string>,
+  routerQuery: {},
 }));
 
 vi.mock('@shared/constants', async () => {

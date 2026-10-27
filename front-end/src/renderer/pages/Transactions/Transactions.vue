@@ -129,7 +129,7 @@ const activeTabs = computed(() => {
 
   const readyToApproveNotifications =
     networkFilteredNotifications.value?.filter(
-      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_REVIEW,
     ) || [];
 
   const readyToSignNotifications =

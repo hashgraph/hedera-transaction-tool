@@ -97,7 +97,7 @@ const creatorSignatureStatus = computedAsync(async () => {
 const filteringNotificationTypes = computed(() => {
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
-      return [NotificationType.TRANSACTION_INDICATOR_APPROVE];
+      return [NotificationType.TRANSACTION_INDICATOR_REVIEW];
     case TransactionNodeCollection.READY_TO_SIGN:
       return [NotificationType.TRANSACTION_INDICATOR_SIGN];
     case TransactionNodeCollection.READY_FOR_EXECUTION:

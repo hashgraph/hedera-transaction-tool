@@ -6,6 +6,8 @@ import { flushPromises, mount } from '@vue/test-utils';
 import TransactionNodeTable from '@renderer/pages/Transactions/components/TransactionNodeTable.vue';
 import { TransactionNodeCollection, type ITransactionNode } from '@shared/interfaces/ITransactionNode.ts';
 import { TransactionStatus } from '@shared/interfaces';
+import useMarkNotifications from '@renderer/composables/useMarkNotifications';
+import { BackEndTransactionType, NotificationType } from '@shared/interfaces';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
 
 vi.mock('@shared/constants', async importOriginal => {
@@ -151,6 +153,7 @@ const mountTable = (collection: TransactionNodeCollection) =>
 describe('TransactionNodeTable.vue — pending review visibility', () => {
   beforeEach(() => {
     vi.mocked(getTransactionNodes).mockReset();
+    localStorage.clear();
   });
 
   test('hides READY_FOR_REVIEW nodes from Ready To Sign by default', async () => {
@@ -184,6 +187,62 @@ describe('TransactionNodeTable.vue — pending review visibility', () => {
     expect(wrapper.find('[data-testid="row-1"]').exists()).toBe(true);
     expect(wrapper.find('[data-testid="row-2"]').exists()).toBe(true);
     expect(wrapper.get('[data-testid="pager"]').attributes('data-total')).toBe('2');
+  });
+
+  test('remembers the pending-review toggle across remounts', async () => {
+    vi.mocked(getTransactionNodes).mockResolvedValue([
+      node({ transactionId: 1, status: TransactionStatus.READY_FOR_REVIEW }),
+    ]);
+
+    const first = mountTable(TransactionNodeCollection.READY_TO_SIGN);
+    await flushPromises();
+    await first.get('[data-testid="pending-review-toggle"]').trigger('click');
+    await flushPromises();
+    first.unmount();
+
+    const second = mountTable(TransactionNodeCollection.READY_TO_SIGN);
+    await flushPromises();
+    expect(second.find('[data-testid="row-1"]').exists()).toBe(true);
+  });
+
+  test('restores stored history filters and ignores invalid stored values', async () => {
+    vi.mocked(getTransactionNodes).mockResolvedValue([]);
+    const key = (n: string) => `${n}::https://org.example.com:${TransactionNodeCollection.HISTORY}`;
+    localStorage.setItem(key('status-filter'), JSON.stringify([TransactionStatus.EXECUTED, 'bogus']));
+
+    mountTable(TransactionNodeCollection.HISTORY);
+    await flushPromises();
+
+    const args = vi.mocked(getTransactionNodes).mock.calls[0];
+    expect(args.flat(2)).toContainEqual(TransactionStatus.EXECUTED);
+    expect(args.flat(2)).not.toContain('bogus');
+  });
+
+  test('marks review notifications read on the Ready for Review tab', async () => {
+    vi.mocked(getTransactionNodes).mockResolvedValue([]);
+    vi.mocked(useMarkNotifications).mockClear();
+
+    mountTable(TransactionNodeCollection.READY_FOR_REVIEW);
+    await flushPromises();
+
+    expect(useMarkNotifications).toHaveBeenCalledWith([
+      NotificationType.TRANSACTION_INDICATOR_REVIEW,
+    ]);
+  });
+
+  test('restores the stored transaction-type filter', async () => {
+    vi.mocked(getTransactionNodes).mockResolvedValue([]);
+    localStorage.setItem(
+      `type-filter::https://org.example.com:${TransactionNodeCollection.HISTORY}`,
+      JSON.stringify([BackEndTransactionType.ACCOUNT_CREATE, 'bogus']),
+    );
+
+    mountTable(TransactionNodeCollection.HISTORY);
+    await flushPromises();
+
+    const args = vi.mocked(getTransactionNodes).mock.calls[0].flat(2);
+    expect(args).toContainEqual(BackEndTransactionType.ACCOUNT_CREATE);
+    expect(args).not.toContain('bogus');
   });
 
   test('does not hide READY_FOR_REVIEW nodes outside the Ready To Sign collection', async () => {

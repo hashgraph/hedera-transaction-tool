@@ -16,7 +16,7 @@ const itemAndLabels: { item: PendingReviewFilterItem; label: string }[] = [
 
 <template>
   <MultipleSelectFilterFieldV2
-    label="Filter"
+    label="Include"
     :item-and-labels="itemAndLabels"
     v-model:selected-items="pendingReviewFilter"
   />

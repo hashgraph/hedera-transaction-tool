@@ -35,11 +35,12 @@ import { FEATURE_REVIEWER_ENABLED, TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } 
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
+import useStoredTablePreferences from '@renderer/composables/useStoredTablePreferences';
 import useTableQueryState from '@renderer/composables/useTableQueryState.ts';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 
 const NOTIFICATION_TYPES_BY_COLLECTION: Record<TransactionNodeCollection, NotificationType[]> = {
-  [TransactionNodeCollection.READY_FOR_REVIEW]: [],
+  [TransactionNodeCollection.READY_FOR_REVIEW]: [NotificationType.TRANSACTION_INDICATOR_REVIEW],
   [TransactionNodeCollection.READY_TO_SIGN]: [],
   [TransactionNodeCollection.IN_PROGRESS]: [],
   [TransactionNodeCollection.READY_FOR_EXECUTION]: [
@@ -116,7 +117,8 @@ const { oldNotifications } = useMarkNotifications(
   NOTIFICATION_TYPES_BY_COLLECTION[props.collection] ?? [],
 );
 
-const defaults = initialSort();
+const stored = useStoredTablePreferences(props.collection);
+const defaults = stored.loadSort(sortFieldFromUrl, initialSort());
 const {
   page: currentPage,
   pageSize,
@@ -135,9 +137,15 @@ const sort = ref<{
   field: sortFieldFromUrl(urlSortField.value) ?? defaults.field,
   direction: urlSortDirection.value,
 });
-const statusFilter = ref<TransactionStatus[]>([]);
-const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
-const pendingReviewFilter = ref<PendingReviewFilterItem[]>([]);
+const statusFilter = ref<TransactionStatus[]>(
+  stored.loadList('status-filter', Object.values(TransactionStatus)),
+);
+const transactionTypeFilter = ref<BackEndTransactionType[]>(
+  stored.loadList('type-filter', Object.values(BackEndTransactionType)),
+);
+const pendingReviewFilter = ref<PendingReviewFilterItem[]>(
+  stored.loadList('pending-review-filter', ['PENDING_REVIEW']),
+);
 
 /* Computed */
 // Ready-to-Sign always receives READY_FOR_REVIEW transactions from the back-end (see
@@ -305,6 +313,7 @@ watch([urlSortField, urlSortDirection], ([field, direction]) => {
 });
 
 watch(sort, () => {
+    stored.save('sort', { field: sortFieldToUrl(sort.value.field), direction: sort.value.direction });
     currentPage.value = 1;
     sortNodes();
   },
@@ -315,6 +324,8 @@ watch([currentPage, pageSize], () => {
 });
 
 watch([statusFilter, transactionTypeFilter], () => {
+  stored.save('status-filter', statusFilter.value);
+  stored.save('type-filter', transactionTypeFilter.value);
   currentPage.value = 1;
   fetchNodes();
 }, { deep: true });
@@ -322,6 +333,7 @@ watch([statusFilter, transactionTypeFilter], () => {
 // Client-side only — the back-end already sent every row this signer is eligible for, so
 // toggling this filter just changes what's shown, no refetch needed.
 watch(pendingReviewFilter, () => {
+  stored.save('pending-review-filter', pendingReviewFilter.value);
   currentPage.value = 1;
   clampPage();
 }, { deep: true });

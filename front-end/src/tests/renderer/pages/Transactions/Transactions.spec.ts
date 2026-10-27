@@ -137,7 +137,7 @@ describe('Transactions.vue', () => {
           AppTabs: {
             props: ['items'],
             template:
-              '<div data-testid="tabs"><span v-for="item in items" :key="item.title">{{ item.title }}</span></div>',
+              '<div data-testid="tabs"><span v-for="item in items" :key="item.title">{{ item.title }}<b v-if="item.notifications" :data-testid="`badge-${item.title}`">{{ item.notifications }}</b></span></div>',
           },
           Drafts: {
             template: '<div data-testid="drafts-tab" />',
@@ -174,6 +174,21 @@ describe('Transactions.vue', () => {
     expect(wrapper.find('[data-testid="span-group-transaction"]').text()).toBe(
       'Transaction Group',
     );
+  });
+
+  test('counts review notifications on the Ready for Review tab only', () => {
+    mocks.userStore.selectedOrganization = { serverUrl: 'https://org.example' };
+    const review = (network: string) => ({
+      notification: { type: 'TRANSACTION_INDICATOR_REVIEW', additionalData: { network } },
+    });
+    mocks.notificationsStore.notifications = {
+      'https://org.example': [review('testnet'), review('testnet'), review('mainnet')],
+    };
+
+    const wrapper = mountTransactions();
+
+    expect(wrapper.get('[data-testid="badge-Ready for Review"]').text()).toBe('2');
+    expect(wrapper.find('[data-testid="badge-Ready to Sign"]').exists()).toBe(false);
   });
 
   test('opens transaction selection modal from the Create New menu', async () => {
