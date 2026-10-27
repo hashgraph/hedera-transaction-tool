@@ -24,6 +24,7 @@ import {
 } from '@renderer/utils';
 import RegisteredNodeUpdateFormData from './RegisteredNodeUpdateFormData.vue';
 import useRegisteredNodeId from '@renderer/composables/useRegisteredNodeId.ts';
+import type { IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 /* HIP-1137 limits — enforced by the consensus node, mirrored here so we never
    send a request that we already know will be rejected. */
@@ -111,24 +112,34 @@ const decorateEndpointsWithUiIds = (
 
 /* Handlers */
 const createTransaction = (commonData: TransactionCommonData): RegisteredNodeUpdateTransaction => {
-  return createRegisteredNodeUpdateTransaction({
-    ...commonData,
-    ...data,
-  });
+  return createRegisteredNodeUpdateTransaction(
+    {
+      ...commonData,
+      ...data,
+    },
+    nodeData.registeredNodeInfo.value,
+  );
 };
 
 const getAllData = (tx: RegisteredNodeUpdateTransaction): RegisteredNodeUpdateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getRegisteredNodeUpdateData(tx),
+    ...getRegisteredNodeUpdateData(tx, nodeData.registeredNodeInfo.value),
   };
 };
 
-const handleDraftLoaded = (transaction: RegisteredNodeUpdateTransaction) => {
+const handleDraftLoaded = async (transaction: RegisteredNodeUpdateTransaction) => {
+  let registeredNodeInfo: IRegisteredNodeInfoParsed | null;
   if (transaction.registeredNodeId) {
+    registeredNodeInfo = await nodeData.fetchRegisteredNodeInfo(
+      transaction.registeredNodeId.toNumber(),
+    );
     nodeData.registeredNodeId.value = transaction.registeredNodeId.toNumber();
+  } else {
+    registeredNodeInfo = null;
+    nodeData.registeredNodeId.value = null;
   }
-  handleUpdateData(getRegisteredNodeUpdateData(transaction));
+  handleUpdateData(getRegisteredNodeUpdateData(transaction, registeredNodeInfo));
 };
 
 const handleUpdateData = (newData: RegisteredNodeUpdateData) => {

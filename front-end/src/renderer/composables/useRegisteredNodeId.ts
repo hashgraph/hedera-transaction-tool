@@ -12,6 +12,7 @@ import useAccountId, { type AccountIdStore } from './useAccountId';
 export interface RegisteredNotIdStore {
   registeredNodeId: Ref<number | null>;
   registeredNodeInfo: Ref<IRegisteredNodeInfoParsed | null>;
+  fetchRegisteredNodeInfo: (nodeId: number) => Promise<IRegisteredNodeInfoParsed | null>;
   key: Ref<Key | null>;
   isValid: Ref<boolean>;
   accountData: AccountIdStore;
@@ -39,23 +40,25 @@ export default function useRegisteredNodeId(): RegisteredNotIdStore {
   watch(registeredNodeId, async () => {
 
     if (registeredNodeId.value !== null) {
-      try {
-        registeredNodeInfo.value = await registeredNodeByIdCache.lookup(
-          registeredNodeId.value,
-          networkStore.mirrorNodeBaseURL,
-          true,
-        );
-      } catch {
-        registeredNodeInfo.value = null;
-      }
+      registeredNodeInfo.value = await fetchRegisteredNodeInfo(registeredNodeId.value);
     } else {
       registeredNodeInfo.value = null;
     }
   });
 
+  /* Functions */
+  const fetchRegisteredNodeInfo = async (nodeId: number): Promise<IRegisteredNodeInfoParsed | null> => {
+    try {
+      return await registeredNodeByIdCache.lookup(nodeId, networkStore.mirrorNodeBaseURL, true);
+    } catch {
+      return null;
+    }
+  }
+
   return {
     registeredNodeId,
     registeredNodeInfo,
+    fetchRegisteredNodeInfo,
     key,
     isValid,
     accountData,
