@@ -30,7 +30,7 @@ export default function useStoredTablePreferences(scope: string) {
   };
 
   /** Stored sort, or `fallback` when missing/invalid. */
-  const loadSort = <F extends string>(
+  const loadSort = <F extends string | number>(
     isValidField: (field: string) => F | undefined,
     fallback: { field: F; direction: 'asc' | 'desc' },
   ): { field: F; direction: 'asc' | 'desc' } => {

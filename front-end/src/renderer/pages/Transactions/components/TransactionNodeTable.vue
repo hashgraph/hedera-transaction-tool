@@ -2,7 +2,10 @@
 import { computed, onMounted, ref, watch } from 'vue';
 import { ToastManager } from '@renderer/utils/ToastManager';
 
-import { type ITransactionNode, TransactionNodeCollection } from '@shared/interfaces/ITransactionNode.ts';
+import {
+  type ITransactionNode,
+  TransactionNodeCollection,
+} from '@shared/interfaces/ITransactionNode.ts';
 
 import { BackEndTransactionType, NotificationType, TransactionStatus } from '@shared/interfaces';
 
@@ -11,7 +14,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork.ts';
 
 import useMarkNotifications from '@renderer/composables/useMarkNotifications';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
-import useNextTransactionV2, { type TransactionNodeId } from '@renderer/stores/storeNextTransactionV2.ts';
+import useNextTransactionV2, {
+  type TransactionNodeId,
+} from '@renderer/stores/storeNextTransactionV2.ts';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
@@ -31,7 +36,11 @@ import TransactionsFilterV2 from '@renderer/components/Filter/v2/TransactionsFil
 import PendingReviewFieldV2, {
   type PendingReviewFilterItem,
 } from '@renderer/components/Filter/v2/PendingReviewFieldV2.vue';
-import { FEATURE_REVIEWER_ENABLED, TRANSACTION_ACTION, TRANSACTION_EVENT_TYPE } from '@shared/constants';
+import {
+  FEATURE_REVIEWER_ENABLED,
+  TRANSACTION_ACTION,
+  TRANSACTION_EVENT_TYPE,
+} from '@shared/constants';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { useTransactionLiveHighlight } from '@renderer/composables/useTransactionLiveHighlight';
 import { useRouter } from 'vue-router';
@@ -78,7 +87,8 @@ const nextTransaction = useNextTransactionV2();
 const router = useRouter();
 const toastManager = ToastManager.inject();
 const logger = createLogger('renderer.transactions.nodeTable');
-const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } = useTransactionLiveHighlight();
+const { recentlyUpdatedTxIds, recentlyUpdatedGroupIds, highlightAndFetch } =
+  useTransactionLiveHighlight();
 
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
@@ -98,9 +108,8 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   // For non-status updates, only refetch if current items are affected
   const txIds = new Set(parsed.transactionIds);
   const grpIds = new Set(parsed.groupIds);
-  const hasMatch = nodes.value.some(n =>
-    (n.transactionId && txIds.has(n.transactionId)) ||
-    (n.groupId && grpIds.has(n.groupId)),
+  const hasMatch = nodes.value.some(
+    n => (n.transactionId && txIds.has(n.transactionId)) || (n.groupId && grpIds.has(n.groupId)),
   );
   if (hasMatch) {
     await highlightAndFetch(parsed.transactionIds, parsed.groupIds, silentFetch);
@@ -125,7 +134,11 @@ const {
   sortField: urlSortField,
   sortDirection: urlSortDirection,
   syncToUrl,
-} = useTableQueryState(TRANSACTION_NODE_SORT_URL_VALUES, sortFieldToUrl(defaults.field), defaults.direction);
+} = useTableQueryState(
+  TRANSACTION_NODE_SORT_URL_VALUES,
+  sortFieldToUrl(defaults.field),
+  defaults.direction,
+);
 
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
@@ -313,30 +326,42 @@ watch([urlSortField, urlSortDirection], ([field, direction]) => {
 });
 
 watch(sort, () => {
-    stored.save('sort', { field: sortFieldToUrl(sort.value.field), direction: sort.value.direction });
-    currentPage.value = 1;
-    sortNodes();
-  },
-);
-
-watch([currentPage, pageSize], () => {
-  syncToUrl(currentPage.value, sortFieldToUrl(sort.value.field), sort.value.direction, pageSize.value);
+  stored.save('sort', { field: sortFieldToUrl(sort.value.field), direction: sort.value.direction });
+  currentPage.value = 1;
+  sortNodes();
 });
 
-watch([statusFilter, transactionTypeFilter], () => {
-  stored.save('status-filter', statusFilter.value);
-  stored.save('type-filter', transactionTypeFilter.value);
-  currentPage.value = 1;
-  fetchNodes();
-}, { deep: true });
+watch([currentPage, pageSize], () => {
+  syncToUrl(
+    currentPage.value,
+    sortFieldToUrl(sort.value.field),
+    sort.value.direction,
+    pageSize.value,
+  );
+});
+
+watch(
+  [statusFilter, transactionTypeFilter],
+  () => {
+    stored.save('status-filter', statusFilter.value);
+    stored.save('type-filter', transactionTypeFilter.value);
+    currentPage.value = 1;
+    fetchNodes();
+  },
+  { deep: true },
+);
 
 // Client-side only — the back-end already sent every row this signer is eligible for, so
 // toggling this filter just changes what's shown, no refetch needed.
-watch(pendingReviewFilter, () => {
-  stored.save('pending-review-filter', pendingReviewFilter.value);
-  currentPage.value = 1;
-  clampPage();
-}, { deep: true });
+watch(
+  pendingReviewFilter,
+  () => {
+    stored.save('pending-review-filter', pendingReviewFilter.value);
+    currentPage.value = 1;
+    clampPage();
+  },
+  { deep: true },
+);
 
 /* Hooks */
 onMounted(fetchNodes);
@@ -351,7 +376,9 @@ onMounted(fetchNodes);
       />
     </div>
     <div
-      v-if="props.collection === TransactionNodeCollection.READY_TO_SIGN && FEATURE_REVIEWER_ENABLED"
+      v-if="
+        props.collection === TransactionNodeCollection.READY_TO_SIGN && FEATURE_REVIEWER_ENABLED
+      "
       class="mt-3 mb-3"
     >
       <PendingReviewFieldV2 v-model:pending-review-filter="pendingReviewFilter" />

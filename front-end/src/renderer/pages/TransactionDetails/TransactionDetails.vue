@@ -8,7 +8,7 @@ import {
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter, type _RouterClassic } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
 import {
@@ -78,10 +78,13 @@ const contacts = useContactsStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransactionOnNotif(); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchTransactionOnNotif();
+    return;
+  } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
@@ -91,8 +94,10 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
 
   const currentId = Number(formattedId.value);
   const currentGroupId = orgTransaction.value?.groupItem?.groupId;
-  if (parsed.transactionIds.includes(currentId) ||
-      (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
+  if (
+    parsed.transactionIds.includes(currentId) ||
+    (currentGroupId && parsed.groupIds.includes(currentGroupId))
+  ) {
     await fetchTransactionOnNotif();
   }
 });
@@ -148,7 +153,11 @@ const creatorSignatureMessage = computed(() =>
 );
 
 const showExternal = computed(() => {
-  return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+  return (
+    FEATURE_EXTERNAL_BADGE_ENABLED &&
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.admin
+  );
 });
 
 const transactionIsInProgress = computed(
@@ -448,8 +457,8 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 </div>
                 <div v-else-if="isPendingReview" class="alert alert-warning" role="alert">
                   <p class="text-small mb-0">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>This transaction is
-                    awaiting review
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>This transaction is awaiting
+                    review
                   </p>
                 </div>
               </div>
