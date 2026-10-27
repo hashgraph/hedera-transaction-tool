@@ -55,6 +55,7 @@ import type {
   TransferHbarData,
 } from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
+import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
 
 export type ExtendedTransactionData = TransactionCommonData &
@@ -163,6 +164,29 @@ export const getAccountDeleteData = (transaction: AccountDeleteTransaction): Acc
   };
 };
 
+// Serialized transactions do not retain whether contents was typed by user or uploaded from file.
+// So we restore editable text only when the textarea can preserve every original byte.
+function restoreFileContents(contents: Uint8Array | null): Uint8Array | string {
+  if (!contents?.length) return '';
+  if (contents.length > DISPLAY_FILE_SIZE_LIMIT) return contents;
+
+  try {
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(contents);
+    // Textareas normalize carriage returns; other control bytes indicate binary content.
+    if (/[\x00-\x08\x0B-\x1F\x7F]|\p{Cf}/u.test(text)) return contents;
+    const encoded = new TextEncoder().encode(text);
+    if (
+      encoded.length === contents.length &&
+      encoded.every((byte, index) => byte === contents[index])
+    ) {
+      return text;
+    }
+  } catch {
+    // Invalid UTF-8 must remain binary rather than acquire replacement characters.
+  }
+  return contents;
+}
+
 export const getFileInfoTransactionData = (
   transaction: FileCreateTransaction | FileUpdateTransaction,
 ): FileData => {
@@ -179,7 +203,7 @@ export const getFileInfoTransactionData = (
   }
   return {
     ownerKey: transaction.keys ? new KeyList(transaction.keys) : null,
-    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+    contents: restoreFileContents(transaction.contents),
     fileMemo: transaction.fileMemo || '',
     expirationTime,
   };
@@ -201,7 +225,7 @@ export const getFileAppendTransactionData = (transaction: FileAppendTransaction)
     fileId: transaction.fileId?.toString() || '',
     chunkSize: transaction.chunkSize || 0,
     maxChunks: transaction.maxChunks || 9999999999999,
-    contents: transaction.contents ? new TextDecoder().decode(transaction.contents) : '',
+    contents: restoreFileContents(transaction.contents),
   };
 };
 
