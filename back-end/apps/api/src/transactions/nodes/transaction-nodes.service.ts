@@ -96,7 +96,11 @@ export class TransactionNodesService {
         break;
       }
       case TransactionNodeCollection.HISTORY: {
-        statusFilter = statusFilter?.length ? statusFilter : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
+        // History is terminal-only: ignore any caller-supplied status that isn't terminal
+        // rather than letting active statuses leak into the "done" tab.
+        statusFilter = statusFilter?.length
+          ? statusFilter.filter(status => TRANSACTION_STATUS_COLLECTIONS.HISTORY.includes(status))
+          : TRANSACTION_STATUS_COLLECTIONS.HISTORY;
         transactionTypeFilter = transactionTypeFilter?.length ? transactionTypeFilter : undefined;
         const query = getTransactionNodesQuery(
           this.sqlBuilder,

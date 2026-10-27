@@ -114,11 +114,13 @@ const { oldNotifications } = useMarkNotifications(
 );
 
 const defaults = initialSort();
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } = useTableQueryState(
-  TRANSACTION_NODE_SORT_URL_VALUES,
-  sortFieldToUrl(defaults.field),
-  defaults.direction,
-);
+const {
+  page: currentPage,
+  pageSize,
+  sortField: urlSortField,
+  sortDirection: urlSortDirection,
+  syncToUrl,
+} = useTableQueryState(TRANSACTION_NODE_SORT_URL_VALUES, sortFieldToUrl(defaults.field), defaults.direction);
 
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
@@ -127,11 +129,9 @@ const sort = ref<{
   field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
 }>({
-  field: sortFieldFromUrl(initialSortField) ?? defaults.field,
-  direction: initialSortDirection,
+  field: sortFieldFromUrl(urlSortField.value) ?? defaults.field,
+  direction: urlSortDirection.value,
 });
-const currentPage = ref(initialPage);
-const pageSize = ref(initialPageSize);
 const statusFilter = ref<TransactionStatus[]>([]);
 const transactionTypeFilter = ref<BackEndTransactionType[]>([]);
 
@@ -280,6 +280,13 @@ async function fetchNodesOnNotif(options?: { silent?: boolean }): Promise<void> 
 }
 
 /* Watchers */
+// Picks up sort changes that came from outside the table (e.g. navigating here via a
+// notification resets the URL's sort to the default); currentPage/pageSize don't need an
+// equivalent since they're the same refs useTableQueryState already resyncs in place.
+watch([urlSortField, urlSortDirection], ([field, direction]) => {
+  sort.value = { field: sortFieldFromUrl(field) ?? defaults.field, direction };
+});
+
 watch(sort, () => {
     currentPage.value = 1;
     sortNodes();

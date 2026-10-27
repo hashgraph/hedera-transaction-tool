@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onErrorCaptured, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onErrorCaptured, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 
 import 'bootstrap/dist/js/bootstrap.bundle.min';
@@ -29,6 +29,21 @@ import { TRANSACTION_ACTION } from '@shared/constants';
 /* Composables */
 const router = useRouter();
 const logger = createLogger('renderer.app');
+
+// RouterView below is keyed to force a remount on navigation (e.g. so /create-transaction
+// re-seeds its form when draftId/groupIndex changes, since those pages only read such query
+// params once at setup). The transactions page is the one exception: it keeps table state
+// (page/sort/filters) in its own query params purely so it's bookmarkable, and remounting for
+// those would wipe that same state and force a full server refetch on every pager click — so
+// it's keyed on its tab only, not the full query.
+const routerViewKey = computed(() => {
+  const route = router.currentRoute.value;
+  if (route.name === 'transactions') {
+    const tab = typeof route.query.tab === 'string' ? route.query.tab : '';
+    return `${route.path}?tab=${tab}`;
+  }
+  return route.fullPath;
+});
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -116,7 +131,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
       <AppMenu v-if="dynamicLayout.showMenu" />
       <RouterView
         v-slot="{ Component }"
-        :key="$route.fullPath"
+        :key="routerViewKey"
         class="flex-1 overflow-hidden container-main-content"
       >
         <Transition name="fade" mode="out-in">

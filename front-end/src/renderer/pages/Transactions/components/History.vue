@@ -108,8 +108,13 @@ const { oldNotifications } = useMarkNotifications([
   NotificationType.TRANSACTION_INDICATOR_FAILED,
 ]);
 
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
-  useTableQueryState(HISTORY_SORT_URL_VALUES, 'created_at', 'desc');
+const {
+  page: currentPage,
+  pageSize,
+  sortField: urlSortField,
+  sortDirection: urlSortDirection,
+  syncToUrl,
+} = useTableQueryState(HISTORY_SORT_URL_VALUES, 'created_at', 'desc');
 
 /* State */
 const organizationTransactions = ref<
@@ -124,15 +129,15 @@ const localSort = reactive<{
   field: Prisma.TransactionScalarFieldEnum;
   direction: Prisma.SortOrder;
 }>({
-  field: initialSortField as Prisma.TransactionScalarFieldEnum,
-  direction: initialSortDirection,
+  field: urlSortField.value as Prisma.TransactionScalarFieldEnum,
+  direction: urlSortDirection.value,
 });
 const orgSort = reactive<{
   field: keyof ITransaction;
   direction: 'asc' | 'desc';
 }>({
-  field: LOCAL_TO_ORG_SORT[initialSortField] || 'createdAt',
-  direction: initialSortDirection,
+  field: LOCAL_TO_ORG_SORT[urlSortField.value] || 'createdAt',
+  direction: urlSortDirection.value,
 });
 const orgFilters = ref<
   {
@@ -142,8 +147,6 @@ const orgFilters = ref<
   }[]
 >([{ property: 'mirrorNetwork', rule: 'eq', value: network.network }]);
 const totalItems = ref(0);
-const currentPage = ref(initialPage);
-const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 
 /* Composables */
@@ -297,6 +300,16 @@ onBeforeMount(async () => {
 });
 
 /* Watchers */
+// Picks up sort changes that came from outside the table (e.g. navigating here via a
+// notification resets the URL's sort to the default); currentPage/pageSize don't need an
+// equivalent since they're the same refs useTableQueryState already resyncs in place.
+watch([urlSortField, urlSortDirection], ([field, direction]) => {
+  localSort.field = field as Prisma.TransactionScalarFieldEnum;
+  localSort.direction = direction;
+  orgSort.field = LOCAL_TO_ORG_SORT[field] || 'createdAt';
+  orgSort.direction = direction;
+});
+
 watch(
   [
     currentPage,

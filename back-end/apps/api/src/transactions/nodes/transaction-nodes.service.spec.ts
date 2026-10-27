@@ -491,6 +491,36 @@ describe('TransactionNodesService', () => {
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
     });
 
+    it('drops non-terminal statuses from a caller-supplied status filter', async () => {
+      const mockQuery = makeMockQuery('SELECT * FROM history_filtered_by_status');
+
+      (getTransactionNodesQuery as jest.Mock).mockReturnValue(mockQuery);
+      entityManager.query.mockResolvedValue([]);
+
+      const r = await service.getTransactionNodes(
+        user,
+        TransactionNodeCollection.HISTORY,
+        TEST_NETWORK,
+        [TransactionStatus.EXPIRED, TransactionStatus.WAITING_FOR_SIGNATURES],
+        undefined,
+      );
+
+      expect(r).toStrictEqual([]);
+
+      expect(getTransactionNodesQuery).toHaveBeenCalledWith(
+        sqlBuilderService,
+        {
+          statuses: [TransactionStatus.EXPIRED],
+          types: undefined,
+          mirrorNetwork: TEST_NETWORK,
+        },
+        user,
+        { signer: true, creator: true, observer: true },
+      );
+
+      expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
+    });
+
     it('transaction type filtering is effective', async () => {
       const mockQuery = makeMockQuery('SELECT * FROM history_filtered_by_type');
 

@@ -41,8 +41,13 @@ const user = useUserStore();
 /* Composables */
 const router = useRouter();
 
-const { initialPage, initialPageSize, initialSortField, initialSortDirection, syncToUrl } =
-  useTableQueryState(DRAFTS_SORT_URL_VALUES, 'created_at', 'desc');
+const {
+  page: currentPage,
+  pageSize,
+  sortField,
+  sortDirection,
+  syncToUrl,
+} = useTableQueryState(DRAFTS_SORT_URL_VALUES, 'created_at', 'desc');
 
 /* Injected */
 const toastManager = ToastManager.inject();
@@ -50,13 +55,9 @@ const toastManager = ToastManager.inject();
 /* State */
 const drafts = ref<TransactionDraft[]>([]);
 const totalItems = ref(0);
-const currentPage = ref(initialPage);
-const pageSize = ref(initialPageSize);
 const isLoading = ref(true);
 const groups = ref<TransactionGroup[]>([]);
 const list = ref<(TransactionDraft | TransactionGroup)[]>([]);
-const sortField = ref<string>(initialSortField);
-const sortDirection = ref<string>(initialSortDirection);
 const descriptionRefs = ref<Map<string, HTMLElement>>(new Map());
 const truncationState = ref<Map<string, boolean>>(new Map());
 let resizeObserver: ResizeObserver | undefined;
@@ -67,11 +68,7 @@ const generatedClass = computed(() => {
 });
 
 /* Handlers */
-const handleSort = async (field: string, direction: string) => {
-  sortField.value = field;
-  sortDirection.value = direction;
-  currentPage.value = 1;
-
+const sortList = (field: string, direction: 'asc' | 'desc') => {
   switch (field) {
     case 'created_at': {
       const cmp = (
@@ -153,6 +150,14 @@ const handleSort = async (field: string, direction: string) => {
       break;
     }
   }
+};
+
+const handleSort = async (field: string, direction: 'asc' | 'desc') => {
+  sortField.value = field;
+  sortDirection.value = direction;
+  currentPage.value = 1;
+
+  sortList(field, direction);
 };
 
 const handleUpdateIsTemplate = async (e: Event, draft: TransactionDraft | TransactionGroup) => {
@@ -289,7 +294,7 @@ async function fetchDrafts() {
     groups.value = await getGroups(createFindGroupArgs());
     totalItems.value = draftsCount + groupsCount;
     list.value = [...drafts.value, ...groups.value];
-    await handleSort(sortField.value, sortDirection.value);
+    sortList(sortField.value, sortDirection.value);
   } finally {
     isLoading.value = false;
   }
@@ -382,13 +387,16 @@ onUnmounted(() => {
 
 /* Watchers */
 watch([currentPage, pageSize], async () => {
-  syncToUrl(
-    currentPage.value,
-    sortField.value,
-    sortDirection.value as 'asc' | 'desc',
-    pageSize.value,
-  );
+  syncToUrl(currentPage.value, sortField.value, sortDirection.value, pageSize.value);
   await fetchDrafts();
+});
+
+// Picks up sort changes that came from outside the table (e.g. navigating here via a
+// notification resets the URL's sort to the default). Calls sortList directly rather than
+// handleSort, since handleSort also resets currentPage, which would drop a page param that
+// has nothing to do with this sort change.
+watch([sortField, sortDirection], ([field, direction]) => {
+  sortList(field, direction);
 });
 
 watch(
