@@ -793,14 +793,6 @@ export function createRegisteredNodeUpdateTransaction(
     }
   }
 
-  if (data.description && data.description.length > 0) {
-    const newValue = data.description;
-    const oldValue = currentNodeInfo !== null ? currentNodeInfo.description : null;
-    if (oldValue === null || oldValue !== newValue) {
-      transaction.setDescription(data.description);
-    }
-  }
-
   if (data.serviceEndpoints.length > 0) {
     const newValue = getRegisteredServiceEndpoints(data.serviceEndpoints);
     const oldValue = currentNodeInfo !== null ? currentNodeInfo.service_endpoints : null;
