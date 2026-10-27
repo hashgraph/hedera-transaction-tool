@@ -290,7 +290,11 @@ watch(
         :data-testid="`span-transaction-node-creator-signature-${index}`"
       />
       <span
-        v-if="FEATURE_REVIEWER_ENABLED && props.node.status === TransactionStatus.READY_FOR_REVIEW"
+        v-if="
+          FEATURE_REVIEWER_ENABLED &&
+          props.collection === TransactionNodeCollection.READY_TO_SIGN &&
+          props.node.status === TransactionStatus.READY_FOR_REVIEW
+        "
         class="badge bg-warning ms-2"
         >Pending Review</span
       >

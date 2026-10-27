@@ -34,7 +34,7 @@ const stepperItems = computed(() => {
   }
 
   if (hasApproveStep.value) {
-    items.push({ title: 'Awaiting Approval', name: 'Awaiting Approval' });
+    items.push({ title: 'Awaiting Review', name: 'Awaiting Review' });
   }
 
   items.push({ title: 'Collecting Signatures', name: 'Collecting Signatures' });
@@ -77,9 +77,10 @@ const stepperItems = computed(() => {
 const stepperActiveIndex = computed(() => {
   switch (props.transaction.status) {
     case TransactionStatus.NEW:
-    case TransactionStatus.READY_FOR_REVIEW:
-      // Only "Transaction Created" is complete while review is pending — same as NEW.
       return 0;
+    case TransactionStatus.READY_FOR_REVIEW:
+      // The "Awaiting Review" step is the current one while review is pending.
+      return hasApproveStep.value ? 1 : 0;
     case TransactionStatus.REJECTED:
       return 1;
     case TransactionStatus.WAITING_FOR_SIGNATURES:

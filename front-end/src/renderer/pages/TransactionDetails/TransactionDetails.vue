@@ -11,7 +11,12 @@ import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { FEATURE_REVIEWER_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import {
+  FEATURE_REVIEWER_ENABLED,
+  FEATURE_EXTERNAL_BADGE_ENABLED,
+  readyToSignTitle,
+  TRANSACTION_ACTION,
+} from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -164,9 +169,13 @@ const isManualFlagVisible = computed(() => {
   return orgTransaction.value?.isManual && transactionIsInProgress.value;
 });
 
+// Only shown to a signer who opened the details from the Ready to Sign tab. Reviewers and
+// In Progress viewers already get this context from the stepper.
 const isPendingReview = computed(
   () =>
-    FEATURE_REVIEWER_ENABLED && orgTransaction.value?.status === TransactionStatus.READY_FOR_REVIEW,
+    FEATURE_REVIEWER_ENABLED &&
+    orgTransaction.value?.status === TransactionStatus.READY_FOR_REVIEW &&
+    router.previousTab === readyToSignTitle,
 );
 
 // Rejection is a per-reviewer flag (TransactionReviewerListMember.accepted === false), not a

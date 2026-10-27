@@ -55,7 +55,11 @@ const stubs = {
   CreatorSignaturePill: true,
 };
 
-async function mountRow(nodeOverrides: Partial<ITransactionNode> = {}, reviewerEnabled = false) {
+async function mountRow(
+  nodeOverrides: Partial<ITransactionNode> = {},
+  reviewerEnabled = false,
+  collection: TransactionNodeCollection = TransactionNodeCollection.READY_TO_SIGN,
+) {
   if (reviewerEnabled) {
     vi.doMock('@shared/constants', async importOriginal => {
       const actual = await importOriginal<typeof import('@shared/constants')>();
@@ -71,7 +75,7 @@ async function mountRow(nodeOverrides: Partial<ITransactionNode> = {}, reviewerE
 
   return mount(TransactionNodeRow, {
     props: {
-      collection: TransactionNodeCollection.READY_TO_SIGN,
+      collection,
       node: { ...baseNode, ...nodeOverrides },
       index: 0,
     },
@@ -89,6 +93,14 @@ describe('TransactionNodeRow.vue badges', () => {
     expect(wrapper.find('.badge.bg-warning').exists()).toBe(true);
     expect(wrapper.find('.badge.bg-warning').text()).toBe('Pending Review');
   });
+
+  test.each([TransactionNodeCollection.READY_FOR_REVIEW, TransactionNodeCollection.IN_PROGRESS])(
+    'omits the Pending Review badge outside Ready to Sign (%s)',
+    async collection => {
+      const wrapper = await mountRow({ status: TransactionStatus.READY_FOR_REVIEW }, true, collection);
+      expect(wrapper.find('.badge.bg-warning').exists()).toBe(false);
+    },
+  );
 
   test('omits the Pending Review badge for other statuses', async () => {
     const wrapper = await mountRow({ status: TransactionStatus.WAITING_FOR_SIGNATURES }, true);

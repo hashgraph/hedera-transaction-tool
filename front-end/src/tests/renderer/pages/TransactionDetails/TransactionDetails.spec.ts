@@ -41,6 +41,7 @@ const routerMock = {
   },
   back: vi.fn(),
   push: vi.fn(),
+  previousTab: undefined as string | undefined,
 };
 
 vi.mock('@hiero-ledger/sdk', async importOriginal => {
@@ -198,6 +199,7 @@ describe('TransactionDetails.vue review warnings', () => {
     lookupMock.mockReset();
     computeSignatureKeyMock.mockReset().mockResolvedValue(null);
     toastManager.reset();
+    routerMock.previousTab = undefined;
   });
 
   test('shows no banner when there is no rejection and the transaction is not pending review', async () => {
@@ -209,6 +211,7 @@ describe('TransactionDetails.vue review warnings', () => {
   });
 
   test('shows the awaiting-review warning when pending review with no rejections', async () => {
+    routerMock.previousTab = 'Ready to Sign';
     const wrapper = await mountTransactionDetails(
       makeOrgTransaction({ status: TransactionStatus.READY_FOR_REVIEW, reviewerLists: [] }),
     );
@@ -217,6 +220,16 @@ describe('TransactionDetails.vue review warnings', () => {
     expect(alert.exists()).toBe(true);
     expect(alert.classes()).toContain('alert-warning');
     expect(alert.text()).toContain('This transaction is awaiting review');
+  });
+
+  test('hides the awaiting-review warning when not opened from the Ready to Sign tab', async () => {
+    for (const tab of ['In Progress', 'Ready for Review', undefined]) {
+      routerMock.previousTab = tab;
+      const wrapper = await mountTransactionDetails(
+        makeOrgTransaction({ status: TransactionStatus.READY_FOR_REVIEW, reviewerLists: [] }),
+      );
+      expect(wrapper.find('[role="alert"]').exists()).toBe(false);
+    }
   });
 
   test('shows the in-progress rejection banner with the note when pending review and rejected', async () => {

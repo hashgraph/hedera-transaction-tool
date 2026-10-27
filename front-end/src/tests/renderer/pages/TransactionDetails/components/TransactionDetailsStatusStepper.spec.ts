@@ -27,7 +27,21 @@ describe('TransactionDetailsStatusStepper.vue', () => {
     ).not.toThrow();
   });
 
-  test('includes the Awaiting Approval step when reviewer lists are present', () => {
+  test('marks Awaiting Review (not Created) as the active step when ready for review', () => {
+    const wrapper = mount(TransactionDetailsStatusStepper, {
+      props: {
+        transaction: {
+          ...baseTransaction,
+          status: TransactionStatus.READY_FOR_REVIEW,
+          reviewerLists: [{ id: 1 }],
+        } as unknown as ITransactionFull,
+      },
+    });
+    const active = wrapper.find('.stepper-active');
+    expect(active.text()).toContain('Awaiting Review');
+  });
+
+  test('includes the Awaiting Review step when reviewer lists are present', () => {
     const wrapper = mount(TransactionDetailsStatusStepper, {
       props: {
         transaction: {
@@ -37,14 +51,14 @@ describe('TransactionDetailsStatusStepper.vue', () => {
       },
     });
 
-    expect(wrapper.text()).toContain('Awaiting Approval');
+    expect(wrapper.text()).toContain('Awaiting Review');
   });
 
-  test('omits the Awaiting Approval step when reviewerLists is undefined', () => {
+  test('omits the Awaiting Review step when reviewerLists is undefined', () => {
     const wrapper = mount(TransactionDetailsStatusStepper, {
       props: { transaction: { ...baseTransaction, reviewerLists: undefined } },
     });
 
-    expect(wrapper.text()).not.toContain('Awaiting Approval');
+    expect(wrapper.text()).not.toContain('Awaiting Review');
   });
 });
