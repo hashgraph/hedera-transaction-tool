@@ -529,15 +529,11 @@ importers:
         specifier: 0.3.1
         version: 0.3.1(socket.io-adapter@2.5.8(supports-color@8.1.1))(supports-color@8.1.1)
       nodemailer:
-        specifier: 10.1.7
-        version: 10.1.7
+        specifier: 10.2.1
+        version: 10.2.1
       socket.io:
         specifier: 4.8.4
         version: 4.8.4(supports-color@8.1.1)
-    devDependencies:
-      '@types/nodemailer':
-        specifier: 8.0.2
-        version: 8.0.2
 
   back-end/typeorm:
     dependencies:
@@ -3045,9 +3041,6 @@ packages:
 
   '@types/node@26.6.5':
     resolution: {integrity: sha512-uMzsv9stDdofIZBx4UGh4Z9ZgXnGC9seRDscilBcTHAeOFk67MZg/k9bWVfO+bk4qZmG+l52hRnLwUiH2LnJTg==}
-
-  '@types/nodemailer@8.0.2':
-    resolution: {integrity: sha512-c7M5ox8p0nEOfbJ2E9Qcmt8/QCu/VzsiAhzBiZbvky2PhKZDHpKB3sQHBM5MEZNkCfBOaS6S9//AGPRTNB7IaA==}
 
   '@types/passport-jwt@4.0.1':
     resolution: {integrity: sha512-Y0Ykz6nWP4jpxgEUYq8NoVZeCQPo1ZndJLfapI249g1jHChvRfZRO/LS3tqu26YgAS/laI1qx98sYGz0IalRXQ==}
@@ -6635,8 +6628,8 @@ packages:
     resolution: {integrity: sha512-5qr2okC4ItAI0hG5SaV0HoYMpnM/Y6+Oqr7AmPYy/2uEoGvS+GbSKLeRxSS1uAdu59yz0ouzcuXievSgg///WA==}
     engines: {node: '>=18'}
 
-  nodemailer@10.1.7:
-    resolution: {integrity: sha512-OQa6FDln5fLttmqSbjDiRYvFDOFNrBqfiOwHPlEbURil3b+vPB1v8xpi+Sp46drzNDlsTnNsS502vthmz56r4w==}
+  nodemailer@10.2.1:
+    resolution: {integrity: sha512-ZrDNsPFoDMwefNs7sJwrYiEJ/CG4ClJWDZv05iNJsEBWa8GRDry1QJHTJxsuTAY9eDDKjX4k+q3SxslXJOao7w==}
     engines: {node: '>=20.0.0'}
 
   nopt@10.0.1:
@@ -11102,10 +11095,6 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
-  '@types/nodemailer@8.0.2':
-    dependencies:
-      '@types/node': 26.6.5
-
   '@types/passport-jwt@4.0.1':
     dependencies:
       '@types/jsonwebtoken': 9.0.10
@@ -15274,7 +15263,7 @@ snapshots:
 
   node-releases@2.0.59: {}
 
-  nodemailer@10.1.7: {}
+  nodemailer@10.2.1: {}
 
   nopt@10.0.1:
     dependencies:
