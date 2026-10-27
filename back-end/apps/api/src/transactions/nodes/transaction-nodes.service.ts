@@ -89,6 +89,7 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
+            reviewer: true,
           }
         );
 
