@@ -101,8 +101,6 @@ updates:
         patterns:
           - "ioredis"
           - "redis"
-          - "cache-manager"
-          - "cache-manager-*"
           - "murlock"
       messaging:
         patterns:
