@@ -22,12 +22,10 @@ export function compareServiceEndpoint(
   p1: RegisteredServiceEndpoint,
   p2: RegisteredServiceEndpoint,
 ): boolean {
-
-
   if (p1 instanceof BlockNodeServiceEndpoint && p2 instanceof BlockNodeServiceEndpoint) {
     return compareBlockNodeServiceEndpoint(p1, p2);
   } else if (p1 instanceof GeneralServiceEndpoint && p2 instanceof GeneralServiceEndpoint) {
-    return compareGeneraleServiceEndpoint(p1, p2);
+    return compareGeneralServiceEndpoint(p1, p2);
   } else if (p1 instanceof MirrorNodeServiceEndpoint && p2 instanceof MirrorNodeServiceEndpoint) {
     return compareMirrorNodeServiceEndpoint(p1, p2);
   } else if (p1 instanceof RpcRelayServiceEndpoint && p2 instanceof RpcRelayServiceEndpoint) {
@@ -49,7 +47,7 @@ function compareBlockNodeServiceEndpoint(
   return true;
 }
 
-function compareGeneraleServiceEndpoint(
+function compareGeneralServiceEndpoint(
   p1: GeneralServiceEndpoint,
   p2: GeneralServiceEndpoint,
 ): boolean {
@@ -75,7 +73,6 @@ function compareGenericServiceEndpoint(
   p1: RegisteredServiceEndpoint,
   p2: RegisteredServiceEndpoint,
 ): boolean {
-
   if (p1.type !== p2.type) return false;
 
   if (p1.ipAddress !== null && p2.ipAddress !== null) {

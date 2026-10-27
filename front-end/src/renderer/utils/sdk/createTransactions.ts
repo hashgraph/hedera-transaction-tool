@@ -769,11 +769,7 @@ export function createRegisteredNodeUpdateTransaction(
   setTransactionCommonData(transaction, data);
 
   if (data.registeredNodeId) {
-    const newValue = Long.fromString(data.registeredNodeId);
-    const oldValue = currentNodeInfo !== null ? Long.fromNumber(currentNodeInfo.registered_node_id) : null;
-    if (oldValue === null || oldValue !== newValue) {
-      transaction.setRegisteredNodeId(newValue);
-    }
+    transaction.setRegisteredNodeId(Long.fromString(data.registeredNodeId));
   }
 
   if (data.adminKey) {
@@ -781,6 +777,19 @@ export function createRegisteredNodeUpdateTransaction(
     const oldValue = currentNodeInfo !== null ? currentNodeInfo.admin_key : null
     if (oldValue === null || (newValue !== null && !compareKeys(oldValue, newValue))) {
       transaction.setAdminKey(data.adminKey);
+    }
+  }
+
+  if (data.description.length > 0) {
+    const newValue = data.description;
+    const oldValue = currentNodeInfo?.description ?? null;
+    if (oldValue !== newValue) {
+      transaction.setDescription(newValue);
+    }
+  } else {
+    const oldValue = currentNodeInfo?.description ?? null;
+    if (oldValue !== null && oldValue !== '') {
+      transaction.setDescription('');
     }
   }
 
