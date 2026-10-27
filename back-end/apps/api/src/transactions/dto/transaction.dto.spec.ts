@@ -2,7 +2,12 @@ import 'reflect-metadata'
 import { plainToInstance } from 'class-transformer'
 import { validateSync } from 'class-validator'
 
-import { TransactionDto, TransactionFullDto } from './transaction.dto'
+import {
+  TransactionDto,
+  TransactionFullDto,
+  TransactionReviewerListDto,
+  TransactionReviewerListMemberDto,
+} from './transaction.dto'
 import { TransactionGroupItemDto } from './transaction-group-item.dto'
 import { TransactionSignerUserKeyDto } from './transaction-signer.dto'
 import { TransactionObserverDto } from './transaction-observer.dto'
@@ -144,6 +149,47 @@ describe('TransactionDto', () => {
 
     expect(dto.observers).toBeInstanceOf(Array);
     expect(dto.observers[0]).toBeInstanceOf(TransactionObserverDto);
+
+    const errors = validateSync(dto, { forbidUnknownValues: false });
+    expect(errors.length).toBe(0);
+  });
+
+  test('maps full transaction -> TransactionFullDto with reviewerLists/members', () => {
+    const plainFull = {
+      id: 2,
+      name: 'FullTxReview',
+      type: 'FULL',
+      transactionId: 'tx-full-review',
+      description: 'full with reviewers',
+      transactionBytes: Buffer.from('03', 'hex'),
+      signature: Buffer.from('04', 'hex'),
+      validStart: '2024-01-01T00:00:00.000Z',
+      isManual: true,
+      createdAt: '2024-01-03T00:00:00.000Z',
+      updatedAt: '2024-01-05T00:00:00.000Z',
+      creatorKey: { id: 9, user: { id: 10, email: 'creator@example.com' } },
+      signers: [{}],
+      observers: [{}],
+      reviewerLists: [
+        {
+          id: 1,
+          name: 'Reviewers',
+          description: 'desc',
+          threshold: 1,
+          members: [
+            { userId: 1, accepted: true, note: null, actionedAt: '2024-01-06T00:00:00.000Z' },
+          ],
+        },
+      ],
+    };
+
+    const dto = plainToInstance(TransactionFullDto, plainFull, { enableImplicitConversion: true });
+
+    expect(dto.reviewerLists).toBeInstanceOf(Array);
+    expect(dto.reviewerLists![0]).toBeInstanceOf(TransactionReviewerListDto);
+    expect(dto.reviewerLists![0].members).toBeInstanceOf(Array);
+    expect(dto.reviewerLists![0].members[0]).toBeInstanceOf(TransactionReviewerListMemberDto);
+    expect(dto.reviewerLists![0].members[0].userId).toBe(1);
 
     const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);
