@@ -69,9 +69,13 @@ const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
+// The Ready for Review tab itself is not gated by FEATURE_REVIEWER_ENABLED — it's already
+// visible, and hiding/showing it based on the flag would orphan a bookmarked or
+// history-restored `?tab=Ready for Review` URL once the flag changes. Review-specific
+// behavior (primary-tab auto-selection, badges, etc.) still checks the flag independently.
 const organizationTabs: TabItem[] = [
   { title: draftsTitle },
-  ...(FEATURE_REVIEWER_ENABLED ? [{ title: readyForReviewTitle }] : []),
+  { title: readyForReviewTitle },
   { title: readyToSignTitle },
   { title: inProgressTitle },
   { title: readyForExecutionTitle },

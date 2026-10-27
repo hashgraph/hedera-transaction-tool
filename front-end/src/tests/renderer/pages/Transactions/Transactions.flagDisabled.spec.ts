@@ -169,13 +169,13 @@ describe('Transactions.vue — FEATURE_REVIEWER_ENABLED disabled', () => {
     vi.mocked(getTransactionNodes).mockResolvedValue([]);
   });
 
-  test('omits the Ready for Review tab from the organization tab list', () => {
+  test('still shows the Ready for Review tab — only the reviewer-queue behavior is gated', () => {
     mocks.userStore.selectedOrganization = { serverUrl: 'https://org.example.com' };
 
     const wrapper = mountTransactions();
     const tabsText = wrapper.find('[data-testid="tabs"]').text();
 
-    expect(tabsText).not.toContain('Ready for Review');
+    expect(tabsText).toContain('Ready for Review');
     expect(tabsText).toContain('Ready to Sign');
     expect(tabsText).toContain('In Progress');
     expect(tabsText).toContain('Ready for Execution');
