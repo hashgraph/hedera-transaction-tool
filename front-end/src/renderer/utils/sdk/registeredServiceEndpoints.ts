@@ -81,11 +81,7 @@ function compareGenericServiceEndpoint(
     if (p1.ipAddress !== p2.ipAddress) return false;
   }
 
-  if (p1.domainName !== null && p2.domainName !== null) {
-    if (p1.domainName !== p2.domainName) return false;
-  } else {
-    if (p1.domainName !== p2.domainName) return false;
-  }
+  if (p1.domainName !== p2.domainName) return false;
 
   if (p1.port !== p2.port) return false;
 
