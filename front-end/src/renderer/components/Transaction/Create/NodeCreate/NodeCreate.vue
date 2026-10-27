@@ -56,12 +56,12 @@ const createTransaction = (commonData: TransactionCommonData): NodeCreateTransac
 const getAllData = (tx: NodeCreateTransaction): NodeData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getNodeData(tx),
+    ...getNodeData(tx, null),
   };
 };
 
 const handleDraftLoaded = (transaction: NodeCreateTransaction) => {
-  handleUpdateData(getNodeData(transaction));
+  handleUpdateData(getNodeData(transaction, null));
 };
 
 const handleUpdateData = (newData: NodeData) => {

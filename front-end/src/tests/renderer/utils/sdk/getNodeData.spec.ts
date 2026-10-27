@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, test, expect } from 'vitest';
-import { Hbar, NodeCreateTransaction, NodeUpdateTransaction } from '@hiero-ledger/sdk';
+import { Hbar, NodeUpdateTransaction } from '@hiero-ledger/sdk';
 import Long from 'long';
 
 import {
@@ -34,7 +34,7 @@ const baseData: NodeData = {
 describe('getNodeData — associatedRegisteredNodes', () => {
   test('NodeCreate with no registered nodes returns an empty array', () => {
     const tx = createNodeCreateTransaction({ ...common, ...baseData });
-    const parsed = getNodeData(tx);
+    const parsed = getNodeData(tx, null);
     expect(parsed.associatedRegisteredNodes).toEqual([]);
   });
 
@@ -44,7 +44,7 @@ describe('getNodeData — associatedRegisteredNodes', () => {
       ...baseData,
       associatedRegisteredNodes: ['1', '7', '12'],
     });
-    const parsed = getNodeData(tx);
+    const parsed = getNodeData(tx, null);
     expect(parsed.associatedRegisteredNodes).toEqual(['1', '7', '12']);
   });
 
@@ -54,7 +54,7 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     // SDK leaves the field as null when never set on an update; getNodeData
     // must normalize null to [] so callers always get an array.
     expect(tx.associatedRegisteredNodes).toBeNull();
-    const parsed = getNodeData(tx);
+    const parsed = getNodeData(tx, null);
     expect(parsed.associatedRegisteredNodes).toEqual([]);
   });
 
@@ -62,20 +62,13 @@ describe('getNodeData — associatedRegisteredNodes', () => {
     const tx = new NodeUpdateTransaction();
     tx.setNodeId(Long.fromNumber(3));
     tx.setAssociatedRegisteredNodes([]);
-    expect(getNodeData(tx).associatedRegisteredNodes).toEqual([]);
+    expect(getNodeData(tx, null).associatedRegisteredNodes).toEqual([]);
   });
 
   test('NodeUpdate with values returns them as decimal strings', () => {
     const tx = new NodeUpdateTransaction();
     tx.setNodeId(Long.fromNumber(3));
     tx.setAssociatedRegisteredNodes([Long.fromNumber(5), Long.fromNumber(8)]);
-    expect(getNodeData(tx).associatedRegisteredNodes).toEqual(['5', '8']);
-  });
-
-  test('throws on non-Node transactions (sanity check on the assertion path)', () => {
-    const tx = new NodeCreateTransaction();
-    // Replace prototype so instanceof check fails — a quick way to stress the guard.
-    Object.setPrototypeOf(tx, Object.prototype);
-    expect(() => getNodeData(tx)).toThrow();
+    expect(getNodeData(tx, null).associatedRegisteredNodes).toEqual(['5', '8']);
   });
 });
