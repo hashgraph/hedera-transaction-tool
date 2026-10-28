@@ -125,8 +125,6 @@ overrides:
 # confirming it is safe (e.g. a trusted patch that is legitimately new).
 minimumReleaseAge: 4320
 minimumReleaseAgeExclude:
-  - '@vue/language-core@3.3.8'
-  - vue-tsc@3.3.8
   # 1.4.1 fixes GHSA-86w9-cpqp-85rv (RSA-PKCS signature forgery via extra
   # nested DigestAlgorithm elements); 1.4.2 fixes a pem.decode() regression
   # from 1.4.1. Confirmed via upstream changelog.
