@@ -13,6 +13,8 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
+  TransactionObserver,
+  TransactionReviewerListMember,
   TransactionStatus,
   User,
   NOTIFICATION_CHANNELS,
@@ -135,6 +137,43 @@ describe('ReceiverService', () => {
     expect(result.get(1)).toBe(tx);
   });
 
+  it('fetchTransactionsWithRelations loads observers and reviewers separately, not via joins', async () => {
+    const tx1 = { id: 1 } as any;
+    const tx2 = { id: 2 } as any;
+    em.qb.getMany.mockResolvedValueOnce([tx1, tx2]);
+    em.find
+      .mockResolvedValueOnce([
+        { id: 10, transactionId: 1, userId: 100 },
+        { id: 11, transactionId: 1, userId: 101 },
+      ])
+      .mockResolvedValueOnce([
+        { id: 30, userId: 300, list: { id: 5, transactionId: 2 } },
+        { id: 31, userId: 301, list: { id: 5, transactionId: 2 } },
+        { id: 32, userId: 302, list: { id: 6, transactionId: 2 } },
+      ]);
+
+    const result = await (service as any).fetchTransactionsWithRelations([1, 2]);
+
+    const joined = em.qb.leftJoinAndSelect.mock.calls.map((c: any[]) => c[0]);
+    expect(joined).not.toContain('transaction.signers');
+    expect(joined).not.toContain('transaction.observers');
+    expect(em.find).toHaveBeenCalledWith(TransactionObserver, expect.objectContaining({ where: { transactionId: In([1, 2]) } }));
+    expect(em.find).toHaveBeenCalledWith(TransactionReviewerListMember, expect.objectContaining({ where: { list: { transactionId: In([1, 2]) } } }));
+    expect(result.get(1).observers.map((o: any) => o.userId)).toEqual([100, 101]);
+    expect(result.get(1).reviewerLists).toEqual([]);
+    expect(result.get(2).observers).toEqual([]);
+    expect(result.get(2).reviewerLists.map((l: any) => l.members.map((m: any) => m.userId))).toEqual([[300, 301], [302]]);
+  });
+
+  it('fetchTransactionsWithRelations skips observer/reviewer queries when no transactions are found', async () => {
+    em.qb.getMany.mockResolvedValueOnce([]);
+
+    const result = await (service as any).fetchTransactionsWithRelations([1]);
+
+    expect(result.size).toBe(0);
+    expect(em.find).not.toHaveBeenCalled();
+  });
+
   it('fetchTransactionsWithRelations uses default withDeleted = false when omitted', async () => {
     const tx = { id: 2 } as any;
     em.qb.getMany.mockResolvedValueOnce([tx]);
@@ -226,13 +265,14 @@ describe('ReceiverService', () => {
 
     const tx: any = {
       creatorKey: { userId: 1 },
-      signers: [{ userId: 2 }],
       observers: [{ userId: 3 }],
+      reviewerLists: [{ members: [{ userId: 2 }, { userId: 3 }] }, { members: [{ userId: 4 }] }],
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
     const result = await (service as any).getTransactionParticipants(em as any, tx, new Map());
-    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 100]));
+    expect(result.participants).toEqual(expect.arrayContaining([1, 2, 3, 4, 100]));
+    expect(result.reviewerUserIds).toEqual([2, 3, 4]);
     expect(result.requiredUserIds).toEqual([100]);
   });
 
@@ -242,8 +282,8 @@ describe('ReceiverService', () => {
     const tx: any = {
       // fetchTransactionsWithRelations always fetches creatorKey, even soft-deleted
       creatorKey: { userId: 1, deletedAt: new Date() },
-      signers: [{ userId: 2 }],
       observers: [{ userId: 3 }],
+      reviewerLists: [{ members: [{ userId: 2 }] }],
       status: TransactionStatus.WAITING_FOR_SIGNATURES,
     };
 
@@ -258,6 +298,7 @@ describe('ReceiverService', () => {
   describe('getNotificationReceiverIds', () => {
     const participantsMock = {
       observerUserIds: [5],
+      reviewerUserIds: [8],
       requiredUserIds: [6, 7],
       creatorId: 1,
       // other fields are ignored by the function under test
@@ -286,7 +327,7 @@ describe('ReceiverService', () => {
       }
     });
 
-    it('returns creator + observers + required for execution/expired/archived etc.', async () => {
+    it('returns creator + observers + reviewers + required for execution/expired/archived etc.', async () => {
       const types = [
         NotificationType.TRANSACTION_READY_FOR_EXECUTION,
         NotificationType.TRANSACTION_INDICATOR_EXECUTABLE,
@@ -297,7 +338,7 @@ describe('ReceiverService', () => {
         NotificationType.TRANSACTION_INDICATOR_EXPIRED,
         NotificationType.TRANSACTION_INDICATOR_ARCHIVED,
       ];
-      const expected = [1, 5, 6, 7];
+      const expected = [1, 5, 8, 6, 7];
       for (const t of types) {
         const res = await (service as any).getNotificationReceiverIds(
           em as any,
@@ -308,20 +349,20 @@ describe('ReceiverService', () => {
       }
     });
 
-    it('returns observers + required for CANCELLED / INDICATOR_CANCELLED', async () => {
+    it('returns observers + reviewers + required for CANCELLED / INDICATOR_CANCELLED', async () => {
       const res = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
         NotificationType.TRANSACTION_CANCELLED,
       );
-      expect(res).toEqual([5, 6, 7]);
+      expect(res).toEqual([5, 8, 6, 7]);
 
       const res2 = await (service as any).getNotificationReceiverIds(
         em as any,
         {} as any,
         NotificationType.TRANSACTION_INDICATOR_CANCELLED,
       );
-      expect(res2).toEqual([5, 6, 7]);
+      expect(res2).toEqual([5, 8, 6, 7]);
     });
 
     it('returns deduplicated pending reviewer user IDs for TRANSACTION_INDICATOR_REVIEW and TRANSACTION_READY_FOR_REVIEW', async () => {
@@ -1398,8 +1439,9 @@ describe('ReceiverService', () => {
     });
 
     it('processes deletions, creates in-app receivers and collects email receivers', async () => {
-      // test-specific: deleteExistingIndicators will call em.find again to look up existing notifications.
-      em.find.mockResolvedValueOnce([]);
+      // test-specific: observers and reviewers are loaded with their own finds after the transaction query,
+      // then deleteExistingIndicators calls em.find again to look up existing notifications.
+      em.find.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       // test-specific: For in-app/email notification creation and receivers (saves inside transaction)
       em.save
@@ -2394,8 +2436,9 @@ describe('ReceiverService', () => {
       await service.processTransactionStatusUpdateNotifications([{ entityId: 50 } as any, { entityId: 51 } as any]);
 
       // Two transactions share the same groupId → single IN query, not two separate finds
-      expect(em.find).toHaveBeenCalledTimes(1);
-      expect(em.find).toHaveBeenCalledWith(Transaction, expect.objectContaining({
+      const groupFinds = em.find.mock.calls.filter(([entity]: any[]) => entity === Transaction);
+      expect(groupFinds).toHaveLength(1);
+      expect(groupFinds[0][1]).toEqual(expect.objectContaining({
         where: { groupItem: { groupId: In([9]) } },
       }));
     });

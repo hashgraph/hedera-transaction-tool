@@ -19,6 +19,8 @@ import {
   NotificationReceiver,
   NotificationType,
   Transaction,
+  TransactionObserver,
+  TransactionReviewerList,
   TransactionReviewerListMember,
   TransactionStatus,
   User,
@@ -105,8 +107,6 @@ export class ReceiverService {
     const qb = this.entityManager
       .createQueryBuilder(Transaction, 'transaction')
       .leftJoinAndSelect('transaction.creatorKey', 'creatorKey')
-      .leftJoinAndSelect('transaction.observers', 'observers')
-      .leftJoinAndSelect('transaction.signers', 'signers')
       .leftJoinAndSelect('transaction.groupItem', 'groupItem')
       .where('transaction.id IN (:...transactionIds)', { transactionIds })
       .withDeleted();
@@ -116,8 +116,61 @@ export class ReceiverService {
     }
 
     const transactions = await qb.getMany();
+    await this.attachObserversAndReviewers(transactions);
 
     return new Map(transactions.map(t => [t.id, t]));
+  }
+
+  /**
+   * Loads observers and reviewers with their own queries and attaches them to the
+   * given transactions. Joining several to-many relations in the transaction query
+   * returns the product of their sizes as rows per transaction, each repeating the
+   * bytea columns, which can exhaust the pod's memory for large groups.
+   */
+  private async attachObserversAndReviewers(transactions: Transaction[]) {
+    if (transactions.length === 0) return;
+
+    const transactionId = In(transactions.map(t => t.id));
+    const [observers, reviewers] = await Promise.all([
+      this.entityManager.find(TransactionObserver, {
+        select: { id: true, transactionId: true, userId: true },
+        where: { transactionId },
+      }),
+      this.entityManager.find(TransactionReviewerListMember, {
+        select: { id: true, userId: true, list: { id: true, transactionId: true } },
+        relations: { list: true },
+        where: { list: { transactionId } },
+      }),
+    ]);
+
+    const observersByTx = new Map<number, TransactionObserver[]>();
+    for (const observer of observers ?? []) {
+      const list = observersByTx.get(observer.transactionId);
+      if (list) list.push(observer);
+      else observersByTx.set(observer.transactionId, [observer]);
+    }
+
+    const reviewerListsByTx = new Map<number, Map<number, TransactionReviewerList>>();
+    for (const member of reviewers ?? []) {
+      const { id: listId, transactionId: txId } = member.list;
+      let lists = reviewerListsByTx.get(txId);
+      if (!lists) reviewerListsByTx.set(txId, (lists = new Map()));
+      let list = lists.get(listId);
+      if (!list) {
+        list = Object.assign(new TransactionReviewerList(), {
+          id: listId,
+          transactionId: txId,
+          members: [],
+        });
+        lists.set(listId, list);
+      }
+      list.members.push(member);
+    }
+
+    for (const transaction of transactions) {
+      transaction.observers = observersByTx.get(transaction.id) ?? [];
+      transaction.reviewerLists = [...(reviewerListsByTx.get(transaction.id)?.values() ?? [])];
+    }
   }
 
   // --- Participant / recipient resolution -------------------------------
@@ -128,8 +181,12 @@ export class ReceiverService {
     keyCache?: Map<string, UserKey>,
   ) {
     const creatorId = transaction.creatorKey.userId;
-    const signerUserIds = transaction.signers?.map(s => s.userId) ?? [];
     const observerUserIds = transaction.observers?.map(o => o.userId) ?? [];
+    const reviewerUserIds = [
+      ...new Set(
+        transaction.reviewerLists?.flatMap(l => l.members?.map(m => m.userId) ?? []) ?? [],
+      ),
+    ];
     const requiredUserIds = await this.getUsersIdsRequiredToSign(
       entityManager,
       transaction,
@@ -140,8 +197,8 @@ export class ReceiverService {
       ...new Set(
         [
           creatorId,
-          ...signerUserIds,
           ...observerUserIds,
+          ...reviewerUserIds,
           ...requiredUserIds,
         ].filter(Boolean),
       ),
@@ -149,8 +206,8 @@ export class ReceiverService {
 
     return {
       creatorId,
-      signerUserIds,
       observerUserIds,
+      reviewerUserIds,
       requiredUserIds,
       participants,
     };
@@ -194,6 +251,7 @@ export class ReceiverService {
     /* Get transaction participants */
     const {
       observerUserIds,
+      reviewerUserIds,
       requiredUserIds,
       creatorId,
     } = await this.getTransactionParticipants(entityManager, transaction, keyCache);
@@ -217,11 +275,11 @@ export class ReceiverService {
       case NotificationType.TRANSACTION_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_EXPIRED:
       case NotificationType.TRANSACTION_INDICATOR_ARCHIVED:
-        return [creatorId, ...observerUserIds, ...requiredUserIds];
+        return [creatorId, ...observerUserIds, ...reviewerUserIds, ...requiredUserIds];
 
       case NotificationType.TRANSACTION_CANCELLED:
       case NotificationType.TRANSACTION_INDICATOR_CANCELLED:
-        return [...observerUserIds, ...requiredUserIds];
+        return [...observerUserIds, ...reviewerUserIds, ...requiredUserIds];
 
       default:
         console.warn(`No recipient logic for ${newIndicatorType}`);
@@ -1069,8 +1127,9 @@ export class ReceiverService {
     if (uniqueGroupIds.length > 0) {
       const allGroupTxs = await this.entityManager.find(Transaction, {
         where: { groupItem: { groupId: In(uniqueGroupIds) } },
-        relations: { creatorKey: true, observers: true, signers: true, groupItem: true },
+        relations: { creatorKey: true, groupItem: true },
       });
+      await this.attachObserversAndReviewers(allGroupTxs);
       for (const tx of allGroupTxs) {
         const gId = tx.groupItem?.groupId;
         if (gId == null) continue;
