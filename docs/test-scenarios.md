@@ -570,7 +570,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #     | Scenario                                                 | Automated | Covered By                                                |
 | ----- | -------------------------------------------------------- | --------- | --------------------------------------------------------- |
 | 7.6.1 | Group details show list of transactions                  | Yes       | Verify user can execute group transaction in organization |
-| 7.6.2 | User can navigate between transactions in the group      | No        |                                                           |
+| 7.6.2 | User can navigate between transactions in the group      | Yes as Component Test | opening a row routes down into that transaction with the whole group as siblings; clicking Details emits handleDetails with the group item transaction id |
 | 7.6.3 | User can sign individual transactions from group details | Yes       | Verify user can execute group transaction in organization |
 | 7.6.4 | Approval decision state is displayed (org admin)         | No        |                                                           |
 
@@ -920,7 +920,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
 | 5. Transaction Creation         | 101             | 92            | 7                        | 0       | 1       | 0        | 1       | 98%        | 99%                     |
 | 6. Transaction Details          | 26              | 24            | 0                        | 0       | 0       | 2        | 0       | 92%        | 92%                     |
-| 7. Transaction Groups           | 39              | 29            | 6                        | 0       | 0       | 4        | 0       | 90%        | 90%                     |
+| 7. Transaction Groups           | 39              | 29            | 7                        | 0       | 0       | 3        | 0       | 92%        | 92%                     |
 | 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
@@ -929,16 +929,16 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 13. Navigation and Layout       | 12              | 11            | 1                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
-| **Total**                       | **472**         | **365**       | **85**                   | **3**   | **5**   | **12**   | **2**   | **96%**    | **97%**                 |
+| **Total**                       | **472**         | **365**       | **86**                   | **3**   | **5**   | **11**   | **2**   | **96%**    | **97%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 92 Vitest renderer test cases (unit + component) across 18 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 85 + 3) / 472 = 95.97%`, rounded to `96%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 86 + 3) / 472 = 96.19%`, rounded to `96%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 85 + 3 + 5) / 472 = 97.03%`, rounded to `97%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 86 + 3 + 5) / 472 = 97.25%`, rounded to `97%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -983,7 +983,6 @@ These scenarios cover secondary workflows and infrequently used transaction type
 | ------------------------ | -------------- | ------------------------------------------------------------ | --------------------------------------------------- |
 | **Transaction Groups**   | 7.1.6          | User can set a payer account for the group                   | When group creation form is modified                |
 | **Transaction Groups**   | 7.1.7          | Valid start time picker works with running clock             | When the date/time picker is modified               |
-| **Group Details**        | 7.6.2          | User can navigate between transactions in group details      | When group detail view is modified                  |
 | **Group Details**        | 7.6.4          | Approval decision state is displayed (org admin)             | When org approval flows are modified                |
 
 #### Tier 4 - Lower Priority (Periodic Verification)
