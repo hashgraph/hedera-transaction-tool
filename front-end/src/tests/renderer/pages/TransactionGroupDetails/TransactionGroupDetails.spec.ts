@@ -47,6 +47,7 @@ const notificationsStore = {
 };
 
 const routeUpMock = vi.fn();
+const routeDownMock = vi.fn();
 const routerMock = {
   currentRoute: {
     value: {
@@ -102,6 +103,7 @@ vi.mock('@renderer/stores/storeNextTransactionV2.ts', () => ({
   default: vi.fn(() => ({
     contextStack: [],
     routeUp: routeUpMock,
+    routeDown: routeDownMock,
   })),
 }));
 
@@ -290,6 +292,21 @@ describe('TransactionGroupDetails.vue', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     toastManager.reset();
+  });
+
+  test('opening a row routes down into that transaction with the whole group as siblings', async () => {
+    const wrapper = await mountGroupDetails();
+
+    wrapper.findComponent({ name: 'TransactionGroupRow' }).vm.$emit('handleDetails', 101);
+    await flushPromises();
+
+    expect(routeDownMock).toHaveBeenCalledTimes(1);
+    expect(routeDownMock).toHaveBeenCalledWith(
+      { transactionId: 101 },
+      groupResponse.groupItems.map(item => ({ transactionId: item.transactionId })),
+      routerMock,
+      expect.anything(),
+    );
   });
 
   test('uses one Cancel All API call and refreshes group state after a failed cancel attempt', async () => {
