@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
+import type { RecoveryPhrase } from '@renderer/types';
 import SetupPersonal from '@renderer/pages/Migrate/components/SetupPersonal.vue';
 import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
@@ -46,13 +47,16 @@ vi.mock('@renderer/utils', () => ({
   isPasswordStrong: (value: string) => ({ result: value.length >= 10, length: value.length >= 10 }),
 }));
 
-const RECOVERY_PHRASE = { words: ['inmate', 'modify', 'chronic'], hash: 'phrase-hash' };
+const RECOVERY_PHRASE = {
+  words: ['inmate', 'modify', 'chronic'],
+  hash: 'phrase-hash',
+} as RecoveryPhrase;
 const RESTORED_KEY = {
   publicKey: { toStringRaw: () => 'public-key-0' },
   toStringRaw: () => 'private-key-0',
 };
 
-const mountStep = (recoveryPhrase?: typeof RECOVERY_PHRASE) =>
+const mountStep = (recoveryPhrase?: RecoveryPhrase) =>
   mount(SetupPersonal, {
     props: { recoveryPhrase },
     global: {

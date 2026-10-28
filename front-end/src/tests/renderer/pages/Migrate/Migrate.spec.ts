@@ -111,7 +111,11 @@ const toPersonal = async (wrapper: Wizard, phrase: typeof PHRASE | null = PHRASE
     recoveryPhrasePassword: phrase ? 'test_password' : null,
   });
 };
-const toOrganization = async (wrapper: Wizard, user = PASSWORD_USER, phrase = PHRASE) => {
+const toOrganization = async (
+  wrapper: Wizard,
+  user: typeof PASSWORD_USER | typeof KEYCHAIN_USER = PASSWORD_USER,
+  phrase: typeof PHRASE | null = PHRASE,
+) => {
   await toPersonal(wrapper, phrase);
   await emitFrom(wrapper, 'SetupPersonal', 'setPersonalUser', user);
 };
@@ -188,7 +192,7 @@ describe('Migrate.vue wizard', () => {
 
     test('a keychain user is logged in as the static user and has no password set', async () => {
       const wrapper = mountWizard();
-      await toOrganization(wrapper, KEYCHAIN_USER as typeof PASSWORD_USER);
+      await toOrganization(wrapper, KEYCHAIN_USER);
 
       await emitFrom(wrapper, 'SetupOrganization', 'setOrganizationSetup', ORG_SETUP, 'jwt-token');
 
@@ -208,7 +212,7 @@ describe('Migrate.vue wizard', () => {
 
     test('no recovery phrase is set on the user when the phrase step was skipped', async () => {
       const wrapper = mountWizard();
-      await toOrganization(wrapper, PASSWORD_USER, null as unknown as typeof PHRASE);
+      await toOrganization(wrapper, PASSWORD_USER, null);
 
       await emitFrom(wrapper, 'SetupOrganization', 'setOrganizationSetup', null, null);
 
