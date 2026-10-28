@@ -20,6 +20,3 @@ Failures in any of these will block the release.
 **User Migration (TTv1 → TTv2)**
 - [ ] Run the TTv1-to-TTv2 migration workflow and verify keys and accounts transfer correctly
 - [ ] Migrated user can connect to the organization and operate normally
-
-**6. Transaction Details**
-- [ ] 6.3.4 Signature status panel shows required vs completed signatures
