@@ -39,7 +39,7 @@ export class TransactionNodesService {
             mirrorNetwork: network,
           },
           user,
-          { }
+          { reviewer: true, onlyUnreviewed: true }
         );
 
         rows = await this.entityManager.query(query.text, query.values);
@@ -89,6 +89,7 @@ export class TransactionNodesService {
             signer: true,
             creator: true,
             observer: true,
+            reviewer: true,
           }
         );
 
@@ -133,6 +134,7 @@ export class TransactionNodesService {
       node.executedAt = row.executed_at ? new Date(row.executed_at).toISOString() : undefined;
       node.status = row.status;
       node.statusCode = row.status_code;
+      node.hasRejection = row.has_rejection;
 
       // Either transaction fields OR group fields
       if (row.group_id === null) {

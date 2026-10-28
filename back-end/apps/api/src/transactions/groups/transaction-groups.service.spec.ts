@@ -233,6 +233,7 @@ describe('TransactionGroupsService', () => {
         gi_seq: 1,
         tx_creator_key_user_id: 1,
         tx_creator_email: 'test@email.com',
+        has_rejection: true,
       },
       {
         tx_id: 11,
@@ -257,6 +258,7 @@ describe('TransactionGroupsService', () => {
         gi_seq: 2,
         tx_creator_key_user_id: 1,
         tx_creator_email: 'test@email.com',
+        has_rejection: false,
       },
     ];
 
@@ -295,6 +297,7 @@ describe('TransactionGroupsService', () => {
           name: 'Tx 1',
           status: 'PENDING',
           mirrorNetwork: 'testnet',
+          hasRejection: true,
         }),
       });
       expect(result.groupItems[1]).toMatchObject({

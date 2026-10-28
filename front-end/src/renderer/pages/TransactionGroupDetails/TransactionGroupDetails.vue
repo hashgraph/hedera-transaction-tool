@@ -240,7 +240,7 @@ const flatBreadCrumb = computed(() => {
 
 /* Handlers */
 const handleBack = async () => {
-  await router.push({ name: 'transactions', query: { tab: router.previousTab ?? undefined } });
+  router.back();
 };
 
 const handleDetails = async (id: number) => {

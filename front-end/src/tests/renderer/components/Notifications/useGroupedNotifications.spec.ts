@@ -46,6 +46,64 @@ const setup = (network: string) => {
   return { ...composable, click };
 };
 
+describe('useGroupedNotifications review notifications', () => {
+  const receiver = (type: NotificationType) => ({
+    isRead: false,
+    notification: { type, additionalData: { network: 'mainnet' } },
+  });
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockNetwork.network = 'mainnet';
+    mockUser.selectedOrganization = { serverUrl };
+  });
+
+  it('describes review notifications and pluralizes the count', () => {
+    mockNotifications.notifications = {
+      [serverUrl]: [receiver(NotificationType.TRANSACTION_INDICATOR_REVIEW)],
+    };
+    const { groupedNotifications } = useGroupedNotifications();
+    expect(groupedNotifications.value[serverUrl]['mainnet'][0].content).toBe(
+      'Transaction ready for review',
+    );
+
+    mockNotifications.notifications = {
+      [serverUrl]: [
+        receiver(NotificationType.TRANSACTION_INDICATOR_REVIEW),
+        receiver(NotificationType.TRANSACTION_INDICATOR_REVIEW),
+      ],
+    };
+    expect(groupedNotifications.value[serverUrl]['mainnet'][0].content).toBe(
+      'Transactions ready for review',
+    );
+  });
+
+  it('opens the Ready for Review tab when a review notification is clicked', async () => {
+    mockNotifications.notifications = {
+      [serverUrl]: [receiver(NotificationType.TRANSACTION_INDICATOR_REVIEW)],
+    };
+    const { groupedNotifications } = useGroupedNotifications();
+    await groupedNotifications.value[serverUrl]['mainnet'][0].action();
+    expect(mockRouterPush).toHaveBeenCalledWith({
+      name: 'transactions',
+      query: { tab: 'Ready for Review' },
+    });
+  });
+
+  it('describes reviewer rejections and marks them read when clicked', async () => {
+    mockNotifications.notifications = {
+      [serverUrl]: [receiver(NotificationType.TRANSACTION_REVIEWER_REJECTION)],
+    };
+    const { groupedNotifications } = useGroupedNotifications();
+    const item = groupedNotifications.value[serverUrl]['mainnet'][0];
+    expect(item.content).toBe('Transaction rejected');
+    await item.action();
+    expect(mockNotifications.markAsRead).toHaveBeenCalledWith(
+      NotificationType.TRANSACTION_REVIEWER_REJECTION,
+    );
+  });
+});
+
 describe('useGroupedNotifications network switching', () => {
   beforeEach(() => {
     vi.clearAllMocks();

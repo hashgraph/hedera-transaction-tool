@@ -1,6 +1,5 @@
 import { SignatureMap } from '@hiero-ledger/sdk';
 
-import type { ITransactionApprover } from '../approvers';
 import type { ITransactionObserverUserId } from '../observers';
 import type { ITransactionSignerUserKey } from '../signers';
 import { type SignerTool } from '../signers';
@@ -56,12 +55,28 @@ export enum TransactionStatus {
   NEW = 'NEW', // unused
   CANCELED = 'CANCELED',
   REJECTED = 'REJECTED',
+  READY_FOR_REVIEW = 'READY FOR REVIEW',
   WAITING_FOR_SIGNATURES = 'WAITING FOR SIGNATURES',
   WAITING_FOR_EXECUTION = 'WAITING FOR EXECUTION',
   EXECUTED = 'EXECUTED',
   FAILED = 'FAILED',
   EXPIRED = 'EXPIRED',
   ARCHIVED = 'ARCHIVED',
+}
+
+export interface ITransactionReviewerListMember {
+  userId: number;
+  accepted: boolean | null;
+  note: string | null;
+  actionedAt: string | null;
+}
+
+export interface ITransactionReviewerList {
+  id: number;
+  name: string | null;
+  description: string | null;
+  threshold: number;
+  members: ITransactionReviewerListMember[];
 }
 
 export interface ITransaction {
@@ -87,14 +102,13 @@ export interface ITransaction {
   creatorId: number;
   creatorEmail: string;
   groupItem?: IGroupItem;
+  hasRejection?: boolean;
 }
 
 export interface ITransactionFull extends ITransaction {
   signers: ITransactionSignerUserKey[];
-  // The back-end no longer sends this field (TransactionApprover was removed in #3185)
-  // — kept optional so old UI paths behind FEATURE_REVIEWER_ENABLED don't assume it exists.
-  approvers?: ITransactionApprover[];
   observers: ITransactionObserverUserId[];
+  reviewerLists?: ITransactionReviewerList[];
 }
 
 export interface IGroupItem {

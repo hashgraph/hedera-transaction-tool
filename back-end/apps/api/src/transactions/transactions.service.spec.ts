@@ -1963,6 +1963,38 @@ describe('TransactionsService', () => {
       expect(result[0].error).toContain(ErrorCodes.TNRS);
     });
 
+    it('should succeed for a transaction still pending review (signing is non-blocking)', async () => {
+      const transaction = {
+        id: transactionId,
+        transactionId: sdkTransaction.transactionId!.toString(),
+        status: TransactionStatus.READY_FOR_REVIEW,
+        transactionBytes: sdkTransaction.toBytes(),
+        mirrorNetwork: 'testnet',
+      };
+      await sdkTransaction.sign(privateKey);
+
+      entityManager.find.mockImplementation(makeFindDispatcher([transaction], []) as any);
+
+      const updateQb = makeUpdateQb();
+      const insertQb = makeInsertQb();
+      const manager = makeTxManager();
+      manager.createQueryBuilder
+        .mockReturnValueOnce(updateQb)
+        .mockReturnValueOnce(insertQb);
+      stubTransaction(manager);
+
+      mockValidatedKeys([privateKey.publicKey]);
+      jest.mocked(userKeysRequiredToSign).mockResolvedValue([1]);
+
+      const result = await service.importSignatures(
+        [{ id: transactionId, signatureMap: sdkTransaction.getSignatures() }],
+        userWithKeys,
+      );
+
+      expect(result).toEqual([{ id: transactionId }]);
+      expect(updateQb.execute).toHaveBeenCalled();
+    });
+
     it('should return error if transaction is expired', async () => {
       const transaction = {
         id: transactionId,

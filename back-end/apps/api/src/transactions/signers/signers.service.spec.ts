@@ -285,6 +285,21 @@ describe('SignersService', () => {
       expect(result).toBe(ErrorCodes.TNRS);
     });
 
+    it('should return null for a transaction still pending review (signing is non-blocking)', () => {
+      const sdkTransaction = new AccountCreateTransaction();
+      const transaction = {
+        id: 1,
+        transactionBytes: sdkTransaction.toBytes(),
+        status: TransactionStatus.READY_FOR_REVIEW,
+      } as Transaction;
+
+      jest.mocked(isExpired).mockReturnValue(false);
+
+      const result = service['validateTransactionStatus'](transaction);
+
+      expect(result).toBeNull();
+    });
+
     it('should return error for expired transaction', () => {
       const sdkTransaction = new AccountCreateTransaction();
       const transaction = {
