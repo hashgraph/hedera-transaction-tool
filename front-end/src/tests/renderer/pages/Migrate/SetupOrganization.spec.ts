@@ -164,3 +164,119 @@ describe('SetupOrganization.vue — email field during migration', () => {
     });
   });
 });
+
+describe('SetupOrganization.vue — routes', () => {
+  const personalUser: PersonalUser = {
+    personalId: 'personal-id-123',
+    useKeychain: false,
+    email: 'user@example.com',
+    password: 'personalPassword',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mocks.healthCheck.mockResolvedValue(undefined);
+    mocks.getVersionStatusForOrg.mockReturnValue('ok');
+    mocks.login.mockResolvedValue({ id: 1, jwtToken: 'jwt-token' });
+  });
+
+  const mountStep = () => mount(SetupOrganization, { props: { personalUser }, global: { stubs } });
+
+  const fillAndSubmit = async (wrapper: ReturnType<typeof mountStep>, url = 'https://org.example.com') => {
+    await wrapper.find('[data-testid="input-organization-url"]').setValue(url);
+    await wrapper.find('[data-testid="input-temporary-organization-password"]').setValue('tempPass123');
+    await wrapper.find('[data-testid="input-new-organization-password"]').setValue('newPass456');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+  };
+
+  test('Skip continues without an organization and without contacting any server', async () => {
+    const wrapper = mountStep();
+
+    await wrapper.find('[data-testid="button-migration-skip-organization-setup"]').trigger('click');
+
+    expect(wrapper.emitted('setOrganizationSetup')).toEqual([[null, null]]);
+    expect(mocks.healthCheck).not.toHaveBeenCalled();
+    expect(mocks.login).not.toHaveBeenCalled();
+  });
+
+  test('Cancel stops the migration', async () => {
+    const wrapper = mountStep();
+
+    await wrapper.find('[data-testid="button-migration-cancel"]').trigger('click');
+
+    expect(wrapper.emitted('migration:cancel')).toHaveLength(1);
+    expect(wrapper.emitted('setOrganizationSetup')).toBeUndefined();
+  });
+
+  test('a successful login passes the entered setup and the jwt token to the wizard', async () => {
+    const wrapper = mountStep();
+
+    await fillAndSubmit(wrapper);
+
+    expect(mocks.healthCheck).toHaveBeenCalledWith('https://org.example.com');
+    expect(mocks.login).toHaveBeenCalledWith(
+      'https://org.example.com',
+      'user@example.com',
+      'tempPass123',
+    );
+    expect(wrapper.emitted('setOrganizationSetup')).toEqual([
+      [
+        {
+          organizationURL: 'https://org.example.com',
+          organizationEmail: 'user@example.com',
+          organizationNickname: 'Organization 1',
+          temporaryOrganizationPassword: 'tempPass123',
+          newOrganizationPassword: 'newPass456',
+        },
+        'jwt-token',
+      ],
+    ]);
+  });
+
+  test('an app version below the organization minimum blocks the setup', async () => {
+    mocks.getVersionStatusForOrg.mockReturnValue('belowMinimum');
+    const wrapper = mountStep();
+
+    await fillAndSubmit(wrapper);
+
+    expect(wrapper.text()).toContain('no longer supported by this organization');
+    expect(mocks.login).not.toHaveBeenCalled();
+    expect(wrapper.emitted('setOrganizationSetup')).toBeUndefined();
+  });
+
+  test('a failed login shows the error and does not continue', async () => {
+    mocks.login.mockRejectedValue(new Error('Invalid credentials'));
+    const wrapper = mountStep();
+
+    await fillAndSubmit(wrapper);
+
+    expect(wrapper.text()).toContain('Invalid credentials');
+    expect(wrapper.emitted('setOrganizationSetup')).toBeUndefined();
+  });
+
+  test('retrying after a failed login does not repeat the version check for the same url', async () => {
+    mocks.login.mockRejectedValueOnce(new Error('Invalid credentials'));
+    const wrapper = mountStep();
+
+    await fillAndSubmit(wrapper);
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.healthCheck).toHaveBeenCalledTimes(1);
+    expect(mocks.login).toHaveBeenCalledTimes(2);
+    expect(wrapper.emitted('setOrganizationSetup')).toHaveLength(1);
+  });
+
+  test('required fields are validated before any request is made', async () => {
+    const wrapper = mountStep();
+
+    await wrapper.find('[data-testid="input-organization-url"]').setValue('not a url');
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.healthCheck).not.toHaveBeenCalled();
+    expect(wrapper.emitted('setOrganizationSetup')).toBeUndefined();
+  });
+});
+
