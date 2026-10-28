@@ -8,10 +8,15 @@ import {
 } from '@shared/interfaces';
 
 import { computed, onBeforeMount, ref, watch, type Ref } from 'vue';
-import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter, type _RouterClassic } from 'vue-router';
 
 import { Transaction as SDKTransaction } from '@hiero-ledger/sdk';
-import { FEATURE_REVIEWER_ENABLED, FEATURE_EXTERNAL_BADGE_ENABLED, TRANSACTION_ACTION } from '@shared/constants';
+import {
+  FEATURE_REVIEWER_ENABLED,
+  FEATURE_EXTERNAL_BADGE_ENABLED,
+  readyToSignTitle,
+  TRANSACTION_ACTION,
+} from '@shared/constants';
 import { CommonNetwork } from '@shared/enums';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -21,6 +26,7 @@ import useContactsStore from '@renderer/stores/storeContacts';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
+import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards';
 
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -47,7 +53,6 @@ import {
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
-import ReadOnlyApproversList from '@renderer/components/Approvers/ReadOnlyApproversList.vue';
 
 import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
@@ -73,10 +78,13 @@ const contacts = useContactsStore();
 const notifications = useNotificationsStore();
 
 /* Composables */
-const router = useRouter();
+const router = useRouter() as _RouterClassic & Record<string, string>;
 useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   const parsed = parseTransactionActionPayload(payload);
-  if (!parsed) { await fetchTransactionOnNotif(); return; } // Legacy fallback
+  if (!parsed) {
+    await fetchTransactionOnNotif();
+    return;
+  } // Legacy fallback
 
   // If initial fetch hasn't completed yet, fall back to a full refetch
   if (!orgTransaction.value && !localTransaction.value) {
@@ -86,8 +94,10 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
 
   const currentId = Number(formattedId.value);
   const currentGroupId = orgTransaction.value?.groupItem?.groupId;
-  if (parsed.transactionIds.includes(currentId) ||
-      (currentGroupId && parsed.groupIds.includes(currentGroupId))) {
+  if (
+    parsed.transactionIds.includes(currentId) ||
+    (currentGroupId && parsed.groupIds.includes(currentGroupId))
+  ) {
     await fetchTransactionOnNotif();
   }
 });
@@ -143,7 +153,11 @@ const creatorSignatureMessage = computed(() =>
 );
 
 const showExternal = computed(() => {
-  return FEATURE_EXTERNAL_BADGE_ENABLED &&  isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin;
+  return (
+    FEATURE_EXTERNAL_BADGE_ENABLED &&
+    isLoggedInOrganization(user.selectedOrganization) &&
+    user.selectedOrganization.admin
+  );
 });
 
 const transactionIsInProgress = computed(
@@ -163,6 +177,32 @@ const isTransactionFailed = computed(() => {
 const isManualFlagVisible = computed(() => {
   return orgTransaction.value?.isManual && transactionIsInProgress.value;
 });
+
+// Only shown to a signer who opened the details from the Ready to Sign tab. Reviewers and
+// In Progress viewers already get this context from the stepper.
+const isPendingReview = computed(
+  () =>
+    FEATURE_REVIEWER_ENABLED &&
+    orgTransaction.value?.status === TransactionStatus.READY_FOR_REVIEW &&
+    router.previousTab === readyToSignTitle,
+);
+
+// Rejection is a per-reviewer flag (TransactionReviewerListMember.accepted === false), not a
+// transaction status — submitReview never moves the transaction to a REJECTED state on
+// rejection, it stays READY_FOR_REVIEW, so this has to be computed from the member rows.
+const rejectedMembers = computed(() =>
+  (orgTransaction.value?.reviewerLists ?? [])
+    .flatMap(list => list.members)
+    .filter(member => member.accepted === false),
+);
+
+const hasRejection = computed(() => FEATURE_REVIEWER_ENABLED && rejectedMembers.value.length > 0);
+
+const isReviewInProgress = computed(() => isInProgressStatus(orgTransaction.value?.status));
+
+const rejectionNotes = computed(() =>
+  rejectedMembers.value.map(member => member.note).filter((note): note is string => !!note),
+);
 
 const executedAtLabel = computed(() => {
   switch (orgTransaction.value?.status) {
@@ -389,13 +429,38 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                 <TransactionDetailsStatusStepper :transaction="orgTransaction" />
               </div>
 
-              <!-- Approvers -->
-              <div
-                v-if="FEATURE_REVIEWER_ENABLED && orgTransaction?.approvers && orgTransaction.approvers.length > 0"
-                class="mt-5"
-              >
-                <h4 class="text-title text-bold">Approvers</h4>
-                <ReadOnlyApproversList :approvers="orgTransaction?.approvers" />
+              <!-- Review warnings -->
+              <div v-if="hasRejection || isPendingReview" class="mt-4">
+                <div
+                  v-if="hasRejection"
+                  class="alert mb-0"
+                  :class="
+                    isReviewInProgress
+                      ? 'alert-danger'
+                      : 'bg-danger-subtle border-danger-subtle text-danger-emphasis'
+                  "
+                  role="alert"
+                >
+                  <p class="text-small mb-1" :class="{ 'text-bold': isReviewInProgress }">
+                    <i class="bi bi-x-circle-fill me-1"></i
+                    >{{
+                      isReviewInProgress
+                        ? 'This transaction was rejected by a reviewer'
+                        : 'A reviewer rejected this transaction'
+                    }}
+                  </p>
+                  <ul v-if="rejectionNotes.length > 0" class="mb-0 ps-4">
+                    <li v-for="(note, i) in rejectionNotes" :key="i" class="text-small">
+                      {{ note }}
+                    </li>
+                  </ul>
+                </div>
+                <div v-else-if="isPendingReview" class="alert alert-warning" role="alert">
+                  <p class="text-small mb-0">
+                    <i class="bi bi-exclamation-triangle-fill me-1"></i>This transaction is awaiting
+                    review
+                  </p>
+                </div>
               </div>
 
               <hr v-if="isLoggedInOrganization(user.selectedOrganization)" class="separator my-5" />

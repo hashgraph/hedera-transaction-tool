@@ -309,6 +309,15 @@ describe('TransactionGroupDetails.vue', () => {
     );
   });
 
+  test('back arrow goes back in history so the list keeps its page', async () => {
+    const wrapper = await mountGroupDetails();
+
+    await wrapper.get('[log-label="back-to-transactions"]').trigger('click');
+
+    expect(routerMock.back).toHaveBeenCalledTimes(1);
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
   test('uses one Cancel All API call and refreshes group state after a failed cancel attempt', async () => {
     vi.mocked(cancelTransactionGroup).mockRejectedValueOnce(new Error('cancel failed'));
     const wrapper = await mountGroupDetails();

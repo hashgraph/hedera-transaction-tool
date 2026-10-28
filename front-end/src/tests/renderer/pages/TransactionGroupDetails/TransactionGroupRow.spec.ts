@@ -198,3 +198,49 @@ describe('manual badge', () => {
     expect(wrapper.find('.badge.bg-info').exists()).toBe(false);
   });
 });
+
+describe('rejected badge', () => {
+  async function renderWithRejection(hasRejection: boolean | undefined, reviewerEnabled: boolean) {
+    vi.resetModules();
+    if (reviewerEnabled) {
+      vi.doMock('@shared/constants', async importOriginal => {
+        const actual = await importOriginal<typeof import('@shared/constants')>();
+        return { ...actual, FEATURE_REVIEWER_ENABLED: true };
+      });
+    } else {
+      vi.doUnmock('@shared/constants');
+    }
+
+    const { default: TransactionGroupRowFresh } = await import(
+      '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue'
+    );
+
+    const item = groupItem(new AccountCreateTransaction());
+    item.transaction.hasRejection = hasRejection;
+
+    return mount(TransactionGroupRowFresh, {
+      props: { groupItem: item, rowIndex: 0 },
+      global: {
+        stubs: { TransactionId: true, DateTimeString: true, SignSingleButton: true, AppButton: true },
+      },
+    });
+  }
+
+  test('shows the Rejected badge when hasRejection is true and the flag is on', async () => {
+    const wrapper = await renderWithRejection(true, true);
+    expect(wrapper.find('.badge.bg-danger').exists()).toBe(true);
+    expect(wrapper.find('.badge.bg-danger').text()).toBe('Rejected');
+  });
+
+  test('omits the Rejected badge when hasRejection is false or undefined', async () => {
+    expect((await renderWithRejection(false, true)).find('.badge.bg-danger').exists()).toBe(false);
+    expect((await renderWithRejection(undefined, true)).find('.badge.bg-danger').exists()).toBe(
+      false,
+    );
+  });
+
+  test('omits the Rejected badge when the flag is off even if hasRejection is true', async () => {
+    const wrapper = await renderWithRejection(true, false);
+    expect(wrapper.find('.badge.bg-danger').exists()).toBe(false);
+  });
+});

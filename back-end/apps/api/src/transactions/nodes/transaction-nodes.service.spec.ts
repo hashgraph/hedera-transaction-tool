@@ -88,6 +88,7 @@ describe('TransactionNodesService', () => {
     is_manual: false,
     group_item_count: null,
     group_collected_count: null,
+    has_rejection: false,
   };
 
   const singleTransactionRow2 = {
@@ -105,6 +106,7 @@ describe('TransactionNodesService', () => {
     is_manual: false,
     group_item_count: null,
     group_collected_count: null,
+    has_rejection: false,
   };
 
   const groupRow1 = {
@@ -122,6 +124,7 @@ describe('TransactionNodesService', () => {
     is_manual: null,
     group_item_count: 2,
     group_collected_count: 2,
+    has_rejection: false,
   };
 
   const groupRow2 = {
@@ -139,6 +142,7 @@ describe('TransactionNodesService', () => {
     is_manual: null,
     group_item_count: 2,
     group_collected_count: 1,
+    has_rejection: true,
   };
 
   const groupRow3 = {
@@ -156,6 +160,7 @@ describe('TransactionNodesService', () => {
     is_manual: null,
     group_item_count: 1,
     group_collected_count: 1,
+    has_rejection: true,
   };
 
   //
@@ -177,6 +182,7 @@ describe('TransactionNodesService', () => {
   singleTransactionNode1.isManual = singleTransactionRow1.is_manual;
   singleTransactionNode1.groupItemCount = undefined;
   singleTransactionNode1.groupCollectedCount = undefined;
+  singleTransactionNode1.hasRejection = singleTransactionRow1.has_rejection;
 
   const singleTransactionNode2 = new TransactionNodeDto();
   singleTransactionNode2.transactionId = singleTransactionRow2.transaction_id;
@@ -193,6 +199,7 @@ describe('TransactionNodesService', () => {
   singleTransactionNode2.isManual = singleTransactionRow2.is_manual;
   singleTransactionNode2.groupItemCount = undefined;
   singleTransactionNode2.groupCollectedCount = undefined;
+  singleTransactionNode2.hasRejection = singleTransactionRow2.has_rejection;
 
   const groupNode1 = new TransactionNodeDto();
   groupNode1.transactionId = undefined;
@@ -209,6 +216,7 @@ describe('TransactionNodesService', () => {
   groupNode1.isManual = undefined;
   groupNode1.groupItemCount = groupRow1.group_item_count;
   groupNode1.groupCollectedCount = groupRow1.group_collected_count;
+  groupNode1.hasRejection = groupRow1.has_rejection;
 
   const groupNode2 = new TransactionNodeDto();
   groupNode2.transactionId = undefined;
@@ -225,6 +233,7 @@ describe('TransactionNodesService', () => {
   groupNode2.isManual = undefined;
   groupNode2.groupItemCount = groupRow2.group_item_count;
   groupNode2.groupCollectedCount = groupRow2.group_collected_count;
+  groupNode2.hasRejection = groupRow2.has_rejection;
 
   const groupNode3 = new TransactionNodeDto();
   groupNode3.transactionId = undefined;
@@ -241,6 +250,7 @@ describe('TransactionNodesService', () => {
   groupNode3.isManual = undefined;
   groupNode3.groupItemCount = groupRow3.group_item_count;
   groupNode3.groupCollectedCount = groupRow3.group_collected_count;
+  groupNode3.hasRejection = groupRow3.has_rejection;
 
   const allNodes = [
     singleTransactionNode1,
@@ -307,7 +317,7 @@ describe('TransactionNodesService', () => {
           mirrorNetwork: TEST_NETWORK,
         },
         user,
-        { }
+        { reviewer: true, onlyUnreviewed: true }
       );
 
       expect(entityManager.query).toHaveBeenCalledWith(mockQuery.text, mockQuery.values);
@@ -419,6 +429,7 @@ describe('TransactionNodesService', () => {
           signer: true,
           creator: true,
           observer: true,
+          reviewer: true,
         }
       );
 

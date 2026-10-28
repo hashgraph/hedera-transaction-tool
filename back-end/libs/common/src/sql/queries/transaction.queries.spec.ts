@@ -6,6 +6,8 @@ import {
   TransactionCachedAccount,
   TransactionGroup,
   TransactionGroupItem,
+  TransactionReviewerList,
+  TransactionReviewerListMember,
   TransactionSigner,
   TransactionStatus,
   TransactionType,
@@ -14,7 +16,7 @@ import {
   UserStatus,
 } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
-import { getTransactionNodesQuery, SqlBuilderService } from '@app/common';
+import { getTransactionGroupItemsQuery, getTransactionNodesQuery, SqlBuilderService } from '@app/common';
 
 describe('getTransactionNodesForUser - Integration', () => {
   let dataSource: DataSource;
@@ -34,6 +36,8 @@ describe('getTransactionNodesForUser - Integration', () => {
 
   afterEach(async () => {
     const entities = [
+      TransactionReviewerListMember,
+      TransactionReviewerList,
       TransactionSigner,
       TransactionCachedAccount,
       TransactionGroupItem,
@@ -386,7 +390,7 @@ describe('getTransactionNodesForUser - Integration', () => {
       expect(result[0].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
     });
 
-    it('should return null status when transactions have mixed statuses', async () => {
+    it('should return the earliest-stage active status when transactions have mixed active statuses', async () => {
       const user = await createTestUserWithKeys(dataSource);
       const group = await createTestTransactionGroup(dataSource);
 
@@ -406,6 +410,59 @@ describe('getTransactionNodesForUser - Integration', () => {
           TransactionStatus.WAITING_FOR_SIGNATURES,
           TransactionStatus.WAITING_FOR_EXECUTION,
         ],
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result[0].status).toBe(TransactionStatus.WAITING_FOR_SIGNATURES);
+    });
+
+    it('should prioritize READY_FOR_REVIEW over WAITING_FOR_SIGNATURES in a mixed group', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.READY_FOR_REVIEW,
+        groupId: group.id,
+        seq: 0,
+      });
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      const filters = {
+        statuses: [
+          TransactionStatus.READY_FOR_REVIEW,
+          TransactionStatus.WAITING_FOR_SIGNATURES,
+        ],
+      };
+
+      const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result[0].status).toBe(TransactionStatus.READY_FOR_REVIEW);
+    });
+
+    it('should return null status when transactions have mixed terminal statuses', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.EXECUTED,
+        groupId: group.id,
+        seq: 0,
+      });
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.FAILED,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      const filters = {
+        statuses: [TransactionStatus.EXECUTED, TransactionStatus.FAILED],
       };
 
       const query = getTransactionNodesQuery(sqlBuilder, filters, user, signerRoles);
@@ -626,6 +683,263 @@ describe('getTransactionNodesForUser - Integration', () => {
       expect(Number(result[0].group_collected_count)).toBe(1);
     });
   });
+
+  describe('reviewer role flag', () => {
+    it('should show transaction to reviewer who has not yet acted (onlyUnreviewed: true)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const reviewer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, reviewer, { accepted: null });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, reviewer, {
+        reviewer: true,
+        onlyUnreviewed: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should NOT show transaction to reviewer who has already accepted (onlyUnreviewed: true)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const reviewer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, reviewer, { accepted: true });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, reviewer, {
+        reviewer: true,
+        onlyUnreviewed: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should NOT show transaction to reviewer who has already rejected (onlyUnreviewed: true)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const reviewer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, reviewer, { accepted: false });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, reviewer, {
+        reviewer: true,
+        onlyUnreviewed: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+
+    it('should show transaction to reviewer even after acting (onlyUnreviewed: false)', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const reviewer = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, reviewer, { accepted: true });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, reviewer, {
+        reviewer: true,
+        onlyUnreviewed: false,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].transaction_id).toBe(transaction.id);
+    });
+
+    it('should NOT show transaction to a user who is not on the reviewer list', async () => {
+      const creator = await createTestUserWithKeys(dataSource);
+      const reviewer = await createTestUserWithKeys(dataSource);
+      const outsider = await createTestUserWithKeys(dataSource);
+
+      const transaction = await createTestTransaction(dataSource, creator, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, reviewer, { accepted: null });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, outsider, {
+        reviewer: true,
+        onlyUnreviewed: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('reviewer status flags', () => {
+    it('should report no rejection when there are no reviewer lists', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].has_rejection).toBe(false);
+    });
+
+    it('should report has_rejection when a reviewer rejected, even if the list is otherwise satisfied', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const transaction = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, {
+        accepted: false,
+        note: 'Not approved',
+      });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].has_rejection).toBe(true);
+    });
+
+    it('should roll up has_rejection across all transactions in a group', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      const txA = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      // Only one member of the group has a reviewer list, and it's rejected — the group row
+      // should surface that even though the representative row is a different transaction.
+      const list = await createTestReviewerList(dataSource, txA, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, { accepted: false });
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, signerRoles);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].group_id).toBe(group.id);
+      expect(result[0].has_rejection).toBe(true);
+    });
+
+    it('should still report has_rejection after the current signer signs the rejected item (onlyUnsigned: true)', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      const txA = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      const list = await createTestReviewerList(dataSource, txA, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, { accepted: false });
+
+      // User already signed the rejected transaction; the other group member is still unsigned.
+      await createTransactionSigner(dataSource, txA, user.keys[0]);
+
+      const query = getTransactionNodesQuery(sqlBuilder, defaultFilters, user, {
+        ...signerRoles,
+        onlyUnsigned: true,
+      });
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].group_id).toBe(group.id);
+      expect(result[0].has_rejection).toBe(true);
+    });
+  });
+
+  describe('getTransactionGroupItemsQuery - has_rejection', () => {
+    it('should report no rejection when there are no reviewer lists', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+      await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+
+      const query = getTransactionGroupItemsQuery(sqlBuilder, group.id, user);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].has_rejection).toBe(false);
+    });
+
+    it('should report has_rejection for a transaction a reviewer rejected', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+      const transaction = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      const list = await createTestReviewerList(dataSource, transaction, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, { accepted: false });
+
+      const query = getTransactionGroupItemsQuery(sqlBuilder, group.id, user);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].has_rejection).toBe(true);
+    });
+
+    it('should scope has_rejection per transaction row, not roll it up across the group', async () => {
+      const user = await createTestUserWithKeys(dataSource);
+      const group = await createTestTransactionGroup(dataSource);
+
+      const rejectedTx = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 0,
+      });
+      const list = await createTestReviewerList(dataSource, rejectedTx, { threshold: 1 });
+      await createTestReviewerListMember(dataSource, list, user, { accepted: false });
+
+      const cleanTx = await createTestTransaction(dataSource, user, {
+        status: TransactionStatus.WAITING_FOR_SIGNATURES,
+        groupId: group.id,
+        seq: 1,
+      });
+
+      const query = getTransactionGroupItemsQuery(sqlBuilder, group.id, user);
+      const result = await dataSource.query(query.text, query.values);
+
+      expect(result).toHaveLength(2);
+      const rejectedRow = result.find((r: { tx_id: number }) => r.tx_id === rejectedTx.id);
+      const cleanRow = result.find((r: { tx_id: number }) => r.tx_id === cleanTx.id);
+      expect(rejectedRow.has_rejection).toBe(true);
+      expect(cleanRow.has_rejection).toBe(false);
+    });
+  });
 });
 
 // --- Helpers ---
@@ -824,4 +1138,39 @@ async function linkSignerToTransaction(
     isReceiver: options?.isReceiver ?? false,
   });
   await dataSource.getRepository(TransactionCachedAccount).save(transactionCachedAccount);
+}
+
+async function createTestReviewerList(
+  dataSource: DataSource,
+  transaction: Transaction,
+  options: { threshold: number },
+): Promise<TransactionReviewerList> {
+  const list = dataSource.getRepository(TransactionReviewerList).create({
+    transactionId: transaction.id,
+    name: 'Test Reviewer List',
+    description: null,
+    threshold: options.threshold,
+    members: [],
+  });
+  await dataSource.getRepository(TransactionReviewerList).save(list);
+  return list;
+}
+
+async function createTestReviewerListMember(
+  dataSource: DataSource,
+  list: TransactionReviewerList,
+  user: User,
+  options: { accepted: boolean | null; note?: string },
+): Promise<TransactionReviewerListMember> {
+  const member = dataSource.getRepository(TransactionReviewerListMember).create({
+    listId: list.id,
+    userId: user.id,
+    userKeyId: user.keys[0]?.id ?? null,
+    signature: null,
+    accepted: options.accepted,
+    note: options.note ?? null,
+    actionedAt: options.accepted === null ? null : new Date(),
+  } as DeepPartial<TransactionReviewerListMember>);
+  await dataSource.getRepository(TransactionReviewerListMember).save(member);
+  return member;
 }

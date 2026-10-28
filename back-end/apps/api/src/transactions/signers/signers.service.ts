@@ -208,7 +208,8 @@ export class SignersService {
   private validateTransactionStatus(transaction: Transaction): string | null {
     if (
       transaction.status !== TransactionStatus.WAITING_FOR_SIGNATURES &&
-      transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION
+      transaction.status !== TransactionStatus.WAITING_FOR_EXECUTION &&
+      transaction.status !== TransactionStatus.READY_FOR_REVIEW
     ) {
       return ErrorCodes.TNRS;
     }

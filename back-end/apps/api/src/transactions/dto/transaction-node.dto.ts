@@ -43,4 +43,7 @@ export class TransactionNodeDto implements ITransactionNode {
 
   @Expose()
   groupCollectedCount?: number;
+
+  @Expose()
+  hasRejection?: boolean;
 }

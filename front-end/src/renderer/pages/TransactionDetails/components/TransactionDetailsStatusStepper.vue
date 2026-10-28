@@ -15,7 +15,7 @@ const props = defineProps<{
 
 /* Computed */
 const hasApproveStep = computed(() => {
-  return FEATURE_REVIEWER_ENABLED && (props.transaction.approvers?.length ?? 0) > 0;
+  return FEATURE_REVIEWER_ENABLED && (props.transaction.reviewerLists?.length ?? 0) > 0;
 });
 
 const stepperItems = computed(() => {
@@ -34,7 +34,7 @@ const stepperItems = computed(() => {
   }
 
   if (hasApproveStep.value) {
-    items.push({ title: 'Awaiting Approval', name: 'Awaiting Approval' });
+    items.push({ title: 'Awaiting Review', name: 'Awaiting Review' });
   }
 
   items.push({ title: 'Collecting Signatures', name: 'Collecting Signatures' });
@@ -78,8 +78,10 @@ const stepperActiveIndex = computed(() => {
   switch (props.transaction.status) {
     case TransactionStatus.NEW:
       return 0;
+    case TransactionStatus.READY_FOR_REVIEW:
+      // The "Awaiting Review" step is the current one while review is pending.
+      return hasApproveStep.value ? 1 : 0;
     case TransactionStatus.REJECTED:
-      // case TransactionStatus.WAITING_FOR_APPROVAL:
       return 1;
     case TransactionStatus.WAITING_FOR_SIGNATURES:
       return hasApproveStep.value ? 2 : 1;

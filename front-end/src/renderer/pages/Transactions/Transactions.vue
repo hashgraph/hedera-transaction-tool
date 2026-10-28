@@ -12,6 +12,7 @@ import {
 } from '@shared/interfaces';
 import {
   draftsTitle,
+  FEATURE_REVIEWER_ENABLED,
   historyTitle,
   inProgressTitle,
   readyForExecutionTitle,
@@ -68,6 +69,10 @@ const withLoader = useLoader();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
 /* State */
+// The Ready for Review tab itself is not gated by FEATURE_REVIEWER_ENABLED — it's already
+// visible, and hiding/showing it based on the flag would orphan a bookmarked or
+// history-restored `?tab=Ready for Review` URL once the flag changes. Review-specific
+// behavior (primary-tab auto-selection, badges, etc.) still checks the flag independently.
 const organizationTabs: TabItem[] = [
   { title: draftsTitle },
   { title: readyForReviewTitle },
@@ -124,7 +129,7 @@ const activeTabs = computed(() => {
 
   const readyToApproveNotifications =
     networkFilteredNotifications.value?.filter(
-      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_APPROVE,
+      nr => nr.notification.type === NotificationType.TRANSACTION_INDICATOR_REVIEW,
     ) || [];
 
   const readyToSignNotifications =
@@ -294,6 +299,7 @@ async function findPrimaryTabTitle(): Promise<string> {
 
   if (!isLoggedInOrganization(user.selectedOrganization)) return historyTitle;
   if (user.selectedOrganization.isPasswordTemporary) return historyTitle;
+  if (!FEATURE_REVIEWER_ENABLED) return readyToSignTitle;
 
   const nodes = await getTransactionNodes(
     user.selectedOrganization.serverUrl,
