@@ -161,6 +161,29 @@ describe('group transfer summary', () => {
   });
 });
 
+describe('details navigation', () => {
+  test('clicking Details emits handleDetails with the group item transaction id', async () => {
+    const wrapper = mount(TransactionGroupRow, {
+      props: { groupItem: groupItem(new AccountCreateTransaction()), rowIndex: 0 },
+      global: {
+        stubs: {
+          TransactionId: true,
+          DateTimeString: true,
+          SignSingleButton: true,
+          AppButton: {
+            emits: ['click'],
+            template: '<button v-bind="$attrs" @click="$emit(\'click\', $event)"><slot /></button>',
+          },
+        },
+      },
+    });
+
+    await wrapper.get('[data-testid="button-group-transaction-0"]').trigger('click');
+
+    expect(wrapper.emitted('handleDetails')).toEqual([[1]]);
+  });
+});
+
 describe('manual badge', () => {
   test('shows the Manual badge when the transaction is manual', async () => {
     const wrapper = render(new AccountCreateTransaction());
