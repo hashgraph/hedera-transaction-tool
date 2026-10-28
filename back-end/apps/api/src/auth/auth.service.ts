@@ -106,10 +106,12 @@ export class AuthService {
   }
 
   /* Create OTP and send it to the user */
-  async createOtp(email: string): Promise<{ token: string } | null> {
+  async createOtp(email: string): Promise<{ token: string }> {
     const user = await this.usersService.getUser({ email });
 
-    if (!user) return null;
+    // Unknown emails get an identically shaped response so this endpoint can't be
+    // used to test whether an account exists (the token is useless for them).
+    if (!user) return { token: this.getOtpTokenForEmail(email) };
 
     // A legitimate new request always gets a clean slate of attempts, and
     // replaces whatever code (if any) was previously pending.
@@ -132,11 +134,14 @@ export class AuthService {
     // header on /verify-reset keep working. Remove once such clients are no
     // longer supported; what actually authorizes /verify-reset is the email+code
     // pair, not this token.
-    const token = this.getOtpToken(
-      { email: user.email, verified: false },
+    return { token: this.getOtpTokenForEmail(user.email) };
+  }
+
+  private getOtpTokenForEmail(email: string): string {
+    return this.getOtpToken(
+      { email, verified: false },
       this.configService.get<number>('OTP_EXPIRATION') ?? 2,
     );
-    return { token };
   }
 
   /**
