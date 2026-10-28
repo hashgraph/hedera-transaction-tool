@@ -2,14 +2,21 @@ services:
   api:
     volumes:
       - .:/usr/src/app/back-end
+      # Preserve image-installed dependencies
+      - /usr/src/app/back-end/node_modules
+      - /usr/src/app/back-end/apps/api/node_modules
 
   chain:
     volumes:
       - .:/usr/src/app/back-end
+      - /usr/src/app/back-end/node_modules
+      - /usr/src/app/back-end/apps/chain/node_modules
 
   notifications:
     volumes:
       - .:/usr/src/app/back-end
+      - /usr/src/app/back-end/node_modules
+      - /usr/src/app/back-end/apps/notifications/node_modules
 
   database:
     volumes:
