@@ -145,10 +145,10 @@ describe('AuthController', () => {
   });
 
   describe('reset-password', () => {
-    it('should have no return value', async () => {
-      authService.createOtp.mockResolvedValue(null);
+    it('should return the service result verbatim', async () => {
+      authService.createOtp.mockResolvedValue({ token: 'token' });
 
-      expect(await controller.createOtp({ email: 'john@test.com' })).toBeNull();
+      expect(await controller.createOtp({ email: 'john@test.com' })).toEqual({ token: 'token' });
     });
   });
 

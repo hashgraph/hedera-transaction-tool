@@ -437,11 +437,14 @@ describe('AuthService', () => {
     const email = '';
 
     userService.getUser.mockResolvedValue(null);
+    jwtService.sign.mockReturnValue('unverifiedToken');
 
-    await service.createOtp(email);
+    const result = await service.createOtp(email);
 
     expect(otpStoreService.resetFailedAttempts).not.toHaveBeenCalled();
     expect(otpStoreService.storeCodeHash).not.toHaveBeenCalled();
+    // Same shape as for a known user, so existence isn't revealed
+    expect(result).toEqual({ token: 'unverifiedToken' });
   });
 
   it('should not create otp if opt secret not set', async () => {
