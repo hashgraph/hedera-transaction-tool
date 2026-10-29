@@ -141,7 +141,9 @@ function fetchTransactionsToSign(
     const nodes = JSON.parse(res.body as string) as TransactionNode[];
     // Map transactionId from new endpoint to id for compatibility
     const transactions: SignableTransaction[] = nodes
-      .filter((node) => node.transactionId !== undefined)
+      // READY_TO_SIGN also returns READY FOR REVIEW items (hidden from signers by the UI);
+      // they aren't pre-signed by the seed, so skip them
+      .filter((node) => node.transactionId !== undefined && node.status !== 'READY FOR REVIEW')
       .slice(0, targetCount)
       .map((node) => ({
         id: node.transactionId as number,
