@@ -3,6 +3,7 @@ import { safeStorage } from 'electron';
 import { KeyPair, Prisma } from '@prisma/client';
 
 import { encrypt, decrypt, isLegacyBlob } from '@main/utils/crypto';
+import { CRYPTO_CONCURRENCY, mapWithConcurrency } from '@main/utils/concurrency';
 
 import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
@@ -64,33 +65,25 @@ export const storeKeyPair = async (
   }
 };
 
-// Change decryption password
-export const changeDecryptionPassword = async (
+// Re-encrypts every key pair in memory. Throws before anything is written if one cannot be decrypted.
+export const prepareKeyPairsReencryption = async (
   userId: string,
   oldPassword: string,
   newPassword: string,
-) => {
-  const prisma = getPrismaClient();
-
+): Promise<Prisma.KeyPairUpdateArgs[]> => {
   const keyPairs = await getKeyPairs(userId, oldPassword);
 
-  for (let i = 0; i < keyPairs.length; i++) {
-    const keyPair = keyPairs[i];
-    const decryptedPrivateKey = await decrypt(keyPair.private_key, oldPassword);
-    const encryptedPrivateKey = await encrypt(decryptedPrivateKey, newPassword);
-
-    await prisma.keyPair.update({
-      where: {
-        id: keyPair.id,
-        public_key: keyPair.public_key,
-      },
-      data: {
-        private_key: encryptedPrivateKey,
-      },
-    });
-  }
-
-  return await getKeyPairs(userId, newPassword);
+  return await mapWithConcurrency(
+    keyPairs,
+    CRYPTO_CONCURRENCY,
+    async (keyPair): Promise<Prisma.KeyPairUpdateArgs> => {
+      const decryptedPrivateKey = await decrypt(keyPair.private_key, oldPassword);
+      return {
+        where: { id: keyPair.id, public_key: keyPair.public_key },
+        data: { private_key: await encrypt(decryptedPrivateKey, newPassword) },
+      };
+    },
+  );
 };
 
 // Decrypt user's private key

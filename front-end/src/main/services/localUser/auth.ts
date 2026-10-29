@@ -3,7 +3,8 @@ import { randomUUID } from 'crypto';
 import { getPrismaClient } from '@main/db/prisma';
 import { hash, dualCompareHash } from '@main/utils/crypto';
 
-import { changeDecryptionPassword } from './keyPairs';
+import { prepareKeyPairsReencryption } from './keyPairs';
+import { prepareCredentialsReencryption } from './organizationCredentials';
 
 export const register = async (email: string, password: string) => {
   const prisma = getPrismaClient();
@@ -43,7 +44,7 @@ export const login = async (email: string, password: string, _autoRegister?: boo
 
   /* Temporary to migrate users to new hashing algorithm */
   if (isBcrypt) {
-    await updatePassword(user.id, password);
+    await rehashPassword(user.id, password);
   }
 
   return user;
@@ -84,16 +85,34 @@ export const comparePasswords = async (userId: string, password: string) => {
 export const changePassword = async (userId: string, oldPassword: string, newPassword: string) => {
   const isOldCorrect = await comparePasswords(userId, oldPassword);
 
-  if (isOldCorrect) {
-    await updatePassword(userId, newPassword);
-  } else {
+  if (!isOldCorrect) {
     throw new Error('Incorrect current password');
   }
 
-  await changeDecryptionPassword(userId, oldPassword, newPassword);
+  // Everything is re-encrypted in memory first, then the password hash and all re-encrypted
+  // data are written in a single transaction, so a failure never leaves a mix of old and new.
+  const keyPairUpdates = await prepareKeyPairsReencryption(userId, oldPassword, newPassword);
+  const credentialUpdates = await prepareCredentialsReencryption(userId, oldPassword, newPassword);
+  const hashedPassword = await hash(newPassword);
+
+  const prisma = getPrismaClient();
+  await prisma.$transaction([
+    prisma.user.update({ where: { id: userId }, data: { password: hashedPassword } }),
+    ...keyPairUpdates.map(update => prisma.keyPair.update(update)),
+    ...credentialUpdates.map(update => prisma.organizationCredentials.update(update)),
+  ]);
 };
 
-export const updatePassword = async (id: string, password: string) => {
+/*
+ * Re-stores the login hash of a password the user has just been verified with (used to migrate
+ * legacy bcrypt hashes to argon2). It does NOT change the password: the plaintext stays the same,
+ * so data encrypted with it (key pairs, organization credentials) remains decryptable.
+ *
+ * Do not use this to change a user's password. That changes the encryption key, so all data
+ * encrypted with the old password must be re-encrypted in the same transaction as the new hash,
+ * as done in changePassword().
+ */
+const rehashPassword = async (id: string, password: string) => {
   await getPrismaClient().user.update({
     where: {
       id,
