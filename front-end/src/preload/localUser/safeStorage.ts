@@ -10,8 +10,6 @@ export default {
       ipcRenderer.invoke('safeStorage:initializeUseKeychain', useKeychain),
     getUseKeychain: (): Promise<boolean> => ipcRenderer.invoke('safeStorage:getUseKeychain'),
     getStaticUser: (): Promise<User> => ipcRenderer.invoke('safeStorage:getStaticUser'),
-    encrypt: (data: string): Promise<string> => ipcRenderer.invoke('safeStorage:encrypt', data),
-    decrypt: (data: string, encoding?: BufferEncoding): Promise<string> =>
-      ipcRenderer.invoke('safeStorage:decrypt', data, encoding),
+    checkKeychain: (): Promise<boolean> => ipcRenderer.invoke('safeStorage:checkKeychain'),
   },
 };

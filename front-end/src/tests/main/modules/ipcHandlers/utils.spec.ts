@@ -171,6 +171,7 @@ describe('registerUtilsListeners', () => {
       'sha384',
       'x509BytesFromPem',
       'quit',
+      'relaunch',
       'test:setDialogMockState',
       'test:clearDialogMockState',
     ];
@@ -503,6 +504,15 @@ describe('registerUtilsListeners', () => {
   test('Should invoke app.quit in util:quit', async () => {
     await invokeIPCHandler('utils:quit');
     expect(app.quit).toHaveBeenCalled();
+  });
+
+  test('Should relaunch and then quit the app in util:relaunch', async () => {
+    await invokeIPCHandler('utils:relaunch');
+    expect(app.relaunch).toHaveBeenCalled();
+    expect(app.quit).toHaveBeenCalled();
+    expect(vi.mocked(app.relaunch).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(app.quit).mock.invocationCallOrder[0],
+    );
   });
 
   test('Should hash the data in util:sha384', async () => {

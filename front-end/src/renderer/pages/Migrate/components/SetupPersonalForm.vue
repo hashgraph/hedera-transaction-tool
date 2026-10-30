@@ -2,6 +2,7 @@
 import { computed, onBeforeMount, onMounted, reactive, ref, watch } from 'vue';
 
 import { initializeUseKeychain, isKeychainAvailable } from '@renderer/services/safeStorageService';
+import { relaunch } from '@renderer/services/electronUtilsService';
 
 import { isEmail, isPasswordStrong } from '@renderer/utils';
 
@@ -89,7 +90,7 @@ const handleOnFormSubmit = async () => {
 const handleCancel = () => emit('migration:cancel');
 
 const handleUseKeychain = async () => {
-  if ((await safeStorage.encryptString('gain_access')) !== null) {
+  if (await safeStorage.checkKeychain()) {
     // We have access to safe storage (ie keychain)
     try {
       await initializeUseKeychain(true);
@@ -202,15 +203,23 @@ watch(inputPassword, pass => {
           :disabled="safeStorageDenied"
           >Continue with Keychain</AppButton
         >
-        <p
-          v-if="safeStorageDenied"
-          class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
-          style="max-width: 300px"
-        >
-          Continue with Keychain is disabled.<br />
-          You need to restart the application, start data migration again and authorize Keychain
-          access.
-        </p>
+        <template v-if="safeStorageDenied">
+          <p
+            class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
+            style="max-width: 300px"
+          >
+            Continue with Keychain is disabled.<br />
+            Keychain access was denied. Relaunch the application and start data migration again to
+            try again.
+          </p>
+          <AppButton
+            color="primary"
+            type="button"
+            data-testid="button-setup-personal-keychain-relaunch"
+            @click="relaunch"
+            >Relaunch</AppButton
+          >
+        </template>
       </div>
     </template>
 

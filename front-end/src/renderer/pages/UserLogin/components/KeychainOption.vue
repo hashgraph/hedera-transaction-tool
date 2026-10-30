@@ -6,6 +6,8 @@ import useSafeStorage, { SafeStorageStatus } from '@renderer/stores/storeSafeSto
 
 import useSetupStores from '@renderer/composables/user/useSetupStores';
 
+import { relaunch } from '@renderer/services/electronUtilsService';
+
 import {
   getStaticUser,
   initializeUseKeychain,
@@ -29,7 +31,7 @@ const safeStorageDenied = computed(() => safeStorage.status === SafeStorageStatu
 
 /* Handlers */
 const handleUseKeychain = async () => {
-  if ((await safeStorage.encryptString('gain_access')) !== null) {
+  if (await safeStorage.checkKeychain()) {
     // We have access to safe storage (ie keychain)
     try {
       await initializeUseKeychain(true);
@@ -63,13 +65,17 @@ onMounted(async () => {
       :disabled="safeStorageDenied"
       >Sign in with Keychain</AppButton
     >
-    <p
-      v-if="safeStorageDenied"
-      class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
-      style="max-width: 300px"
-    >
-      Sign In with Keychain is disabled.<br />
-      You need to restart the application, sign with Keychain again and authorize Keychain access.
-    </p>
+    <template v-if="safeStorageDenied">
+      <p
+        class="text-micro text-secondary text-center align-self-center mt-3 mb-3"
+        style="max-width: 300px"
+      >
+        Sign In with Keychain is disabled.<br />
+        Keychain access was denied. Relaunch the application to try again.
+      </p>
+      <AppButton color="primary" data-testid="button-keychain-relaunch" @click="relaunch"
+        >Relaunch</AppButton
+      >
+    </template>
   </div>
 </template>

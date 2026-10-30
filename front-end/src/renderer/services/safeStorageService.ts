@@ -22,12 +22,7 @@ export const getStaticUser = async () =>
     return await window.electronAPI.local.safeStorage.getStaticUser();
   }, 'Failed to get static user');
 
-export const encrypt = async (data: string) =>
-  commonIPCHandler<string>(async () => {
-    return await window.electronAPI.local.safeStorage.encrypt(data);
-  }, 'Failed to encrypt data');
-
-export const decrypt = async (data: string, encoding?: BufferEncoding) =>
-  commonIPCHandler<string>(async () => {
-    return await window.electronAPI.local.safeStorage.decrypt(data, encoding);
-  }, 'Failed to decrypt data');
+export const checkKeychain = async () =>
+  commonIPCHandler<boolean>(async () => {
+    return await window.electronAPI.local.safeStorage.checkKeychain();
+  }, 'Failed to check keychain');

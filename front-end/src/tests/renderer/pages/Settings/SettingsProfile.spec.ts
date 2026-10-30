@@ -356,7 +356,6 @@ describe('settings profile coverage', () => {
 
     test.each([
       ['Keychain access denied or unavailable'],
-      ['Failed to encrypt with application password'],
       ['No encryption method available'],
     ])(
       'encrypt failure mode "%s" surfaces to the toast and aborts before BE / DB',

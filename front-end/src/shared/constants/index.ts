@@ -13,6 +13,7 @@ export const MEMO_MAX_LENGTH = 100;
 
 /* Keychain */
 export const STATIC_USER = 'keychain@mode';
+export const KEYCHAIN_UNAVAILABLE_MESSAGE = 'Unable to access the keychain.';
 
 /* Encrypted keys */
 export const ENCRYPTED_KEY_ALREADY_IMPORTED = 'This key is already imported';

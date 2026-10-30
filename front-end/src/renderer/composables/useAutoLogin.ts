@@ -3,18 +3,23 @@ import { onMounted } from 'vue';
 import { HTX_USER } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useSafeStorage from '@renderer/stores/storeSafeStorage';
 
-import { getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
+import { checkKeychain, getStaticUser, getUseKeychain } from '@renderer/services/safeStorageService';
 
 import { safeAwait } from '@renderer/utils';
 
 export default function useAutoLogin() {
   /* Stores */
   const user = useUserStore();
+  const safeStorage = useSafeStorage();
 
   /* Functions */
   const keychainLogin = async () => {
     const staticUser = await getStaticUser();
+    const { data: keychainOk } = await safeAwait(checkKeychain());
+    safeStorage.keychainUnavailable = keychainOk !== true;
+    if (safeStorage.keychainUnavailable) return null;
     await user.login(staticUser.id, staticUser.email, true);
     return staticUser.id;
   };

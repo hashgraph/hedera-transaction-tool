@@ -44,5 +44,6 @@ export default {
     ): Promise<{ raw: Uint8Array; hash: string; text: string }> =>
       ipcRenderer.invoke('utils:x509BytesFromPem', pem),
     quit: (): Promise<void> => ipcRenderer.invoke('utils:quit'),
+    relaunch: (): Promise<void> => ipcRenderer.invoke('utils:relaunch'),
   },
 };

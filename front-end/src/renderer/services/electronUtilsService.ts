@@ -92,3 +92,9 @@ export const quit = async () =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.utils.quit();
   }, 'Failed quit the application');
+
+/* Relaunches the application */
+export const relaunch = async () =>
+  commonIPCHandler(async () => {
+    return await window.electronAPI.local.utils.relaunch();
+  }, 'Failed to relaunch the application');

@@ -1,3 +1,7 @@
+import { KEYCHAIN_UNAVAILABLE_MESSAGE } from '@shared/constants';
+
+import useSafeStorage from '@renderer/stores/storeSafeStorage';
+
 import { createLogger } from './logger';
 
 const logger = createLogger('renderer.ipc');
@@ -11,6 +15,10 @@ export const commonIPCHandler = async <T>(callback: () => Promise<T>, defaultMes
   try {
     return await callback();
   } catch (error) {
+    // Every local IPC call goes through here, so a keychain failure that propagates out of main shows the modal
+    if (error instanceof Error && error.message.includes(KEYCHAIN_UNAVAILABLE_MESSAGE)) {
+      useSafeStorage().keychainUnavailable = true;
+    }
     throw Error(getMessageFromIPCError(error, defaultMessage));
   }
 };

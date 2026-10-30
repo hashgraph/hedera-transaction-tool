@@ -1,4 +1,4 @@
-import { safeStorage } from 'electron';
+import { keychainDecrypt, keychainEncrypt } from '@main/utils/keychain';
 import { getPrismaClient } from '@main/db/prisma';
 
 import { Organization, OrganizationCredentials } from '@prisma/client';
@@ -343,16 +343,13 @@ export const encryptOrganizationPassword = async (
 
   try {
     if (useKeychain) {
-      const buffer = safeStorage.encryptString(password);
+      const buffer = keychainEncrypt(password);
       return buffer.toString('base64');
     }
     return await encrypt(password, encryptPassword as string);
   } catch (error) {
     logger.error('Failed to encrypt organization password', { error, useKeychain });
-    if (useKeychain) {
-      throw new Error('Keychain access denied or unavailable', { cause: error });
-    }
-    throw new Error('Failed to encrypt with application password', { cause: error });
+    throw error;
   }
 };
 
@@ -361,7 +358,7 @@ async function encryptData(data: string, encryptPassword?: string | null) {
   const useKeychain = await getUseKeychainClaim();
 
   if (useKeychain) {
-    const passwordBuffer = safeStorage.encryptString(data);
+    const passwordBuffer = keychainEncrypt(data);
     return passwordBuffer.toString('base64');
   } else if (encryptPassword) {
     return await encrypt(data, encryptPassword);
@@ -383,7 +380,7 @@ export async function decryptData(
   const useKeychain = await getUseKeychainClaim();
   if (useKeychain) {
     const buffer = Buffer.from(data, 'base64');
-    return safeStorage.decryptString(buffer);
+    return keychainDecrypt(buffer);
   } else if (decryptPassword) {
     return decrypt(data, decryptPassword);
   } else {
@@ -404,7 +401,7 @@ export async function decryptMigratePassword(
   const useKeychain = await getUseKeychainClaim();
   if (useKeychain) {
     const buffer = Buffer.from(credential.password, 'base64');
-    return safeStorage.decryptString(buffer);
+    return keychainDecrypt(buffer);
   } else if (decryptPassword) {
     const decrypted = await decrypt(credential.password, decryptPassword);
     if (isLegacyBlob(credential.password)) {

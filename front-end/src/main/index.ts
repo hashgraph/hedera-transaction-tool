@@ -10,6 +10,7 @@ import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
 
 import { safeAwait } from '@main/utils/safeAwait';
+import { probeKeychainAtStartup } from '@main/utils/keychain';
 import {
   configurePlaywrightUserDataPath,
   isPlaywrightSession,
@@ -42,8 +43,15 @@ async function run() {
   registerIpcListeners();
 }
 
+let appInit: Promise<void> = Promise.resolve();
+
 function attachAppEvents() {
   app.on('ready', async () => {
+    // The probe reads the keychain claim from the DB, so wait for init. Then probe before creating
+    // the window: the keychain prompt blocks the main process and would stall the renderer
+    await safeAwait(appInit);
+    await safeAwait(probeKeychainAtStartup());
+
     try {
       mainWindowInit = initMainWindow();
       await mainWindowInit;
@@ -153,7 +161,7 @@ if (!gotTheLock) {
     mainWindow.focus();
   });
 
-  run();
+  appInit = run();
 
   attachAppEvents();
   setupDeepLink();

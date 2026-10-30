@@ -13,12 +13,13 @@ const mocks = vi.hoisted(() => ({
   },
   safeStorageStore: {
     status: 0, // SafeStorageStatus.notDetermined
-    encryptString: vi.fn(),
+    checkKeychain: vi.fn(),
   },
   setupStores: vi.fn(),
   getStaticUser: vi.fn(),
   initializeUseKeychain: vi.fn(),
   isKeychainAvailable: vi.fn(),
+  relaunch: vi.fn(),
 }));
 
 vi.mock('@renderer/stores/storeUser', () => ({
@@ -37,6 +38,8 @@ vi.mock('@renderer/stores/storeSafeStorage.js', () => ({
 vi.mock('@renderer/composables/user/useSetupStores', () => ({
   default: vi.fn(() => mocks.setupStores),
 }));
+
+vi.mock('@renderer/services/electronUtilsService', () => ({ relaunch: mocks.relaunch }));
 
 vi.mock('@renderer/services/safeStorageService', () => ({
   getStaticUser: mocks.getStaticUser,
@@ -87,7 +90,7 @@ describe('KeychainOption.vue', () => {
   describe('registering via OS keychain (1.3.2)', () => {
     test('registers and logs in the static user when keychain access is granted', async () => {
       mocks.isKeychainAvailable.mockResolvedValue(true);
-      mocks.safeStorageStore.encryptString.mockResolvedValue('encrypted-value');
+      mocks.safeStorageStore.checkKeychain.mockResolvedValue(true);
       mocks.getStaticUser.mockResolvedValue({ id: 'static-user-id', email: 'static@keychain.local' });
 
       const wrapper = mountKeychainOption();
@@ -96,7 +99,7 @@ describe('KeychainOption.vue', () => {
       await wrapper.find('[data-testid="button-keychain-login"]').trigger('click');
       await flushPromises();
 
-      expect(mocks.safeStorageStore.encryptString).toHaveBeenCalledWith('gain_access');
+      expect(mocks.safeStorageStore.checkKeychain).toHaveBeenCalled();
       expect(mocks.initializeUseKeychain).toHaveBeenCalledWith(true);
       expect(mocks.getStaticUser).toHaveBeenCalled();
       expect(mocks.userStore.setAccountSetupStarted).toHaveBeenCalledWith(true);
@@ -111,7 +114,7 @@ describe('KeychainOption.vue', () => {
 
     test('does not log in when keychain access is denied', async () => {
       mocks.isKeychainAvailable.mockResolvedValue(true);
-      mocks.safeStorageStore.encryptString.mockResolvedValue(null);
+      mocks.safeStorageStore.checkKeychain.mockResolvedValue(false);
 
       const wrapper = mountKeychainOption();
       await flushPromises();
@@ -126,7 +129,7 @@ describe('KeychainOption.vue', () => {
 
     test('ignores an already-initialized keychain error and still logs in', async () => {
       mocks.isKeychainAvailable.mockResolvedValue(true);
-      mocks.safeStorageStore.encryptString.mockResolvedValue('encrypted-value');
+      mocks.safeStorageStore.checkKeychain.mockResolvedValue(true);
       mocks.initializeUseKeychain.mockRejectedValue(new Error('Keychain mode already initialized'));
       mocks.getStaticUser.mockResolvedValue({ id: 'static-user-id', email: 'static@keychain.local' });
 
@@ -153,6 +156,27 @@ describe('KeychainOption.vue', () => {
       const button = wrapper.find('[data-testid="button-keychain-login"]');
       expect(button.attributes('disabled')).toBeDefined();
       expect(wrapper.text()).toContain('Sign In with Keychain is disabled.');
+    });
+
+    test('offers a relaunch button once access has been denied', async () => {
+      mocks.isKeychainAvailable.mockResolvedValue(true);
+      mocks.safeStorageStore.status = SafeStorageStatus.denied;
+
+      const wrapper = mountKeychainOption();
+      await flushPromises();
+
+      await wrapper.find('[data-testid="button-keychain-relaunch"]').trigger('click');
+
+      expect(mocks.relaunch).toHaveBeenCalled();
+    });
+
+    test('does not show the relaunch button before any denial', async () => {
+      mocks.isKeychainAvailable.mockResolvedValue(true);
+
+      const wrapper = mountKeychainOption();
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="button-keychain-relaunch"]').exists()).toBe(false);
     });
   });
 });
