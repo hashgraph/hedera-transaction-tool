@@ -3,6 +3,8 @@ import { app, BrowserWindow } from 'electron';
 import { PROTOCOL_NAME } from '@main/modules/deepLink';
 import * as path from 'path';
 import { deleteAllTempFolders } from '@main/services/localUser';
+import { probeKeychainAtStartup } from '@main/utils/keychain';
+import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { MockedObject } from 'vitest';
 
 vi.mock('path', () => ({
@@ -21,6 +23,7 @@ vi.mock('electron', () => {
   };
 });
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
+vi.mock('@main/utils/keychain', () => ({ probeKeychainAtStartup: vi.fn() }));
 vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
 vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
 vi.mock('@main/modules/menu', () => ({
@@ -67,5 +70,22 @@ describe('Electron entry file', async () => {
     beforeQuitHandler && (await beforeQuitHandler[1]({ preventDefault: vi.fn() }));
 
     expect(deleteAllTempFolders).toHaveBeenCalledOnce();
+  });
+
+  test('Should probe the keychain before creating the main window on ready', async () => {
+    const appMO = app as unknown as MockedObject<Electron.App>;
+    //@ts-expect-error Incorrect type definition
+    const readyHandler = appMO.on.mock.calls.find(([event]) => event === 'ready');
+    expect(readyHandler).toBeDefined();
+
+    // Whatever runs after the window is created is not relevant here
+    //@ts-expect-error Incorrect type definition
+    await readyHandler![1]().catch(() => {});
+
+    expect(probeKeychainAtStartup).toHaveBeenCalledOnce();
+    expect(restoreOrCreateWindow).toHaveBeenCalledOnce();
+    expect(vi.mocked(probeKeychainAtStartup).mock.invocationCallOrder[0]).toBeLessThan(
+      vi.mocked(restoreOrCreateWindow).mock.invocationCallOrder[0],
+    );
   });
 });

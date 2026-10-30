@@ -29,8 +29,7 @@ describe('IPC handlers Safe Storage', () => {
       'initializeUseKeychain',
       'getUseKeychain',
       'getStaticUser',
-      'encrypt',
-      'decrypt',
+      'checkKeychain',
     ];
     expect(events.every(e => getIPCHandler(`safeStorage:${e}`))).toBe(true);
   });
@@ -87,23 +86,18 @@ describe('IPC handlers Safe Storage', () => {
     );
   });
 
-  test('Should set up encrypt handler', async () => {
-    const data = 'test data';
-    const encryptedData = Buffer.from('encrypted data').toString('base64');
-    vi.mocked(safeStorage.encryptString).mockReturnValueOnce(Buffer.from('encrypted data'));
+  test('Should report the keychain as usable when the canary round trips', async () => {
+    vi.mocked(safeStorage.encryptString).mockImplementation(s => Buffer.from(s));
+    vi.mocked(safeStorage.decryptString).mockImplementation(b => b.toString());
 
-    const result = await invokeIPCHandler('safeStorage:encrypt', data);
-    expect(result).toEqual(encryptedData);
-    expect(safeStorage.encryptString).toHaveBeenCalledWith(data);
+    expect(await invokeIPCHandler('safeStorage:checkKeychain')).toBe(true);
   });
 
-  test('Should set up decrypt handler', async () => {
-    const encryptedData = Buffer.from('encrypted data').toString('base64');
-    const decryptedData = 'decrypted data';
-    vi.mocked(safeStorage.decryptString).mockReturnValueOnce(decryptedData);
+  test('Should report the keychain as unusable when encryption fails', async () => {
+    vi.mocked(safeStorage.encryptString).mockImplementation(() => {
+      throw new Error('Encryption is not available');
+    });
 
-    const result = await invokeIPCHandler('safeStorage:decrypt', encryptedData, 'base64');
-    expect(result).toEqual(decryptedData);
-    expect(safeStorage.decryptString).toHaveBeenCalledWith(Buffer.from(encryptedData, 'base64'));
+    expect(await invokeIPCHandler('safeStorage:checkKeychain')).toBe(false);
   });
 });

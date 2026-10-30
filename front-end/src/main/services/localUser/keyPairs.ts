@@ -1,9 +1,8 @@
-import { safeStorage } from 'electron';
-
 import { KeyPair, Prisma } from '@prisma/client';
 
 import { encrypt, decrypt, isLegacyBlob } from '@main/utils/crypto';
 
+import { keychainDecrypt, keychainEncrypt } from '@main/utils/keychain';
 import { getPrismaClient } from '@main/db/prisma';
 import { createLogger } from '@main/modules/logger';
 
@@ -47,7 +46,7 @@ export const storeKeyPair = async (
       const useKeychain = await getUseKeychainClaim();
 
       if (useKeychain) {
-        const buffer = safeStorage.encryptString(keyPair.private_key);
+        const buffer = keychainEncrypt(keyPair.private_key);
         keyPair.private_key = buffer.toString('base64');
       } else if (password) {
         keyPair.private_key = await encrypt(keyPair.private_key, password);
@@ -60,7 +59,7 @@ export const storeKeyPair = async (
     });
   } catch (error: unknown) {
     logger.error('Failed to store key pair', { error });
-    throw new Error(error instanceof Error ? error.message : 'Failed to store key pair');
+    throw error instanceof Error ? error : new Error('Failed to store key pair');
   }
 };
 
@@ -115,7 +114,7 @@ export const decryptPrivateKey = async (
 
   if (useKeychain) {
     const buffer = Buffer.from(keyPair?.private_key || '', 'base64');
-    return safeStorage.decryptString(buffer);
+    return keychainDecrypt(buffer);
   }
 
   if (!password) {

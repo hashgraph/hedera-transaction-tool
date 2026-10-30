@@ -22,7 +22,9 @@ import { getOrganization } from '@main/services/localUser/organizations';
 import { getCurrentUser } from '@main/services/localUser/organizationCredentials';
 import { getUseKeychainClaim } from '@main/services/localUser/claim';
 
+import { KEYCHAIN_UNAVAILABLE_MESSAGE } from '@shared/constants';
 import { decrypt, encrypt, isLegacyBlob } from '@main/utils/crypto';
+import { KeychainUnavailableError } from '@main/utils/keychain';
 
 vi.mock('@main/db/prisma');
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -150,6 +152,21 @@ describe('Services Local User Key Pairs', () => {
       prisma.keyPair.create.mockRejectedValue({});
       await expect(storeKeyPair(keyPair, '123', false)).rejects.toThrow('Failed to store key pair');
     });
+
+    test('Should rethrow the original error instance, preserving its type and cause', async () => {
+      const cause = new Error('os keychain locked');
+      vi.mocked(getUseKeychainClaim).mockResolvedValue(true);
+      vi.mocked(safeStorage.encryptString).mockImplementation(() => {
+        throw cause;
+      });
+
+      const error = await storeKeyPair(keyPair, null, false).catch(e => e);
+
+      expect(error).toBeInstanceOf(KeychainUnavailableError);
+      expect(error.message).toBe(KEYCHAIN_UNAVAILABLE_MESSAGE);
+      expect(error.cause).toBe(cause);
+      expect(prisma.keyPair.create).not.toHaveBeenCalled();
+    });
   });
 
   describe('changeDecryptionPassword', () => {
@@ -227,6 +244,18 @@ describe('Services Local User Key Pairs', () => {
 
       expect(safeStorage.decryptString).toHaveBeenCalledWith(Buffer.from('', 'base64'));
       expect(result).toBe(decrypted);
+    });
+
+    test('Should throw the typed keychain error when keychain decrypt fails', async () => {
+      prisma.keyPair.findFirst.mockResolvedValueOnce(keyPair);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.decryptString).mockImplementation(() => {
+        throw new Error('Encryption is not available');
+      });
+
+      await expect(decryptPrivateKey(keyPair.user_id, null, keyPair.public_key)).rejects.toThrow(
+        KEYCHAIN_UNAVAILABLE_MESSAGE,
+      );
     });
 
     test("Should pass empty string if key pair can't be found and keychain is NOT used", async () => {
