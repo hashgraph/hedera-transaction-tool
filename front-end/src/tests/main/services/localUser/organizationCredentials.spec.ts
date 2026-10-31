@@ -20,6 +20,7 @@ import {
   decryptMigratePassword,
   organizationCredentialsInvalid,
   decryptMigrateJwtToken,
+  prepareCredentialsReencryption,
 } from '@main/services/localUser/organizationCredentials';
 
 import { safeStorage } from 'electron';
@@ -1033,6 +1034,45 @@ describe('Services Local User Organization Credentials', () => {
       vi.mocked(login).mockRejectedValue('Failed login in server');
 
       await expect(() => tryAutoSignIn('123', '321')).rejects.toThrow('Incorrect decryption password');
+    });
+  });
+
+  describe('prepareCredentialsReencryption', () => {
+    beforeEach(() => {
+      vi.resetAllMocks();
+    });
+
+    test('re-encrypts password and jwt token with the new password', async () => {
+      prisma.organizationCredentials.findMany.mockResolvedValue([
+        { ...organizationCredentials, jwtToken: 'encryptedJwt' },
+      ]);
+      vi.mocked(isClearTextToken).mockReturnValue(false);
+      vi.mocked(decrypt).mockImplementation(async v => `plain:${v}`);
+      vi.mocked(encrypt).mockImplementation(async v => `new:${v}`);
+
+      const updates = await prepareCredentialsReencryption('123', 'old', 'new');
+
+      expect(decrypt).toHaveBeenCalledWith('encryptedPassword', 'old');
+      expect(updates).toEqual([
+        {
+          where: { id: '1' },
+          data: { password: 'new:plain:encryptedPassword', jwtToken: 'new:plain:encryptedJwt' },
+        },
+      ]);
+    });
+
+    test('skips empty, clear text and undecryptable values', async () => {
+      prisma.organizationCredentials.findMany.mockResolvedValue([
+        { ...organizationCredentials, password: '', jwtToken: 'a.b.c' },
+        { ...organizationCredentials, id: '2', jwtToken: null },
+      ]);
+      vi.mocked(isClearTextToken).mockImplementation(v => v === 'a.b.c');
+      vi.mocked(decrypt).mockRejectedValue(new Error('bad decrypt'));
+
+      const updates = await prepareCredentialsReencryption('123', 'old', 'new');
+
+      expect(updates).toEqual([]);
+      expect(encrypt).not.toHaveBeenCalled();
     });
   });
 

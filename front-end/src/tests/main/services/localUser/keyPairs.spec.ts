@@ -7,7 +7,7 @@ import { KeyPair, Prisma } from '@prisma/client';
 import prisma from '@main/db/__mocks__/prisma';
 
 import {
-  changeDecryptionPassword,
+  prepareKeyPairsReencryption,
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   deleteKeyPair,
@@ -152,7 +152,7 @@ describe('Services Local User Key Pairs', () => {
     });
   });
 
-  describe('changeDecryptionPassword', () => {
+  describe('prepareKeyPairsReencryption', () => {
     beforeEach(() => {
       vi.resetAllMocks();
     });
@@ -161,20 +161,55 @@ describe('Services Local User Key Pairs', () => {
       const userId = 'user1';
       const oldPassword = 'password1';
       const newPassword = 'password2';
-      const keyPairs: KeyPair[] = [{ ...keyPair }];
+      // More keys than the crypto concurrency limit, to make sure none are dropped
+      const keyPairs: KeyPair[] = Array.from({ length: 10 }, (_, i) => ({
+        ...keyPair,
+        id: `id${i}`,
+        public_key: `public${i}`,
+        private_key: `encrypted${i}`,
+      }));
 
-      vi.mocked(decrypt).mockReturnValue(Promise.resolve('decryptedPrivateKey'));
-      vi.mocked(encrypt).mockReturnValue(Promise.resolve('encryptedPrivateKey2'));
+      vi.mocked(decrypt).mockImplementation(async (data, password) => `plain(${password}):${data}`);
+      vi.mocked(encrypt).mockImplementation(async (data, password) => `enc(${password}):${data}`);
       prisma.keyPair.findMany.mockResolvedValue(keyPairs);
 
-      await changeDecryptionPassword(userId, oldPassword, newPassword);
+      const updates = await prepareKeyPairsReencryption(userId, oldPassword, newPassword);
 
-      expect(decrypt).toHaveBeenCalledWith(keyPairs[0].private_key, oldPassword);
-      expect(encrypt).toHaveBeenCalledWith('decryptedPrivateKey', newPassword);
-      expect(prisma.keyPair.update).toHaveBeenCalledWith({
-        where: { id: keyPairs[0].id, public_key: keyPairs[0].public_key },
-        data: { private_key: 'encryptedPrivateKey2' },
-      });
+      expect(prisma.keyPair.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { user_id: userId } }),
+      );
+      for (const kp of keyPairs) {
+        expect(decrypt).toHaveBeenCalledWith(kp.private_key, oldPassword);
+      }
+      // Each key is decrypted with the old password and re-encrypted with the new one,
+      // and the updates keep the order of the key pairs
+      expect(updates).toEqual(
+        keyPairs.map(kp => ({
+          where: { id: kp.id, public_key: kp.public_key },
+          data: { private_key: `enc(${newPassword}):plain(${oldPassword}):${kp.private_key}` },
+        })),
+      );
+      // Preparing must not write anything
+      expect(prisma.keyPair.update).not.toHaveBeenCalled();
+    });
+
+    test('Should reject if one key pair cannot be decrypted', async () => {
+      const keyPairs: KeyPair[] = [
+        { ...keyPair, id: '1' },
+        { ...keyPair, id: '2' },
+      ];
+
+      vi.mocked(decrypt)
+        .mockResolvedValueOnce('decryptedPrivateKey')
+        .mockRejectedValueOnce(new Error('bad decrypt'));
+      vi.mocked(encrypt).mockResolvedValue('encryptedPrivateKey2');
+      prisma.keyPair.findMany.mockResolvedValue(keyPairs);
+
+      await expect(prepareKeyPairsReencryption('user1', 'old', 'new')).rejects.toThrow(
+        'bad decrypt',
+      );
+
+      expect(prisma.keyPair.update).not.toHaveBeenCalled();
     });
   });
 

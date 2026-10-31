@@ -1,7 +1,7 @@
 import { safeStorage } from 'electron';
 import { getPrismaClient } from '@main/db/prisma';
 
-import { Organization, OrganizationCredentials } from '@prisma/client';
+import { Organization, OrganizationCredentials, Prisma } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
 
 import { login } from '@main/services/organization/auth';
@@ -14,6 +14,7 @@ import {
   isClearTextToken,
   isLegacyBlob,
 } from '@main/utils/crypto';
+import { CRYPTO_CONCURRENCY, mapWithConcurrency } from '@main/utils/concurrency';
 
 const logger = createLogger('main.organizationCredentials');
 
@@ -87,6 +88,44 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   } catch {
     return true;
   }
+};
+
+/* Re-encrypts the stored credentials of a user with a new password (password mode only).
+ * Values that are empty, not yet encrypted or cannot be decrypted are left untouched. */
+export const prepareCredentialsReencryption = async (
+  user_id: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<Prisma.OrganizationCredentialsUpdateArgs[]> => {
+  const prisma = getPrismaClient();
+
+  const reencrypt = async (value: string | null) => {
+    if (!value || isClearTextToken(value)) return undefined;
+    try {
+      return await encrypt(await decrypt(value, oldPassword), newPassword);
+    } catch (error) {
+      logger.warn('Skipping organization credential that cannot be decrypted', { error });
+      return undefined;
+    }
+  };
+
+  const credentials = await prisma.organizationCredentials.findMany({ where: { user_id } });
+
+  const updates = await mapWithConcurrency(
+    credentials,
+    CRYPTO_CONCURRENCY,
+    async (credential): Promise<Prisma.OrganizationCredentialsUpdateArgs | null> => {
+      const [password, jwtToken] = await Promise.all([
+        reencrypt(credential.password),
+        reencrypt(credential.jwtToken),
+      ]);
+      if (password === undefined && jwtToken === undefined) return null;
+      return { where: { id: credential.id }, data: { password, jwtToken } };
+    },
+  );
+  return updates.filter(
+    (update): update is Prisma.OrganizationCredentialsUpdateArgs => update !== null,
+  );
 };
 
 /* Returns the access token of a user for an organization */
