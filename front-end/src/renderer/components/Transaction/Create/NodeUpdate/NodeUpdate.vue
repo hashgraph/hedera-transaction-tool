@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
 import type { ComponentExposed } from 'vue-component-type-helpers';
-import { NodeUpdateTransaction } from '@hiero-ledger/sdk';
+import { Long, NodeUpdateTransaction } from '@hiero-ledger/sdk';
 
 import { useRoute } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
@@ -9,21 +9,27 @@ import useAccountId from '@renderer/composables/useAccountId';
 import useNodeId from '@renderer/composables/useNodeId';
 
 import {
-  type ComponentServiceEndpoint,
   createNodeUpdateTransaction,
+  getServiceEndpoint,
+  getServiceEndpoints,
   type NodeUpdateData,
+  sortAndCompareLongs,
   type TransactionCommonData,
 } from '@renderer/utils/sdk/createTransactions';
 import {
   compareKeys,
   getComponentServiceEndpoint,
-  getNodeData,
   getNodeUpdateData,
   getTransactionCommonData,
 } from '@renderer/utils';
 
 import BaseTransaction from '@renderer/components/Transaction/Create/BaseTransaction';
 import NodeUpdateFormData from '@renderer/components/Transaction/Create/NodeUpdate/NodeUpdateFormData.vue';
+import type { INodeInfoParsed } from '@shared/interfaces';
+import {
+  compareNodeServiceEndpoint,
+  compareNodeServiceEndpoints,
+} from '@renderer/utils/sdk/serviceEndpoints.ts';
 
 /* Composables */
 const route = useRoute();
@@ -58,13 +64,19 @@ const hasAnyChange = computed(() => {
   if (data.nodeAccountId !== (nodeInfo.node_account_id?.toString() ?? '')) return true;
 
   if (data.gossipEndpoints.length > 0) return true;
-  if (data.serviceEndpoints.length > 0) return true;
 
-  const initialGrpc = getComponentServiceEndpoint(nodeInfo.grpc_web_proxy_endpoint);
-  const currentGrpc = data.grpcWebProxyEndpoint;
-  const endpointKey = (ep: ComponentServiceEndpoint | null) =>
-    ep ? `${ep.ipAddressV4}|${ep.domainName}|${ep.port}` : '';
-  if (endpointKey(initialGrpc) !== endpointKey(currentGrpc)) return true;
+  const initialServiceEndpoints = nodeInfo.service_endpoints;
+  const currentServiceEndpoints = getServiceEndpoints(data.serviceEndpoints);
+  if (!compareNodeServiceEndpoints(initialServiceEndpoints, currentServiceEndpoints)) return true;
+
+  const initialGrpc = nodeInfo.grpc_web_proxy_endpoint;
+  const currentGrpc =
+    data.grpcWebProxyEndpoint !== null ? getServiceEndpoint(data.grpcWebProxyEndpoint) : null;
+  if (initialGrpc !== null && currentGrpc !== null) {
+    if (!compareNodeServiceEndpoint(initialGrpc, currentGrpc)) return true;
+  } else {
+    if (initialGrpc !== currentGrpc) return true;
+  }
 
   if (data.gossipCaCertificate.length > 0) return true;
   if (data.certificateHash.length > 0) return true;
@@ -77,9 +89,9 @@ const hasAnyChange = computed(() => {
 
   if (data.declineReward !== nodeInfo.decline_reward) return true;
 
-  const oldNodes = [...nodeInfo.associated_registered_nodes].map(String).sort().join(',');
-  const newNodes = [...data.associatedRegisteredNodes].sort().join(',');
-  if (oldNodes !== newNodes) return true;
+  const oldNodes = nodeInfo.associated_registered_nodes.map(n => Long.fromNumber(n));
+  const newNodes = data.associatedRegisteredNodes.map(s => Long.fromString(s));
+  if (!sortAndCompareLongs(oldNodes, newNodes)) return true;
 
   return false;
 });
@@ -95,27 +107,30 @@ const createTransaction = (commonData: TransactionCommonData): NodeUpdateTransac
       ...commonData,
       ...(data as NodeUpdateData),
     },
-    nodeData.nodeInfo?.value || null,
+    nodeData.nodeInfo.value,
   );
 };
 
 const getAllData = (tx: NodeUpdateTransaction): NodeUpdateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getNodeData(tx),
-    ...getNodeUpdateData(tx),
+    ...getNodeUpdateData(tx, nodeData.nodeInfo.value),
   };
 };
-const handleDraftLoaded = (transaction: NodeUpdateTransaction) => {
-  if (transaction instanceof NodeUpdateTransaction) {
-    if (transaction.nodeId) {
-      nodeData.nodeId.value = transaction.nodeId.toNumber();
-    }
-    if (transaction.accountId) {
-      newNodeAccountData.accountId.value = transaction.accountId.toString();
-    }
+
+const handleDraftLoaded = async (transaction: NodeUpdateTransaction) => {
+  let nodeInfo: INodeInfoParsed | null;
+  if (transaction.nodeId) {
+    nodeInfo = await nodeData.fetchNodeInfo(transaction.nodeId.toNumber());
+    nodeData.nodeId.value = transaction.nodeId.toNumber();
+  } else {
+    nodeInfo = null;
+    nodeData.nodeId.value = null;
   }
-  handleUpdateData(getNodeUpdateData(transaction));
+  if (transaction.accountId) {
+    newNodeAccountData.accountId.value = transaction.accountId.toString();
+  }
+  handleUpdateData(getNodeUpdateData(transaction, nodeInfo));
 };
 
 const handleUpdateData = (newData: NodeUpdateData) => {

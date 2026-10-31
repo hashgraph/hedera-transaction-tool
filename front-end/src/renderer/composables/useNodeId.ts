@@ -12,6 +12,7 @@ import useAccountId, { type AccountIdStore } from './useAccountId';
 export interface NodeIdStore {
   nodeId: Ref<number | null>;
   nodeInfo: Ref<INodeInfoParsed | null>;
+  fetchNodeInfo: (nodeId: number) => Promise<INodeInfoParsed | null>;
   key: Ref<Key | null>;
   isValid: Ref<boolean>;
   accountData: AccountIdStore;
@@ -51,12 +52,10 @@ export default function useNodeId(): NodeIdStore {
       }
 
       nodeInfoController.value = new AbortController();
-      const nodeInfoRes = await nodeByIdCache.lookup(parsedNodeId, networkStore.mirrorNodeBaseURL, true);
+      nodeInfo.value = await fetchNodeInfo(parsedNodeId);
 
-      nodeInfo.value = nodeInfoRes;
-
-      if (nodeInfoRes?.node_account_id) {
-        accountData.accountId.value = nodeInfoRes.node_account_id.toString();
+      if (nodeInfo.value?.node_account_id) {
+        accountData.accountId.value = nodeInfo.value?.node_account_id.toString();
       }
     } catch {
       resetData();
@@ -73,9 +72,18 @@ export default function useNodeId(): NodeIdStore {
     nodeInfoController.value = null;
   }
 
+  const fetchNodeInfo = async (nodeId: number): Promise<INodeInfoParsed | null> => {
+    try {
+      return await nodeByIdCache.lookup(nodeId, networkStore.mirrorNodeBaseURL, true);
+    } catch {
+      return null;
+    }
+  }
+
   return {
     nodeId,
     nodeInfo,
+    fetchNodeInfo,
     key,
     isValid,
     accountData,

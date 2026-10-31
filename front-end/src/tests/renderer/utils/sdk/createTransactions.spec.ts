@@ -1036,7 +1036,7 @@ describe('createNodeCreateTransaction / createNodeUpdateTransaction — full pay
   test('NodeCreate preserves every field through serialisation', () => {
     const tx = roundtrip(createNodeCreateTransaction({ ...common, ...nodeData }));
     expect(tx).toBeInstanceOf(NodeCreateTransaction);
-    const parsed = getNodeData(tx);
+    const parsed = getNodeData(tx, null);
 
     expect(parsed.nodeAccountId).toBe('0.0.5');
     expect(parsed.description).toBe('my node');
@@ -1062,7 +1062,7 @@ describe('createNodeCreateTransaction / createNodeUpdateTransaction — full pay
         associatedRegisteredNodes: [],
       }),
     );
-    const parsed = getNodeData(tx);
+    const parsed = getNodeData(tx, null);
     expect(parsed.grpcWebProxyEndpoint).toBeNull();
     expect(parsed.certificateHash.length).toBe(0);
     expect(parsed.declineReward).toBe(false);
@@ -1073,7 +1073,7 @@ describe('createNodeCreateTransaction / createNodeUpdateTransaction — full pay
       createNodeUpdateTransaction({ ...common, ...nodeData, nodeId: '5' }, null),
     );
     expect(tx).toBeInstanceOf(NodeUpdateTransaction);
-    const parsed = getNodeUpdateData(tx);
+    const parsed = getNodeUpdateData(tx, null);
     expect(parsed.nodeId).toBe('5');
     expect(parsed.nodeAccountId).toBe('0.0.5');
     expect(parsed.serviceEndpoints).toEqual(nodeData.serviceEndpoints);
