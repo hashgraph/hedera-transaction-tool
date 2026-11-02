@@ -5,7 +5,8 @@ import prisma from '@main/db/__mocks__/prisma';
 import { randomUUID } from 'crypto';
 
 import * as auth from '@main/services/localUser/auth';
-import { changeDecryptionPassword } from '@main/services/localUser/keyPairs';
+import { prepareKeyPairsReencryption } from '@main/services/localUser/keyPairs';
+import { prepareCredentialsReencryption } from '@main/services/localUser/organizationCredentials';
 import { dualCompareHash, hash } from '@main/utils/crypto';
 
 vi.mock('crypto', () => ({ randomUUID: vi.fn() }));
@@ -13,6 +14,7 @@ vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
 vi.mock('@main/db/prisma');
 vi.mock('@main/utils/crypto');
 vi.mock('@main/services/localUser/keyPairs');
+vi.mock('@main/services/localUser/organizationCredentials');
 
 describe('Services Local User Auth', () => {
   beforeEach(() => {
@@ -235,24 +237,94 @@ describe('Services Local User Auth', () => {
       );
     });
 
-    test('Should update the user password and change the decryption password if the old password is correct', async () => {
+    test('Should write the hash and all re-encrypted data in one transaction', async () => {
       const userId = '123';
       const newPassword = 'newPassword';
+      const keyUpdates = [
+        { where: { id: 'k1' }, data: { private_key: 'enc1' } },
+        { where: { id: 'k2' }, data: { private_key: 'enc2' } },
+        { where: { id: 'k3' }, data: { private_key: 'enc3' } },
+      ];
+      const credUpdates = [
+        { where: { id: 'c1' }, data: { password: 'enc1', jwtToken: 'jwt1' } },
+        { where: { id: 'c2' }, data: { password: 'enc2' } },
+      ];
 
-      vi.mocked(hash).mockResolvedValueOnce(userPassword);
       vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
+      vi.mocked(hash).mockResolvedValueOnce('new-hash');
+      vi.mocked(prepareKeyPairsReencryption).mockResolvedValueOnce(keyUpdates);
+      vi.mocked(prepareCredentialsReencryption).mockResolvedValueOnce(credUpdates);
+      prisma.user.update.mockReturnValue('user-op' as never);
+      prisma.keyPair.update.mockImplementation(((args: { where: { id: string } }) =>
+        `key-op:${args.where.id}`) as never);
+      prisma.organizationCredentials.update.mockImplementation(((args: {
+        where: { id: string };
+      }) => `cred-op:${args.where.id}`) as never);
 
       await auth.changePassword(userId, userPassword, newPassword);
 
+      expect(prepareKeyPairsReencryption).toHaveBeenCalledWith(userId, userPassword, newPassword);
+      expect(prepareCredentialsReencryption).toHaveBeenCalledWith(
+        userId,
+        userPassword,
+        newPassword,
+      );
+      expect(hash).toHaveBeenCalledWith(newPassword);
       expect(prisma.user.update).toHaveBeenCalledWith({
-        where: {
-          id: userId,
-        },
-        data: {
-          password: userPassword,
-        },
+        where: { id: userId },
+        data: { password: 'new-hash' },
       });
-      expect(changeDecryptionPassword).toHaveBeenCalledWith(userId, userPassword, newPassword);
+      keyUpdates.forEach(update => expect(prisma.keyPair.update).toHaveBeenCalledWith(update));
+      credUpdates.forEach(update =>
+        expect(prisma.organizationCredentials.update).toHaveBeenCalledWith(update),
+      );
+      // The hash, every key and every credential are committed together
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+      expect(prisma.$transaction).toHaveBeenCalledWith([
+        'user-op',
+        'key-op:k1',
+        'key-op:k2',
+        'key-op:k3',
+        'cred-op:c1',
+        'cred-op:c2',
+      ]);
+    });
+
+    test('Should not change the password hash if a key cannot be re-encrypted', async () => {
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
+      vi.mocked(prepareKeyPairsReencryption).mockRejectedValueOnce(new Error('bad decrypt'));
+
+      await expect(auth.changePassword('123', userPassword, 'newPassword')).rejects.toThrow(
+        'bad decrypt',
+      );
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    test('Should not change the password hash if credentials cannot be re-encrypted', async () => {
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: true, isBcrypt: false });
+      vi.mocked(prepareKeyPairsReencryption).mockResolvedValueOnce([]);
+      vi.mocked(prepareCredentialsReencryption).mockRejectedValueOnce(new Error('db error'));
+
+      await expect(auth.changePassword('123', userPassword, 'newPassword')).rejects.toThrow(
+        'db error',
+      );
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    test('Should not re-encrypt anything if the old password is incorrect', async () => {
+      vi.mocked(dualCompareHash).mockResolvedValueOnce({ correct: false, isBcrypt: false });
+
+      await expect(auth.changePassword('123', 'wrong', 'newPassword')).rejects.toThrow(
+        'Incorrect current password',
+      );
+
+      expect(prepareKeyPairsReencryption).not.toHaveBeenCalled();
+      expect(prepareCredentialsReencryption).not.toHaveBeenCalled();
+      expect(prisma.$transaction).not.toHaveBeenCalled();
     });
   });
 });

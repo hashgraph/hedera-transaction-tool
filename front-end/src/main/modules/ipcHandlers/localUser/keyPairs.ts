@@ -3,7 +3,6 @@ import { ipcMain } from 'electron';
 import {
   storeKeyPair,
   deleteSecretHashes,
-  changeDecryptionPassword,
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   getKeyPairs,
@@ -21,7 +20,6 @@ export default () => {
   createIPCChannel('keyPairs', [
     renameFunc(storeKeyPair, 'store'),
     renameFunc(getKeyPairs, 'getAll'),
-    renameFunc(changeDecryptionPassword, 'changeDecryptionPassword'),
     renameFunc(updateNickname, 'updateNickname'),
     renameFunc(updateMnemonicHash, 'updateMnemonicHash'),
     renameFunc(updateIndex, 'updateIndex'),

@@ -1,7 +1,7 @@
 import { safeStorage } from 'electron';
 import { getPrismaClient } from '@main/db/prisma';
 
-import { Organization, OrganizationCredentials } from '@prisma/client';
+import { Organization, OrganizationCredentials, Prisma } from '@prisma/client';
 import { jwtDecode } from 'jwt-decode';
 
 import { login } from '@main/services/organization/auth';
@@ -14,6 +14,7 @@ import {
   isClearTextToken,
   isLegacyBlob,
 } from '@main/utils/crypto';
+import { CRYPTO_CONCURRENCY, mapWithConcurrency } from '@main/utils/concurrency';
 
 const logger = createLogger('main.organizationCredentials');
 
@@ -87,6 +88,43 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
   } catch {
     return true;
   }
+};
+
+/* Re-encrypts the stored credentials of a user with a new password (password mode only).
+ * Empty and clear-text values are left untouched. Throws before anything is written if an
+ * encrypted value cannot be decrypted, so the rotation never leaves mixed ciphertext. */
+export const prepareCredentialsReencryption = async (
+  user_id: string,
+  oldPassword: string,
+  newPassword: string,
+): Promise<Prisma.OrganizationCredentialsUpdateArgs[]> => {
+  const prisma = getPrismaClient();
+
+  const credentials = await prisma.organizationCredentials.findMany({ where: { user_id } });
+
+  // One task per encrypted value so the concurrency limit applies to the crypto work itself
+  const tasks: { id: string; field: 'password' | 'jwtToken'; value: string }[] = [];
+  for (const credential of credentials) {
+    for (const field of ['password', 'jwtToken'] as const) {
+      const value = credential[field];
+      if (value && !isClearTextToken(value)) tasks.push({ id: credential.id, field, value });
+    }
+  }
+
+  const reencrypted = await mapWithConcurrency(tasks, CRYPTO_CONCURRENCY, async task =>
+    encrypt(await decrypt(task.value, oldPassword), newPassword),
+  );
+
+  const updates = new Map<string, Prisma.OrganizationCredentialsUpdateArgs>();
+  tasks.forEach((task, i) => {
+    let update = updates.get(task.id);
+    if (!update) {
+      update = { where: { id: task.id }, data: {} };
+      updates.set(task.id, update);
+    }
+    update.data[task.field] = reencrypted[i];
+  });
+  return [...updates.values()];
 };
 
 /* Returns the access token of a user for an organization */

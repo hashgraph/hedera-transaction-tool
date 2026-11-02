@@ -8,7 +8,6 @@ import registerKeyPairsHandlers from '@main/modules/ipcHandlers/localUser/keyPai
 import {
   storeKeyPair,
   deleteSecretHashes,
-  changeDecryptionPassword,
   decryptPrivateKey,
   deleteEncryptedPrivateKeys,
   getKeyPairs,
@@ -28,8 +27,6 @@ describe('IPC handlers Key Pairs', () => {
 
   const userId = 'userId';
   const password = 'password';
-  const oldPassword = 'oldPassword';
-  const newPassword = 'newPassword';
   const organizationId = 'organizationId';
   const keyPairId = 'keyPairId';
   const nickname = 'nickname';
@@ -40,7 +37,6 @@ describe('IPC handlers Key Pairs', () => {
     const events = [
       'store',
       'getAll',
-      'changeDecryptionPassword',
       'updateNickname',
       'updateMnemonicHash',
       'updateIndex',
@@ -64,11 +60,6 @@ describe('IPC handlers Key Pairs', () => {
 
     await invokeIPCHandler('keyPairs:store', keyPair, password, encrypted);
     expect(storeKeyPair).toHaveBeenCalledWith(keyPair, password, encrypted);
-  });
-
-  test('Should set up changeDecryptionPassword handler', async () => {
-    await invokeIPCHandler('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword);
-    expect(changeDecryptionPassword).toHaveBeenCalledWith(userId, oldPassword, newPassword);
   });
 
   test('Should set up decryptPrivateKey handler', async () => {

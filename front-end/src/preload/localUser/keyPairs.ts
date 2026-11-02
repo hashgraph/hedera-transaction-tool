@@ -13,12 +13,6 @@ export default {
       password: string | null,
       encrypted: boolean,
     ): Promise<void> => ipcRenderer.invoke('keyPairs:store', keyPair, password, encrypted),
-    changeDecryptionPassword: (
-      userId: string,
-      oldPassword: string,
-      newPassword: string,
-    ): Promise<KeyPair[]> =>
-      ipcRenderer.invoke('keyPairs:changeDecryptionPassword', userId, oldPassword, newPassword),
     decryptPrivateKey: (
       userId: string,
       password: string | null,

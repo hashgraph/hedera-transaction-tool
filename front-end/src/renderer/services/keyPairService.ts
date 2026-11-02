@@ -28,20 +28,6 @@ export const storeKeyPair = async (
     return await window.electronAPI.local.keyPairs.store(keyPair, password, encrypted);
   }, 'Failed to store key pair');
 
-/* Change the decryption password of a stored private key */
-export const changeDecryptionPassword = async (
-  userId: string,
-  oldPassword: string,
-  newPassword: string,
-) =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.keyPairs.changeDecryptionPassword(
-      userId,
-      oldPassword,
-      newPassword,
-    );
-  }, 'Failed to change decryption password');
-
 /* Decrypt private key with user's password */
 export const decryptPrivateKey = async (
   userId: string,
