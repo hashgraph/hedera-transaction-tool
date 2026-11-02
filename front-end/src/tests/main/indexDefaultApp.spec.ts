@@ -25,7 +25,10 @@ vi.mock('electron', () => {
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
 vi.mock('@main/utils/keychain', () => ({ probeKeychainAtStartup: vi.fn() }));
 vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
-vi.mock('@main/modules/logger', () => ({ default: vi.fn() }));
+vi.mock('@main/modules/logger', () => ({
+  default: vi.fn(),
+  createLogger: vi.fn(() => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn() })),
+}));
 vi.mock('@main/modules/menu', () => ({
   default: vi.fn(),
 }));

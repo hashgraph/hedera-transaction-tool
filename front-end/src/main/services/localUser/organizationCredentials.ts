@@ -349,7 +349,9 @@ export const encryptOrganizationPassword = async (
     return await encrypt(password, encryptPassword as string);
   } catch (error) {
     logger.error('Failed to encrypt organization password', { error, useKeychain });
-    throw error;
+    // Keychain errors are already typed (KeychainUnavailableError), keep them as-is
+    if (useKeychain) throw error;
+    throw new Error('Failed to encrypt with application password', { cause: error });
   }
 };
 

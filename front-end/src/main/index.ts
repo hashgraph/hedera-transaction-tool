@@ -4,7 +4,7 @@ import { optimizer, is } from '@electron-toolkit/utils';
 
 import initDatabase from '@main/db/init';
 
-import initLogger from '@main/modules/logger';
+import initLogger, { createLogger } from '@main/modules/logger';
 import createMenu from '@main/modules/menu';
 import handleDeepLink, { PROTOCOL_NAME } from '@main/modules/deepLink';
 import registerIpcListeners from '@main/modules/ipcHandlers';
@@ -20,6 +20,8 @@ import { deleteAllTempFolders } from '@main/services/localUser';
 
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
 import { initializeUpdaterService } from '@main/services/electronUpdater';
+
+const logger = createLogger('main.index');
 
 let mainWindow: BrowserWindow | null = null;
 let mainWindowInit: Promise<void> | null = null;
@@ -49,7 +51,10 @@ function attachAppEvents() {
   app.on('ready', async () => {
     // The probe reads the keychain claim from the DB, so wait for init. Then probe before creating
     // the window: the keychain prompt blocks the main process and would stall the renderer
-    await safeAwait(appInit);
+    const { error: initError } = await safeAwait(appInit);
+    if (initError) {
+      logger.error('App initialization failed', { error: initError });
+    }
     await safeAwait(probeKeychainAtStartup());
 
     try {

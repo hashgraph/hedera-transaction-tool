@@ -751,7 +751,7 @@ describe('Services Local User Organization Credentials', () => {
       expect((err as Error).cause).toBe(underlying);
     });
 
-    test('Should rethrow the original error when AES encrypt throws', async () => {
+    test('Should wrap AES encrypt failures with the application password message and cause', async () => {
       const underlying = new Error('AES failure');
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
@@ -763,7 +763,8 @@ describe('Services Local User Organization Credentials', () => {
         (e: unknown) => e,
       );
 
-      expect(err).toBe(underlying);
+      expect((err as Error).message).toBe('Failed to encrypt with application password');
+      expect((err as Error).cause).toBe(underlying);
     });
 
     test('Should reject with the no-method-available message before any encrypt call (no cause) and emit a warn for observability', async () => {

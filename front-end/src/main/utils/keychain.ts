@@ -63,5 +63,10 @@ export const probeKeychainAtStartup = async (): Promise<void> => {
   startupProbeResult = probeKeychain();
 };
 
-/* Returns the startup probe result when available, otherwise probes now */
+/*
+ * Returns the startup probe result, probing now only if the startup probe did not run. The
+ * keychain is deliberately not re-probed after launch: the startup probe is the access that
+ * can block on the OS prompt, and a failure later surfaces as KeychainUnavailableError from
+ * keychainEncrypt/keychainDecrypt at the call site.
+ */
 export const getKeychainStatus = (): boolean => startupProbeResult ?? probeKeychain();
