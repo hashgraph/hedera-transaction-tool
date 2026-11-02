@@ -71,7 +71,8 @@ export const prepareKeyPairsReencryption = async (
   oldPassword: string,
   newPassword: string,
 ): Promise<Prisma.KeyPairUpdateArgs[]> => {
-  const keyPairs = await getKeyPairs(userId, oldPassword);
+  // Rows whose private key was cleared (deleteEncryptedPrivateKeys) have nothing to re-encrypt
+  const keyPairs = (await getKeyPairs(userId, oldPassword)).filter(keyPair => keyPair.private_key);
 
   return await mapWithConcurrency(
     keyPairs,

@@ -193,6 +193,23 @@ describe('Services Local User Key Pairs', () => {
       expect(prisma.keyPair.update).not.toHaveBeenCalled();
     });
 
+    test('Should skip key pairs whose private key was cleared', async () => {
+      const keyPairs: KeyPair[] = [
+        { ...keyPair, id: '1', private_key: '' },
+        { ...keyPair, id: '2', public_key: 'public2', private_key: 'encrypted2' },
+      ];
+      vi.mocked(decrypt).mockResolvedValue('plain');
+      vi.mocked(encrypt).mockResolvedValue('enc');
+      prisma.keyPair.findMany.mockResolvedValue(keyPairs);
+
+      const updates = await prepareKeyPairsReencryption('user1', 'old', 'new');
+
+      expect(decrypt).toHaveBeenCalledTimes(1);
+      expect(updates).toEqual([
+        { where: { id: '2', public_key: 'public2' }, data: { private_key: 'enc' } },
+      ]);
+    });
+
     test('Should reject if one key pair cannot be decrypted', async () => {
       const keyPairs: KeyPair[] = [
         { ...keyPair, id: '1' },

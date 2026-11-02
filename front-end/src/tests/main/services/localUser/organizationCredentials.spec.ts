@@ -1061,18 +1061,58 @@ describe('Services Local User Organization Credentials', () => {
       ]);
     });
 
-    test('skips empty, clear text and undecryptable values', async () => {
+    test('skips empty and clear text values', async () => {
       prisma.organizationCredentials.findMany.mockResolvedValue([
         { ...organizationCredentials, password: '', jwtToken: 'a.b.c' },
-        { ...organizationCredentials, id: '2', jwtToken: null },
+        { ...organizationCredentials, id: '2', password: null, jwtToken: null },
       ]);
       vi.mocked(isClearTextToken).mockImplementation(v => v === 'a.b.c');
-      vi.mocked(decrypt).mockRejectedValue(new Error('bad decrypt'));
 
       const updates = await prepareCredentialsReencryption('123', 'old', 'new');
 
       expect(updates).toEqual([]);
+      expect(decrypt).not.toHaveBeenCalled();
       expect(encrypt).not.toHaveBeenCalled();
+    });
+
+    test('propagates decrypt failures so nothing is committed', async () => {
+      prisma.organizationCredentials.findMany.mockResolvedValue([
+        { ...organizationCredentials, jwtToken: 'encryptedJwt' },
+      ]);
+      vi.mocked(isClearTextToken).mockReturnValue(false);
+      vi.mocked(decrypt).mockImplementation(async v => {
+        if (v === 'encryptedJwt') throw new Error('bad decrypt');
+        return 'plain';
+      });
+      vi.mocked(encrypt).mockResolvedValue('new');
+
+      await expect(prepareCredentialsReencryption('123', 'old', 'new')).rejects.toThrow(
+        'bad decrypt',
+      );
+    });
+
+    test('limits concurrency across individual values', async () => {
+      const many = Array.from({ length: 6 }, (_, i) => ({
+        ...organizationCredentials,
+        id: String(i),
+        jwtToken: 'encryptedJwt',
+      }));
+      prisma.organizationCredentials.findMany.mockResolvedValue(many);
+      vi.mocked(isClearTextToken).mockReturnValue(false);
+      let inFlight = 0;
+      let max = 0;
+      vi.mocked(decrypt).mockImplementation(async () => {
+        max = Math.max(max, ++inFlight);
+        await new Promise(r => setTimeout(r, 5));
+        inFlight--;
+        return 'plain';
+      });
+      vi.mocked(encrypt).mockResolvedValue('new');
+
+      const updates = await prepareCredentialsReencryption('123', 'old', 'new');
+
+      expect(updates).toHaveLength(6);
+      expect(max).toBeLessThanOrEqual(4);
     });
   });
 

@@ -91,7 +91,8 @@ export const shouldSignInOrganization = async (user_id: string, organization_id:
 };
 
 /* Re-encrypts the stored credentials of a user with a new password (password mode only).
- * Values that are empty, not yet encrypted or cannot be decrypted are left untouched. */
+ * Empty and clear-text values are left untouched. Throws before anything is written if an
+ * encrypted value cannot be decrypted, so the rotation never leaves mixed ciphertext. */
 export const prepareCredentialsReencryption = async (
   user_id: string,
   oldPassword: string,
@@ -99,33 +100,31 @@ export const prepareCredentialsReencryption = async (
 ): Promise<Prisma.OrganizationCredentialsUpdateArgs[]> => {
   const prisma = getPrismaClient();
 
-  const reencrypt = async (value: string | null) => {
-    if (!value || isClearTextToken(value)) return undefined;
-    try {
-      return await encrypt(await decrypt(value, oldPassword), newPassword);
-    } catch (error) {
-      logger.warn('Skipping organization credential that cannot be decrypted', { error });
-      return undefined;
-    }
-  };
-
   const credentials = await prisma.organizationCredentials.findMany({ where: { user_id } });
 
-  const updates = await mapWithConcurrency(
-    credentials,
-    CRYPTO_CONCURRENCY,
-    async (credential): Promise<Prisma.OrganizationCredentialsUpdateArgs | null> => {
-      const [password, jwtToken] = await Promise.all([
-        reencrypt(credential.password),
-        reencrypt(credential.jwtToken),
-      ]);
-      if (password === undefined && jwtToken === undefined) return null;
-      return { where: { id: credential.id }, data: { password, jwtToken } };
-    },
+  // One task per encrypted value so the concurrency limit applies to the crypto work itself
+  const tasks: { id: string; field: 'password' | 'jwtToken'; value: string }[] = [];
+  for (const credential of credentials) {
+    for (const field of ['password', 'jwtToken'] as const) {
+      const value = credential[field];
+      if (value && !isClearTextToken(value)) tasks.push({ id: credential.id, field, value });
+    }
+  }
+
+  const reencrypted = await mapWithConcurrency(tasks, CRYPTO_CONCURRENCY, async task =>
+    encrypt(await decrypt(task.value, oldPassword), newPassword),
   );
-  return updates.filter(
-    (update): update is Prisma.OrganizationCredentialsUpdateArgs => update !== null,
-  );
+
+  const updates = new Map<string, Prisma.OrganizationCredentialsUpdateArgs>();
+  tasks.forEach((task, i) => {
+    let update = updates.get(task.id);
+    if (!update) {
+      update = { where: { id: task.id }, data: {} };
+      updates.set(task.id, update);
+    }
+    update.data[task.field] = reencrypted[i];
+  });
+  return [...updates.values()];
 };
 
 /* Returns the access token of a user for an organization */
