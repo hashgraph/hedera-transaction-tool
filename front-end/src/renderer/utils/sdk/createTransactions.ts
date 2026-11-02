@@ -339,10 +339,6 @@ export const createAccountUpdateTransaction = (
     const oldValue = oldData?.memo ?? null;
     if (oldValue !== null && oldValue !== '') {
       transaction.setAccountMemo('');
-      const frozen = transaction.freeze();
-      const parsed = Transaction.fromBytes(frozen.toBytes());
-      const parsedMemo = (parsed as AccountUpdateTransaction).accountMemo;
-      console.log("parsedMemo=" + parsedMemo);
     }
   }
 
