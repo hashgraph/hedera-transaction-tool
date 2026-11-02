@@ -147,7 +147,7 @@ onBeforeUnmount(() => {
         class="mt-4"
         label="Imported Default Max Transaction Fee"
         :value="Hbar.fromTinybars(importedUserData.defaultMaxTransactionFee).toString()"
-        data-testid="p-migration-summary-imported-accounts"
+        data-testid="p-migration-summary-imported-max-fee"
       />
 
       <SummaryItem
