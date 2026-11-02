@@ -569,6 +569,11 @@ const setNodeData = (
     if (newValue !== null && (oldValue === null || !compareNodeServiceEndpoint(oldValue, newValue))) {
       transaction.setGrpcWebProxyEndpoint(newValue);
     }
+  } else {
+    const oldValue = currentNodeInfo?.grpc_web_proxy_endpoint ?? null;
+    if (oldValue !== null && transaction instanceof NodeUpdateTransaction) {
+      transaction.deleteGrpcWebProxyEndpoint();
+    }
   }
 
   if (data.certificateHash.length > 0) {
