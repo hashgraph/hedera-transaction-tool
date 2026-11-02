@@ -5,6 +5,7 @@ import * as path from 'path';
 import { deleteAllTempFolders } from '@main/services/localUser';
 import { probeKeychainAtStartup } from '@main/utils/keychain';
 import { restoreOrCreateWindow } from '@main/windows/mainWindow';
+import initDatabase from '@main/db/init';
 import { MockedObject } from 'vitest';
 
 vi.mock('path', () => ({
@@ -25,9 +26,10 @@ vi.mock('electron', () => {
 vi.mock('@main/db/init', () => ({ default: vi.fn() }));
 vi.mock('@main/utils/keychain', () => ({ probeKeychainAtStartup: vi.fn() }));
 vi.mock('@main/services/localUser', () => ({ deleteAllTempFolders: vi.fn() }));
+const mockLogger = vi.hoisted(() => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn() }));
 vi.mock('@main/modules/logger', () => ({
   default: vi.fn(),
-  createLogger: vi.fn(() => ({ error: vi.fn(), warn: vi.fn(), info: vi.fn() })),
+  createLogger: vi.fn(() => mockLogger),
 }));
 vi.mock('@main/modules/menu', () => ({
   default: vi.fn(),
@@ -90,5 +92,24 @@ describe('Electron entry file', async () => {
     expect(vi.mocked(probeKeychainAtStartup).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(restoreOrCreateWindow).mock.invocationCallOrder[0],
     );
+  });
+
+  test('Should log the error and still create the window when app initialization fails', async () => {
+    const initError = new Error('db init failed');
+    vi.mocked(initDatabase).mockRejectedValueOnce(initError);
+    vi.mocked(restoreOrCreateWindow).mockClear();
+    vi.resetModules();
+    await import('@main/index');
+
+    const appMO = app as unknown as MockedObject<Electron.App>;
+    //@ts-expect-error Incorrect type definition
+    const readyCalls = appMO.on.mock.calls.filter(([event]) => event === 'ready');
+    //@ts-expect-error Incorrect type definition
+    await readyCalls[readyCalls.length - 1][1]().catch(() => {});
+
+    expect(mockLogger.error).toHaveBeenCalledWith('App initialization failed', {
+      error: initError,
+    });
+    expect(restoreOrCreateWindow).toHaveBeenCalledOnce();
   });
 });
