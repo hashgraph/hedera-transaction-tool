@@ -30,7 +30,6 @@ import {
 
 import type {
   AccountCreateData,
-  AccountData,
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
@@ -57,7 +56,7 @@ import type {
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
-import type { INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -84,14 +83,9 @@ export const assertTransactionType: AssertType = (transaction, type) => {
   }
 };
 
-export const getAccountData = (transaction: Transaction): AccountData => {
-  if (
-    !(transaction instanceof AccountCreateTransaction) &&
-    !(transaction instanceof AccountUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
   return {
+    initialBalance: transaction.initialBalance || new Hbar(0),
     receiverSignatureRequired: transaction.receiverSignatureRequired || false,
     declineStakingReward: transaction.declineStakingRewards || false,
     maxAutomaticTokenAssociations: transaction.maxAutomaticTokenAssociations?.toNumber() || 0,
@@ -107,17 +101,30 @@ export const getAccountData = (transaction: Transaction): AccountData => {
   };
 };
 
-export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
+export const getAccountUpdateData = (transaction: AccountUpdateTransaction, oldData: IAccountInfoParsed | null): AccountUpdateData => {
+  const accountId = transaction.accountId?.toString() ?? '';
+  const receiverSignatureRequired =
+    transaction.receiverSignatureRequired ?? oldData?.receiverSignatureRequired ?? false;
+  const declineStakingReward = transaction.declineStakingRewards ?? oldData?.declineReward ?? false;
+  const maxAutomaticTokenAssociations =
+    transaction.maxAutomaticTokenAssociations?.toNumber() ??
+    oldData?.maxAutomaticTokenAssociations ??
+    0;
+  const stakedAccountId = transaction.stakedAccountId ?? oldData?.stakedAccountId ?? null;
+  const stakedNodeId = transaction.stakedNodeId?.toNumber() ?? oldData?.stakedNodeId ?? null;
+  const stakeType = stakedAccountId ? 'Account' : stakedNodeId ? 'Node' : 'None';
+  const accountMemo = transaction.accountMemo ?? oldData?.memo ?? '';
+  const ownerKey = transaction.key ?? oldData?.key ?? null;
   return {
-    initialBalance: transaction.initialBalance || new Hbar(0),
-    ...getAccountData(transaction),
-  };
-};
-
-export const getAccountUpdateData = (transaction: AccountUpdateTransaction): AccountUpdateData => {
-  return {
-    accountId: transaction.accountId?.toString() || '',
-    ...getAccountData(transaction),
+    accountId,
+    receiverSignatureRequired,
+    declineStakingReward,
+    maxAutomaticTokenAssociations,
+    stakeType,
+    stakedAccountId: stakedAccountId?.toString() ?? '',
+    stakedNodeId,
+    accountMemo,
+    ownerKey,
   };
 };
 

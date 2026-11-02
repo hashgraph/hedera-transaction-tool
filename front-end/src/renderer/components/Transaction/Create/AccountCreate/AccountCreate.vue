@@ -17,7 +17,6 @@ import {
   isAccountId,
   isUserLoggedIn,
   getEntityIdFromTransactionReceipt,
-  getAccountData,
   getTransactionCommonData,
 } from '@renderer/utils';
 import {
@@ -77,7 +76,6 @@ const createTransaction = (commonData: TransactionCommonData): AccountCreateTran
 const getAllData = (tx: AccountCreateTransaction): AccountCreateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getAccountData(tx),
     ...getAccountCreateData(tx),
   };
 };

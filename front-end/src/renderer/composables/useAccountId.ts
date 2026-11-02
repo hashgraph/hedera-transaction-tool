@@ -15,6 +15,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 export interface AccountIdStore {
   accountId: Ref<string>;
   accountInfo: Ref<IAccountInfoParsed | null>;
+  fetchAccountInfo: (accountId: string) => Promise<IAccountInfoParsed | null>;
   accountIdFormatted: Ref<string>;
   accountIdWithChecksum: Ref<string | string[] | undefined>;
   autoRenewPeriodInDays: Ref<string>;
@@ -100,11 +101,7 @@ export default function useAccountId(): AccountIdStore {
       AccountId.fromString(baseId);
 
       accountInfoController.value = new AbortController();
-      const accountInfoRes = await accountByIdCache.lookup(
-        baseId,
-        networkStore.mirrorNodeBaseURL,
-        true /* To get the latest balance */
-      );
+      const accountInfoRes = await fetchAccountInfo(baseId);
 
       allowancesController.value = new AbortController();
       const accountAllowancesRes = await getAccountAllowances(
@@ -167,9 +164,18 @@ export default function useAccountId(): AccountIdStore {
             https://hashscan.io/${networkStore.network}/account/${accountIdFormatted.value}`);
   }
 
+  const fetchAccountInfo = async (accountId: string): Promise<IAccountInfoParsed | null> => {
+    try {
+      return await accountByIdCache.lookup(accountId, networkStore.mirrorNodeBaseURL, true);
+    } catch {
+      return null;
+    }
+  };
+
   return {
     accountId,
     accountInfo,
+    fetchAccountInfo,
     accountIdFormatted,
     accountIdWithChecksum,
     autoRenewPeriodInDays,

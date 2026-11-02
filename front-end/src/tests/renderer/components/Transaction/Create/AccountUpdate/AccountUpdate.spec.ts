@@ -381,7 +381,7 @@ describe('AccountUpdate.vue — createTransaction (form data reaches the transac
     transaction.freeze();
     const decoded = Transaction.fromBytes(transaction.toBytes());
     expect(decoded instanceof AccountUpdateTransaction).toBe(true);
-    const decodedData = getAccountUpdateData(decoded as AccountUpdateTransaction);
+    const decodedData = getAccountUpdateData(decoded as AccountUpdateTransaction, null);
 
     expect(decodedData.accountId).toBe('0.0.100');
     expect(decodedData.ownerKey?.toString()).toBe(key2.toString());

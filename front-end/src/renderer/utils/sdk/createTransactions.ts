@@ -301,47 +301,84 @@ export const createAccountUpdateTransaction = (
   const transaction = new AccountUpdateTransaction();
   setTransactionCommonData(transaction, data);
 
-  isAccountId(data.accountId) && transaction.setAccountId(data.accountId);
-
-  if (oldData?.receiverSignatureRequired !== data.receiverSignatureRequired) {
-    transaction.setReceiverSignatureRequired(data.receiverSignatureRequired);
+  if (isAccountId(data.accountId)) {
+    transaction.setAccountId(data.accountId);
   }
 
-  if (oldData?.declineReward !== data.declineStakingReward) {
-    transaction.setDeclineStakingReward(data.declineStakingReward);
+  const oldReceiverSignatureRequired = oldData?.receiverSignatureRequired ?? null;
+  const newReceiverSignatureRequired = data.receiverSignatureRequired;
+  if (
+    oldReceiverSignatureRequired === null ||
+    oldReceiverSignatureRequired !== newReceiverSignatureRequired
+  ) {
+    transaction.setReceiverSignatureRequired(newReceiverSignatureRequired);
   }
 
-  if (oldData?.maxAutomaticTokenAssociations !== data.maxAutomaticTokenAssociations) {
-    transaction.setMaxAutomaticTokenAssociations(Number(data.maxAutomaticTokenAssociations));
+  const oldDeclineReward = oldData?.declineReward ?? null;
+  const newDeclineReward = data.declineStakingReward;
+  if (oldDeclineReward === null || oldDeclineReward !== newDeclineReward) {
+    transaction.setDeclineStakingReward(newDeclineReward);
   }
 
-  if (oldData?.memo !== data.accountMemo) {
-    transaction.setAccountMemo(data.accountMemo || '');
+  const oldMaxAutomaticTokenAssociations = oldData?.maxAutomaticTokenAssociations ?? null;
+  const newMaxAutomaticTokenAssociations = data.maxAutomaticTokenAssociations;
+  if (
+    oldMaxAutomaticTokenAssociations === null ||
+    oldMaxAutomaticTokenAssociations !== newMaxAutomaticTokenAssociations
+  ) {
+    transaction.setMaxAutomaticTokenAssociations(newMaxAutomaticTokenAssociations);
   }
 
-  if (data.ownerKey && oldData?.key) {
-    !compareKeys(data.ownerKey, oldData?.key) && transaction.setKey(data.ownerKey);
-  } else if (data.ownerKey) {
-    transaction.setKey(data.ownerKey);
-  }
-
-  if (data.stakeType === 'None') {
-    oldData?.stakedAccountId && transaction.clearStakedAccountId();
-    oldData?.stakedNodeId !== null && transaction.clearStakedNodeId();
-  } else if (data.stakeType === 'Account') {
-    if (!isAccountId(data.stakedAccountId) || data.stakedAccountId === '0.0.0') {
-      transaction.clearStakedAccountId();
-    } else if (
-      isAccountId(data.stakedAccountId) &&
-      oldData?.stakedAccountId?.toString() !== data.stakedAccountId
-    ) {
-      transaction.setStakedAccountId(data.stakedAccountId);
+  if (data.accountMemo.length > 0) {
+    const oldMemo = oldData?.memo ?? null;
+    const newMemo = data.accountMemo;
+    if (oldMemo === null || oldMemo !== newMemo) {
+      transaction.setAccountMemo(newMemo);
     }
-  } else if (data.stakeType === 'Node') {
-    if (data.stakedNodeId === null) {
+  } else {
+    const oldValue = oldData?.memo ?? null;
+    if (oldValue !== null && oldValue !== '') {
+      transaction.setAccountMemo('');
+      const frozen = transaction.freeze();
+      const parsed = Transaction.fromBytes(frozen.toBytes());
+      const parsedMemo = (parsed as AccountUpdateTransaction).accountMemo;
+      console.log("parsedMemo=" + parsedMemo);
+    }
+  }
+
+  const oldKey = oldData?.key ?? null;
+  const newKey = data.ownerKey;
+  if (newKey !== null) {
+    if (oldKey === null || !compareKeys(oldKey, newKey)) {
+      transaction.setKey(newKey);
+    }
+  }
+
+  const oldStakedAccountId = oldData?.stakedAccountId?.toString() ?? null;
+  const newStakedAccountId = data.stakeType === 'Account' ? data.stakedAccountId : null;
+  if (
+    newStakedAccountId !== null &&
+    newStakedAccountId !== '' &&
+    newStakedAccountId !== '0.0.0'
+  ) {
+    if (oldStakedAccountId === null || oldStakedAccountId !== newStakedAccountId) {
+      transaction.setStakedAccountId(newStakedAccountId);
+    }
+  } else {
+    if (oldStakedAccountId !== null) {
+      transaction.clearStakedAccountId();
+    }
+  }
+
+  const oldStakedNodeId = oldData?.stakedNodeId ?? null;
+  const newStakedNodeId = data.stakeType == 'Node' ? data.stakedNodeId : null;
+  if (newStakedNodeId !== null) {
+    if (oldStakedNodeId === null || oldStakedNodeId !== newStakedNodeId) {
+      transaction.setStakedNodeId(newStakedNodeId);
+    }
+  } else {
+    if (oldStakedNodeId !== null) {
       transaction.clearStakedNodeId();
-    } else if (oldData?.stakedNodeId !== data.stakedNodeId) {
-      transaction.setStakedNodeId(data.stakedNodeId);
     }
   }
 

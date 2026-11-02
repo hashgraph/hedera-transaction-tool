@@ -82,12 +82,20 @@ const createTransaction = (commonData: TransactionCommonData): AccountUpdateTran
 const getAllData = (tx: AccountUpdateTransaction): AccountUpdateData => {
   return {
     ...getTransactionCommonData(tx),
-    ...getAccountUpdateData(tx),
+    ...getAccountUpdateData(tx, accountData.accountInfo.value),
   };
 };
 
-const handleDraftLoaded = (transaction: AccountUpdateTransaction) => {
-  handleUpdateData(getAccountUpdateData(transaction));
+const handleDraftLoaded = async (transaction: AccountUpdateTransaction) => {
+  let accountInfo: IAccountInfoParsed | null;
+  if (transaction.accountId !== null) {
+    accountInfo = await accountData.fetchAccountInfo(transaction.accountId.toString());
+    accountData.accountId.value = transaction.accountId.toString();
+  } else {
+    accountInfo = null;
+    accountData.accountId.value = '';
+  }
+  handleUpdateData(getAccountUpdateData(transaction, accountInfo));
 };
 
 const handleUpdateData = (newData: AccountUpdateData) => {
