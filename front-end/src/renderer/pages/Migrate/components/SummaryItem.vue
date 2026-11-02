@@ -3,7 +3,7 @@
 defineProps<{
   label: string;
   value: string;
-  'data-testid'?: string;
+  dataTestid?: string;
 }>();
 </script>
 <template>
@@ -12,7 +12,7 @@ defineProps<{
       <p class="text-small text-semi-bold">{{ label }}</p>
     </div>
     <div class="col-8">
-      <p class="text-small text-secondary overflow-hidden" :data-testid="['data-testid']">
+      <p class="text-small text-secondary overflow-hidden" :data-testid="dataTestid">
         {{ value }}
         <slot></slot>
       </p>

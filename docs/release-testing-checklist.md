@@ -16,7 +16,3 @@ Failures in any of these will block the release.
 
 **4. Transactions List**
 - [ ] 4.2.2 Notification badges appear on relevant tabs
-
-**User Migration (TTv1 → TTv2)**
-- [ ] Run the TTv1-to-TTv2 migration workflow and verify keys and accounts transfer correctly
-- [ ] Migrated user can connect to the organization and operate normally
