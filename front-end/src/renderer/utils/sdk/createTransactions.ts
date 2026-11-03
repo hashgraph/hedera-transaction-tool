@@ -350,33 +350,45 @@ export const createAccountUpdateTransaction = (
     }
   }
 
+  let normalizedStakeType: 'Account' | 'Node' | 'None';
+  if (data.stakeType === 'Account') {
+    normalizedStakeType =
+      data.stakedAccountId === '' || data.stakedAccountId === '0.0.0' ? 'None' : 'Account';
+  } else if (data.stakeType === 'Node') {
+    normalizedStakeType = data.stakedNodeId === null || data.stakedNodeId === -1 ? 'None' : 'Node';
+  } else {
+    normalizedStakeType = 'None';
+  }
+
   const oldStakedAccountId = oldData?.stakedAccountId?.toString() ?? null;
-  const newStakedAccountId = data.stakeType === 'Account' ? data.stakedAccountId : null;
-  if (
-    newStakedAccountId !== null &&
-    newStakedAccountId !== '' &&
-    newStakedAccountId !== '0.0.0'
-  ) {
-    if (oldStakedAccountId === null || oldStakedAccountId !== newStakedAccountId) {
+  const newStakedAccountId = data.stakedAccountId;
+  if (normalizedStakeType === 'Account') {
+    if (
+      newStakedAccountId !== null &&
+      (oldStakedAccountId === null || newStakedAccountId !== oldStakedAccountId.toString())
+    ) {
       transaction.setStakedAccountId(newStakedAccountId);
     }
-  } else {
-    if (oldStakedAccountId !== null) {
-      transaction.clearStakedAccountId();
+  } else if (normalizedStakeType === 'None') {
+    if (oldStakedAccountId !== null && oldStakedAccountId !== '0.0.0') {
+      transaction.setStakedAccountId('0.0.0');
     }
-  }
+  } // else normalizedStakeType === 'Node' => leaves transaction.stakedAccountId to null
 
   const oldStakedNodeId = oldData?.stakedNodeId ?? null;
   const newStakedNodeId = data.stakeType == 'Node' ? data.stakedNodeId : null;
-  if (newStakedNodeId !== null) {
-    if (oldStakedNodeId === null || oldStakedNodeId !== newStakedNodeId) {
+  if (normalizedStakeType === 'Node') {
+    if (
+      newStakedNodeId !== null &&
+      (oldStakedNodeId === null || newStakedNodeId !== oldStakedNodeId)
+    ) {
       transaction.setStakedNodeId(newStakedNodeId);
     }
-  } else {
-    if (oldStakedNodeId !== null) {
-      transaction.clearStakedNodeId();
+  } else if (normalizedStakeType === 'None') {
+    if (oldStakedNodeId !== null && oldStakedNodeId !== -1) {
+      transaction.setStakedNodeId(-1);
     }
-  }
+  } // else normalizedStakeType === 'Account' => leaves transaction.stakedNodeId to null
 
   return transaction;
 };
