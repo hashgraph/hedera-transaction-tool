@@ -301,4 +301,9 @@ export default () => {
   ipcMain.handle(createChannelName('quit'), async () => {
     app.quit();
   });
+
+  ipcMain.handle(createChannelName('relaunch'), async () => {
+    app.relaunch();
+    app.quit();
+  });
 };

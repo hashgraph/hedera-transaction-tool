@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
   restorePrivateKey: vi.fn(),
   storeKeyPair: vi.fn(),
   setStoredClaim: vi.fn(),
-  encryptString: vi.fn(),
+  checkKeychain: vi.fn(),
   safeStorage: { status: 2 },
 }));
 
@@ -32,7 +32,7 @@ vi.mock('@renderer/services/keyPairService', () => ({
 }));
 vi.mock('@renderer/services/claimService', () => ({ setStoredClaim: mocks.setStoredClaim }));
 vi.mock('@renderer/stores/storeSafeStorage.ts', () => ({
-  default: () => ({ ...mocks.safeStorage, encryptString: mocks.encryptString }),
+  default: () => ({ ...mocks.safeStorage, checkKeychain: mocks.checkKeychain }),
   SafeStorageStatus: { notDetermined: 0, denied: 1, authorized: 2 },
 }));
 vi.mock('@renderer/utils', () => ({
@@ -88,7 +88,7 @@ describe('Migrate: personal setup step', () => {
     mocks.registerLocal.mockResolvedValue({ id: 'personal-id' });
     mocks.getStaticUser.mockResolvedValue({ id: 'static-id' });
     mocks.restorePrivateKey.mockResolvedValue(RESTORED_KEY);
-    mocks.encryptString.mockResolvedValue('encrypted');
+    mocks.checkKeychain.mockResolvedValue(true);
   });
 
   describe('with email and password', () => {
@@ -206,7 +206,7 @@ describe('Migrate: personal setup step', () => {
     });
 
     test('does not continue when access to the keychain is not granted', async () => {
-      mocks.encryptString.mockResolvedValue(null);
+      mocks.checkKeychain.mockResolvedValue(false);
       const wrapper = mountStep();
 
       await useKeychain(wrapper);

@@ -24,6 +24,8 @@ import {
 } from '@main/services/localUser/organizationCredentials';
 
 import { safeStorage } from 'electron';
+import { KEYCHAIN_UNAVAILABLE_MESSAGE } from '@shared/constants';
+import { KeychainUnavailableError } from '@main/utils/keychain';
 import { jwtDecode } from 'jwt-decode';
 import { decrypt, encrypt, isClearTextToken, isLegacyBlob } from '@main/utils/crypto';
 import { login } from '@main/services/organization';
@@ -733,7 +735,7 @@ describe('Services Local User Organization Credentials', () => {
       expect(encrypt).not.toHaveBeenCalled();
     });
 
-    test('Should rethrow with the keychain-specific message when keychain encrypt throws (Deny scenario)', async () => {
+    test('Should rethrow the typed keychain-unavailable error when keychain encrypt throws (Deny scenario)', async () => {
       const underlying = new Error(
         'Error while encrypting the text provided to safeStorage.encryptString. Encryption is not available.',
       );
@@ -745,12 +747,12 @@ describe('Services Local User Organization Credentials', () => {
 
       const err = await encryptOrganizationPassword('newPassword', null).catch((e: unknown) => e);
 
-      expect(err).toBeInstanceOf(Error);
-      expect((err as Error).message).toBe('Keychain access denied or unavailable');
+      expect(err).toBeInstanceOf(KeychainUnavailableError);
+      expect((err as Error).message).toBe(KEYCHAIN_UNAVAILABLE_MESSAGE);
       expect((err as Error).cause).toBe(underlying);
     });
 
-    test('Should rethrow with the application-password message when AES encrypt throws', async () => {
+    test('Should wrap AES encrypt failures with the application password message and cause', async () => {
       const underlying = new Error('AES failure');
 
       vi.mocked(getUseKeychainClaim).mockResolvedValue(false);
@@ -762,7 +764,6 @@ describe('Services Local User Organization Credentials', () => {
         (e: unknown) => e,
       );
 
-      expect(err).toBeInstanceOf(Error);
       expect((err as Error).message).toBe('Failed to encrypt with application password');
       expect((err as Error).cause).toBe(underlying);
     });

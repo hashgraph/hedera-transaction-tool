@@ -1,4 +1,6 @@
-import { ipcMain, safeStorage } from 'electron';
+import { ipcMain } from 'electron';
+
+import { getKeychainStatus } from '@main/utils/keychain';
 
 import { STATIC_USER } from '@shared/constants';
 
@@ -32,17 +34,6 @@ export default () => {
     return await login(STATIC_USER, STATIC_USER);
   });
 
-  // Encrypt data
-  ipcMain.handle(createChannelName('encrypt'), (_e, data: string) => {
-    const buffer = safeStorage.encryptString(data);
-    return buffer.toString('base64');
-  });
-
-  // Decrypt data
-  ipcMain.handle(
-    createChannelName('decrypt'),
-    (_e, encrypted: string, encoding?: BufferEncoding) => {
-      return safeStorage.decryptString(Buffer.from(encrypted, encoding));
-    },
-  );
+  // Probe the keychain with a canary round trip
+  ipcMain.handle(createChannelName('checkKeychain'), () => getKeychainStatus());
 };

@@ -22,6 +22,7 @@ vi.mock('electron', () => {
 });
 vi.mock('@main/db/init', () => mockDeep());
 vi.mock('@main/services/localUser', () => mockDeep());
+vi.mock('@main/utils/keychain', () => ({ probeKeychainAtStartup: vi.fn() }));
 vi.mock('@main/modules/logger', () => mockDeep());
 vi.mock('@main/modules/menu', () => mockDeep());
 vi.mock('@main/modules/deepLink', () => ({

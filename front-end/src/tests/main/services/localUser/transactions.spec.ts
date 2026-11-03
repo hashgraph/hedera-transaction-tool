@@ -18,6 +18,7 @@ import {
 } from '@main/services/localUser/transactions';
 
 import { safeStorage } from 'electron';
+import { KEYCHAIN_UNAVAILABLE_MESSAGE } from '@shared/constants';
 import * as SDK from '@hiero-ledger/sdk';
 import { getKeyPairs } from '@main/services/localUser/keyPairs';
 import { showContentInTemp } from '@main/services/localUser/files';
@@ -302,6 +303,25 @@ describe('Services Local User Transactions', () => {
       expect(getKeyPairs).toHaveBeenCalledWith(userId, userPassword);
       expect(transactionMock.toBytes).toHaveBeenCalled();
       expect(result).toEqual(signedTransactionBytes);
+    });
+
+    test('Should throw the keychain error when keychain decrypt fails', async () => {
+      const keyPairs = [{ public_key: 'publicKey1', private_key: 'privateKey1', type: 'ECDSA' }];
+
+      vi.spyOn(SDK.Transaction, 'fromBytes').mockReturnValue({
+        freezeWith: vi.fn(),
+        sign: vi.fn(),
+        toBytes: vi.fn(),
+      } as unknown as SDK.Transaction);
+      vi.mocked(getKeyPairs).mockResolvedValue(keyPairs as unknown as KeyPair[]);
+      vi.mocked(getUseKeychainClaim).mockResolvedValueOnce(true);
+      vi.mocked(safeStorage.decryptString).mockImplementation(() => {
+        throw new Error('Encryption is not available');
+      });
+
+      await expect(
+        signTransaction(new Uint8Array([1]), ['publicKey1'], 'user1', null),
+      ).rejects.toThrow(KEYCHAIN_UNAVAILABLE_MESSAGE);
     });
 
     test('Should throw if no decrypt password is provided and keychain is not used', async () => {

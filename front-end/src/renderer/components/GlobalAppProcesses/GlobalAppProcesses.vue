@@ -4,6 +4,7 @@ import { onMounted, ref, watch } from 'vue';
 import { ACCOUNT_SETUP_STARTED } from '@shared/constants';
 
 import useUserStore from '@renderer/stores/storeUser';
+import useSafeStorage from '@renderer/stores/storeSafeStorage';
 
 import useAutoLogin from '@renderer/composables/useAutoLogin';
 import useLoader from '@renderer/composables/useLoader';
@@ -19,11 +20,13 @@ import { getStoredClaim } from '@renderer/services/claimService';
 import AutoLoginInOrganization from '@renderer/components/Organization/AutoLoginInOrganization.vue';
 import ImportantNote from './components/ImportantNote.vue';
 import BeginDataMigration from './components/BeginDataMigration.vue';
+import KeychainUnavailableModal from './components/KeychainUnavailableModal.vue';
 import MandatoryUpgrade from './components/MandatoryUpgrade.vue';
 import OptionalUpgrade from './components/OptionalUpgrade.vue';
 
 /* Stores */
 const user = useUserStore();
+const safeStorage = useSafeStorage();
 
 /* Composables */
 const withLoader = useLoader();
@@ -61,6 +64,9 @@ const handleImportantModalReady = async () => {
 
 const handleBeginMigrationReadyState = async () => {
   await withLoader(tryAutoLogin);
+
+  // Keychain unusable: stay logged out, the keychain modal explains and offers relaunch/reset
+  if (safeStorage.keychainUnavailable) return;
 
   await user.refetchOrganizations();
 
@@ -116,6 +122,7 @@ watch(
 </script>
 
 <template>
+  <KeychainUnavailableModal />
   <MandatoryUpgrade />
   <OptionalUpgrade />
 

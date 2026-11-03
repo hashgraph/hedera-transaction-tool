@@ -1,4 +1,4 @@
-import { safeStorage } from 'electron';
+import { keychainDecrypt } from '@main/utils/keychain';
 import {
   AddressBookQuery,
   Client,
@@ -120,7 +120,7 @@ export const signTransaction = async (
 
     if (useKeychain) {
       const buffer = Buffer.from(keyPair.private_key, 'base64');
-      decryptedPrivateKey = safeStorage.decryptString(buffer);
+      decryptedPrivateKey = keychainDecrypt(buffer);
     } else if (userPassword) {
       decryptedPrivateKey = await decrypt(keyPair.private_key, userPassword);
     } else {
