@@ -77,7 +77,7 @@ export abstract class TransactionBaseModel<T extends SDKTransaction> {
     const feePayerAccountId = this.getFeePayerAccountId();
     const accounts = this.getSigningAccounts();
     const receiverAccounts = this.getReceiverAccounts();
-    const newKeys = this.getNewKeys() ?? [];
+    const newKeys = this.getNewKeys();
     const nodeKeys = await this.getNodeKeys(mirrorNodeLink, accountInfoCache, nodeInfoCache);
     const registeredNodeKeys = await this.getRegisteredNodeKeys(
       mirrorNodeLink,

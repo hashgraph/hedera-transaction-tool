@@ -8,6 +8,14 @@ import { createLogger } from '@renderer/utils/logger';
 const logger = createLogger('renderer.transaction.signatureModel.registerNodeDelete');
 
 export default class RegisteredNodeUpdateTransactionModel extends TransactionBaseModel<RegisteredNodeUpdateTransaction> {
+  override getNewKeys() {
+    if (this.transaction.adminKey != null) {
+      return [this.transaction.adminKey];
+    }
+
+    return [];
+  }
+
   override async getRegisteredNodeKeys(
     mirrorNodeLink: string,
     _accountInfoCache: AccountByIdCache,
