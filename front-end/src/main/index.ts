@@ -13,6 +13,7 @@ import { safeAwait } from '@main/utils/safeAwait';
 import { probeKeychainAtStartup } from '@main/utils/keychain';
 import {
   configurePlaywrightUserDataPath,
+  DEFAULT_SESSION_PARTITION,
   isPlaywrightSession,
   shouldBypassSingleInstanceLock,
 } from '@main/utils/playwrightIsolation';
@@ -65,7 +66,8 @@ function attachAppEvents() {
     }
 
     if (!is.dev) {
-      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+      const mainSession = session.fromPartition(DEFAULT_SESSION_PARTITION);
+      mainSession.webRequest.onHeadersReceived((details, callback) => {
         callback({
           responseHeaders: {
             ...details.responseHeaders,
