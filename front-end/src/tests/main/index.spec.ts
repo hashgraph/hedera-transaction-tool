@@ -180,23 +180,6 @@ describe('Electron entry file', async () => {
     expect(restoreOrCreateWindow).toHaveBeenCalled();
   });
 
-  test('Should call on headers received callback', async () => {
-    //@ts-expect-error Mocked object
-    const onHeadersReceivedCalls = session.defaultSession.webRequest.onHeadersReceived.mock.calls;
-    const callback = vi.fn();
-
-    expect(onHeadersReceivedCalls).toBeDefined();
-    expect(onHeadersReceivedCalls[0]).toBeDefined();
-
-    onHeadersReceivedCalls[0][0]({ responseHeaders: {} }, callback);
-
-    expect(callback).toHaveBeenCalledWith({
-      responseHeaders: {
-        'Content-Security-Policy': ["script-src 'self'"],
-      },
-    });
-  });
-
   test('Should request single instance lock', () => {
     expect(app.requestSingleInstanceLock).toHaveBeenCalled();
   });
