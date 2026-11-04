@@ -329,7 +329,7 @@ describe('getAccountUpdateData', () => {
       });
 
       describe('accountInfo.memo == ""', () => {
-        const accountInfo = { ...baseAccountInfo, accountMemo: '' };
+        const accountInfo = { ...baseAccountInfo, memo: '' };
 
         test('transaction.accountMemo == null', () => {
           const transaction = new AccountUpdateTransaction();
@@ -412,7 +412,8 @@ describe('getAccountUpdateData', () => {
       });
 
       test('accountInfo.key != null + transaction.key != null', () => {
-        const accountInfo = { ...baseAccountInfo, accountId: AccountId.fromString('0.0.42') };
+        const accountInfoKey = PrivateKey.generateECDSA().publicKey;
+        const accountInfo = { ...baseAccountInfo, key: accountInfoKey };
         const transaction = new AccountUpdateTransaction();
         const transactionKey = PrivateKey.generateECDSA().publicKey;
         transaction.setKey(transactionKey);
