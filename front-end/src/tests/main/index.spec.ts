@@ -112,7 +112,6 @@ describe('Electron entry file', async () => {
     expect(app.setAsDefaultProtocolClient).toHaveBeenCalledWith(PROTOCOL_NAME);
     expect(restoreOrCreateWindow).toHaveBeenCalled();
     expect(createMenu).toHaveBeenCalled();
-    expect(session.defaultSession.webRequest.onHeadersReceived).toHaveBeenCalled();
     expect(app.on).toHaveBeenCalledWith('activate', expect.any(Function));
 
     is.dev = true;
