@@ -163,9 +163,7 @@ export function resetDbState() {
   let db: BetterSqlite3.Database | null = null;
 
   const tablesToReset = [
-    'Organization',
     'Claim',
-    'User',
     'ComplexKey',
     'HederaAccount',
     'HederaFile',
@@ -178,6 +176,8 @@ export function resetDbState() {
     'Mnemonic',
     'Contact',
     'PublicKeyMapping',
+    'Organization',
+    'User',
   ];
 
   try {
