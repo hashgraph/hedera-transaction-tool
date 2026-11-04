@@ -353,7 +353,7 @@ export const createAccountUpdateTransaction = (
   let normalizedStakeType: 'Account' | 'Node' | 'None';
   if (data.stakeType === 'Account') {
     normalizedStakeType =
-      data.stakedAccountId === '' || data.stakedAccountId === '0.0.0' ? 'None' : 'Account';
+      !isAccountId(data.stakedAccountId) || data.stakedAccountId === '0.0.0' ? 'None' : 'Account';
   } else if (data.stakeType === 'Node') {
     normalizedStakeType = data.stakedNodeId === null || data.stakedNodeId === -1 ? 'None' : 'Node';
   } else {
