@@ -442,6 +442,16 @@ describe('getAccountUpdateData', () => {
         expect(data.stakedNodeId).toBe(null);
       });
 
+      test('accountInfo == null + transaction.stakedAccountId == null + transaction.stakedNodeId == -1', () => {
+        const transaction = new AccountUpdateTransaction();
+        const stakedNodeId = -1;
+        transaction.setStakedNodeId(stakedNodeId);
+        const data = getAccountUpdateData(transaction, null);
+        expect(data.stakeType).toBe('None');
+        expect(data.stakedAccountId).toBe('');
+        expect(data.stakedNodeId).toBe(null);
+      });
+
       test('accountInfo == null + transaction.stakedAccountId != null + transaction.stakedNodeId == null', () => {
         const transaction = new AccountUpdateTransaction();
         const stakedAccountId = AccountId.fromString('0.0.42');

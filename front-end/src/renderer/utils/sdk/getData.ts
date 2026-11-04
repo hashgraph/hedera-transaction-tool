@@ -110,10 +110,20 @@ export const getAccountUpdateData = (transaction: AccountUpdateTransaction, oldD
     transaction.maxAutomaticTokenAssociations?.toNumber() ??
     oldData?.maxAutomaticTokenAssociations ??
     0;
-  const rawStakedAccountId = transaction.stakedAccountId ?? oldData?.stakedAccountId ?? null;
+
+  const hasStakingUpdate =
+    transaction.stakedAccountId !== null || transaction.stakedNodeId !== null;
+  const rawStakedAccountId = hasStakingUpdate
+    ? transaction.stakedAccountId
+    : (oldData?.stakedAccountId ?? null);
+  const rawStakedNodeId = hasStakingUpdate
+    ? (transaction.stakedNodeId?.toNumber() ?? null)
+    : (oldData?.stakedNodeId ?? null);
+
   const stakedAccountId = rawStakedAccountId?.toString() === '0.0.0' ? null : rawStakedAccountId;
-  const stakedNodeId = transaction.stakedNodeId?.toNumber() ?? oldData?.stakedNodeId ?? null;
-  const stakeType = stakedAccountId ? 'Account' : stakedNodeId ? 'Node' : 'None';
+  const stakedNodeId = rawStakedNodeId === -1 ? null : rawStakedNodeId;
+  const stakeType = stakedAccountId ? 'Account' : stakedNodeId !== null ? 'Node' : 'None';
+
   const accountMemo = transaction.accountMemo ?? oldData?.memo ?? '';
   const ownerKey = transaction.key ?? oldData?.key ?? null;
   return {
