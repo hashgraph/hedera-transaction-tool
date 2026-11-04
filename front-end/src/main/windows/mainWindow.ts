@@ -30,7 +30,7 @@ async function createWindow() {
       preload,
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false,
+      sandbox: true,
       session,
     },
     show: false,
