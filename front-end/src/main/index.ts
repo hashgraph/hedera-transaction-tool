@@ -13,6 +13,7 @@ import { safeAwait } from '@main/utils/safeAwait';
 import { probeKeychainAtStartup } from '@main/utils/keychain';
 import {
   configurePlaywrightUserDataPath,
+  DEFAULT_SESSION_PARTITION,
   isPlaywrightSession,
   shouldBypassSingleInstanceLock,
 } from '@main/utils/playwrightIsolation';
