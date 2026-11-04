@@ -190,7 +190,7 @@ export class AccountPage extends BasePage {
   }
 
   async clickOnLinkAccountButton() {
-    await this.click(this.linkAccountButtonSelector, this.VERY_LONG_TIMEOUT);
+    await this.click(this.linkAccountButtonSelector, null, this.VERY_LONG_TIMEOUT);
   }
 
   async isUnlinkedAccountsListEmpty() {
