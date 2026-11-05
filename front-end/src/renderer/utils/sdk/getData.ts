@@ -2,6 +2,7 @@ import {
   AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
   AccountDeleteTransaction,
+  AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
   FileAppendTransaction,
@@ -111,17 +112,32 @@ export const getAccountUpdateData = (transaction: AccountUpdateTransaction, oldD
     oldData?.maxAutomaticTokenAssociations ??
     0;
 
-  const hasStakingUpdate =
-    transaction.stakedAccountId !== null || transaction.stakedNodeId !== null;
-  const rawStakedAccountId = hasStakingUpdate
-    ? transaction.stakedAccountId
-    : (oldData?.stakedAccountId ?? null);
+  const normalizeStakedAccountId = (accountId: AccountId | null): AccountId | null => {
+    return accountId?.toString() === '0.0.0' ? null : accountId;
+  }
+  const normalizeStakedNodeId = (nodeId: number | null): number | null => {
+    return nodeId === -1 ? null : nodeId;
+  }
+  const oldStakedAccountId = normalizeStakedAccountId(oldData?.stakedAccountId ?? null);
+  const oldStakedNodeId = normalizeStakedNodeId(oldData?.stakedNodeId ?? null);
+
+  const hasAccountStakingUpdate =
+    oldStakedAccountId === null
+      ? normalizeStakedAccountId(transaction.stakedAccountId) !== null
+      : transaction.stakedAccountId !== null && transaction.stakedAccountId !== oldStakedAccountId;
+  const hasNodeStakingUpdate =
+    oldStakedNodeId === null
+      ? normalizeStakedNodeId(transaction.stakedNodeId?.toNumber() ?? null) !== null
+      : transaction.stakedNodeId !== null && !transaction.stakedNodeId.equals(oldStakedNodeId);
+
+  const hasStakingUpdate = hasAccountStakingUpdate || hasNodeStakingUpdate;
+  const rawStakedAccountId = hasStakingUpdate ? transaction.stakedAccountId : oldStakedAccountId;
   const rawStakedNodeId = hasStakingUpdate
     ? (transaction.stakedNodeId?.toNumber() ?? null)
-    : (oldData?.stakedNodeId ?? null);
+    : oldStakedNodeId;
 
-  const stakedAccountId = rawStakedAccountId?.toString() === '0.0.0' ? null : rawStakedAccountId;
-  const stakedNodeId = rawStakedNodeId === -1 ? null : rawStakedNodeId;
+  const stakedAccountId = normalizeStakedAccountId(rawStakedAccountId);
+  const stakedNodeId = normalizeStakedNodeId(rawStakedNodeId);
   const stakeType = stakedAccountId ? 'Account' : stakedNodeId !== null ? 'Node' : 'None';
 
   const accountMemo = transaction.accountMemo ?? oldData?.memo ?? '';

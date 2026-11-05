@@ -486,6 +486,243 @@ describe('getAccountUpdateData', () => {
       });
     });
 
-    describe('accountInfo != null', () => {});
+    describe('accountInfo != null', () => {
+      describe('accountInfo.stakedAccountId === null && accountInfo.stakedNodeId === null', () => {
+        const accountInfo = { ...baseAccountInfo, stakedAccountId: null, stakedNodeId: null };
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('None');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('None');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = -1;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('None');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.123 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.123');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.123 + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.123');
+          transaction.setStakedAccountId(stakedAccountId);
+          transaction.setStakedNodeId(-1);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == 42', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = 42;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId == 42', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const stakedNodeId = 42;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+      });
+
+      describe('accountInfo.stakedAccountId === 0.0.123 && accountInfo.stakedNodeId === null', () => {
+        const accountInfoStakedAccountId = AccountId.fromString('0.0.123');
+        const accountInfo = {
+          ...baseAccountInfo,
+          stakedAccountId: accountInfoStakedAccountId,
+          stakedNodeId: null,
+        };
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(accountInfoStakedAccountId?.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('None');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = -1;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(accountInfoStakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.234 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.234');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.234 + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.234');
+          transaction.setStakedAccountId(stakedAccountId);
+          transaction.setStakedNodeId(-1);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == 42', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = 42;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId == 42', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const stakedNodeId = 42;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+      });
+
+      describe('accountInfo.stakedAccountId === null && accountInfo.stakedNodeId == 42', () => {
+        const accountInfoStakedNodeId = 42;
+        const accountInfo = {
+          ...baseAccountInfo,
+          stakedAccountId: null,
+          stakedNodeId: accountInfoStakedNodeId,
+        };
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(accountInfoStakedNodeId);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(accountInfoStakedNodeId);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = -1;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('None');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.123 + transaction.stakedNodeId == null', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.123');
+          transaction.setStakedAccountId(stakedAccountId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == 0.0.123 + transaction.stakedNodeId == -1', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.123');
+          transaction.setStakedAccountId(stakedAccountId);
+          transaction.setStakedNodeId(-1);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Account');
+          expect(data.stakedAccountId).toBe(stakedAccountId.toString());
+          expect(data.stakedNodeId).toBe(null);
+        });
+
+        test('transaction.stakedAccountId == null + transaction.stakedNodeId == 44', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedNodeId = 44;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+
+        test('transaction.stakedAccountId == 0.0.0 + transaction.stakedNodeId === 44', () => {
+          const transaction = new AccountUpdateTransaction();
+          const stakedAccountId = AccountId.fromString('0.0.0');
+          transaction.setStakedAccountId(stakedAccountId);
+          const stakedNodeId = 44;
+          transaction.setStakedNodeId(stakedNodeId);
+          const data = getAccountUpdateData(transaction, accountInfo);
+          expect(data.stakeType).toBe('Node');
+          expect(data.stakedAccountId).toBe('');
+          expect(data.stakedNodeId).toBe(stakedNodeId);
+        });
+
+      });
+
+    });
   });
 });
