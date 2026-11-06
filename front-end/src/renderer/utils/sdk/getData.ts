@@ -2,6 +2,7 @@ import {
   AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
   AccountDeleteTransaction,
+  AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
   FileAppendTransaction,
@@ -30,7 +31,6 @@ import {
 
 import type {
   AccountCreateData,
-  AccountData,
   AccountDeleteData,
   AccountUpdateData,
   ApproveHbarAllowanceData,
@@ -57,7 +57,7 @@ import type {
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
-import type { INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
 
 export const getTransactionCommonData = (transaction: Transaction): TransactionCommonData => {
   const transactionId = transaction.transactionId;
@@ -84,14 +84,9 @@ export const assertTransactionType: AssertType = (transaction, type) => {
   }
 };
 
-export const getAccountData = (transaction: Transaction): AccountData => {
-  if (
-    !(transaction instanceof AccountCreateTransaction) &&
-    !(transaction instanceof AccountUpdateTransaction)
-  ) {
-    throw new Error('Invalid transaction type.');
-  }
+export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
   return {
+    initialBalance: transaction.initialBalance || new Hbar(0),
     receiverSignatureRequired: transaction.receiverSignatureRequired || false,
     declineStakingReward: transaction.declineStakingRewards || false,
     maxAutomaticTokenAssociations: transaction.maxAutomaticTokenAssociations?.toNumber() || 0,
@@ -107,17 +102,56 @@ export const getAccountData = (transaction: Transaction): AccountData => {
   };
 };
 
-export const getAccountCreateData = (transaction: AccountCreateTransaction): AccountCreateData => {
-  return {
-    initialBalance: transaction.initialBalance || new Hbar(0),
-    ...getAccountData(transaction),
-  };
-};
+export const getAccountUpdateData = (transaction: AccountUpdateTransaction, oldData: IAccountInfoParsed | null): AccountUpdateData => {
+  const accountId = transaction.accountId?.toString() ?? '';
+  const receiverSignatureRequired =
+    transaction.receiverSignatureRequired ?? oldData?.receiverSignatureRequired ?? false;
+  const declineStakingReward = transaction.declineStakingRewards ?? oldData?.declineReward ?? false;
+  const maxAutomaticTokenAssociations =
+    transaction.maxAutomaticTokenAssociations?.toNumber() ??
+    oldData?.maxAutomaticTokenAssociations ??
+    0;
 
-export const getAccountUpdateData = (transaction: AccountUpdateTransaction): AccountUpdateData => {
+  const normalizeStakedAccountId = (accountId: AccountId | null): AccountId | null => {
+    return accountId?.toString() === '0.0.0' ? null : accountId;
+  }
+  const normalizeStakedNodeId = (nodeId: number | null): number | null => {
+    return nodeId === -1 ? null : nodeId;
+  }
+  const oldStakedAccountId = normalizeStakedAccountId(oldData?.stakedAccountId ?? null);
+  const oldStakedNodeId = normalizeStakedNodeId(oldData?.stakedNodeId ?? null);
+
+  const hasAccountStakingUpdate =
+    oldStakedAccountId === null
+      ? normalizeStakedAccountId(transaction.stakedAccountId) !== null
+      : transaction.stakedAccountId !== null && transaction.stakedAccountId !== oldStakedAccountId;
+  const hasNodeStakingUpdate =
+    oldStakedNodeId === null
+      ? normalizeStakedNodeId(transaction.stakedNodeId?.toNumber() ?? null) !== null
+      : transaction.stakedNodeId !== null && !transaction.stakedNodeId.equals(oldStakedNodeId);
+
+  const hasStakingUpdate = hasAccountStakingUpdate || hasNodeStakingUpdate;
+  const rawStakedAccountId = hasStakingUpdate ? transaction.stakedAccountId : oldStakedAccountId;
+  const rawStakedNodeId = hasStakingUpdate
+    ? (transaction.stakedNodeId?.toNumber() ?? null)
+    : oldStakedNodeId;
+
+  const stakedAccountId = normalizeStakedAccountId(rawStakedAccountId);
+  const stakedNodeId = normalizeStakedNodeId(rawStakedNodeId);
+  const stakeType = stakedAccountId ? 'Account' : stakedNodeId !== null ? 'Node' : 'None';
+
+  const accountMemo = transaction.accountMemo ?? oldData?.memo ?? '';
+  const ownerKey = transaction.key ?? oldData?.key ?? null;
   return {
-    accountId: transaction.accountId?.toString() || '',
-    ...getAccountData(transaction),
+    accountId,
+    receiverSignatureRequired,
+    declineStakingReward,
+    maxAutomaticTokenAssociations,
+    stakeType,
+    stakedAccountId: stakedAccountId?.toString() ?? '',
+    stakedNodeId,
+    accountMemo,
+    ownerKey,
   };
 };
 
