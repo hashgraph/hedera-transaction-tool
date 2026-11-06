@@ -1,7 +1,7 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
-import { setActivePinia, createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import {
   AccountId,
   FileId,
@@ -13,6 +13,9 @@ import {
   Transaction,
   TransactionId,
 } from '@hiero-ledger/sdk';
+import BigFileOrganizationRequestHandler from '@renderer/components/Transaction/TransactionProcessor/components/BigFileOrganizationRequestHandler.vue';
+import { TransactionRequest } from '@renderer/components/Transaction/TransactionProcessor';
+import { submitTransactionGroup } from '@renderer/services/organization/transactionGroup';
 
 const mocks = vi.hoisted(() => ({
   sign: vi.fn(),
@@ -71,10 +74,6 @@ vi.mock('@renderer/stores/storeNetwork', () => ({
   default: vi.fn(() => ({ network: 'testnet' })),
 }));
 
-import BigFileOrganizationRequestHandler from '@renderer/components/Transaction/TransactionProcessor/components/BigFileOrganizationRequestHandler.vue';
-import { TransactionRequest } from '@renderer/components/Transaction/TransactionProcessor';
-import { submitTransactionGroup } from '@renderer/services/organization/transactionGroup';
-
 // Real frozen bytes, so the handler can parse them like it would the main process output
 const freezeBytes = async (bytes: Uint8Array) =>
   Transaction.fromBytes(bytes)
@@ -99,7 +98,7 @@ function buildRequest() {
 
   return TransactionRequest.fromData({
     transactionKey: new KeyList([key]),
-    transactionBytes: transaction.toBytes(),
+    transaction: transaction,
     name: 'big',
     description: '',
     submitManually: false,
@@ -117,7 +116,7 @@ describe('BigFileOrganizationRequestHandler.vue', () => {
 
   test('freezes the update and append items, signs the frozen bytes and submits those same bytes', async () => {
     const wrapper = mount(BigFileOrganizationRequestHandler, {
-      props: { observers: [], approvers: [] },
+      props: { transactionCtor: FileUpdateTransaction, observers: [], approvers: [] },
     });
     await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
       buildRequest(),

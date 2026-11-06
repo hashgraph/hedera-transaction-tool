@@ -118,10 +118,12 @@ vi.mock(
 );
 
 import TransactionProcessor from '@renderer/components/Transaction/TransactionProcessor/TransactionProcessor.vue';
+import { TransferTransaction } from '@hiero-ledger/sdk';
 
 function mountProcessor() {
   return mount(TransactionProcessor, {
     props: {
+      transactionCtor: TransferTransaction,
       hasDataChanged: false,
       saveDraft: async () => {},
     },

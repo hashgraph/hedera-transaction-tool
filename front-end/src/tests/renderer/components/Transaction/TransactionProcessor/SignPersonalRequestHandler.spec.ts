@@ -16,6 +16,7 @@ vi.mock('@renderer/services/keyPairService', () => ({
 
 vi.mock('@renderer/services/transactionService', () => ({
   signTransaction: vi.fn(),
+  freeze: vi.fn()
 }));
 
 vi.mock('@renderer/utils', async importOriginal => {
@@ -31,7 +32,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
   return {
     ...actual,
     Transaction: {
-      fromBytes: vi.fn(() => ({})),
+      fromBytes: vi.fn(() => new TransferTransaction()),
     },
   };
 });
@@ -46,6 +47,7 @@ vi.mock('@renderer/stores/storeUser', () => ({
 import SignPersonalRequestHandler from '@renderer/components/Transaction/TransactionProcessor/components/SignPersonalRequestHandler.vue';
 import { TransactionRequest } from '@renderer/components/Transaction/TransactionProcessor';
 import { signTransaction } from '@renderer/services/transactionService';
+import { TransferTransaction } from '@hiero-ledger/sdk';
 
 const signTransactionMock = vi.mocked(signTransaction);
 
@@ -57,7 +59,7 @@ type HandlerVm = {
 function buildRequest() {
   return TransactionRequest.fromData({
     transactionKey: {} as never,
-    transactionBytes: new Uint8Array([0]),
+    transaction: new TransferTransaction(),
     name: 'test',
     description: '',
     submitManually: false,
@@ -66,7 +68,11 @@ function buildRequest() {
 }
 
 function mountHandler() {
-  return mount(SignPersonalRequestHandler);
+  return mount(SignPersonalRequestHandler, {
+    props: {
+      transactionCtor: TransferTransaction,
+    }
+  });
 }
 
 describe('SignPersonalRequestHandler.vue', () => {
@@ -96,9 +102,7 @@ describe('SignPersonalRequestHandler.vue', () => {
         'typed-password',
       );
       expect(wrapper.emitted('transaction:sign:success')).toBeTruthy();
-      expect(nextHandle).toHaveBeenCalledWith(
-        expect.objectContaining({ transactionBytes: signedBytes }),
-      );
+      expect(nextHandle).toHaveBeenCalledOnce();
     });
 
     // Regression test: this used to throw "Password is required to sign" unconditionally

@@ -55,7 +55,7 @@ vi.mock('@hiero-ledger/sdk', async importOriginal => {
   return {
     ...actual,
     Transaction: {
-      fromBytes: vi.fn(() => ({})),
+      fromBytes: vi.fn(() => new TransferTransaction()),
     },
   };
 });
@@ -81,14 +81,21 @@ import { ErrorCodes, ErrorMessages } from '@shared/constants';
 import { RequestError } from '@renderer/utils';
 import { submitTransaction } from '@renderer/services/organization';
 import { decryptPrivateKey } from '@renderer/services/keyPairService';
+import {
+  AccountId,
+  Hbar,
+  Timestamp,
+  TransactionId,
+  TransferTransaction,
+} from '@hiero-ledger/sdk';
 
 const submitTransactionMock = vi.mocked(submitTransaction);
 const decryptPrivateKeyMock = vi.mocked(decryptPrivateKey);
 
-function buildRequest(bytesFactory?: (n: number) => Uint8Array) {
+function buildRequest(bytesFactory?: (n: number) => TransferTransaction) {
   return TransactionRequest.fromData({
     transactionKey: {} as never,
-    transactionBytes: new Uint8Array([0]),
+    transaction: new TransferTransaction(),
     name: 'test',
     description: '',
     submitManually: false,
@@ -99,7 +106,7 @@ function buildRequest(bytesFactory?: (n: number) => Uint8Array) {
 
 function mountHandler() {
   return mount(OrganizationRequestHandler, {
-    props: { observers: [], approvers: [] },
+    props: { transactionCtor: TransferTransaction, observers: [], approvers: [] },
   });
 }
 
@@ -119,8 +126,17 @@ describe('OrganizationRequestHandler.vue', () => {
 
   describe('freeze before signing', () => {
     test('signs and submits the frozen bytes, not the original ones', async () => {
-      const original = new Uint8Array([0]);
-      const frozen = new Uint8Array([9, 9, 9]);
+      const tx = new TransferTransaction()
+        .setTransactionId(
+          TransactionId.withValidStart(
+            AccountId.fromString('0.0.1000'),
+            Timestamp.fromDate(new Date()),
+          ),
+        )
+        .setMaxTransactionFee(new Hbar(2));
+      const original = tx.toBytes();
+      tx.freeze();
+      const frozen = tx.toBytes();
       mocks.freeze.mockResolvedValue(frozen);
       submitTransactionMock.mockResolvedValue({ id: 1, transactionBytes: 'b' });
 
@@ -175,7 +191,7 @@ describe('OrganizationRequestHandler.vue', () => {
         .mockRejectedValueOnce(texError())
         .mockResolvedValueOnce({ id: 7, transactionBytes: 'b' });
 
-      const factory = vi.fn((_: number) => new Uint8Array([1]));
+      const factory = vi.fn((_: number) => new TransferTransaction());
       const wrapper = mountHandler();
       await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
         buildRequest(factory),
@@ -197,7 +213,7 @@ describe('OrganizationRequestHandler.vue', () => {
       const err = texError();
       submitTransactionMock.mockRejectedValue(err);
 
-      const factory = vi.fn((_: number) => new Uint8Array([0]));
+      const factory = vi.fn((_: number) => new TransferTransaction());
       const wrapper = mountHandler();
 
       await expect(
@@ -223,7 +239,7 @@ describe('OrganizationRequestHandler.vue', () => {
         .mockRejectedValueOnce(err)
         .mockResolvedValueOnce({ id: 1, transactionBytes: 'b' });
 
-      const factory = vi.fn((_: number) => new Uint8Array([0]));
+      const factory = vi.fn((_: number) => new TransferTransaction());
       const wrapper = mountHandler();
       await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
         buildRequest(factory),
@@ -292,7 +308,7 @@ describe('OrganizationRequestHandler.vue', () => {
       submitTransactionMock.mockRejectedValue(err);
 
       const wrapper = mountHandler();
-      const factory = vi.fn((_: number) => new Uint8Array([0]));
+      const factory = vi.fn((_: number) => new TransferTransaction());
 
       await expect(
         (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(

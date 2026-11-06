@@ -2,7 +2,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { setActivePinia, createPinia } from 'pinia';
-import { AccountId, Hbar, PrivateKey, Transaction } from '@hiero-ledger/sdk';
+import { AccountId, Hbar, PrivateKey, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 
 const mocks = vi.hoisted(() => ({
   sign: vi.fn(),
@@ -99,7 +99,7 @@ describe('MultipleAccountUpdateRequestHandler.vue', () => {
 
   test('freezes every item, signs the frozen bytes and submits those same bytes', async () => {
     const wrapper = mount(MultipleAccountUpdateRequestHandler, {
-      props: { observers: [], approvers: [] },
+      props: { transactionCtor: TransferTransaction, observers: [], approvers: [] },
     });
     await (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(
       buildRequest(),
@@ -128,7 +128,7 @@ describe('MultipleAccountUpdateRequestHandler.vue', () => {
     mocks.freeze.mockRejectedValue(err);
 
     const wrapper = mount(MultipleAccountUpdateRequestHandler, {
-      props: { observers: [], approvers: [] },
+      props: { transactionCtor: TransferTransaction, observers: [], approvers: [] },
     });
     await expect(
       (wrapper.vm as unknown as { handle: (r: unknown) => Promise<void> }).handle(buildRequest()),
