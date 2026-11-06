@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { freeze } from '@renderer/services/transactionService';
 import type { TransactionApproverDto } from '@shared/interfaces';
 import type { GroupItem } from '@renderer/stores/storeTransactionGroup';
@@ -10,7 +10,7 @@ import {
 } from '@renderer/services/organization';
 import { TransactionRequest, type Handler, type Processable } from '..';
 
-import { ref } from 'vue';
+import { ref, type Ref } from 'vue';
 import { Transaction, FileUpdateTransaction, Hbar, Key } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -65,21 +65,21 @@ const network = useNetworkStore();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
-const nextHandler = ref<Handler | null>(null);
-const request = ref<TransactionRequest | null>(null);
+const nextHandler = ref<Handler<T> | null>(null);
+const request: Ref<TransactionRequest<T> | null> = ref(null);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
     return;
   }
 
-  const transaction = Transaction.fromBytes(req.transactionBytes);
+  const transaction = req.transaction;
   const size = transaction.toBytes().length;
   const sizeBufferBytes = 200;
   // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit
@@ -113,7 +113,7 @@ async function handle(req: Processable) {
 function createAppendTransaction() {
   if (!request.value) throw new Error('Request is missing');
 
-  const originalTransaction = Transaction.fromBytes(request.value.transactionBytes);
+  const originalTransaction = request.value.transaction;
   if (!originalTransaction) throw new Error('Transaction is missing');
   if (!isFileUpdate(originalTransaction))
     throw new Error('Transaction is not a File Update Transaction');
@@ -139,7 +139,7 @@ function createAppendTransaction() {
     originalTransaction.transactionId?.accountId ?? null,
   );
 
-  const append = createFileAppendTransaction({
+  return createFileAppendTransaction({
     payerId,
     validStart: new Date(validStart.getTime() + 10),
     maxTransactionFee: originalTransaction.maxTransactionFee || new Hbar(2),
@@ -149,8 +149,6 @@ function createAppendTransaction() {
     chunkSize,
     maxChunks: 99999,
   });
-
-  return append;
 }
 
 function createGroupItem(transaction: Transaction, transactionKey: Key, seq: string): GroupItem {
@@ -174,8 +172,8 @@ function createGroupItem(transaction: Transaction, transactionKey: Key, seq: str
   };
 }
 
-function createGroupItems(req: TransactionRequest) {
-  const originalTransaction = Transaction.fromBytes(req.transactionBytes);
+function createGroupItems<T extends Transaction>(req: TransactionRequest<T>) {
+  const originalTransaction = req.transaction;
   assertTransactionType(originalTransaction, FileUpdateTransaction);
   if (!originalTransaction.contents) throw new Error('Transaction content is missing');
 

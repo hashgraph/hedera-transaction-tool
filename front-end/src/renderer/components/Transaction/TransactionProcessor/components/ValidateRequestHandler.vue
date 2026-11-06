@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { BaseRequest, CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
 
 import { ref } from 'vue';
@@ -23,17 +23,16 @@ const network = useNetworkStore();
 const accountByIdCache = AppCache.inject().mirrorAccountById;
 
 /* State */
-const nextHandler = ref<Handler | null>(null);
+const nextHandler = ref<Handler<T> | null>(null);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(request: Processable) {
+async function handle(request: Processable<T>) {
   if (request instanceof TransactionRequest) {
-    const transaction = Transaction.fromBytes(request.transactionBytes);
-    if (!transaction) throw new Error('Transaction not provided');
+    const transaction = request.transaction;
 
     assertUserLoggedIn(user.personal);
 
@@ -51,7 +50,7 @@ async function handle(request: Processable) {
 }
 
 /* Functions */
-function validate(request: TransactionRequest, transaction: Transaction) {
+function validate(request: TransactionRequest<T>, transaction: Transaction) {
   validateSignableInPersonal(request);
 
   if (transaction instanceof FileCreateTransaction) {

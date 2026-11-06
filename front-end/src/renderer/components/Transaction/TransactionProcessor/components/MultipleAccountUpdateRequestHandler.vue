@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { freeze } from '@renderer/services/transactionService';
 import {
   MultipleAccountUpdateRequest,
@@ -53,9 +53,12 @@ import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
 import { getTransactionType } from '@renderer/utils/sdk/transactions';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import type { TransactionCtor } from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 
 /* Props */
 const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
   observers: number[];
   approvers: TransactionApproverDto[];
 }>();
@@ -87,20 +90,22 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 const router = useRouter();
 
 /* State */
-const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
-const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
-const nextHandler = ref<Handler | null>(null);
+const signPersonalHandler = ref<ComponentExposed<typeof SignPersonalRequestHandler> | null>(null);
+const executePersonalHandler = ref<ComponentExposed<typeof ExecutePersonalRequestHandler> | null>(
+  null,
+);
+const nextHandler = ref<Handler<T> | null>(null);
 const personalItemsIndex = ref<number>(0);
 const groupItems = ref<GroupItem[]>([]);
 
 const request = ref<MultipleAccountUpdateRequest | null>(null);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   if (!(req instanceof MultipleAccountUpdateRequest)) {
     nextHandler.value?.handle(req);
     return;
@@ -149,14 +154,8 @@ const handleTransactionExecuted = async (
 
 /* Functions */
 function buildChain() {
-  assertHandlerExists<typeof SignPersonalRequestHandler>(
-    signPersonalHandler.value,
-    'Sign Personal',
-  );
-  assertHandlerExists<typeof ExecutePersonalRequestHandler>(
-    executePersonalHandler.value,
-    'Execute Personal',
-  );
+  assertHandlerExists(signPersonalHandler.value, 'Sign Personal');
+  assertHandlerExists(executePersonalHandler.value, 'Execute Personal');
 
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
@@ -245,9 +244,9 @@ async function processPersonal() {
 
   const currentItem = groupItems.value[personalItemsIndex.value];
   const accountId = request.value.accountIds[personalItemsIndex.value];
-
+  const transaction = Transaction.fromBytes(currentItem.transactionBytes);
   const transactionRequest = TransactionRequest.fromData({
-    transactionBytes: currentItem.transactionBytes,
+    transaction: transaction,
     transactionKey: request.value?.getAccountIdTransactionKey(accountId),
     name: currentItem.type,
     description: currentItem.description,
@@ -346,7 +345,7 @@ async function submitApproversObservers(group: IGroup) {
   await Promise.allSettled(promises);
 }
 
-async function startChain(req: TransactionRequest) {
+async function startChain<T extends Transaction>(req: TransactionRequest<T>) {
   assertHandlerExists<typeof SignPersonalRequestHandler>(
     signPersonalHandler.value,
     'Sign Personal',
@@ -368,6 +367,7 @@ defineExpose({
   <!-- Handler #2: Sign in Personal -->
   <SignPersonalRequestHandler
     ref="signPersonalHandler"
+    :transaction-ctor="props.transactionCtor"
     @transaction:sign:begin="handleSignBegin"
     @transaction:sign:success="handleSignSuccess"
     @transaction:sign:fail="handleSignFail"

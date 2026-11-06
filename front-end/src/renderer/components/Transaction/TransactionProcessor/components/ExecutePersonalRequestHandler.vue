@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { TransactionRequest, type Handler, type Processable } from '..';
 
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, type Ref } from 'vue';
 import { Transaction, TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import { Prisma } from '@prisma/client';
@@ -37,27 +37,25 @@ const user = useUserStore();
 const network = useNetworkStore();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const draft = useDraft();
 
 /* State */
-const nextHandler = ref<Handler | null>(null);
-const request = ref<TransactionRequest | null>(null);
+const request: Ref<TransactionRequest<T> | null> = ref(null);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 const isExecuting = ref(false);
 const unmounted = ref(false);
 
 /* Computed */
-const transaction = computed(() =>
-  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
-);
+const transaction = computed(() =>request.value?.transaction ??  null);
 const type = computed(() => (transaction.value ? getTransactionType(transaction.value) : null));
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   reset();
 
   if (!(req instanceof TransactionRequest)) {
@@ -69,7 +67,7 @@ async function handle(req: Processable) {
 
   assertUserLoggedIn(user.personal);
 
-  await executeTransaction(req.transactionBytes);
+  await executeTransaction(req.transaction.toBytes());
 
   if (nextHandler.value) {
     await nextHandler.value.handle(req);

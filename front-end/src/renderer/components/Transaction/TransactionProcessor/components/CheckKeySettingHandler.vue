@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import { ref, type Ref } from 'vue';
 import type { Handler, Processable } from '@renderer/components/Transaction/TransactionProcessor';
@@ -7,6 +7,7 @@ import { getErrorMessage } from '@renderer/utils';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import { useRouter } from 'vue-router';
 import storeUser from '@renderer/stores/storeUser';
+import { Transaction } from '@hiero-ledger/sdk';
 
 /* Props */
 const props = defineProps<{
@@ -16,23 +17,23 @@ const props = defineProps<{
 
 /* Composables */
 const router = useRouter();
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* Stores */
 const user = storeUser();
 
 /* State */
-const request: Ref<Processable | null> = ref(null);
-const nextHandler: Ref<Handler | null> = ref(null);
+const request: Ref<Processable<T> | null> = ref(null);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 const show = ref(false);
 const saving = ref(false);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-function handle(req: Processable) {
+function handle(req: Processable<T>) {
   request.value = req;
   // If user has no private key setup, we show the modal
   if (user.keyPairs.length === 0) {

@@ -1,7 +1,7 @@
-<script setup lang="ts">
-import { CustomRequest, TransactionRequest, type Handler, type Processable } from '..';
+<script setup lang="ts" generic="T extends Transaction">
+import { CustomRequest, type Handler, type Processable } from '..';
 
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -28,33 +28,32 @@ const network = useNetworkStore();
 const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
-const request = ref<Processable | null>(null);
-const nextHandler = ref<Handler | null>(null);
+const request: Ref<Processable<T> | null> = ref(null);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 const show = ref(false);
 
 /* Computed */
-const transaction = computed(() =>
-  request.value instanceof TransactionRequest
-    ? Transaction.fromBytes(request.value.transactionBytes)
-    : null,
-);
+const transaction = computed(() => {
+  if (request.value instanceof CustomRequest) return null;
+  return request.value?.transaction ?? null
+});
 
-const isTransferOutOfStaking = computed(() =>
-  transaction.value && hasTransfersOutOfStaking(transaction.value),
+const isTransferOutOfStaking = computed(
+  () => transaction.value && hasTransfersOutOfStaking(transaction.value),
 );
 
 /* Actions */
 async function next() {
   if (nextHandler.value && request.value) {
-    await nextHandler.value.handle(request.value as Processable);
+    await nextHandler.value.handle(request.value);
   }
 }
 
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable): Promise<void> {
+async function handle(req: Processable<T>): Promise<void> {
   reset();
 
   request.value = req;

@@ -1,10 +1,11 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import type { ExecutedData, Processable } from '.';
 
 import { ref } from 'vue';
+import type { ComponentExposed } from 'vue-component-type-helpers';
 
-import { TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
+import { Transaction, TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import { ToastManager } from '@renderer/utils/ToastManager';
 
@@ -19,10 +20,11 @@ import MultipleAccountUpdateRequestHandler from './components/MultipleAccountUpd
 import CheckKeySettingHandler from '@renderer/components/Transaction/TransactionProcessor/components/CheckKeySettingHandler.vue';
 
 import { assertHandlerExists } from '.';
-
+import type { TransactionCtor } from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 
 /* Props */
 const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
   onExecuted?: (data: ExecutedData) => void;
   onSubmitted?: (id: number, body: string) => Promise<void>;
   onGroupSubmitted?: (id: number) => Promise<void>;
@@ -34,23 +36,27 @@ const props = defineProps<{
 }>();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 
 /* State */
 /** Handlers */
-const checkKeySettingHandler = ref<InstanceType<typeof CheckKeySettingHandler> | null>(null);
-const validateHandler = ref<InstanceType<typeof ValidateRequestHandler> | null>(null);
-const confirmHandler = ref<InstanceType<typeof ConfirmTransactionHandler> | null>(null);
-const multipleAccountUpdateHandler = ref<InstanceType<
+const checkKeySettingHandler = ref<ComponentExposed<typeof CheckKeySettingHandler> | null>(null);
+const validateHandler = ref<ComponentExposed<typeof ValidateRequestHandler> | null>(null);
+const confirmHandler = ref<ComponentExposed<typeof ConfirmTransactionHandler> | null>(null);
+const multipleAccountUpdateHandler = ref<ComponentExposed<
   typeof MultipleAccountUpdateRequestHandler
 > | null>(null);
-const bigFileOrganizationHandler = ref<InstanceType<
+const bigFileOrganizationHandler = ref<ComponentExposed<
   typeof BigFileOrganizationRequestHandler
 > | null>(null);
-const bigFilePersonalHandler = ref<InstanceType<typeof BigFilePersonalRequestHandler> | null>(null);
-const organizationHandler = ref<InstanceType<typeof OrganizationRequestHandler> | null>(null);
-const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
-const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
+const bigFilePersonalHandler = ref<ComponentExposed<typeof BigFilePersonalRequestHandler> | null>(
+  null,
+);
+const organizationHandler = ref<ComponentExposed<typeof OrganizationRequestHandler> | null>(null);
+const signPersonalHandler = ref<ComponentExposed<typeof SignPersonalRequestHandler> | null>(null);
+const executePersonalHandler = ref<ComponentExposed<typeof ExecutePersonalRequestHandler> | null>(
+  null,
+);
 
 const observers = ref<number[]>([]);
 const approvers = ref<TransactionApproverDto[]>([]);
@@ -104,7 +110,7 @@ const handleTransactionStore = (id: string) => {
 
 /* Functions */
 async function process(
-  request: Processable,
+  request: Processable<T>,
   observerUserIds?: number[],
   approverDtos?: TransactionApproverDto[],
 ) {
@@ -123,33 +129,15 @@ async function process(
 }
 
 function buildChain() {
-  assertHandlerExists<typeof CheckKeySettingHandler>(
-    checkKeySettingHandler.value,
-    'CheckKeySetting',
-  );
-  assertHandlerExists<typeof ValidateRequestHandler>(validateHandler.value, 'Validate');
-  assertHandlerExists<typeof ConfirmTransactionHandler>(confirmHandler.value, 'Confirm');
-  assertHandlerExists<typeof MultipleAccountUpdateRequestHandler>(
-    multipleAccountUpdateHandler.value,
-    'Multiple Accounts Update',
-  );
-  assertHandlerExists<typeof BigFileOrganizationRequestHandler>(
-    bigFileOrganizationHandler.value,
-    'Large File Create/Update',
-  );
-  assertHandlerExists<typeof BigFilePersonalRequestHandler>(
-    bigFilePersonalHandler.value,
-    'Large File Create/Update',
-  );
-  assertHandlerExists<typeof OrganizationRequestHandler>(organizationHandler.value, 'Organization');
-  assertHandlerExists<typeof SignPersonalRequestHandler>(
-    signPersonalHandler.value,
-    'Sign Personal',
-  );
-  assertHandlerExists<typeof ExecutePersonalRequestHandler>(
-    executePersonalHandler.value,
-    'Execute Personal',
-  );
+  assertHandlerExists(checkKeySettingHandler.value, 'CheckKeySetting');
+  assertHandlerExists(validateHandler.value, 'Validate');
+  assertHandlerExists(confirmHandler.value, 'Confirm');
+  assertHandlerExists(multipleAccountUpdateHandler.value, 'Multiple Accounts Update');
+  assertHandlerExists(bigFileOrganizationHandler.value, 'Large File Create/Update');
+  assertHandlerExists(bigFilePersonalHandler.value, 'Large File Create/Update');
+  assertHandlerExists(organizationHandler.value, 'Organization');
+  assertHandlerExists(signPersonalHandler.value, 'Sign Personal');
+  assertHandlerExists(executePersonalHandler.value, 'Execute Personal');
 
   checkKeySettingHandler.value.setNext(validateHandler.value);
   validateHandler.value.setNext(confirmHandler.value);
@@ -180,7 +168,11 @@ defineExpose({
 <template>
   <div>
     <!-- Handler #0: Check at least one private key is set -->
-    <CheckKeySettingHandler ref="checkKeySettingHandler" :save-draft="props.saveDraft" :hasDataChanged="props.hasDataChanged" />
+    <CheckKeySettingHandler
+      ref="checkKeySettingHandler"
+      :save-draft="props.saveDraft"
+      :hasDataChanged="props.hasDataChanged"
+    />
 
     <!-- Handler #1: Validation -->
     <ValidateRequestHandler ref="validateHandler" />
@@ -191,6 +183,7 @@ defineExpose({
     <!-- Handler #3: Multiple Accounts Update (has sub-chain) -->
     <MultipleAccountUpdateRequestHandler
       ref="multipleAccountUpdateHandler"
+      :transaction-ctor="props.transactionCtor"
       :observers="observers"
       :approvers="approvers"
       @transaction:sign:begin="handleSignBegin"
@@ -218,6 +211,7 @@ defineExpose({
     <!-- Handler #5: Big File Create/Update in Personal (has sub-chain) -->
     <BigFilePersonalRequestHandler
       ref="bigFilePersonalHandler"
+      :transaction-ctor="transactionCtor"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
       @transaction:sign:fail="handleLoading(false)"
@@ -228,6 +222,7 @@ defineExpose({
     <!-- Handler #6: Organization  -->
     <OrganizationRequestHandler
       ref="organizationHandler"
+      :transaction-ctor="props.transactionCtor"
       :observers="observers"
       :approvers="approvers"
       @transaction:submit:success="handleSubmitSuccess"
@@ -239,6 +234,7 @@ defineExpose({
     <!-- Handler #7: Sign in Personal -->
     <SignPersonalRequestHandler
       ref="signPersonalHandler"
+      :transaction-ctor="props.transactionCtor"
       @transaction:sign:begin="handleSignBegin"
       @transaction:sign:success="handleSignSuccess"
       @transaction:sign:fail="handleLoading(false)"

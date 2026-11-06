@@ -54,20 +54,22 @@ import useNextTransactionV2, {
 } from '@renderer/stores/storeNextTransactionV2.ts';
 import { useRoute, useRouter } from 'vue-router';
 import { addDraft, updateDraft } from '@renderer/services/transactionDraftsService';
+import type { ComponentExposed } from 'vue-component-type-helpers';
 
 /* Types */
 export type CreateTransactionFunc<T> = (commonData: TransactionCommonData) => T;
 export type GetAllData<T, D> = (transaction: T) => D;
 
 /* Props */
-const { createTransaction, preCreateAssert, customRequest, getAllData } = defineProps<{
-  transactionCtor: TransactionCtor<T>;
-  createTransaction: CreateTransactionFunc<T>;
-  getAllData: GetAllData<T, D>;
-  preCreateAssert?: () => boolean | void | Promise<boolean | void>;
-  createDisabled?: boolean;
-  customRequest?: CustomRequest;
-}>();
+const { transactionCtor, createTransaction, preCreateAssert, customRequest, getAllData } =
+  defineProps<{
+    transactionCtor: TransactionCtor<T>;
+    createTransaction: CreateTransactionFunc<T>;
+    getAllData: GetAllData<T, D>;
+    preCreateAssert?: () => boolean | void | Promise<boolean | void>;
+    createDisabled?: boolean;
+    customRequest?: CustomRequest;
+  }>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -95,7 +97,7 @@ const withLoader = useLoader();
 const appCache = AppCache.inject();
 
 /* State */
-const transactionProcessor = ref<InstanceType<typeof TransactionProcessor> | null>(null);
+const transactionProcessor = ref<ComponentExposed<typeof TransactionProcessor> | null>(null);
 const baseGroupHandlerRef = ref<InstanceType<typeof BaseGroupHandler> | null>(null);
 
 const name = ref('');
@@ -216,12 +218,12 @@ const handleCreate = async () => {
 
   const bytesFactory =
     baseValidStart && payerAccountId
-      ? (nanoOffset: number): Uint8Array => {
-          if (nanoOffset === 0) return initialTx.toBytes();
+      ? (nanoOffset: number): T => {
+          if (nanoOffset === 0) return initialTx;
           const offsetTimestamp = applyNanoOffset(baseValidStart, nanoOffset);
           const retryTx = createTransaction(capturedData);
           retryTx.setTransactionId(TransactionId.withValidStart(payerAccountId, offsetTimestamp));
-          return retryTx.toBytes();
+          return retryTx;
         }
       : undefined;
 
@@ -229,7 +231,7 @@ const handleCreate = async () => {
     customRequest ||
     TransactionRequest.fromData({
       transactionKey: transactionKey.value,
-      transactionBytes: bytesFactory ? bytesFactory(0) : initialTx.toBytes(),
+      transaction: bytesFactory ? bytesFactory(0) : initialTx,
       bytesFactory,
       name: name.value.trim(),
       description: description.value.trim(),
@@ -466,6 +468,7 @@ defineExpose({
 
     <TransactionProcessor
       ref="transactionProcessor"
+      :transaction-ctor="transactionCtor"
       :observers="observers"
       :approvers="approvers"
       :has-data-changed="hasDataChanged"

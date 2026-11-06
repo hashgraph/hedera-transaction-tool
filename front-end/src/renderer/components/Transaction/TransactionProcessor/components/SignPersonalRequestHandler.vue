@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { TransactionRequest, type Handler, type Processable } from '..';
 
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -10,7 +10,13 @@ import usePersonalPassword from '@renderer/composables/usePersonalPassword';
 import { flattenKeyList } from '@renderer/services/keyPairService';
 import { signTransaction } from '@renderer/services/transactionService';
 
-import { assertUserLoggedIn } from '@renderer/utils';
+import { assertTransactionType, assertUserLoggedIn } from '@renderer/utils';
+import type { TransactionCtor } from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
+
+/* Props */
+const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
+}>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -26,8 +32,8 @@ const user = useUserStore();
 const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
-const request = ref<TransactionRequest | null>(null);
-const nextHandler = ref<Handler | null>(null);
+const request: Ref<TransactionRequest<T> | null> = ref(null);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 
 /* Computed */
 const localPublicKeys = computed(() => {
@@ -37,16 +43,14 @@ const localPublicKeys = computed(() => {
   const flattenedSignatureKey = flattenKeyList(key).map(pk => pk.toStringRaw());
   return flattenedSignatureKey.filter(pk => user.publicKeys.includes(pk));
 });
-const transaction = computed(() =>
-  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
-);
+const transaction = computed(() => request.value?.transaction ?? null);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
     return;
@@ -76,7 +80,7 @@ async function sign() {
 
   try {
     const signed = await signTransaction(
-      request.value.transactionBytes,
+      request.value.transaction.toBytes(),
       localPublicKeys.value,
       user.personal.id,
       password,
@@ -84,7 +88,9 @@ async function sign() {
 
     emit('transaction:sign:success');
 
-    request.value.transactionBytes = signed;
+    const signedTransaction = Transaction.fromBytes(signed);
+    assertTransactionType(signedTransaction, props.transactionCtor);
+    request.value.transaction = signedTransaction;
     await nextHandler.value?.handle(request.value);
   } catch (error) {
     emit('transaction:sign:fail');

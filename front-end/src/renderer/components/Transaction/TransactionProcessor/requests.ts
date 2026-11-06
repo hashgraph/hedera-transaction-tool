@@ -2,7 +2,7 @@ import type { Hbar, Key } from '@hiero-ledger/sdk';
 import type { IAccountInfoParsed } from '@shared/interfaces';
 import type { AccountUpdateDataMultiple } from '@renderer/utils';
 
-import { AccountId, KeyList } from '@hiero-ledger/sdk';
+import { AccountId, KeyList, Transaction } from '@hiero-ledger/sdk';
 
 import type { AccountByIdCache } from '@renderer/caches/mirrorNode/AccountByIdCache.ts';
 
@@ -19,39 +19,39 @@ export class BaseRequest {
   }
 }
 
-export class TransactionRequest extends BaseRequest {
+export class TransactionRequest<T extends Transaction> extends BaseRequest {
   transactionKey: Key;
-  transactionBytes: Uint8Array;
+  transaction: T;
   name: string;
   description: string;
-  bytesFactory?: (nanoOffset: number) => Uint8Array;
+  bytesFactory?: (nanoOffset: number) => T;
 
   constructor(opts: {
     transactionKey: Key;
-    transactionBytes: Uint8Array;
+    transaction: T;
     name: string;
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
-    bytesFactory?: (nanoOffset: number) => Uint8Array;
+    bytesFactory?: (nanoOffset: number) => T;
   }) {
     super(opts.submitManually, opts.reminderMillisecondsBefore);
     this.transactionKey = opts.transactionKey;
     this.requestKey = opts.transactionKey;
-    this.transactionBytes = opts.transactionBytes;
+    this.transaction = opts.transaction;
     this.name = opts.name;
     this.description = opts.description;
     this.bytesFactory = opts.bytesFactory;
   }
 
-  static fromData(data: {
+  static fromData<T extends Transaction>(data: {
     transactionKey: Key;
-    transactionBytes: Uint8Array;
+    transaction: T;
     name: string;
     description: string;
     submitManually: boolean;
     reminderMillisecondsBefore: number | null;
-    bytesFactory?: (nanoOffset: number) => Uint8Array;
+    bytesFactory?: (nanoOffset: number) => T;
   }) {
     return new TransactionRequest(data);
   }

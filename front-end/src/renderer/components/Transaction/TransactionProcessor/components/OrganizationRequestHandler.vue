@@ -1,9 +1,9 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { freeze } from '@renderer/services/transactionService';
 import type { TransactionApproverDto } from '@shared/interfaces/organization/approvers';
 import { TransactionRequest, type Handler, type Processable } from '..';
 
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
@@ -19,14 +19,17 @@ import { ErrorCodes } from '@shared/constants';
 
 import {
   assertIsLoggedInOrganization,
+  assertTransactionType,
   assertUserLoggedIn,
   getPrivateKey,
   RequestError,
   uint8ToHex,
 } from '@renderer/utils';
+import type { TransactionCtor } from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 
 /* Props */
 const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
   observers: number[];
   approvers: TransactionApproverDto[];
 }>();
@@ -44,21 +47,19 @@ const user = useUserStore();
 const network = useNetwork();
 
 /* Composables */
-const toastManager = ToastManager.inject()
+const toastManager = ToastManager.inject();
 const draft = useDraft();
 const { getPasswordAsync } = usePersonalPassword();
 
 /* State */
-const request = ref<TransactionRequest | null>(null);
-const nextHandler = ref<Handler | null>(null);
+const request: Ref<TransactionRequest<T> | null> = ref(null);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 
 /* Computed */
-const transaction = computed(() =>
-  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
-);
+const transaction = computed(() => request.value?.transaction ?? null);
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
@@ -89,7 +90,7 @@ function setNext(next: Handler) {
  */
 const MAX_NANO_RETRIES = 3;
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
     return;
@@ -112,7 +113,7 @@ async function handle(req: Processable) {
         // Bucket N spans [(N-1)*333_333 + 1, N*333_333]; randomized within
         // the bucket so concurrent retriers don't all pick the same offset.
         const jitterNanos = (attempt - 1) * 333_333 + 1 + Math.floor(Math.random() * 333_333);
-        request.value.transactionBytes = req.bytesFactory(jitterNanos);
+        request.value.transaction = req.bytesFactory(jitterNanos);
       }
 
       try {
@@ -171,13 +172,15 @@ async function sign(publicKey: string) {
   const privateKey = getPrivateKey(publicKey, privateKeyRaw);
 
   /* Freezes the transaction so the creator signs the exact bytes the server will store */
-  request.value.transactionBytes = await freeze(request.value.transactionBytes);
+  const frozenBytes = await freeze(request.value.transaction.toBytes());
+  const frozenTransaction = Transaction.fromBytes(frozenBytes);
+  assertTransactionType(frozenTransaction, props.transactionCtor);
+  request.value.transaction = frozenTransaction;
 
   /* Signs the frozen transaction */
-  const signatureBytes = privateKey.sign(request.value.transactionBytes);
-  const signature = uint8ToHex(signatureBytes);
+  const signatureBytes = privateKey.sign(frozenBytes);
 
-  return signature;
+  return uint8ToHex(signatureBytes);
 }
 
 async function submit(publicKey: string, signature: string) {
@@ -185,7 +188,7 @@ async function submit(publicKey: string, signature: string) {
   if (!request.value) throw new Error('Request is required to sign');
   if (!transaction.value) throw new Error('Transaction is required to sign');
 
-  const hexTransactionBytes = uint8ToHex(request.value.transactionBytes);
+  const hexTransactionBytes = uint8ToHex(request.value.transaction.toBytes());
 
   return await submitTransaction(
     user.selectedOrganization.serverUrl,

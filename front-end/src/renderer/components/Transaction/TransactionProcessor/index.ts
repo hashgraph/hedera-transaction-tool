@@ -1,21 +1,22 @@
-import { TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
+import { Transaction, TransactionReceipt, TransactionResponse } from '@hiero-ledger/sdk';
 
 import TransactionProcessor from './TransactionProcessor.vue';
 import type { CustomRequest, TransactionRequest } from './requests';
+import type { ComponentExposed } from 'vue-component-type-helpers';
 
 export * from './requests';
 
-export type Processable = TransactionRequest | CustomRequest;
+export type Processable<T extends Transaction> = TransactionRequest<T> | CustomRequest;
 
-export interface Handler {
-  setNext: (handler: Handler) => void;
-  handle: (transactionRequest: Processable) => Promise<void>;
+export interface Handler<T extends Transaction> {
+  setNext: (handler: Handler<T>) => void;
+  handle: (transactionRequest: Processable<T>) => Promise<void>;
 }
 
-export function assertHandlerExists<T extends abstract new (...args: any) => any>(
-  handler: InstanceType<T> | null,
+export function assertHandlerExists<T>(
+  handler: ComponentExposed<T> | null,
   name: string,
-): asserts handler is InstanceType<T> {
+): asserts handler is ComponentExposed<T> {
   if (!handler) throw new Error(`${name} handler is not provided`);
 }
 

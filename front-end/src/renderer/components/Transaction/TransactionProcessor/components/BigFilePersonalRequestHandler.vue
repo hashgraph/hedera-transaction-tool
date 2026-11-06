@@ -1,7 +1,7 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends Transaction">
 import { TransactionRequest, type Handler, type Processable } from '..';
 
-import { computed, ref } from 'vue';
+import { computed, ref, type Ref } from 'vue';
 import {
   Transaction,
   FileCreateTransaction,
@@ -24,10 +24,17 @@ import SignPersonalRequestHandler from './SignPersonalRequestHandler.vue';
 import ExecutePersonalRequestHandler from './ExecutePersonalRequestHandler.vue';
 
 import { assertHandlerExists } from '..';
+import type { ComponentExposed } from 'vue-component-type-helpers';
+import type { TransactionCtor } from '@renderer/components/Transaction/Create/BaseTransaction/BaseDraftLoad.vue';
 
 /* Constants */
 const FIRST_CHUNK_SIZE_BYTES = 100;
 const SIZE_BUFFER_BYTES = 200;
+
+/* Props */
+const props = defineProps<{
+  transactionCtor: TransactionCtor<T>;
+}>();
 
 /* Emits */
 const emit = defineEmits<{
@@ -47,11 +54,13 @@ const emit = defineEmits<{
 const user = useUserStore();
 
 /* State */
-const signPersonalHandler = ref<InstanceType<typeof SignPersonalRequestHandler> | null>(null);
-const executePersonalHandler = ref<InstanceType<typeof ExecutePersonalRequestHandler> | null>(null);
-const nextHandler = ref<Handler | null>(null);
+const signPersonalHandler = ref<ComponentExposed<typeof SignPersonalRequestHandler> | null>(null);
+const executePersonalHandler = ref<ComponentExposed<typeof ExecutePersonalRequestHandler> | null>(
+  null,
+);
+const nextHandler: Ref<Handler<T> | null> = ref(null);
 
-const request = ref<TransactionRequest | null>(null);
+const request: Ref<TransactionRequest<T> | null> = ref(null);
 const fileId = ref<string | null>(null);
 const originalProcessed = ref<boolean>(false);
 const originalResponse = ref<TransactionResponse | null>(null);
@@ -59,9 +68,7 @@ const originalReceipt = ref<TransactionReceipt | null>(null);
 const originalLocalId = ref<string | null>(null);
 
 /* Computed */
-const originalTransaction = computed(() =>
-  request.value ? Transaction.fromBytes(request.value.transactionBytes) : null,
-);
+const originalTransaction = computed(() => request.value?.transaction ?? null);
 const content = computed(() => {
   if (!originalTransaction.value) return null;
   if (!isFileCreateOrUpdate(originalTransaction.value)) return null;
@@ -69,17 +76,17 @@ const content = computed(() => {
 });
 
 /* Actions */
-function setNext(next: Handler) {
+function setNext(next: Handler<T>) {
   nextHandler.value = next;
 }
 
-async function handle(req: Processable) {
+async function handle(req: Processable<T>) {
   if (!(req instanceof TransactionRequest)) {
     await nextHandler.value?.handle(req);
     return;
   }
 
-  const transaction = Transaction.fromBytes(req.transactionBytes);
+  const transaction = req.transaction;
   const size = transaction.toBytes().length;
   // HIP-1300: privileged fee payers (0.0.2, 0.0.42-0.0.799) get a 128 KB limit
   // and should NOT trigger the big-file split flow when under that limit.
@@ -179,18 +186,15 @@ function buildChain() {
   signPersonalHandler.value.setNext(executePersonalHandler.value);
 }
 
-async function startChain(req: TransactionRequest) {
-  assertHandlerExists<typeof SignPersonalRequestHandler>(
-    signPersonalHandler.value,
-    'Sign Personal',
-  );
+async function startChain<V extends Transaction>(req: TransactionRequest<V>) {
+  assertHandlerExists(signPersonalHandler.value, 'Sign Personal');
   await signPersonalHandler.value.handle(req);
 }
 
 async function processOriginal() {
   if (!request.value) throw new Error('Transaction request is missing');
 
-  const transaction = Transaction.fromBytes(request.value.transactionBytes);
+  const transaction = request.value.transaction;
 
   assertTransactionType(transaction);
   if (!content.value) throw new Error('Transaction content is missing');
@@ -199,7 +203,7 @@ async function processOriginal() {
 
   await startChain(
     TransactionRequest.fromData({
-      transactionBytes: transaction.toBytes(),
+      transaction: transaction,
       transactionKey: request.value.transactionKey,
       name: request.value.name,
       description: request.value.description,
@@ -216,7 +220,7 @@ async function processAppend() {
 
   await startChain(
     TransactionRequest.fromData({
-      transactionBytes: transaction.toBytes(),
+      transaction: transaction,
       transactionKey: request.value.transactionKey,
       name: request.value.name,
       description: request.value.description,
@@ -247,7 +251,7 @@ function createAppendTransaction() {
   // subtracts a reserve for protobuf/signature overhead.
   const chunkSize = getMaxChunkSize(originalTransactionId.accountId ?? null);
 
-  const append = new FileAppendTransaction()
+  return new FileAppendTransaction()
     .setTransactionValidDuration(180)
     .setMaxTransactionFee(maxTransactionFee)
     .setTransactionId(
@@ -260,8 +264,6 @@ function createAppendTransaction() {
     .setContents(content.value.slice(FIRST_CHUNK_SIZE_BYTES))
     .setChunkSize(chunkSize)
     .setMaxChunks(99999);
-
-  return append;
 }
 
 function isFileCreateOrUpdate(
@@ -299,6 +301,7 @@ defineExpose({
   <!-- Handler #2: Sign in Personal -->
   <SignPersonalRequestHandler
     ref="signPersonalHandler"
+    :transactionCtor="props.transactionCtor"
     @transaction:sign:begin="handleSignBegin"
     @transaction:sign:success="handleSignSuccess"
     @transaction:sign:fail="handleSignFail"
