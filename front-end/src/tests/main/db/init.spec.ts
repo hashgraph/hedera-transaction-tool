@@ -10,6 +10,9 @@ import electron from 'electron';
 import * as sqlite3 from 'better-sqlite3';
 import { getDatabaseLogger } from '@main/modules/logger';
 
+// init.ts parses migration names as local time, so derive the expected value the same way
+const INIT_MIGRATION_TIMESTAMP = new Date(2024, 1, 7, 14, 11, 45).getTime() / 1000;
+
 vi.mock('@main/db/prisma');
 
 vi.mock('@electron-toolkit/utils', () => ({ is: { dev: true } }));
@@ -92,7 +95,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707315105,
+      created_at: INIT_MIGRATION_TIMESTAMP,
     });
 
     vi.spyOn(fsp, 'readdir')
@@ -134,7 +137,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707315105,
+      created_at: INIT_MIGRATION_TIMESTAMP,
     });
 
     vi.spyOn(fsp, 'readdir')
@@ -182,7 +185,7 @@ describe('Initialize database', () => {
     prisma.migration.findFirst.mockResolvedValue({
       id: 1,
       name: '20240207141145_init',
-      created_at: 1707315105,
+      created_at: INIT_MIGRATION_TIMESTAMP,
     });
 
     vi.spyOn(fsp, 'readdir')

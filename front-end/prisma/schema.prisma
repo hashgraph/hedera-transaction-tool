@@ -30,6 +30,7 @@ model User {
   Contact                 Contact[]
   Claim                   Claim[]
   Mnemonic                Mnemonic[]
+  SmartContract           SmartContract[]
 }
 
 model KeyPair {
@@ -132,6 +133,27 @@ model HederaFile {
   contentBytes  String?
   lastRefreshed DateTime?
   user          User      @relation(fields: [user_id], references: [id])
+}
+
+// `abi` is the normalized function-array ABI (post upload format-sniffing), stored as a JSON
+// string rather than Prisma's Json type, matching this schema's existing convention for JSON
+// columns (see ReviewerGroup.attestationSignatures). `roles` and `function_tags` are local
+// bookkeeping only — never derived from or verified against the chain beyond the one-time getter
+// resolution that may populate a role's `value` — see docs/contract-execute-safe-timelock.md and
+// the Smart Contracts registry design notes for the shapes stored in each.
+model SmartContract {
+  id            String   @id @default(uuid())
+  user_id       String
+  network       String
+  contract_id   String?
+  evm_address   String?
+  nickname      String?
+  abi           String
+  roles         String?
+  function_tags String?
+  verified      Boolean  @default(false)
+  created_at    DateTime @default(now())
+  user          User     @relation(fields: [user_id], references: [id])
 }
 
 model ComplexKey {
