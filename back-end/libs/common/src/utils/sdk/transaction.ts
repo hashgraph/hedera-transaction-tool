@@ -21,6 +21,7 @@ import {
   RegisteredNodeDeleteTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
+  ContractExecuteTransaction,
   KeyList,
   AccountId,
 } from '@hiero-ledger/sdk';
@@ -81,6 +82,8 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
     return TransactionType.SYSTEM_DELETE;
   } else if (transaction instanceof SystemUndeleteTransaction) {
     return TransactionType.SYSTEM_UNDELETE;
+  } else if (transaction instanceof ContractExecuteTransaction) {
+    return TransactionType.CONTRACT_EXECUTE;
   }
 
   throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);
