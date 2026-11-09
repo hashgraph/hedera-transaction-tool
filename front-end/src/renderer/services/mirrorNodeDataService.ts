@@ -154,6 +154,85 @@ export const getAccountAllowances = async (
   return allowances;
 };
 
+export interface ContractInfo {
+  contract_id: string;
+  evm_address: string;
+  deleted: boolean;
+}
+
+/*
+ * GET /api/v1/contracts/{contractIdOrAddress}. Accepts either a `0.0.x` id or a 0x EVM address and
+ * returns both. Resolves to `null` on a 404 (contract does not exist on this network); any other
+ * failure (offline, 5xx, abort) throws so callers can tell "not found" from "couldn't check".
+ */
+export const getContractInfo = async (
+  contractIdOrAddress: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+): Promise<ContractInfo | null> => {
+  try {
+    const { data } = await axios.get(
+      `${withAPIPrefix(mirrorNodeLink)}/contracts/${contractIdOrAddress}`,
+      { signal: controller?.signal },
+    );
+
+    return {
+      contract_id: data.contract_id,
+      evm_address: data.evm_address,
+      deleted: Boolean(data.deleted),
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export interface ContractCallRequest {
+  to: string;
+  from?: string;
+  data?: string;
+  gas?: number;
+  gasPrice?: number;
+  value?: number;
+  estimate?: boolean;
+}
+
+export interface ContractCallResult {
+  success: boolean;
+  result?: string;
+  errorMessage?: string;
+}
+
+/*
+ * Free, read-only `eth_call`-equivalent simulation - no transaction is submitted and no fee is
+ * charged. Request/response shape confirmed against the mirror node's own OpenAPI spec for
+ * POST /api/v1/contracts/call: only `to` is required, a success response is `{ result: "0x..." }`,
+ * and a revert/validation failure comes back as a non-2xx with `{ _status: { messages: [...] } }`.
+ */
+export const callContract = async (
+  request: ContractCallRequest,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+): Promise<ContractCallResult> => {
+  try {
+    const { data } = await axios.post(`${withAPIPrefix(mirrorNodeLink)}/contracts/call`, request, {
+      signal: controller?.signal,
+    });
+
+    return { success: true, result: data.result };
+  } catch (error) {
+    const errorMessage = axios.isAxiosError(error)
+      ? error.response?.data?._status?.messages?.[0]?.message
+      : undefined;
+
+    logger.warn('Contract call simulation failed', { error });
+
+    return { success: false, errorMessage: errorMessage || 'Contract call simulation failed' };
+  }
+};
+
 /* Gets the exchange rate set */
 export const getExchangeRateSet = async (mirrorNodeLink: string, controller?: AbortController) => {
   try {
