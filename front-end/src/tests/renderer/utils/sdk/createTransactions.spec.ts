@@ -7,6 +7,7 @@ import {
   AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
+  ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
@@ -41,6 +42,7 @@ import {
   createAccountDeleteTransaction,
   createAccountUpdateTransaction,
   createApproveHbarAllowanceTransaction,
+  createContractExecuteTransaction,
   createFileAppendTransaction,
   createFileCreateDataOnlyTransaction,
   createFileCreateTransaction,
@@ -59,6 +61,7 @@ import {
   type AccountCreateData,
   type AccountUpdateData,
   type ComponentRegisteredServiceEndpoint,
+  type ContractExecuteData,
   type FileAppendData,
   type FileData,
   type FileUpdateData,
@@ -70,6 +73,7 @@ import {
   type RegisteredEndpointType,
 } from '@renderer/utils/sdk/createTransactions';
 import {
+  getContractExecuteData,
   getFreezeData,
   getNodeData,
   getNodeDeleteData,
@@ -1381,5 +1385,123 @@ describe('Registered node creators', () => {
         createRegisteredNodeDeleteTransaction({ ...common, registeredNodeId: '' }).registeredNodeId,
       ).toBeNull();
     });
+  });
+});
+
+describe('createContractExecuteTransaction', () => {
+  const hex = (b: Uint8Array) =>
+    Array.from(b)
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('');
+  const EVM = '00000000000000000000000000000000000004d2';
+
+  const make = (overrides: Partial<ContractExecuteData> = {}): ContractExecuteData => ({
+    contractId: '0.0.1234',
+    gas: 150000,
+    payableAmount: new Hbar(0),
+    functionName: '',
+    functionArgs: [],
+    ...overrides,
+  });
+
+  test('applies common data, contract id and gas', () => {
+    const tx = createContractExecuteTransaction({ ...common, ...make() });
+    expect(tx).toBeInstanceOf(ContractExecuteTransaction);
+    expect(tx.transactionId?.accountId?.toString()).toBe(common.payerId);
+    expect(tx.contractId?.toString()).toBe('0.0.1234');
+    expect(tx.gas?.toString()).toBe('150000');
+  });
+
+  test('accepts an EVM address as the contract reference', () => {
+    const tx = createContractExecuteTransaction({ ...common, ...make({ contractId: `0x${EVM}` }) });
+    expect(tx.contractId?.toEvmAddress()).toBe(EVM);
+  });
+
+  test('leaves contract id unset for an unparseable reference', () => {
+    const tx = createContractExecuteTransaction({ ...common, ...make({ contractId: 'nope' }) });
+    expect(tx.contractId).toBeNull();
+  });
+
+  test('gas of 0 / NaN is set as 0', () => {
+    expect(
+      createContractExecuteTransaction({ ...common, ...make({ gas: 0 }) }).gas?.toString(),
+    ).toBe('0');
+    expect(
+      createContractExecuteTransaction({ ...common, ...make({ gas: NaN }) }).gas?.toString(),
+    ).toBe('0');
+  });
+
+  test('sets payable amount only when positive', () => {
+    expect(
+      createContractExecuteTransaction({ ...common, ...make({ payableAmount: new Hbar(5) }) })
+        .payableAmount?.toTinybars()
+        .toString(),
+    ).toBe(new Hbar(5).toTinybars().toString());
+    expect(
+      createContractExecuteTransaction({ ...common, ...make({ payableAmount: new Hbar(0) }) })
+        .payableAmount,
+    ).toBeNull();
+  });
+
+  test('encodes function name + args as selector + ABI-encoded calldata', () => {
+    const tx = createContractExecuteTransaction({
+      ...common,
+      ...make({
+        functionName: 'transfer',
+        functionArgs: [
+          { name: 'to', type: 'address', value: `0x${EVM}` },
+          { name: 'amount', type: 'uint256', value: '1' },
+        ],
+      }),
+    });
+    expect(hex(tx.functionParameters!)).toBe(
+      'a9059cbb' + EVM.padStart(64, '0') + '1'.padStart(64, '0'),
+    );
+  });
+
+  test('skips encoding while args are incomplete (no throw, no calldata)', () => {
+    const tx = createContractExecuteTransaction({
+      ...common,
+      ...make({
+        functionName: 'transfer',
+        functionArgs: [{ name: 'amount', type: 'uint256', value: '' }],
+        rawFunctionParametersHex: 'deadbeef',
+      }),
+    });
+    expect(tx.functionParameters?.length ?? 0).toBe(0);
+  });
+
+  test('keeps raw calldata for a reloaded draft with no function name', () => {
+    const tx = createContractExecuteTransaction({
+      ...common,
+      ...make({ rawFunctionParametersHex: 'a9059cbb00' }),
+    });
+    expect(hex(tx.functionParameters!)).toBe('a9059cbb00');
+  });
+
+  test('ignores raw calldata when a function name is present', () => {
+    const tx = createContractExecuteTransaction({
+      ...common,
+      ...make({ functionName: 'pause', rawFunctionParametersHex: 'deadbeef' }),
+    });
+    expect(hex(tx.functionParameters!)).toBe(hex(tx.functionParameters!).slice(0, 8));
+    expect(hex(tx.functionParameters!)).not.toContain('deadbeef');
+  });
+
+  test('no function and no raw calldata leaves parameters empty', () => {
+    const tx = createContractExecuteTransaction({ ...common, ...make() });
+    expect(tx.functionParameters?.length ?? 0).toBe(0);
+  });
+
+  test('survives a bytes round trip and getContractExecuteData agrees', () => {
+    const tx = createContractExecuteTransaction({
+      ...common,
+      ...make({ functionName: 'pause', payableAmount: new Hbar(1) }),
+    });
+    const restored = roundtrip(tx);
+    const data = getContractExecuteData(restored);
+    expect(data.contractId).toBe('0.0.1234');
+    expect(data.gas).toBe(150000);
+    expect(data.rawFunctionParametersHex).toBe(hex(tx.functionParameters!));
   });
 });

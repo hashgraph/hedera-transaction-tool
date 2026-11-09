@@ -16,6 +16,7 @@ import RegisteredNodeUpdate from './RegisteredNodeUpdate';
 import RegisteredNodeDelete from './RegisteredNodeDelete';
 import SystemDelete from './SystemDelete';
 import SystemUndelete from './SystemUndelete';
+import ContractExecute from './ContractExecute';
 
 export const transactionTypeKeys = {
   createFile: 'FileCreateTransaction',
@@ -37,6 +38,7 @@ export const transactionTypeKeys = {
   registeredNodeDelete: 'RegisteredNodeDeleteTransaction',
   systemDelete: 'SystemDeleteTransaction',
   systemUndelete: 'SystemUndeleteTransaction',
+  contractExecute: 'ContractExecuteTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -58,6 +60,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.registeredNodeDelete]: RegisteredNodeDelete,
   [transactionTypeKeys.systemDelete]: SystemDelete,
   [transactionTypeKeys.systemUndelete]: SystemUndelete,
+  [transactionTypeKeys.contractExecute]: ContractExecute,
 };
 
 export default txTypeComponentMapping;

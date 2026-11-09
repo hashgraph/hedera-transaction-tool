@@ -99,4 +99,28 @@ describe('TransactionSelectionModal.vue', () => {
       query: { group: 'true', initialValidStart: '1700000000000' },
     });
   });
+  test('lists Contract Execute under the Smart Contract Service group and routes to it', async () => {
+    const router = { push: vi.fn() };
+    const wrapper = mount(TransactionSelectionModal, {
+      props: { show: true, 'onUpdate:show': vi.fn() },
+      global: {
+        mocks: { $router: router },
+        stubs: { AppModal: { template: '<div><slot /></div>' } },
+      },
+    });
+
+    const group = wrapper.find('[data-testid="menu-link-smart contract service"]');
+    expect(group.text()).toBe('Smart Contract Service');
+    await group.trigger('click');
+    const link = wrapper.find('[data-testid="menu-sub-link-contractexecutetransaction"]');
+    expect(link.text()).toBe('Contract Execute');
+
+    await link.trigger('click');
+
+    expect(router.push).toHaveBeenCalledWith({
+      name: 'createTransaction',
+      params: { type: 'ContractExecuteTransaction' },
+      query: { group: 'false', initialValidStart: undefined },
+    });
+  });
 });

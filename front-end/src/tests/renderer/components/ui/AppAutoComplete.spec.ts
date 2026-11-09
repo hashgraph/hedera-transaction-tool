@@ -19,6 +19,7 @@ type Props = Partial<{
   tabularNums: boolean;
   groupBreakAfter: (item: string) => boolean;
   filterItem: (item: string, input: string) => boolean;
+  itemLabel: (item: string) => string;
 }>;
 
 // Mounts AppAutoComplete behind a tiny host component that actually binds
@@ -1183,6 +1184,20 @@ describe('AppAutoComplete', () => {
     await input.trigger('keydown', { key: 'Tab' });
     await flushPromises();
     expect((input.element as HTMLInputElement).value).toBe('Transfer');
+  });
+
+  test('itemLabel: renders secondary text beside items that have a label, and omits it otherwise', async () => {
+    const wrapper = mountAutoComplete({
+      modelValue: 'x',
+      items: ['0.0.1', '0.0.2'],
+      findMatch: vi.fn((): MatchResult => null),
+      itemLabel: (item: string) => (item === '0.0.1' ? 'My Contract' : ''),
+    });
+    await wrapper.find('input').trigger('focus');
+    await flushPromises();
+    const rows = wrapper.findAll('.autocomplete-item-custom');
+    expect(rows[0].find('.text-secondary').text()).toBe('My Contract');
+    expect(rows[1].find('.text-secondary').exists()).toBe(false);
   });
 
   // M9: the chevron is a sibling of <input>, not a descendant of it — the window

@@ -50,6 +50,9 @@ const props = withDefaults(
     // assumed — pass the same notion of "matches" findMatch itself uses, so the two
     // can't disagree about what's a match.
     filterItem?: (item: string, input: string) => boolean;
+    // Optional, purely presentational — secondary text shown beside an item in the
+    // dropdown (e.g. a saved contract's nickname). The item itself stays the value.
+    itemLabel?: (item: string) => string;
   }>(),
   {
     modelValue: '',
@@ -580,6 +583,7 @@ watchEffect(() => {
             :ref="el => setItemRef(el as HTMLElement, i)"
           >
             {{ item }}
+            <span v-if="itemLabel?.(item)" class="text-secondary ms-2">{{ itemLabel(item) }}</span>
           </div>
           <div v-if="groupBreakAfter?.(item)" class="autocomplete-item-separator"></div>
         </template>

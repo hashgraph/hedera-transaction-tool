@@ -3,6 +3,10 @@ import { describe, test, expect } from 'vitest';
 
 import {
   AccountId,
+  ContractExecuteTransaction,
+  ContractFunctionParameters,
+  ContractId,
+  Hbar,
   FileCreateTransaction,
   FileUpdateTransaction,
   FileAppendTransaction,
@@ -11,6 +15,7 @@ import {
 } from '@hiero-ledger/sdk';
 
 import {
+  getContractExecuteData,
   getFileCreateTransactionData,
   getFileUpdateTransactionData,
   getFileAppendTransactionData,
@@ -154,4 +159,44 @@ describe('lossless file draft restoration', () => {
       expect(restored.contents).toBe(contents);
     },
   );
+});
+
+describe('getContractExecuteData', () => {
+  test('reads contract id, gas, payable amount and raw calldata from a built transaction', () => {
+    const params = new ContractFunctionParameters().addUint256(7);
+    const tx = new ContractExecuteTransaction()
+      .setContractId(ContractId.fromString('0.0.1234'))
+      .setGas(100000)
+      .setPayableAmount(new Hbar(3))
+      .setFunction('set', params);
+
+    const data = getContractExecuteData(tx);
+
+    expect(data.contractId).toBe('0.0.1234');
+    expect(data.gas).toBe(100000);
+    expect(data.payableAmount.toTinybars().toString()).toBe(new Hbar(3).toTinybars().toString());
+    // ABI-less: name/args cannot be recovered, calldata (selector + args) is carried raw instead
+    expect(data.functionName).toBe('');
+    expect(data.functionArgs).toEqual([]);
+    expect(data.rawFunctionParametersHex).toBe(
+      Array.from(params._build('set'))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join(''),
+    );
+  });
+
+  test('falls back to blanks/zeros on an empty transaction', () => {
+    const data = getContractExecuteData(new ContractExecuteTransaction());
+    expect(data.contractId).toBe('');
+    expect(data.gas).toBe(0);
+    expect(data.payableAmount.toTinybars().toNumber()).toBe(0);
+    expect(data.rawFunctionParametersHex).toBe('');
+  });
+
+  test('different calls to the same contract produce different data', () => {
+    const base = () => new ContractExecuteTransaction().setContractId('0.0.9').setGas(1);
+    const a = getContractExecuteData(base().setFunction('a'));
+    const b = getContractExecuteData(base().setFunction('b'));
+    expect(a.rawFunctionParametersHex).not.toBe(b.rawFunctionParametersHex);
+  });
 });
