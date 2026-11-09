@@ -14,6 +14,8 @@ export * from './constants';
 
 const StyleGuide = () => import('@renderer/pages/Styleguide');
 const Accounts = () => import('@renderer/pages/Accounts');
+const SmartContracts = () => import('@renderer/pages/SmartContracts');
+const AddSmartContract = () => import('@renderer/pages/SmartContracts/AddSmartContract');
 const Settings = () => import('@renderer/pages/Settings');
 const Files = () => import('@renderer/pages/Files');
 const ContactList = () => import('@renderer/pages/ContactList');
@@ -47,6 +49,8 @@ const routes: RouteRecordRaw[] = [
   { path: '/transactions', name: 'transactions', component: Transactions },
   { path: '/accounts/link-existing', name: 'linkExistingAccount', component: LinkExistingAccount },
   { path: '/accounts', name: 'accounts', component: Accounts },
+  { path: '/smart-contracts/add', name: 'addSmartContract', component: AddSmartContract },
+  { path: '/smart-contracts', name: 'smartContracts', component: SmartContracts },
   { path: '/files', name: 'files', component: Files },
   { path: '/files/link-existing', name: 'linkExistingFile', component: LinkExistingFile },
   { path: '/contact-list/create', name: 'signUpUser', component: SignUpUser },

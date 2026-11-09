@@ -45,6 +45,12 @@ const getMenuItems = (): MenuItem[] => [
     icon: 'bi bi-file-text',
   },
   {
+    link: '/smart-contracts',
+    testid: 'button-menu-smart-contracts',
+    title: 'Smart Contracts',
+    icon: 'bi bi-file-code',
+  },
+  {
     link: '/contact-list',
     testid: 'button-contact-list',
     title: 'Contact List',
