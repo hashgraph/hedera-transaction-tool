@@ -1,15 +1,26 @@
 import { ErrorCodes, ErrorMessages } from '@app/common';
-import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException } from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
 
 @Catch(BadRequestException)
 export class BadRequestExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(BadRequestExceptionFilter.name);
+
   catch(exception: BadRequestException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
     const isErrorCode = ErrorMessages[exception.message as ErrorCodes];
+
+    if (!isErrorCode) {
+      // The client only ever sees ErrorCodes.UNKWN for these, so log the real
+      // message/stack here or it's lost entirely.
+      this.logger.error(
+        `Unmapped BadRequestException surfaced as UNKWN: ${exception.message}`,
+        exception.stack,
+      );
+    }
 
     response.status(status).json({
       statusCode: status,
