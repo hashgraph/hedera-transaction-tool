@@ -442,16 +442,14 @@ onMounted(async () => {
       </template>
 
       <!-- Simulated call result - skipped when the role check above already explains the failure -->
-      <div
+      <p
         v-if="callSimulationStatus === 'fail' && onlineRoleCheckStatus !== 'fail'"
-        class="alert alert-warning text-small mt-2 mb-0"
-        role="alert"
+        class="text-danger text-small mt-1 mb-0"
         data-testid="alert-contract-execute-simulation-fail"
       >
-        <i class="bi bi-exclamation-triangle-fill me-1" />
-        <span class="text-semi-bold">This call would currently fail.</span>
+        This call would currently fail.
         {{ callSimulationError || 'The simulated call reverted or ran out of gas.' }}
-      </div>
+      </p>
       <p
         v-else-if="callSimulationStatus === 'checking'"
         class="text-micro text-secondary mt-1"
