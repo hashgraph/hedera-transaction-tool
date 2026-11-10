@@ -38,6 +38,7 @@ import AppCustomIcon from '@renderer/components/ui/AppCustomIcon.vue';
 import AppModal from '@renderer/components/ui/AppModal.vue';
 import AppInput from '@renderer/components/ui/AppInput.vue';
 import RoleModal from './components/RoleModal.vue';
+import ViewSourceModal from './components/ViewSourceModal.vue';
 
 /* Stores */
 const user = useUserStore();
@@ -55,6 +56,7 @@ const isNicknameInputShown = ref(false);
 const nicknameInputRef = ref<InstanceType<typeof AppInput> | null>(null);
 const isRoleModalShown = ref(false);
 const editingRole = ref<ContractRole | null>(null);
+const isViewSourceModalShown = ref(false);
 
 /* Computed */
 const selectedContract = computed(
@@ -396,6 +398,13 @@ onMounted(async () => {
                       data-testid="badge-smart-contract-verified"
                       ><i class="bi bi-patch-check-fill me-1"></i>Verified</span
                     >
+                    <span
+                      v-if="selectedContract.verified && selectedContract.evm_address"
+                      class="text-micro link-primary cursor-pointer"
+                      data-testid="button-view-source"
+                      @click="isViewSourceModalShown = true"
+                      >View source</span
+                    >
                   </div>
                 </div>
               </div>
@@ -586,6 +595,11 @@ onMounted(async () => {
           </AppModal>
 
           <RoleModal v-model:show="isRoleModalShown" :role="editingRole" @save="handleSaveRole" />
+
+          <ViewSourceModal
+            v-model:show="isViewSourceModalShown"
+            :evm-address="selectedContract?.evm_address ?? null"
+          />
         </div>
       </div>
     </div>

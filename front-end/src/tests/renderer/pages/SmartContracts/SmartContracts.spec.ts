@@ -53,6 +53,11 @@ const RoleModalStub = {
   emits: ['save', 'update:show'],
   template: '<div data-testid="role-modal" :data-show="show" :data-role="role && role.name" />',
 };
+const ViewSourceModalStub = {
+  props: ['show', 'evmAddress'],
+  emits: ['update:show'],
+  template: '<div data-testid="view-source-modal" :data-show="show" :data-evm-address="evmAddress" />',
+};
 
 const ROLE_VALUE = '0x' + '11'.repeat(32);
 const EVM = '0x' + 'ab'.repeat(20);
@@ -114,7 +119,12 @@ const tick = (ms = 120) => new Promise(r => setTimeout(r, ms));
 async function mountPage(opts: { errorHandler?: (e: unknown) => void } = {}) {
   const wrapper = mount(SmartContracts, {
     global: {
-      stubs: { AppModal: AppModalStub, AppButton: AppButtonStub, RoleModal: RoleModalStub },
+      stubs: {
+        AppModal: AppModalStub,
+        AppButton: AppButtonStub,
+        RoleModal: RoleModalStub,
+        ViewSourceModal: ViewSourceModalStub,
+      },
       mocks: { $router: mocks.router },
       provide: { [ToastManager.injectKey as symbol]: mocks.toast },
       config: opts.errorHandler ? { errorHandler: opts.errorHandler } : {},
@@ -201,6 +211,29 @@ describe('SmartContracts.vue', () => {
       mocks.db = [makeContract({ evm_address: null })];
       const wrapper = await mountPage();
       expect(wrapper.find(t('p-smart-contract-data-evm-address')).text()).toBe('None');
+    });
+
+    test('View source only shows for a verified contract with an evm address', async () => {
+      mocks.db = [makeContract(), contractB(), makeContract({ id: 'c3', evm_address: null })];
+      const wrapper = await mountPage();
+      expect(wrapper.find(t('button-view-source')).exists()).toBe(true);
+
+      await wrapper.find(t('p-smart-contract-nickname-1')).trigger('click'); // contractB: unverified
+      expect(wrapper.find(t('button-view-source')).exists()).toBe(false);
+
+      await wrapper.find(t('p-smart-contract-id-2')).trigger('click'); // verified but no evm_address
+      expect(wrapper.find(t('button-view-source')).exists()).toBe(false);
+    });
+
+    test('clicking View source opens the modal for the selected contract', async () => {
+      mocks.db = [makeContract()];
+      const wrapper = await mountPage();
+      const modal = () => wrapper.findComponent(ViewSourceModalStub);
+      expect(modal().props('show')).toBe(false);
+
+      await wrapper.find(t('button-view-source')).trigger('click');
+      expect(modal().props('show')).toBe(true);
+      expect(modal().props('evmAddress')).toBe(EVM);
     });
 
     test('fetching while logged out raises an error', async () => {
