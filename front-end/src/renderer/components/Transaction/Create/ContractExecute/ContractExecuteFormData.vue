@@ -272,9 +272,15 @@ watch(
   { immediate: true },
 );
 
+// Each check below is guarded by its own generation counter: neither checkAccountHasRole nor
+// simulateContractCall supports cancellation, so a slower response for stale inputs (e.g. the
+// payer changed again before the first check returned) must be detected and dropped on arrival
+// instead, rather than overwriting a newer, still-relevant status.
+let roleCheckGeneration = 0;
 watch(
   [taggedRole, () => props.payerId, contractEvmAddress],
   async ([role, payerId, toAddress]) => {
+    const generation = ++roleCheckGeneration;
     onlineRoleCheckStatus.value = 'idle';
 
     if (!role || !role.verified || !role.value || !toAddress || !isAccountId(payerId)) {
@@ -289,11 +295,14 @@ watch(
       payerId,
       network.mirrorNodeBaseURL,
     );
-    onlineRoleCheckStatus.value = result;
+    if (generation === roleCheckGeneration) {
+      onlineRoleCheckStatus.value = result;
+    }
   },
   { immediate: true },
 );
 
+let callSimulationGeneration = 0;
 watch(
   [
     selectedFunction,
@@ -304,6 +313,7 @@ watch(
     contractEvmAddress,
   ],
   async ([fn, args, gas, payableAmount, payerId, toAddress]) => {
+    const generation = ++callSimulationGeneration;
     callSimulationStatus.value = 'idle';
     callSimulationError.value = '';
 
@@ -323,8 +333,10 @@ watch(
       },
       network.mirrorNodeBaseURL,
     );
-    callSimulationStatus.value = result.status;
-    callSimulationError.value = result.errorMessage || '';
+    if (generation === callSimulationGeneration) {
+      callSimulationStatus.value = result.status;
+      callSimulationError.value = result.errorMessage || '';
+    }
   },
   { immediate: true, deep: true },
 );

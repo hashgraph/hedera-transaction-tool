@@ -868,6 +868,22 @@ describe('ContractExecuteFormData.vue', () => {
       expect(checkAccountHasRoleMock).toHaveBeenCalledTimes(2);
     });
 
+    test('a stale response for a previous payer does not overwrite a newer one', async () => {
+      let resolveStale!: (v: string) => void;
+      checkAccountHasRoleMock
+        .mockImplementationOnce(() => new Promise<string>(r => (resolveStale = r)))
+        .mockResolvedValueOnce('fail');
+
+      const { wrapper } = await mountForm(tagged, PAYER);
+      await wrapper.setProps({ payerId: HOLDER });
+      await flushPromises();
+      expect(failAlert(wrapper).exists()).toBe(true); // the newer check already resolved 'fail'
+
+      resolveStale('pass'); // the first (now stale) check resolves late
+      await flushPromises();
+      expect(failAlert(wrapper).exists()).toBe(true); // must still reflect 'fail', not the stale 'pass'
+    });
+
     test.each([
       ['unverified role', { verified: false }, PAYER],
       ['role without a resolved value', { value: undefined }, PAYER],
@@ -1012,6 +1028,27 @@ describe('ContractExecuteFormData.vue', () => {
       await wrapper.setProps({ payerId: '0.0.700' });
       await flushPromises();
       expect(simulateContractCallMock).toHaveBeenCalledTimes(2);
+    });
+
+    test('a stale response for previous inputs does not overwrite a newer one', async () => {
+      let resolveStale!: (v: { status: string; errorMessage?: string }) => void;
+      simulateContractCallMock
+        .mockImplementationOnce(() => new Promise(r => (resolveStale = r)))
+        .mockResolvedValueOnce({ status: 'pass' });
+
+      const { wrapper } = await mountForm({
+        contractId: '0.0.1001',
+        functionName: 'mint',
+        functionArgs: mintArgs,
+      });
+      await wrapper.setProps({ payerId: '0.0.700' });
+      await flushPromises();
+      expect(wrapper.text()).toContain('Simulated call currently succeeds.'); // the newer check already resolved 'pass'
+
+      resolveStale({ status: 'fail', errorMessage: 'STALE - should never be shown' });
+      await flushPromises();
+      expect(wrapper.text()).toContain('Simulated call currently succeeds.'); // still 'pass', not the stale 'fail'
+      expect(wrapper.text()).not.toContain('STALE');
     });
 
     test('includes a non-zero payable amount in tinybars', async () => {
