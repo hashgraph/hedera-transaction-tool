@@ -180,9 +180,13 @@ const sel = (w: Wrapper) => w.find('[data-testid="select-contract-execute-functi
 const mismatch = (w: Wrapper) => w.find('[data-testid="alert-contract-execute-role-mismatch"]');
 const failAlert = (w: Wrapper) => w.find('[data-testid="alert-contract-execute-role-fail"]');
 
+// Option values are function signatures now (to disambiguate overloads - see
+// ContractExecuteFormData.vue's functionOptions) - resolve a bare name to its rendered option's
+// actual value so existing callers can keep passing just the name.
 async function chooseFunction(w: Wrapper, name: string) {
   const el = sel(w).element as HTMLSelectElement;
-  el.value = name;
+  const option = Array.from(el.options).find(o => o.value === name || o.value.startsWith(`${name}(`));
+  el.value = option ? option.value : name;
   await sel(w).trigger('change');
   await flushPromises();
 }
@@ -435,6 +439,73 @@ describe('ContractExecuteFormData.vue', () => {
       wrapper.findComponent({ name: 'AppHbarInput' }).vm.$emit('update:modelValue', new Hbar(3));
       await flushPromises();
       expect(emitted.at(-1)!.payableAmount.toBigNumber().toNumber()).toBe(3);
+    });
+  });
+
+  describe('overloaded functions', () => {
+    const OVERLOADED_ABI = [
+      {
+        type: 'function',
+        name: 'transfer',
+        inputs: [{ name: 'to', type: 'address' }],
+        outputs: [],
+        stateMutability: 'nonpayable',
+      },
+      {
+        type: 'function',
+        name: 'transfer',
+        inputs: [
+          { name: 'to', type: 'address' },
+          { name: 'amount', type: 'uint256' },
+        ],
+        outputs: [],
+        stateMutability: 'payable',
+      },
+    ];
+
+    beforeEach(() => {
+      getAllMock.mockResolvedValue([
+        makeContract({ abi: JSON.stringify(OVERLOADED_ABI), roles: null, function_tags: null }),
+      ]);
+    });
+
+    test('each overload gets its own option value (the signature), not a shared bare name', async () => {
+      const { wrapper } = await mountForm({ contractId: '0.0.1001' });
+      const values = sel(wrapper)
+        .findAll('option')
+        .map(o => o.attributes('value'));
+      expect(values).toEqual(['', 'transfer(address)', 'transfer(address,uint256)']);
+    });
+
+    test('selecting the second overload seeds its own args, not the first overload\'s', async () => {
+      const { wrapper, emitted } = await mountForm({ contractId: '0.0.1001' });
+      await chooseFunction(wrapper, 'transfer(address,uint256)');
+      expect(emitted.at(-1)).toMatchObject({
+        functionName: 'transfer',
+        functionArgs: [
+          { name: 'to', type: 'address', value: '' },
+          { name: 'amount', type: 'uint256', value: '' },
+        ],
+      });
+    });
+
+    test('switching from the second overload back to the first drops the extra arg', async () => {
+      const { wrapper, emitted } = await mountForm({ contractId: '0.0.1001' });
+      await chooseFunction(wrapper, 'transfer(address,uint256)');
+      await chooseFunction(wrapper, 'transfer(address)');
+      expect(emitted.at(-1)).toMatchObject({
+        functionName: 'transfer',
+        functionArgs: [{ name: 'to', type: 'address', value: '' }],
+      });
+    });
+
+    test('payable amount input reflects the exact overload selected, not always the first', async () => {
+      const { wrapper } = await mountForm({ contractId: '0.0.1001' });
+      const payable = () => wrapper.find('[data-testid="input-contract-execute-payable-amount"]');
+      await chooseFunction(wrapper, 'transfer(address)');
+      expect(payable().exists()).toBe(false);
+      await chooseFunction(wrapper, 'transfer(address,uint256)');
+      expect(payable().exists()).toBe(true);
     });
   });
 

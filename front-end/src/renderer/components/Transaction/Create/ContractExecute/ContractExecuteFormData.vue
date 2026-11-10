@@ -93,16 +93,33 @@ const abi = computed<AbiItem[]>(() => {
 
 const callableFunctions = computed(() => getAbiFunctions(abi.value).filter(isCallableAbiFunction));
 
+// The option value (and selectedFunction's lookup key below) is the function's signature, not
+// just its name - two overloads (e.g. transfer(address) and transfer(address,uint256)) would
+// otherwise collide on a bare name, and the <select> could only ever resolve to the first one.
 const functionOptions = computed(() => [
   { label: 'Select a function', value: '' },
   ...callableFunctions.value.map(fn => ({
     label: `${fn.name}(${fn.inputs.map(i => i.type).join(', ')})`,
-    value: fn.name,
+    value: getFunctionSignature(fn),
   })),
 ]);
 
-const selectedFunction = computed(
-  () => callableFunctions.value.find(f => f.name === props.data.functionName) || null,
+// data.functionName/functionArgs can't carry a signature directly (functionName has to stay the
+// bare name - see handleFunctionChange), but functionArgs already carries each arg's exact type,
+// set whenever a function is chosen or a call is decoded from raw calldata - so the signature of
+// the function actually selected can usually be reconstructed from the two together. Falls back
+// to matching by name only (ambiguous for overloads) when functionArgs isn't populated yet.
+const selectedFunction = computed(() => {
+  const signature = `${props.data.functionName}(${props.data.functionArgs.map(a => a.type).join(',')})`;
+  return (
+    callableFunctions.value.find(f => getFunctionSignature(f) === signature) ||
+    callableFunctions.value.find(f => f.name === props.data.functionName) ||
+    null
+  );
+});
+
+const selectedFunctionSignature = computed(() =>
+  selectedFunction.value ? getFunctionSignature(selectedFunction.value) : '',
 );
 
 // null while empty (Create button gating covers that) or for bool (checkbox can't be malformed).
@@ -117,7 +134,7 @@ const roles = computed(() => parseRoles(selectedSavedContract.value?.roles));
 const functionTags = computed(() => parseFunctionTags(selectedSavedContract.value?.function_tags));
 
 const taggedRole = computed(() => {
-  const fn = callableFunctions.value.find(f => f.name === props.data.functionName);
+  const fn = selectedFunction.value;
   if (!fn) {
     return null;
   }
@@ -198,10 +215,10 @@ const handleManualAbiFileUpdate = async (
   }
 };
 
-function handleFunctionChange(name: string) {
-  const fn = callableFunctions.value.find(f => f.name === name) || null;
+function handleFunctionChange(signature: string) {
+  const fn = callableFunctions.value.find(f => getFunctionSignature(f) === signature) || null;
   emitUpdate({
-    functionName: name,
+    functionName: fn?.name ?? '',
     // payable amount only applies to payable functions - don't carry it over to another one
     payableAmount: fn?.stateMutability === 'payable' ? props.data.payableAmount : new Hbar(0),
     rawFunctionParametersHex: '',
@@ -373,7 +390,7 @@ onMounted(async () => {
       <label class="form-label">Function <span class="text-danger">*</span></label>
       <select
         class="form-select is-fill"
-        :value="data.functionName"
+        :value="selectedFunctionSignature"
         @change="handleFunctionChange(($event.target as HTMLSelectElement).value)"
         :disabled="callableFunctions.length === 0"
         data-testid="select-contract-execute-function"
