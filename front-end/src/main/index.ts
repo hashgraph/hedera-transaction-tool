@@ -1,6 +1,6 @@
 import * as path from 'path';
-import { app, BrowserWindow, session } from 'electron';
-import { optimizer, is } from '@electron-toolkit/utils';
+import { app, BrowserWindow } from 'electron';
+import { optimizer } from '@electron-toolkit/utils';
 
 import initDatabase from '@main/db/init';
 
@@ -62,17 +62,6 @@ function attachAppEvents() {
       await mainWindowInit;
     } finally {
       mainWindowInit = null;
-    }
-
-    if (!is.dev) {
-      session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
-        callback({
-          responseHeaders: {
-            ...details.responseHeaders,
-            'Content-Security-Policy': ["script-src 'self'"],
-          },
-        });
-      });
     }
 
     app.on('activate', async function () {
