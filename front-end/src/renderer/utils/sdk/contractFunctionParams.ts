@@ -234,7 +234,16 @@ function decodeDynamicWord(
   type: 'string' | 'bytes',
 ): string {
   const tailOffset = argsStart + Number(BigInt(`0x${uint8ToHex(headWord)}`));
+  // Uint8Array.slice() never throws on an out-of-range end index - it silently returns
+  // whatever bytes actually exist, so truncated/corrupted calldata must be rejected explicitly
+  // instead of being allowed to produce a shorter-than-claimed (but plausible-looking) value.
+  if (tailOffset + 32 > functionParameters.length) {
+    throw new Error('Truncated calldata: dynamic argument length word is out of bounds');
+  }
   const length = Number(BigInt(`0x${uint8ToHex(functionParameters.slice(tailOffset, tailOffset + 32))}`));
+  if (tailOffset + 32 + length > functionParameters.length) {
+    throw new Error('Truncated calldata: dynamic argument data is out of bounds');
+  }
   const data = functionParameters.slice(tailOffset + 32, tailOffset + 32 + length);
 
   return type === 'string' ? new TextDecoder().decode(data) : `0x${uint8ToHex(data)}`;
@@ -274,6 +283,14 @@ export function decodeContractCall(
 
     // Every param - static or dynamic - gets exactly one head word, in declaration order.
     const argsStart = 4;
+
+    // The full static head (one word per param) must actually be present before decoding
+    // anything - slicing a short/missing word wouldn't throw on its own, it would just read
+    // fewer bytes than a real argument has and decode a wrong-but-plausible-looking value.
+    if (functionParameters.length < argsStart + fn.inputs.length * 32) {
+      return { functionName: fn.name, args: null };
+    }
+
     try {
       const args = fn.inputs.map((input, i) => {
         const headWord = functionParameters.slice(

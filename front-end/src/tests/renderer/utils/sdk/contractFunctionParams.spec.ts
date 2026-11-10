@@ -326,6 +326,40 @@ describe('decodeContractCall', () => {
     expect(decodeContractCall(abi, new Uint8Array([0xde, 0xad, 0xbe, 0xef]))).toBeNull();
   });
 
+  test('truncated static head (calldata shorter than one full word per param) decodes to args=null, not a wrong value', () => {
+    const full = hexToUint8Array(
+      encodeCall('transfer', [
+        { name: 'to', type: 'address', value: ADDR },
+        { name: 'amount', type: 'uint256', value: '123456789' },
+      ]),
+    );
+    // selector (4) + full "to" word (32) + only 10 of the 32 bytes of "amount"
+    const truncated = full.slice(0, 4 + 32 + 10);
+    expect(decodeContractCall(abi, truncated)).toEqual({ functionName: 'transfer', args: null });
+  });
+
+  test('truncated dynamic tail data decodes to args=null, not a wrong/shorter value', () => {
+    const full = hexToUint8Array(encodeCall('f', [{ name: 's', type: 'string', value: 'hello world' }]));
+    // selector (4) + offset word (32) + length word (32) + only 7 of the 11 bytes of "hello world"
+    // (the rest of that 32-byte-aligned tail word is just zero padding, so cutting fewer bytes
+    // than that would only remove padding, not actual claimed content)
+    const truncated = full.slice(0, 4 + 32 + 32 + 7);
+    expect(decodeContractCall([fn('f', [['s', 'string']])], truncated)).toEqual({
+      functionName: 'f',
+      args: null,
+    });
+  });
+
+  test('truncated dynamic length word (tail cut before the length can even be read) decodes to args=null', () => {
+    const full = hexToUint8Array(encodeCall('f', [{ name: 's', type: 'string', value: 'hello world' }]));
+    // selector (4) + full head word (32) + only 10 of the 32 bytes of the tail's length word
+    const truncated = full.slice(0, 4 + 32 + 10);
+    expect(decodeContractCall([fn('f', [['s', 'string']])], truncated)).toEqual({
+      functionName: 'f',
+      args: null,
+    });
+  });
+
   test('skips ABI functions whose parameter types cannot be selector-built and keeps looking', () => {
     const data = hexToUint8Array(encodeCall('pause', []));
     const mixed = [fn('weird', [['t', 'tuple']]), fn('pause', [])];
