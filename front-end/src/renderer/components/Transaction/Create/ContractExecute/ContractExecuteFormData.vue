@@ -164,6 +164,12 @@ const contractEvmAddress = computed(() => {
   return parsed ? `0x${parsed.toEvmAddress()}` : null;
 });
 
+// The two checks below (role check + call simulation) are a predictive helper only: they tell the
+// user whether this call looks like it will pass or fail *right now*, given current on-chain
+// state. Neither one gates submission - a 'fail' status never disables the submit button, and a
+// 'pass'/'unknown' status is not a guarantee, since chain state can change between this check and
+// when the transaction actually executes (possibly after collecting multiple signatures).
+
 // Shared by both async checks below: 'idle' before anything has run, 'checking' while in flight,
 // then whatever ContractCallStatus the check resolved to.
 type AsyncCheckStatus = 'idle' | 'checking' | ContractCallStatus;

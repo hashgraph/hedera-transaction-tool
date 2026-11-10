@@ -223,9 +223,13 @@ export const callContract = async (
 
     return { success: true, result: data.result };
   } catch (error) {
-    const errorMessage = axios.isAxiosError(error)
-      ? error.response?.data?._status?.messages?.[0]?.message
+    // `message` is just the HAPI status string (e.g. "CONTRACT_REVERT_EXECUTED") - the same for
+    // every revert. `detail`, when present, is the mirror node's decoded reason (e.g. a require
+    // message), so prefer it; fall back to `message` when there's nothing more specific decoded.
+    const statusMessage = axios.isAxiosError(error)
+      ? error.response?.data?._status?.messages?.[0]
       : undefined;
+    const errorMessage = statusMessage?.detail || statusMessage?.message;
 
     logger.warn('Contract call simulation failed', { error });
 
