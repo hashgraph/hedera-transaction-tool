@@ -9,6 +9,7 @@ vi.mock('@renderer/services/mirrorNodeDataService', () => ({ callContract }));
 import {
   buildZeroArgCallData,
   checkAccountHasRole,
+  contractIdToReference,
   decodeBytes32Result,
   findMatchingSavedContract,
   parseContractReference,
@@ -72,6 +73,28 @@ describe('parseContractReference', () => {
     });
     expect(parseContractReference(EVM)).toBeNull();
     spy2.mockRestore();
+  });
+});
+
+describe('contractIdToReference', () => {
+  // Not long-zero (i.e. not derived from a shard.realm.num) - a CREATE2-style address.
+  const NON_LONG_ZERO = 'abcdef1234567890abcdef1234567890abcdef12';
+
+  test('returns the plain "0.0.X" string for a non-EVM-backed id', () => {
+    expect(contractIdToReference(ContractId.fromString('0.0.1234'))).toBe('0.0.1234');
+  });
+
+  test('returns the "0x..." form for a genuine (non-long-zero) EVM-backed id, not the SDK\'s raw "shard.realm.<hex>" toString()', () => {
+    const id = ContractId.fromEvmAddress(0, 0, `0x${NON_LONG_ZERO}`);
+    // this is the string parseContractReference (and anything built on it) can't read back
+    expect(id.toString()).toBe(`0.0.${NON_LONG_ZERO}`);
+    expect(contractIdToReference(id)).toBe(`0x${NON_LONG_ZERO}`);
+  });
+
+  test('falls back to "0.0.X" for a long-zero EVM address (SDK resolves it to a real entity num, evmAddress stays unset)', () => {
+    const id = ContractId.fromEvmAddress(0, 0, `0x${EVM}`);
+    expect(id.evmAddress).toBeNull();
+    expect(contractIdToReference(id)).toBe('0.0.1234');
   });
 });
 

@@ -57,6 +57,7 @@ import type {
   TransferHbarData,
 } from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
+import { contractIdToReference } from '@renderer/utils/sdk/contractCall';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
 import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
@@ -557,7 +558,7 @@ export const getContractExecuteData = (
   const functionParameters = transaction.functionParameters;
 
   return {
-    contractId: transaction.contractId?.toString() || '',
+    contractId: transaction.contractId ? contractIdToReference(transaction.contractId) : '',
     gas: transaction.gas ? Number(transaction.gas.toString()) : 0,
     payableAmount: transaction.payableAmount || new Hbar(0),
     functionName: '',

@@ -46,6 +46,14 @@ export function parseContractReference(idOrEvmAddress: string): ContractId | nul
   return null;
 }
 
+/* Inverse of parseContractReference: a ContractId built via fromEvmAddress stringifies as
+ * "shard.realm.<hex>", a form only the SDK itself understands - round-tripping that through
+ * parseContractReference (and anything built on it, like findMatchingSavedContract) fails. Use
+ * the same "0x..." form the rest of the app works with instead. */
+export function contractIdToReference(contractId: ContractId): string {
+  return contractId.evmAddress != null ? `0x${contractId.toEvmAddress()}` : contractId.toString();
+}
+
 interface SavedContractReference {
   contract_id?: string | null;
   evm_address?: string | null;

@@ -185,6 +185,15 @@ describe('getContractExecuteData', () => {
     );
   });
 
+  test('uses the "0x..." form for a genuine (non-long-zero) EVM-backed contract id, not the SDK\'s raw "shard.realm.<hex>" toString()', () => {
+    const addr = 'abcdef1234567890abcdef1234567890abcdef12';
+    const tx = new ContractExecuteTransaction()
+      .setContractId(ContractId.fromEvmAddress(0, 0, `0x${addr}`))
+      .setGas(1);
+
+    expect(getContractExecuteData(tx).contractId).toBe(`0x${addr}`);
+  });
+
   test('falls back to blanks/zeros on an empty transaction', () => {
     const data = getContractExecuteData(new ContractExecuteTransaction());
     expect(data.contractId).toBe('');

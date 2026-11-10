@@ -11,7 +11,7 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/smartContractsService';
 import { decodeContractCall } from '@renderer/utils/sdk/contractFunctionParams';
-import { findMatchingSavedContract } from '@renderer/utils/sdk/contractCall';
+import { contractIdToReference, findMatchingSavedContract } from '@renderer/utils/sdk/contractCall';
 import { parseStoredAbi, type AbiItem } from '@renderer/utils/sdk/abi';
 
 import { isUserLoggedIn, stringifyHbar, uint8ToHex } from '@renderer/utils';
@@ -39,7 +39,7 @@ const contractExecuteTransaction = computed(() =>
 const matchingContract = computed(() => {
   const contractId = contractExecuteTransaction.value?.contractId;
   return contractId
-    ? findMatchingSavedContract(savedContracts.value, contractId.toString())
+    ? findMatchingSavedContract(savedContracts.value, contractIdToReference(contractId))
     : null;
 });
 
@@ -94,7 +94,11 @@ onMounted(async () => {
     <div :class="commonColClass">
       <h4 :class="detailItemLabelClass">Contract ID</h4>
       <p :class="detailItemValueClass" data-testid="p-contract-execute-details-contract-id">
-        {{ contractExecuteTransaction.contractId?.toString() || 'None' }}
+        {{
+          contractExecuteTransaction.contractId
+            ? contractIdToReference(contractExecuteTransaction.contractId)
+            : 'None'
+        }}
       </p>
     </div>
 

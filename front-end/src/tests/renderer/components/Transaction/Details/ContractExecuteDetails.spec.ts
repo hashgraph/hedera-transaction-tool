@@ -108,6 +108,12 @@ describe('ContractExecuteDetails.vue', () => {
     expect(wrapper.text()).not.toContain('250000');
   });
 
+  test('shows a genuine (non-long-zero) EVM-backed contract id as "0x...", not the SDK\'s raw "shard.realm.<hex>" toString()', async () => {
+    const addr = 'abcdef1234567890abcdef1234567890abcdef12';
+    const wrapper = await mountDetails(makeTx({ id: ContractId.fromEvmAddress(0, 0, `0x${addr}`) }));
+    expect(byId(wrapper, 'contract-id').text()).toBe(`0x${addr}`);
+  });
+
   test('shows None for a missing contract id and hides payable amount when unset', async () => {
     const wrapper = await mountDetails(new ContractExecuteTransaction());
     expect(byId(wrapper, 'contract-id').text()).toBe('None');
@@ -212,6 +218,17 @@ describe('ContractExecuteDetails.vue', () => {
         makeContract({ contract_id: 'not-an-id', evm_address: evmOf('0.0.1001') }),
       ]);
       const wrapper = await mountDetails(makeTx({ params: mintParams() }));
+      expect(byId(wrapper, 'function').exists()).toBe(true);
+    });
+
+    test('by a saved contract recorded under a genuine (non-long-zero) EVM address', async () => {
+      const addr = 'abcdef1234567890abcdef1234567890abcdef12';
+      getAllMock.mockResolvedValue([makeContract({ contract_id: null, evm_address: addr })]);
+      const tx = makeTx({
+        id: ContractId.fromEvmAddress(0, 0, `0x${addr}`),
+        params: mintParams(),
+      });
+      const wrapper = await mountDetails(tx);
       expect(byId(wrapper, 'function').exists()).toBe(true);
     });
 

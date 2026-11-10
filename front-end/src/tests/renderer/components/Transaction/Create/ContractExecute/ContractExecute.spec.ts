@@ -155,4 +155,15 @@ describe('ContractExecute.vue', () => {
     expect(data.payableAmount.toBigNumber().toNumber()).toBe(3);
     expect(data.rawFunctionParametersHex).toBe('01020304');
   });
+
+  test('a loaded draft with a genuine (non-long-zero) EVM-backed contract id restores it as "0x...", parseable by the form', async () => {
+    const addr = 'abcdef1234567890abcdef1234567890abcdef12';
+    const { base, form } = setup();
+    const tx = new ContractExecuteTransaction()
+      .setContractId(ContractId.fromEvmAddress(0, 0, `0x${addr}`))
+      .setGas(1);
+    base.vm.$emit('draft-loaded', tx);
+    await base.vm.$nextTick();
+    expect(form().props('data').contractId).toBe(`0x${addr}`);
+  });
 });
