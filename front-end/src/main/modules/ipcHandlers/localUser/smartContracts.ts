@@ -1,6 +1,5 @@
 import {
   addSmartContract,
-  getSmartContractById,
   getSmartContracts,
   removeSmartContracts,
   updateSmartContract,
@@ -12,7 +11,6 @@ export default () => {
   createIPCChannel('smartContracts', [
     renameFunc(addSmartContract, 'add'),
     renameFunc(getSmartContracts, 'getAll'),
-    renameFunc(getSmartContractById, 'getOne'),
     renameFunc(updateSmartContract, 'update'),
     renameFunc(removeSmartContracts, 'remove'),
   ]);

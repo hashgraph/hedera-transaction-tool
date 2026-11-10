@@ -16,24 +16,6 @@ export const getSmartContracts = async (findArgs: Prisma.SmartContractFindManyAr
   }
 };
 
-export const getSmartContractById = async (userId: string, id: string) => {
-  const prisma = getPrismaClient();
-
-  try {
-    const contract = await prisma.smartContract.findFirst({
-      where: {
-        id,
-        user_id: userId,
-      },
-    });
-
-    return contract || null;
-  } catch (error) {
-    logger.error('Error fetching smart contract', { error });
-    return null;
-  }
-};
-
 export const addSmartContract = async (contract: Prisma.SmartContractUncheckedCreateInput) => {
   if (
     (!contract.contract_id || contract.contract_id.trim().length === 0) &&

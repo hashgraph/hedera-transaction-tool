@@ -2,7 +2,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils';
 import { reactive } from 'vue';
-import { AccountId, Hbar } from '@hiero-ledger/sdk';
+import { AccountId, ContractId, Hbar } from '@hiero-ledger/sdk';
 
 import type { ContractExecuteData } from '@renderer/utils/sdk';
 
@@ -67,7 +67,7 @@ vi.mock('@renderer/components/ui/AppCheckBox.vue', () => ({
 vi.mock('@renderer/components/ui/AppInput.vue', () => ({
   default: {
     name: 'AppInput',
-    props: ['modelValue', 'filled', 'type', 'min', 'placeholder'],
+    props: ['modelValue', 'filled', 'type', 'min', 'placeholder', 'autoTrim'],
     emits: ['update:modelValue'],
     template: '<div />',
   },
@@ -93,7 +93,8 @@ const ABI = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
-  // not callable: dynamic param
+  // callable (string is encodable) but not fully decodable for display - see
+  // isCallableAbiFunction vs isFullyDecodableAbiFunction in abi.ts
   {
     type: 'function',
     name: 'setName',
@@ -101,10 +102,19 @@ const ABI = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  // not callable: array param, unsupported by encodeContractFunctionParams
+  {
+    type: 'function',
+    name: 'setIds',
+    inputs: [{ name: 'ids', type: 'uint256[]' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
   { type: 'event', name: 'Transfer', inputs: [] },
 ];
 
 const EVM = 'ab'.repeat(20);
+const evmOf = (id: string) => ContractId.fromString(id).toEvmAddress();
 const PAYER = '0.0.500';
 const HOLDER = '0.0.600';
 const ROLE_VALUE = '0x' + '11'.repeat(32);
@@ -244,7 +254,22 @@ describe('ContractExecuteFormData.vue', () => {
         'mint(address, uint256)',
         'deposit()',
         'setFlag(bool)',
+        'setName(string)',
       ]);
+    });
+
+    test('a saved contract with only a contract_id is recognized when entered by its equivalent EVM address', async () => {
+      getAllMock.mockResolvedValue([makeContract({ contract_id: '0.0.1001', evm_address: null })]);
+      const { wrapper } = await mountForm({ contractId: `0x${evmOf('0.0.1001')}` });
+      expect(wrapper.find('.invisible').exists()).toBe(true);
+    });
+
+    test('a saved contract with only an evm_address is recognized when entered by an equivalent "0.0.X" id', async () => {
+      getAllMock.mockResolvedValue([
+        makeContract({ contract_id: null, evm_address: `0x${evmOf('0.0.1001')}` }),
+      ]);
+      const { wrapper } = await mountForm({ contractId: '0.0.1001' });
+      expect(wrapper.find('.invisible').exists()).toBe(true);
     });
 
     test('unknown contract id shows the ABI upload and no functions', async () => {
@@ -267,7 +292,7 @@ describe('ContractExecuteFormData.vue', () => {
 
     test('an ABI with no callable function shows a hint', async () => {
       getAllMock.mockResolvedValue([
-        makeContract({ abi: JSON.stringify([ABI[3]]), roles: null, function_tags: null }),
+        makeContract({ abi: JSON.stringify([ABI[4]]), roles: null, function_tags: null }),
       ]);
       const { wrapper } = await mountForm({ contractId: '0.0.1001' });
       expect(wrapper.text()).toContain('No callable functions found in this ABI.');
@@ -288,7 +313,7 @@ describe('ContractExecuteFormData.vue', () => {
       upload(wrapper, fileOf(JSON.stringify(ABI)));
       await flushPromises();
       expect(emitted.at(-1)).toMatchObject({ functionName: '', functionArgs: [] });
-      expect(sel(wrapper).findAll('option')).toHaveLength(4);
+      expect(sel(wrapper).findAll('option')).toHaveLength(5);
       expect(wrapper.findComponent({ name: 'AppUploadFile' }).props('file')).not.toBeNull();
     });
 
@@ -296,7 +321,7 @@ describe('ContractExecuteFormData.vue', () => {
       const { wrapper } = await mountForm({ contractId: '0.0.7777' });
       upload(wrapper, fileOf(JSON.stringify({ abi: ABI })));
       await flushPromises();
-      expect(sel(wrapper).findAll('option')).toHaveLength(4);
+      expect(sel(wrapper).findAll('option')).toHaveLength(5);
     });
 
     test('invalid JSON shows the parse error and keeps no ABI', async () => {
@@ -438,6 +463,36 @@ describe('ContractExecuteFormData.vue', () => {
       expect(emitted.at(-1)!.functionArgs).toEqual([args[0], { ...args[1], value: '42' }]);
     });
 
+    // AppInput's autoTrim strips trailing whitespace on every keystroke by default, which would
+    // make it impossible to type a sentence with spaces into a string param (each space is
+    // stripped the instant it's typed, since it's always the trailing character at that point).
+    // Every other arg type is already charset-restricted by isAllowedFunctionArgKey /
+    // sanitizeFunctionArgInput to exclude whitespace, so leaving autoTrim on for them is harmless.
+    test('disables autoTrim only for string params, so sentences with spaces can be typed', async () => {
+      const { wrapper } = await mountForm({
+        contractId: '0.0.1001',
+        functionName: 'mint',
+        functionArgs: args,
+      });
+      const inputs = wrapper.findAllComponents({ name: 'AppInput' }).slice(1);
+      expect(inputs.map(i => i.props('autoTrim'))).toEqual([true, true]);
+
+      getAllMock.mockResolvedValue([
+        makeContract({
+          abi: JSON.stringify([ABI[3]]),
+          roles: null,
+          function_tags: null,
+        }),
+      ]);
+      const stringForm = await mountForm({
+        contractId: '0.0.1001',
+        functionName: 'setName',
+        functionArgs: [{ name: 'n', type: 'string', value: '' }],
+      });
+      const stringInput = stringForm.wrapper.findAllComponents({ name: 'AppInput' }).slice(1)[0];
+      expect(stringInput.props('autoTrim')).toBe(false);
+    });
+
     test('bool params render a checkbox that emits true/false strings', async () => {
       const { wrapper, emitted } = await mountForm({
         contractId: '0.0.1001',
@@ -564,14 +619,7 @@ describe('ContractExecuteFormData.vue', () => {
       expect(emitted).toHaveLength(0);
     });
 
-    test('does not emit when the selector matches nothing or args cannot be decoded', async () => {
-      const unknown = await mountForm({
-        contractId: '0.0.1001',
-        rawFunctionParametersHex: '0xdeadbeef',
-      });
-      expect(unknown.emitted).toHaveLength(0);
-
-      // selector for setName(string) exists in the ABI but is not fully decodable -> args null
+    test('decodes raw calldata with a string param too (head/tail decoding)', async () => {
       getAllMock.mockResolvedValue([
         makeContract({
           abi: JSON.stringify([
@@ -588,6 +636,37 @@ describe('ContractExecuteFormData.vue', () => {
       const { ContractFunctionParameters } = await import('@hiero-ledger/sdk');
       const hex = Buffer.from(
         new ContractFunctionParameters().addString('hi')._build('setName'),
+      ).toString('hex');
+      const { emitted } = await mountForm({ contractId: '0.0.1001', rawFunctionParametersHex: hex });
+      const last = emitted.at(-1)!;
+      expect(last.functionName).toBe('setName');
+      expect(last.functionArgs).toEqual([{ name: 'n', type: 'string', value: 'hi' }]);
+    });
+
+    test('does not emit when the selector matches nothing or args cannot be decoded (array param)', async () => {
+      const unknown = await mountForm({
+        contractId: '0.0.1001',
+        rawFunctionParametersHex: '0xdeadbeef',
+      });
+      expect(unknown.emitted).toHaveLength(0);
+
+      // array params are identified by selector but still not decodable - see isCallableAbiFunction
+      getAllMock.mockResolvedValue([
+        makeContract({
+          abi: JSON.stringify([
+            {
+              type: 'function',
+              name: 'setIds',
+              inputs: [{ name: 'ids', type: 'uint256[]' }],
+              outputs: [],
+              stateMutability: 'nonpayable',
+            },
+          ]),
+        }),
+      ]);
+      const { ContractFunctionParameters } = await import('@hiero-ledger/sdk');
+      const hex = Buffer.from(
+        new ContractFunctionParameters().addUint256Array([1, 2])._build('setIds'),
       ).toString('hex');
       const dynamic = await mountForm({ contractId: '0.0.1001', rawFunctionParametersHex: hex });
       expect(dynamic.emitted).toHaveLength(0);

@@ -1,7 +1,6 @@
-import { AccountId, ContractFunctionParameters, ContractId } from '@hiero-ledger/sdk';
+import { AccountId, ContractId } from '@hiero-ledger/sdk';
 
 import { callContract } from '@renderer/services/mirrorNodeDataService';
-import { uint8ToHex } from '@renderer/utils';
 import {
   buildFunctionCallData,
   type ContractCallArgument,
@@ -47,13 +46,52 @@ export function parseContractReference(idOrEvmAddress: string): ContractId | nul
   return null;
 }
 
-/* Zero-arg calls only - the only shape needed for role getters (and later `hasRole`, which
- * takes args and will need its own encoding once that's built). Uses the SDK's own selector
- * builder rather than a bundled keccak/ABI library, since it already computes the exact same
- * selector `ContractExecuteTransaction.setFunction()` would. */
+interface SavedContractReference {
+  contract_id?: string | null;
+  evm_address?: string | null;
+}
+
+/* Matches a "0.0.X" id or EVM address (as typed by the user, or taken off a transaction) against
+ * a list of saved contracts, normalizing both sides to an EVM address first - so a contract saved
+ * by one identifier form still resolves when referenced by the other (or by an equivalent but
+ * textually different "0.0.X" id, e.g. with a leading zero). */
+export function findMatchingSavedContract<T extends SavedContractReference>(
+  contracts: T[],
+  reference: string,
+): T | null {
+  const parsed = parseContractReference(reference);
+  if (!parsed) {
+    return null;
+  }
+  const targetEvmAddress = parsed.toEvmAddress();
+
+  return (
+    contracts.find(c => {
+      if (c.contract_id) {
+        try {
+          if (ContractId.fromString(c.contract_id).toEvmAddress() === targetEvmAddress) {
+            return true;
+          }
+        } catch {
+          // not a plain "0.0.X" id - fall through to the evm_address check below
+        }
+      }
+      if (c.evm_address) {
+        const saved = c.evm_address.startsWith('0x') ? c.evm_address.slice(2) : c.evm_address;
+        if (saved.toLowerCase() === targetEvmAddress.toLowerCase()) {
+          return true;
+        }
+      }
+      return false;
+    }) || null
+  );
+}
+
+/* Zero-arg calls only - the shape needed for role getters. Just buildFunctionCallData with no
+ * args; kept as its own named function since "zero-arg getter call" is a distinct concept from
+ * the general case at every call site that uses it. */
 export function buildZeroArgCallData(functionName: string): string {
-  const bytes = new ContractFunctionParameters()._build(functionName);
-  return `0x${uint8ToHex(bytes)}`;
+  return buildFunctionCallData(functionName, []);
 }
 
 /* A single bytes32 return value needs no ABI decoding - the raw 32-byte word returned by
@@ -79,10 +117,12 @@ export async function resolveBytes32Getter(
   return success && result ? decodeBytes32Result(result) : null;
 }
 
-export type CallSimulationStatus = 'pass' | 'fail' | 'unknown';
+// Shared by both the call simulation and the role check below: 'unknown' (not 'fail') on any
+// network hiccup, so a mirror node blip is never reported as "this will fail" / "lacks the role".
+export type ContractCallStatus = 'pass' | 'fail' | 'unknown';
 
 export interface CallSimulationResult {
-  status: CallSimulationStatus;
+  status: ContractCallStatus;
   errorMessage?: string;
 }
 
@@ -119,16 +159,13 @@ export async function simulateContractCall(
   }
 }
 
-export type RoleCheckResult = 'pass' | 'fail' | 'unknown';
-
-/* Live `hasRole(role, account)` read via mirror node. 'unknown' (not 'fail') on any error, so a
- * network hiccup is never reported as "account lacks the role". */
+/* Live `hasRole(role, account)` read via mirror node. */
 export async function checkAccountHasRole(
   contract: ContractReference,
   roleValue: string,
   accountId: string,
   mirrorNodeLink: string,
-): Promise<RoleCheckResult> {
+): Promise<ContractCallStatus> {
   try {
     const data = buildFunctionCallData('hasRole', [
       { name: 'role', type: 'bytes32', value: roleValue },

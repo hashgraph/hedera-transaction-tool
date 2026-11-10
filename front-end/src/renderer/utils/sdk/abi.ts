@@ -153,6 +153,19 @@ export function getAbiFunctions(abi: AbiItem[]): AbiFunctionItem[] {
   return abi.filter((item): item is AbiFunctionItem => item.type === 'function');
 }
 
+// Shared by every call site that reads a SmartContract row's `abi` column (itself the output of
+// parseAbiJson, so always either valid JSON or null/undefined) - never throws, [] on anything else.
+export function parseStoredAbi(json: string | null | undefined): AbiItem[] {
+  if (!json) {
+    return [];
+  }
+  try {
+    return JSON.parse(json) as AbiItem[];
+  } catch {
+    return [];
+  }
+}
+
 // Only dynamic arrays (`T[]`) are supported: the SDK's selector builder has no fixed-length form.
 // `ContractFunctionParameters` only exposes `addBytes` (dynamic) and `addBytes32` (fixed) -
 // there is no addBytes1..addBytes31, unlike every numeric width which has a method per size.
@@ -166,26 +179,18 @@ export function isSupportedAbiParameter(param: AbiParameter): boolean {
   return SUPPORTED_PARAM_TYPE.test(param.type);
 }
 
-export function isSupportedAbiFunction(fn: AbiFunctionItem): boolean {
-  return fn.inputs.every(isSupportedAbiParameter);
+// Encodable for building a real call ourselves via encodeContractFunctionParams, which (unlike
+// the selector builder used for matching) throws on any array type - see contractFunctionParams.ts.
+// This is also exactly what decodeContractCall can decode back into a display value: single
+// 32-byte-word types directly, plus `string`/`bytes` via their head/tail (offset+length) encoding.
+// Used to gate both which functions a user can select to call, and which calls get their
+// arguments (not just their name) decoded for display.
+export function isEncodableAbiParameter(param: AbiParameter): boolean {
+  return isSupportedAbiParameter(param) && !param.type.endsWith('[]');
 }
 
-// Single 32-byte-word types - the only ones this app can decode back into a display value or a
-// draft-reloaded form field without a full ABI head/tail (offset+length) decoder. Arrays, bare
-// `bytes`, and `string` are supported for encoding (see isSupportedAbiParameter) but not for
-// decoding display, since that needs more than this app currently implements.
-export function isStaticAbiParameter(param: AbiParameter): boolean {
-  return (
-    isSupportedAbiParameter(param) &&
-    !param.type.endsWith('[]') &&
-    !/\[\d+\]$/.test(param.type) &&
-    param.type !== 'string' &&
-    param.type !== 'bytes'
-  );
-}
-
-export function isFullyDecodableAbiFunction(fn: AbiFunctionItem): boolean {
-  return fn.inputs.every(isStaticAbiParameter);
+export function isCallableAbiFunction(fn: AbiFunctionItem): boolean {
+  return fn.inputs.every(isEncodableAbiParameter);
 }
 
 /* Zero-arg, read-only getters returning a single bytes32 — the shape OpenZeppelin's

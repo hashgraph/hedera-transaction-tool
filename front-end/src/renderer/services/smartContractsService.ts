@@ -7,11 +7,6 @@ export const getAll = async (findArgs: Prisma.SmartContractFindManyArgs) =>
     return await window.electronAPI.local.smartContracts.getAll(findArgs);
   }, 'Failed to get smart contracts');
 
-export const getOne = async (userId: string, id: string) =>
-  commonIPCHandler(async () => {
-    return await window.electronAPI.local.smartContracts.getOne(userId, id);
-  }, 'Failed to get the smart contract');
-
 export const add = async (contract: Prisma.SmartContractUncheckedCreateInput) =>
   commonIPCHandler(async () => {
     return await window.electronAPI.local.smartContracts.add(contract);

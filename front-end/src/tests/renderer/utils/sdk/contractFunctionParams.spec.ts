@@ -191,12 +191,106 @@ describe('decodeContractCall', () => {
     expect(decodeContractCall([fn('pause', [])], data)).toEqual({ functionName: 'pause', args: [] });
   });
 
-  test('identifies functions with non-static params by selector but returns args=null', () => {
+  test('round-trips a string arg (head/tail: offset + length + utf8 data)', () => {
+    const data = hexToUint8Array(encodeCall('setGreeting', [{ name: 'g', type: 'string', value: 'Well Hello!' }]));
+    expect(decodeContractCall([fn('setGreeting', [['g', 'string']])], data)).toEqual({
+      functionName: 'setGreeting',
+      args: [{ name: 'g', type: 'string', value: 'Well Hello!' }],
+    });
+  });
+
+  test('round-trips a dynamic bytes arg (head/tail: offset + length + hex data)', () => {
+    const data = hexToUint8Array(encodeCall('setBlob', [{ name: 'b', type: 'bytes', value: '0x0102ff' }]));
+    expect(decodeContractCall([fn('setBlob', [['b', 'bytes']])], data)).toEqual({
+      functionName: 'setBlob',
+      args: [{ name: 'b', type: 'bytes', value: '0x0102ff' }],
+    });
+  });
+
+  test('round-trips a mix of static and dynamic args, decoding head offsets in declaration order', () => {
+    const data = hexToUint8Array(
+      encodeCall('f', [
+        { name: 'a', type: 'address', value: ADDR },
+        { name: 's', type: 'string', value: 'hi' },
+        { name: 'n', type: 'uint256', value: '7' },
+      ]),
+    );
+    expect(
+      decodeContractCall(
+        [fn('f', [['a', 'address'], ['s', 'string'], ['n', 'uint256']])],
+        data,
+      )?.args,
+    ).toEqual([
+      { name: 'a', type: 'address', value: ADDR },
+      { name: 's', type: 'string', value: 'hi' },
+      { name: 'n', type: 'uint256', value: '7' },
+    ]);
+  });
+
+  test('an empty string/bytes decodes to an empty value', () => {
+    const stringData = hexToUint8Array(
+      encodeCall('setGreeting', [{ name: 'g', type: 'string', value: '' }]),
+    );
+    expect(
+      decodeContractCall([fn('setGreeting', [['g', 'string']])], stringData)?.args?.[0].value,
+    ).toBe('');
+
+    const bytesData = hexToUint8Array(encodeCall('setBlob', [{ name: 'b', type: 'bytes', value: '0x' }]));
+    expect(decodeContractCall([fn('setBlob', [['b', 'bytes']])], bytesData)?.args?.[0].value).toBe(
+      '0x',
+    );
+  });
+
+  test('decodes a string longer than one 32-byte tail word', () => {
+    const long = 'x'.repeat(75); // spans three 32-byte words of tail data
+    const data = hexToUint8Array(encodeCall('setGreeting', [{ name: 'g', type: 'string', value: long }]));
+    expect(decodeContractCall([fn('setGreeting', [['g', 'string']])], data)?.args?.[0].value).toBe(
+      long,
+    );
+  });
+
+  test('round-trips multiple dynamic args, each with its own independent tail offset', () => {
+    const data = hexToUint8Array(
+      encodeCall('f', [
+        { name: 's1', type: 'string', value: 'hello' },
+        { name: 'b', type: 'bytes', value: '0xdeadbeef' },
+        { name: 's2', type: 'string', value: 'world' },
+      ]),
+    );
+    expect(
+      decodeContractCall([fn('f', [['s1', 'string'], ['b', 'bytes'], ['s2', 'string']])], data)
+        ?.args,
+    ).toEqual([
+      { name: 's1', type: 'string', value: 'hello' },
+      { name: 'b', type: 'bytes', value: '0xdeadbeef' },
+      { name: 's2', type: 'string', value: 'world' },
+    ]);
+  });
+
+  test('round-trips every supported non-array type in a single call', () => {
+    const root = '0x' + 'cd'.repeat(32);
+    const callArgs: ContractCallArgument[] = [
+      { name: 'addr', type: 'address', value: ADDR },
+      { name: 'ok', type: 'bool', value: 'true' },
+      { name: 'root', type: 'bytes32', value: root },
+      { name: 'small', type: 'uint8', value: '200' },
+      { name: 'big', type: 'uint256', value: '123456789' },
+      { name: 'neg', type: 'int256', value: '-5' },
+      { name: 'text', type: 'string', value: 'Well Hello!' },
+      { name: 'blob', type: 'bytes', value: '0x0102ff' },
+    ];
+    const data = hexToUint8Array(encodeCall('everything', callArgs));
+    const everythingFn = fn(
+      'everything',
+      callArgs.map(a => [a.name, a.type]),
+    );
+    expect(decodeContractCall([everythingFn], data)?.args).toEqual(callArgs);
+  });
+
+  test('identifies functions with array params by selector but returns args=null', () => {
     const cases: [string, string, () => ContractFunctionParameters][] = [
-      ['setName', 'string', () => new ContractFunctionParameters().addString('x')],
       ['setIds', 'uint256[]', () => new ContractFunctionParameters().addUint256Array([1, 2])],
       ['setRoots', 'bytes32[]', () => new ContractFunctionParameters().addBytes32Array([new Uint8Array(32)])],
-      ['setBlob', 'bytes', () => new ContractFunctionParameters().addBytes(new Uint8Array([1]))],
     ];
     for (const [name, type, build] of cases) {
       const data = build()._build(name);

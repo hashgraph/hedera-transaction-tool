@@ -20,11 +20,6 @@ describe('preload smartContracts API', () => {
     expect(invoke).toHaveBeenCalledWith('smartContracts:getAll', args);
   });
 
-  test('getOne invokes smartContracts:getOne with user and id', async () => {
-    await api.getOne('u', 'id');
-    expect(invoke).toHaveBeenCalledWith('smartContracts:getOne', 'u', 'id');
-  });
-
   test('add invokes smartContracts:add with the contract', async () => {
     const c = { user_id: 'u', network: 'testnet' } as never;
     await api.add(c);

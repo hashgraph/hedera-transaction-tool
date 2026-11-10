@@ -41,6 +41,13 @@ const ABI = [
     outputs: [],
     stateMutability: 'nonpayable',
   },
+  {
+    type: 'function',
+    name: 'setIds',
+    inputs: [{ name: 'ids', type: 'uint256[]' }],
+    outputs: [],
+    stateMutability: 'nonpayable',
+  },
 ];
 
 const ADDR = '0x' + '12'.repeat(20);
@@ -58,6 +65,7 @@ function makeContract(overrides: Record<string, unknown> = {}) {
 const mintParams = () =>
   new ContractFunctionParameters().addAddress(ADDR).addUint256(7)._build('mint');
 const nameParams = () => new ContractFunctionParameters().addString('hi')._build('setName');
+const idsParams = () => new ContractFunctionParameters().addUint256Array([1, 2])._build('setIds');
 
 function makeTx(opts: { id?: ContractId; gas?: number; payable?: Hbar; params?: Uint8Array } = {}) {
   const tx = new ContractExecuteTransaction();
@@ -92,20 +100,25 @@ describe('ContractExecuteDetails.vue', () => {
     expect(wrapper.html()).not.toContain('Contract ID');
   });
 
-  test('shows contract id, gas and payable amount', async () => {
+  test('shows contract id and payable amount, but never gas (a cap, like max fee, not shown in details)', async () => {
     const wrapper = await mountDetails(makeTx({ gas: 250000, payable: new Hbar(5) }));
     expect(byId(wrapper, 'contract-id').text()).toBe('0.0.1001');
-    expect(byId(wrapper, 'gas').text()).toBe('250000');
     expect(byId(wrapper, 'payable-amount').text()).toContain('5');
+    expect(byId(wrapper, 'gas').exists()).toBe(false);
+    expect(wrapper.text()).not.toContain('250000');
   });
 
-  test('shows None / 0 and hides payable amount when unset', async () => {
+  test('shows None for a missing contract id and hides payable amount when unset', async () => {
     const wrapper = await mountDetails(new ContractExecuteTransaction());
     expect(byId(wrapper, 'contract-id').text()).toBe('None');
-    expect(byId(wrapper, 'gas').text()).toBe('0');
     expect(byId(wrapper, 'payable-amount').exists()).toBe(false);
     // no contract id -> nothing to match, no calldata -> no ABI message
     expect(byId(wrapper, 'no-abi').exists()).toBe(true);
+  });
+
+  test('hides payable amount when explicitly set to 0 (e.g. after a protobuf bytes round-trip, which has no "unset" for a plain numeric field)', async () => {
+    const wrapper = await mountDetails(makeTx({ payable: new Hbar(0) }));
+    expect(byId(wrapper, 'payable-amount').exists()).toBe(false);
   });
 
   test('queries saved contracts for the current user and network', async () => {
@@ -129,10 +142,16 @@ describe('ContractExecuteDetails.vue', () => {
     expect(wrapper.text()).not.toContain('full calldata');
   });
 
-  test('identifies the function but shows raw calldata when args are not decodable', async () => {
-    const params = nameParams();
+  test('decodes a string argument (head/tail encoding), not just static types', async () => {
+    const wrapper = await mountDetails(makeTx({ params: nameParams() }));
+    expect(byId(wrapper, 'function').text()).toBe('setName(string n = hi)');
+    expect(wrapper.text()).not.toContain('full calldata');
+  });
+
+  test('identifies the function but shows raw calldata when args are not decodable (array param)', async () => {
+    const params = idsParams();
     const wrapper = await mountDetails(makeTx({ params }));
-    expect(byId(wrapper, 'function').text()).toBe('setName(...)');
+    expect(byId(wrapper, 'function').text()).toBe('setIds(...)');
     expect(wrapper.text()).toContain('full calldata: 0x');
     expect(wrapper.text()).toContain(Buffer.from(params).toString('hex'));
   });

@@ -3,7 +3,7 @@ import { ContractFunctionParameters, ContractFunctionSelector } from '@hiero-led
 import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import {
   getAbiFunctions,
-  isFullyDecodableAbiFunction,
+  isCallableAbiFunction,
   type AbiFunctionItem,
   type AbiItem,
 } from './abi';
@@ -17,8 +17,7 @@ export interface ContractCallArgument {
 export interface DecodedContractCall {
   functionName: string;
   /* null when the function was identified by its selector but has a parameter type (array,
-   * string, dynamic bytes) this app doesn't decode back into a display value - see
-   * isFullyDecodableAbiFunction. */
+   * tuple) this app doesn't decode back into a display value - see isCallableAbiFunction. */
   args: { name: string; type: string; value: string }[] | null;
 }
 
@@ -220,10 +219,33 @@ function decodeWord(word: Uint8Array, type: string): string {
   return value.toString();
 }
 
+function isDynamicAbiType(type: string): boolean {
+  return type === 'string' || type === 'bytes';
+}
+
+/* Reads a dynamic (`string`/`bytes`) argument out of the "tail" section: the head word just read
+ * for this param is an offset (relative to `argsStart`, i.e. the first byte after the selector)
+ * pointing to a length word followed by that many bytes of the actual data - the standard
+ * Solidity ABI head/tail scheme for dynamic types. */
+function decodeDynamicWord(
+  functionParameters: Uint8Array,
+  argsStart: number,
+  headWord: Uint8Array,
+  type: 'string' | 'bytes',
+): string {
+  const tailOffset = argsStart + Number(BigInt(`0x${uint8ToHex(headWord)}`));
+  const length = Number(BigInt(`0x${uint8ToHex(functionParameters.slice(tailOffset, tailOffset + 32))}`));
+  const data = functionParameters.slice(tailOffset + 32, tailOffset + 32 + length);
+
+  return type === 'string' ? new TextDecoder().decode(data) : `0x${uint8ToHex(data)}`;
+}
+
 /* Identifies a call's function by matching the leading 4-byte selector against the ABI - this
- * works even for functions with array/string/dynamic-bytes params, since the selector only
- * encodes type names, not values. Arg values are only decoded when every param is a single
- * 32-byte-word type (see isFullyDecodableAbiFunction); otherwise `args` comes back null. */
+ * works even for functions with array/tuple params, since the selector only encodes type names,
+ * not values. Arg values are only decoded when every param is one this app can both encode and
+ * decode (see isCallableAbiFunction: single 32-byte-word types, plus `string`/`bytes` via their
+ * head/tail encoding) - otherwise `args` comes back null and the caller falls back to raw
+ * calldata for display. */
 export function decodeContractCall(
   abi: AbiItem[],
   functionParameters: Uint8Array,
@@ -246,22 +268,30 @@ export function decodeContractCall(
       continue;
     }
 
-    if (!isFullyDecodableAbiFunction(fn)) {
+    if (!isCallableAbiFunction(fn)) {
       return { functionName: fn.name, args: null };
     }
 
-    const args: { name: string; type: string; value: string }[] = [];
-    let offset = 4;
-    for (const input of fn.inputs) {
-      args.push({
-        name: input.name,
-        type: input.type,
-        value: decodeWord(functionParameters.slice(offset, offset + 32), input.type),
-      });
-      offset += 32;
-    }
+    // Every param - static or dynamic - gets exactly one head word, in declaration order.
+    const argsStart = 4;
+    try {
+      const args = fn.inputs.map((input, i) => {
+        const headWord = functionParameters.slice(
+          argsStart + i * 32,
+          argsStart + (i + 1) * 32,
+        );
+        const value = isDynamicAbiType(input.type)
+          ? decodeDynamicWord(functionParameters, argsStart, headWord, input.type as 'string' | 'bytes')
+          : decodeWord(headWord, input.type);
 
-    return { functionName: fn.name, args };
+        return { name: input.name, type: input.type, value };
+      });
+
+      return { functionName: fn.name, args };
+    } catch {
+      // malformed/truncated calldata (e.g. a bad offset or length) - fall back to raw calldata
+      return { functionName: fn.name, args: null };
+    }
   }
 
   return null;

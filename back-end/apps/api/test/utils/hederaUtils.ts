@@ -1,40 +1,23 @@
 import * as crypto from 'crypto';
 
 import {
-  AccountAllowanceApproveTransaction,
   AccountCreateTransaction,
-  AccountDeleteTransaction,
   AccountId,
   AccountUpdateTransaction,
-  ContractExecuteTransaction,
   Client,
-  FileAppendTransaction,
-  FileCreateTransaction,
-  FileDeleteTransaction,
-  FileUpdateTransaction,
-  FreezeTransaction,
   Key,
   Mnemonic,
-  NodeCreateTransaction,
-  NodeDeleteTransaction,
-  NodeUpdateTransaction,
   PrivateKey,
   PublicKey,
-  RegisteredNodeCreateTransaction,
-  RegisteredNodeDeleteTransaction,
-  RegisteredNodeUpdateTransaction,
   SignatureMap,
-  SystemDeleteTransaction,
-  SystemUndeleteTransaction,
   Timestamp,
   Transaction,
   TransactionId,
-  TransferTransaction,
 } from '@hiero-ledger/sdk';
 
-import { TransactionType } from '@entities';
-
 import { HederaAccount } from './models';
+
+export { getTransactionTypeEnumValue } from '@app/common';
 
 export const localnet2 = new HederaAccount()
   .setAccountId('0.0.2')
@@ -81,50 +64,6 @@ export const generatePrivateKey = async (mnemonic?: Mnemonic) => {
 
 export const createTransactionId = (accountId: AccountId, date?: Date) =>
   TransactionId.withValidStart(accountId, Timestamp.fromDate(date || new Date()));
-
-export const getTransactionTypeEnumValue = (transaction: Transaction): TransactionType => {
-  if (transaction instanceof AccountCreateTransaction) {
-    return TransactionType.ACCOUNT_CREATE;
-  } else if (transaction instanceof AccountUpdateTransaction) {
-    return TransactionType.ACCOUNT_UPDATE;
-  } else if (transaction instanceof AccountDeleteTransaction) {
-    return TransactionType.ACCOUNT_DELETE;
-  } else if (transaction instanceof TransferTransaction) {
-    return TransactionType.TRANSFER;
-  } else if (transaction instanceof AccountAllowanceApproveTransaction) {
-    return TransactionType.ACCOUNT_ALLOWANCE_APPROVE;
-  } else if (transaction instanceof FileCreateTransaction) {
-    return TransactionType.FILE_CREATE;
-  } else if (transaction instanceof FileUpdateTransaction) {
-    return TransactionType.FILE_UPDATE;
-  } else if (transaction instanceof FileAppendTransaction) {
-    return TransactionType.FILE_APPEND;
-  } else if (transaction instanceof FileDeleteTransaction) {
-    return TransactionType.FILE_DELETE;
-  } else if (transaction instanceof FreezeTransaction) {
-    return TransactionType.FREEZE;
-  } else if (transaction instanceof NodeCreateTransaction) {
-    return TransactionType.NODE_CREATE;
-  } else if (transaction instanceof NodeUpdateTransaction) {
-    return TransactionType.NODE_UPDATE;
-  } else if (transaction instanceof NodeDeleteTransaction) {
-    return TransactionType.NODE_DELETE;
-  } else if (transaction instanceof RegisteredNodeCreateTransaction) {
-    return TransactionType.REGISTERED_NODE_CREATE;
-  } else if (transaction instanceof RegisteredNodeUpdateTransaction) {
-    return TransactionType.REGISTERED_NODE_UPDATE;
-  } else if (transaction instanceof RegisteredNodeDeleteTransaction) {
-    return TransactionType.REGISTERED_NODE_DELETE;
-  } else if (transaction instanceof SystemDeleteTransaction) {
-    return TransactionType.SYSTEM_DELETE;
-  } else if (transaction instanceof SystemUndeleteTransaction) {
-    return TransactionType.SYSTEM_UNDELETE;
-  } else if (transaction instanceof ContractExecuteTransaction) {
-    return TransactionType.CONTRACT_EXECUTE;
-  }
-
-  throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);
-};
 
 export const createAccount = async (payerId: AccountId, payerKey: PrivateKey, key: Key) => {
   const client = Client.forLocalNode();

@@ -4,14 +4,15 @@ import type { ITransactionFull } from '@shared/interfaces';
 
 import { computed, onMounted, ref } from 'vue';
 
-import { ContractExecuteTransaction, ContractId, Transaction } from '@hiero-ledger/sdk';
+import { ContractExecuteTransaction, Transaction } from '@hiero-ledger/sdk';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/smartContractsService';
 import { decodeContractCall } from '@renderer/utils/sdk/contractFunctionParams';
-import type { AbiItem } from '@renderer/utils/sdk/abi';
+import { findMatchingSavedContract } from '@renderer/utils/sdk/contractCall';
+import { parseStoredAbi, type AbiItem } from '@renderer/utils/sdk/abi';
 
 import { isUserLoggedIn, stringifyHbar, uint8ToHex } from '@renderer/utils';
 
@@ -36,49 +37,15 @@ const contractExecuteTransaction = computed(() =>
 // Matches on either identifier form, since a contract targeted by EVM address and the same
 // contract saved by its "0.0.X" id (or vice versa) should still resolve to the same ABI.
 const matchingContract = computed(() => {
-  const tx = contractExecuteTransaction.value;
-  const contractId = tx?.contractId;
-  if (!contractId) {
-    return null;
-  }
-
-  const txEvmAddress = contractId.toEvmAddress();
-
-  return (
-    savedContracts.value.find(c => {
-      if (c.contract_id && c.contract_id === contractId.toString()) {
-        return true;
-      }
-      if (c.contract_id) {
-        try {
-          if (ContractId.fromString(c.contract_id).toEvmAddress() === txEvmAddress) {
-            return true;
-          }
-        } catch {
-          // not a plain "0.0.X" id - fall through to the evm_address check below
-        }
-      }
-      if (c.evm_address) {
-        const saved = c.evm_address.startsWith('0x') ? c.evm_address.slice(2) : c.evm_address;
-        if (saved.toLowerCase() === txEvmAddress.toLowerCase()) {
-          return true;
-        }
-      }
-      return false;
-    }) || null
-  );
+  const contractId = contractExecuteTransaction.value?.contractId;
+  return contractId
+    ? findMatchingSavedContract(savedContracts.value, contractId.toString())
+    : null;
 });
 
-const abi = computed<AbiItem[]>(() => {
-  if (!matchingContract.value) {
-    return [];
-  }
-  try {
-    return JSON.parse(matchingContract.value.abi) as AbiItem[];
-  } catch {
-    return [];
-  }
-});
+const abi = computed<AbiItem[]>(() =>
+  matchingContract.value ? parseStoredAbi(matchingContract.value.abi) : [],
+);
 
 const decoded = computed(() => {
   const tx = contractExecuteTransaction.value;
@@ -92,6 +59,16 @@ const decoded = computed(() => {
 const rawCalldataHex = computed(() =>
   uint8ToHex(contractExecuteTransaction.value!.functionParameters!),
 );
+
+// A transaction loaded from stored bytes has already round-tripped through protobuf, which has no
+// concept of "unset" for a plain numeric field - payableAmount comes back as Hbar(0), not null,
+// even for a non-payable call that never set it. A nonzero check is what actually distinguishes a
+// call that sent hbar from one that didn't, without re-deriving "is this function payable" from
+// the ABI on every render.
+const payableAmount = computed(() => {
+  const amount = contractExecuteTransaction.value?.payableAmount;
+  return amount && amount.toBigNumber().gt(0) ? amount : null;
+});
 
 /* Misc */
 const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
@@ -121,17 +98,10 @@ onMounted(async () => {
       </p>
     </div>
 
-    <div :class="commonColClass">
-      <h4 :class="detailItemLabelClass">Gas</h4>
-      <p :class="detailItemValueClass" data-testid="p-contract-execute-details-gas">
-        {{ contractExecuteTransaction.gas?.toString() || '0' }}
-      </p>
-    </div>
-
-    <div v-if="contractExecuteTransaction.payableAmount" :class="commonColClass">
+    <div v-if="payableAmount" :class="commonColClass">
       <h4 :class="detailItemLabelClass">Payable Amount</h4>
       <p :class="detailItemValueClass" data-testid="p-contract-execute-details-payable-amount">
-        {{ stringifyHbar(contractExecuteTransaction.payableAmount) }}
+        {{ stringifyHbar(payableAmount) }}
       </p>
     </div>
 
@@ -160,8 +130,8 @@ onMounted(async () => {
         Could not match this call to a function in the saved ABI.
       </p>
       <p v-if="decoded && decoded.args === null" class="text-micro text-secondary mt-2">
-        This function has a parameter type (array, string, or dynamic bytes) that isn't decoded
-        for display yet - full calldata: 0x{{ rawCalldataHex }}
+        This function has a parameter type (array or tuple) that isn't decoded for display yet -
+        full calldata: 0x{{ rawCalldataHex }}
       </p>
     </div>
   </div>

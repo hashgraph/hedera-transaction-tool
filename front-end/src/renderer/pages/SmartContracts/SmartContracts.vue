@@ -13,6 +13,7 @@ import { getAll, remove, update } from '@renderer/services/smartContractsService
 import {
   getAbiFunctions,
   getRoleGetterCandidates,
+  parseStoredAbi,
   type AbiFunctionItem,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
@@ -27,7 +28,7 @@ import {
 import {
   checkAccountHasRole,
   resolveBytes32Getter,
-  type RoleCheckResult,
+  type ContractCallStatus,
 } from '@renderer/utils/sdk/contractCall';
 
 import { isUserLoggedIn, getErrorMessage } from '@renderer/utils';
@@ -60,16 +61,9 @@ const selectedContract = computed(
   () => contracts.value.find(c => c.id === selectedId.value) || null,
 );
 
-const selectedAbi = computed<AbiItem[]>(() => {
-  if (!selectedContract.value) {
-    return [];
-  }
-  try {
-    return JSON.parse(selectedContract.value.abi) as AbiItem[];
-  } catch {
-    return [];
-  }
-});
+const selectedAbi = computed<AbiItem[]>(() =>
+  selectedContract.value ? parseStoredAbi(selectedContract.value.abi) : [],
+);
 
 const selectedFunctions = computed(() => getAbiFunctions(selectedAbi.value));
 
@@ -119,7 +113,7 @@ function taggedRoleFor(fn: AbiFunctionItem): ContractRole | null {
 }
 
 /* Live hasRole check of each role's recorded holder - shown as a check mark next to the holder. */
-const holderChecks = ref<Record<string, RoleCheckResult>>({});
+const holderChecks = ref<Record<string, ContractCallStatus>>({});
 
 const holderCheckKey = computed(() =>
   JSON.stringify(

@@ -2,11 +2,10 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 
-import { add, getAll, getOne, remove, update } from '@renderer/services/smartContractsService';
+import { add, getAll, remove, update } from '@renderer/services/smartContractsService';
 
 const api = {
   getAll: vi.fn(),
-  getOne: vi.fn(),
   add: vi.fn(),
   update: vi.fn(),
   remove: vi.fn(),
@@ -25,12 +24,6 @@ describe('smartContractsService', () => {
     api.getAll.mockResolvedValue(['c']);
     expect(await getAll({ where: { user_id: 'u' } })).toEqual(['c']);
     expect(api.getAll).toHaveBeenCalledWith({ where: { user_id: 'u' } });
-  });
-
-  test('getOne forwards args', async () => {
-    api.getOne.mockResolvedValue('c');
-    expect(await getOne('u', 'id')).toBe('c');
-    expect(api.getOne).toHaveBeenCalledWith('u', 'id');
   });
 
   test('add forwards the contract', async () => {
@@ -54,7 +47,6 @@ describe('smartContractsService', () => {
 
   test.each([
     ['getAll', () => getAll({}), 'Failed to get smart contracts'],
-    ['getOne', () => getOne('u', 'i'), 'Failed to get the smart contract'],
     ['add', () => add({} as never), 'Smart contract save failed'],
     ['update', () => update('i', 'u', {}), 'Smart contract update failed'],
     ['remove', () => remove('u', []), 'Smart contract removal failed'],

@@ -15,28 +15,28 @@ export interface ContractRole {
   note?: string;
 }
 
-export function parseRoles(json: string | null | undefined): ContractRole[] {
+function safeJsonParse<T>(
+  json: string | null | undefined,
+  isValid: (parsed: unknown) => boolean,
+  fallback: T,
+): T {
   if (!json) {
-    return [];
+    return fallback;
   }
   try {
     const parsed = JSON.parse(json);
-    return Array.isArray(parsed) ? (parsed as ContractRole[]) : [];
+    return isValid(parsed) ? (parsed as T) : fallback;
   } catch {
-    return [];
+    return fallback;
   }
 }
 
+export function parseRoles(json: string | null | undefined): ContractRole[] {
+  return safeJsonParse(json, Array.isArray, []);
+}
+
 export function parseFunctionTags(json: string | null | undefined): Record<string, string> {
-  if (!json) {
-    return {};
-  }
-  try {
-    const parsed = JSON.parse(json);
-    return parsed && typeof parsed === 'object' ? (parsed as Record<string, string>) : {};
-  } catch {
-    return {};
-  }
+  return safeJsonParse(json, parsed => Boolean(parsed) && typeof parsed === 'object', {});
 }
 
 export function getFunctionSignature(fn: AbiFunctionItem): string {

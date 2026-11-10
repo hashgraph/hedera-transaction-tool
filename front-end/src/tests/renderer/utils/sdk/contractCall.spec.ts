@@ -10,6 +10,7 @@ import {
   buildZeroArgCallData,
   checkAccountHasRole,
   decodeBytes32Result,
+  findMatchingSavedContract,
   parseContractReference,
   resolveBytes32Getter,
   simulateContractCall,
@@ -71,6 +72,43 @@ describe('parseContractReference', () => {
     });
     expect(parseContractReference(EVM)).toBeNull();
     spy2.mockRestore();
+  });
+});
+
+describe('findMatchingSavedContract', () => {
+  const evmOf = (id: string) => ContractId.fromString(id).toEvmAddress();
+
+  test('matches by an equivalent but textually different "0.0.X" id (same EVM address)', () => {
+    const contracts = [{ contract_id: '0.0.01001', evm_address: null }];
+    expect(findMatchingSavedContract(contracts, '0.0.1001')).toBe(contracts[0]);
+  });
+
+  test.each([
+    ['with 0x prefix', (a: string) => `0x${a}`],
+    ['without 0x prefix', (a: string) => a],
+    ['uppercase', (a: string) => `0x${a.toUpperCase()}`],
+  ])('matches a saved evm address by reference %s', (_n, fmt) => {
+    const contracts = [{ contract_id: null, evm_address: fmt(evmOf('0.0.1001')) }];
+    expect(findMatchingSavedContract(contracts, '0.0.1001')).toBe(contracts[0]);
+  });
+
+  test('matches a saved "0.0.X" id when the reference is an EVM address', () => {
+    const contracts = [{ contract_id: '0.0.1001', evm_address: null }];
+    expect(findMatchingSavedContract(contracts, `0x${evmOf('0.0.1001')}`)).toBe(contracts[0]);
+  });
+
+  test('an unparseable saved contract id falls through to the evm address check', () => {
+    const contracts = [{ contract_id: 'not-an-id', evm_address: evmOf('0.0.1001') }];
+    expect(findMatchingSavedContract(contracts, '0.0.1001')).toBe(contracts[0]);
+  });
+
+  test('returns null when nothing matches, or the reference is unparseable', () => {
+    const contracts = [
+      { contract_id: '0.0.2002', evm_address: evmOf('0.0.3003') },
+      { contract_id: null, evm_address: null },
+    ];
+    expect(findMatchingSavedContract(contracts, '0.0.1001')).toBeNull();
+    expect(findMatchingSavedContract(contracts, 'garbage')).toBeNull();
   });
 });
 

@@ -4,14 +4,13 @@ import { describe, expect, test } from 'vitest';
 import {
   getAbiFunctions,
   getRoleGetterCandidates,
-  isFullyDecodableAbiFunction,
-  isStaticAbiParameter,
-  isSupportedAbiFunction,
+  isCallableAbiFunction,
   isSupportedAbiParameter,
   normalizeAbiInput,
   parseAbiJson,
   parseContractArtifact,
   parseStandardJsonSources,
+  parseStoredAbi,
   type AbiFunctionItem,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
@@ -56,6 +55,22 @@ describe('parseAbiJson', () => {
 
   test('throws when no ABI can be found', () => {
     expect(() => parseAbiJson('{"foo":1}')).toThrow('Could not find an ABI');
+  });
+});
+
+describe('parseStoredAbi', () => {
+  test('parses a stored ABI JSON string', () => {
+    expect(parseStoredAbi('[{"type":"function","name":"x"}]')).toEqual([
+      { type: 'function', name: 'x' },
+    ]);
+  });
+
+  test.each([null, undefined, ''])('returns [] for %j', value => {
+    expect(parseStoredAbi(value)).toEqual([]);
+  });
+
+  test('returns [] for invalid JSON rather than throwing', () => {
+    expect(parseStoredAbi('{not json')).toEqual([]);
   });
 });
 
@@ -192,30 +207,22 @@ describe('isSupportedAbiParameter - dynamic bytes', () => {
   });
 });
 
-describe('isSupportedAbiFunction', () => {
-  test('true when every input is supported (including zero inputs)', () => {
-    expect(isSupportedAbiFunction(fn('a'))).toBe(true);
-    expect(isSupportedAbiFunction(fn('a', ['address', 'uint256[]']))).toBe(true);
+describe('isCallableAbiFunction', () => {
+  test('true when every input is encodable (including zero inputs)', () => {
+    expect(isCallableAbiFunction(fn('a'))).toBe(true);
+    expect(isCallableAbiFunction(fn('a', ['address', 'uint256', 'string', 'bytes']))).toBe(true);
   });
 
-  test('false when any input is unsupported', () => {
-    expect(isSupportedAbiFunction(fn('a', ['address', 'tuple']))).toBe(false);
-  });
-});
-
-describe('isStaticAbiParameter / isFullyDecodableAbiFunction', () => {
-  test.each(['uint256', 'int8', 'address', 'bool', 'bytes32'])('%s is static', type => {
-    expect(isStaticAbiParameter({ name: 'x', type })).toBe(true);
+  test('false when any input is a tuple or unsupported type', () => {
+    expect(isCallableAbiFunction(fn('a', ['address', 'tuple']))).toBe(false);
   });
 
-  test.each(['uint256[]', 'address[2]', 'string', 'bytes', 'tuple'])('%s is not static', type => {
-    expect(isStaticAbiParameter({ name: 'x', type })).toBe(false);
-  });
-
-  test('function is decodable only if all inputs are static', () => {
-    expect(isFullyDecodableAbiFunction(fn('a', ['address', 'uint256']))).toBe(true);
-    expect(isFullyDecodableAbiFunction(fn('a'))).toBe(true);
-    expect(isFullyDecodableAbiFunction(fn('a', ['address', 'string']))).toBe(false);
+  // Unlike isSupportedAbiParameter (used for selector-based matching/decoding, which can still
+  // identify a call with array params), arrays aren't encodable - encodeContractFunctionParams
+  // throws on them (see contractFunctionParams.ts), so they must not be offered as callable.
+  test('false when any input is an array, even though isSupportedAbiParameter allows it', () => {
+    expect(isSupportedAbiParameter({ name: 'x', type: 'uint256[]' })).toBe(true);
+    expect(isCallableAbiFunction(fn('a', ['uint256[]']))).toBe(false);
   });
 });
 

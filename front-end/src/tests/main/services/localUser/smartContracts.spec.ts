@@ -12,7 +12,6 @@ vi.mock('@main/db/prisma');
 
 import {
   addSmartContract,
-  getSmartContractById,
   getSmartContracts,
   removeSmartContracts,
   updateSmartContract,
@@ -37,29 +36,6 @@ describe('Services Local User Smart Contracts', () => {
       prisma.smartContract.findMany.mockRejectedValueOnce(new Error('db'));
 
       expect(await getSmartContracts({})).toEqual([]);
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('getSmartContractById', () => {
-    test('Should scope the lookup to the user so other users contracts are not returned', async () => {
-      const record = { id: '1', user_id: 'u' };
-      prisma.smartContract.findFirst.mockResolvedValueOnce(record as never);
-
-      expect(await getSmartContractById('u', '1')).toEqual(record);
-      expect(prisma.smartContract.findFirst).toHaveBeenCalledWith({
-        where: { id: '1', user_id: 'u' },
-      });
-    });
-
-    test('Should return null when not found', async () => {
-      prisma.smartContract.findFirst.mockResolvedValueOnce(null);
-      expect(await getSmartContractById('u', '1')).toBeNull();
-    });
-
-    test('Should return null on error', async () => {
-      prisma.smartContract.findFirst.mockRejectedValueOnce(new Error('db'));
-      expect(await getSmartContractById('u', '1')).toBeNull();
       expect(mockLogger.error).toHaveBeenCalled();
     });
   });

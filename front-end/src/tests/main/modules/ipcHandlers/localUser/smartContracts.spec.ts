@@ -6,7 +6,6 @@ import registerSmartContractsHandlers from '@main/modules/ipcHandlers/localUser/
 
 import {
   addSmartContract,
-  getSmartContractById,
   getSmartContracts,
   removeSmartContracts,
   updateSmartContract,
@@ -21,7 +20,7 @@ describe('IPC handlers Smart Contracts', () => {
   });
 
   test('Should register handlers for each event', () => {
-    const events = ['getAll', 'getOne', 'add', 'update', 'remove'];
+    const events = ['getAll', 'add', 'update', 'remove'];
     expect(events.every(e => getIPCHandler(`smartContracts:${e}`))).toBe(true);
   });
 
@@ -29,11 +28,6 @@ describe('IPC handlers Smart Contracts', () => {
     const args = { where: { user_id: 'u' } };
     await invokeIPCHandler('smartContracts:getAll', args);
     expect(getSmartContracts).toHaveBeenCalledWith(args);
-  });
-
-  test('Should set up getOne handler', async () => {
-    await invokeIPCHandler('smartContracts:getOne', 'u', 'id1');
-    expect(getSmartContractById).toHaveBeenCalledWith('u', 'id1');
   });
 
   test('Should set up add handler', async () => {

@@ -11,8 +11,9 @@ import useNetworkStore from '@renderer/stores/storeNetwork';
 import { getAll } from '@renderer/services/smartContractsService';
 import {
   getAbiFunctions,
-  isFullyDecodableAbiFunction,
+  isCallableAbiFunction,
   parseAbiJson,
+  parseStoredAbi,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
 import {
@@ -30,8 +31,10 @@ import {
 } from '@renderer/utils/sdk/contractFunctionParams';
 import {
   checkAccountHasRole,
+  findMatchingSavedContract,
   parseContractReference,
   simulateContractCall,
+  type ContractCallStatus,
 } from '@renderer/utils/sdk/contractCall';
 
 import { hexToUint8Array, isAccountId, isUserLoggedIn, getErrorMessage } from '@renderer/utils';
@@ -70,36 +73,25 @@ const savedContractItems = computed(() =>
     .filter(i => i.value),
 );
 
-// A saved contract is "selected" whenever the entered ID / EVM address matches one.
+// A saved contract is "selected" whenever the entered ID / EVM address matches one - normalizing
+// both sides to an EVM address first, same as ContractExecuteDetails' matcher, so a contract
+// saved by one identifier form is still recognized when referenced by the other.
 const selectedSavedContract = computed(() => {
-  const entered = props.data.contractId.trim().toLowerCase();
+  const entered = props.data.contractId.trim();
   if (!entered) {
     return null;
   }
-  return (
-    savedContracts.value.find(
-      c =>
-        c.contract_id?.toLowerCase() === entered ||
-        c.evm_address?.toLowerCase() === entered ||
-        c.evm_address?.toLowerCase() === `0x${entered}`,
-    ) || null
-  );
+  return findMatchingSavedContract(savedContracts.value, entered);
 });
 
 const abi = computed<AbiItem[]>(() => {
   if (selectedSavedContract.value) {
-    try {
-      return JSON.parse(selectedSavedContract.value.abi) as AbiItem[];
-    } catch {
-      return [];
-    }
+    return parseStoredAbi(selectedSavedContract.value.abi);
   }
   return manualAbi.value || [];
 });
 
-const callableFunctions = computed(() =>
-  getAbiFunctions(abi.value).filter(isFullyDecodableAbiFunction),
-);
+const callableFunctions = computed(() => getAbiFunctions(abi.value).filter(isCallableAbiFunction));
 
 const functionOptions = computed(() => [
   { label: 'Select a function', value: '' },
@@ -155,18 +147,20 @@ const contractEvmAddress = computed(() => {
   return parsed ? `0x${parsed.toEvmAddress()}` : null;
 });
 
+// Shared by both async checks below: 'idle' before anything has run, 'checking' while in flight,
+// then whatever ContractCallStatus the check resolved to.
+type AsyncCheckStatus = 'idle' | 'checking' | ContractCallStatus;
+
 // Online check: a live hasRole(role, account) read, run only when the registry has a verified
 // (on-chain-resolved) role value - never guesses, and fails silently (status 'unknown') so a
 // network hiccup doesn't block anything, it just removes this one extra signal.
-type OnlineRoleCheckStatus = 'idle' | 'checking' | 'pass' | 'fail' | 'unknown';
-const onlineRoleCheckStatus = ref<OnlineRoleCheckStatus>('idle');
+const onlineRoleCheckStatus = ref<AsyncCheckStatus>('idle');
 
 // Online check: simulates the exact call (function, args, gas, payable amount, fee payer) via
 // the mirror node before the user signs - catches reverts and under-provisioned gas early. Purely
 // advisory, same as the role check above: mirror node state can drift before the real transaction
 // executes, so this reports what would *currently* happen, not a guarantee.
-type CallSimulationUiStatus = 'idle' | 'checking' | 'pass' | 'fail' | 'unknown';
-const callSimulationStatus = ref<CallSimulationUiStatus>('idle');
+const callSimulationStatus = ref<AsyncCheckStatus>('idle');
 const callSimulationError = ref('');
 
 /* Handlers */
@@ -490,6 +484,7 @@ onMounted(async () => {
           @keydown="(e: KeyboardEvent) => handleArgKeyDown(e, arg.type)"
           :filled="true"
           :placeholder="arg.type"
+          :auto-trim="arg.type !== 'string'"
           :data-testid="'input-contract-execute-arg-' + index"
         />
         <p
