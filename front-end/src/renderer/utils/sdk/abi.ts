@@ -52,6 +52,103 @@ export function parseAbiJson(text: string): AbiItem[] {
   return abi;
 }
 
+export interface StandardJsonSource {
+  path: string;
+  content: string;
+}
+
+export interface StandardJsonSourcesResult {
+  sources: StandardJsonSource[];
+  // From settings.compilationTarget, e.g. {"WorldClock.sol": "WorldClock"} - picked up by
+  // ContractSourceViewer to land on the right file/tab instead of whichever happens to be first.
+  contractNameHint: string | null;
+}
+
+/*
+ * Pulls whatever inline source a solc "Standard JSON Input" shape
+ * (https://docs.soliditylang.org/en/latest/using-the-compiler.html#input-description) carries -
+ * the same format Sourcify itself accepts for verification, and what `solc --standard-json` /
+ * Remix's "compilation details" export produce. Unlike an ABI JSON or solc metadata.json, this
+ * embeds the actual source text inline (`sources[path].content`). Never throws - an empty
+ * `sources` array just means this particular file had no (or no inline) source, which callers
+ * combine with an ABI search rather than treat as fatal on its own.
+ */
+function extractStandardJsonSources(parsed: unknown): StandardJsonSourcesResult {
+  const rawSources =
+    parsed && typeof parsed === 'object' ? (parsed as Record<string, unknown>).sources : undefined;
+
+  const sources: StandardJsonSource[] = [];
+  if (rawSources && typeof rawSources === 'object') {
+    for (const [path, value] of Object.entries(rawSources as Record<string, unknown>)) {
+      const content = (value as Record<string, unknown> | undefined)?.content;
+      if (typeof content === 'string') {
+        sources.push({ path, content });
+      }
+    }
+  }
+
+  const settings = (parsed as Record<string, unknown> | undefined)?.settings as
+    Record<string, unknown> | undefined;
+  const compilationTarget = settings?.compilationTarget as Record<string, string> | undefined;
+  const contractNameHint = compilationTarget ? (Object.values(compilationTarget)[0] ?? null) : null;
+
+  return { sources, contractNameHint };
+}
+
+export function parseStandardJsonSources(text: string): StandardJsonSourcesResult {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('File is not valid JSON');
+  }
+
+  const result = extractStandardJsonSources(parsed);
+  if (result.sources.length === 0) {
+    throw new Error(
+      'This file has no inline source ("sources" entries need a "content" field - solc metadata.json and ABI-only files don\'t carry source text)',
+    );
+  }
+
+  return result;
+}
+
+export interface ContractArtifact {
+  abi: AbiItem[] | null;
+  sources: StandardJsonSource[];
+  contractNameHint: string | null;
+}
+
+/*
+ * One upload slot, either kind of file: a raw ABI array/build artifact (Foundry/Hardhat/Remix) and
+ * a solc Standard JSON Input are mutually exclusive shapes in practice (the latter is compiler
+ * *input*, so it never carries an ABI - that's compiler *output*), so a single file only ever
+ * populates one side of this. Callers merge across uploads themselves (keep whichever side a new
+ * upload didn't find) so a user can still get both by dropping an ABI artifact and a Standard
+ * JSON Input in, one after the other, into the same control.
+ */
+export function parseContractArtifact(text: string): ContractArtifact {
+  let parsed: unknown;
+
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error('File is not valid JSON');
+  }
+
+  const abi = normalizeAbiInput(parsed);
+  const { sources, contractNameHint } = extractStandardJsonSources(parsed);
+
+  if (abi === null && sources.length === 0) {
+    throw new Error(
+      'Could not find an ABI or source in this file (expected a raw ABI JSON array, a build artifact with an "abi" field, or a solc "Standard JSON Input" file with inline source)',
+    );
+  }
+
+  return { abi, sources, contractNameHint };
+}
+
 export function getAbiFunctions(abi: AbiItem[]): AbiFunctionItem[] {
   return abi.filter((item): item is AbiFunctionItem => item.type === 'function');
 }

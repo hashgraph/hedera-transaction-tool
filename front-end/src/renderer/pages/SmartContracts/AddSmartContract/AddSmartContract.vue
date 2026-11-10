@@ -11,7 +11,12 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import { add } from '@renderer/services/smartContractsService';
 import { getContractInfo, type ContractInfo } from '@renderer/services/mirrorNodeDataService';
 import { getVerifiedContract, type VerifiedContract } from '@renderer/services/sourcifyService';
-import { getAbiFunctions, parseAbiJson, type AbiItem } from '@renderer/utils/sdk/abi';
+import {
+  getAbiFunctions,
+  parseContractArtifact,
+  type AbiItem,
+  type StandardJsonSource,
+} from '@renderer/utils/sdk/abi';
 import { parseContractReference } from '@renderer/utils/sdk/contractCall';
 
 import { isUserLoggedIn, getErrorMessage } from '@renderer/utils';
@@ -39,6 +44,8 @@ const identifier = ref('');
 const nickname = ref('');
 const abiFile = ref<{ meta: File; content: Uint8Array; loadPercentage: number } | null>(null);
 const uploadedAbi = ref<AbiItem[] | null>(null);
+const uploadedSources = ref<StandardJsonSource[] | null>(null);
+const uploadedContractNameHint = ref<string | null>(null);
 const abiError = ref('');
 
 const lookupState = ref<LookupState>('idle');
@@ -62,6 +69,12 @@ const identifierType = computed<'contractId' | 'evmAddress' | null>(() => {
 const checking = computed(() => lookupState.value === 'loading' || verifying.value);
 const showUpload = computed(() => !checking.value && verified.value === null);
 const abi = computed<AbiItem[] | null>(() => verified.value?.abi ?? uploadedAbi.value);
+const sources = computed<{ path: string; content: string }[]>(
+  () => verified.value?.sources ?? uploadedSources.value ?? [],
+);
+const sourceContractName = computed(
+  () => verified.value?.name ?? uploadedContractNameHint.value ?? '',
+);
 // Only read by the template once an ABI is present
 const functionCount = computed(() => getAbiFunctions(abi.value!).length);
 const canSave = computed(
@@ -117,18 +130,35 @@ const handleAbiFileUpdate = async (
   file: { meta: File; content: Uint8Array; loadPercentage: number } | null,
 ) => {
   abiFile.value = file;
-  uploadedAbi.value = null;
   abiError.value = '';
 
-  if (!file || file.loadPercentage < 100) {
+  if (!file) {
+    uploadedAbi.value = null;
+    uploadedSources.value = null;
+    uploadedContractNameHint.value = null;
+    return;
+  }
+  if (file.loadPercentage < 100) {
     return;
   }
 
   try {
     const text = new TextDecoder().decode(file.content);
-    uploadedAbi.value = parseAbiJson(text);
+    const result = parseContractArtifact(text);
+    // A raw ABI artifact and a solc Standard JSON Input are mutually exclusive shapes (the
+    // latter never carries an ABI), so a single file only ever fills in one side - only
+    // overwrite the side this file actually has, so an ABI upload followed by a source upload
+    // (or vice versa) through this same control ends up with both, instead of the second
+    // upload wiping out what the first one found.
+    if (result.abi !== null) {
+      uploadedAbi.value = result.abi;
+    }
+    if (result.sources.length > 0) {
+      uploadedSources.value = result.sources;
+      uploadedContractNameHint.value = result.contractNameHint;
+    }
   } catch (error) {
-    abiError.value = getErrorMessage(error, 'Failed to parse ABI file');
+    abiError.value = getErrorMessage(error, 'Failed to parse file');
   }
 };
 
@@ -262,19 +292,28 @@ onBeforeUnmount(resetLookup);
                 <AppUploadFile
                   id="smart-contract-abi-upload"
                   :file="abiFile"
-                  :max-size-kb="2048"
+                  :max-size-kb="4096"
                   accept=".json"
                   show-name
                   @update:file="handleAbiFileUpdate"
                 />
               </div>
               <p v-if="abiError" class="text-danger text-small mt-2">{{ abiError }}</p>
-              <p v-else-if="uploadedAbi" class="text-success text-small mt-2">
-                Found {{ functionCount }} function{{ functionCount === 1 ? '' : 's' }} in the ABI.
+              <p v-else-if="uploadedAbi || uploadedSources" class="text-success text-small mt-2">
+                <template v-if="uploadedAbi"
+                  >Found {{ functionCount }} function{{ functionCount === 1 ? '' : 's' }} in the
+                  ABI. </template
+                ><template v-if="uploadedSources"
+                  >Found {{ uploadedSources.length }} source file{{
+                    uploadedSources.length === 1 ? '' : 's'
+                  }}.</template
+                >
               </p>
               <p v-else class="text-secondary text-small mt-2">
                 <template v-if="resolved">This contract is not verified. </template>Upload a raw ABI
-                JSON array, or a build artifact (Foundry, Hardhat, Remix) containing an "abi" field.
+                JSON array, a build artifact (Foundry, Hardhat, Remix) with an "abi" field, or a
+                solc "Standard JSON Input" file to also show its source code below. Drop both in
+                (one at a time) to get the ABI and the source at once.
               </p>
             </template>
           </div>
@@ -291,17 +330,17 @@ onBeforeUnmount(resetLookup);
         </form>
 
         <div
-          v-if="verified && verified.sources.length > 0"
+          v-if="sources.length > 0"
           class="flex-grow-1 d-flex flex-column"
           style="min-height: 0; min-width: 0"
         >
           <h3 class="text-subheader text-bold mb-3 flex-shrink-0">
-            {{ verified.name || 'Contract' }} source code
+            {{ sourceContractName || 'Contract' }} source code
           </h3>
           <ContractSourceViewer
             class="flex-grow-1"
-            :contract-name="verified.name"
-            :sources="verified.sources"
+            :contract-name="sourceContractName"
+            :sources="sources"
           />
         </div>
       </div>

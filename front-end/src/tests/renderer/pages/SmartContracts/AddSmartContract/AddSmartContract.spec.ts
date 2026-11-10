@@ -333,12 +333,18 @@ describe('AddSmartContract.vue', () => {
     expect(mocks.toast.error).toHaveBeenCalledWith('User not logged in');
   });
 
-  describe('ABI upload', () => {
+  describe('contract artifact upload (one control, either shape)', () => {
     const readyForUpload = async () => {
       const wrapper = mountPage();
       await lookup(wrapper);
       return wrapper;
     };
+    const standardJsonInput = (over: Record<string, unknown> = {}) =>
+      JSON.stringify({
+        language: 'Solidity',
+        sources: { 'WorldClock.sol': { content: 'contract WorldClock {}' } },
+        ...over,
+      });
 
     test('a valid raw ABI array is accepted and reports its function count', async () => {
       const wrapper = await readyForUpload();
@@ -354,6 +360,51 @@ describe('AddSmartContract.vue', () => {
       expect(wrapper.text()).toContain('Found 2 functions in the ABI.');
     });
 
+    test('a solc Standard JSON Input file is accepted and shows the source viewer', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(wrapper, fileOf(standardJsonInput()));
+
+      expect(wrapper.text()).toContain('Found 1 source file.');
+      expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('|1');
+      expect(saveBtn(wrapper).attributes('disabled')).toBeDefined(); // no ABI yet
+    });
+
+    test('settings.compilationTarget feeds the contract name into the viewer', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(
+        wrapper,
+        fileOf(
+          standardJsonInput({ settings: { compilationTarget: { 'WorldClock.sol': 'WorldClock' } } }),
+        ),
+      );
+
+      expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('WorldClock|1');
+      expect(wrapper.text()).toContain('WorldClock source code');
+    });
+
+    test('uploading an ABI file then a Standard JSON Input file (in that order) keeps both', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(wrapper, fileOf(JSON.stringify([fnAbi('a')])));
+      await uploadFile(wrapper, fileOf(standardJsonInput()));
+
+      const text = wrapper.text();
+      expect(text).toContain('Found 1 function in the ABI.');
+      expect(text).toContain('Found 1 source file.');
+      expect(wrapper.find('[data-testid="source-viewer"]').exists()).toBe(true);
+      expect(saveBtn(wrapper).attributes('disabled')).toBeUndefined();
+    });
+
+    test('uploading a Standard JSON Input file then an ABI file (reverse order) keeps both', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(wrapper, fileOf(standardJsonInput()));
+      await uploadFile(wrapper, fileOf(JSON.stringify([fnAbi('a'), fnAbi('b')])));
+
+      const text = wrapper.text();
+      expect(text).toContain('Found 2 functions in the ABI.');
+      expect(text).toContain('Found 1 source file.');
+      expect(saveBtn(wrapper).attributes('disabled')).toBeUndefined();
+    });
+
     test('invalid JSON shows a parse error and keeps save disabled', async () => {
       const wrapper = await readyForUpload();
       await uploadFile(wrapper, fileOf('not json'));
@@ -362,10 +413,25 @@ describe('AddSmartContract.vue', () => {
       expect(saveBtn(wrapper).attributes('disabled')).toBeDefined();
     });
 
-    test('JSON without an ABI shows an error', async () => {
+    test('JSON with neither an ABI nor a source shows an error', async () => {
       const wrapper = await readyForUpload();
       await uploadFile(wrapper, fileOf('{"foo":1}'));
-      expect(wrapper.text()).toContain('Could not find an ABI in this file');
+      expect(wrapper.text()).toContain('Could not find an ABI or source in this file');
+    });
+
+    test('a failed re-upload blocks save but does not erase a previously accepted ABI once fixed', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(wrapper, fileOf(JSON.stringify([fnAbi('a')])));
+      await uploadFile(wrapper, fileOf('not json'));
+
+      expect(wrapper.text()).toContain('File is not valid JSON');
+      expect(saveBtn(wrapper).attributes('disabled')).toBeDefined();
+
+      await uploadFile(wrapper, fileOf(standardJsonInput()));
+      const text = wrapper.text();
+      expect(text).toContain('Found 1 function in the ABI.');
+      expect(text).toContain('Found 1 source file.');
+      expect(saveBtn(wrapper).attributes('disabled')).toBeUndefined();
     });
 
     test('a file still loading is not parsed yet', async () => {
@@ -375,13 +441,15 @@ describe('AddSmartContract.vue', () => {
       expect(saveBtn(wrapper).attributes('disabled')).toBeDefined();
     });
 
-    test('removing the file clears a previous ABI and error', async () => {
+    test('removing the file clears a previous ABI, source, and error', async () => {
       const wrapper = await readyForUpload();
+      await uploadFile(wrapper, fileOf(standardJsonInput()));
       await uploadFile(wrapper, fileOf('not json'));
       await uploadFile(wrapper, null);
 
       expect(wrapper.text()).not.toContain('File is not valid JSON');
       expect(wrapper.text()).toContain('Upload a raw ABI JSON array');
+      expect(wrapper.find('[data-testid="source-viewer"]').exists()).toBe(false);
       expect(saveBtn(wrapper).attributes('disabled')).toBeDefined();
     });
   });

@@ -10,6 +10,8 @@ import {
   isSupportedAbiParameter,
   normalizeAbiInput,
   parseAbiJson,
+  parseContractArtifact,
+  parseStandardJsonSources,
   type AbiFunctionItem,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
@@ -54,6 +56,87 @@ describe('parseAbiJson', () => {
 
   test('throws when no ABI can be found', () => {
     expect(() => parseAbiJson('{"foo":1}')).toThrow('Could not find an ABI');
+  });
+});
+
+describe('parseStandardJsonSources', () => {
+  test('extracts inline source content keyed by path', () => {
+    const result = parseStandardJsonSources(
+      JSON.stringify({
+        language: 'Solidity',
+        sources: { 'WorldClock.sol': { content: 'contract WorldClock {}' } },
+      }),
+    );
+
+    expect(result.sources).toEqual([
+      { path: 'WorldClock.sol', content: 'contract WorldClock {}' },
+    ]);
+    expect(result.contractNameHint).toBeNull();
+  });
+
+  test('picks up the contract name hint from settings.compilationTarget', () => {
+    const result = parseStandardJsonSources(
+      JSON.stringify({
+        language: 'Solidity',
+        sources: { 'WorldClock.sol': { content: 'contract WorldClock {}' } },
+        settings: { compilationTarget: { 'WorldClock.sol': 'WorldClock' } },
+      }),
+    );
+
+    expect(result.contractNameHint).toBe('WorldClock');
+  });
+
+  test('skips sources with no inline content (urls-only references)', () => {
+    const result = parseStandardJsonSources(
+      JSON.stringify({
+        sources: {
+          'Imported.sol': { urls: ['bzz-raw://...'] },
+          'Main.sol': { content: 'contract Main {}' },
+        },
+      }),
+    );
+
+    expect(result.sources).toEqual([{ path: 'Main.sol', content: 'contract Main {}' }]);
+  });
+
+  test('throws on invalid JSON', () => {
+    expect(() => parseStandardJsonSources('{nope')).toThrow('File is not valid JSON');
+  });
+
+  test('throws when there is no sources field', () => {
+    expect(() => parseStandardJsonSources('{"abi":[]}')).toThrow('no inline source');
+  });
+
+  test('throws when no source has inline content', () => {
+    expect(() =>
+      parseStandardJsonSources(JSON.stringify({ sources: { 'A.sol': { urls: [] } } })),
+    ).toThrow('no inline source');
+  });
+});
+
+describe('parseContractArtifact', () => {
+  test('finds an ABI in a plain array, with no source', () => {
+    const result = parseContractArtifact(JSON.stringify([fn('foo')]));
+    expect(result.abi).toEqual([fn('foo')]);
+    expect(result.sources).toEqual([]);
+  });
+
+  test('finds inline source in a Standard JSON Input file, with no ABI', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({ sources: { 'A.sol': { content: 'contract A {}' } } }),
+    );
+    expect(result.abi).toBeNull();
+    expect(result.sources).toEqual([{ path: 'A.sol', content: 'contract A {}' }]);
+  });
+
+  test('throws on invalid JSON', () => {
+    expect(() => parseContractArtifact('{nope')).toThrow('File is not valid JSON');
+  });
+
+  test('throws when the file has neither an ABI nor inline source', () => {
+    expect(() => parseContractArtifact('{"foo":1}')).toThrow(
+      'Could not find an ABI or source in this file',
+    );
   });
 });
 
