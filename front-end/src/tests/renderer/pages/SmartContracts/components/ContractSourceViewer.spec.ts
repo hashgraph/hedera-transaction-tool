@@ -71,6 +71,20 @@ describe('ContractSourceViewer.vue', () => {
     expect(wrapper.find('tbody tr td').text()).toBe('1');
   });
 
+  test('lands on a root-level contract-named file (no directory prefix)', async () => {
+    mocks.createHighlighterCore.mockRejectedValue(new Error('no wasm'));
+    const wrapper = await mountViewer({
+      sources: [
+        { path: 'Imported.sol', content: 'import line' },
+        { path: 'Token.sol', content: 'root-level contract' },
+      ],
+    });
+
+    const select = wrapper.find('[data-testid="select-contract-source-file"]');
+    expect((select.element as HTMLSelectElement).value).toBe('Token.sol');
+    expect(renderedLines(wrapper)).toEqual(['root-level contract']);
+  });
+
   test('falls back to the first source when none matches the contract name', async () => {
     mocks.createHighlighterCore.mockRejectedValue(new Error('no wasm'));
     const wrapper = await mountViewer({ contractName: 'Missing' });

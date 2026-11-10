@@ -56,8 +56,13 @@ onMounted(async () => {
 watch(
   () => props.sources,
   sources => {
-    // Land on the contract's own file rather than whichever import happens to be listed first.
-    const main = sources.find(s => s.path.endsWith(`/${props.contractName}.sol`)) ?? sources[0];
+    // Land on the contract's own file rather than whichever import happens to be listed first -
+    // checking the exact root-level path before the suffix match, since a path like "Token.sol"
+    // (no directory prefix) would never satisfy the suffix check on its own.
+    const main =
+      sources.find(s => s.path === `${props.contractName}.sol`) ??
+      sources.find(s => s.path.endsWith(`/${props.contractName}.sol`)) ??
+      sources[0];
     selectedPath.value = main?.path ?? '';
   },
   { immediate: true },
