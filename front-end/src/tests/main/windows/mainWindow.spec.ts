@@ -49,6 +49,8 @@ vi.mock('electron', () => {
   Object.defineProperty(bw.prototype, 'webContents', {
     value: {
       openDevTools: vi.fn(),
+      on: vi.fn(),
+      setWindowOpenHandler: vi.fn(),
     },
     writable: false,
     enumerable: true,
