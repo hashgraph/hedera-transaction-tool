@@ -366,6 +366,7 @@ describe('SmartContracts.vue', () => {
       mocks.db = [makeContract()];
       const errors: unknown[] = [];
       const wrapper = await mountPage({ errorHandler: e => errors.push(e) });
+      mocks.update.mockClear(); // drop the auto-add-from-ABI call that happens on mount
       await startEdit(wrapper);
       mocks.userStore.personal = null;
       await wrapper.find(t('input-smart-contract-nickname')).trigger('blur');
@@ -396,58 +397,52 @@ describe('SmartContracts.vue', () => {
       mocks.db = [contractB()];
       const wrapper = await mountPage();
       expect(wrapper.text()).toContain('No roles defined yet.');
-      expect(wrapper.text()).not.toContain('Suggested from ABI');
     });
 
-    test('suggests role getters found in the ABI and hides the empty message', async () => {
+    test('auto-adds role getters found in the ABI, resolving on-chain where possible', async () => {
       mocks.db = [makeContract()];
+      mocks.resolveBytes32Getter.mockImplementation(async (_contract, name) =>
+        name === 'MINTER_ROLE' ? ROLE_VALUE : null,
+      );
       const wrapper = await mountPage();
-      expect(wrapper.text()).toContain('Suggested from ABI');
-      expect(wrapper.find(t('button-add-suggested-role-MINTER_ROLE')).exists()).toBe(true);
-      expect(wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).exists()).toBe(true);
-      expect(wrapper.text()).not.toContain('No roles defined yet.');
-    });
-
-    test('adding a suggested role records it verified with its on-chain value when resolvable', async () => {
-      mocks.db = [makeContract()];
-      mocks.resolveBytes32Getter.mockResolvedValue(ROLE_VALUE);
-      const wrapper = await mountPage();
-      await wrapper.find(t('button-add-suggested-role-MINTER_ROLE')).trigger('click');
-      await flushPromises();
 
       expect(mocks.resolveBytes32Getter).toHaveBeenCalledWith(
         { contractId: '0.0.10', evmAddress: EVM },
         'MINTER_ROLE',
         'https://mirror.example',
       );
-      expect(lastRoles()).toEqual([
-        expect.objectContaining({
-          name: 'MINTER_ROLE',
-          value: ROLE_VALUE,
-          verified: true,
-        }),
-      ]);
-      // Added role is no longer suggested, but the other getter still is.
-      expect(wrapper.find(t('button-add-suggested-role-MINTER_ROLE')).exists()).toBe(false);
-      expect(wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).exists()).toBe(true);
+      expect(mocks.resolveBytes32Getter).toHaveBeenCalledWith(
+        { contractId: '0.0.10', evmAddress: EVM },
+        'ADMIN_ROLE',
+        'https://mirror.example',
+      );
+      expect(lastRoles()).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ name: 'MINTER_ROLE', value: ROLE_VALUE, verified: true }),
+          expect.objectContaining({ name: 'ADMIN_ROLE', verified: false }),
+        ]),
+      );
       expect(wrapper.text()).toContain('verified on-chain');
+      expect(wrapper.text()).not.toContain('No roles defined yet.');
     });
 
-    test('a suggested role that cannot be resolved is saved unverified and offers on-chain resolution', async () => {
+    test('an auto-added role that cannot be resolved is saved unverified and offers on-chain resolution', async () => {
       mocks.db = [makeContract()];
       const wrapper = await mountPage();
-      await wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).trigger('click');
-      await flushPromises();
 
-      expect(lastRoles()[0]).toMatchObject({ name: 'ADMIN_ROLE', verified: false });
-      expect(lastRoles()[0].value).toBeUndefined();
+      const adminRole = lastRoles().find(r => r.name === 'ADMIN_ROLE');
+      expect(adminRole).toMatchObject({ verified: false });
+      expect(adminRole?.value).toBeUndefined();
       expect(wrapper.find(t('button-resolve-role-ADMIN_ROLE')).exists()).toBe(true);
     });
 
     test('resolve on-chain verifies an existing role and keeps its other fields', async () => {
       mocks.db = [
         makeContract({
-          roles: JSON.stringify([role({ verified: false, value: undefined })]),
+          roles: JSON.stringify([
+            role({ verified: false, value: undefined }),
+            role({ id: 'r2', name: 'ADMIN_ROLE', verified: true, value: ROLE_VALUE }),
+          ]),
         }),
       ];
       mocks.resolveBytes32Getter.mockResolvedValue(ROLE_VALUE);
@@ -457,12 +452,20 @@ describe('SmartContracts.vue', () => {
 
       expect(lastRoles()).toEqual([
         expect.objectContaining({ id: 'r1', value: ROLE_VALUE, verified: true }),
+        expect.objectContaining({ id: 'r2', name: 'ADMIN_ROLE' }),
       ]);
       expect(wrapper.find(t('button-resolve-role-MINTER_ROLE')).exists()).toBe(false);
     });
 
     test('resolve on-chain failure tells the user and changes nothing', async () => {
-      mocks.db = [makeContract({ roles: JSON.stringify([role({ verified: false, value: undefined })]) })];
+      mocks.db = [
+        makeContract({
+          roles: JSON.stringify([
+            role({ verified: false, value: undefined }),
+            role({ id: 'r2', name: 'ADMIN_ROLE', verified: true, value: ROLE_VALUE }),
+          ]),
+        }),
+      ];
       const wrapper = await mountPage();
       await wrapper.find(t('button-resolve-role-MINTER_ROLE')).trigger('click');
       await flushPromises();
@@ -496,7 +499,12 @@ describe('SmartContracts.vue', () => {
 
       roleModal(wrapper).vm.$emit('save', role({ id: 'new', name: 'NEW_ROLE' }));
       await flushPromises();
-      expect(lastRoles().map(r => r.id)).toEqual(['new']);
+      // MINTER_ROLE/ADMIN_ROLE were auto-added from the ABI before the manual add.
+      expect(lastRoles().map(r => r.name).sort()).toEqual([
+        'ADMIN_ROLE',
+        'MINTER_ROLE',
+        'NEW_ROLE',
+      ]);
       expect(wrapper.text()).toContain('NEW_ROLE');
     });
 
@@ -512,7 +520,11 @@ describe('SmartContracts.vue', () => {
     test('edit opens the modal with that role; saving replaces it in place and shows the note', async () => {
       mocks.db = [
         makeContract({
-          roles: JSON.stringify([role(), role({ id: 'r2', name: 'OTHER_ROLE', verified: false })]),
+          roles: JSON.stringify([
+            role(),
+            role({ id: 'r2', name: 'OTHER_ROLE', verified: false }),
+            role({ id: 'r3', name: 'ADMIN_ROLE', verified: false, value: undefined }),
+          ]),
         }),
       ];
       const wrapper = await mountPage();
@@ -522,39 +534,46 @@ describe('SmartContracts.vue', () => {
       roleModal(wrapper).vm.$emit('save', role({ note: 'rotated key' }));
       await flushPromises();
 
-      expect(lastRoles().map(r => r.id)).toEqual(['r1', 'r2']);
+      expect(lastRoles().map(r => r.id)).toEqual(['r1', 'r2', 'r3']);
       expect(wrapper.text()).toContain('rotated key');
     });
 
     test('removing a role drops it from the roles list', async () => {
       mocks.db = [
         makeContract({
-          roles: JSON.stringify([role(), role({ id: 'r2', name: 'OTHER_ROLE' })]),
+          roles: JSON.stringify([
+            role(),
+            role({ id: 'r2', name: 'OTHER_ROLE' }),
+            role({ id: 'r3', name: 'ADMIN_ROLE', verified: false, value: undefined }),
+          ]),
         }),
       ];
       const wrapper = await mountPage();
       await wrapper.find(t('button-remove-role-MINTER_ROLE')).trigger('click');
       await flushPromises();
 
-      expect(lastRoles().map(r => r.id)).toEqual(['r2']);
+      expect(lastRoles().map(r => r.id)).toEqual(['r2', 'r3']);
       expect(wrapper.find(t('button-edit-role-MINTER_ROLE')).exists()).toBe(false);
     });
 
-    test('a failed role update shows the error toast', async () => {
+    test('a failed auto-add shows the error toast', async () => {
       mocks.db = [makeContract()];
       mocks.update.mockRejectedValue(new Error('disk full'));
-      const wrapper = await mountPage();
-      await wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).trigger('click');
-      await flushPromises();
+      await mountPage();
       expect(mocks.toast.error).toHaveBeenCalledWith('disk full');
     });
 
     test('saving a role while logged out raises an error', async () => {
-      mocks.db = [makeContract()];
+      mocks.db = [
+        makeContract({
+          roles: JSON.stringify([role(), role({ id: 'r2', name: 'ADMIN_ROLE' })]),
+        }),
+      ];
       const errors: unknown[] = [];
       const wrapper = await mountPage({ errorHandler: e => errors.push(e) });
+      await wrapper.find(t('button-add-role')).trigger('click');
       mocks.userStore.personal = null;
-      await wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).trigger('click');
+      roleModal(wrapper).vm.$emit('save', role({ id: 'new', name: 'NEW_ROLE' }));
       await flushPromises();
       expect(mocks.update).not.toHaveBeenCalled();
       expect((errors[0] as Error).message).toBe('User is not logged in');
@@ -563,6 +582,7 @@ describe('SmartContracts.vue', () => {
     test('role helpers are inert when no contract is selected', async () => {
       mocks.db = [makeContract()];
       const wrapper = await mountPage();
+      mocks.resolveBytes32Getter.mockClear();
       mocks.db = [];
       await wrapper.find(t('button-remove-smart-contract')).trigger('click');
       await wrapper.find(t('button-confirm-remove-smart-contract')).trigger('click');

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SmartContract } from '@prisma/client';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -183,15 +183,22 @@ const handleOpenEditRole = (role: ContractRole) => {
   isRoleModalShown.value = true;
 };
 
-const handleAddSuggestedRole = async (name: string) => {
-  const resolved = await tryResolveRoleValue(name);
-  const role = createRole({ name });
-  const nextRoles = [
-    ...roles.value,
-    resolved ? { ...role, value: resolved, verified: true } : role,
-  ];
+async function autoAddSuggestedRoles() {
+  if (suggestedRoles.value.length === 0) {
+    return;
+  }
+
+  const addedRoles = await Promise.all(
+    suggestedRoles.value.map(async fn => {
+      const resolved = await tryResolveRoleValue(fn.name);
+      const role = createRole({ name: fn.name });
+      return resolved ? { ...role, value: resolved, verified: true } : role;
+    }),
+  );
+
+  const nextRoles = [...roles.value, ...addedRoles];
   await persistContract({ roles: JSON.stringify(nextRoles) });
-};
+}
 
 const handleResolveRole = async (role: ContractRole) => {
   const resolved = await tryResolveRoleValue(role.name);
@@ -218,6 +225,12 @@ const handleRemoveRole = async (roleId: string) => {
 };
 
 /* Hooks */
+watch(selectedId, async id => {
+  if (id) {
+    await autoAddSuggestedRoles();
+  }
+});
+
 onMounted(async () => {
   await fetchContracts();
 });
@@ -362,27 +375,9 @@ onMounted(async () => {
                   >Add Role</AppButton
                 >
               </div>
-              <p
-                v-if="roles.length === 0 && suggestedRoles.length === 0"
-                class="text-small text-secondary mt-2"
-              >
+              <p v-if="roles.length === 0" class="text-small text-secondary mt-2">
                 No roles defined yet.
               </p>
-              <div v-if="suggestedRoles.length > 0" class="mt-3">
-                <p class="text-micro text-secondary">Suggested from ABI:</p>
-                <div class="d-flex flex-wrap gap-2 mt-2">
-                  <AppButton
-                    v-for="fn in suggestedRoles"
-                    :key="fn.name"
-                    size="small"
-                    color="secondary"
-                    class="min-w-unset"
-                    :data-testid="'button-add-suggested-role-' + fn.name"
-                    @click="handleAddSuggestedRole(fn.name)"
-                    >+ {{ fn.name }}</AppButton
-                  >
-                </div>
-              </div>
               <div
                 v-for="role in roles"
                 :key="role.id"
