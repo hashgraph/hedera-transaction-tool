@@ -16,12 +16,7 @@ import {
   parseStoredAbi,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
-import {
-  getFunctionSignature,
-  parseFunctionTags,
-  parseRoles,
-  roleHolderSummary,
-} from '@renderer/utils/sdk/contractRoles';
+import { getFunctionSignature } from '@renderer/utils/sdk/contractRoles';
 import {
   areContractCallArgsEncodable,
   decodeContractCall,
@@ -30,7 +25,6 @@ import {
   validateFunctionArgValue,
 } from '@renderer/utils/sdk/contractFunctionParams';
 import {
-  checkAccountHasRole,
   findMatchingSavedContract,
   parseContractReference,
   simulateContractCall,
@@ -129,32 +123,6 @@ const argErrors = computed(() =>
   ),
 );
 
-const roles = computed(() => parseRoles(selectedSavedContract.value?.roles));
-
-const functionTags = computed(() => parseFunctionTags(selectedSavedContract.value?.function_tags));
-
-const taggedRole = computed(() => {
-  const fn = selectedFunction.value;
-  if (!fn) {
-    return null;
-  }
-  const roleId = functionTags.value[getFunctionSignature(fn)];
-  return roles.value.find(r => r.id === roleId) || null;
-});
-
-// Local check: no network needed, just compares the chosen fee payer against whatever the
-// registry already records as this role's holder.
-const localRoleMismatch = computed(() => {
-  const role = taggedRole.value;
-  return Boolean(
-    role &&
-    role.holderType === 'account' &&
-    role.holderAccountId &&
-    props.payerId.trim().length > 0 &&
-    props.payerId !== role.holderAccountId,
-  );
-});
-
 const contractEvmAddress = computed(() => {
   const reference = selectedSavedContract.value
     ? // a saved contract always has at least one of the two (enforced when it is added)
@@ -164,25 +132,18 @@ const contractEvmAddress = computed(() => {
   return parsed ? `0x${parsed.toEvmAddress()}` : null;
 });
 
-// The two checks below (role check + call simulation) are a predictive helper only: they tell the
-// user whether this call looks like it will pass or fail *right now*, given current on-chain
-// state. Neither one gates submission - a 'fail' status never disables the submit button, and a
-// 'pass'/'unknown' status is not a guarantee, since chain state can change between this check and
-// when the transaction actually executes (possibly after collecting multiple signatures).
+// The check below is a predictive helper only: it tells the user whether this call looks like it
+// will pass or fail *right now*, given current on-chain state. It doesn't gate submission - a
+// 'fail' status never disables the submit button, and a 'pass'/'unknown' status is not a
+// guarantee, since chain state can change between this check and when the transaction actually
+// executes (possibly after collecting multiple signatures).
 
-// Shared by both async checks below: 'idle' before anything has run, 'checking' while in flight,
-// then whatever ContractCallStatus the check resolved to.
+// 'idle' before anything has run, 'checking' while in flight, then whatever ContractCallStatus
+// the check resolved to.
 type AsyncCheckStatus = 'idle' | 'checking' | ContractCallStatus;
 
-// Online check: a live hasRole(role, account) read, run only when the registry has a verified
-// (on-chain-resolved) role value - never guesses, and fails silently (status 'unknown') so a
-// network hiccup doesn't block anything, it just removes this one extra signal.
-const onlineRoleCheckStatus = ref<AsyncCheckStatus>('idle');
-
-// Online check: simulates the exact call (function, args, gas, payable amount, fee payer) via
-// the mirror node before the user signs - catches reverts and under-provisioned gas early. Purely
-// advisory, same as the role check above: mirror node state can drift before the real transaction
-// executes, so this reports what would *currently* happen, not a guarantee.
+// Simulates the exact call (function, args, gas, payable amount, fee payer) via the mirror node
+// before the user signs - catches reverts and under-provisioned gas early.
 const callSimulationStatus = ref<AsyncCheckStatus>('idle');
 const callSimulationError = ref('');
 
@@ -278,36 +239,10 @@ watch(
   { immediate: true },
 );
 
-// Each check below is guarded by its own generation counter: neither checkAccountHasRole nor
-// simulateContractCall supports cancellation, so a slower response for stale inputs (e.g. the
-// payer changed again before the first check returned) must be detected and dropped on arrival
-// instead, rather than overwriting a newer, still-relevant status.
-let roleCheckGeneration = 0;
-watch(
-  [taggedRole, () => props.payerId, contractEvmAddress],
-  async ([role, payerId, toAddress]) => {
-    const generation = ++roleCheckGeneration;
-    onlineRoleCheckStatus.value = 'idle';
-
-    if (!role || !role.verified || !role.value || !toAddress || !isAccountId(payerId)) {
-      return;
-    }
-
-    onlineRoleCheckStatus.value = 'checking';
-
-    const result = await checkAccountHasRole(
-      { evmAddress: toAddress },
-      role.value,
-      payerId,
-      network.mirrorNodeBaseURL,
-    );
-    if (generation === roleCheckGeneration) {
-      onlineRoleCheckStatus.value = result;
-    }
-  },
-  { immediate: true },
-);
-
+// The check below is guarded by its own generation counter: simulateContractCall doesn't support
+// cancellation, so a slower response for stale inputs (e.g. the payer changed again before the
+// first check returned) must be detected and dropped on arrival instead, rather than overwriting
+// a newer, still-relevant status.
 let callSimulationGeneration = 0;
 watch(
   [
@@ -435,44 +370,9 @@ onMounted(async () => {
         />
       </div>
 
-      <template v-if="taggedRole">
-        <p class="text-micro text-secondary mt-2">
-          Requires: {{ taggedRole.name }} ({{ roleHolderSummary(taggedRole) }})
-        </p>
-        <!-- Strictest: verified on-chain that the fee payer lacks the role -->
-        <div
-          v-if="onlineRoleCheckStatus === 'fail'"
-          class="alert alert-danger text-small mt-2 mb-0"
-          role="alert"
-          data-testid="alert-contract-execute-role-fail"
-        >
-          <i class="bi bi-exclamation-octagon-fill me-1" />
-          <span class="text-semi-bold">This call will likely fail.</span>
-          The fee payer does not hold {{ taggedRole.name }} on-chain, so the contract will reject
-          this call. Select the account that holds this role as the fee payer.
-        </div>
-        <!-- Warning: fee payer differs from the recorded role holder (not confirmed on-chain) -->
-        <div
-          v-else-if="localRoleMismatch && onlineRoleCheckStatus !== 'pass'"
-          class="alert alert-warning text-small mt-2 mb-0"
-          role="alert"
-          data-testid="alert-contract-execute-role-mismatch"
-        >
-          <i class="bi bi-exclamation-triangle-fill me-1" />
-          This function requires {{ taggedRole.name }}, but the selected fee payer is not the
-          recorded holder ({{ roleHolderSummary(taggedRole) }}).
-        </div>
-        <p v-else-if="onlineRoleCheckStatus === 'checking'" class="text-micro text-secondary mt-1">
-          Checking on-chain...
-        </p>
-        <p v-else-if="onlineRoleCheckStatus === 'pass'" class="text-micro text-success mt-1">
-          Fee payer currently holds {{ taggedRole.name }} on-chain.
-        </p>
-      </template>
-
-      <!-- Simulated call result - skipped when the role check above already explains the failure -->
+      <!-- Simulated call result -->
       <p
-        v-if="callSimulationStatus === 'fail' && onlineRoleCheckStatus !== 'fail'"
+        v-if="callSimulationStatus === 'fail'"
         class="text-danger text-small mt-1 mb-0"
         data-testid="alert-contract-execute-simulation-fail"
       >

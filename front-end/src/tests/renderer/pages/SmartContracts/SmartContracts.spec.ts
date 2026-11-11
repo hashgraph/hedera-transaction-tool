@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
   update: vi.fn(),
   remove: vi.fn(),
   resolveBytes32Getter: vi.fn(),
-  checkAccountHasRole: vi.fn(),
   toast: { error: vi.fn(), success: vi.fn() },
   router: { push: vi.fn() },
 }));
@@ -36,7 +35,6 @@ vi.mock('@renderer/services/smartContractsService', () => ({
 }));
 vi.mock('@renderer/utils/sdk/contractCall', () => ({
   resolveBytes32Getter: mocks.resolveBytes32Getter,
-  checkAccountHasRole: mocks.checkAccountHasRole,
 }));
 
 const AppModalStub = {
@@ -78,15 +76,11 @@ const mint = {
   outputs: [],
   stateMutability: 'nonpayable',
 };
-const MINT_SIG = 'mint(address,uint256)';
-
 const role = (over: Partial<ContractRole> = {}): ContractRole => ({
   id: 'r1',
   name: 'MINTER_ROLE',
   verified: true,
   value: ROLE_VALUE,
-  holderType: 'account',
-  holderAccountId: '0.0.500',
   ...over,
 });
 
@@ -100,7 +94,6 @@ const makeContract = (over: Record<string, unknown> = {}) => ({
   abi: JSON.stringify([getter('MINTER_ROLE'), getter('ADMIN_ROLE'), mint]),
   verified: true,
   roles: null,
-  function_tags: null,
   created_at: new Date(),
   ...over,
 });
@@ -139,7 +132,6 @@ const t = (id: string) => `[data-testid="${id}"]`;
 const roleModal = (w: Wrapper) => w.findComponent(RoleModalStub);
 const lastUpdate = () => mocks.update.mock.calls.at(-1)!;
 const lastRoles = () => JSON.parse(lastUpdate()[2].roles) as ContractRole[];
-const lastTags = () => JSON.parse(lastUpdate()[2].function_tags) as Record<string, string>;
 
 describe('SmartContracts.vue', () => {
   beforeEach(() => {
@@ -157,7 +149,6 @@ describe('SmartContracts.vue', () => {
       mocks.db = mocks.db.filter(c => !ids.includes(c.id));
     });
     mocks.resolveBytes32Getter.mockResolvedValue(null);
-    mocks.checkAccountHasRole.mockResolvedValue('unknown');
   });
 
   describe('listing', () => {
@@ -434,14 +425,12 @@ describe('SmartContracts.vue', () => {
           name: 'MINTER_ROLE',
           value: ROLE_VALUE,
           verified: true,
-          holderType: 'unassigned',
         }),
       ]);
       // Added role is no longer suggested, but the other getter still is.
       expect(wrapper.find(t('button-add-suggested-role-MINTER_ROLE')).exists()).toBe(false);
       expect(wrapper.find(t('button-add-suggested-role-ADMIN_ROLE')).exists()).toBe(true);
       expect(wrapper.text()).toContain('verified on-chain');
-      expect(wrapper.text()).toContain('Unassigned');
     });
 
     test('a suggested role that cannot be resolved is saved unverified and offers on-chain resolution', async () => {
@@ -458,9 +447,7 @@ describe('SmartContracts.vue', () => {
     test('resolve on-chain verifies an existing role and keeps its other fields', async () => {
       mocks.db = [
         makeContract({
-          roles: JSON.stringify([
-            role({ verified: false, value: undefined, holderType: 'unassigned', holderAccountId: undefined }),
-          ]),
+          roles: JSON.stringify([role({ verified: false, value: undefined })]),
         }),
       ];
       mocks.resolveBytes32Getter.mockResolvedValue(ROLE_VALUE);
@@ -522,7 +509,7 @@ describe('SmartContracts.vue', () => {
       expect(roleModal(wrapper).attributes('data-show')).toBe('false');
     });
 
-    test('edit opens the modal with that role; saving replaces it in place and shows holder and note', async () => {
+    test('edit opens the modal with that role; saving replaces it in place and shows the note', async () => {
       mocks.db = [
         makeContract({
           roles: JSON.stringify([role(), role({ id: 'r2', name: 'OTHER_ROLE', verified: false })]),
@@ -532,22 +519,17 @@ describe('SmartContracts.vue', () => {
       await wrapper.find(t('button-edit-role-MINTER_ROLE')).trigger('click');
       expect(roleModal(wrapper).attributes('data-role')).toBe('MINTER_ROLE');
 
-      roleModal(wrapper).vm.$emit('save', role({ holderAccountId: '0.0.600', note: 'rotated key' }));
+      roleModal(wrapper).vm.$emit('save', role({ note: 'rotated key' }));
       await flushPromises();
 
-      expect(lastRoles().map(r => [r.id, r.holderAccountId])).toEqual([
-        ['r1', '0.0.600'],
-        ['r2', '0.0.500'],
-      ]);
-      expect(wrapper.text()).toContain('Account: 0.0.600');
+      expect(lastRoles().map(r => r.id)).toEqual(['r1', 'r2']);
       expect(wrapper.text()).toContain('rotated key');
     });
 
-    test('removing a role also drops function tags that pointed at it', async () => {
+    test('removing a role drops it from the roles list', async () => {
       mocks.db = [
         makeContract({
           roles: JSON.stringify([role(), role({ id: 'r2', name: 'OTHER_ROLE' })]),
-          function_tags: JSON.stringify({ [MINT_SIG]: 'r1', 'burn(uint256)': 'r2' }),
         }),
       ];
       const wrapper = await mountPage();
@@ -555,7 +537,6 @@ describe('SmartContracts.vue', () => {
       await flushPromises();
 
       expect(lastRoles().map(r => r.id)).toEqual(['r2']);
-      expect(lastTags()).toEqual({ 'burn(uint256)': 'r2' });
       expect(wrapper.find(t('button-edit-role-MINTER_ROLE')).exists()).toBe(false);
     });
 
@@ -593,141 +574,16 @@ describe('SmartContracts.vue', () => {
     });
   });
 
-  describe('holder on-chain verification', () => {
-    const withRoles = (...roles: ContractRole[]) => {
-      mocks.db = [makeContract({ roles: JSON.stringify(roles) })];
-    };
-
-    test('a confirmed holder shows a check mark', async () => {
-      withRoles(role());
-      mocks.checkAccountHasRole.mockResolvedValue('pass');
-      const wrapper = await mountPage();
-
-      expect(mocks.checkAccountHasRole).toHaveBeenCalledWith(
-        { contractId: '0.0.10', evmAddress: EVM },
-        ROLE_VALUE,
-        '0.0.500',
-        'https://mirror.example',
-      );
-      expect(wrapper.find(t('icon-role-holder-verified-MINTER_ROLE')).exists()).toBe(true);
-      expect(wrapper.text()).not.toContain('not a holder on-chain');
-    });
-
-    test('a failed check says the account is not a holder', async () => {
-      withRoles(role());
-      mocks.checkAccountHasRole.mockResolvedValue('fail');
-      const wrapper = await mountPage();
-      expect(wrapper.text()).toContain('not a holder on-chain');
-      expect(wrapper.find(t('icon-role-holder-verified-MINTER_ROLE')).exists()).toBe(false);
-    });
-
-    test('an unknown result shows neither indicator', async () => {
-      withRoles(role());
-      const wrapper = await mountPage();
-      expect(wrapper.text()).not.toContain('not a holder on-chain');
-      expect(wrapper.find(t('icon-role-holder-verified-MINTER_ROLE')).exists()).toBe(false);
-    });
-
-    test('roles that are unverified, valueless or not account-held are not checked', async () => {
-      withRoles(
-        role({ id: 'a', verified: false }),
-        role({ id: 'b', value: undefined }),
-        role({ id: 'c', holderType: 'unassigned' }),
-        role({ id: 'd', holderAccountId: undefined }),
-      );
-      await mountPage();
-      expect(mocks.checkAccountHasRole).not.toHaveBeenCalled();
-    });
-
-    test('results arriving after the user switched contracts are discarded', async () => {
-      mocks.db = [
-        makeContract({ roles: JSON.stringify([role()]) }),
-        makeContract({ id: 'c3', nickname: 'Other', roles: JSON.stringify([role({ id: 'r9' })]) }),
-      ];
-      let release!: (v: string) => void;
-      mocks.checkAccountHasRole.mockImplementationOnce(() => new Promise(r => (release = r)));
-      const wrapper = await mountPage();
-
-      await wrapper.find(t('p-smart-contract-nickname-1')).trigger('click');
-      release('pass');
-      await flushPromises();
-
-      expect(wrapper.find(t('icon-role-holder-verified-MINTER_ROLE')).exists()).toBe(false);
-    });
-
-    test('checks are cleared when no contract remains selected', async () => {
-      withRoles(role());
-      mocks.checkAccountHasRole.mockResolvedValue('pass');
-      const wrapper = await mountPage();
-      await wrapper.find(t('button-remove-smart-contract')).trigger('click');
-      await wrapper.find(t('button-confirm-remove-smart-contract')).trigger('click');
-      await flushPromises();
-      expect(wrapper.find(t('icon-role-holder-verified-MINTER_ROLE')).exists()).toBe(false);
-    });
-  });
-
-  describe('functions and role tagging', () => {
-    test('lists ABI functions with their signature and a role select with None first', async () => {
+  describe('functions', () => {
+    test('lists every ABI function with its signature, purely as info - no per-function role control', async () => {
       mocks.db = [makeContract({ roles: JSON.stringify([role()]) })];
       const wrapper = await mountPage();
 
       expect(wrapper.text()).toContain('Functions (3)');
       expect(wrapper.text()).toContain('mint(address to, uint256 amount)');
-      const options = wrapper.findAll(`${t('select-function-role-mint')} option`);
-      expect(options.map(o => o.text())).toEqual(['None', 'MINTER_ROLE']);
-      expect((wrapper.find(t('select-function-role-mint')).element as HTMLSelectElement).value).toBe('');
-    });
-
-    test('choosing a role tags the function and shows what it requires with holder status', async () => {
-      mocks.db = [makeContract({ roles: JSON.stringify([role()]) })];
-      mocks.checkAccountHasRole.mockResolvedValue('pass');
-      const wrapper = await mountPage();
-      await wrapper.find(t('select-function-role-mint')).setValue('r1');
-      await flushPromises();
-
-      expect(lastUpdate()[2]).toEqual({ function_tags: JSON.stringify({ [MINT_SIG]: 'r1' }) });
-      expect(wrapper.text()).toContain('Requires: MINTER_ROLE (Account: 0.0.500)');
-      expect(wrapper.findAll('i[title="Holder confirmed on-chain"]').length).toBeGreaterThan(1);
-      expect((wrapper.find(t('select-function-role-mint')).element as HTMLSelectElement).value).toBe('r1');
-    });
-
-    test('a tagged role whose holder check failed says so next to the requirement', async () => {
-      mocks.db = [
-        makeContract({
-          roles: JSON.stringify([role()]),
-          function_tags: JSON.stringify({ [MINT_SIG]: 'r1' }),
-        }),
-      ];
-      mocks.checkAccountHasRole.mockResolvedValue('fail');
-      const wrapper = await mountPage();
-      const requires = wrapper.findAll('p').find(p => p.text().startsWith('Requires:'))!;
-      expect(requires.text()).toContain('not a holder on-chain');
-    });
-
-    test('choosing None removes the tag', async () => {
-      mocks.db = [
-        makeContract({
-          roles: JSON.stringify([role()]),
-          function_tags: JSON.stringify({ [MINT_SIG]: 'r1', 'burn(uint256)': 'r1' }),
-        }),
-      ];
-      const wrapper = await mountPage();
-      await wrapper.find(t('select-function-role-mint')).setValue('');
-      await flushPromises();
-
-      expect(lastTags()).toEqual({ 'burn(uint256)': 'r1' });
-      expect(wrapper.text()).not.toContain('Requires:');
-    });
-
-    test('a tag pointing at a role that no longer exists shows no requirement', async () => {
-      mocks.db = [
-        makeContract({
-          roles: JSON.stringify([role()]),
-          function_tags: JSON.stringify({ [MINT_SIG]: 'ghost' }),
-        }),
-      ];
-      const wrapper = await mountPage();
-      expect(wrapper.text()).not.toContain('Requires:');
+      expect(wrapper.text()).toContain('MINTER_ROLE()');
+      expect(wrapper.text()).toContain('ADMIN_ROLE()');
+      expect(wrapper.find(t('select-function-role-mint')).exists()).toBe(false);
     });
   });
 });

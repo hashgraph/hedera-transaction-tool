@@ -8,7 +8,6 @@ CREATE TABLE "SmartContract" (
     "nickname" TEXT,
     "abi" TEXT NOT NULL,
     "roles" TEXT,
-    "function_tags" TEXT,
     "verified" BOOLEAN NOT NULL DEFAULT false,
     "created_at" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT "SmartContract_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE

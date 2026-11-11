@@ -1,7 +1,8 @@
 import type { AbiFunctionItem } from './abi';
 
-export type RoleHolderType = 'unassigned' | 'account' | 'contract';
-
+// Deliberately has no notion of a "holder": a role can have any number of holders and an account
+// can hold any number of roles, so the registry can't represent that relationship with a single
+// field on the role - it only tracks the role's own identity (name + resolved on-chain value).
 export interface ContractRole {
   id: string;
   name: string;
@@ -9,9 +10,6 @@ export interface ContractRole {
    * (see contractCall.ts's resolveBytes32Getter). Never guessed locally. */
   value?: string;
   verified: boolean;
-  holderType: RoleHolderType;
-  holderAccountId?: string;
-  holderContractRef?: string;
   note?: string;
 }
 
@@ -35,10 +33,6 @@ export function parseRoles(json: string | null | undefined): ContractRole[] {
   return safeJsonParse(json, Array.isArray, []);
 }
 
-export function parseFunctionTags(json: string | null | undefined): Record<string, string> {
-  return safeJsonParse(json, parsed => Boolean(parsed) && typeof parsed === 'object', {});
-}
-
 export function getFunctionSignature(fn: AbiFunctionItem): string {
   return `${fn.name}(${fn.inputs.map(i => i.type).join(',')})`;
 }
@@ -49,10 +43,4 @@ export function createRole(partial: Omit<ContractRole, 'id' | 'verified'>): Cont
     verified: false,
     ...partial,
   };
-}
-
-export function roleHolderSummary(role: ContractRole): string {
-  if (role.holderType === 'account') return `Account: ${role.holderAccountId || 'not set'}`;
-  if (role.holderType === 'contract') return `Contract: ${role.holderContractRef || 'not set'}`;
-  return 'Unassigned';
 }

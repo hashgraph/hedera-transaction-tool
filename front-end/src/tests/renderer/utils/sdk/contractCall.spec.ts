@@ -8,7 +8,6 @@ vi.mock('@renderer/services/mirrorNodeDataService', () => ({ callContract }));
 
 import {
   buildZeroArgCallData,
-  checkAccountHasRole,
   contractIdToReference,
   decodeBytes32Result,
   findMatchingSavedContract,
@@ -170,52 +169,6 @@ describe('resolveBytes32Getter', () => {
     expect(await resolveBytes32Getter({ contractId: '0.0.1234' }, 'name', MIRROR)).toBeNull();
     callContract.mockResolvedValueOnce({ success: true, result: '0x12' });
     expect(await resolveBytes32Getter({ contractId: '0.0.1234' }, 'name', MIRROR)).toBeNull();
-  });
-});
-
-describe('checkAccountHasRole', () => {
-  const contract = { contractId: '0.0.1234' };
-
-  test('sends hasRole(bytes32,address) calldata for the role and account', async () => {
-    callContract.mockResolvedValue({ success: true, result: '0x' + WORD('01') });
-    await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR);
-    const [request, link] = callContract.mock.calls[0];
-    expect(link).toBe(MIRROR);
-    expect(request.to).toBe(`0x${EVM}`);
-    expect(request.data).toBe('0x91d14854' + ROLE.slice(2) + WORD('03e9'));
-  });
-
-  test('pass when result is non-zero (with or without 0x)', async () => {
-    callContract.mockResolvedValueOnce({ success: true, result: '0x' + WORD('01') });
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('pass');
-    callContract.mockResolvedValueOnce({ success: true, result: WORD('01') });
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('pass');
-  });
-
-  test('fail when result is zero', async () => {
-    callContract.mockResolvedValue({ success: true, result: '0x' + WORD('00') });
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('fail');
-  });
-
-  test('unknown when the simulation failed or returned nothing', async () => {
-    callContract.mockResolvedValueOnce({ success: false, errorMessage: 'revert' });
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('unknown');
-    callContract.mockResolvedValueOnce({ success: true });
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('unknown');
-  });
-
-  test('unknown (never fail) on thrown errors, bad account id, or bad contract', async () => {
-    callContract.mockRejectedValueOnce(new Error('network down'));
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('unknown');
-    expect(await checkAccountHasRole(contract, ROLE, 'not-an-account', MIRROR)).toBe('unknown');
-    expect(await checkAccountHasRole({}, ROLE, '0.0.1001', MIRROR)).toBe('unknown');
-    expect(await checkAccountHasRole(contract, '0x1234', '0.0.1001', MIRROR)).toBe('unknown');
-  });
-
-  test('empty result "0x" is fail', async () => {
-    callContract.mockResolvedValue({ success: true, result: '0x' });
-    // `!result` is false for "0x" (non-empty string); hex.length === 0 -> fail
-    expect(await checkAccountHasRole(contract, ROLE, '0.0.1001', MIRROR)).toBe('fail');
   });
 });
 

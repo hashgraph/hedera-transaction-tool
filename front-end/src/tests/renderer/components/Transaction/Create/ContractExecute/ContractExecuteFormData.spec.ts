@@ -21,13 +21,11 @@ vi.mock('@renderer/services/smartContractsService', () => ({
   getAll: (...args: unknown[]) => getAllMock(...args),
 }));
 
-const checkAccountHasRoleMock = vi.fn();
 const simulateContractCallMock = vi.fn();
 vi.mock('@renderer/utils/sdk/contractCall', async importOriginal => {
   const actual = await importOriginal<typeof import('@renderer/utils/sdk/contractCall')>();
   return {
     ...actual,
-    checkAccountHasRole: (...args: unknown[]) => checkAccountHasRoleMock(...args),
     simulateContractCall: (...args: unknown[]) => simulateContractCallMock(...args),
   };
 });
@@ -116,8 +114,6 @@ const ABI = [
 const EVM = 'ab'.repeat(20);
 const evmOf = (id: string) => ContractId.fromString(id).toEvmAddress();
 const PAYER = '0.0.500';
-const HOLDER = '0.0.600';
-const ROLE_VALUE = '0x' + '11'.repeat(32);
 
 function makeContract(overrides: Record<string, unknown> = {}) {
   return {
@@ -128,17 +124,6 @@ function makeContract(overrides: Record<string, unknown> = {}) {
     evm_address: `0x${EVM}`,
     nickname: 'Vault',
     abi: JSON.stringify(ABI),
-    roles: JSON.stringify([
-      {
-        id: 'r1',
-        name: 'MINTER_ROLE',
-        value: ROLE_VALUE,
-        verified: true,
-        holderType: 'account',
-        holderAccountId: HOLDER,
-      },
-    ]),
-    function_tags: JSON.stringify({ 'mint(address,uint256)': 'r1' }),
     ...overrides,
   };
 }
@@ -177,8 +162,6 @@ async function mountForm(
 }
 
 const sel = (w: Wrapper) => w.find('[data-testid="select-contract-execute-function"]');
-const mismatch = (w: Wrapper) => w.find('[data-testid="alert-contract-execute-role-mismatch"]');
-const failAlert = (w: Wrapper) => w.find('[data-testid="alert-contract-execute-role-fail"]');
 
 // Option values are function signatures now (to disambiguate overloads - see
 // ContractExecuteFormData.vue's functionOptions) - resolve a bare name to its rendered option's
@@ -197,7 +180,6 @@ describe('ContractExecuteFormData.vue', () => {
     userState.personal = { isLoggedIn: true, id: 'u1' };
     networkState.network = 'testnet';
     getAllMock.mockResolvedValue([makeContract()]);
-    checkAccountHasRoleMock.mockResolvedValue('unknown');
     simulateContractCallMock.mockResolvedValue({ status: 'unknown' });
   });
 
@@ -296,7 +278,7 @@ describe('ContractExecuteFormData.vue', () => {
 
     test('an ABI with no callable function shows a hint', async () => {
       getAllMock.mockResolvedValue([
-        makeContract({ abi: JSON.stringify([ABI[4]]), roles: null, function_tags: null }),
+        makeContract({ abi: JSON.stringify([ABI[4]]) }),
       ]);
       const { wrapper } = await mountForm({ contractId: '0.0.1001' });
       expect(wrapper.text()).toContain('No callable functions found in this ABI.');
@@ -465,7 +447,7 @@ describe('ContractExecuteFormData.vue', () => {
 
     beforeEach(() => {
       getAllMock.mockResolvedValue([
-        makeContract({ abi: JSON.stringify(OVERLOADED_ABI), roles: null, function_tags: null }),
+        makeContract({ abi: JSON.stringify(OVERLOADED_ABI) }),
       ]);
     });
 
@@ -551,8 +533,6 @@ describe('ContractExecuteFormData.vue', () => {
       getAllMock.mockResolvedValue([
         makeContract({
           abi: JSON.stringify([ABI[3]]),
-          roles: null,
-          function_tags: null,
         }),
       ]);
       const stringForm = await mountForm({
@@ -744,188 +724,6 @@ describe('ContractExecuteFormData.vue', () => {
     });
   });
 
-  describe('role warnings', () => {
-    const tagged = { contractId: '0.0.1001', functionName: 'mint' };
-
-    test('shows the role requirement and a yellow warning when payer differs from the recorded holder', async () => {
-      const { wrapper } = await mountForm(tagged);
-      expect(wrapper.text()).toContain('Requires: MINTER_ROLE (Account: 0.0.600)');
-      expect(mismatch(wrapper).exists()).toBe(true);
-      expect(mismatch(wrapper).text()).toContain('not the recorded holder');
-      expect(failAlert(wrapper).exists()).toBe(false);
-    });
-
-    test('no warning when the payer is the recorded holder', async () => {
-      const { wrapper } = await mountForm(tagged, HOLDER);
-      expect(mismatch(wrapper).exists()).toBe(false);
-      expect(failAlert(wrapper).exists()).toBe(false);
-    });
-
-    test('no warning when no payer is selected yet', async () => {
-      const { wrapper } = await mountForm(tagged, '  ');
-      expect(mismatch(wrapper).exists()).toBe(false);
-    });
-
-    test.each([
-      ['unassigned', { holderType: 'unassigned' }, 'Unassigned'],
-      ['contract', { holderType: 'contract', holderContractRef: '0.0.77' }, 'Contract: 0.0.77'],
-      ['account without id', { holderType: 'account', holderAccountId: undefined }, 'Account: not set'],
-    ])('no mismatch warning for a %s holder', async (_n, patch, summary) => {
-      getAllMock.mockResolvedValue([
-        makeContract({
-          roles: JSON.stringify([
-            { id: 'r1', name: 'MINTER_ROLE', verified: false, holderAccountId: undefined, ...patch },
-          ]),
-        }),
-      ]);
-      const { wrapper } = await mountForm(tagged);
-      expect(wrapper.text()).toContain(summary);
-      expect(mismatch(wrapper).exists()).toBe(false);
-    });
-
-    test('no role line for an untagged function', async () => {
-      const { wrapper } = await mountForm({ contractId: '0.0.1001', functionName: 'deposit' });
-      expect(wrapper.text()).not.toContain('Requires:');
-      expect(mismatch(wrapper).exists()).toBe(false);
-    });
-
-    test('no role line when the tag references a role that does not exist', async () => {
-      getAllMock.mockResolvedValue([makeContract({ roles: '[]' })]);
-      const { wrapper } = await mountForm(tagged);
-      expect(wrapper.text()).not.toContain('Requires:');
-    });
-
-    test('no role line when there is no saved contract (manual ABI) or no function chosen', async () => {
-      const manual = await mountForm({ contractId: '0.0.9999', functionName: 'mint' });
-      expect(manual.wrapper.text()).not.toContain('Requires:');
-      const none = await mountForm({ contractId: '0.0.1001' });
-      expect(none.wrapper.text()).not.toContain('Requires:');
-    });
-
-    test('on-chain failure shows the red alert and replaces the yellow warning', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('fail');
-      const { wrapper } = await mountForm(tagged);
-      expect(checkAccountHasRoleMock).toHaveBeenCalledWith(
-        { evmAddress: `0x${'00'.repeat(16)}${(1001).toString(16).padStart(8, '0')}` },
-        ROLE_VALUE,
-        PAYER,
-        'https://mirror.test',
-      );
-      expect(failAlert(wrapper).exists()).toBe(true);
-      expect(failAlert(wrapper).text()).toContain('This call will likely fail');
-      expect(mismatch(wrapper).exists()).toBe(false);
-    });
-
-    test('on-chain failure also shows when the recorded holder matches (no local mismatch)', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('fail');
-      const { wrapper } = await mountForm(tagged, HOLDER);
-      expect(failAlert(wrapper).exists()).toBe(true);
-    });
-
-    test('on-chain pass hides the yellow warning and shows a confirmation', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('pass');
-      const { wrapper } = await mountForm(tagged);
-      expect(mismatch(wrapper).exists()).toBe(false);
-      expect(failAlert(wrapper).exists()).toBe(false);
-      expect(wrapper.text()).toContain('Fee payer currently holds MINTER_ROLE on-chain.');
-    });
-
-    test('inconclusive check keeps the yellow warning and shows nothing extra', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('unknown');
-      const { wrapper } = await mountForm(tagged);
-      expect(mismatch(wrapper).exists()).toBe(true);
-      expect(failAlert(wrapper).exists()).toBe(false);
-      expect(wrapper.text()).not.toContain('Checking on-chain');
-      expect(wrapper.text()).not.toContain('currently holds');
-    });
-
-    test('inconclusive check with matching holder shows nothing extra at all', async () => {
-      const { wrapper } = await mountForm(tagged, HOLDER);
-      expect(mismatch(wrapper).exists()).toBe(false);
-      expect(failAlert(wrapper).exists()).toBe(false);
-      expect(wrapper.text()).not.toContain('Checking on-chain');
-    });
-
-    test('shows a checking indicator while the on-chain call is pending', async () => {
-      let resolve!: (v: string) => void;
-      checkAccountHasRoleMock.mockReturnValue(new Promise<string>(r => (resolve = r)));
-      const { wrapper } = await mountForm(tagged, HOLDER);
-      expect(wrapper.text()).toContain('Checking on-chain...');
-      resolve('pass');
-      await flushPromises();
-      expect(wrapper.text()).not.toContain('Checking on-chain...');
-      expect(wrapper.text()).toContain('currently holds');
-    });
-
-    test('re-evaluates when the payer changes', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('fail');
-      const { wrapper } = await mountForm(tagged);
-      expect(failAlert(wrapper).exists()).toBe(true);
-      checkAccountHasRoleMock.mockResolvedValue('pass');
-      await wrapper.setProps({ payerId: '0.0.700' });
-      await flushPromises();
-      expect(failAlert(wrapper).exists()).toBe(false);
-      expect(checkAccountHasRoleMock).toHaveBeenCalledTimes(2);
-    });
-
-    test('a stale response for a previous payer does not overwrite a newer one', async () => {
-      let resolveStale!: (v: string) => void;
-      checkAccountHasRoleMock
-        .mockImplementationOnce(() => new Promise<string>(r => (resolveStale = r)))
-        .mockResolvedValueOnce('fail');
-
-      const { wrapper } = await mountForm(tagged, PAYER);
-      await wrapper.setProps({ payerId: HOLDER });
-      await flushPromises();
-      expect(failAlert(wrapper).exists()).toBe(true); // the newer check already resolved 'fail'
-
-      resolveStale('pass'); // the first (now stale) check resolves late
-      await flushPromises();
-      expect(failAlert(wrapper).exists()).toBe(true); // must still reflect 'fail', not the stale 'pass'
-    });
-
-    test.each([
-      ['unverified role', { verified: false }, PAYER],
-      ['role without a resolved value', { value: undefined }, PAYER],
-      ['invalid payer id', {}, 'not-an-id'],
-      ['empty payer id', {}, ''],
-    ])('does not call the network for %s', async (_n, patch, payer) => {
-      getAllMock.mockResolvedValue([
-        makeContract({
-          roles: JSON.stringify([
-            {
-              id: 'r1',
-              name: 'MINTER_ROLE',
-              value: ROLE_VALUE,
-              verified: true,
-              holderType: 'account',
-              holderAccountId: HOLDER,
-              ...patch,
-            },
-          ]),
-        }),
-      ]);
-      const { wrapper } = await mountForm(tagged, payer);
-      expect(checkAccountHasRoleMock).not.toHaveBeenCalled();
-      expect(failAlert(wrapper).exists()).toBe(false);
-    });
-
-    test('does not call the network when the contract address cannot be resolved', async () => {
-      getAllMock.mockResolvedValue([makeContract({ contract_id: null, evm_address: '0x1234' })]);
-      // evm_address "0x1234" matches the typed id but is not a parseable contract reference
-      await mountForm({ contractId: '0x1234', functionName: 'mint' });
-      expect(checkAccountHasRoleMock).not.toHaveBeenCalled();
-    });
-
-    test('uses the saved evm address when the saved contract has no contract id', async () => {
-      getAllMock.mockResolvedValue([makeContract({ contract_id: null })]);
-      checkAccountHasRoleMock.mockResolvedValue('fail');
-      const { wrapper } = await mountForm({ contractId: `0x${EVM}`, functionName: 'mint' });
-      expect(checkAccountHasRoleMock.mock.calls[0][0]).toEqual({ evmAddress: `0x${EVM}` });
-      expect(failAlert(wrapper).exists()).toBe(true);
-    });
-  });
-
   describe('call simulation', () => {
     const mintArgs = [
       { name: 'to', type: 'address', value: `0x${EVM}` },
@@ -966,14 +764,6 @@ describe('ContractExecuteFormData.vue', () => {
       expect(simFail(wrapper).exists()).toBe(true);
       expect(simFail(wrapper).text()).toContain('This call would currently fail.');
       expect(simFail(wrapper).text()).toContain('CONTRACT_REVERT_EXECUTED');
-    });
-
-    test('suppresses the simulation-fail alert when the role-fail alert already covers it', async () => {
-      checkAccountHasRoleMock.mockResolvedValue('fail');
-      simulateContractCallMock.mockResolvedValue({ status: 'fail', errorMessage: 'x' });
-      const { wrapper } = await mountForm({ contractId: '0.0.1001', functionName: 'mint' });
-      expect(failAlert(wrapper).exists()).toBe(true);
-      expect(simFail(wrapper).exists()).toBe(false);
     });
 
     test('shows a checking indicator while the simulation is pending', async () => {

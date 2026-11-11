@@ -1,4 +1,4 @@
-import { AccountId, ContractId } from '@hiero-ledger/sdk';
+import { ContractId } from '@hiero-ledger/sdk';
 
 import { callContract } from '@renderer/services/mirrorNodeDataService';
 import {
@@ -125,8 +125,8 @@ export async function resolveBytes32Getter(
   return success && result ? decodeBytes32Result(result) : null;
 }
 
-// Shared by both the call simulation and the role check below: 'unknown' (not 'fail') on any
-// network hiccup, so a mirror node blip is never reported as "this will fail" / "lacks the role".
+// 'unknown' (not 'fail') on any network hiccup, so a mirror node blip is never reported as "this
+// will fail".
 export type ContractCallStatus = 'pass' | 'fail' | 'unknown';
 
 export interface CallSimulationResult {
@@ -139,8 +139,8 @@ export interface CallSimulationResult {
  * read-only /contracts/call. Catches both business-logic reverts (failed requires, invalid state)
  * and an under-provisioned gas limit (the simulated EVM run reverts the same way a real
  * out-of-gas execution would) before the user ever signs. 'unknown' (not 'fail') on any network
- * issue, same convention as checkAccountHasRole below - a hiccup here should never read as "this
- * call will fail". `valueTinybars` assumes the mirror node's `value` field is tinybars, matching
+ * issue - a hiccup here should never read as "this call will fail". `valueTinybars` assumes the
+ * mirror node's `value` field is tinybars, matching
  * every other numeric field in this REST API (the OpenAPI spec's description for `value` doesn't
  * name a unit) - worth double-checking against a live payable call. */
 export async function simulateContractCall(
@@ -164,35 +164,5 @@ export async function simulateContractCall(
     return success ? { status: 'pass' } : { status: 'fail', errorMessage };
   } catch {
     return { status: 'unknown' };
-  }
-}
-
-/* Live `hasRole(role, account)` read via mirror node. */
-export async function checkAccountHasRole(
-  contract: ContractReference,
-  roleValue: string,
-  accountId: string,
-  mirrorNodeLink: string,
-): Promise<ContractCallStatus> {
-  try {
-    const data = buildFunctionCallData('hasRole', [
-      { name: 'role', type: 'bytes32', value: roleValue },
-      {
-        name: 'account',
-        type: 'address',
-        value: `0x${AccountId.fromString(accountId).toEvmAddress()}`,
-      },
-    ]);
-    const { success, result } = await callContract(
-      { to: toCallAddress(contract), data },
-      mirrorNodeLink,
-    );
-    if (!success || !result) {
-      return 'unknown';
-    }
-    const hex = result.startsWith('0x') ? result.slice(2) : result;
-    return hex.length > 0 && BigInt(`0x${hex}`) !== 0n ? 'pass' : 'fail';
-  } catch {
-    return 'unknown';
   }
 }

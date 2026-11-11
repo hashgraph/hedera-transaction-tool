@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { SmartContract } from '@prisma/client';
 
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -14,22 +14,15 @@ import {
   getAbiFunctions,
   getRoleGetterCandidates,
   parseStoredAbi,
-  type AbiFunctionItem,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
 import {
   createRole,
   getFunctionSignature,
-  parseFunctionTags,
   parseRoles,
-  roleHolderSummary,
   type ContractRole,
 } from '@renderer/utils/sdk/contractRoles';
-import {
-  checkAccountHasRole,
-  resolveBytes32Getter,
-  type ContractCallStatus,
-} from '@renderer/utils/sdk/contractCall';
+import { resolveBytes32Getter } from '@renderer/utils/sdk/contractCall';
 
 import { isUserLoggedIn, getErrorMessage } from '@renderer/utils';
 
@@ -71,10 +64,6 @@ const selectedFunctions = computed(() => getAbiFunctions(selectedAbi.value));
 
 const roles = computed<ContractRole[]>(() => parseRoles(selectedContract.value?.roles));
 
-const functionTags = computed<Record<string, string>>(() =>
-  parseFunctionTags(selectedContract.value?.function_tags),
-);
-
 const suggestedRoles = computed(() =>
   getRoleGetterCandidates(selectedAbi.value).filter(
     fn => !roles.value.some(r => r.name === fn.name),
@@ -104,55 +93,6 @@ async function tryResolveRoleValue(functionName: string): Promise<string | null>
   );
 }
 
-const roleSelectOptions = computed(() => [
-  { label: 'None', value: '' },
-  ...roles.value.map(r => ({ label: r.name, value: r.id })),
-]);
-
-function taggedRoleFor(fn: AbiFunctionItem): ContractRole | null {
-  const roleId = functionTags.value[getFunctionSignature(fn)];
-  return roles.value.find(r => r.id === roleId) || null;
-}
-
-/* Live hasRole check of each role's recorded holder - shown as a check mark next to the holder. */
-const holderChecks = ref<Record<string, ContractCallStatus>>({});
-
-const holderCheckKey = computed(() =>
-  JSON.stringify(
-    roles.value
-      .filter(r => r.verified && r.value && r.holderType === 'account' && r.holderAccountId)
-      .map(r => [r.id, r.value, r.holderAccountId]),
-  ),
-);
-
-watch(
-  [holderCheckKey, selectedContract],
-  async () => {
-    const contract = selectedContract.value;
-    holderChecks.value = {};
-    if (!contract) {
-      return;
-    }
-    const id = contract.id;
-    for (const role of roles.value) {
-      if (!role.verified || !role.value || role.holderType !== 'account' || !role.holderAccountId) {
-        continue;
-      }
-      const result = await checkAccountHasRole(
-        { contractId: contract.contract_id, evmAddress: contract.evm_address },
-        role.value,
-        role.holderAccountId,
-        network.mirrorNodeBaseURL,
-      );
-      if (selectedId.value !== id) {
-        return;
-      }
-      holderChecks.value = { ...holderChecks.value, [role.id]: result };
-    }
-  },
-  { immediate: true },
-);
-
 /* Functions */
 async function fetchContracts() {
   if (!isUserLoggedIn(user.personal)) throw new Error('User is not logged in');
@@ -170,7 +110,7 @@ async function fetchContracts() {
   }
 }
 
-async function persistContract(partial: { roles?: string; function_tags?: string }) {
+async function persistContract(partial: { roles?: string }) {
   if (!isUserLoggedIn(user.personal) || !selectedContract.value) {
     throw new Error('User is not logged in');
   }
@@ -245,7 +185,7 @@ const handleOpenEditRole = (role: ContractRole) => {
 
 const handleAddSuggestedRole = async (name: string) => {
   const resolved = await tryResolveRoleValue(name);
-  const role = createRole({ name, holderType: 'unassigned' });
+  const role = createRole({ name });
   const nextRoles = [
     ...roles.value,
     resolved ? { ...role, value: resolved, verified: true } : role,
@@ -274,23 +214,7 @@ const handleSaveRole = async (role: ContractRole) => {
 
 const handleRemoveRole = async (roleId: string) => {
   const nextRoles = roles.value.filter(r => r.id !== roleId);
-  const nextTags = Object.fromEntries(
-    Object.entries(functionTags.value).filter(([, tagRoleId]) => tagRoleId !== roleId),
-  );
-  await persistContract({
-    roles: JSON.stringify(nextRoles),
-    function_tags: JSON.stringify(nextTags),
-  });
-};
-
-const handleFunctionRoleChange = async (signature: string, roleId: string) => {
-  const nextTags = { ...functionTags.value };
-  if (roleId) {
-    nextTags[signature] = roleId;
-  } else {
-    delete nextTags[signature];
-  }
-  await persistContract({ function_tags: JSON.stringify(nextTags) });
+  await persistContract({ roles: JSON.stringify(nextRoles) });
 };
 
 /* Hooks */
@@ -471,18 +395,6 @@ onMounted(async () => {
                       >verified on-chain</span
                     >
                   </p>
-                  <p class="text-micro text-secondary">
-                    {{ roleHolderSummary(role) }}
-                    <i
-                      v-if="holderChecks[role.id] === 'pass'"
-                      class="bi bi-check-circle-fill text-success ms-1"
-                      title="Holder confirmed on-chain"
-                      :data-testid="'icon-role-holder-verified-' + role.name"
-                    ></i>
-                    <span v-else-if="holderChecks[role.id] === 'fail'" class="text-danger ms-1"
-                      >not a holder on-chain</span
-                    >
-                  </p>
                   <p v-if="role.note" class="text-micro text-secondary">{{ role.note }}</p>
                 </div>
                 <div class="d-flex gap-3 align-items-center">
@@ -517,47 +429,11 @@ onMounted(async () => {
               <div
                 v-for="fn in selectedFunctions"
                 :key="getFunctionSignature(fn)"
-                class="d-flex justify-content-between align-items-start mt-3"
+                class="mt-3"
               >
-                <div>
-                  <p class="text-small text-secondary">
-                    {{ fn.name }}({{ fn.inputs.map(i => `${i.type} ${i.name}`).join(', ') }})
-                  </p>
-                  <p v-if="taggedRoleFor(fn)" class="text-micro text-secondary mt-1">
-                    Requires: {{ taggedRoleFor(fn)?.name }} ({{
-                      roleHolderSummary(taggedRoleFor(fn)!)
-                    }})
-                    <i
-                      v-if="holderChecks[taggedRoleFor(fn)!.id] === 'pass'"
-                      class="bi bi-check-circle-fill text-success ms-1"
-                      title="Holder confirmed on-chain"
-                    ></i>
-                    <span
-                      v-else-if="holderChecks[taggedRoleFor(fn)!.id] === 'fail'"
-                      class="text-danger ms-1"
-                      >not a holder on-chain</span
-                    >
-                  </p>
-                </div>
-                <select
-                  class="form-select is-fill w-auto"
-                  :value="functionTags[getFunctionSignature(fn)] || ''"
-                  @change="
-                    handleFunctionRoleChange(
-                      getFunctionSignature(fn),
-                      ($event.target as HTMLSelectElement).value,
-                    )
-                  "
-                  :data-testid="'select-function-role-' + fn.name"
-                >
-                  <option
-                    v-for="option in roleSelectOptions"
-                    :key="option.value"
-                    :value="option.value"
-                  >
-                    {{ option.label }}
-                  </option>
-                </select>
+                <p class="text-small text-secondary">
+                  {{ fn.name }}({{ fn.inputs.map(i => `${i.type} ${i.name}`).join(', ') }})
+                </p>
               </div>
             </div>
           </div>
