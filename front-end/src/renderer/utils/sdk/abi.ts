@@ -160,7 +160,8 @@ export function parseStoredAbi(json: string | null | undefined): AbiItem[] {
     return [];
   }
   try {
-    return JSON.parse(json) as AbiItem[];
+    const parsed: unknown = JSON.parse(json);
+    return Array.isArray(parsed) ? (parsed as AbiItem[]) : [];
   } catch {
     return [];
   }

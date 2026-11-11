@@ -72,6 +72,12 @@ describe('parseStoredAbi', () => {
   test('returns [] for invalid JSON rather than throwing', () => {
     expect(parseStoredAbi('{not json')).toEqual([]);
   });
+
+  test('returns [] for valid JSON that is not an array, rather than passing it through', () => {
+    expect(parseStoredAbi('{"foo":1}')).toEqual([]);
+    expect(parseStoredAbi('"just a string"')).toEqual([]);
+    expect(parseStoredAbi('42')).toEqual([]);
+  });
 });
 
 describe('parseStandardJsonSources', () => {
