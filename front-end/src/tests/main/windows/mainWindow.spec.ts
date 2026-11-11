@@ -11,6 +11,10 @@ vi.mock('@main/services/windowState');
 /**
  * Mock real electron BrowserWindow API
  */
+const webContentListeners: Record<string, any> = {};
+let windowOpenHandler:
+  ((details: Electron.HandlerDetails) => Electron.WindowOpenHandlerResponse) | null = null;
+
 vi.mock('electron', () => {
   // Use "as unknown as" because vi.fn() does not have static methods
   const bw = vi.fn() as unknown as MockedClass<typeof BrowserWindow>;
@@ -49,6 +53,12 @@ vi.mock('electron', () => {
   Object.defineProperty(bw.prototype, 'webContents', {
     value: {
       openDevTools: vi.fn(),
+      on: vi.fn((event, callback) => {
+        webContentListeners[event] = callback;
+      }),
+      setWindowOpenHandler: vi.fn(callback => {
+        windowOpenHandler = callback;
+      }),
     },
     writable: false,
     enumerable: true,
@@ -248,4 +258,31 @@ test('Should update window state on resize, moved', async () => {
   instance.emit('resized');
   instance.emit('moved');
   expect(setWindowBounds).toHaveBeenCalledTimes(2);
+});
+
+test('Should prevent navigation outside the application', async () => {
+  const event = {
+    preventDefault: vi.fn(),
+  };
+  Object.assign(webContentListeners, {});
+  await restoreOrCreateWindow();
+  webContentListeners['will-navigate'](event, 'https://example.com');
+  expect(event.preventDefault).toHaveBeenCalledTimes(1);
+});
+
+test('Should prevent opening new window', async () => {
+  await restoreOrCreateWindow();
+  expect(windowOpenHandler).not.toBe(null);
+  const r = windowOpenHandler!({
+    url: 'https://example.com',
+    frameName: '',
+    features: '',
+    disposition: 'new-window',
+    referrer: {
+      url: '',
+      policy: 'default',
+    },
+    postBody: undefined,
+  });
+  expect(r).toEqual({ action: 'deny' });
 });
