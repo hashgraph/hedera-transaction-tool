@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 
 import LinkExistingAccount from '@renderer/pages/Accounts/LinkExistingAccount/LinkExistingAccount.vue';
 
@@ -150,5 +150,24 @@ describe('LinkExistingAccount.vue', () => {
     );
     expect(mocks.toastSuccess).toHaveBeenCalledWith('Account linked successfully!');
     expect(mocks.routerPush).toHaveBeenCalledWith({ name: 'accounts' });
+  });
+
+  test('shows an error toast and stays on the page when linking fails (e.g. duplicate account)', async () => {
+    mocks.addAccount.mockRejectedValue(new Error('Account ID or Nickname already exists!'));
+    mocks.accountData.accountId.value = '0.0.1001-abcde';
+    mocks.accountData.isValid.value = true;
+
+    const wrapper = mount(LinkExistingAccount, {
+      global: {
+        stubs,
+      },
+    });
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+
+    expect(mocks.toastError).toHaveBeenCalledWith('Account ID or Nickname already exists!');
+    expect(mocks.toastSuccess).not.toHaveBeenCalled();
+    expect(mocks.routerPush).not.toHaveBeenCalled();
   });
 });

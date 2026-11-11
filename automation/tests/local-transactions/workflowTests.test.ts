@@ -165,20 +165,6 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
     expect(toastText).toBe('Account Unlinked!');
   });
 
-  test('Verify user can add an existing account', async () => {
-    await accountPage.ensureAccountExistsAndUnlinked();
-    const accountFromList = await accountPage.getFirstAccountFromUnlinkedList();
-    await accountPage.clickOnAccountsLink();
-    await accountPage.clickOnAddNewButton();
-    await accountPage.clickOnAddExistingLink();
-    await accountPage.fillInExistingAccountId(accountFromList);
-    await accountPage.clickOnLinkAccountButton();
-    await transactionPage.clickOnTransactionsMenuButton();
-    await accountPage.clickOnAccountsLink();
-    const isAccountCardVisible = await transactionPage.isAccountCardVisible(accountFromList);
-    expect(isAccountCardVisible).toBe(true);
-  });
-
   // 14.5.1: Account ID with a wrong checksum on the Link Existing form surfaces a toast.
   test('Verify Account ID with invalid checksum shows error toast on link', async () => {
     await transactionPage.ensureAccountExists();
@@ -199,19 +185,5 @@ test.describe('Workflow account navigation tests @local-transactions', () => {
       .filter({ hasText: 'Invalid checksum for the entered Account ID.' });
     await toast.click();
     await toast.waitFor({ state: 'detached', timeout: 10_000 });
-  });
-
-  test('Verify duplicate account link shows error toast', async () => {
-    await transactionPage.ensureAccountExists();
-    const accountFromList = await transactionPage.getFirstAccountFromList();
-    await transactionPage.mirrorGetAccountResponse(accountFromList);
-    await transactionPage.clickOnTransactionsMenuButton();
-    await accountPage.clickOnAccountsLink();
-    await accountPage.clickOnAddNewButton();
-    await accountPage.clickOnAddExistingLink();
-    await accountPage.fillInExistingAccountId(accountFromList);
-    await accountPage.clickOnLinkAccountButton();
-    const toastText = await registrationPage.getToastMessageByVariant('error');
-    expect(toastText).toContain('Account ID or Nickname already exists!');
   });
 });
