@@ -123,7 +123,9 @@ export default function useAccountId(): AccountIdStore {
       accountInfo.value = accountInfoRes;
       allowances.value = accountAllowancesRes;
     } catch {
-      if (!controller.signal.aborted) resetData();
+      // Only an invalid id gets here (it is parsed before the first await, so this run can't have
+      // been aborted yet); lookup and allowances failures are handled where they happen.
+      resetData();
     } finally {
       // A newer request owns the loading flag once this one has been aborted
       if (!controller.signal.aborted) loading.value = false;
