@@ -41,7 +41,15 @@ export function validateSenderFrame(e: Electron.IpcMainInvokeEvent): boolean {
   } else {
     const indexPath = join(process.env.DIST, 'index.html');
     const indexURL = pathToFileURL(indexPath);
-    if (indexURL.href !== senderFrameURL.href) return false;
+    if (
+      senderFrameURL.protocol !== 'file:' ||
+      senderFrameURL.host !== indexURL.host ||
+      !senderFrameURL.pathname.startsWith(
+        indexURL.pathname.substring(0, indexURL.pathname.lastIndexOf('/') + 1),
+      )
+    ) {
+      return false;
+    }
   }
 
   return true;
