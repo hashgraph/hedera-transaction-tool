@@ -118,6 +118,23 @@ describe('LinkExistingAccount.vue with real account lookups', () => {
     expect(button(wrapper).attributes('disabled')).toBeUndefined();
   });
 
+  test('does not allow linking an edited id until its own lookup has answered', async () => {
+    const wrapper = mountForm();
+    await type(wrapper, '0.0.1180');
+    await respond(0, accountInfo('0.0.1180'));
+    expect(button(wrapper).attributes('disabled')).toBeUndefined();
+
+    await type(wrapper, '0.0.1181'); // previous result is still held, new lookup pending
+    expect(button(wrapper).attributes('disabled')).toBeDefined();
+
+    await wrapper.find('form').trigger('submit');
+    await flushPromises();
+    expect(mocks.add).not.toHaveBeenCalled();
+
+    await respond(1, accountInfo('0.0.1181'));
+    expect(button(wrapper).attributes('disabled')).toBeUndefined();
+  });
+
   test('stays enabled when the lookup for a shorter, typed-over id answers "not found" last', async () => {
     // What the Playwright helper did: fill the full id, delete the last digit, type it back
     const wrapper = mountForm();

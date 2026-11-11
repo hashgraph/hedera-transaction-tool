@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
     accountIdFormatted: { value: '0.0.1001-abcde' },
     accountInfo: { value: { balance: '10 ℏ' } },
     isValid: { value: false },
+    isLoading: { value: false },
   },
 }));
 

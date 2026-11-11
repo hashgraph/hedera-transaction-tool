@@ -10,7 +10,7 @@ const ipc = vi.hoisted(() => ({
   listened: new Set<string>(),
   invoked: new Set<string>(),
   sent: new Set<string>(),
-  exposed: {},
+  exposed: new Map<string, any>(),
 }));
 
 vi.mock('electron', () => ({
@@ -42,7 +42,7 @@ vi.mock('electron', () => ({
   },
   contextBridge: {
     exposeInMainWorld: (key: string, api: unknown) => {
-      ipc.exposed[key] = api;
+      ipc.exposed.set(key, api);
     },
   },
 }));
@@ -64,7 +64,7 @@ describe('preload <-> main IPC contract', () => {
     registerAllHandlers();
     await import('../../../preload');
 
-    const api = ipc.exposed.electronAPI;
+    const api = ipc.exposed.get('electronAPI');
     for (const [, fn] of collectFunctions(api)) {
       try {
         await fn();
@@ -75,8 +75,8 @@ describe('preload <-> main IPC contract', () => {
   });
 
   test('exposes electronAPI to the renderer', () => {
-    expect(ipc.exposed.electronAPI).toBeDefined();
-    expect(Object.keys((ipc.exposed.electronAPI as any).local)).toContain('accounts');
+    expect(ipc.exposed.get('electronAPI')).toBeDefined();
+    expect(Object.keys(ipc.exposed.get('electronAPI').local)).toContain('accounts');
   });
 
   test('calls at least some channels (guards against the walk silently doing nothing)', () => {
@@ -89,7 +89,7 @@ describe('preload <-> main IPC contract', () => {
   });
 
   test('every channel the preload sends on has a registered ipcMain listener', () => {
-    const missing = [...ipc.sent].filter(c => !ipc.listened.has(c) && !ipc.handled.has(c)).sort();
+    const missing = [...ipc.sent].filter(c => !ipc.listened.has(c)).sort();
     expect(missing).toEqual([]);
   });
 });

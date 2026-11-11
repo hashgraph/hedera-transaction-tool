@@ -36,6 +36,9 @@ const accountData = useAccountId();
 const nickname = ref('');
 
 const handleLinkAccount = async () => {
+  // The current result may still belong to a previously typed id while a new lookup is pending
+  if (accountData.isLoading.value) return;
+
   if (
     accountData.accountId.value.includes('-') &&
     !validateAccountIdChecksum(accountData.accountId.value)
@@ -122,7 +125,7 @@ const handleBlur = () => {
         data-testid="button-link-account-id"
         type="submit"
         class="mt-5"
-        :disabled="!accountData.isValid.value"
+        :disabled="!accountData.isValid.value || accountData.isLoading.value"
         log-label="link-existing-account"
         :log-metadata="{ accountId: accountData.accountId.value }"
         >Link Account</AppButton
