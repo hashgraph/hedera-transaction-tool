@@ -31,7 +31,6 @@ describe('renameFunc', () => {
 
 describe('createIPCChannel', () => {
   const ipcMainMO = vi.mocked(ipcMain);
-  const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
 
   beforeEach(() => {
     vi.resetAllMocks();
@@ -56,9 +55,22 @@ describe('createIPCChannel', () => {
   });
 
   test('should call the handler with correct arguments', () => {
+    vi.stubEnv('VITE_DEV_SERVER_URL', 'http://localhost:5173');
+
     const handler = vi.fn().mockName('handler');
     const channelName = 'testChannel';
     const args = [1, 2, 3];
+
+    const senderFrame = {
+      url: process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173',
+    };
+
+    const event = {
+      senderFrame,
+      sender: {
+        mainFrame: senderFrame,
+      },
+    } as unknown as Electron.IpcMainInvokeEvent;
 
     createIPCChannel(channelName, [handler]);
 
