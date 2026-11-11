@@ -117,7 +117,9 @@ overrides:
   "mysql2": "3.24.5"
   "node-abi": "4.38.0"
   "body-parser": "2.4.0"
-  "follow-redirects": "1.16.1"
+  "follow-redirects": "1.16.2"
+  "minimatch@>=7.0.0": "11.0.1"
+  "glob@>=9.0.0": "14.0.4"
 
 # Refuse to resolve packages published fewer than 3 days ago (4320 minutes)
 # This blocks supply-chain attacks that race to publish malicious versions.
