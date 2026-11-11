@@ -153,7 +153,7 @@ export class AccountPage extends BasePage {
    * @param {string} buttonSelector - The test ID selector for the button to check.
    */
   async fillInAccountId(accountId: string, inputSelector: string, buttonSelector: string) {
-    const maxRetries = 100;
+    const maxRetries = 1000;
     let attempt = 0;
 
     while (attempt < maxRetries) {
