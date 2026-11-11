@@ -1,19 +1,24 @@
 // @vitest-environment happy-dom
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 import { reactive } from 'vue';
 import {
+  AccountId,
   ContractExecuteTransaction,
   ContractFunctionParameters,
   ContractId,
   Hbar,
+  Timestamp,
+  TransactionId,
   TransferTransaction,
 } from '@hiero-ledger/sdk';
+
+import { TransactionStatus, type ITransactionFull } from '@shared/interfaces';
 
 import ContractExecuteDetails from '@renderer/components/Transaction/Details/ContractExecuteDetails.vue';
 
 const userState = reactive<{ personal: unknown }>({ personal: null });
-const networkState = reactive({ network: 'testnet' });
+const networkState = reactive({ network: 'testnet', mirrorNodeBaseURL: 'https://mirror.example' });
 
 vi.mock('@renderer/stores/storeUser', () => ({ default: () => userState }));
 vi.mock('@renderer/stores/storeNetwork', () => ({ default: () => networkState }));
@@ -21,6 +26,15 @@ vi.mock('@renderer/stores/storeNetwork', () => ({ default: () => networkState })
 const getAllMock = vi.fn();
 vi.mock('@renderer/services/smartContractsService', () => ({
   getAll: (...args: unknown[]) => getAllMock(...args),
+}));
+
+const lookupMock = vi.fn();
+vi.mock('@renderer/caches/AppCache.ts', () => ({
+  AppCache: {
+    inject: () => ({
+      mirrorContractResultByTransactionId: { lookup: (...args: unknown[]) => lookupMock(...args) },
+    }),
+  },
 }));
 
 const ABI = [
@@ -76,9 +90,12 @@ function makeTx(opts: { id?: ContractId; gas?: number; payable?: Hbar; params?: 
   return tx;
 }
 
-async function mountDetails(transaction: unknown) {
+async function mountDetails(transaction: unknown, organizationTransaction: unknown = null) {
   const wrapper = mount(ContractExecuteDetails, {
-    props: { transaction: transaction as never, organizationTransaction: null },
+    props: {
+      transaction: transaction as never,
+      organizationTransaction: organizationTransaction as ITransactionFull | null,
+    },
   });
   await flushPromises();
   return wrapper;
@@ -92,6 +109,7 @@ describe('ContractExecuteDetails.vue', () => {
     vi.clearAllMocks();
     userState.personal = { isLoggedIn: true, id: 'u1' };
     getAllMock.mockResolvedValue([makeContract()]);
+    lookupMock.mockResolvedValue(null);
   });
 
   test('renders nothing for a non ContractExecute transaction', async () => {
@@ -239,6 +257,80 @@ describe('ContractExecuteDetails.vue', () => {
       ]);
       const wrapper = await mountDetails(makeTx({ params: mintParams() }));
       expect(byId(wrapper, 'no-abi').exists()).toBe(true);
+    });
+  });
+
+  describe('execution result', () => {
+    const resultAbi = [
+      {
+        type: 'function',
+        name: 'balanceOf',
+        inputs: [{ name: 'owner', type: 'address' }],
+        outputs: [{ name: '', type: 'uint256' }],
+        stateMutability: 'view',
+      },
+    ];
+
+    const balanceOfParams = () =>
+      new ContractFunctionParameters().addAddress(ADDR)._build('balanceOf');
+
+    function withTxId(tx: ContractExecuteTransaction) {
+      tx.setTransactionId(
+        TransactionId.withValidStart(AccountId.fromString('0.0.2'), new Timestamp(1700000000, 0)),
+      );
+      return tx;
+    }
+
+    beforeEach(() => {
+      getAllMock.mockResolvedValue([makeContract({ abi: JSON.stringify(resultAbi) })]);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test('shows the decoded return value once mirror node has indexed a personal transaction (after the retry delay)', async () => {
+      lookupMock.mockResolvedValue({ callResult: `0x${'2a'.padStart(64, '0')}`, errorMessage: null });
+      vi.useFakeTimers();
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })));
+      await vi.advanceTimersByTimeAsync(1500);
+      await flushPromises();
+      expect(byId(wrapper, 'result').text()).toBe('uint256 = 42');
+      expect(lookupMock).toHaveBeenCalledWith('0.0.2-1700000000-0', 'https://mirror.example');
+    });
+
+    test('shows the mirror-node-decoded revert reason instead of a result', async () => {
+      lookupMock.mockResolvedValue({ callResult: '0x', errorMessage: 'ERC20: insufficient balance' });
+      vi.useFakeTimers();
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })));
+      await vi.advanceTimersByTimeAsync(1500);
+      await flushPromises();
+      expect(byId(wrapper, 'result-error').text()).toBe('ERC20: insufficient balance');
+      expect(byId(wrapper, 'result').exists()).toBe(false);
+    });
+
+    test('shows nothing when there is no return data yet', async () => {
+      lookupMock.mockResolvedValue({ callResult: '0x', errorMessage: null });
+      vi.useFakeTimers();
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })));
+      await vi.advanceTimersByTimeAsync(1500);
+      await flushPromises();
+      expect(wrapper.text()).not.toContain('Result');
+    });
+
+    test('skips the lookup for an organization transaction still pending execution', async () => {
+      const org = { status: TransactionStatus.WAITING_FOR_SIGNATURES } as unknown as ITransactionFull;
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })), org);
+      expect(lookupMock).not.toHaveBeenCalled();
+      expect(wrapper.text()).not.toContain('Result');
+    });
+
+    test('fetches immediately (no retry delay) for an already-executed organization transaction', async () => {
+      lookupMock.mockResolvedValue({ callResult: `0x${'2a'.padStart(64, '0')}`, errorMessage: null });
+      const org = { status: TransactionStatus.EXECUTED } as unknown as ITransactionFull;
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })), org);
+      expect(lookupMock).toHaveBeenCalled();
+      expect(byId(wrapper, 'result').text()).toBe('uint256 = 42');
     });
   });
 });

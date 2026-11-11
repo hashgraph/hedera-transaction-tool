@@ -12,6 +12,7 @@ import {
   type RegisteredNode,
   type RegisteredServiceEndPoint,
   type RegisteredBlockNodeEndpoint,
+  type ContractResult,
   RegisteredNodeType,
   RegisteredBlockNodeApi,
 } from '@shared/interfaces';
@@ -234,6 +235,41 @@ export const callContract = async (
     logger.warn('Contract call simulation failed', { error });
 
     return { success: false, errorMessage: errorMessage || 'Contract call simulation failed' };
+  }
+};
+
+export interface ContractExecutionResult {
+  callResult: string | null;
+  errorMessage: string | null;
+}
+
+/*
+ * GET /api/v1/contracts/results/{transactionIdOrHash} - the record of an already-executed
+ * ContractExecuteTransaction, including the ABI-encoded return value (`call_result`). Unlike
+ * `callContract`, this is never a simulation: it only resolves once the real transaction has run
+ * and mirror node has indexed it, so a 404 here just means "not indexed yet" rather than "not
+ * found" - callers retry rather than treat it as a hard failure.
+ */
+export const getContractExecutionResult = async (
+  transactionIdOrHash: string,
+  mirrorNodeLink: string,
+  controller?: AbortController,
+): Promise<ContractExecutionResult | null> => {
+  try {
+    const { data } = await axios.get<ContractResult>(
+      `${withAPIPrefix(mirrorNodeLink)}/contracts/results/${transactionIdOrHash}`,
+      { signal: controller?.signal },
+    );
+
+    return {
+      callResult: data.call_result || null,
+      errorMessage: data.error_message || null,
+    };
+  } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 404) {
+      return null;
+    }
+    throw error;
   }
 };
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import type { SmartContract } from '@prisma/client';
-import type { ITransactionFull } from '@shared/interfaces';
+import { type ITransactionFull, TransactionStatus } from '@shared/interfaces';
 
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 import { ContractExecuteTransaction, Transaction } from '@hiero-ledger/sdk';
 
@@ -10,11 +10,12 @@ import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
 import { getAll } from '@renderer/services/smartContractsService';
-import { decodeContractCall } from '@renderer/utils/sdk/contractFunctionParams';
+import { decodeContractCall, decodeContractCallResult } from '@renderer/utils/sdk/contractFunctionParams';
 import { contractIdToReference, findMatchingSavedContract } from '@renderer/utils/sdk/contractCall';
 import { parseStoredAbi, type AbiItem } from '@renderer/utils/sdk/abi';
+import { AppCache } from '@renderer/caches/AppCache.ts';
 
-import { isUserLoggedIn, stringifyHbar, uint8ToHex } from '@renderer/utils';
+import { isUserLoggedIn, stringifyHbar, uint8ToHex, hexToUint8Array, safeAwait } from '@renderer/utils';
 
 /* Props */
 const props = defineProps<{
@@ -26,8 +27,13 @@ const props = defineProps<{
 const user = useUserStore();
 const network = useNetworkStore();
 
+/* Injected */
+const contractResultCache = AppCache.inject().mirrorContractResultByTransactionId;
+
 /* State */
 const savedContracts = ref<SmartContract[]>([]);
+const callResultHex = ref<string | null>(null);
+const resultErrorMessage = ref<string | null>(null);
 
 /* Computed */
 const contractExecuteTransaction = computed(() =>
@@ -60,6 +66,24 @@ const rawCalldataHex = computed(() =>
   uint8ToHex(contractExecuteTransaction.value!.functionParameters!),
 );
 
+const decodedResult = computed(() => {
+  const tx = contractExecuteTransaction.value;
+  if (!tx?.functionParameters || abi.value.length === 0 || !callResultHex.value) {
+    return null;
+  }
+  return decodeContractCallResult(
+    abi.value,
+    tx.functionParameters,
+    hexToUint8Array(callResultHex.value),
+  );
+});
+
+// '0x' is mirror node's encoding of "no return data" (a void function, or a reverted call) -
+// nothing useful to decode or show as raw bytes in that case.
+const hasCallResult = computed(
+  () => !!callResultHex.value && callResultHex.value !== '0x',
+);
+
 // A transaction loaded from stored bytes has already round-tripped through protobuf, which has no
 // concept of "unset" for a plain numeric field - payableAmount comes back as Hbar(0), not null,
 // even for a non-payable call that never set it. A nonzero check is what actually distinguishes a
@@ -75,8 +99,59 @@ const detailItemLabelClass = 'text-micro text-semi-bold text-dark-blue';
 const detailItemValueClass = 'text-small overflow-hidden mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
+/* Functions */
+async function fetchContractResult(payer: string, seconds: string, nanos: string) {
+  const { data } = await safeAwait(
+    contractResultCache.lookup(`${payer}-${seconds}-${nanos}`, network.mirrorNodeBaseURL),
+  );
+
+  if (data) {
+    callResultHex.value = data.callResult;
+    resultErrorMessage.value = data.errorMessage;
+  }
+}
+
+// Mirrors AccountDetails.vue's checkAndFetchTransactionInfo: a result only exists once the
+// transaction has actually run, so this is skipped for an organization transaction still pending
+// approval/execution. For a personal/local transaction (no organizationTransaction) there's no
+// such status to gate on here, so the lookup is tried after a short delay instead, to give mirror
+// node time to index a call that may have just executed.
+async function checkAndFetchContractResult() {
+  const tx = contractExecuteTransaction.value;
+  if (!tx) {
+    return;
+  }
+
+  const isExecutedOrganizationTransaction = Boolean(
+    props.organizationTransaction?.status &&
+      [TransactionStatus.EXECUTED, TransactionStatus.FAILED].includes(
+        props.organizationTransaction.status,
+      ),
+  );
+
+  if (!isExecutedOrganizationTransaction && props.organizationTransaction) {
+    return;
+  }
+
+  const payer = tx.transactionId?.accountId?.toString();
+  const seconds = tx.transactionId?.validStart?.seconds?.toString();
+  const nanos = tx.transactionId?.validStart?.nanos?.toString();
+
+  if (!payer || !seconds || !nanos) {
+    return;
+  }
+
+  if (!props.organizationTransaction) {
+    setTimeout(async () => await fetchContractResult(payer, seconds, nanos), 1500);
+  } else {
+    await fetchContractResult(payer, seconds, nanos);
+  }
+}
+
 /* Hooks */
 onMounted(async () => {
+  await checkAndFetchContractResult();
+
   if (!isUserLoggedIn(user.personal)) {
     return;
   }
@@ -87,6 +162,11 @@ onMounted(async () => {
       network: network.network,
     },
   });
+});
+
+/* Watchers */
+watch([() => props.transaction, () => props.organizationTransaction], async () => {
+  setTimeout(async () => await checkAndFetchContractResult(), 3000);
 });
 </script>
 <template>
@@ -136,6 +216,35 @@ onMounted(async () => {
       <p v-if="decoded && decoded.args === null" class="text-micro text-secondary mt-2">
         This function has a parameter type (array or tuple) that isn't decoded for display yet -
         full calldata: 0x{{ rawCalldataHex }}
+      </p>
+    </div>
+
+    <div v-if="resultErrorMessage || hasCallResult" class="col-12 py-3">
+      <h4 :class="detailItemLabelClass">Result</h4>
+      <p
+        v-if="resultErrorMessage"
+        class="text-small text-pink overflow-hidden mt-1"
+        data-testid="p-contract-execute-details-result-error"
+      >
+        {{ resultErrorMessage }}
+      </p>
+      <p
+        v-else-if="decodedResult?.args"
+        :class="detailItemValueClass"
+        data-testid="p-contract-execute-details-result"
+      >
+        {{
+          decodedResult.args
+            .map(a => `${a.type}${a.name ? ` ${a.name}` : ''} = ${a.value}`)
+            .join(', ')
+        }}
+      </p>
+      <p
+        v-else
+        class="text-micro text-secondary mt-1"
+        data-testid="p-contract-execute-details-result-raw"
+      >
+        No saved ABI matched this function's outputs for display - raw result: {{ callResultHex }}
       </p>
     </div>
   </div>

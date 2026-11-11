@@ -4,8 +4,10 @@ import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import {
   getAbiFunctions,
   isCallableAbiFunction,
+  isEncodableAbiParameter,
   type AbiFunctionItem,
   type AbiItem,
+  type AbiParameter,
 } from './abi';
 
 export interface ContractCallArgument {
@@ -249,16 +251,11 @@ function decodeDynamicWord(
   return type === 'string' ? new TextDecoder().decode(data) : `0x${uint8ToHex(data)}`;
 }
 
-/* Identifies a call's function by matching the leading 4-byte selector against the ABI - this
- * works even for functions with array/tuple params, since the selector only encodes type names,
- * not values. Arg values are only decoded when every param is one this app can both encode and
- * decode (see isCallableAbiFunction: single 32-byte-word types, plus `string`/`bytes` via their
- * head/tail encoding) - otherwise `args` comes back null and the caller falls back to raw
- * calldata for display. */
-export function decodeContractCall(
-  abi: AbiItem[],
-  functionParameters: Uint8Array,
-): DecodedContractCall | null {
+/* Finds the ABI function a call's leading 4-byte selector matches - works even for functions with
+ * array/tuple params, since the selector only encodes type names, not values. Shared by the input
+ * decoder below and by decodeContractCallResult, so a result can be matched to its function (and
+ * thus its `outputs`) the same way the call itself was matched to its `inputs`. */
+function matchAbiFunction(abi: AbiItem[], functionParameters: Uint8Array): AbiFunctionItem | null {
   if (functionParameters.length < 4) {
     return null;
   }
@@ -266,50 +263,95 @@ export function decodeContractCall(
   const selectorHex = uint8ToHex(functionParameters.slice(0, 4));
 
   for (const fn of getAbiFunctions(abi)) {
-    let candidateSelector: string;
     try {
-      candidateSelector = buildSelectorHex(fn);
+      if (buildSelectorHex(fn) === selectorHex) {
+        return fn;
+      }
     } catch {
       continue;
-    }
-
-    if (candidateSelector !== selectorHex) {
-      continue;
-    }
-
-    if (!isCallableAbiFunction(fn)) {
-      return { functionName: fn.name, args: null };
-    }
-
-    // Every param - static or dynamic - gets exactly one head word, in declaration order.
-    const argsStart = 4;
-
-    // The full static head (one word per param) must actually be present before decoding
-    // anything - slicing a short/missing word wouldn't throw on its own, it would just read
-    // fewer bytes than a real argument has and decode a wrong-but-plausible-looking value.
-    if (functionParameters.length < argsStart + fn.inputs.length * 32) {
-      return { functionName: fn.name, args: null };
-    }
-
-    try {
-      const args = fn.inputs.map((input, i) => {
-        const headWord = functionParameters.slice(
-          argsStart + i * 32,
-          argsStart + (i + 1) * 32,
-        );
-        const value = isDynamicAbiType(input.type)
-          ? decodeDynamicWord(functionParameters, argsStart, headWord, input.type as 'string' | 'bytes')
-          : decodeWord(headWord, input.type);
-
-        return { name: input.name, type: input.type, value };
-      });
-
-      return { functionName: fn.name, args };
-    } catch {
-      // malformed/truncated calldata (e.g. a bad offset or length) - fall back to raw calldata
-      return { functionName: fn.name, args: null };
     }
   }
 
   return null;
+}
+
+/* Decodes `params.length` consecutive ABI values out of `data`, starting at `headStart` - the
+ * standard Solidity ABI head/tail scheme, parameterized so it works both for a call's `inputs`
+ * (head starts after the 4-byte selector) and a result's `outputs` (head starts at byte 0, there
+ * being no selector on a return value). Returns null if the static head isn't fully present, or on
+ * any malformed/truncated dynamic offset or length - callers fall back to raw hex for display. */
+function decodeAbiValues(
+  data: Uint8Array,
+  params: AbiParameter[],
+  headStart: number,
+): { name: string; type: string; value: string }[] | null {
+  // The full static head (one word per param) must actually be present before decoding anything -
+  // slicing a short/missing word wouldn't throw on its own, it would just read fewer bytes than a
+  // real argument has and decode a wrong-but-plausible-looking value.
+  if (data.length < headStart + params.length * 32) {
+    return null;
+  }
+
+  try {
+    return params.map((param, i) => {
+      const headWord = data.slice(headStart + i * 32, headStart + (i + 1) * 32);
+      const value = isDynamicAbiType(param.type)
+        ? decodeDynamicWord(data, headStart, headWord, param.type as 'string' | 'bytes')
+        : decodeWord(headWord, param.type);
+
+      return { name: param.name, type: param.type, value };
+    });
+  } catch {
+    // malformed/truncated data (e.g. a bad offset or length) - fall back to raw hex for display
+    return null;
+  }
+}
+
+/* Arg values are only decoded when every param is one this app can both encode and decode (see
+ * isCallableAbiFunction: single 32-byte-word types, plus `string`/`bytes` via their head/tail
+ * encoding) - otherwise `args` comes back null and the caller falls back to raw calldata for
+ * display. */
+export function decodeContractCall(
+  abi: AbiItem[],
+  functionParameters: Uint8Array,
+): DecodedContractCall | null {
+  const fn = matchAbiFunction(abi, functionParameters);
+  if (!fn) {
+    return null;
+  }
+
+  if (!isCallableAbiFunction(fn)) {
+    return { functionName: fn.name, args: null };
+  }
+
+  return { functionName: fn.name, args: decodeAbiValues(functionParameters, fn.inputs, 4) };
+}
+
+export interface DecodedContractResult {
+  functionName: string;
+  /* null when the result couldn't be decoded back into a display value - a void function, an
+   * output type this app doesn't decode (array/tuple), or malformed/truncated call result bytes.
+   * Callers fall back to raw `call_result` hex for display. */
+  args: { name: string; type: string; value: string }[] | null;
+}
+
+/* Decodes an already-executed call's `call_result` bytes (from mirror node's
+ * GET /api/v1/contracts/results/{transactionIdOrHash}) against the same ABI function the original
+ * `functionParameters` calldata matched - a result carries no selector of its own, so it's matched
+ * via the call that produced it, not independently. */
+export function decodeContractCallResult(
+  abi: AbiItem[],
+  functionParameters: Uint8Array,
+  callResult: Uint8Array,
+): DecodedContractResult | null {
+  const fn = matchAbiFunction(abi, functionParameters);
+  if (!fn) {
+    return null;
+  }
+
+  if (fn.outputs.length === 0 || !fn.outputs.every(isEncodableAbiParameter)) {
+    return { functionName: fn.name, args: null };
+  }
+
+  return { functionName: fn.name, args: decodeAbiValues(callResult, fn.outputs, 0) };
 }

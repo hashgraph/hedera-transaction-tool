@@ -9,6 +9,7 @@ import {
   areContractCallArgsEncodable,
   buildFunctionCallData,
   decodeContractCall,
+  decodeContractCallResult,
   encodeContractFunctionParams,
   isAllowedFunctionArgKey,
   sanitizeFunctionArgInput,
@@ -19,11 +20,15 @@ import {
 const ADDR = '0x00000000000000000000000000000000000004d2';
 const WORD = (hex: string) => hex.replace(/^0x/, '').padStart(64, '0');
 
-const fn = (name: string, inputs: [string, string][]): AbiFunctionItem => ({
+const fn = (
+  name: string,
+  inputs: [string, string][],
+  outputs: [string, string][] = [],
+): AbiFunctionItem => ({
   type: 'function',
   name,
   inputs: inputs.map(([n, type]) => ({ name: n, type })),
-  outputs: [],
+  outputs: outputs.map(([n, type]) => ({ name: n, type })),
 });
 
 const encodeCall = (name: string, args: ContractCallArgument[]) =>
@@ -364,6 +369,84 @@ describe('decodeContractCall', () => {
     const data = hexToUint8Array(encodeCall('pause', []));
     const mixed = [fn('weird', [['t', 'tuple']]), fn('pause', [])];
     expect(decodeContractCall(mixed, data)?.functionName).toBe('pause');
+  });
+});
+
+describe('decodeContractCallResult', () => {
+  test('decodes a single static return value', () => {
+    const callData = hexToUint8Array(
+      encodeCall('balanceOf', [{ name: 'owner', type: 'address', value: ADDR }]),
+    );
+    const abi = [fn('balanceOf', [['owner', 'address']], [['', 'uint256']])];
+    const resultBytes = encodeContractFunctionParams([
+      { name: '', type: 'uint256', value: '42' },
+    ])._build();
+
+    expect(decodeContractCallResult(abi, callData, resultBytes)).toEqual({
+      functionName: 'balanceOf',
+      args: [{ name: '', type: 'uint256', value: '42' }],
+    });
+  });
+
+  test('decodes a mix of static and dynamic outputs, head/tail offsets starting at byte 0 (no selector)', () => {
+    const callData = hexToUint8Array(encodeCall('get', []));
+    const abi = [
+      fn('get', [], [
+        ['a', 'address'],
+        ['s', 'string'],
+      ]),
+    ];
+    const resultBytes = encodeContractFunctionParams([
+      { name: 'a', type: 'address', value: ADDR },
+      { name: 's', type: 'string', value: 'hi' },
+    ])._build();
+
+    expect(decodeContractCallResult(abi, callData, resultBytes)?.args).toEqual([
+      { name: 'a', type: 'address', value: ADDR },
+      { name: 's', type: 'string', value: 'hi' },
+    ]);
+  });
+
+  test('a void function (no outputs) decodes to args=null but still identifies the function', () => {
+    const callData = hexToUint8Array(encodeCall('pause', []));
+    expect(decodeContractCallResult([fn('pause', [])], callData, new Uint8Array(0))).toEqual({
+      functionName: 'pause',
+      args: null,
+    });
+  });
+
+  test('an output type this app cannot decode (array) returns args=null but still identifies the function', () => {
+    const callData = hexToUint8Array(encodeCall('getIds', []));
+    const resultBytes = new ContractFunctionParameters().addUint256Array([1, 2])._build();
+    const abi = [fn('getIds', [], [['', 'uint256[]']])];
+
+    expect(decodeContractCallResult(abi, callData, resultBytes)).toEqual({
+      functionName: 'getIds',
+      args: null,
+    });
+  });
+
+  test('returns null when the call does not match any ABI function', () => {
+    expect(
+      decodeContractCallResult(
+        [fn('pause', [])],
+        new Uint8Array([0xde, 0xad, 0xbe, 0xef]),
+        new Uint8Array(0),
+      ),
+    ).toBeNull();
+  });
+
+  test('truncated/malformed result bytes decode to args=null, not a wrong value', () => {
+    const callData = hexToUint8Array(
+      encodeCall('balanceOf', [{ name: 'owner', type: 'address', value: ADDR }]),
+    );
+    const abi = [fn('balanceOf', [['owner', 'address']], [['', 'uint256']])];
+    const truncatedResult = new Uint8Array(10); // shorter than one full 32-byte word
+
+    expect(decodeContractCallResult(abi, callData, truncatedResult)).toEqual({
+      functionName: 'balanceOf',
+      args: null,
+    });
   });
 });
 
