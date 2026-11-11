@@ -1,4 +1,4 @@
-import { ArgumentsHost, BadRequestException } from '@nestjs/common';
+import { ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
 
 import { BadRequestExceptionFilter } from './bad-request-exception.filter';
 
@@ -42,4 +42,23 @@ describe('BadRequestExceptionFilter', () => {
       code: 'UNKWN',
     });
   });
+
+  it.each(['toString', 'constructor', 'hasOwnProperty'])(
+    'should treat inherited Object property "%s" as unmapped and log it',
+    message => {
+      const json = jest.fn();
+      const status = jest.fn().mockReturnValue({ json });
+      const getResponse = jest.fn().mockReturnValue({ status });
+      const switchToHttp = jest.fn().mockReturnValue({ getResponse });
+      const host = { switchToHttp };
+      const errorSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+      filter.catch(new BadRequestException(message), host as unknown as ArgumentsHost);
+
+      expect(errorSpy).toHaveBeenCalledTimes(1);
+      expect(json).toHaveBeenCalledWith(expect.objectContaining({ code: 'UNKWN' }));
+
+      errorSpy.mockRestore();
+    },
+  );
 });

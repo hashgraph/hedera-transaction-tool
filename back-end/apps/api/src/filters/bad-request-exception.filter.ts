@@ -1,6 +1,8 @@
-import { ErrorCodes, ErrorMessages } from '@app/common';
+import { ErrorCodes } from '@app/common';
 import { ExceptionFilter, Catch, ArgumentsHost, BadRequestException, Logger } from '@nestjs/common';
 import { Response } from 'express';
+
+const KNOWN_ERROR_CODES = new Set<string>(Object.values(ErrorCodes));
 
 @Catch(BadRequestException)
 export class BadRequestExceptionFilter implements ExceptionFilter {
@@ -11,7 +13,7 @@ export class BadRequestExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const status = exception.getStatus();
 
-    const isErrorCode = ErrorMessages[exception.message as ErrorCodes];
+    const isErrorCode = KNOWN_ERROR_CODES.has(exception.message);
 
     if (!isErrorCode) {
       // The client only ever sees ErrorCodes.UNKWN for these, so log the real
