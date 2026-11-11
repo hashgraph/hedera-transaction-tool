@@ -503,6 +503,10 @@ export class TransactionsService {
       // Preserve explicit BadRequestException, but annotate unexpected errors
       if (err instanceof BadRequestException) throw err;
 
+      const errorStack = err instanceof Error ? err.stack : null;
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Failed to create transactions: ${errorMessage}`, errorStack ?? undefined);
+
       const PREFIX = 'An unexpected error occurred while creating transactions';
       const message = err instanceof Error && err.message ? `${PREFIX}: ${err.message}` : PREFIX;
       throw new BadRequestException(message);

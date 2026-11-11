@@ -60,14 +60,10 @@ async function mountRow(
   reviewerEnabled = false,
   collection: TransactionNodeCollection = TransactionNodeCollection.READY_TO_SIGN,
 ) {
-  if (reviewerEnabled) {
-    vi.doMock('@shared/constants', async importOriginal => {
-      const actual = await importOriginal<typeof import('@shared/constants')>();
-      return { ...actual, FEATURE_REVIEWER_ENABLED: true };
-    });
-  } else {
-    vi.doUnmock('@shared/constants');
-  }
+  vi.doMock('@shared/constants', async importOriginal => {
+    const actual = await importOriginal<typeof import('@shared/constants')>();
+    return { ...actual, FEATURE_REVIEWER_ENABLED: reviewerEnabled };
+  });
 
   const { default: TransactionNodeRow } = await import(
     '@renderer/pages/Transactions/components/TransactionNodeRow.vue'
