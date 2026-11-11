@@ -622,6 +622,16 @@ describe('SmartContracts.vue', () => {
       expect((wrapper.vm as any).selectedAbi).toEqual([]);
       expect(await (wrapper.vm as any).tryResolveRoleValue('MINTER_ROLE')).toBeNull();
       expect(mocks.resolveBytes32Getter).not.toHaveBeenCalled();
+
+      // Each of these used to fall through to persistContract's own (now-removed) selected-contract
+      // check and throw - they should now just no-op instead, since there's no contract to save to.
+      mocks.update.mockClear();
+      await (wrapper.vm as any).handleResolveRole(role());
+      await (wrapper.vm as any).handleSaveRole(role());
+      await (wrapper.vm as any).handleRemoveRole('r1');
+      await (wrapper.vm as any).autoAddSuggestedRoles();
+      await flushPromises();
+      expect(mocks.update).not.toHaveBeenCalled();
     });
   });
 
