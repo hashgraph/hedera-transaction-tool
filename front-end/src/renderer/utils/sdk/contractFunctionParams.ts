@@ -117,6 +117,11 @@ export function sanitizeFunctionArgInput(type: string, value: string): string {
     return value.toLowerCase().replace(/[^0-9a-fx]/g, '').slice(0, 66);
   }
 
+  if (type === 'bytes') {
+    // dynamic - no fixed length to cap at, unlike bytes32
+    return value.toLowerCase().replace(/[^0-9a-fx]/g, '');
+  }
+
   const normalized = normalizeNumericType(type);
   if (getIntBits(normalized) !== null) {
     const stripped = value.replace(/[^0-9-]/g, '');
@@ -137,7 +142,7 @@ export function sanitizeFunctionArgInput(type: string, value: string): string {
  * AppHbarInput's handleKeyDown pairs with its own paste-time correction. `key`/`currentValue`
  * are the raw KeyboardEvent.key and the input's value before this keystroke is applied. */
 export function isAllowedFunctionArgKey(type: string, key: string, currentValue: string): boolean {
-  if (type === 'address' || type === 'bytes32') {
+  if (type === 'address' || type === 'bytes32' || type === 'bytes') {
     return /^[0-9a-fA-Fx]$/.test(key);
   }
 
@@ -173,6 +178,11 @@ export function validateFunctionArgValue(type: string, value: string): string | 
   if (type === 'bytes32') {
     const hex = trimmed.startsWith('0x') ? trimmed.slice(2) : trimmed;
     return /^[0-9a-fA-F]{64}$/.test(hex) ? null : 'Must be 32 bytes (64 hex characters)';
+  }
+
+  if (type === 'bytes') {
+    const hex = trimmed.startsWith('0x') ? trimmed.slice(2) : trimmed;
+    return /^([0-9a-fA-F]{2})*$/.test(hex) ? null : 'Must be an even number of hex characters (0x...)';
   }
 
   const normalized = normalizeNumericType(type);

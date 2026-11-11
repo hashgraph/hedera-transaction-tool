@@ -471,6 +471,14 @@ describe('validateFunctionArgValue', () => {
     expect(validateFunctionArgValue('bytes32', '0xab')).not.toBeNull();
   });
 
+  test('bytes: accepts even-length hex with or without 0x, rejects odd length and non-hex', () => {
+    expect(validateFunctionArgValue('bytes', '0x0102ff')).toBeNull();
+    expect(validateFunctionArgValue('bytes', '0102ff')).toBeNull();
+    expect(validateFunctionArgValue('bytes', '0x')).toBeNull();
+    expect(validateFunctionArgValue('bytes', '0xabc')).not.toBeNull();
+    expect(validateFunctionArgValue('bytes', '0xzz')).not.toBeNull();
+  });
+
   test('uint*: rejects non-integers, negatives, and out-of-range values', () => {
     expect(validateFunctionArgValue('uint8', '255')).toBeNull();
     expect(validateFunctionArgValue('uint8', '256')).toBe('Must be between 0 and 255');
@@ -490,6 +498,11 @@ describe('validateFunctionArgValue', () => {
     expect(validateFunctionArgValue('bool', 'true')).toBeNull();
     expect(validateFunctionArgValue('bool', 'anything')).toBeNull();
   });
+
+  test('string: no format validation beyond non-empty', () => {
+    expect(validateFunctionArgValue('string', 'hello world')).toBeNull();
+    expect(validateFunctionArgValue('string', 'not hex at all')).toBeNull();
+  });
 });
 
 describe('sanitizeFunctionArgInput', () => {
@@ -504,6 +517,11 @@ describe('sanitizeFunctionArgInput', () => {
     expect(sanitizeFunctionArgInput('bytes32', '0X' + 'AB'.repeat(40))).toBe(
       '0x' + 'ab'.repeat(32),
     );
+  });
+
+  test('bytes: lowercases, strips non-hex, no length cap', () => {
+    expect(sanitizeFunctionArgInput('bytes', '0xABCzz 123')).toBe('0xabc123');
+    expect(sanitizeFunctionArgInput('bytes', '0X' + 'AB'.repeat(40))).toBe('0x' + 'ab'.repeat(40));
   });
 
   test('uint*: strips everything but digits, including a stray minus', () => {
@@ -525,10 +543,12 @@ describe('sanitizeFunctionArgInput', () => {
 });
 
 describe('isAllowedFunctionArgKey', () => {
-  test('address/bytes32: allows hex digits and x, rejects other letters', () => {
+  test('address/bytes32/bytes: allows hex digits and x, rejects other letters', () => {
     expect(isAllowedFunctionArgKey('address', 'a', '')).toBe(true);
     expect(isAllowedFunctionArgKey('address', 'x', '0')).toBe(true);
     expect(isAllowedFunctionArgKey('bytes32', 'g', '')).toBe(false);
+    expect(isAllowedFunctionArgKey('bytes', 'f', '0x0')).toBe(true);
+    expect(isAllowedFunctionArgKey('bytes', 'g', '')).toBe(false);
   });
 
   test('uint*: allows digits, rejects a minus entirely', () => {
