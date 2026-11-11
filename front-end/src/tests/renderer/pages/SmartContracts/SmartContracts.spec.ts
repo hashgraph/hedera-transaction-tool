@@ -579,6 +579,37 @@ describe('SmartContracts.vue', () => {
       expect((errors[0] as Error).message).toBe('User is not logged in');
     });
 
+    test('switching contracts while an auto-add resolution is in flight saves to the original contract, not the one now selected', async () => {
+      mocks.db = [makeContract({ id: 'c1' }), contractB()];
+      let resolveMinter: (value: string | null) => void;
+      mocks.resolveBytes32Getter.mockImplementation((_contract: unknown, name: string) =>
+        name === 'MINTER_ROLE'
+          ? new Promise<string | null>(resolve => (resolveMinter = resolve))
+          : Promise.resolve(null),
+      );
+
+      const wrapper = await mountPage();
+      // c1 is auto-selected (first contract); its MINTER_ROLE resolution is still pending.
+
+      (wrapper.vm as any).handleSelect('c2');
+      await flushPromises();
+      // c2's ABI is corrupt (contractB()), so it has no suggested roles to auto-add - nothing
+      // competing to persist for c2.
+      expect(mocks.update).not.toHaveBeenCalled();
+
+      resolveMinter!(ROLE_VALUE);
+      await flushPromises();
+
+      expect(mocks.update).toHaveBeenCalledTimes(1);
+      const [savedId, , savedPartial] = lastUpdate();
+      expect(savedId).toBe('c1');
+      const savedRoles = JSON.parse(savedPartial.roles) as ContractRole[];
+      expect(savedRoles.find(r => r.name === 'MINTER_ROLE')).toMatchObject({
+        value: ROLE_VALUE,
+        verified: true,
+      });
+    });
+
     test('role helpers are inert when no contract is selected', async () => {
       mocks.db = [makeContract()];
       const wrapper = await mountPage();

@@ -110,13 +110,17 @@ async function fetchContracts() {
   }
 }
 
-async function persistContract(partial: { roles?: string }) {
-  if (!isUserLoggedIn(user.personal) || !selectedContract.value) {
+// Takes the target contract id explicitly rather than reading selectedContract.value itself -
+// callers that resolve roles asynchronously (autoAddSuggestedRoles, handleResolveRole) capture the
+// id before their own awaits, so a selection change made while that await is in flight can't
+// redirect the save onto whatever contract happens to be selected by the time this runs.
+async function persistContract(contractId: string, partial: { roles?: string }) {
+  if (!isUserLoggedIn(user.personal)) {
     throw new Error('User is not logged in');
   }
 
   try {
-    await update(selectedContract.value.id, user.personal.id, partial);
+    await update(contractId, user.personal.id, partial);
     await fetchContracts();
   } catch (error) {
     toastManager.error(getErrorMessage(error, 'Failed to update smart contract'));
@@ -184,9 +188,14 @@ const handleOpenEditRole = (role: ContractRole) => {
 };
 
 async function autoAddSuggestedRoles() {
-  if (suggestedRoles.value.length === 0) {
+  if (suggestedRoles.value.length === 0 || !selectedContract.value) {
     return;
   }
+
+  // Captured before the resolution awaits below, so a selection change made while they're in
+  // flight can't redirect the save onto a different contract - see persistContract.
+  const contractId = selectedContract.value.id;
+  const baseRoles = roles.value;
 
   const addedRoles = await Promise.all(
     suggestedRoles.value.map(async fn => {
@@ -196,11 +205,19 @@ async function autoAddSuggestedRoles() {
     }),
   );
 
-  const nextRoles = [...roles.value, ...addedRoles];
-  await persistContract({ roles: JSON.stringify(nextRoles) });
+  const nextRoles = [...baseRoles, ...addedRoles];
+  await persistContract(contractId, { roles: JSON.stringify(nextRoles) });
 }
 
 const handleResolveRole = async (role: ContractRole) => {
+  if (!selectedContract.value) {
+    return;
+  }
+
+  // Same capture-before-await reasoning as autoAddSuggestedRoles.
+  const contractId = selectedContract.value.id;
+  const baseRoles = roles.value;
+
   const resolved = await tryResolveRoleValue(role.name);
 
   if (!resolved) {
@@ -208,20 +225,32 @@ const handleResolveRole = async (role: ContractRole) => {
     return;
   }
 
-  await handleSaveRole({ ...role, value: resolved, verified: true });
+  await handleSaveRole({ ...role, value: resolved, verified: true }, contractId, baseRoles);
 };
 
-const handleSaveRole = async (role: ContractRole) => {
-  const exists = roles.value.some(r => r.id === role.id);
+const handleSaveRole = async (
+  role: ContractRole,
+  contractId = selectedContract.value?.id,
+  baseRoles = roles.value,
+) => {
+  if (!contractId) {
+    return;
+  }
+
+  const exists = baseRoles.some(r => r.id === role.id);
   const nextRoles = exists
-    ? roles.value.map(r => (r.id === role.id ? role : r))
-    : [...roles.value, role];
-  await persistContract({ roles: JSON.stringify(nextRoles) });
+    ? baseRoles.map(r => (r.id === role.id ? role : r))
+    : [...baseRoles, role];
+  await persistContract(contractId, { roles: JSON.stringify(nextRoles) });
 };
 
 const handleRemoveRole = async (roleId: string) => {
+  if (!selectedContract.value) {
+    return;
+  }
+
   const nextRoles = roles.value.filter(r => r.id !== roleId);
-  await persistContract({ roles: JSON.stringify(nextRoles) });
+  await persistContract(selectedContract.value.id, { roles: JSON.stringify(nextRoles) });
 };
 
 /* Hooks */
