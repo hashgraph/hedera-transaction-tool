@@ -332,5 +332,51 @@ describe('ContractExecuteDetails.vue', () => {
       expect(lookupMock).toHaveBeenCalled();
       expect(byId(wrapper, 'result').text()).toBe('uint256 = 42');
     });
+
+    // The component is reused without remounting (not keyed) when paging Prev/Next through the
+    // external-signing transaction browser - the same scenario these two tests cover.
+    function withOtherTxId(tx: ContractExecuteTransaction) {
+      tx.setTransactionId(
+        TransactionId.withValidStart(AccountId.fromString('0.0.3'), new Timestamp(1700000111, 0)),
+      );
+      return tx;
+    }
+
+    test('clears a previous transaction\'s result immediately when the displayed transaction changes, before the new one resolves', async () => {
+      lookupMock.mockResolvedValue({ callResult: `0x${'2a'.padStart(64, '0')}`, errorMessage: null });
+      vi.useFakeTimers();
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })));
+      await vi.advanceTimersByTimeAsync(1500);
+      await flushPromises();
+      expect(byId(wrapper, 'result').text()).toBe('uint256 = 42');
+
+      lookupMock.mockResolvedValue(null); // the new transaction has no result yet
+      await wrapper.setProps({ transaction: withOtherTxId(makeTx({ params: balanceOfParams() })) });
+
+      expect(byId(wrapper, 'result').exists()).toBe(false);
+      expect(byId(wrapper, 'result-error').exists()).toBe(false);
+    });
+
+    test('drops a stale result that resolves after the displayed transaction has already changed', async () => {
+      let resolveFirst: (value: unknown) => void;
+      lookupMock.mockReturnValueOnce(new Promise(resolve => (resolveFirst = resolve)));
+
+      vi.useFakeTimers();
+      const wrapper = await mountDetails(withTxId(makeTx({ params: balanceOfParams() })));
+      await vi.advanceTimersByTimeAsync(1500); // first transaction's lookup is now in flight
+
+      lookupMock.mockResolvedValue(null); // the new transaction has no result yet
+      await wrapper.setProps({ transaction: withOtherTxId(makeTx({ params: balanceOfParams() })) });
+
+      // the first (now stale) transaction's lookup finally resolves
+      resolveFirst!({ callResult: `0x${'2a'.padStart(64, '0')}`, errorMessage: null });
+      await flushPromises();
+      expect(byId(wrapper, 'result').exists()).toBe(false);
+
+      // the new transaction's own (delayed) lookup runs and genuinely finds nothing either
+      await vi.advanceTimersByTimeAsync(3000 + 1500);
+      await flushPromises();
+      expect(byId(wrapper, 'result').exists()).toBe(false);
+    });
   });
 });

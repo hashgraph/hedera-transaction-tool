@@ -35,6 +35,12 @@ const savedContracts = ref<SmartContract[]>([]);
 const callResultHex = ref<string | null>(null);
 const resultErrorMessage = ref<string | null>(null);
 
+// Bumped whenever the displayed transaction changes, so a result fetch started for a previous
+// transaction (e.g. the one shown before Prev/Next paged to a new entry in the external-signing
+// transaction browser, which reuses this component instance without remounting it) can't land
+// late and overwrite the current transaction's state.
+let contractResultGeneration = 0;
+
 /* Computed */
 const contractExecuteTransaction = computed(() =>
   props.transaction instanceof ContractExecuteTransaction ? props.transaction : null,
@@ -100,15 +106,24 @@ const detailItemValueClass = 'text-small overflow-hidden mt-1';
 const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
 
 /* Functions */
-async function fetchContractResult(payer: string, seconds: string, nanos: string) {
+async function fetchContractResult(
+  payer: string,
+  seconds: string,
+  nanos: string,
+  generation: number,
+) {
   const { data } = await safeAwait(
     contractResultCache.lookup(`${payer}-${seconds}-${nanos}`, network.mirrorNodeBaseURL),
   );
 
-  if (data) {
-    callResultHex.value = data.callResult;
-    resultErrorMessage.value = data.errorMessage;
+  // A newer transaction may have replaced this one (and already reset these refs) while the
+  // lookup was in flight - dropping the stale result here is what contractResultGeneration guards.
+  if (!data || generation !== contractResultGeneration) {
+    return;
   }
+
+  callResultHex.value = data.callResult;
+  resultErrorMessage.value = data.errorMessage;
 }
 
 // Mirrors AccountDetails.vue's checkAndFetchTransactionInfo: a result only exists once the
@@ -116,7 +131,7 @@ async function fetchContractResult(payer: string, seconds: string, nanos: string
 // approval/execution. For a personal/local transaction (no organizationTransaction) there's no
 // such status to gate on here, so the lookup is tried after a short delay instead, to give mirror
 // node time to index a call that may have just executed.
-async function checkAndFetchContractResult() {
+async function checkAndFetchContractResult(generation: number) {
   const tx = contractExecuteTransaction.value;
   if (!tx) {
     return;
@@ -142,15 +157,15 @@ async function checkAndFetchContractResult() {
   }
 
   if (!props.organizationTransaction) {
-    setTimeout(async () => await fetchContractResult(payer, seconds, nanos), 1500);
+    setTimeout(async () => await fetchContractResult(payer, seconds, nanos, generation), 1500);
   } else {
-    await fetchContractResult(payer, seconds, nanos);
+    await fetchContractResult(payer, seconds, nanos, generation);
   }
 }
 
 /* Hooks */
 onMounted(async () => {
-  await checkAndFetchContractResult();
+  await checkAndFetchContractResult(contractResultGeneration);
 
   if (!isUserLoggedIn(user.personal)) {
     return;
@@ -165,8 +180,11 @@ onMounted(async () => {
 });
 
 /* Watchers */
-watch([() => props.transaction, () => props.organizationTransaction], async () => {
-  setTimeout(async () => await checkAndFetchContractResult(), 3000);
+watch([() => props.transaction, () => props.organizationTransaction], () => {
+  const generation = ++contractResultGeneration;
+  callResultHex.value = null;
+  resultErrorMessage.value = null;
+  setTimeout(async () => await checkAndFetchContractResult(generation), 3000);
 });
 </script>
 <template>
