@@ -29,6 +29,11 @@ const loading = ref(false);
 const result = ref<VerifiedContract | null>(null);
 const failed = ref(false);
 
+// Same abort-the-previous-lookup pattern as AddSmartContract.vue's runLookup/resetLookup - the
+// modal is reused for whichever contract is selected (not remounted), so closing/reopening it for
+// a different contract before the first lookup finishes must not let that stale response land.
+let controller: AbortController | null = null;
+
 /* Handlers */
 const handleShowUpdate = (show: boolean) => emit('update:show', show);
 
@@ -36,6 +41,9 @@ const handleShowUpdate = (show: boolean) => emit('update:show', show);
 watch(
   () => [props.show, props.evmAddress] as const,
   async ([show, evmAddress]) => {
+    controller?.abort();
+    controller = null;
+
     if (!show) {
       return;
     }
@@ -47,8 +55,14 @@ watch(
       return;
     }
 
+    const thisController = new AbortController();
+    controller = thisController;
+
     loading.value = true;
-    const fetched = await getVerifiedContract(network.network, evmAddress);
+    const fetched = await getVerifiedContract(network.network, evmAddress, thisController);
+    if (thisController.signal.aborted) {
+      return;
+    }
     loading.value = false;
 
     if (!fetched) {

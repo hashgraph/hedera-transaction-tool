@@ -55,7 +55,11 @@ describe('ViewSourceModal.vue', () => {
     getVerifiedContractMock.mockResolvedValue(RESULT);
     const wrapper = await mountModal(true, EVM);
 
-    expect(getVerifiedContractMock).toHaveBeenCalledWith('testnet', EVM);
+    expect(getVerifiedContractMock).toHaveBeenCalledWith(
+      'testnet',
+      EVM,
+      expect.any(AbortController),
+    );
     expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('Token|1');
     expect(wrapper.text()).toContain('Token source code');
   });
@@ -97,6 +101,35 @@ describe('ViewSourceModal.vue', () => {
     await wrapper.setProps({ show: true });
     await flushPromises();
     expect(getVerifiedContractMock).toHaveBeenCalledTimes(2);
+  });
+
+  test('aborts and drops a stale response when reopened for a different address before the first lookup resolves', async () => {
+    const EVM_B = '0x' + 'cd'.repeat(20);
+    const RESULT_B = { ...RESULT, name: 'Other' };
+
+    let resolveA!: (v: typeof RESULT | null) => void;
+    let controllerA!: AbortController;
+    getVerifiedContractMock.mockImplementationOnce((...args: unknown[]) => {
+      controllerA = args[2] as AbortController;
+      return new Promise(r => (resolveA = r));
+    });
+    const wrapper = await mountModal(true, EVM);
+    expect(wrapper.find('[data-testid="text-view-source-loading"]').exists()).toBe(true);
+
+    // closed, then reopened for a different contract before the first lookup resolves
+    getVerifiedContractMock.mockResolvedValueOnce(RESULT_B);
+    await wrapper.setProps({ show: false });
+    await flushPromises();
+    await wrapper.setProps({ show: true, evmAddress: EVM_B });
+    await flushPromises();
+
+    expect(controllerA.signal.aborted).toBe(true);
+    expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('Other|1');
+
+    // the stale first lookup finally resolves - must not overwrite the now-current result
+    resolveA(RESULT);
+    await flushPromises();
+    expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('Other|1');
   });
 
   test('clicking close emits update:show false', async () => {
