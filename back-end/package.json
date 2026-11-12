@@ -113,6 +113,6 @@
     "typescript": "catalog:"
   },
   "engines": {
-    "node": ">=24.22.1 <25"
+    "node": ">=24.22.3 <25"
   }
 }
