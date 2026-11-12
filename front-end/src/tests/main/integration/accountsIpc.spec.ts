@@ -35,14 +35,24 @@ vi.mock('electron', () => ({
       if (!handler) {
         throw new Error(`Error invoking remote method '${channel}': No handler registered`);
       }
+      const senderFrame = {
+        url: process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173',
+      };
+      const event = {
+        senderFrame,
+        sender: {
+          mainFrame: senderFrame,
+        },
+      } as unknown as Electron.IpcMainInvokeEvent;
       try {
-        return structuredClone(await handler({}, ...structuredClone(args)));
+        return structuredClone(await handler(event, ...structuredClone(args)));
       } catch (error) {
         throw new Error(`Error invoking remote method '${channel}': ${error}`);
       }
     },
   },
 }));
+vi.stubEnv('VITE_DEV_SERVER_URL', 'http://localhost:5173');
 
 const { accounts } = accountsPreload;
 

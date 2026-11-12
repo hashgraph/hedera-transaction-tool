@@ -1,5 +1,4 @@
-import type { RouteRecordRaw } from 'vue-router';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
 
 import { attachMeta } from './meta';
 import * as constants from '@renderer/router/constants';
@@ -144,7 +143,7 @@ const routes: RouteRecordRaw[] = [
 attachMeta(routes);
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes,
   linkActiveClass: 'active',
 });

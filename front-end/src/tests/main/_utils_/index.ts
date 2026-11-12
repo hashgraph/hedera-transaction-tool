@@ -11,7 +11,18 @@ vi.mock('electron', () => {
   return mocked;
 });
 
-const event: Electron.IpcMainEvent = mockDeep<Electron.IpcMainEvent>();
+vi.stubEnv('VITE_DEV_SERVER_URL', 'http://localhost:5173');
+
+const senderFrame = {
+  url: process.env.VITE_DEV_SERVER_URL || 'http://localhost:5173',
+};
+
+const event = {
+  senderFrame,
+  sender: {
+    mainFrame: senderFrame,
+  },
+} as unknown as Electron.IpcMainEvent;
 
 export const getIPCHandler = (name: string) => {
   const handler = vi.mocked(ipcMain).handle.mock.calls.find(([e]) => e === name);
