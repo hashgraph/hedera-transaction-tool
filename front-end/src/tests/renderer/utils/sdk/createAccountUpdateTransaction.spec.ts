@@ -98,7 +98,7 @@ describe('createAccountUpdateTransaction', () => {
       test('receiverSignatureRequired == false ', () => {
         const modifiedData = { ...data, receiverSignatureRequired: false };
         const tx = roundtrip(createAccountUpdateTransaction(modifiedData, null));
-        expect(tx.receiverSignatureRequired).toBe(null);
+        expect(tx.receiverSignatureRequired).toBe(false);
       });
       test('receiverSignatureRequired == true ', () => {
         const modifiedData = { ...data, receiverSignatureRequired: true };
@@ -129,10 +129,8 @@ describe('createAccountUpdateTransaction', () => {
 
         test('data.receiverSignatureRequired == false ', () => {
           const modifiedData = { ...data, receiverSignatureRequired: false };
-          const tx1 = createAccountUpdateTransaction(modifiedData, accountInfo);
-          expect(tx1.receiverSignatureRequired).toBe(false);
-          const tx2 = roundtrip(tx1);
-          expect(tx2.receiverSignatureRequired).toBe(null); // roundrip() transforms false in null
+          const tx = roundtrip(createAccountUpdateTransaction(modifiedData, accountInfo));
+          expect(tx.receiverSignatureRequired).toBe(false);
         });
 
         test('data.receiverSignatureRequired == true', () => {
@@ -152,7 +150,7 @@ describe('createAccountUpdateTransaction', () => {
       test('data.declineStakingReward == false ', () => {
         const modifiedData = { ...data, declineStakingReward: false };
         const tx = roundtrip(createAccountUpdateTransaction(modifiedData, null));
-        expect(tx.declineStakingRewards).toBe(null);
+        expect(tx.declineStakingRewards).toBe(false);
       });
 
       test('data.declineStakingReward == true ', () => {
@@ -184,10 +182,8 @@ describe('createAccountUpdateTransaction', () => {
 
         test('data.declineStakingReward == false ', () => {
           const modifiedData = { ...data, declineStakingReward: false };
-          const tx1 = createAccountUpdateTransaction(modifiedData, accountInfo);
-          expect(tx1.declineStakingRewards).toBe(false);
-          const tx2 = roundtrip(tx1);
-          expect(tx2.declineStakingRewards).toBe(null); // roundTrip() transforms false to null
+          const tx = roundtrip(createAccountUpdateTransaction(modifiedData, accountInfo));
+          expect(tx.declineStakingRewards).toBe(false);
         });
 
         test('data.declineStakingReward == true ', () => {
@@ -206,10 +202,8 @@ describe('createAccountUpdateTransaction', () => {
     describe('accountInfo == null', () => {
       test('data.maxAutomaticTokenAssociations == 0 ', () => {
         const modifiedData = { ...data, maxAutomaticTokenAssociations: 0 };
-        const tx1 = createAccountUpdateTransaction(modifiedData, null);
-        expect(tx1.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
-        const tx2 = roundtrip(tx1);
-        expect(tx2.maxAutomaticTokenAssociations).toBe(null); // roundTrip() transforms 0 in null
+        const tx = roundtrip(createAccountUpdateTransaction(modifiedData, null));
+        expect(tx.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
       });
 
       test('data.maxAutomaticTokenAssociations == 7 ', () => {
@@ -225,10 +219,8 @@ describe('createAccountUpdateTransaction', () => {
 
         test('data.maxAutomaticTokenAssociations == 0 ', () => {
           const modifiedData = { ...data, maxAutomaticTokenAssociations: 0 };
-          const tx1 = createAccountUpdateTransaction(modifiedData, accountInfo);
-          expect(tx1.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
-          const tx2 = roundtrip(tx1);
-          expect(tx2.maxAutomaticTokenAssociations).toBe(null); // roundTrip() transforms 0 in null
+          const tx = roundtrip(createAccountUpdateTransaction(modifiedData, accountInfo));
+          expect(tx.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
         });
 
         test('data.maxAutomaticTokenAssociations == 7 ', () => {
@@ -259,10 +251,8 @@ describe('createAccountUpdateTransaction', () => {
 
         test('data.maxAutomaticTokenAssociations == 0 ', () => {
           const modifiedData = { ...data, maxAutomaticTokenAssociations: 0 };
-          const tx1 = createAccountUpdateTransaction(modifiedData, accountInfo);
-          expect(tx1.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
-          const tx2 = roundtrip(tx1);
-          expect(tx2.maxAutomaticTokenAssociations).toBe(null); // roundTrip() transforms 0 in null
+          const tx = roundtrip(createAccountUpdateTransaction(modifiedData, accountInfo));
+          expect(tx.maxAutomaticTokenAssociations?.toNumber()).toBe(0);
         });
 
         test('data.maxAutomaticTokenAssociations == 7 ', () => {
@@ -336,10 +326,8 @@ describe('createAccountUpdateTransaction', () => {
 
         test('accountMemo == "" ', () => {
           const modifiedData = { ...data, accountMemo: '' };
-          const tx1 = createAccountUpdateTransaction(modifiedData, accountInfo);
-          expect(tx1.accountMemo).toBe('');
-          const tx2 = roundtrip(tx1);
-          expect(tx2.accountMemo).toBe(null); // roundtrip() transforms '' into null (?)
+          const tx = roundtrip(createAccountUpdateTransaction(modifiedData, accountInfo));
+          expect(tx.accountMemo).toBe('');
         });
 
         test('accountMemo == abc', () => {

@@ -1293,10 +1293,8 @@ describe('Registered node creators', () => {
 
         test('new: empty => empty', () => {
           const modifiedData = { ...data, description: '' };
-          const tx1 = createRegisteredNodeUpdateTransaction(modifiedData, currentInfo);
-          expect(tx1.description).toBe('');
-          const tx2 = roundtrip(tx1);
-          expect(tx2.description).toBe(null); // roundtrip() transforms '' into null (?)
+          const tx = roundtrip(createRegisteredNodeUpdateTransaction(modifiedData, currentInfo));
+          expect(tx.description).toBe('');
         });
 
         test('new: abc => null', () => {

@@ -43,8 +43,8 @@ catalog:
   '@eslint/js': 10.0.1
   '@typescript-eslint/eslint-plugin': 8.72.0
   '@typescript-eslint/parser': 8.72.0
-  '@hiero-ledger/proto': 2.32.0
-  '@hiero-ledger/sdk': 2.90.1
+  '@hiero-ledger/proto': 2.32.1
+  '@hiero-ledger/sdk': 2.91.0
   '@types/bcrypt': 6.0.0
   '@types/better-sqlite3': 9.6.0
   '@types/jest': 30.0.0
@@ -126,3 +126,8 @@ overrides:
 # Add a specific package@version to minimumReleaseAgeExclude only after
 # confirming it is safe (e.g. a trusted patch that is legitimately new).
 minimumReleaseAge: 4320
+
+minimumReleaseAgeExclude:
+  - '@hiero-ledger/cryptography@1.24.0'
+  - '@hiero-ledger/proto@2.32.1'
+  - '@hiero-ledger/sdk@2.91.0'
