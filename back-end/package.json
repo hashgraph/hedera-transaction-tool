@@ -68,7 +68,7 @@
     "nest-winston": "2.0.0",
     "pg": "catalog:",
     "readline-sync": "1.4.10",
-    "redis": "6.3.0",
+    "redis": "6.3.1",
     "reflect-metadata": "catalog:",
     "rxjs": "7.8.2",
     "semver": "catalog:",
