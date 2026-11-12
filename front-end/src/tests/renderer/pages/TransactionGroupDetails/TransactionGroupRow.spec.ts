@@ -202,14 +202,10 @@ describe('manual badge', () => {
 describe('rejected badge', () => {
   async function renderWithRejection(hasRejection: boolean | undefined, reviewerEnabled: boolean) {
     vi.resetModules();
-    if (reviewerEnabled) {
-      vi.doMock('@shared/constants', async importOriginal => {
-        const actual = await importOriginal<typeof import('@shared/constants')>();
-        return { ...actual, FEATURE_REVIEWER_ENABLED: true };
-      });
-    } else {
-      vi.doUnmock('@shared/constants');
-    }
+    vi.doMock('@shared/constants', async importOriginal => {
+      const actual = await importOriginal<typeof import('@shared/constants')>();
+      return { ...actual, FEATURE_REVIEWER_ENABLED: reviewerEnabled };
+    });
 
     const { default: TransactionGroupRowFresh } = await import(
       '@renderer/pages/TransactionGroupDetails/TransactionGroupRow.vue'

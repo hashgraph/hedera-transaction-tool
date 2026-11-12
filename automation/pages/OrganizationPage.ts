@@ -796,6 +796,11 @@ export class OrganizationPage extends BasePage {
     await this.transactionPage.clickOnCreateNewTransactionButton();
     await this.transactionPage.clickOnCreateAccountTransaction();
     await this.transactionPage.fillInInitialFunds('100');
+    // Account create form is currently waiting for account info from mirror node.
+    // Once receives, it will populate Administration Key section.
+    // And it will typically switch Administration Key section to Simple Tab.
+    // So let's wait for a while before clicking on Complex tab
+    await this.wait(this.SHORT_TIMEOUT);
     await this.transactionPage.clickOnComplexTab();
     await this.transactionPage.clickOnCreateNewComplexKeyButton();
 

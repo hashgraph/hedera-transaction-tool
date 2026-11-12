@@ -32,7 +32,6 @@ import {
   uint8ToHex,
 } from '@renderer/utils';
 import {
-  assertTransactionType,
   createFileAppendTransaction,
   getPrivateKey,
   getMaxTransactionSizeForTransaction,
@@ -66,7 +65,6 @@ const { getPassword, passwordModalOpened } = usePersonalPassword();
 
 /* State */
 const nextHandler = ref<Handler | null>(null);
-const request = ref<TransactionRequest | null>(null);
 
 /* Actions */
 function setNext(next: Handler) {
@@ -88,7 +86,7 @@ async function handle(req: Processable) {
 
   if (
     !isLoggedInOrganization(user.selectedOrganization) ||
-    !isFileUpdate(transaction) ||
+    !(transaction instanceof FileUpdateTransaction) ||
     size <= maxSize - sizeBufferBytes ||
     !transaction.contents
   ) {
@@ -96,12 +94,9 @@ async function handle(req: Processable) {
     return;
   }
 
-  reset();
-  request.value = req;
-
   try {
     emit('loading:begin');
-    const groupItems = createGroupItems(req);
+    const groupItems = createGroupItems(transaction, req.transactionKey);
     await signGroupItems(groupItems);
   } finally {
     emit('loading:end');
@@ -110,14 +105,7 @@ async function handle(req: Processable) {
 
 /* Functions */
 
-function createAppendTransaction() {
-  if (!request.value) throw new Error('Request is missing');
-
-  const originalTransaction = Transaction.fromBytes(request.value.transactionBytes);
-  if (!originalTransaction) throw new Error('Transaction is missing');
-  if (!isFileUpdate(originalTransaction))
-    throw new Error('Transaction is not a File Update Transaction');
-
+function createAppendTransaction(originalTransaction: FileUpdateTransaction) {
   if (!originalTransaction.contents) throw new Error('Transaction content is missing');
 
   const payerId = originalTransaction.transactionId?.accountId?.toString();
@@ -139,7 +127,7 @@ function createAppendTransaction() {
     originalTransaction.transactionId?.accountId ?? null,
   );
 
-  const append = createFileAppendTransaction({
+  return createFileAppendTransaction({
     payerId,
     validStart: new Date(validStart.getTime() + 10),
     maxTransactionFee: originalTransaction.maxTransactionFee || new Hbar(2),
@@ -149,8 +137,6 @@ function createAppendTransaction() {
     chunkSize,
     maxChunks: 99999,
   });
-
-  return append;
 }
 
 function createGroupItem(transaction: Transaction, transactionKey: Key, seq: string): GroupItem {
@@ -174,14 +160,14 @@ function createGroupItem(transaction: Transaction, transactionKey: Key, seq: str
   };
 }
 
-function createGroupItems(req: TransactionRequest) {
-  const originalTransaction = Transaction.fromBytes(req.transactionBytes);
-  assertTransactionType(originalTransaction, FileUpdateTransaction);
+function createGroupItems(originalTransaction: FileUpdateTransaction, transactionKey: Key) {
   if (!originalTransaction.contents) throw new Error('Transaction content is missing');
 
-  originalTransaction.setContents(originalTransaction.contents.slice(0, FIRST_CHUNK_SIZE_BYTES));
-  const updateItem = createGroupItem(originalTransaction, req.transactionKey, '0');
-  const appendItem = createGroupItem(createAppendTransaction(), req.transactionKey, '1');
+  const t0 = Transaction.fromBytes(originalTransaction.toBytes()) as FileUpdateTransaction;
+  t0.setContents(originalTransaction.contents.slice(0, FIRST_CHUNK_SIZE_BYTES));
+  const t1 = createAppendTransaction(originalTransaction);
+  const updateItem = createGroupItem(t0, transactionKey, '0');
+  const appendItem = createGroupItem(t1, transactionKey, '1');
   return [updateItem, appendItem];
 }
 
@@ -265,14 +251,6 @@ async function submitApproversObservers(group: IGroup) {
   });
 
   await Promise.allSettled(promises);
-}
-
-function isFileUpdate(transaction: Transaction): transaction is FileUpdateTransaction {
-  return transaction instanceof FileUpdateTransaction;
-}
-
-function reset() {
-  request.value = null;
 }
 
 /* Expose */

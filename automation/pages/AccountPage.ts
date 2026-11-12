@@ -1,15 +1,12 @@
 import { BasePage } from './BasePage.js';
 import { Page } from '@playwright/test';
 import { TransactionPage } from './TransactionPage.js';
-import { deleteAccountById } from '../utils/db/databaseQueries.js';
 
 export class AccountPage extends BasePage {
-  private readonly unlikedAccounts: string[]; // Store unlinked accounts
   private transactionPage: TransactionPage;
 
   constructor(window: Page) {
     super(window);
-    this.unlikedAccounts = [];
     this.transactionPage = new TransactionPage(window);
   }
 
@@ -135,10 +132,6 @@ export class AccountPage extends BasePage {
     await this.click(this.updateInNetworkLinkSelector);
   }
 
-  async addAccountToUnliked(accountId: string) {
-    this.unlikedAccounts.push(accountId);
-  }
-
   async unlinkAccounts() {
     await this.waitForElementToBeVisible(this.confirmUnlinkButtonSelector);
     await this.click(this.confirmUnlinkButtonSelector);
@@ -191,24 +184,6 @@ export class AccountPage extends BasePage {
 
   async clickOnLinkAccountButton() {
     await this.click(this.linkAccountButtonSelector, null, this.VERY_LONG_TIMEOUT);
-  }
-
-  async isUnlinkedAccountsListEmpty() {
-    return this.unlikedAccounts.length === 0;
-  }
-
-  async getFirstAccountFromUnlinkedList() {
-    return this.unlikedAccounts[0];
-  }
-
-  async ensureAccountExistsAndUnlinked() {
-    if (await this.isUnlinkedAccountsListEmpty()) {
-      const { newAccountId } = await this.transactionPage.createNewAccount();
-      await this.transactionPage.mirrorGetAccountResponse(newAccountId ?? '');
-      await this.transactionPage.clickOnTransactionsMenuButton();
-      await deleteAccountById(newAccountId ?? '');
-      await this.addAccountToUnliked(newAccountId ?? '');
-    }
   }
 
   async clickOnAccountCheckbox(accountId: string) {

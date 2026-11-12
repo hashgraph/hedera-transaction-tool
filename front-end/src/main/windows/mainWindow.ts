@@ -30,7 +30,7 @@ async function createWindow() {
       preload,
       nodeIntegration: false,
       contextIsolation: true,
-      sandbox: false,
+      sandbox: true,
       session,
     },
     show: false,
@@ -54,6 +54,21 @@ async function createWindow() {
 
   mainWindow.on('closed', () => {
     removeListeners();
+  });
+
+  mainWindow.webContents.on('will-navigate', (event, _url) => {
+    // TT does not navigate out of its index.html : so this callback is not called.
+    // But we disable it because it's recommended by security audits.
+    // https://www.electronjs.org/docs/latest/api/web-contents#event-will-navigate
+    event.preventDefault();
+  });
+
+  mainWindow.webContents.setWindowOpenHandler(() => {
+    // TT uses only one window : so this callback is not called.
+    // But we disable it because it's recommended by security audits.
+    // If someday TT supports multiple windows, we should probably revisit this code.
+    // https://www.electronjs.org/docs/latest/api/web-contents#contentssetwindowopenhandlerhandler
+    return { action: 'deny' };
   });
 
   if (process.env.VITE_DEV_SERVER_URL) {

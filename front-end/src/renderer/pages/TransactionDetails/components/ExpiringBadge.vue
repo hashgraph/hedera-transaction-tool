@@ -2,6 +2,7 @@
 import { computed, ref, onMounted, onUnmounted, watch } from 'vue';
 
 import { TransactionStatus } from '@shared/interfaces';
+import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards';
 
 /* Constants */
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
@@ -37,11 +38,6 @@ let intervalId: ReturnType<typeof setInterval> | null = null;
 let currentIntervalMs: number | null = null;
 
 /* Computed */
-const inProgressStatuses = [
-  TransactionStatus.NEW,
-  TransactionStatus.WAITING_FOR_SIGNATURES,
-];
-
 const timeUntilExpiry = computed(() => {
   if (!props.validStart) return null;
   const expiryTime = props.validStart.getTime() + props.validDuration * 1000;
@@ -53,7 +49,7 @@ const shouldShowBadge = computed(() => {
   if (!props.validStart || isNaN(props.validStart.getTime())) return false;
 
   // Must be in-progress status
-  if (!props.transactionStatus || !inProgressStatuses.includes(props.transactionStatus)) {
+  if (!isInProgressStatus(props.transactionStatus)) {
     return false;
   }
 
