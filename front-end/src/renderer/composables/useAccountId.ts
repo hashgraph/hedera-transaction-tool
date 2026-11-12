@@ -15,7 +15,7 @@ import { AppCache } from '@renderer/caches/AppCache';
 export interface AccountIdStore {
   accountId: Ref<string>;
   accountInfo: Ref<IAccountInfoParsed | null>;
-  fetchAccountInfo: (accountId: string) => Promise<IAccountInfoParsed | null>;
+  fetchAccountInfo: (accountId: string, signal?: AbortSignal) => Promise<IAccountInfoParsed | null>;
   accountIdFormatted: Ref<string>;
   accountIdWithChecksum: Ref<string | string[] | undefined>;
   autoRenewPeriodInDays: Ref<string>;
@@ -40,8 +40,12 @@ export default function useAccountId(): AccountIdStore {
   const allowances = ref<CryptoAllowance[]>([]);
   const loading = ref<boolean>(false);
 
-  const accountInfoController = ref<AbortController | null>(null);
-  const allowancesController = ref<AbortController | null>(null);
+  // Aborted whenever accountId changes, so only the latest request's results are applied.
+  // The account lookup goes through the shared AppCache, which can't be aborted (other callers may
+  // be waiting on the same request), so its result is simply ignored when the run was aborted.
+  let requestController: AbortController | null = null;
+  // Base id (without checksum) of the latest run, so a checksum-only edit doesn't restart it
+  let lastBaseId: string | null = null;
 
   /* Computed */
   const isValid = computed(() => accountInfo.value !== null);
@@ -67,9 +71,7 @@ export default function useAccountId(): AccountIdStore {
   const accountIdWithChecksum = computed(() => {
     try {
       return isValid.value
-        ? accountInfo.value?.accountId
-            .toStringWithChecksum(networkStore.client)
-            .split('-')
+        ? accountInfo.value?.accountId.toStringWithChecksum(networkStore.client).split('-')
         : accountIdFormatted.value;
     } catch {
       return accountIdFormatted.value;
@@ -91,31 +93,50 @@ export default function useAccountId(): AccountIdStore {
 
   /* Watchers */
   watch(accountId, async newAccountId => {
-    cancelPreviousRequests();
+    const baseId = newAccountId.split('-')[0];
 
-    if (!newAccountId) return resetData();
+    // Appending or changing only the checksum (e.g. on blur) refers to the same account, so keep
+    // the in-flight or completed lookup instead of flipping to loading again
+    if (newAccountId && baseId === lastBaseId) return;
+
+    cancelPreviousRequests();
+    lastBaseId = newAccountId ? baseId : null;
+
+    if (!newAccountId) {
+      loading.value = false;
+      return resetData();
+    }
+
+    const controller = new AbortController();
+    requestController = controller;
 
     loading.value = true;
     try {
-      const baseId = newAccountId.split('-')[0];
       AccountId.fromString(baseId);
 
-      accountInfoController.value = new AbortController();
       const accountInfoRes = await fetchAccountInfo(baseId);
 
-      allowancesController.value = new AbortController();
-      const accountAllowancesRes = await getAccountAllowances(
-        baseId,
-        networkStore.mirrorNodeBaseURL,
-        allowancesController.value,
-      );
+      let accountAllowancesRes: CryptoAllowance[] = [];
+      try {
+        accountAllowancesRes = await getAccountAllowances(
+          baseId,
+          networkStore.mirrorNodeBaseURL,
+          controller,
+        );
+      } catch {
+        // Allowances are secondary; failing to load them must not invalidate the account itself
+      }
 
+      if (controller.signal.aborted) return;
       accountInfo.value = accountInfoRes;
       allowances.value = accountAllowancesRes;
     } catch {
+      // Only an invalid id gets here (it is parsed before the first await, so this run can't have
+      // been aborted yet); lookup and allowances failures are handled where they happen.
       resetData();
     } finally {
-      loading.value = false;
+      // A newer request owns the loading flag once this one has been aborted
+      if (!controller.signal.aborted) loading.value = false;
     }
   });
 
@@ -126,11 +147,8 @@ export default function useAccountId(): AccountIdStore {
   }
 
   function cancelPreviousRequests() {
-    accountInfoController.value?.abort();
-    allowancesController.value?.abort();
-
-    accountInfoController.value = null;
-    allowancesController.value = null;
+    requestController?.abort();
+    requestController = null;
   }
 
   function getSpenderAllowance(spenderId: string | AccountId) {
