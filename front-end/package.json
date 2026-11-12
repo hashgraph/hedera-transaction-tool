@@ -99,7 +99,7 @@
     "vite-plugin-eslint": "1.8.1",
     "vite-plugin-vue-devtools": "8.2.1",
     "vitest": "catalog:vitest",
-    "vitest-mock-extended": "5.1.1",
+    "vitest-mock-extended": "6.0.0",
     "vue": "3.5.44",
     "vue-component-type-helpers": "3.3.13",
     "vue-tsc": "3.3.13"
