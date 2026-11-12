@@ -5,6 +5,7 @@ import {
   AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
+  ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
@@ -36,6 +37,7 @@ import type {
   ApproveHbarAllowanceData,
   ComponentRegisteredServiceEndpoint,
   ComponentServiceEndpoint,
+  ContractExecuteData,
   FileAppendData,
   FileCreateData,
   FileData,
@@ -55,6 +57,7 @@ import type {
   TransferHbarData,
 } from '@renderer/utils';
 import { getMaximumExpirationTime, getMinimumExpirationTime } from '.';
+import { contractIdToReference } from '@renderer/utils/sdk/contractCall';
 import { DISPLAY_FILE_SIZE_LIMIT } from '@shared/constants';
 import { uint8ToHex } from '..';
 import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
@@ -543,4 +546,23 @@ const stripUiIds = (data: Record<string, unknown>) => {
       }
     }
   }
+};
+
+// functionName/functionArgs can't be recovered here without an ABI (see ContractExecuteData),
+// so they're always blank - harmless for transactionsDataMatch since both sides of any
+// comparison go through this same function, and rawFunctionParametersHex carries the real
+// per-call difference instead.
+export const getContractExecuteData = (
+  transaction: ContractExecuteTransaction,
+): ContractExecuteData => {
+  const functionParameters = transaction.functionParameters;
+
+  return {
+    contractId: transaction.contractId ? contractIdToReference(transaction.contractId) : '',
+    gas: transaction.gas ? Number(transaction.gas.toString()) : 0,
+    payableAmount: transaction.payableAmount || new Hbar(0),
+    functionName: '',
+    functionArgs: [],
+    rawFunctionParametersHex: functionParameters ? uint8ToHex(functionParameters) : '',
+  };
 };

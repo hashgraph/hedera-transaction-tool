@@ -23,6 +23,7 @@ export enum BackEndTransactionType {
   REGISTERED_NODE_CREATE = 'REGISTERED NODE CREATE',
   REGISTERED_NODE_UPDATE = 'REGISTERED NODE UPDATE',
   REGISTERED_NODE_DELETE = 'REGISTERED NODE DELETE',
+  CONTRACT_EXECUTE = 'CONTRACT EXECUTE',
 }
 
 // Hand-copies the same label strings as HederaSchema's TransactionTypeLabels (keyed here by
@@ -49,6 +50,7 @@ export const TransactionTypeName = {
   [BackEndTransactionType.REGISTERED_NODE_CREATE]: 'Registered Node Create Transaction',
   [BackEndTransactionType.REGISTERED_NODE_UPDATE]: 'Registered Node Update Transaction',
   [BackEndTransactionType.REGISTERED_NODE_DELETE]: 'Registered Node Delete Transaction',
+  [BackEndTransactionType.CONTRACT_EXECUTE]: 'Contract Execute Transaction',
 };
 
 export enum TransactionStatus {

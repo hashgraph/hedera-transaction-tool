@@ -3,6 +3,7 @@ import { mockDeep } from 'vitest-mock-extended';
 import registerListeners from '@main/modules/ipcHandlers/localUser';
 import listenForKeyPairEvents from '@main/modules/ipcHandlers/localUser/keyPairs';
 import listenForAccountsEvents from '@main/modules/ipcHandlers/localUser/accounts';
+import listenForSmartContractsEvents from '@main/modules/ipcHandlers/localUser/smartContracts';
 import listenForTransactionsEvents from '@main/modules/ipcHandlers/localUser/transactions';
 import listenForFilesEvents from '@main/modules/ipcHandlers/localUser/files';
 import listenForTransactionDraftsEvents from '@main/modules/ipcHandlers/localUser/transactionDrafts';
@@ -25,6 +26,7 @@ vi.mock('electron', () => ({
 
 vi.mock('@main/modules/ipcHandlers/localUser/keyPairs', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/accounts', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/smartContracts', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/transactions', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/files', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/transactionDrafts', () => mockDeep());
@@ -44,6 +46,7 @@ describe('index', () => {
 
     expect(listenForKeyPairEvents).toHaveBeenCalled();
     expect(listenForAccountsEvents).toHaveBeenCalled();
+    expect(listenForSmartContractsEvents).toHaveBeenCalled();
     expect(listenForTransactionsEvents).toHaveBeenCalled();
     expect(listenForFilesEvents).toHaveBeenCalled();
     expect(listenForTransactionDraftsEvents).toHaveBeenCalled();

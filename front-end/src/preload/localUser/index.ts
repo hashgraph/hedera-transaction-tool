@@ -3,6 +3,7 @@ import themeAPI from './theme';
 import keyPairsAPI from './keyPairs';
 import utilsAPI from './utils';
 import accountsAPI from './accounts';
+import smartContractsAPI from './smartContracts';
 import filesAPI from './files';
 import complexKeysAPI from './complexKeys';
 import localUserAPI from './localUser';
@@ -30,6 +31,7 @@ export default {
   ...keyPairsAPI,
   ...utilsAPI,
   ...accountsAPI,
+  ...smartContractsAPI,
   ...filesAPI,
   ...complexKeysAPI,
   ...localUserAPI,

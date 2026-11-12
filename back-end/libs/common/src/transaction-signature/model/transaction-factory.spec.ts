@@ -1,7 +1,7 @@
 import TransactionFactory from './transaction-factory';
-import { TokenBurnTransaction, TransferTransaction } from '@hiero-ledger/sdk';
+import { ContractExecuteTransaction, TokenBurnTransaction, TransferTransaction } from '@hiero-ledger/sdk';
 import * as Models from '.';
-import { TransferTransactionModel } from '.';
+import { ContractExecuteTransactionModel, TransferTransactionModel } from '.';
 
 describe('TransactionFactory', () => {
   it('should have all models with a TRANSACTION_TYPE', () => {
@@ -25,5 +25,11 @@ describe('TransactionFactory', () => {
 
     const instance = TransactionFactory.fromBytes(Buffer.from(sampleBytes));
     expect(instance).toBeInstanceOf(TransferTransactionModel);
+  });
+
+  it('supports contract execute transactions', () => {
+    expect(TransactionFactory.fromTransaction(new ContractExecuteTransaction())).toBeInstanceOf(
+      ContractExecuteTransactionModel,
+    );
   });
 });

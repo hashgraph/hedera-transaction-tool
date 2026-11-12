@@ -2,6 +2,7 @@ export * from './account-allowance-approve-transaction.model';
 export * from './account-create-transaction.model';
 export * from './account-delete-transaction.model';
 export * from './account-update-transaction.model';
+export * from './contract-execute-transaction.model';
 export * from './file-append-transaction.model';
 export * from './file-create-transaction.model';
 export * from './file-update-transaction.model';

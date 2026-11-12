@@ -1,4 +1,8 @@
-import type { IAccountInfoParsed, INodeInfoParsed, IRegisteredNodeInfoParsed } from '@shared/interfaces';
+import type {
+  IAccountInfoParsed,
+  INodeInfoParsed,
+  IRegisteredNodeInfoParsed,
+} from '@shared/interfaces';
 
 import {
   AccountAllowanceApproveTransaction,
@@ -8,6 +12,7 @@ import {
   AccountUpdateTransaction,
   BlockNodeApi,
   BlockNodeServiceEndpoint,
+  ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
   FileId,
@@ -42,11 +47,18 @@ import { MEMO_MAX_LENGTH } from '@shared/constants';
 
 import { isAccountId, isContractId, isFileId } from '../validator';
 import { compareKeys } from '.';
+import { hexToUint8Array } from '@renderer/utils';
 import {
   compareNodeServiceEndpoint,
   compareNodeServiceEndpoints,
 } from '@renderer/utils/sdk/serviceEndpoints.ts';
 import { compareServiceEndpoints } from '@renderer/utils/sdk/registeredServiceEndpoints.ts';
+import { parseContractReference } from '@renderer/utils/sdk/contractCall.ts';
+import {
+  areContractCallArgsEncodable,
+  encodeContractFunctionParams,
+  type ContractCallArgument,
+} from '@renderer/utils/sdk/contractFunctionParams.ts';
 
 export type TransactionCommonData = {
   payerId: string;
@@ -150,11 +162,7 @@ export type NodeDeleteData = {
 };
 
 /* HIP-1137 — Registered Node */
-export type RegisteredEndpointType =
-  | 'blockNode'
-  | 'mirrorNode'
-  | 'rpcRelay'
-  | 'generalService';
+export type RegisteredEndpointType = 'blockNode' | 'mirrorNode' | 'rpcRelay' | 'generalService';
 
 export interface ComponentRegisteredServiceEndpoint extends ComponentServiceEndpoint {
   type: RegisteredEndpointType;
@@ -199,6 +207,19 @@ export type SystemDeleteData = SystemData & {
 };
 
 export type SystemUndeleteData = SystemData;
+
+export type ContractExecuteData = {
+  contractId: string;
+  gas: number;
+  payableAmount: Hbar;
+  functionName: string;
+  functionArgs: ContractCallArgument[];
+  // Set only by getContractExecuteData (always blank on a freshly-built transaction, since the
+  // builder below ignores it) - the raw encoded calldata is the only thing that lets
+  // transactionsDataMatch tell two different function calls apart without needing an ABI to
+  // decode functionName/functionArgs back out of an arbitrary transaction.
+  rawFunctionParametersHex?: string;
+};
 
 /* Crafts transaction id by account id and valid start */
 export const createTransactionId = (
@@ -568,7 +589,6 @@ const setNodeData = (
   data: NodeData,
   currentNodeInfo?: INodeInfoParsed | null,
 ) => {
-
   // const newDescription = data.description;
   // const oldDescription = baseline?.description ?? '';
   // if (oldDescription !== newDescription) {
@@ -586,7 +606,6 @@ const setNodeData = (
       transaction.setDescription('');
     }
   }
-
 
   if (isAccountId(data.nodeAccountId)) {
     const newValue = AccountId.fromString(data.nodeAccountId);
@@ -611,7 +630,10 @@ const setNodeData = (
   if (data.grpcWebProxyEndpoint !== null) {
     const newValue = getServiceEndpoint(data.grpcWebProxyEndpoint);
     const oldValue = currentNodeInfo?.grpc_web_proxy_endpoint ?? null;
-    if (newValue !== null && (oldValue === null || !compareNodeServiceEndpoint(oldValue, newValue))) {
+    if (
+      newValue !== null &&
+      (oldValue === null || !compareNodeServiceEndpoint(oldValue, newValue))
+    ) {
       transaction.setGrpcWebProxyEndpoint(newValue);
     }
   } else {
@@ -671,7 +693,6 @@ export function sortAndCompareLongs(a1: Long[], a2: Long[]): boolean {
   }
   return true;
 }
-
 
 /* Node Create */
 export function createNodeCreateTransaction(data: TransactionCommonData & NodeData) {
@@ -794,9 +815,7 @@ export const buildRegisteredServiceEndpoint = (
       // any code outside the SDK's known set. Filter unknown codes against
       // `KNOWN_BLOCK_NODE_API_CODES` (derived from the running SDK) to avoid
       // crashing the build for drafts saved on a future SDK release.
-      const apis = (data.endpointApis ?? []).filter(code =>
-        KNOWN_BLOCK_NODE_API_CODES.has(code),
-      );
+      const apis = (data.endpointApis ?? []).filter(code => KNOWN_BLOCK_NODE_API_CODES.has(code));
       if (apis.length > 0) {
         endpoint.setEndpointApis(apis);
       }
@@ -867,7 +886,7 @@ export function createRegisteredNodeUpdateTransaction(
 
   if (data.adminKey) {
     const newValue = data.adminKey;
-    const oldValue = currentNodeInfo !== null ? currentNodeInfo.admin_key : null
+    const oldValue = currentNodeInfo !== null ? currentNodeInfo.admin_key : null;
     if (oldValue === null || (newValue !== null && !compareKeys(oldValue, newValue))) {
       transaction.setAdminKey(data.adminKey);
     }
@@ -959,5 +978,35 @@ export function createSystemUndeleteTransaction(
   const transaction = new SystemUndeleteTransaction();
   setTransactionCommonData(transaction, data);
   setSystemData(transaction, data);
+  return transaction;
+}
+
+/* Contract Execute */
+export function createContractExecuteTransaction(
+  data: TransactionCommonData & ContractExecuteData,
+): ContractExecuteTransaction {
+  const transaction = new ContractExecuteTransaction();
+  setTransactionCommonData(transaction, data);
+
+  const contractId = parseContractReference(data.contractId);
+  if (contractId) {
+    transaction.setContractId(contractId);
+  }
+
+  transaction.setGas(data.gas || 0);
+
+  if (data.payableAmount.toBigNumber().gt(0)) {
+    transaction.setPayableAmount(data.payableAmount);
+  }
+
+  // This runs on every render of the create form, so skip encoding while args are incomplete
+  // (the form's create button is disabled in that state).
+  if (data.functionName && areContractCallArgsEncodable(data.functionArgs)) {
+    transaction.setFunction(data.functionName, encodeContractFunctionParams(data.functionArgs));
+  } else if (!data.functionName && data.rawFunctionParametersHex) {
+    // Reloaded draft whose function couldn't be matched to an ABI (yet) - keep the calldata as-is.
+    transaction.setFunctionParameters(hexToUint8Array(data.rawFunctionParametersHex));
+  }
+
   return transaction;
 }

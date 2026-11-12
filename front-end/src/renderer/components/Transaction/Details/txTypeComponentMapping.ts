@@ -1,5 +1,6 @@
 import AccountApproveAllowanceDetails from './AccountApproveAllowanceDetails.vue';
 import AccountDetails from './AccountDetails.vue';
+import ContractExecuteDetails from './ContractExecuteDetails.vue';
 import DeleteAccountDetails from './DeleteAccountDetails.vue';
 import FileDetails from './FileDetails.vue';
 import FreezeDetails from './FreezeDetails.vue';
@@ -28,6 +29,7 @@ export const transactionTypeKeys = {
   registeredNodeCreate: 'RegisteredNodeCreateTransaction',
   registeredNodeUpdate: 'RegisteredNodeUpdateTransaction',
   registeredNodeDelete: 'RegisteredNodeDeleteTransaction',
+  contractExecute: 'ContractExecuteTransaction',
 };
 
 const txTypeComponentMapping = {
@@ -48,6 +50,7 @@ const txTypeComponentMapping = {
   [transactionTypeKeys.registeredNodeCreate]: RegisteredNodeDetails,
   [transactionTypeKeys.registeredNodeUpdate]: RegisteredNodeDetails,
   [transactionTypeKeys.registeredNodeDelete]: RegisteredNodeDetails,
+  [transactionTypeKeys.contractExecute]: ContractExecuteDetails,
 };
 
 export default txTypeComponentMapping;

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from 'vitest';
-import { FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
+import { ContractExecuteTransaction, FreezeTransaction, FreezeType, Transaction, TransferTransaction } from '@hiero-ledger/sdk';
 import {
   formatTransactionType,
   getDisplayTransactionType,
@@ -356,5 +356,14 @@ describe('SDK Transaction Utilities - Freeze Types', () => {
       const transferTx = new TransferTransaction();
       expect(getRawTransactionType(transferTx)).toBe('Transfer Transaction');
     });
+  });
+});
+
+describe('getTransactionType - ContractExecuteTransaction', () => {
+  test('is recognised and formatted', () => {
+    const tx = new ContractExecuteTransaction();
+    expect(getTransactionType(tx)).toBe('Contract Execute Transaction');
+    expect(getTransactionType(tx, true)).toBe('ContractExecuteTransaction');
+    expect(getTransactionType(tx, false, true)).toBe('Contract Execute');
   });
 });

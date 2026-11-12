@@ -1,12 +1,15 @@
 import {
   AccountCreateTransaction,
   AccountId,
+  ContractExecuteTransaction,
   PrivateKey,
   Transaction as SDKTransaction,
+  TokenBurnTransaction,
   TransactionId,
 } from '@hiero-ledger/sdk';
 
-import { validateSignature } from './transaction';
+import { TransactionType } from '@entities';
+import { getTransactionTypeEnumValue, validateSignature } from './transaction';
 
 describe('validateSignature', () => {
   const createFrozenTransaction = () =>
@@ -73,5 +76,19 @@ describe('validateSignature', () => {
         signatureMap,
       ),
     ).toThrow('Invalid signature');
+  });
+});
+
+describe('getTransactionTypeEnumValue', () => {
+  it('classifies a ContractExecuteTransaction as CONTRACT_EXECUTE', () => {
+    expect(getTransactionTypeEnumValue(new ContractExecuteTransaction())).toBe(
+      TransactionType.CONTRACT_EXECUTE,
+    );
+  });
+
+  it('rejects transaction types it does not know about', () => {
+    expect(() => getTransactionTypeEnumValue(new TokenBurnTransaction())).toThrow(
+      'Unsupported transaction type',
+    );
   });
 });
