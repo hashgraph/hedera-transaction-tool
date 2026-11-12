@@ -165,4 +165,50 @@ describe('validateSenderFrame', () => {
 
     expect(validateSenderFrame(event)).toBe(true);
   });
+
+  it('returns false when production sender frame URL is outside DIST directory', () => {
+    vi.stubEnv('VITE_DEV_SERVER_URL', '');
+    vi.stubEnv('DIST', '/app/dist');
+
+    const frame = {
+      url: pathToFileURL('/app/other/index.html').href,
+    };
+
+    const event = {
+      senderFrame: frame,
+      sender: {
+        mainFrame: frame,
+      },
+    } as Electron.IpcMainInvokeEvent;
+
+    expect(validateSenderFrame(event)).toBe(false);
+  });
+
+  it('should throw an error when the IPC sender is unauthorized', () => {
+    vi.stubEnv('VITE_DEV_SERVER_URL', 'http://localhost:5173');
+
+    const handler = vi.fn();
+    Object.defineProperty(handler, 'name', { value: 'testHandler' });
+
+    createIPCChannel('test-channel', [handler]);
+
+    const registeredHandler = vi.mocked(ipcMain.handle).mock.calls[0][1];
+
+    const frame = {
+      url: 'http://unauthorized.com',
+    };
+
+    const event = {
+      senderFrame: frame,
+      sender: {
+        mainFrame: frame,
+      },
+    } as Electron.IpcMainInvokeEvent;
+
+    expect(() => registeredHandler(event as any)).toThrow(
+      `Unauthorized IPC sender: ${ frame.url }`,
+    );
+
+    expect(handler).not.toHaveBeenCalled();
+  });
 });
