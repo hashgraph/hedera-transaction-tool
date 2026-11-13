@@ -191,7 +191,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 3.5.5  | User can log in with new password after change                                   | Yes       | Verify user can change password |
 | 3.5.6  | New password must be >= 10 characters (validation)                               | Yes as Component Test | keeps change password disabled for weak new password |
 | 3.5.7  | Organization user can change org password                                        | Yes       | Verify organization user can change password    |
-| 3.5.8  | Keychain user sees reset application form instead of password change             | No        |                                                 |
+| 3.5.8  | Keychain user sees reset application form instead of password change             | Yes as Component Test | renders the Reset Application form instead of the password change form |
 | 3.5.9  | User can log out (personal mode)                                                 | Yes       | Verify logout redirects user to sign-in screen  |
 | 3.5.10 | User can log out (organization mode)                                             | Yes       | Verify organization login form is visible after logout |
 | 3.5.11 | Logout redirects to login                                                        | Yes       | Verify logout redirects user to sign-in screen  |
@@ -237,7 +237,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #     | Scenario                                                                                                           | Automated | Covered By                                                                                                  |
 | ----- | ------------------------------------------------------------------------------------------------------------------ | --------- | ----------------------------------------------------------------------------------------------------------- |
 | 4.2.1 | Transaction page shows 6 tabs (Drafts, Ready for Review, Ready to Sign, In Progress, Ready for Execution, History) | Yes as Component Test | shows organization transaction tabs and import signatures action in organization mode                       |
-| 4.2.2 | Notification badges appear on relevant tabs                                                                        | No        |                                                                                                             |
+| 4.2.2 | Notification badges appear on relevant tabs                                                                        | Yes as Component Test | `Transactions.spec.ts` › tab notification badges (per-tab indicator mapping); `storeNotifications.spec.ts` (websocket new/delete handling) |
 | 4.2.3 | "Import Signatures from File" option is available (org only)                                                       | Yes as Component Test | shows organization transaction tabs and import signatures action in organization mode                       |
 | 4.2.4 | User can import .tx2 (V2) signatures                                                                               | Yes       | Verify user can export and import transaction with 25 signatures for TTv1->TTv2 compatibility               |
 | 4.2.5 | User can import .zip (V1) signatures                                                                               | Yes       | Verify user can import superfluous signatures from TTv1 format                                              |
@@ -962,8 +962,8 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | ------------------------------- | --------------- | ------------- | ----------------------- | ------- | ------- | -------- | ------- | ---------- | ----------------------- |
 | 1. Registration                 | 22              | 14            | 8                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 2. Login                        | 17              | 13            | 4                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 3. Settings                     | 78              | 60            | 14                       | 0       | 0       | 3        | 1       | 95%        | 95%                     |
-| 4. Transactions List            | 34              | 22            | 10                       | 0       | 1       | 1        | 0       | 94%        | 97%                     |
+| 3. Settings                     | 78              | 60            | 15                       | 0       | 0       | 2        | 1       | 96%        | 96%                     |
+| 4. Transactions List            | 34              | 22            | 11                       | 0       | 1       | 0        | 0       | 97%        | 100%                    |
 | 5. Transaction Creation         | 101             | 92            | 7                        | 0       | 1       | 0        | 1       | 98%        | 99%                     |
 | 6. Transaction Details          | 26              | 24            | 1                        | 0       | 0       | 1        | 0       | 96%        | 96%                     |
 | 7. Transaction Groups           | 39              | 29            | 7                        | 0       | 0       | 3        | 0       | 92%        | 92%                     |
@@ -976,16 +976,16 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
 | 16. User Migration              | 15              | 0             | 14                       | 0       | 0       | 1        | 0       | 93%        | 93%                     |
-| **Total**                       | **487**         | **365**       | **101**                  | **3**   | **5**   | **11**   | **2**   | **96%**    | **97%**                 |
+| **Total**                       | **487**         | **365**       | **103**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
-The migrated frontend package coverage currently comes from 92 Vitest renderer test cases (unit + component) across 18 spec files.
+The migrated frontend package coverage currently comes from 2,517 Vitest renderer test cases (unit + component) across 185 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 101 + 3) / 487 = 96.30%`, rounded to `96%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3) / 487 = 96.71%`, rounded to `97%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 101 + 3 + 5) / 487 = 97.33%`, rounded to `97%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3 + 5) / 487 = 97.74%`, rounded to `98%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
@@ -1017,8 +1017,6 @@ These scenarios affect core access paths or org collaboration workflows that use
 
 | Area                        | Scenario # | Description                                                  | Why Important                                                                                  |
 | --------------------------- | ---------- | ------------------------------------------------------------ |------------------------------------------------------------------------------------------------|
-| **Profile / Auth**          | 3.5.8      | Keychain user sees reset application form instead of password change | Keychain users see a different profile view; breakage leaves them with no auth option  |
-| **Org Transaction List**    | 4.2.2      | Notification badges appear on relevant org transaction tabs  | Missing badges cause org users to miss signing obligations                                     |
 | **Org Transaction Details** | 6.3.5      | Approvers list is shown for org transactions                 | Approvers cannot verify who needs to approve the transaction                                   |
 
 #### Tier 3 - Medium Priority (Verify When Changed)
@@ -1043,6 +1041,6 @@ These scenarios cover edge cases and error handling. Verify periodically or afte
 ### Priority Areas for Additional Automation
 
 1. **Error Handling / Edge Cases (100%)** - Loading-state coverage. Note: 14.4.1 and 14.4.3 are covered by renderer unit tests, 14.4.2 is covered by unit tests (`front-end/src/tests/renderer/stores/storeWebsocketConnection.spec.ts`) and 14.4.4 by `front-end/src/tests/main/modules/ipcHandlers/localUser/transactions.spec.ts`. 14.5.4 (expired tx) and 14.5.5 (duplicate tx ID) are not reachable through the renderer UI and are covered at the backend layer.
-2. **Transactions List (94%)** - Re-enable Ready for Review tab coverage, org tab notification badges, history table pagination, drafts table sort and pagination
+2. **Transactions List (97%)** - Re-enable Ready for Review tab coverage, history table pagination, drafts table sort and pagination
 3. **Organization Transaction Workflows (92%)** - Re-enable council-scale (57-user) regression coverage
 4. **Contact List (96%)** - Approver duplicate handling (skipped; Approvers feature flag disabled)

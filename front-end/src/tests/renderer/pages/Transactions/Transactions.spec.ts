@@ -191,6 +191,105 @@ describe('Transactions.vue', () => {
     expect(wrapper.find('[data-testid="badge-Ready to Sign"]').exists()).toBe(false);
   });
 
+  describe('tab notification badges', () => {
+    const ORG_URL = 'https://org.example';
+    const BADGED_TABS = ['Ready for Review', 'Ready to Sign', 'Ready for Execution', 'History'];
+
+    const indicator = (type: string, network = 'testnet') => ({
+      notification: { type, additionalData: { network } },
+    });
+
+    // Which indicator types feed which tab (the History tab groups all terminal states)
+    const tabIndicators: [string, string[]][] = [
+      ['Ready for Review', ['TRANSACTION_INDICATOR_REVIEW']],
+      ['Ready to Sign', ['TRANSACTION_INDICATOR_SIGN']],
+      ['Ready for Execution', ['TRANSACTION_INDICATOR_EXECUTABLE']],
+      [
+        'History',
+        [
+          'TRANSACTION_INDICATOR_EXECUTED',
+          'TRANSACTION_INDICATOR_EXPIRED',
+          'TRANSACTION_INDICATOR_ARCHIVED',
+          'TRANSACTION_INDICATOR_CANCELLED',
+          'TRANSACTION_INDICATOR_FAILED',
+        ],
+      ],
+    ];
+
+    const badgeFor = (wrapper: ReturnType<typeof mountTransactions>, tab: string) => {
+      const badge = wrapper.find(`[data-testid="badge-${tab}"]`);
+      return badge.exists() ? badge.text() : null;
+    };
+
+    test.each(tabIndicators)('%s tab counts only its own indicator types', (tab, types) => {
+      mocks.userStore.selectedOrganization = { serverUrl: ORG_URL };
+      // One of every indicator type, so anything that leaks into the wrong tab shows up
+      const everyType = tabIndicators.flatMap(([, t]) => t);
+      mocks.notificationsStore.notifications = {
+        [ORG_URL]: everyType.map(type => indicator(type)),
+      };
+
+      const wrapper = mountTransactions();
+
+      expect(badgeFor(wrapper, tab)).toBe(String(types.length));
+      for (const other of BADGED_TABS.filter(t => t !== tab)) {
+        const expected = tabIndicators.find(([t]) => t === other)![1].length;
+        expect(badgeFor(wrapper, other)).toBe(String(expected));
+      }
+    });
+
+    test('Drafts and In Progress never show a badge', () => {
+      mocks.userStore.selectedOrganization = { serverUrl: ORG_URL };
+      mocks.notificationsStore.notifications = {
+        [ORG_URL]: tabIndicators.flatMap(([, types]) => types.map(type => indicator(type))),
+      };
+
+      const wrapper = mountTransactions();
+
+      expect(badgeFor(wrapper, 'Drafts')).toBeNull();
+      expect(badgeFor(wrapper, 'In Progress')).toBeNull();
+    });
+
+    test.each(tabIndicators)('%s tab ignores indicators from other networks', (tab, types) => {
+      mocks.userStore.selectedOrganization = { serverUrl: ORG_URL };
+      mocks.notificationsStore.notifications = {
+        [ORG_URL]: [indicator(types[0], 'mainnet'), indicator(types[0], 'previewnet')],
+      };
+
+      const wrapper = mountTransactions();
+
+      expect(badgeFor(wrapper, tab)).toBeNull();
+    });
+
+    test('ignores non-indicator notification types', () => {
+      mocks.userStore.selectedOrganization = { serverUrl: ORG_URL };
+      mocks.notificationsStore.notifications = {
+        [ORG_URL]: [
+          indicator('TRANSACTION_WAITING_FOR_SIGNATURES'),
+          indicator('TRANSACTION_READY_FOR_EXECUTION'),
+          indicator('TRANSACTION_CANCELLED'),
+        ],
+      };
+
+      const wrapper = mountTransactions();
+
+      for (const tab of BADGED_TABS) {
+        expect(badgeFor(wrapper, tab)).toBeNull();
+      }
+    });
+
+    test("does not count another organization's notifications", () => {
+      mocks.userStore.selectedOrganization = { serverUrl: ORG_URL };
+      mocks.notificationsStore.notifications = {
+        'https://other.example': [indicator('TRANSACTION_INDICATOR_SIGN')],
+      };
+
+      const wrapper = mountTransactions();
+
+      expect(badgeFor(wrapper, 'Ready to Sign')).toBeNull();
+    });
+  });
+
   test('opens transaction selection modal from the Create New menu', async () => {
     const wrapper = mountTransactions();
 
