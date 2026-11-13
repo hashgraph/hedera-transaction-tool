@@ -51,13 +51,13 @@ import {
 } from '@renderer/utils';
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
-import SignatureStatus from '@renderer/components/SignatureStatus.vue';
 import UsersGroup from '@renderer/components/Organization/UsersGroup.vue';
 
 import txTypeComponentMapping from '@renderer/components/Transaction/Details/txTypeComponentMapping';
 
 import TransactionDetailsHeader from './components/TransactionDetailsHeader.vue';
 import TransactionDetailsStatusStepper from './components/TransactionDetailsStatusStepper.vue';
+import SignaturesCollectedSection from './components/SignaturesCollectedSection.vue';
 import { getGroup } from '@renderer/services/transactionGroupsService';
 import { AppCache } from '@renderer/caches/AppCache.ts';
 import DateTimeString from '@renderer/components/ui/DateTimeString.vue';
@@ -636,14 +636,11 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
               <hr class="separator my-5" />
 
               <!-- SIGNATURES COLLECTED -->
-              <h2 v-if="signatureKeyObject" class="text-title text-bold">Signatures Collected</h2>
-              <div v-if="signatureKeyObject" class="text-small mt-5">
-                <SignatureStatus
-                  :signature-key-object="signatureKeyObject"
-                  :public-keys-signed="signersPublicKeys"
-                  :show-external="showExternal"
-                />
-              </div>
+              <SignaturesCollectedSection
+                :signature-key-object="signatureKeyObject"
+                :signers-public-keys="signersPublicKeys"
+                :show-external="showExternal"
+              />
 
               <hr
                 v-if="orgTransaction?.observers && orgTransaction.observers.length > 0"
