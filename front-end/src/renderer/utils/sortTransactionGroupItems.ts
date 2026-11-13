@@ -18,8 +18,7 @@ export function compareGroupItems(i1: IGroupItem, i2: IGroupItem, sort: Transact
     case TransactionNodeSortField.TRANSACTION_ID:
       result = compareString(i1.transaction.transactionId, i2.transaction.transactionId);
       if (result === 0) {
-        // n1 and n2 are groups
-        result = compareString(i1.transaction.validStart, i1.transaction.validStart);
+        result = compareString(i1.transaction.validStart, i2.transaction.validStart);
       }
       break;
     case TransactionNodeSortField.TRANSACTION_TYPE:
@@ -29,19 +28,19 @@ export function compareGroupItems(i1: IGroupItem, i2: IGroupItem, sort: Transact
       const t2 = bt2 ? getTransactionTypeFromBackendType(bt2) : undefined;
       result = compareString(t1, t2);
       if (result === 0) {
-        result = compareString(i1.transaction.validStart, i1.transaction.validStart);
+        result = compareString(i1.transaction.validStart, i2.transaction.validStart);
       }
       break;
     case TransactionNodeSortField.DESCRIPTION:
       result = compareString(i1.transaction.description, i2.transaction.description);
       if (result === 0) {
-        result = compareString(i1.transaction.validStart, i1.transaction.validStart);
+        result = compareString(i1.transaction.validStart, i2.transaction.validStart);
       }
       break;
     case TransactionNodeSortField.STATUS:
       result = compareString(i1.transaction.status, i2.transaction.status);
       if (result === 0) {
-        result = compareString(i1.transaction.validStart, i1.transaction.validStart);
+        result = compareString(i1.transaction.validStart, i2.transaction.validStart);
       }
       break;
     case TransactionNodeSortField.VALID_START_DATE:
