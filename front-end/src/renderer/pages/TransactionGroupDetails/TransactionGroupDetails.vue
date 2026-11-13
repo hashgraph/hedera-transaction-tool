@@ -82,7 +82,7 @@ const cancel: ActionButton = 'Cancel All';
 const exportName: ActionButton = 'Export All (Transaction Tool 1.0)';
 
 const defaultSorting: ITransactionNodeSort = {
-  field: TransactionNodeSortField.TRANSACTION_ID,
+  field: TransactionNodeSortField.VALID_START_DATE,
   direction: 'asc',
 };
 
