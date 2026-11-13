@@ -36,7 +36,7 @@ export default function useStoredTablePreferences(scope: string) {
   ): { field: F; direction: 'asc' | 'desc' } => {
     const stored = load('sort') as { field?: unknown; direction?: unknown } | null;
     const field = typeof stored?.field === 'string' ? isValidField(stored.field) : undefined;
-    if (field && (stored?.direction === 'asc' || stored?.direction === 'desc')) {
+    if (field !== undefined && (stored?.direction === 'asc' || stored?.direction === 'desc')) {
       return { field, direction: stored.direction };
     }
     return fallback;
