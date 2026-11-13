@@ -171,6 +171,15 @@ const groupId = computed(() => {
   return Number.isNaN(id) ? null : id;
 });
 
+const sortedGroupItems = computed(() => {
+  const result = group.value?.groupItems.slice() ?? [];
+  sortTransactionGroupItems(result, sort.value.field);
+  if (sort.value.direction === 'desc') {
+    result.reverse();
+  }
+  return result;
+});
+
 const pageTitle = computed(() => {
   let txType: BackEndTransactionType | null = null;
   let result: string | null = null;
@@ -385,9 +394,8 @@ watch(
     router.back();
   },
 );
-watch([sort, () => group.value?.groupItems ?? []], () => {
+watch(sort, () => {
   stored.save('sort', { field: sortFieldToUrl(sort.value.field), direction: sort.value.direction });
-  sortGroupItems();
 });
 
 /* Functions */
@@ -557,7 +565,7 @@ function sortGroupItems(): void {
             <hr class="separator my-5 w-100" />
 
             <Transition mode="out-in" name="fade">
-              <template v-if="group.groupItems.length > 0">
+              <template v-if="sortedGroupItems.length > 0">
                 <div class="fill-remaining overflow-x-auto">
                   <table class="table-custom">
                     <thead>
@@ -655,7 +663,7 @@ function sortGroupItems(): void {
                       </tr>
                     </thead>
                     <tbody>
-                      <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
+                      <template v-for="(groupItem, index) in sortedGroupItems" :key="groupItem.seq">
                         <TransactionGroupRow
                           :group-item="groupItem"
                           :row-index="index"
