@@ -113,18 +113,11 @@ export type IDeleteReviewerRuleRequest = IDeleteReviewerGroupRequest;
 
 export type ChangeRequestStatus = 'PENDING' | 'APPLIED' | 'REJECTED';
 
-export interface IAttestationSignature {
-  userKeyId: number;
-  vote: 'approve' | 'reject';
-  signature: string;
-}
-
 export interface IGroupChangeRecord {
   id: number;
   groupId: number;
   type: 'UPDATE' | 'DELETE';
   status: ChangeRequestStatus;
-  attestationSignatures: IAttestationSignature[];
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -135,7 +128,6 @@ export interface IRuleChangeRecord {
   groupId: number | null;
   action: 'add' | 'remove';
   status: ChangeRequestStatus;
-  attestationSignatures: IAttestationSignature[] | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }
