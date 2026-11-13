@@ -979,7 +979,7 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | **Total**                       | **487**         | **365**       | **103**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
-The migrated frontend package coverage currently comes from 92 Vitest renderer test cases (unit + component) across 18 spec files.
+The migrated frontend package coverage currently comes from 2,517 Vitest renderer test cases (unit + component) across 185 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
 Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3) / 487 = 96.71%`, rounded to `97%`.

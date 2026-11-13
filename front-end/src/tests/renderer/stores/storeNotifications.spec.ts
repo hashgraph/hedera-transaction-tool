@@ -125,7 +125,7 @@ describe('storeNotifications', () => {
       organizations: [{ serverUrl: SERVER_URL }],
       selectedOrganization: { serverUrl: SERVER_URL, userId: 1, loggedIn: true },
     });
-    mocks.networkStore.network = 'testnet';
+    mocks.networkStore = reactive({ network: 'testnet' });
 
     mocks.getConnectionStatus.mockReturnValue('connected');
     mocks.getAllInAppNotifications.mockResolvedValue([]);
@@ -412,6 +412,8 @@ describe('storeNotifications', () => {
       expect(store.currentOrganizationNotifications.map(n => n.id)).toEqual([1]);
 
       mocks.networkStore.network = 'mainnet';
+
+      expect(store.currentOrganizationNotifications.map(n => n.id)).toEqual([2]);
     });
 
     test('is empty when logged out of the organization', async () => {
