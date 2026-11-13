@@ -82,7 +82,7 @@ describe('ReviewerGroupsService', () => {
       await expect(service.getGroupChanges(1)).rejects.toThrow(ErrorCodes.RGNF);
     });
 
-    it('returns all change records when no fromVersion supplied', async () => {
+    it('returns all change records for the group', async () => {
       const records = [mockAppliedRecord()];
       groupRepo.findOne.mockResolvedValueOnce(mockGroup());
       groupChangeRecordRepo.find.mockResolvedValueOnce(records);
@@ -92,19 +92,6 @@ describe('ReviewerGroupsService', () => {
       expect(result).toBe(records);
       expect(groupChangeRecordRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: { groupId: 1 } }),
-      );
-    });
-
-    it('filters by fromVersion when supplied', async () => {
-      groupRepo.findOne.mockResolvedValueOnce(mockGroup());
-      groupChangeRecordRepo.find.mockResolvedValueOnce([]);
-
-      await service.getGroupChanges(1, 3);
-
-      expect(groupChangeRecordRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ groupId: 1, snapshotVersion: expect.anything() }),
-        }),
       );
     });
   });

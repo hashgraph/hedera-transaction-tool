@@ -124,7 +124,6 @@ export interface IGroupChangeRecord {
   groupId: number;
   type: 'UPDATE' | 'DELETE';
   status: ChangeRequestStatus;
-  snapshotVersion: number;
   attestationSignatures: IAttestationSignature[];
   createdAt: string | Date;
   updatedAt: string | Date;
@@ -136,7 +135,6 @@ export interface IRuleChangeRecord {
   groupId: number | null;
   action: 'add' | 'remove';
   status: ChangeRequestStatus;
-  groupSnapshotVersion: number | null;
   attestationSignatures: IAttestationSignature[] | null;
   createdAt: string | Date;
   updatedAt: string | Date;

@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, MoreThanOrEqual, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 
 import {
   ChangeRequestStatus,
@@ -34,14 +34,11 @@ export class ReviewerGroupsService {
     return this.groupRepo.find();
   }
 
-  async getGroupChanges(id: number, fromVersion?: number): Promise<GroupChangeRecord[]> {
+  async getGroupChanges(id: number): Promise<GroupChangeRecord[]> {
     const group = await this.groupRepo.findOne({ where: { id }, withDeleted: true });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
     return this.groupChangeRecordRepo.find({
-      where: {
-        groupId: id,
-        ...(fromVersion !== undefined && { snapshotVersion: MoreThanOrEqual(fromVersion) }),
-      },
+      where: { groupId: id },
       order: { snapshotVersion: 'ASC' },
     });
   }
