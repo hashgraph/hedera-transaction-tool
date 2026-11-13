@@ -52,6 +52,15 @@ export class ReviewerGroupsService {
       relations: { members: true, rules: true },
     });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
+
+    // required: false — a member whose underlying user was removed from the org has no
+    // resolvable key; drop them rather than fail the whole request. Their past reviews are
+    // already "unverifiable" the same way any departed member's are.
+    const keyMap = await this.loadUserKeys(group.members.map(m => m.userKeyId), { required: false });
+    group.members = group.members
+      .filter(m => keyMap.has(m.userKeyId))
+      .map(m => Object.assign(m, { publicKey: keyMap.get(m.userKeyId)! }));
+
     return group;
   }
 
@@ -232,12 +241,17 @@ export class ReviewerGroupsService {
     };
   }
 
-  private async loadUserKeys(userKeyIds: number[]): Promise<Map<number, string>> {
+  private async loadUserKeys(
+    userKeyIds: number[],
+    opts: { required?: boolean } = {},
+  ): Promise<Map<number, string>> {
     if (!userKeyIds.length) return new Map();
     const keys = await this.userKeyRepo.findBy({ id: In(userKeyIds) });
     const keyMap = new Map(keys.map(k => [k.id, k.publicKey]));
-    const missing = userKeyIds.find(id => !keyMap.has(id));
-    if (missing !== undefined) throw new BadRequestException(ErrorCodes.KNF);
+    if (opts.required !== false) {
+      const missing = userKeyIds.find(id => !keyMap.has(id));
+      if (missing !== undefined) throw new BadRequestException(ErrorCodes.KNF);
+    }
     return keyMap;
   }
 
