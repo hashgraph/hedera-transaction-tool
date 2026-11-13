@@ -563,7 +563,7 @@ const commonColClass = 'col-6 col-lg-5 col-xl-4 col-xxl-3 overflow-hidden py-3';
                   class="text-micro text-pink cursor-pointer"
                   @click="
                     openTransactionInHashscan(
-                      sdkTransaction.transactionId?.toString() || '',
+                      sdkTransaction?.transactionId?.toString() ?? '',
                       network.network,
                     )
                   "
