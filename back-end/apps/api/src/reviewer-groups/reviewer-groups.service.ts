@@ -85,7 +85,7 @@ export class ReviewerGroupsService {
           userKeyId: m.userKeyId,
         });
         await manager.save(member);
-        savedMembers.push(member);
+        savedMembers.push(Object.assign(member, { publicKey: keyMap.get(m.userKeyId)! }));
       }
 
       const snapshotPayload = this.buildSnapshot(

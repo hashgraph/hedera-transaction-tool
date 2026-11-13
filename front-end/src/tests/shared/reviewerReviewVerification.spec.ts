@@ -37,6 +37,17 @@ describe('review-record verification', () => {
     ).toBeNull();
   });
 
+  test('a signature with no recorded vote is invalid, not not-yet-reviewed', () => {
+    expect(
+      verifyReviewSignature(transactionId, transactionHash, {
+        accepted: null,
+        note: null,
+        userKey: reviewer.userKey,
+        signature: 'aa',
+      }),
+    ).toBe('invalid');
+  });
+
   test('a genuine signature over the vote and hash verifies', () => {
     const signature = signReview(reviewer, true, 'looks good');
     expect(

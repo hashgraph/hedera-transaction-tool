@@ -31,9 +31,10 @@ export const verifyReviewSignature = (
   transactionHash: string,
   member: Pick<ITransactionReviewerListMember, 'accepted' | 'note' | 'userKey' | 'signature'>,
 ): ReviewVerificationStatus | null => {
-  // accepted is always set alongside signature by the back-end; both are checked only so the
-  // message below can be built with a non-null `accepted`.
-  if (member.signature === null || member.accepted === null) return null;
+  if (member.signature === null) return null;
+  // The back-end always sets `accepted` alongside `signature`; a signature with no vote can't
+  // be checked, so it is flagged rather than treated as not yet reviewed.
+  if (member.accepted === null) return 'invalid';
 
   const publicKey = member.userKey?.publicKey;
   if (!publicKey) return 'unverifiable';

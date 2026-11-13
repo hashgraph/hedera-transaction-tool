@@ -197,6 +197,7 @@ describe('ReviewerGroupsService', () => {
 
       expect(result).toBe(group);
       expect(manager.save).toHaveBeenCalledTimes(3);
+      expect(result.members).toEqual([expect.objectContaining({ userKeyId: 20, publicKey: 'pubkey' })]);
     });
   });
 
