@@ -57,6 +57,7 @@ model Organization {
   keyPairs                KeyPair[]
   OrganizationCredentials OrganizationCredentials[]
   Contact                 Contact[]
+  ReviewerGroup           ReviewerGroup[]
 }
 
 model OrganizationCredentials {
@@ -137,11 +138,11 @@ model HederaFile {
 
 // `abi` is the normalized function-array ABI (post upload format-sniffing), stored as a JSON
 // string rather than Prisma's Json type, matching this schema's existing convention for JSON
-// columns (see ReviewerGroup.attestationSignatures). `roles` is local bookkeeping only — never
-// derived from or verified against the chain beyond the one-time getter resolution that may
-// populate a role's `value`. There is deliberately no function-to-role mapping: a function can
-// require more than one role and a role can have more than one holder, so the registry only
-// surfaces roles and functions as discovered info rather than pretending to model that mapping.
+// columns. `roles` is local bookkeeping only — never derived from or verified against the
+// chain beyond the one-time getter resolution that may populate a role's `value`. There is
+// deliberately no function-to-role mapping: a function can require more than one role and a
+// role can have more than one holder, so the registry only surfaces roles and functions as
+// discovered info rather than pretending to model that mapping.
 model SmartContract {
   id          String   @id @default(uuid())
   user_id     String
@@ -241,75 +242,76 @@ model PublicKeyMapping {
 // `transactionId` is NOT a FK to the front-end's own local `Transaction` model
 // (which uses a String UUID `id` — a different id space entirely).
 //
-// `attestationSignatures` is stored as a JSON string, not Bytes, because the
-// back-end's actual shape (see AttestationSignature in group-change-record.entity.ts)
-// is an array of individual signer entries — { userKeyId, vote, signature }[] — not a
-// single opaque blob. Same reasoning applies to `publicKey`: it's stored hex-encoded as
-// a String, matching GroupSnapshotMember.publicKey on the back-end and this schema's
-// own PublicKeyMapping convention, rather than as Bytes.
+// `publicKey` is stored hex-encoded as a String, matching the back-end's own
+// convention (GroupSnapshotMember.publicKey, this schema's PublicKeyMapping) rather
+// than as Bytes.
 //
-// Unlike the back-end, there is no local GroupChangeRecord/RuleChangeRecord history
-// here. The client never re-walks history it has already verified — it only ever
-// advances forward from its current locally-trusted state (ReviewerGroup + the current
-// ReviewerGroupMember/ReviewerRule rows) to whatever the server currently has. A fetched
-// change record's `snapshotPayload`/`rulePayload` is only needed transiently, to
-// reconstruct the exact bytes that were signed for that one verification; once verified
-// and applied, it's logically redundant with the resulting current-state rows and isn't
-// kept. `ReviewerGroup.attestationSignatures` holds the *latest* attestation only — the
-// votes that authorized the group's current `snapshotVersion`. Its sole intended use is
-// UI attribution ("this configuration was approved by these members") — it can NOT be
-// re-verified locally after the fact, since that would require the prior version's
-// member keys, which get overwritten the moment the new version is applied. If no UI
-// ever ends up surfacing it, it has no other purpose and should be dropped. A rule
-// addition needs no attestation at all, and a rule removal ends in the row being
-// deleted, so there's no equivalent "latest attestation" to keep for ReviewerRule.
+// The client fully trusts the organization server for this data: a group/rule change
+// only ever reaches the server's APPLIED state after it collects a real attestation
+// threshold from the group's members, and the client does not re-verify that itself
+// (see #3194 for the reasoning). So there is no local GroupChangeRecord/RuleChangeRecord
+// history, no stored snapshot version, and no stored attestation — a sync just replaces
+// each table's rows with whatever the server currently reports (shared/utils/reviewerSync.ts).
+// `ReviewerGroupMember.publicKey` is still cached locally (not re-fetched live), because it's
+// the trust anchor for a *different* mechanism — verifying a reviewer's own signature on a
+// transaction review (see reviewerReviewService.ts) — which does need to work offline.
 //
-// This is schema-only: no sync, verification, or UI logic is implemented here. See
-// #3194 for local store sync.
+// Every reviewer table is scoped by `organizationId`: the int ids are per-backend, so two
+// organizations can both have a group 1. Primary keys are therefore (organizationId, id),
+// and deleting an Organization cascades to all of its reviewer data. A group member has no
+// row id of its own (the back-end's own member rows carry none), so it is keyed by
+// (organizationId, groupId, userId).
+//
+// Sync lives in #3194; see shared/utils/reviewerSync.ts.
 
 model ReviewerGroup {
-  id                    Int      @id
-  name                  String
-  description           String?
-  threshold             Int
-  snapshotVersion       Int
-  attestationSignatures String? // JSON: AttestationSignature[] that authorized the current snapshotVersion. For UI attribution display only — not re-verifiable locally. Null only for a freshly-created group (no prior members to attest it).
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  organizationId String
+  id             Int
+  name           String
+  description    String?
+  threshold      Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  members ReviewerGroupMember[]
-  rules   ReviewerRule[]
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  members      ReviewerGroupMember[]
+  rules        ReviewerRule[]
+
+  @@id([organizationId, id])
 }
 
 model ReviewerGroupMember {
-  id        Int      @id
-  groupId   Int
-  userId    Int
-  userKeyId Int
-  publicKey String // hex-encoded; stored locally for signature verification
-  createdAt DateTime @default(now())
+  organizationId String
+  groupId        Int
+  userId         Int
+  userKeyId      Int
+  publicKey      String // hex-encoded; stored locally for signature verification
+  createdAt      DateTime @default(now())
 
-  group ReviewerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group ReviewerGroup @relation(fields: [organizationId, groupId], references: [organizationId, id], onDelete: Cascade)
 
-  @@unique([groupId, userId])
+  @@id([organizationId, groupId, userId])
 }
 
-// Uniqueness on (hederaEntityId, network, groupId, entityRole, transactionType) cannot
+// Uniqueness on (organizationId, hederaId, network, groupId, entityRole, transactionType) cannot
 // be expressed with @@unique, because SQLite (like other SQL engines) treats two NULLs
 // as distinct, and Prisma's schema syntax has no way to express a functional/COALESCE
 // index. The constraint is instead enforced by a hand-written unique index in the
 // migration SQL, matching the COALESCE approach used by the back-end (#3184).
 model ReviewerRule {
-  id              Int      @id
+  organizationId  String
+  id              Int
   groupId         Int
-  hederaEntityId  String
+  hederaId        String
   network         String
   entityRole      String? // fee_payer | sender | receiver | account | file | token | topic | node; null matches any role. See EntityRole in the back-end's entity-role.enum.ts.
   transactionType String?
   condition       String? // reserved; JSON string; null until evaluation logic is built
   createdAt       DateTime @default(now())
 
-  group ReviewerGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group ReviewerGroup @relation(fields: [organizationId, groupId], references: [organizationId, id], onDelete: Cascade)
+
+  @@id([organizationId, id])
 }
 
 model TransactionReviewerList {
