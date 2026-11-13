@@ -99,8 +99,7 @@ export class ReviewerGroupsService {
         keyMap,
       );
 
-      // snapshotVersion=1 is the trust anchor. No prior members exist to attest it;
-      // the client must verify the initial state out-of-band with their org admin.
+      // snapshotVersion=1 is the initial state; no prior members exist to attest it.
       const changeRecord = manager.create(GroupChangeRecord, {
         groupId: group.id,
         userId,
