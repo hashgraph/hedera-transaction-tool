@@ -177,7 +177,14 @@ describe('TransactionDto', () => {
           description: 'desc',
           threshold: 1,
           members: [
-            { userId: 1, accepted: true, note: null, actionedAt: '2024-01-06T00:00:00.000Z' },
+            {
+              userId: 1,
+              userKeyId: 5,
+              accepted: true,
+              note: null,
+              signature: Buffer.from('ab', 'hex'),
+              actionedAt: '2024-01-06T00:00:00.000Z',
+            },
           ],
         },
       ],
@@ -190,6 +197,8 @@ describe('TransactionDto', () => {
     expect(dto.reviewerLists![0].members).toBeInstanceOf(Array);
     expect(dto.reviewerLists![0].members[0]).toBeInstanceOf(TransactionReviewerListMemberDto);
     expect(dto.reviewerLists![0].members[0].userId).toBe(1);
+    expect(dto.reviewerLists![0].members[0].userKeyId).toBe(5);
+    expect(dto.reviewerLists![0].members[0].signature).toBe('ab');
 
     const errors = validateSync(dto, { forbidUnknownValues: false });
     expect(errors.length).toBe(0);

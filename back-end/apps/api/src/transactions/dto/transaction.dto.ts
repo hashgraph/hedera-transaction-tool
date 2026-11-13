@@ -11,10 +11,17 @@ export class TransactionReviewerListMemberDto {
   userId!: number;
 
   @Expose()
+  userKeyId!: number | null;
+
+  @Expose()
   accepted!: boolean | null;
 
   @Expose()
   note!: string | null;
+
+  @Expose()
+  @Transform(({ obj }) => obj.signature?.toString('hex') ?? null)
+  signature!: string | null;
 
   @Expose()
   actionedAt!: Date | null;
