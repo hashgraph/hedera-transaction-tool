@@ -53,6 +53,9 @@ export interface IReviewerGroupMember {
   groupId: number;
   userId: number;
   userKeyId: number;
+  // Resolved by the back-end from UserKey. A member whose underlying user was removed from
+  // the org is dropped from the list entirely rather than appearing with no key.
+  publicKey: string;
   createdAt: string | Date;
 }
 

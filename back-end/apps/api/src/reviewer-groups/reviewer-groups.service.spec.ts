@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, QueryFailedError, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import {
@@ -126,6 +126,41 @@ describe('ReviewerGroupsService', () => {
       expect(groupRepo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({ relations: { members: true, rules: true } }),
       );
+    });
+
+    it('resolves each member\'s public key', async () => {
+      const group = {
+        ...mockGroup(),
+        members: [{ userId: 10, userKeyId: 20 }, { userId: 11, userKeyId: 21 }],
+      } as unknown as ReviewerGroup;
+      groupRepo.findOne.mockResolvedValueOnce(group);
+      userKeyRepo.findBy.mockResolvedValueOnce([
+        { id: 20, publicKey: 'key-one' } as UserKey,
+        { id: 21, publicKey: 'key-two' } as UserKey,
+      ]);
+
+      const result = await service.getGroup(1);
+
+      expect(userKeyRepo.findBy).toHaveBeenCalledWith({ id: In([20, 21]) });
+      expect(result.members).toEqual([
+        expect.objectContaining({ userId: 10, userKeyId: 20, publicKey: 'key-one' }),
+        expect.objectContaining({ userId: 11, userKeyId: 21, publicKey: 'key-two' }),
+      ]);
+    });
+
+    it('drops a member whose key cannot be resolved (their user was removed from the org), rather than failing the request', async () => {
+      const group = {
+        ...mockGroup(),
+        members: [{ userId: 10, userKeyId: 20 }, { userId: 11, userKeyId: 21 }],
+      } as unknown as ReviewerGroup;
+      groupRepo.findOne.mockResolvedValueOnce(group);
+      userKeyRepo.findBy.mockResolvedValueOnce([{ id: 20, publicKey: 'key-one' } as UserKey]);
+
+      const result = await service.getGroup(1);
+
+      expect(result.members).toEqual([
+        expect.objectContaining({ userId: 10, userKeyId: 20, publicKey: 'key-one' }),
+      ]);
     });
   });
 

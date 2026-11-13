@@ -71,7 +71,7 @@ describe('DTO @Transform and @Type', () => {
           threshold: 1,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          members: [{ id: 1, groupId: 1, userId: 10, userKeyId: 20, createdAt: new Date().toISOString() }],
+          members: [{ id: 1, groupId: 1, userId: 10, userKeyId: 20, publicKey: 'pubkey', createdAt: new Date().toISOString() }],
           rules: [{ id: 1, groupId: 1, hederaId: '0.0.1234', network: 'testnet', entityRole: null, transactionType: null, createdAt: new Date().toISOString() }],
         },
         { excludeExtraneousValues: true },
