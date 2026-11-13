@@ -10,5 +10,6 @@ export * from './update';
 export * from './TransactionFile';
 export * from './TransactionFileImportResult';
 export * from './ITransactionNode';
+export * from './reviewerStore';
 
 export type Network = string;

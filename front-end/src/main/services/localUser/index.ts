@@ -7,6 +7,7 @@ export * from './transactionDrafts';
 export * from './transactionGroups';
 export * from './complexKeys';
 export * from './organizations';
+export * from './reviewerStore';
 export * from './organizationCredentials';
 export * from './contacts';
 export * from './encryptedKeys';

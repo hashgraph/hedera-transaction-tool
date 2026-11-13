@@ -24,6 +24,7 @@ import publicKeyMapping from './publicKeyMapping';
 import transactionFile from './transactionFile';
 import settings from './settings';
 import logging from './logging';
+import reviewerStore from './reviewerStore';
 
 export default {
   ...updateAPI,
@@ -52,4 +53,5 @@ export default {
   ...transactionFile,
   ...settings,
   ...logging,
+  ...reviewerStore,
 };

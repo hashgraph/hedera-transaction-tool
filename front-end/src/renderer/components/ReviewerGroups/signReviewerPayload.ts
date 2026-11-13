@@ -38,8 +38,9 @@ export function resolveReviewerSigningKey(
 // back-end DTOs still require the proposer's own signature as the trust anchor for the
 // change record. The back-end does not verify this signature yet (see reviewer-groups
 // .service.ts/reviewer-rules.service.ts createGroup/createRule — userSignature is stored,
-// not checked), so this canonical JSON form is a placeholder pending #3194 finalizing the
-// verification format.
+// not checked), so this canonical JSON form is a placeholder pending #3529 defining and
+// verifying the proposer-signature format (#3194 only covers member attestations and review
+// signatures, not the proposer's own).
 export async function signReviewerPayload(
   personalUserId: string,
   personalPassword: string | null,

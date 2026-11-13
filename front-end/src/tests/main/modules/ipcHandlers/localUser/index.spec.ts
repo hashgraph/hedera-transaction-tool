@@ -16,6 +16,7 @@ import listenForPublicClaimEvents from '@main/modules/ipcHandlers/localUser/clai
 import listenForPublicMnemonicEvents from '@main/modules/ipcHandlers/localUser/mnemonic';
 import listenForPublicKeyMappingsEvents from '@main/modules/ipcHandlers/localUser/publicKeyMappings';
 import listenForLoggingEvents from '@main/modules/ipcHandlers/localUser/logging';
+import listenForReviewerStoreEvents from '@main/modules/ipcHandlers/localUser/reviewerStore';
 
 vi.mock('@main/db/prisma', () => ({ getPath: vi.fn() }));
 
@@ -39,6 +40,7 @@ vi.mock('@main/modules/ipcHandlers/localUser/claim', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/mnemonic', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/publicKeyMappings', () => mockDeep());
 vi.mock('@main/modules/ipcHandlers/localUser/logging', () => mockDeep());
+vi.mock('@main/modules/ipcHandlers/localUser/reviewerStore', () => mockDeep());
 
 describe('index', () => {
   test('should call all event listeners', () => {
@@ -59,5 +61,6 @@ describe('index', () => {
     expect(listenForPublicMnemonicEvents).toHaveBeenCalled();
     expect(listenForPublicKeyMappingsEvents).toHaveBeenCalled();
     expect(listenForLoggingEvents).toHaveBeenCalled();
+    expect(listenForReviewerStoreEvents).toHaveBeenCalled();
   });
 });

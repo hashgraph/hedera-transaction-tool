@@ -8,16 +8,24 @@ import type {
 } from '@shared/interfaces';
 
 import { axiosWithCredentials, commonRequestHandler } from '@renderer/utils';
-import type { AxiosResponse } from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 
 const controller = 'reviewer-groups';
 
 export const getReviewerGroups = (organizationServerUrl: string): Promise<IReviewerGroupSummary[]> =>
   commonRequestHandler(async () => {
-    const response: AxiosResponse<IReviewerGroupSummary[]> = await axiosWithCredentials.get(
-      `${organizationServerUrl}/${controller}`,
-    );
-    return response.data;
+    try {
+      const response: AxiosResponse<IReviewerGroupSummary[]> = await axiosWithCredentials.get(
+        `${organizationServerUrl}/${controller}`,
+      );
+      return response.data;
+    } catch (error) {
+      // A server that predates this feature has no reviewer-groups routes at all — treat
+      // that as "no groups" rather than a sync failure, the same way a new client should
+      // behave against an old backend elsewhere in this app (see cancelTransactionGroup).
+      if (axios.isAxiosError(error) && error.response?.status === 404) return [];
+      throw error;
+    }
   }, 'Failed to get reviewer groups');
 
 export const getReviewerGroup = (
