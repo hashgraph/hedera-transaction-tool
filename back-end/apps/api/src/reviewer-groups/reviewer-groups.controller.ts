@@ -8,7 +8,6 @@ import {
   ParseIntPipe,
   Patch,
   Post,
-  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -47,11 +46,8 @@ export class ReviewerGroupsController {
   @ApiResponse({ status: 200, type: [GroupChangeRecordDto] })
   @Get(':id/changes')
   @Serialize(GroupChangeRecordDto)
-  getGroupChanges(
-    @Param('id', ParseIntPipe) id: number,
-    @Query('fromVersion', new ParseIntPipe({ optional: true })) fromVersion?: number,
-  ) {
-    return this.service.getGroupChanges(id, fromVersion);
+  getGroupChanges(@Param('id', ParseIntPipe) id: number) {
+    return this.service.getGroupChanges(id);
   }
 
   @ApiOperation({ summary: 'Get a single reviewer group with members and rules' })

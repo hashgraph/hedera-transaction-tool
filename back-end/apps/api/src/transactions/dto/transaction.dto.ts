@@ -5,16 +5,27 @@ import { TransactionStatus, TransactionType } from '@entities';
 import { TransactionSignerUserKeyDto } from './transaction-signer.dto';
 import { TransactionObserverDto } from './transaction-observer.dto';
 import { TransactionGroupItemDto } from './transaction-group-item.dto';
+import { UserKeyCoreDto } from '../../user-keys/dtos';
 
 export class TransactionReviewerListMemberDto {
   @Expose()
   userId!: number;
+
+  // The key the member's review signature was made with; null if the key is no longer
+  // available (the signature then can't be verified).
+  @Expose()
+  @Type(() => UserKeyCoreDto)
+  userKey!: UserKeyCoreDto | null;
 
   @Expose()
   accepted!: boolean | null;
 
   @Expose()
   note!: string | null;
+
+  @Expose()
+  @Transform(({ obj }) => obj.signature?.toString('hex') ?? null)
+  signature!: string | null;
 
   @Expose()
   actionedAt!: Date | null;

@@ -220,7 +220,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { id: 1 },
-        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: true }, comments: true, groupItem: { group: true }},
+        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: { userKey: true } }, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -249,7 +249,7 @@ describe('TransactionsService', () => {
 
       expect(transactionsRepo.find).toHaveBeenCalledWith({
         where: { transactionId: transactionId },
-        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: true }, comments: true, groupItem: { group: true }},
+        relations: { creatorKey: { user: true }, observers: true, reviewerLists: { members: { userKey: true } }, comments: true, groupItem: { group: true }},
         order: { id: 'DESC' },
       });
 
@@ -284,7 +284,7 @@ describe('TransactionsService', () => {
           },
           observers: true,
           reviewerLists: {
-            members: true,
+            members: { userKey: true },
           },
           comments: true,
           groupItem: {

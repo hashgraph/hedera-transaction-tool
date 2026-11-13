@@ -53,6 +53,9 @@ export interface IReviewerGroupMember {
   groupId: number;
   userId: number;
   userKeyId: number;
+  // Resolved by the back-end from UserKey. A member whose underlying user was removed from
+  // the org is dropped from the list entirely rather than appearing with no key.
+  publicKey: string;
   createdAt: string | Date;
 }
 
@@ -110,19 +113,11 @@ export type IDeleteReviewerRuleRequest = IDeleteReviewerGroupRequest;
 
 export type ChangeRequestStatus = 'PENDING' | 'APPLIED' | 'REJECTED';
 
-export interface IAttestationSignature {
-  userKeyId: number;
-  vote: 'approve' | 'reject';
-  signature: string;
-}
-
 export interface IGroupChangeRecord {
   id: number;
   groupId: number;
   type: 'UPDATE' | 'DELETE';
   status: ChangeRequestStatus;
-  snapshotVersion: number;
-  attestationSignatures: IAttestationSignature[];
   createdAt: string | Date;
   updatedAt: string | Date;
 }
@@ -133,8 +128,6 @@ export interface IRuleChangeRecord {
   groupId: number | null;
   action: 'add' | 'remove';
   status: ChangeRequestStatus;
-  groupSnapshotVersion: number | null;
-  attestationSignatures: IAttestationSignature[] | null;
   createdAt: string | Date;
   updatedAt: string | Date;
 }

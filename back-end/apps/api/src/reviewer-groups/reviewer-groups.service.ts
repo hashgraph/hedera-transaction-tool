@@ -1,6 +1,6 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, In, MoreThanOrEqual, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, In, QueryFailedError, Repository } from 'typeorm';
 
 import {
   ChangeRequestStatus,
@@ -34,14 +34,11 @@ export class ReviewerGroupsService {
     return this.groupRepo.find();
   }
 
-  async getGroupChanges(id: number, fromVersion?: number): Promise<GroupChangeRecord[]> {
+  async getGroupChanges(id: number): Promise<GroupChangeRecord[]> {
     const group = await this.groupRepo.findOne({ where: { id }, withDeleted: true });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
     return this.groupChangeRecordRepo.find({
-      where: {
-        groupId: id,
-        ...(fromVersion !== undefined && { snapshotVersion: MoreThanOrEqual(fromVersion) }),
-      },
+      where: { groupId: id },
       order: { snapshotVersion: 'ASC' },
     });
   }
@@ -52,6 +49,15 @@ export class ReviewerGroupsService {
       relations: { members: true, rules: true },
     });
     if (!group) throw new NotFoundException(ErrorCodes.RGNF);
+
+    // required: false — a member whose underlying user was removed from the org has no
+    // resolvable key; drop them rather than fail the whole request. Their past reviews are
+    // already "unverifiable" the same way any departed member's are.
+    const keyMap = await this.loadUserKeys(group.members.map(m => m.userKeyId), { required: false });
+    group.members = group.members
+      .filter(m => keyMap.has(m.userKeyId))
+      .map(m => Object.assign(m, { publicKey: keyMap.get(m.userKeyId)! }));
+
     return group;
   }
 
@@ -79,7 +85,7 @@ export class ReviewerGroupsService {
           userKeyId: m.userKeyId,
         });
         await manager.save(member);
-        savedMembers.push(member);
+        savedMembers.push(Object.assign(member, { publicKey: keyMap.get(m.userKeyId)! }));
       }
 
       const snapshotPayload = this.buildSnapshot(
@@ -90,8 +96,7 @@ export class ReviewerGroupsService {
         keyMap,
       );
 
-      // snapshotVersion=1 is the trust anchor. No prior members exist to attest it;
-      // the client must verify the initial state out-of-band with their org admin.
+      // snapshotVersion=1 is the initial state; no prior members exist to attest it.
       const changeRecord = manager.create(GroupChangeRecord, {
         groupId: group.id,
         userId,
@@ -232,12 +237,17 @@ export class ReviewerGroupsService {
     };
   }
 
-  private async loadUserKeys(userKeyIds: number[]): Promise<Map<number, string>> {
+  private async loadUserKeys(
+    userKeyIds: number[],
+    opts: { required?: boolean } = {},
+  ): Promise<Map<number, string>> {
     if (!userKeyIds.length) return new Map();
     const keys = await this.userKeyRepo.findBy({ id: In(userKeyIds) });
     const keyMap = new Map(keys.map(k => [k.id, k.publicKey]));
-    const missing = userKeyIds.find(id => !keyMap.has(id));
-    if (missing !== undefined) throw new BadRequestException(ErrorCodes.KNF);
+    if (opts.required !== false) {
+      const missing = userKeyIds.find(id => !keyMap.has(id));
+      if (missing !== undefined) throw new BadRequestException(ErrorCodes.KNF);
+    }
     return keyMap;
   }
 

@@ -78,8 +78,7 @@ export class RuleChangeRecord {
   userKeyId!: number;
 
   // Hex-encoded Ed25519 signature over rulePayload, produced by the proposer's private
-  // key. Proves the proposer created this specific request — the backend cannot forge it
-  // without access to their private key. Retained even after userId/userKeyId are nulled.
+  // key. Stored for audit; not currently verified.
   @Column({ type: String, nullable: true })
   userSignature!: string | null;
 
@@ -101,29 +100,15 @@ export class RuleChangeRecord {
   rulePayload!: RulePayload;
 
   // The snapshotVersion of the reviewer_group when this record was created.
-  // Null for ADD actions (no attestation required). For REMOVE actions, the client
-  // uses this to find the right group snapshot in its locally-held, already-verified
-  // group chain — never fetch the group from the backend for this lookup, as a
-  // compromised backend could supply a different member list. Walk all group changes
-  // first so the required snapshot version is already trusted locally before any rule
-  // changes are processed.
+  // Null for ADD actions (no attestation required). For REMOVE actions, identifies the
+  // group snapshot whose members and threshold the attestations were collected against.
   @Column({ type: Number, nullable: true })
   groupSnapshotVersion!: number | null;
 
   // Null for ADD actions. For REMOVE actions: accumulated member votes starting as [].
-  // Each entry's signature covers { vote, rulePayload } so neither the vote nor the
-  // content can be tampered with by the backend. The first 'reject' entry moves status
-  // to REJECTED immediately. Once 'approve' count >= group threshold, status moves to
-  // APPLIED.
-  //
-  // Client verification (APPLIED REMOVE records only):
-  //   1. From the locally-held group chain, find the snapshot at groupSnapshotVersion.
-  //   2. For each entry: find the matching member in that snapshot and use their
-  //      embedded publicKey to verify the signature over { vote, rulePayload }:
-  //      PublicKey.fromString(publicKey).verify({ vote, rulePayload }, Buffer.from(signature, 'hex'))
-  //   3. Reject any entry whose userKeyId is not in that snapshot's member list.
-  //   4. If 'approve' count >= that snapshot's threshold, accept the change.
-  //      Never fetch keys or group state from the backend for this check.
+  // Each entry's signature covers { vote, rulePayload }. The first 'reject' entry moves
+  // status to REJECTED immediately. Once 'approve' count >= group threshold, status moves
+  // to APPLIED. Kept as an audit record; clients do not re-verify it.
   @Column({ type: 'jsonb', nullable: true })
   attestationSignatures!: AttestationSignature[] | null;
 
