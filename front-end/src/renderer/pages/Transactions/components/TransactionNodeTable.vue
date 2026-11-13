@@ -20,7 +20,9 @@ import useNextTransactionV2, {
 
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import EmptyTransactions from '@renderer/components/EmptyTransactions.vue';
-import TransactionNodeHead from '@renderer/pages/Transactions/components/TransactionNodeHead.vue';
+import TransactionNodeHead, {
+  type ITransactionNodeSort,
+} from '@renderer/pages/Transactions/components/TransactionNodeHead.vue';
 import TransactionNodeRow from '@renderer/pages/Transactions/components/TransactionNodeRow.vue';
 import AppPager from '@renderer/components/ui/AppPager.vue';
 import { getTransactionNodes } from '@renderer/services/organization/transactionNode.ts';
@@ -143,10 +145,7 @@ const {
 /* State */
 const nodes = ref<ITransactionNode[]>([]);
 const isLoading = ref(true);
-const sort = ref<{
-  field: TransactionNodeSortField;
-  direction: 'asc' | 'desc';
-}>({
+const sort = ref<ITransactionNodeSort>({
   field: sortFieldFromUrl(urlSortField.value) ?? defaults.field,
   direction: urlSortDirection.value,
 });
@@ -240,10 +239,7 @@ const routeToDetails = async (node: ITransactionNode) => {
 
 /* Functions */
 function initialSort() {
-  let result: {
-    field: TransactionNodeSortField;
-    direction: 'asc' | 'desc';
-  };
+  let result: ITransactionNodeSort;
   switch (props.collection) {
     case TransactionNodeCollection.READY_FOR_REVIEW:
     case TransactionNodeCollection.READY_TO_SIGN:

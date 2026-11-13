@@ -53,6 +53,14 @@ import CancelAllController from '@renderer/pages/TransactionGroupDetails/CancelA
 import ExportAllController from '@renderer/pages/TransactionGroupDetails/ExportAllController.vue';
 import ApproveAllController from '@renderer/pages/TransactionGroupDetails/ApproveAllController.vue';
 import SplitSignButtonDropdown from '@renderer/components/SplitSignButtonDropdown.vue';
+import {
+  sortFieldFromUrl,
+  sortFieldToUrl,
+  TransactionNodeSortField,
+} from '@renderer/utils/sortTransactionNodes.ts';
+import type { ITransactionNodeSort } from '@renderer/pages/Transactions/components/TransactionNodeHead.vue';
+import { sortTransactionGroupItems } from '@renderer/utils/sortTransactionGroupItems.ts';
+import useStoredTablePreferences from '@renderer/composables/useStoredTablePreferences.ts';
 
 /* Types */
 type ActionButton =
@@ -72,6 +80,11 @@ const sign: ActionButton = 'Sign All';
 const signAndNext: ActionButton = 'Sign All & Next';
 const cancel: ActionButton = 'Cancel All';
 const exportName: ActionButton = 'Export All (Transaction Tool 1.0)';
+
+const defaultSorting: ITransactionNodeSort = {
+  field: TransactionNodeSortField.VALID_START_DATE,
+  direction: 'asc',
+};
 
 const primaryButtons: ActionButton[] = [reject, approve, sign];
 const buttonsDataTestIds: { [key: string]: string } = {
@@ -113,6 +126,7 @@ useWebsocketSubscription(TRANSACTION_ACTION, async (payload?: unknown) => {
   if (isAffected) await fetchGroupOnNotif(groupId);
 });
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
+const stored = useStoredTablePreferences('group-details');
 
 /* Injected */
 const appCache = AppCache.inject();
@@ -121,6 +135,7 @@ const toastManager = ToastManager.inject();
 /* State */
 const group = ref<IGroup | null>(null);
 const firstSignableGroupItem = ref<IGroupItem | null>(null);
+const sort = ref<ITransactionNodeSort>(stored.loadSort(sortFieldFromUrl, defaultSorting));
 
 const shouldApprove = ref(false);
 const isVersionMismatch = ref(false);
@@ -154,6 +169,15 @@ const isApproved = ref(false);
 const groupId = computed(() => {
   const id = Number(router.currentRoute.value.params.id);
   return Number.isNaN(id) ? null : id;
+});
+
+const sortedGroupItems = computed(() => {
+  const result = group.value?.groupItems.slice() ?? [];
+  sortTransactionGroupItems(result, sort.value.field);
+  if (sort.value.direction === 'desc') {
+    result.reverse();
+  }
+  return result;
 });
 
 const pageTitle = computed(() => {
@@ -236,6 +260,14 @@ const dropDownItems = computed(() =>
 
 const flatBreadCrumb = computed(() => {
   return nextTransaction.contextStack.length === 0;
+});
+
+const oppositeDirection = computed(() => {
+  return sort.value.direction === 'asc' ? 'desc' : 'asc';
+});
+
+const generatedClass = computed(() => {
+  return sort.value.direction === 'desc' ? 'bi-arrow-down-short' : 'bi-arrow-up-short';
 });
 
 /* Handlers */
@@ -342,6 +374,10 @@ const updateFirstSignableGroupItemAfterSign = async (transactionId: number) => {
   } // else leaves firstSignableGroupItem unchanged because it's valid
 };
 
+const handleSort = (field: TransactionNodeSortField, direction: 'asc' | 'desc') => {
+  sort.value = { field, direction };
+};
+
 /* Hooks */
 onBeforeMount(async () => {
   if (groupId.value !== null) {
@@ -358,6 +394,9 @@ watch(
     router.back();
   },
 );
+watch(sort, () => {
+  stored.save('sort', { field: sortFieldToUrl(sort.value.field), direction: sort.value.direction });
+});
 
 /* Functions */
 async function fetchGroup(id: string | number) {
@@ -365,6 +404,7 @@ async function fetchGroup(id: string | number) {
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
     try {
       group.value = await getTransactionGroupById(user.selectedOrganization.serverUrl, Number(id));
+      sortGroupItems();
       isVersionMismatch.value = false;
 
       if (group.value?.groupItems != undefined) {
@@ -428,6 +468,15 @@ async function fetchGroupOnNotif(groupId: string | number) {
   }
   // 2) Now fetch group
   await fetchGroup(groupId);
+}
+
+function sortGroupItems(): void {
+  if (group.value !== null) {
+    sortTransactionGroupItems(group.value.groupItems, sort.value.field);
+    if (sort.value.direction === 'desc') {
+      group.value.groupItems.reverse();
+    }
+  }
 }
 </script>
 <template>
@@ -516,20 +565,105 @@ async function fetchGroupOnNotif(groupId: string | number) {
             <hr class="separator my-5 w-100" />
 
             <Transition mode="out-in" name="fade">
-              <template v-if="group.groupItems.length > 0">
+              <template v-if="sortedGroupItems.length > 0">
                 <div class="fill-remaining overflow-x-auto">
                   <table class="table-custom">
                     <thead>
                       <tr>
-                        <th>Transaction ID</th>
-                        <th>Transaction Type</th>
-                        <th>Status</th>
-                        <th>Valid Start</th>
+                        <!-- Header #1 : Transaction Id -->
+                        <th>
+                          <div
+                            class="table-sort-link"
+                            @click="
+                              handleSort(
+                                TransactionNodeSortField.TRANSACTION_ID,
+                                sort?.field === TransactionNodeSortField.TRANSACTION_ID
+                                  ? oppositeDirection
+                                  : 'asc',
+                              )
+                            "
+                          >
+                            <span>Transaction ID</span>
+                            <i
+                              v-if="sort?.field === TransactionNodeSortField.TRANSACTION_ID"
+                              class="bi text-title"
+                              :class="[generatedClass]"
+                            ></i>
+                          </div>
+                        </th>
+
+                        <!-- Header #2 : Transaction Type -->
+                        <th>
+                          <div
+                            class="table-sort-link"
+                            @click="
+                              handleSort(
+                                TransactionNodeSortField.TRANSACTION_TYPE,
+                                sort?.field === TransactionNodeSortField.TRANSACTION_TYPE
+                                  ? oppositeDirection
+                                  : 'asc',
+                              )
+                            "
+                          >
+                            <span>Transaction Type</span>
+                            <i
+                              v-if="sort?.field === TransactionNodeSortField.TRANSACTION_TYPE"
+                              class="bi text-title"
+                              :class="[generatedClass]"
+                            ></i>
+                          </div>
+                        </th>
+
+                        <!-- Header #3 : Status -->
+                        <th>
+                          <div
+                            class="table-sort-link"
+                            @click="
+                              handleSort(
+                                TransactionNodeSortField.STATUS,
+                                sort?.field === TransactionNodeSortField.STATUS
+                                  ? oppositeDirection
+                                  : 'asc',
+                              )
+                            "
+                          >
+                            <span>Status</span>
+                            <i
+                              v-if="sort?.field === TransactionNodeSortField.STATUS"
+                              :class="[generatedClass]"
+                              class="bi text-title"
+                            ></i>
+                          </div>
+                        </th>
+
+                        <!-- Header #4 : Valid Start -->
+                        <th>
+                          <div
+                            class="table-sort-link"
+                            @click="
+                              handleSort(
+                                TransactionNodeSortField.VALID_START_DATE,
+                                sort?.field === TransactionNodeSortField.VALID_START_DATE
+                                  ? oppositeDirection
+                                  : 'asc',
+                              )
+                            "
+                          >
+                            <span>Valid Start</span>
+                            <i
+                              v-if="sort?.field === TransactionNodeSortField.VALID_START_DATE"
+                              class="bi text-title"
+                              :class="[generatedClass]"
+                            ></i>
+                          </div>
+                        </th>
+
+                        <!-- Header #5 : Actions -->
                         <th class="text-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <template v-for="(groupItem, index) in group.groupItems" :key="groupItem.seq">
+                      <template v-for="(groupItem, index) in sortedGroupItems" :key="groupItem.seq">
                         <TransactionGroupRow
                           :group-item="groupItem"
                           :row-index="index"
