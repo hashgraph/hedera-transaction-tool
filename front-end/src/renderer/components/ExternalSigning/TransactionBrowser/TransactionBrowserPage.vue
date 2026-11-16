@@ -5,6 +5,7 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileCreateTransaction,
   FileUpdateTransaction,
@@ -41,6 +42,7 @@ import SystemDetails from '@renderer/components/Transaction/Details/SystemDetail
 import NodeDetails from '@renderer/components/Transaction/Details/NodeDetails.vue';
 import RegisteredNodeDetails from '@renderer/components/Transaction/Details/RegisteredNodeDetails.vue';
 import ContractExecuteDetails from '@renderer/components/Transaction/Details/ContractExecuteDetails.vue';
+import ContractCreateDetails from '@renderer/components/Transaction/Details/ContractCreateDetails.vue';
 
 /* Props */
 const props = defineProps<{
@@ -236,6 +238,12 @@ const transactionDetailsTitle = computed(() => transactionType.value!);
 
               <ContractExecuteDetails
                 v-if="transaction instanceof ContractExecuteTransaction"
+                :organization-transaction="null"
+                :transaction="transaction"
+              />
+
+              <ContractCreateDetails
+                v-if="transaction instanceof ContractCreateTransaction"
                 :organization-transaction="null"
                 :transaction="transaction"
               />

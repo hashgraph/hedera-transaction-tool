@@ -3,6 +3,7 @@ import { describe, test, expect } from 'vitest';
 import { mount } from '@vue/test-utils';
 import {
   AccountId,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   ContractId,
   Timestamp,
@@ -38,6 +39,11 @@ function mountPage(entry: TransactionBrowserEntry) {
           props: ['transaction', 'organizationTransaction'],
           template: '<div data-testid="contract-execute-details-stub" />',
         },
+        ContractCreateDetails: {
+          name: 'ContractCreateDetails',
+          props: ['transaction', 'organizationTransaction'],
+          template: '<div data-testid="contract-create-details-stub" />',
+        },
         TransactionBrowserKeySection: true,
         TransferDetails: true,
       },
@@ -68,5 +74,30 @@ describe('TransactionBrowserPage.vue - contract execute', () => {
       .addHbarTransfer('0.0.3', 1);
     const wrapper = mountPage(entryFor(tx));
     expect(wrapper.findComponent({ name: 'ContractExecuteDetails' }).exists()).toBe(false);
+  });
+});
+
+describe('TransactionBrowserPage.vue - contract create', () => {
+  test('renders ContractCreateDetails for a ContractCreateTransaction', () => {
+    const tx = new ContractCreateTransaction()
+      .setTransactionId(txId())
+      .setNodeAccountIds([AccountId.fromString('0.0.3')])
+      .setGas(1000);
+    const wrapper = mountPage(entryFor(tx));
+    const details = wrapper.findComponent({ name: 'ContractCreateDetails' });
+    expect(details.exists()).toBe(true);
+    expect(details.props('organizationTransaction')).toBeNull();
+    expect(details.props('transaction')).toBeInstanceOf(ContractCreateTransaction);
+    expect(wrapper.text()).toContain('Contract Create');
+  });
+
+  test('does not render ContractCreateDetails for other transaction types', () => {
+    const tx = new TransferTransaction()
+      .setTransactionId(txId())
+      .setNodeAccountIds([AccountId.fromString('0.0.3')])
+      .addHbarTransfer('0.0.2', -1)
+      .addHbarTransfer('0.0.3', 1);
+    const wrapper = mountPage(entryFor(tx));
+    expect(wrapper.findComponent({ name: 'ContractCreateDetails' }).exists()).toBe(false);
   });
 });

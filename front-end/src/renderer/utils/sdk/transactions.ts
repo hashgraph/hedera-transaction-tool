@@ -3,6 +3,7 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileAppendTransaction,
   FileContentsQuery,
@@ -122,6 +123,8 @@ export const getTransactionType = (
     transactionType = 'System Undelete Transaction';
   } else if (transaction instanceof ContractExecuteTransaction) {
     transactionType = 'Contract Execute Transaction';
+  } else if (transaction instanceof ContractCreateTransaction) {
+    transactionType = 'Contract Create Transaction';
   }
 
   return formatTransactionType(transactionType, short, removeTransaction);

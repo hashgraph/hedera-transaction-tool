@@ -6,18 +6,16 @@ Safe/Timelock wrapping remains out of scope here too; see `docs/contract-execute
 
 ## Status (2026-11-16)
 
-On branch `3720-add-contract-create`. Done: Step 0 (oversized-bytecode size check), Step 1
-(bytecode/constructor-args input parsing, plus an extra single-contract `solc --standard-json`
-output shape added along the way), Step 2 (create form), Step 3 (details view), and Step 4
-(back-end touchpoints). Not yet committed. See "Known upstream SDK gap" below before touching
-`getContractCreateData`, `ContractCreateDetails.vue`'s bytecode display, or the oversized-bytecode
-check in `transactions.service.ts`.
+On branch `3720-add-contract-create`. All five steps done: Step 0 (oversized-bytecode size check),
+Step 1 (bytecode/constructor-args input parsing, plus an extra single-contract
+`solc --standard-json` output shape added along the way), Step 2 (create form), Step 3 (details
+view), Step 4 (back-end touchpoints), and Step 5 (full registration - the feature is now reachable
+end-to-end in the running app: creatable via `TransactionSelectionModal`, viewable via Details and
+the external-signing Transaction Browser). Not yet committed. See "Known upstream SDK gap" below
+before touching `getContractCreateData`, `ContractCreateDetails.vue`'s bytecode display, or the
+oversized-bytecode check in `transactions.service.ts`.
 
-Still open: nothing front-end is registered anywhere yet (no entry in
-`txTypeComponentMapping.ts` - either the Create or Details one - `TransactionSelectionModal.vue`,
-`TransactionBrowserPage.vue`'s instanceof chain - that's Step 5), so neither front-end component
-can actually be reached in the running app yet, only exercised via their own component tests. The
-back-end model/enum/factory registration from Step 4 is independently complete and testable now.
+Not yet manually tested in the running app - only via automated tests so far.
 
 ## Known upstream SDK gap: inline bytecode doesn't survive `Transaction.fromBytes()`
 
@@ -186,12 +184,22 @@ instead of duplicating it.
   overriding `getNewKeys()` to return `[adminKey]` when set, registered in that directory's
   `index.ts` and `transaction-factory.ts` - mirrors `FileCreateTransactionModel`'s precedent.
 
-## 5. Registration checklist (not started)
+## 5. Registration checklist (done)
 
-Both `txTypeComponentMapping.ts` (Create + Details), both `transaction-factory.ts` (front-end +
-back-end), `TransactionSelectionModal.vue`, `TransactionBrowserPage.vue`'s instanceof chain, back-end
-`TransactionType` enum + `getTransactionTypeEnumValue()`, signature models front/back,
-`createTransactions.ts`/`getData.ts`.
+All touchpoints wired: front-end `txTypeComponentMapping.ts` (Create + Details), front-end
+`transaction-factory.ts` + new `contract-create-transaction.model.ts` (mirrors the back-end one -
+`getNewKeys()` returns `[adminKey]` when set), `TransactionSelectionModal.vue` (new "Contract
+Create" entry under Smart Contract Service), `TransactionBrowserPage.vue`'s instanceof chain,
+`front-end/src/shared/interfaces/organization/transactions/index.ts`'s `BackEndTransactionType` +
+`TransactionTypeName` (the front-end's own copy of the back-end enum/label), and
+`getTransactionType()` in `utils/sdk/transactions.ts` (drives the front-end factory's lookup key
+and display labels everywhere, including `TransactionBrowserPage.vue`'s header text). Back-end
+`TransactionType` enum/`getTransactionTypeEnumValue()`/model were already done in Step 4.
+
+Verified no regressions via a full front-end test suite run compared against the pre-Step-5
+commit: identical set of pre-existing failures (DB/IPC integration tests, logger tests, encryption
+mode, CSV import controller, account-update/registered-node SDK-roundtrip quirks - none touch
+anything in this feature) plus one flaky timing-based test, modulo exact flake count.
 
 ## Open / not yet done
 

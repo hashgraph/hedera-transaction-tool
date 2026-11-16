@@ -52,7 +52,10 @@ const transactionGroups = computed<MenuGroup[]>(() => {
     // { groupTitle: 'Token Service', items: [] },
     {
       groupTitle: 'Smart Contract Service',
-      items: [{ label: 'Contract Execute', name: transactionTypeKeys.contractExecute }],
+      items: [
+        { label: 'Contract Create', name: transactionTypeKeys.contractCreate },
+        { label: 'Contract Execute', name: transactionTypeKeys.contractExecute },
+      ],
     },
     {
       groupTitle: 'Node',

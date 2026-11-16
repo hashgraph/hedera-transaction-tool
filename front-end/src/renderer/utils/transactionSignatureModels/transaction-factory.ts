@@ -17,6 +17,7 @@ import NodeDeleteTransactionModel from './node-delete-transaction.model';
 import RegisteredNodeCreateTransactionModel from './registered-node-create-transaction.model';
 import RegisteredNodeUpdateTransactionModel from './registered-node-update-transaction.model';
 import RegisteredNodeDeleteTransactionModel from './registered-node-delete-transaction.model';
+import ContractCreateTransactionModel from './contract-create-transaction.model';
 import ContractExecuteTransactionModel from './contract-execute-transaction.model';
 import { getTransactionType } from '../sdk/transactions';
 
@@ -42,6 +43,7 @@ export default class TransactionFactory {
       RegisteredNodeUpdateTransaction: RegisteredNodeUpdateTransactionModel,
       RegisteredNodeDeleteTransaction: RegisteredNodeDeleteTransactionModel,
       ContractExecuteTransaction: ContractExecuteTransactionModel,
+      ContractCreateTransaction: ContractCreateTransactionModel,
     };
 
     const transactionType = getTransactionType(
