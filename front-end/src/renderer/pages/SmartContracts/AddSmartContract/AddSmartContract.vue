@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
 
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ToastManager } from '@renderer/utils/ToastManager';
 import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/useSetDynamicLayout';
 
@@ -36,6 +36,7 @@ const network = useNetworkStore();
 
 /* Composables */
 const router = useRouter();
+const route = useRoute();
 const toastManager = ToastManager.inject();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 
@@ -208,6 +209,14 @@ watch([trimmedIdentifier, () => network.network, () => network.mirrorNodeBaseURL
 });
 
 onBeforeUnmount(resetLookup);
+
+// Pre-fills from e.g. ContractCreateDetails' "Link Contract" button, which already knows the
+// resolved contract id - same pattern as FileContents.vue's route.query.fileId.
+onMounted(() => {
+  if (typeof route.query.identifier === 'string') {
+    identifier.value = route.query.identifier;
+  }
+});
 </script>
 <template>
   <div class="p-5">

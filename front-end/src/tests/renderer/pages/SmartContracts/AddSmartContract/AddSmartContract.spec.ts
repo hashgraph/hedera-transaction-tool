@@ -16,13 +16,17 @@ const mocks = vi.hoisted(() => ({
     mirrorNodeBaseURL: 'https://mirror.example',
   },
   router: { push: vi.fn(), back: vi.fn() },
+  route: { query: {} },
   add: vi.fn(),
   getContractInfo: vi.fn(),
   getVerifiedContract: vi.fn(),
   toast: { error: vi.fn(), success: vi.fn() },
 }));
 
-vi.mock('vue-router', () => ({ useRouter: vi.fn(() => mocks.router) }));
+vi.mock('vue-router', () => ({
+  useRouter: vi.fn(() => mocks.router),
+  useRoute: vi.fn(() => mocks.route),
+}));
 vi.mock('@renderer/stores/storeUser', () => ({ default: vi.fn(() => mocks.userStore) }));
 vi.mock('@renderer/stores/storeNetwork', () => {
   mocks.networkStore = reactive(mocks.networkStore);
@@ -116,6 +120,7 @@ describe('AddSmartContract.vue', () => {
     mocks.userStore.personal = { isLoggedIn: true, id: 'local-user' };
     mocks.networkStore.network = 'testnet';
     mocks.networkStore.mirrorNodeBaseURL = 'https://mirror.example';
+    mocks.route.query = {};
     mocks.getContractInfo.mockResolvedValue(info);
     mocks.getVerifiedContract.mockResolvedValue(null);
     mocks.add.mockResolvedValue({});
@@ -137,6 +142,31 @@ describe('AddSmartContract.vue', () => {
     const wrapper = mountPage();
     await wrapper.find('button').trigger('click');
     expect(mocks.router.back).toHaveBeenCalled();
+  });
+
+  test('pre-fills the identifier from route.query.identifier (e.g. the "Link Contract" button) and triggers a lookup', async () => {
+    mocks.route.query = { identifier: CONTRACT_ID };
+    const wrapper = mountPage();
+    await nextTick();
+    expect(
+      (wrapper.find('[data-testid="input-smart-contract-identifier"]').element as HTMLInputElement)
+        .value,
+    ).toBe(CONTRACT_ID);
+    await settle();
+    expect(mocks.getContractInfo).toHaveBeenCalledWith(
+      CONTRACT_ID,
+      'https://mirror.example',
+      expect.anything(),
+    );
+  });
+
+  test('ignores a non-string route.query.identifier', () => {
+    mocks.route.query = { identifier: ['0.0.1', '0.0.2'] };
+    const wrapper = mountPage();
+    expect(
+      (wrapper.find('[data-testid="input-smart-contract-identifier"]').element as HTMLInputElement)
+        .value,
+    ).toBe('');
   });
 
   test('an invalid identifier shows a validation error and never triggers a lookup', async () => {

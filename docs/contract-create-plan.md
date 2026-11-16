@@ -8,15 +8,15 @@ Safe/Timelock wrapping remains out of scope here too; see `docs/contract-execute
 
 On branch `3720-add-contract-create`. Done: Step 0 (oversized-bytecode size check), Step 1
 (bytecode/constructor-args input parsing, plus an extra single-contract `solc --standard-json`
-output shape added along the way - see below), and Step 2 (create form - data layer
-`createContractCreateTransaction`/`getContractCreateData`, plus
-`ContractCreate.vue`/`ContractCreateFormData.vue`). Not yet committed. See "Known upstream SDK
-gap" below before touching `getContractCreateData` or the oversized-bytecode check in
+output shape added along the way), Step 2 (create form), and Step 3 (details view). Not yet
+committed. See "Known upstream SDK gap" below before touching `getContractCreateData`,
+`ContractCreateDetails.vue`'s bytecode display, or the oversized-bytecode check in
 `transactions.service.ts`.
 
-Still open for Step 2: not registered anywhere yet (no entry in `txTypeComponentMapping.ts`,
-`TransactionSelectionModal.vue`, etc. - that's Step 5), so the form can't actually be reached in
-the running app yet, only exercised via its own component tests.
+Still open for Steps 2/3: nothing is registered anywhere yet (no entry in
+`txTypeComponentMapping.ts` - either the Create or Details one - `TransactionSelectionModal.vue`,
+the back-end `TransactionType` enum, etc. - that's Steps 4/5), so neither component can actually
+be reached in the running app yet, only exercised via their own component tests.
 
 ## Known upstream SDK gap: inline bytecode doesn't survive `Transaction.fromBytes()`
 
@@ -153,11 +153,28 @@ to blank fields, specifically for the "reloaded draft, re-uploaded the same arti
 the reset unconditionally silently discarded a decodable reload. See
 `ContractCreateFormData.vue`'s `handleArtifactFileUpdate`.
 
-## 3. Details + signing (not started)
+## 3. Details + signing (done)
 
-`ContractCreateDetails.vue`: bytecode size/hash, admin key, gas, decoded constructor args, "Link
-Contract" button into the Smart Contracts registry (manual, post-execution, per the mirror-node
-entity-ID-lookup pattern in `AccountDetails.vue`).
+`ContractCreateDetails.vue`: new-contract-id resolution + "Link Contract" button (mirrors
+`AccountDetails.vue`'s `handleLinkEntity`/entity-id lookup pattern), admin key display (mirrors
+`AccountDetails.vue`'s key block: `KeyList` → `KeyStructureModal`, `PublicKey` → formatted with
+owner lookup, else → `KeyComponent`, plus an explicit "will be immutable" message when unset),
+bytecode (File ID when file-sourced; see "Known upstream SDK gap" for the inline case - always
+degraded here, not just on reload, since Details only ever receives an already-deserialized
+transaction), gas/initial balance/memo/auto-renew account/max-automatic-token-associations/staking,
+and decoded constructor parameters (mirrors `ContractExecuteDetails.vue`'s decode pattern, matched
+against a saved contract found by the *resolved* contract id, since there's nothing to match
+against before execution).
+
+Deviated from the plan's literal wording ("save into the Smart Contracts registry" implying a
+one-click save like `AccountDetails.vue`'s `handleLinkEntity`): `SmartContract.abi` is a required
+(non-nullable) column, and there's no UI anywhere to edit a saved contract's ABI after creation
+(`SmartContracts.vue` only supports editing nickname/roles) - so a one-click save with a placeholder
+empty ABI would create a permanently half-broken registry entry. Instead, "Link Contract" navigates
+to the existing `addSmartContract` route with the resolved id pre-filled via a new
+`route.query.identifier` read in `AddSmartContract.vue` (same pattern as `FileContents.vue`'s
+`route.query.fileId`), reusing that page's already-built Sourcify-lookup + manual-ABI-upload flow
+instead of duplicating it.
 
 ## 4. Back-end touchpoints (not started)
 
