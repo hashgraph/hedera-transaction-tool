@@ -6,8 +6,73 @@ Safe/Timelock wrapping remains out of scope here too; see `docs/contract-execute
 
 ## Status (2026-11-16)
 
-Just started, on branch `3720-add-contract-create`. First piece being implemented: the oversized-
-bytecode size check (see "Step 0" below). Nothing else built yet.
+On branch `3720-add-contract-create`. Done: Step 0 (oversized-bytecode size check), Step 1
+(bytecode/constructor-args input parsing, plus an extra single-contract `solc --standard-json`
+output shape added along the way - see below), and Step 2 (create form - data layer
+`createContractCreateTransaction`/`getContractCreateData`, plus
+`ContractCreate.vue`/`ContractCreateFormData.vue`). Not yet committed. See "Known upstream SDK
+gap" below before touching `getContractCreateData` or the oversized-bytecode check in
+`transactions.service.ts`.
+
+Still open for Step 2: not registered anywhere yet (no entry in `txTypeComponentMapping.ts`,
+`TransactionSelectionModal.vue`, etc. - that's Step 5), so the form can't actually be reached in
+the running app yet, only exercised via its own component tests.
+
+## Known upstream SDK gap: inline bytecode doesn't survive `Transaction.fromBytes()`
+
+`ContractCreateTransaction._fromProtobuf()` in `@hiero-ledger/sdk` never restores the `bytecode`
+field - every other field (including `bytecodeFileId`, `constructorParameters`) is restored, but
+`bytecode` is silently omitted. Already found and fixed upstream: issue
+[hiero-sdk-js#4659](https://github.com/hiero-ledger/hiero-sdk-js/issues/4659), fix
+[hiero-sdk-js#4660](https://github.com/hiero-ledger/hiero-sdk-js/pull/4660), merged 2026-11-11 -
+**not in a published release yet** (our installed `2.90.1`, and the newest tag `2.91.0`, both
+predate it). Revisit once a release containing it ships and we bump the dependency.
+
+Verified impact (reproduced directly against the installed SDK via ad hoc scripts, not committed):
+- **Actual signed/submitted bytes are unaffected.** A frozen transaction's wire bytes are cached at
+  freeze time and never regenerated from the (buggy) mutable fields on a plain `.toBytes()` /
+  `.execute()` call, confirmed by decoding the raw protobuf before and after a round trip - byte-
+  for-byte identical, `initcode` intact both times. Contracts deploy with the correct bytecode.
+- **`getContractCreateData`'s read-back is degraded**: `transaction.bytecode` is `null` after
+  `Transaction.fromBytes()` (e.g. reopening a draft, viewing details on an unsubmitted multi-sig
+  transaction), so `bytecodeHex` comes back empty instead of the real hex. Left as-is (no
+  workaround) per team decision - see the comment on `getContractCreateData` in `getData.ts`. This
+  starts working correctly the moment the dependency is bumped, no code change needed on our side.
+- **Reopening a saved draft actually loses the bytecode, not just display**: `BaseDraftLoad.vue`
+  loads a draft via `Transaction.fromBytes()` and emits it; the create form's own `draft-loaded`
+  handler then does `Object.assign(data, getContractCreateData(transaction))`, overwriting the
+  live reactive form data - so `data.bytecodeHex` goes from whatever it was to `''` in place.
+  **Mitigation (temporary, remove once the SDK dependency is bumped past hiero-sdk-js#4660):** the
+  create form's `draft-loaded` handler must detect "just reloaded a draft, `bytecodeSource` is
+  `'inline'`, recovered `bytecodeHex` is empty" and show a message under the bytecode upload
+  control telling the user to re-upload the bytecode artifact before creating - not just a silent
+  empty field, since clicking Create with neither `bytecode` nor `bytecodeFileId` set would build
+  an invalid transaction. Mark this check clearly in code as temporary/to-remove.
+- **A real, separate back-end gap**: `isTransactionBodyOverMaxSize()`
+  (`back-end/libs/common/src/utils/sdk/transaction.ts`, used by
+  `transactions.service.ts`'s `validateAndPrepareTransaction` to reject oversized transactions at
+  upload time) calls the SDK's `_makeTransactionBody()`, which *does* regenerate the body from the
+  same broken mutable fields - so for a `ContractCreateTransaction` with inline bytecode that went
+  through a `fromBytes()` cycle, this check always measures a body missing the bytecode and never
+  flags one as oversized, no matter how large it actually is. Confirmed this is bounded, not a
+  security hole: the *other* size check, `isTransactionOverMaxSize` (used right before execution,
+  reconstructs the literal outgoing per-node wire message from the cached `SignedTransaction`, not
+  from mutable fields - verified by reading `_makeRequestAsync()`/`_buildTransaction()`) is
+  unaffected and will still correctly reject an actually-oversized one. Worst case: an oversized
+  submission is accepted at upload time, potentially collects signatures from real signers, then
+  fails late (at execution) instead of being rejected cleanly upfront. Decision: leave
+  `isTransactionBodyOverMaxSize` as-is, no workaround - its "check body size independent of
+  signatures collected so far" design is correct and will resume working once the dependency is
+  bumped; the front-end's own Step 0 size check already prevents a normal client from ever hitting
+  this gap in practice.
+
+Note beyond the original Step 1 scope: `parseContractArtifact` also now understands raw
+single-contract `solc --standard-json` compilation output (`contracts[file][name] = { abi, evm: {
+bytecode: { object } } }`) - a real shape produced by plain `solc --standard-json` / Remix's raw
+compiler output, distinct from both Foundry/Hardhat's flattened per-contract artifacts and the
+Standard JSON *Input* shape. Multi-contract output is not disambiguated (no reliable signal for
+which contract is the deploy target) and returns null rather than guessing. This also benefits the
+registry's existing "Add smart contract" page for free, since it shares `parseContractArtifact`.
 
 ## Scope
 
@@ -43,7 +108,7 @@ Out of scope (deferred to a follow-up issue):
 - `EthereumTransaction`-based deployment (excluded by the issue itself).
 - `ContractUpdateTransaction` / `ContractDeleteTransaction` (still deferred from #3718's scope too).
 
-## Step 0: oversized-bytecode size check (in progress)
+## Step 0: oversized-bytecode size check (done)
 
 A `ContractCreateTransaction` has no chunking mechanism (unlike `FileAppendTransaction`) - its
 `bytecode` field is set directly on the transaction body, so it is bounded by the plain Hedera
@@ -56,7 +121,7 @@ signatures) and a `getMaxContractBytecodeSize(feePayer)` helper, so the create f
 user's bytecode length against it and block submission with a clear message instead of letting an
 oversized transaction fail at signing/submission time.
 
-## 1. Bytecode + constructor args input (not started)
+## 1. Bytecode + constructor args input (done)
 
 - `abi.ts`: extend `parseContractArtifact` to also pull `bytecode.object` (Foundry/Hardhat shape);
   add `getAbiConstructor(abi)` helper (ABI constructor entries have `type: 'constructor'`, inputs
@@ -69,12 +134,24 @@ oversized transaction fail at signing/submission time.
 - Same struct/tuple and "fully-decodable types only" limitations carried over from Contract
   Execute (`isCallableAbiFunction`-equivalent gating on the constructor's inputs).
 
-## 2. Create form (not started)
+## 2. Create form (done)
 
-`Transaction/Create/ContractCreate/`: bytecode source toggle (inline upload vs. existing File ID),
-oversized-bytecode block (Step 0), admin key input (reuse `KeyComponent`/key-structure UI from
-AccountCreate), gas, initial balance, auto-renew period/account, memo, staking fields, constructor
-args dynamic form, contract source import/display (reuse `ContractSourceViewer.vue`).
+`Transaction/Create/ContractCreate/`: `ContractCreate.vue` (orchestrator, mirrors
+`ContractExecute.vue`) + `ContractCreateFormData.vue`. One artifact upload control
+(`parseContractArtifact`) supplies ABI + bytecode + source together; bytecode source toggle
+(inline vs. existing File ID); oversized-bytecode message (Step 0) pointing at
+FileCreate/FileAppend; admin key via `KeyField`; gas, initial balance, contract memo, max
+automatic token associations, auto-renew account, staking fields (mirrors `AccountDataFormData`'s
+staking block); constructor-args dynamic form (mirrors `ContractExecuteFormData`'s function-args
+form, pointed at the ABI's `constructor` entry instead of a selected function); contract source
+display (`ContractSourceViewer.vue`). No auto-renew *period* field - same precedent as
+`AccountCreateTransaction`, which also leaves it at the SDK default rather than exposing it.
+
+Decided (not in the original Step 2 bullet list): the artifact-upload handler must prefer
+decoding `rawConstructorParametersHex` against a freshly-(re)uploaded ABI over blindly resetting
+to blank fields, specifically for the "reloaded draft, re-uploaded the same artifact" case - doing
+the reset unconditionally silently discarded a decodable reload. See
+`ContractCreateFormData.vue`'s `handleArtifactFileUpdate`.
 
 ## 3. Details + signing (not started)
 

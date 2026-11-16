@@ -12,6 +12,7 @@ import {
   AccountUpdateTransaction,
   BlockNodeApi,
   BlockNodeServiceEndpoint,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
@@ -219,6 +220,30 @@ export type ContractExecuteData = {
   // transactionsDataMatch tell two different function calls apart without needing an ABI to
   // decode functionName/functionArgs back out of an arbitrary transaction.
   rawFunctionParametersHex?: string;
+};
+
+export type ContractCreateData = {
+  // Mutually exclusive with bytecodeFileId - ContractCreateTransaction has no chunking mechanism
+  // (unlike FileAppendTransaction), so inline bytecode past the fee-payer's transaction size
+  // limit (see getMaxContractBytecodeSize) must go through an existing File instead.
+  bytecodeSource: 'inline' | 'file';
+  bytecodeHex: string;
+  bytecodeFileId: string;
+  adminKey: Key | null;
+  gas: number;
+  initialBalance: Hbar;
+  autoRenewAccountId: string;
+  contractMemo: string;
+  maxAutomaticTokenAssociations: number;
+  declineStakingReward: boolean;
+  stakeType: 'Account' | 'Node' | 'None';
+  stakedAccountId: string;
+  stakedNodeId: number | null;
+  constructorArgs: ContractCallArgument[];
+  // Same role as ContractExecuteData.rawFunctionParametersHex: constructor args can't be
+  // recovered on reload without the ABI, so this carries the raw encoded bytes for
+  // transactionsDataMatch instead.
+  rawConstructorParametersHex?: string;
 };
 
 /* Crafts transaction id by account id and valid start */
@@ -1006,6 +1031,51 @@ export function createContractExecuteTransaction(
   } else if (!data.functionName && data.rawFunctionParametersHex) {
     // Reloaded draft whose function couldn't be matched to an ABI (yet) - keep the calldata as-is.
     transaction.setFunctionParameters(hexToUint8Array(data.rawFunctionParametersHex));
+  }
+
+  return transaction;
+}
+
+/* Contract Create */
+export function createContractCreateTransaction(
+  data: TransactionCommonData & ContractCreateData,
+): ContractCreateTransaction {
+  const transaction = new ContractCreateTransaction()
+    .setGas(data.gas || 0)
+    .setInitialBalance(data.initialBalance || new Hbar(0))
+    .setMaxAutomaticTokenAssociations(data.maxAutomaticTokenAssociations)
+    .setContractMemo(data.contractMemo)
+    .setDeclineStakingReward(data.declineStakingReward);
+  setTransactionCommonData(transaction, data);
+
+  if (data.adminKey) {
+    transaction.setAdminKey(data.adminKey);
+  }
+
+  if (data.bytecodeSource === 'file') {
+    if (isFileId(data.bytecodeFileId)) {
+      transaction.setBytecodeFileId(data.bytecodeFileId);
+    }
+  } else if (data.bytecodeHex) {
+    transaction.setBytecode(hexToUint8Array(data.bytecodeHex));
+  }
+
+  if (isAccountId(data.autoRenewAccountId)) {
+    transaction.setAutoRenewAccountId(data.autoRenewAccountId);
+  }
+
+  // Same "skip encoding while incomplete" / "preserve raw bytes from a reloaded draft" dichotomy
+  // as createContractExecuteTransaction - see rawConstructorParametersHex on ContractCreateData.
+  if (data.constructorArgs.length > 0 && areContractCallArgsEncodable(data.constructorArgs)) {
+    transaction.setConstructorParameters(encodeContractFunctionParams(data.constructorArgs));
+  } else if (data.constructorArgs.length === 0 && data.rawConstructorParametersHex) {
+    transaction.setConstructorParameters(hexToUint8Array(data.rawConstructorParametersHex));
+  }
+
+  if (data.stakeType === 'Account' && isAccountId(data.stakedAccountId)) {
+    transaction.setStakedAccountId(AccountId.fromString(data.stakedAccountId));
+  } else if (data.stakeType === 'Node' && data.stakedNodeId !== null) {
+    transaction.setStakedNodeId(Number(data.stakedNodeId));
   }
 
   return transaction;

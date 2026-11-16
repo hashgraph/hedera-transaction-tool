@@ -5,6 +5,7 @@ import {
   AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
@@ -37,6 +38,7 @@ import type {
   ApproveHbarAllowanceData,
   ComponentRegisteredServiceEndpoint,
   ComponentServiceEndpoint,
+  ContractCreateData,
   ContractExecuteData,
   FileAppendData,
   FileCreateData,
@@ -564,5 +566,46 @@ export const getContractExecuteData = (
     functionName: '',
     functionArgs: [],
     rawFunctionParametersHex: functionParameters ? uint8ToHex(functionParameters) : '',
+  };
+};
+
+// constructorArgs can't be recovered here without the ABI (see ContractCreateData), so it's
+// always blank - rawConstructorParametersHex carries the real per-call difference instead, same
+// as getContractExecuteData.
+//
+// Known upstream SDK gap (not a bug in this function): `transaction.bytecode` always comes back
+// null for a ContractCreateTransaction that went through Transaction.fromBytes() (a reloaded
+// draft, or any transaction read back from storage) - ContractCreateTransaction._fromProtobuf()
+// never restores it, unlike every other field here (including bytecodeFileId). The real signed
+// bytes are unaffected (Hedera's cached frozen body bytes are never regenerated from this,
+// so deployment itself is correct either way) - only this read-back is degraded. Already fixed
+// upstream (https://github.com/hiero-ledger/hiero-sdk-js/pull/4660), just not in a release yet;
+// no workaround here - once the dependency is bumped past that fix, this starts working as
+// written, with no code change needed.
+export const getContractCreateData = (
+  transaction: ContractCreateTransaction,
+): ContractCreateData => {
+  const constructorParameters = transaction.constructorParameters;
+
+  return {
+    bytecodeSource: transaction.bytecodeFileId ? 'file' : 'inline',
+    bytecodeHex: transaction.bytecode ? uint8ToHex(transaction.bytecode) : '',
+    bytecodeFileId: transaction.bytecodeFileId?.toString() || '',
+    adminKey: transaction.adminKey || null,
+    gas: transaction.gas ? Number(transaction.gas.toString()) : 0,
+    initialBalance: transaction.initialBalance || new Hbar(0),
+    autoRenewAccountId: transaction.autoRenewAccountId?.toString() || '',
+    contractMemo: transaction.contractMemo || '',
+    maxAutomaticTokenAssociations: transaction.maxAutomaticTokenAssociations ?? 0,
+    declineStakingReward: transaction.declineStakingRewards || false,
+    stakeType: transaction.stakedAccountId
+      ? 'Account'
+      : transaction.stakedNodeId !== null
+        ? 'Node'
+        : 'None',
+    stakedAccountId: transaction.stakedAccountId?.toString() || '',
+    stakedNodeId: transaction.stakedNodeId !== null ? transaction.stakedNodeId.toNumber() : null,
+    constructorArgs: [],
+    rawConstructorParametersHex: constructorParameters ? uint8ToHex(constructorParameters) : '',
   };
 };

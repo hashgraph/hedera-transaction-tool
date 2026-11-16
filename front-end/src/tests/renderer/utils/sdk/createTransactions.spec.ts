@@ -7,6 +7,7 @@ import {
   AccountId,
   AccountUpdateTransaction,
   BlockNodeServiceEndpoint,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
@@ -42,6 +43,7 @@ import {
   createAccountDeleteTransaction,
   createAccountUpdateTransaction,
   createApproveHbarAllowanceTransaction,
+  createContractCreateTransaction,
   createContractExecuteTransaction,
   createFileAppendTransaction,
   createFileCreateDataOnlyTransaction,
@@ -61,6 +63,7 @@ import {
   type AccountCreateData,
   type AccountUpdateData,
   type ComponentRegisteredServiceEndpoint,
+  type ContractCreateData,
   type ContractExecuteData,
   type FileAppendData,
   type FileData,
@@ -73,6 +76,7 @@ import {
   type RegisteredEndpointType,
 } from '@renderer/utils/sdk/createTransactions';
 import {
+  getContractCreateData,
   getContractExecuteData,
   getFreezeData,
   getNodeData,
@@ -1501,5 +1505,217 @@ describe('createContractExecuteTransaction', () => {
     expect(data.contractId).toBe('0.0.1234');
     expect(data.gas).toBe(150000);
     expect(data.rawFunctionParametersHex).toBe(hex(tx.functionParameters!));
+  });
+});
+
+describe('createContractCreateTransaction', () => {
+  const hex = (b: Uint8Array) =>
+    Array.from(b)
+      .map(x => x.toString(16).padStart(2, '0'))
+      .join('');
+
+  const make = (overrides: Partial<ContractCreateData> = {}): ContractCreateData => ({
+    bytecodeSource: 'inline',
+    bytecodeHex: '6080604052',
+    bytecodeFileId: '',
+    adminKey: null,
+    gas: 150000,
+    initialBalance: new Hbar(0),
+    autoRenewAccountId: '',
+    contractMemo: '',
+    maxAutomaticTokenAssociations: 0,
+    declineStakingReward: false,
+    stakeType: 'None',
+    stakedAccountId: '',
+    stakedNodeId: null,
+    constructorArgs: [],
+    ...overrides,
+  });
+
+  test('applies common data, gas, and inline bytecode', () => {
+    const tx = createContractCreateTransaction({ ...common, ...make() });
+    expect(tx).toBeInstanceOf(ContractCreateTransaction);
+    expect(tx.transactionId?.accountId?.toString()).toBe(common.payerId);
+    expect(tx.gas?.toString()).toBe('150000');
+    expect(hex(tx.bytecode!)).toBe('6080604052');
+    expect(tx.bytecodeFileId).toBeNull();
+  });
+
+  test('gas of 0 / NaN is set as 0', () => {
+    expect(createContractCreateTransaction({ ...common, ...make({ gas: 0 }) }).gas?.toString()).toBe(
+      '0',
+    );
+    expect(
+      createContractCreateTransaction({ ...common, ...make({ gas: NaN }) }).gas?.toString(),
+    ).toBe('0');
+  });
+
+  test('defaults the initial balance to 0 and leaves the admin key unset', () => {
+    const tx = createContractCreateTransaction({ ...common, ...make() });
+    expect(tx.initialBalance?.toTinybars().toNumber()).toBe(0);
+    expect(tx.adminKey).toBeNull();
+  });
+
+  test('sets the admin key when provided, including a complex (threshold) key', () => {
+    const key = PrivateKey.generateED25519().publicKey;
+    expect(
+      roundtrip(createContractCreateTransaction({ ...common, ...make({ adminKey: key }) }))
+        .adminKey?.toString(),
+    ).toBe(key.toString());
+
+    const keys = [1, 2, 3].map(() => PrivateKey.generateED25519().publicKey);
+    const tx = roundtrip(
+      createContractCreateTransaction({
+        ...common,
+        ...make({ adminKey: new KeyList(keys, 2) }),
+      }),
+    );
+    expect(tx.adminKey).toBeInstanceOf(KeyList);
+    expect((tx.adminKey as KeyList).threshold).toBe(2);
+  });
+
+  test('uses bytecodeFileId instead of inline bytecode when bytecodeSource is "file"', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ bytecodeSource: 'file', bytecodeFileId: '0.0.150' }),
+    });
+    expect(tx.bytecodeFileId?.toString()).toBe('0.0.150');
+    expect(tx.bytecode).toBeNull();
+  });
+
+  test('ignores an invalid bytecodeFileId', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ bytecodeSource: 'file', bytecodeFileId: 'nope' }),
+    });
+    expect(tx.bytecodeFileId).toBeNull();
+  });
+
+  test('leaves bytecode unset when inline bytecodeHex is empty', () => {
+    const tx = createContractCreateTransaction({ ...common, ...make({ bytecodeHex: '' }) });
+    expect(tx.bytecode).toBeNull();
+  });
+
+  test('sets auto renew account id only when valid', () => {
+    expect(
+      createContractCreateTransaction({
+        ...common,
+        ...make({ autoRenewAccountId: '0.0.9' }),
+      }).autoRenewAccountId?.toString(),
+    ).toBe('0.0.9');
+    expect(
+      createContractCreateTransaction({
+        ...common,
+        ...make({ autoRenewAccountId: 'bad' }),
+      }).autoRenewAccountId,
+    ).toBeNull();
+  });
+
+  test('carries memo, max automatic token associations and decline staking reward', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({
+        contractMemo: 'my contract',
+        maxAutomaticTokenAssociations: 5,
+        declineStakingReward: true,
+      }),
+    });
+    expect(tx.contractMemo).toBe('my contract');
+    expect(tx.maxAutomaticTokenAssociations).toBe(5);
+    expect(tx.declineStakingRewards).toBe(true);
+  });
+
+  test('stakes to an account when stakeType is Account and the id is valid', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ stakeType: 'Account', stakedAccountId: '0.0.9' }),
+    });
+    expect(tx.stakedAccountId?.toString()).toBe('0.0.9');
+    expect(tx.stakedNodeId).toBeNull();
+  });
+
+  test('stakes to a node when stakeType is Node (including node 0)', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ stakeType: 'Node', stakedNodeId: 0 }),
+    });
+    expect(tx.stakedNodeId?.toString()).toBe('0');
+    expect(tx.stakedAccountId).toBeNull();
+  });
+
+  test('does not stake when stakeType is None even if ids are filled in', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ stakeType: 'None', stakedAccountId: '0.0.9', stakedNodeId: 3 }),
+    });
+    expect(tx.stakedAccountId).toBeNull();
+    expect(tx.stakedNodeId).toBeNull();
+  });
+
+  test('encodes constructor args as plain ABI-encoded params, no selector', () => {
+    const EVM = '00000000000000000000000000000000000004d2';
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({
+        constructorArgs: [
+          { name: 'owner', type: 'address', value: `0x${EVM}` },
+          { name: 'supply', type: 'uint256', value: '1' },
+        ],
+      }),
+    });
+    expect(hex(tx.constructorParameters!)).toBe(EVM.padStart(64, '0') + '1'.padStart(64, '0'));
+  });
+
+  test('skips encoding while constructor args are incomplete (no throw, no params)', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({
+        constructorArgs: [{ name: 'supply', type: 'uint256', value: '' }],
+        rawConstructorParametersHex: 'deadbeef',
+      }),
+    });
+    expect(tx.constructorParameters?.length ?? 0).toBe(0);
+  });
+
+  test('keeps raw constructor params for a reloaded draft with no args set', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ rawConstructorParametersHex: 'deadbeef' }),
+    });
+    expect(hex(tx.constructorParameters!)).toBe('deadbeef');
+  });
+
+  test('no constructor args and no raw params leaves constructorParameters empty', () => {
+    const tx = createContractCreateTransaction({ ...common, ...make() });
+    expect(tx.constructorParameters?.length ?? 0).toBe(0);
+  });
+
+  test('survives a bytes round trip and getContractCreateData agrees (inline bytecode)', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ contractMemo: 'my contract', initialBalance: new Hbar(1) }),
+    });
+    const restored = roundtrip(tx);
+    const data = getContractCreateData(restored);
+    expect(data.bytecodeSource).toBe('inline');
+    // Known upstream SDK gap, not a bug here: ContractCreateTransaction._fromProtobuf() doesn't
+    // restore `bytecode` after Transaction.fromBytes() - see the comment on getContractCreateData.
+    // Fixed upstream (hiero-sdk-js#4660), not in a release yet. The real signed bytes (and thus
+    // actual deployment) are unaffected - only this read-back is temporarily degraded.
+    expect(data.bytecodeHex).toBe('');
+    expect(data.gas).toBe(150000);
+    expect(data.contractMemo).toBe('my contract');
+  });
+
+  test('survives a bytes round trip and getContractCreateData agrees (file bytecode)', () => {
+    const tx = createContractCreateTransaction({
+      ...common,
+      ...make({ bytecodeSource: 'file', bytecodeFileId: '0.0.150' }),
+    });
+    const restored = roundtrip(tx);
+    const data = getContractCreateData(restored);
+    expect(data.bytecodeSource).toBe('file');
+    expect(data.bytecodeFileId).toBe('0.0.150');
+    expect(data.bytecodeHex).toBe('');
   });
 });
