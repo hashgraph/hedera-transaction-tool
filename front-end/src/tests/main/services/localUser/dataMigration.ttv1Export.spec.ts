@@ -182,6 +182,7 @@ describe('TTv1 export migration', () => {
       expect(found.map(p => path.basename(p)).sort()).toEqual(['testkey1.pem', 'testkey2.pem']);
     });
 
+    // Two real PBKDF2 decryptions (65,536 iterations each) need headroom on shared CI runners.
     test('decrypt with the export password to the keys derived from the recovery phrase', async () => {
       for (const [index, expected] of derivedKeys.entries()) {
         const result = await decryptPrivateKeyFromPath(
@@ -197,7 +198,7 @@ describe('TTv1 export migration', () => {
           expected.publicKey.toStringRaw(),
         );
       }
-    });
+    }, 15_000);
 
     test('reject a wrong password', async () => {
       await expect(
