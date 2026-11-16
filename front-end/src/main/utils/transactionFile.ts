@@ -76,11 +76,12 @@ async function readSelectedTransactionFile(filePath: string): Promise<Transactio
 export async function exportTransactionFile(
   transactionFile: TransactionFile,
   defaultName: string,
-): Promise<boolean> {
-  const result = await showTransactionSaveDialog(defaultName);
+  signed = false,
+): Promise<string | null> {
+  const result = await showTransactionSaveDialog(defaultName, signed);
   if (result.canceled || !result.filePath) {
-    return false;
+    return null;
   }
   await fsp.writeFile(result.filePath, JSON.stringify(transactionFile), { encoding: 'utf8' });
-  return true;
+  return result.filePath;
 }

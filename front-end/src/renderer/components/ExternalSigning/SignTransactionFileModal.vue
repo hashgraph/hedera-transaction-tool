@@ -50,6 +50,7 @@ const itemsToBeSigned = ref<TransactionFileItem[]>([]);
 const itemsFullySigned = ref<TransactionFileItem[]>([]);
 const itemsSignable = ref<TransactionFileItem[]>([]);
 const showSuccessModal = ref(false);
+const savedFilePath = ref<string | null>(null);
 const isAuditing = ref(false);
 const networkLabel = (networkName: string) =>
   CommonNetworkNames[networkName as keyof typeof CommonNetworkNames] ?? networkName;
@@ -138,12 +139,13 @@ async function handleSignAll() {
     }
 
     try {
-      const exported = await exportTransactionFile(updatedFile, props.suggestedName!);
-      if (!exported) return;
+      const filePath = await exportTransactionFile(updatedFile, props.suggestedName!, true);
+      if (!filePath) return;
+      savedFilePath.value = filePath;
       showSuccessModal.value = true;
     } catch (error) {
-      logger.error('Failed to update transaction file', { error });
-      toastManager.error('Failed to update file');
+      logger.error('Failed to save signed transaction file', { error });
+      toastManager.error('Failed to save file');
     }
   }
 }
@@ -259,7 +261,7 @@ watch(
           </h1>
           <div class="d-flex justify-content-end mb-5">
             <AppButton :disabled="itemsToBeSigned.length === 0" color="primary" type="submit"
-              >Sign and Update File
+              >Sign and Save File
             </AppButton>
           </div>
           <TransactionBrowser :items="itemsSignable" />
@@ -284,7 +286,8 @@ watch(
           {{ itemsToBeSigned.length > 1 ? 'transactions' : 'transaction' }}.
         </div>
         <div class="text-center text-small text-muted mt-4">
-          You may now send that file back to the person who sent it to you.
+          You may now send the file {{ savedFilePath }} to the person who sent you the
+          transaction to sign.
         </div>
 
         <div class="d-grid mt-5">
