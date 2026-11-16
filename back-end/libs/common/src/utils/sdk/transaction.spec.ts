@@ -1,6 +1,7 @@
 import {
   AccountCreateTransaction,
   AccountId,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   PrivateKey,
   Transaction as SDKTransaction,
@@ -83,6 +84,12 @@ describe('getTransactionTypeEnumValue', () => {
   it('classifies a ContractExecuteTransaction as CONTRACT_EXECUTE', () => {
     expect(getTransactionTypeEnumValue(new ContractExecuteTransaction())).toBe(
       TransactionType.CONTRACT_EXECUTE,
+    );
+  });
+
+  it('classifies a ContractCreateTransaction as CONTRACT_CREATE', () => {
+    expect(getTransactionTypeEnumValue(new ContractCreateTransaction())).toBe(
+      TransactionType.CONTRACT_CREATE,
     );
   });
 

@@ -8,15 +8,16 @@ Safe/Timelock wrapping remains out of scope here too; see `docs/contract-execute
 
 On branch `3720-add-contract-create`. Done: Step 0 (oversized-bytecode size check), Step 1
 (bytecode/constructor-args input parsing, plus an extra single-contract `solc --standard-json`
-output shape added along the way), Step 2 (create form), and Step 3 (details view). Not yet
-committed. See "Known upstream SDK gap" below before touching `getContractCreateData`,
-`ContractCreateDetails.vue`'s bytecode display, or the oversized-bytecode check in
-`transactions.service.ts`.
+output shape added along the way), Step 2 (create form), Step 3 (details view), and Step 4
+(back-end touchpoints). Not yet committed. See "Known upstream SDK gap" below before touching
+`getContractCreateData`, `ContractCreateDetails.vue`'s bytecode display, or the oversized-bytecode
+check in `transactions.service.ts`.
 
-Still open for Steps 2/3: nothing is registered anywhere yet (no entry in
+Still open: nothing front-end is registered anywhere yet (no entry in
 `txTypeComponentMapping.ts` - either the Create or Details one - `TransactionSelectionModal.vue`,
-the back-end `TransactionType` enum, etc. - that's Steps 4/5), so neither component can actually
-be reached in the running app yet, only exercised via their own component tests.
+`TransactionBrowserPage.vue`'s instanceof chain - that's Step 5), so neither front-end component
+can actually be reached in the running app yet, only exercised via their own component tests. The
+back-end model/enum/factory registration from Step 4 is independently complete and testable now.
 
 ## Known upstream SDK gap: inline bytecode doesn't survive `Transaction.fromBytes()`
 
@@ -176,10 +177,14 @@ to the existing `addSmartContract` route with the resolved id pre-filled via a n
 `route.query.fileId`), reusing that page's already-built Sourcify-lookup + manual-ABI-upload flow
 instead of duplicating it.
 
-## 4. Back-end touchpoints (not started)
+## 4. Back-end touchpoints (done)
 
-- `TransactionType.CONTRACT_CREATE` enum entry + `getTransactionTypeEnumValue()` branch.
-- `ContractCreateTransactionModel` overriding `getNewKeys()` to return `[adminKey]` when set.
+- `TransactionType.CONTRACT_CREATE` enum entry + `getTransactionTypeEnumValue()` branch
+  (`back-end/libs/common/src/database/entities/transaction.entity.ts`,
+  `back-end/libs/common/src/utils/sdk/transaction.ts`).
+- `ContractCreateTransactionModel` (`back-end/libs/common/src/transaction-signature/model/`)
+  overriding `getNewKeys()` to return `[adminKey]` when set, registered in that directory's
+  `index.ts` and `transaction-factory.ts` - mirrors `FileCreateTransactionModel`'s precedent.
 
 ## 5. Registration checklist (not started)
 

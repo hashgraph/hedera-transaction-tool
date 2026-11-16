@@ -21,6 +21,7 @@ import {
   RegisteredNodeDeleteTransaction,
   SystemDeleteTransaction,
   SystemUndeleteTransaction,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   KeyList,
   AccountId,
@@ -84,6 +85,8 @@ export const getTransactionTypeEnumValue = (transaction: SDKTransaction): Transa
     return TransactionType.SYSTEM_UNDELETE;
   } else if (transaction instanceof ContractExecuteTransaction) {
     return TransactionType.CONTRACT_EXECUTE;
+  } else if (transaction instanceof ContractCreateTransaction) {
+    return TransactionType.CONTRACT_CREATE;
   }
 
   throw new Error(`Unsupported transaction type: ${JSON.stringify(transaction, null, 2)}`);

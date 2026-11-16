@@ -3,6 +3,7 @@ import {
   AccountCreateTransaction,
   AccountDeleteTransaction,
   AccountUpdateTransaction,
+  ContractCreateTransaction,
   ContractExecuteTransaction,
   FileAppendTransaction,
   FileCreateTransaction,
@@ -24,6 +25,7 @@ import { AccountAllowanceApproveTransactionModel } from './account-allowance-app
 import { AccountCreateTransactionModel } from './account-create-transaction.model';
 import { AccountDeleteTransactionModel } from './account-delete-transaction.model';
 import { AccountUpdateTransactionModel } from './account-update-transaction.model';
+import { ContractCreateTransactionModel } from './contract-create-transaction.model';
 import { ContractExecuteTransactionModel } from './contract-execute-transaction.model';
 import { FileAppendTransactionModel } from './file-append-transaction.model';
 import { FileCreateTransactionModel } from './file-create-transaction.model';
@@ -77,6 +79,8 @@ export default class TransactionFactory {
       return new SystemUndeleteTransactionModel(tx);
     } else if (tx instanceof ContractExecuteTransaction) {
       return new ContractExecuteTransactionModel(tx);
+    } else if (tx instanceof ContractCreateTransaction) {
+      return new ContractCreateTransactionModel(tx);
     } else {
       throw new Error(`No transaction model registered for type: ${tx.constructor.name}`);
     }
