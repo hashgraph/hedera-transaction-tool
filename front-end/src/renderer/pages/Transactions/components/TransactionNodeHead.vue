@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { TransactionNodeSortField } from '@renderer/utils/sortTransactionNodes.ts';
 import { TransactionNodeCollection } from '@shared/interfaces/ITransactionNode.ts';
 
-type ITransactionNodeSort = {
+export type ITransactionNodeSort = {
   field: TransactionNodeSortField;
   direction: 'asc' | 'desc';
 };
