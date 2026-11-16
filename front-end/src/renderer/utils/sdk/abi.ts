@@ -13,6 +13,12 @@ export interface AbiFunctionItem {
   stateMutability?: 'pure' | 'view' | 'nonpayable' | 'payable';
 }
 
+export interface AbiConstructorItem {
+  type: 'constructor';
+  inputs: AbiParameter[];
+  stateMutability?: 'nonpayable' | 'payable';
+}
+
 export type AbiItem = AbiFunctionItem | ({ type: string } & Record<string, unknown>);
 
 /*
@@ -114,19 +120,97 @@ export function parseStandardJsonSources(text: string): StandardJsonSourcesResul
   return result;
 }
 
+/*
+ * Normalizes a `bytecode` field value into a hex string, or null - shared by the top-level
+ * `bytecode` field (Hardhat/Foundry artifacts) and the nested `evm.bytecode` field (raw solc
+ * `--standard-json` output), since both wrap the hex the same way: a plain string (Hardhat), or
+ * one level deeper under `.object` (Foundry, solc output - alongside `sourceMap`/`linkReferences`,
+ * which this ignores). An empty `"0x"` (interfaces/abstract contracts/libraries compile to this)
+ * is treated the same as a missing field - there is nothing to deploy.
+ */
+function normalizeBytecodeField(raw: unknown): string | null {
+  let hex: string | null = null;
+  if (typeof raw === 'string') {
+    hex = raw;
+  } else if (raw && typeof raw === 'object') {
+    const object = (raw as Record<string, unknown>).object;
+    if (typeof object === 'string') {
+      hex = object;
+    }
+  }
+
+  if (hex === null) {
+    return null;
+  }
+
+  const stripped = hex.startsWith('0x') ? hex.slice(2) : hex;
+  return stripped.length > 0 ? hex : null;
+}
+
+/*
+ * Pulls the creation bytecode ("init code") out of a build artifact's top-level `bytecode` field
+ * (Hardhat/Foundry/Remix shape). Never reads `deployedBytecode` - that's the code the contract
+ * runs *after* deployment, not the init code ContractCreateTransaction needs.
+ */
+function extractBytecode(parsed: unknown): string | null {
+  return normalizeBytecodeField((parsed as Record<string, unknown> | undefined)?.bytecode);
+}
+
+/*
+ * Pulls ABI + bytecode out of a raw `solc --standard-json` *compilation output* - not to be
+ * confused with the Standard JSON *Input* shape parsed above - its own distinct format:
+ * `contracts[sourceFile][contractName] = { abi, evm: { bytecode: { object } } }`, which supports
+ * multiple source files and contracts per compile (e.g. `solc --standard-json < input.json`, or
+ * Remix's raw compiler output). Only handles the single-contract case: with more than one
+ * contract across the whole output, there's no reliable signal here for which one is the
+ * deployable target (unlike metadata.json's `settings.compilationTarget`), so this returns null
+ * rather than guess - callers fall back to a per-contract artifact (Foundry/Hardhat) instead.
+ */
+function extractSolcOutputContract(
+  parsed: unknown,
+): { abi: AbiItem[] | null; bytecode: string | null } | null {
+  const contracts = (parsed as Record<string, unknown> | undefined)?.contracts;
+  if (!contracts || typeof contracts !== 'object') {
+    return null;
+  }
+
+  const contractEntries: Record<string, unknown>[] = [];
+  for (const perFile of Object.values(contracts as Record<string, unknown>)) {
+    if (perFile && typeof perFile === 'object') {
+      contractEntries.push(...(Object.values(perFile as Record<string, unknown>) as Record<string, unknown>[]));
+    }
+  }
+
+  if (contractEntries.length !== 1) {
+    return null;
+  }
+
+  const [contract] = contractEntries;
+  const abi = Array.isArray(contract.abi) ? (contract.abi as AbiItem[]) : null;
+
+  const evm = contract.evm;
+  const bytecode =
+    evm && typeof evm === 'object'
+      ? normalizeBytecodeField((evm as Record<string, unknown>).bytecode)
+      : null;
+
+  return { abi, bytecode };
+}
+
 export interface ContractArtifact {
   abi: AbiItem[] | null;
+  bytecode: string | null;
   sources: StandardJsonSource[];
   contractNameHint: string | null;
 }
 
 /*
- * One upload slot, either kind of file: a raw ABI array/build artifact (Foundry/Hardhat/Remix) and
- * a solc Standard JSON Input are mutually exclusive shapes in practice (the latter is compiler
- * *input*, so it never carries an ABI - that's compiler *output*), so a single file only ever
- * populates one side of this. Callers merge across uploads themselves (keep whichever side a new
- * upload didn't find) so a user can still get both by dropping an ABI artifact and a Standard
- * JSON Input in, one after the other, into the same control.
+ * One upload slot, any of three shapes: a raw ABI array/build artifact (Foundry/Hardhat/Remix), a
+ * single-contract solc `--standard-json` compilation output, or a solc Standard JSON Input. The
+ * first two are compiler *output* (ABI/bytecode) and the last is compiler *input* (source only),
+ * so a single file only ever populates one side of this. Callers merge across uploads themselves
+ * (keep whichever side a new upload didn't find) so a user can still get both by dropping an
+ * ABI/bytecode file and a Standard JSON Input in, one after the other, into the same control.
  */
 export function parseContractArtifact(text: string): ContractArtifact {
   let parsed: unknown;
@@ -137,20 +221,45 @@ export function parseContractArtifact(text: string): ContractArtifact {
     throw new Error('File is not valid JSON');
   }
 
-  const abi = normalizeAbiInput(parsed);
+  let abi = normalizeAbiInput(parsed);
+  let bytecode = extractBytecode(parsed);
   const { sources, contractNameHint } = extractStandardJsonSources(parsed);
 
-  if (abi === null && sources.length === 0) {
+  if (abi === null || bytecode === null) {
+    const solcOutput = extractSolcOutputContract(parsed);
+    if (solcOutput) {
+      abi = abi ?? solcOutput.abi;
+      bytecode = bytecode ?? solcOutput.bytecode;
+    }
+  }
+
+  if (abi === null && bytecode === null && sources.length === 0) {
     throw new Error(
-      'Could not find an ABI or source in this file (expected a raw ABI JSON array, a build artifact with an "abi" field, or a solc "Standard JSON Input" file with inline source)',
+      'Could not find an ABI, bytecode, or source in this file (expected a raw ABI JSON array, ' +
+        'a build artifact with an "abi" and/or "bytecode" field, a single-contract solc ' +
+        '"--standard-json" output, or a solc "Standard JSON Input" file with inline source)',
     );
   }
 
-  return { abi, sources, contractNameHint };
+  return { abi, bytecode, sources, contractNameHint };
 }
 
 export function getAbiFunctions(abi: AbiItem[]): AbiFunctionItem[] {
   return abi.filter((item): item is AbiFunctionItem => item.type === 'function');
+}
+
+// At most one constructor per ABI (plain Solidity rule) - null means the no-arg default
+// constructor, same as omitting `constructorParameters` on ContractCreateTransaction.
+export function getAbiConstructor(abi: AbiItem[]): AbiConstructorItem | null {
+  return abi.find((item): item is AbiConstructorItem => item.type === 'constructor') ?? null;
+}
+
+// Same "fully encodable/decodable" gate as isCallableAbiFunction - a constructor's args are
+// encoded via encodeContractFunctionParams (reusable as-is: it already builds a plain
+// ContractFunctionParameters with no selector, exactly what setConstructorParameters needs) and
+// decoded via the same head/tail word scheme, so the same type restrictions apply.
+export function isConstructorCallable(ctor: AbiConstructorItem): boolean {
+  return ctor.inputs.every(isEncodableAbiParameter);
 }
 
 // Shared by every call site that reads a SmartContract row's `abi` column (itself the output of

@@ -2,15 +2,18 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  getAbiConstructor,
   getAbiFunctions,
   getRoleGetterCandidates,
   isCallableAbiFunction,
+  isConstructorCallable,
   isSupportedAbiParameter,
   normalizeAbiInput,
   parseAbiJson,
   parseContractArtifact,
   parseStandardJsonSources,
   parseStoredAbi,
+  type AbiConstructorItem,
   type AbiFunctionItem,
   type AbiItem,
 } from '@renderer/utils/sdk/abi';
@@ -136,28 +139,141 @@ describe('parseStandardJsonSources', () => {
 });
 
 describe('parseContractArtifact', () => {
-  test('finds an ABI in a plain array, with no source', () => {
+  test('finds an ABI in a plain array, with no source or bytecode', () => {
     const result = parseContractArtifact(JSON.stringify([fn('foo')]));
     expect(result.abi).toEqual([fn('foo')]);
     expect(result.sources).toEqual([]);
+    expect(result.bytecode).toBeNull();
   });
 
-  test('finds inline source in a Standard JSON Input file, with no ABI', () => {
+  test('finds inline source in a Standard JSON Input file, with no ABI or bytecode', () => {
     const result = parseContractArtifact(
       JSON.stringify({ sources: { 'A.sol': { content: 'contract A {}' } } }),
     );
     expect(result.abi).toBeNull();
     expect(result.sources).toEqual([{ path: 'A.sol', content: 'contract A {}' }]);
+    expect(result.bytecode).toBeNull();
+  });
+
+  test('finds Hardhat-style bytecode (a plain hex string)', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({ abi: [fn('foo')], bytecode: '0x6080604052', deployedBytecode: '0xaabb' }),
+    );
+    expect(result.bytecode).toBe('0x6080604052');
+  });
+
+  test('finds Foundry-style bytecode (nested under bytecode.object)', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({
+        abi: [fn('foo')],
+        bytecode: { object: '0x6080604052', sourceMap: '1:2:3' },
+        deployedBytecode: { object: '0xaabb' },
+      }),
+    );
+    expect(result.bytecode).toBe('0x6080604052');
+  });
+
+  test('treats empty bytecode ("0x", e.g. an interface) as absent', () => {
+    const result = parseContractArtifact(JSON.stringify({ abi: [fn('foo')], bytecode: '0x' }));
+    expect(result.bytecode).toBeNull();
+
+    const nested = parseContractArtifact(
+      JSON.stringify({ abi: [fn('foo')], bytecode: { object: '0x' } }),
+    );
+    expect(nested.bytecode).toBeNull();
+  });
+
+  test('never reads deployedBytecode as a fallback for bytecode', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({ abi: [fn('foo')], deployedBytecode: '0x6080604052' }),
+    );
+    expect(result.bytecode).toBeNull();
   });
 
   test('throws on invalid JSON', () => {
     expect(() => parseContractArtifact('{nope')).toThrow('File is not valid JSON');
   });
 
-  test('throws when the file has neither an ABI nor inline source', () => {
+  test('throws when the file has neither an ABI, bytecode, nor inline source', () => {
     expect(() => parseContractArtifact('{"foo":1}')).toThrow(
-      'Could not find an ABI or source in this file',
+      'Could not find an ABI, bytecode, or source in this file',
     );
+  });
+
+  test('does not throw when only bytecode is present', () => {
+    const result = parseContractArtifact(JSON.stringify({ bytecode: '0x6080604052' }));
+    expect(result.abi).toBeNull();
+    expect(result.bytecode).toBe('0x6080604052');
+  });
+
+  test('finds ABI + bytecode in a single-contract solc --standard-json output', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({
+        contracts: {
+          'WorldClock.sol': {
+            WorldClock: {
+              abi: [fn('foo')],
+              evm: { bytecode: { object: '0x6080604052', sourceMap: '1:2:3' } },
+            },
+          },
+        },
+        sources: { 'WorldClock.sol': { id: 0 } },
+      }),
+    );
+    expect(result.abi).toEqual([fn('foo')]);
+    expect(result.bytecode).toBe('0x6080604052');
+  });
+
+  test('does not guess which contract to use when solc --standard-json output has more than one', () => {
+    const multiContract = JSON.stringify({
+      contracts: {
+        'WorldClock.sol': {
+          WorldClock: { abi: [fn('foo')], evm: { bytecode: { object: '0x6080604052' } } },
+          Imported: { abi: [fn('bar')], evm: { bytecode: { object: '0xaabbcc' } } },
+        },
+      },
+    });
+    // Nothing else in this file to fall back to (no top-level abi/bytecode, no inline source), so
+    // this throws like any other file with nothing usable - it does not guess and return a result.
+    expect(() => parseContractArtifact(multiContract)).toThrow(
+      'Could not find an ABI, bytecode, or source in this file',
+    );
+
+    // With inline source also present, the ambiguous ABI/bytecode still come back null, but the
+    // source is usable on its own, so this does not throw.
+    const withSource = JSON.stringify({
+      contracts: {
+        'WorldClock.sol': {
+          WorldClock: { abi: [fn('foo')], evm: { bytecode: { object: '0x6080604052' } } },
+          Imported: { abi: [fn('bar')], evm: { bytecode: { object: '0xaabbcc' } } },
+        },
+      },
+      sources: { 'WorldClock.sol': { content: 'contract WorldClock {}' } },
+    });
+    const result = parseContractArtifact(withSource);
+    expect(result.abi).toBeNull();
+    expect(result.bytecode).toBeNull();
+    expect(result.sources).toEqual([{ path: 'WorldClock.sol', content: 'contract WorldClock {}' }]);
+  });
+
+  test('ignores an empty contracts map rather than treating it as found', () => {
+    expect(() => parseContractArtifact(JSON.stringify({ contracts: {} }))).toThrow(
+      'Could not find an ABI, bytecode, or source in this file',
+    );
+  });
+
+  test('does not fall back to solc-output extraction when a top-level ABI/bytecode is already found', () => {
+    const result = parseContractArtifact(
+      JSON.stringify({
+        abi: [fn('foo')],
+        bytecode: '0x6080604052',
+        contracts: {
+          'Other.sol': { Other: { abi: [fn('bar')], evm: { bytecode: { object: '0xaabbcc' } } } },
+        },
+      }),
+    );
+    expect(result.abi).toEqual([fn('foo')]);
+    expect(result.bytecode).toBe('0x6080604052');
   });
 });
 
@@ -229,6 +345,39 @@ describe('isCallableAbiFunction', () => {
   test('false when any input is an array, even though isSupportedAbiParameter allows it', () => {
     expect(isSupportedAbiParameter({ name: 'x', type: 'uint256[]' })).toBe(true);
     expect(isCallableAbiFunction(fn('a', ['uint256[]']))).toBe(false);
+  });
+});
+
+describe('getAbiConstructor', () => {
+  const ctor = (inputTypes: string[] = []): AbiConstructorItem => ({
+    type: 'constructor',
+    inputs: inputTypes.map((type, i) => ({ name: `a${i}`, type })),
+  });
+
+  test('finds the constructor entry', () => {
+    const abi: AbiItem[] = [fn('a'), ctor(['address', 'uint256']), fn('b')];
+    expect(getAbiConstructor(abi)).toEqual(ctor(['address', 'uint256']));
+  });
+
+  test('returns null when the ABI has no constructor entry', () => {
+    expect(getAbiConstructor([fn('a')])).toBeNull();
+  });
+});
+
+describe('isConstructorCallable', () => {
+  const ctor = (inputTypes: string[] = []): AbiConstructorItem => ({
+    type: 'constructor',
+    inputs: inputTypes.map((type, i) => ({ name: `a${i}`, type })),
+  });
+
+  test('true when every input is encodable (including zero inputs)', () => {
+    expect(isConstructorCallable(ctor())).toBe(true);
+    expect(isConstructorCallable(ctor(['address', 'uint256', 'string', 'bytes']))).toBe(true);
+  });
+
+  test('false when any input is a tuple, array, or unsupported type', () => {
+    expect(isConstructorCallable(ctor(['address', 'tuple']))).toBe(false);
+    expect(isConstructorCallable(ctor(['uint256[]']))).toBe(false);
   });
 });
 

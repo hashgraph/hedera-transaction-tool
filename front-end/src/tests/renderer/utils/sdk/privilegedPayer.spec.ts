@@ -12,6 +12,8 @@ import {
   isPrivilegedFeePayer,
   getMaxTransactionSize,
   getMaxTransactionSizeForTransaction,
+  getMaxContractBytecodeSize,
+  CONTRACT_CREATE_OVERHEAD_BYTES,
 } from '@renderer/utils/sdk/privilegedPayer';
 import {
   TRANSACTION_MAX_SIZE,
@@ -179,6 +181,43 @@ describe('HIP-1300 frontend privileged fee payer detection', () => {
       const tx = new FileUpdateTransaction().setFileId(FileId.fromString('0.0.150'));
       // No transactionId set — should still return a sane default (standard limit).
       expect(getMaxTransactionSizeForTransaction(tx)).toBe(TRANSACTION_MAX_SIZE);
+    });
+  });
+
+  describe('getMaxContractBytecodeSize', () => {
+    test('returns standard limit minus overhead for normal payers', () => {
+      expect(getMaxContractBytecodeSize('0.0.1001')).toBe(
+        TRANSACTION_MAX_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+    });
+
+    test('returns privileged limit minus overhead for treasury and governance accounts', () => {
+      expect(getMaxContractBytecodeSize('0.0.2')).toBe(
+        TRANSACTION_MAX_PRIVILEGED_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+      expect(getMaxContractBytecodeSize('0.0.42')).toBe(
+        TRANSACTION_MAX_PRIVILEGED_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+      expect(getMaxContractBytecodeSize('0.0.799')).toBe(
+        TRANSACTION_MAX_PRIVILEGED_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+    });
+
+    test('returns standard limit minus overhead for null/undefined fee payer (defensive default)', () => {
+      expect(getMaxContractBytecodeSize(null)).toBe(
+        TRANSACTION_MAX_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+      expect(getMaxContractBytecodeSize(undefined)).toBe(
+        TRANSACTION_MAX_SIZE - CONTRACT_CREATE_OVERHEAD_BYTES,
+      );
+    });
+
+    test('returns the exact byte value for standard payers', () => {
+      expect(getMaxContractBytecodeSize('0.0.10000')).toBe(6144 - 730);
+    });
+
+    test('returns the exact byte value for privileged payers', () => {
+      expect(getMaxContractBytecodeSize('0.0.2')).toBe(131072 - 730);
     });
   });
 });

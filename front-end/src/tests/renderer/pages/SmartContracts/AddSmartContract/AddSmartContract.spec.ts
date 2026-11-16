@@ -360,6 +360,27 @@ describe('AddSmartContract.vue', () => {
       expect(wrapper.text()).toContain('Found 2 functions in the ABI.');
     });
 
+    test('a single-contract solc --standard-json output is accepted (ABI found via the nested shape)', async () => {
+      const wrapper = await readyForUpload();
+      await uploadFile(
+        wrapper,
+        fileOf(
+          JSON.stringify({
+            contracts: {
+              'WorldClock.sol': {
+                WorldClock: {
+                  abi: [fnAbi('a'), fnAbi('b')],
+                  evm: { bytecode: { object: '0x6080604052' } },
+                },
+              },
+            },
+          }),
+        ),
+      );
+      expect(wrapper.text()).toContain('Found 2 functions in the ABI.');
+      expect(saveBtn(wrapper).attributes('disabled')).toBeUndefined();
+    });
+
     test('a solc Standard JSON Input file is accepted and shows the source viewer', async () => {
       const wrapper = await readyForUpload();
       await uploadFile(wrapper, fileOf(standardJsonInput()));
@@ -416,7 +437,7 @@ describe('AddSmartContract.vue', () => {
     test('JSON with neither an ABI nor a source shows an error', async () => {
       const wrapper = await readyForUpload();
       await uploadFile(wrapper, fileOf('{"foo":1}'));
-      expect(wrapper.text()).toContain('Could not find an ABI or source in this file');
+      expect(wrapper.text()).toContain('Could not find an ABI, bytecode, or source in this file');
     });
 
     test('a failed re-upload blocks save but does not erase a previously accepted ABI once fixed', async () => {

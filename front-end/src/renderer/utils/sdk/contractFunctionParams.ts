@@ -2,8 +2,10 @@ import { ContractFunctionParameters, ContractFunctionSelector } from '@hiero-led
 
 import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
 import {
+  getAbiConstructor,
   getAbiFunctions,
   isCallableAbiFunction,
+  isConstructorCallable,
   isEncodableAbiParameter,
   type AbiFunctionItem,
   type AbiItem,
@@ -335,6 +337,24 @@ export function decodeContractCall(
   }
 
   return { functionName: fn.name, args: decodeAbiValues(functionParameters, fn.inputs, 4) };
+}
+
+/* Decodes a ContractCreateTransaction's raw `constructorParameters` bytes against the ABI's
+ * constructor entry - the same head/tail word scheme as decodeContractCall, just starting at byte
+ * 0 instead of byte 4 (a constructor call has no 4-byte selector to skip). Returns null when the
+ * ABI has no constructor entry (ambiguous with "no-arg constructor" - callers that need to
+ * distinguish those should check getAbiConstructor directly), when its args aren't all a type this
+ * app encodes/decodes (array/tuple - see isConstructorCallable), or on malformed/truncated bytes. */
+export function decodeConstructorParams(
+  abi: AbiItem[],
+  constructorParameters: Uint8Array,
+): { name: string; type: string; value: string }[] | null {
+  const ctor = getAbiConstructor(abi);
+  if (!ctor || !isConstructorCallable(ctor)) {
+    return null;
+  }
+
+  return decodeAbiValues(constructorParameters, ctor.inputs, 0);
 }
 
 export interface DecodedContractResult {

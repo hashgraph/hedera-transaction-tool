@@ -80,3 +80,38 @@ export function getMaxChunkSize(
 ): number {
   return getMaxTransactionSize(feePayer) - APPEND_CHUNK_OVERHEAD_BYTES;
 }
+
+/**
+ * Rough breakdown of where the 730 bytes go for a ContractCreateTransaction
+ * (conservative upper bound for a 1–3 signature create with a single-key
+ * admin key; does not reserve anything for constructorParameters - callers
+ * that also set constructor args must subtract those bytes themselves):
+ *   - TransactionID (shard/realm/num of payer + validStart timestamp)    ~40 B
+ *   - Node account ID                                                    ~10 B
+ *   - Transaction body envelope (memo, validDuration, maxFee, type tag)  ~50 B
+ *   - Gas (int64)                                                        ~10 B
+ *   - InitialBalance (int64)                                             ~10 B
+ *   - AutoRenewPeriod (Duration)                                         ~10 B
+ *   - AdminKey (single Ed25519/ECDSA key, protobuf-wrapped)               ~50 B
+ *   - Protobuf field tags + length-delimited framing                    ~100 B
+ *   - SignatureMap (PublicKey prefix + signature bytes per signer,
+ *     accounting for threshold keys up to ~4 signers)                   ~400 B
+ *   - Safety margin                                                      ~50 B
+ *                                                                      ──────
+ *                                                                       ~730 B
+ */
+export const CONTRACT_CREATE_OVERHEAD_BYTES = 730;
+
+/**
+ * Returns the maximum safe `bytecode` length (in bytes) for a
+ * ContractCreateTransaction for a given fee payer — the transaction size
+ * limit minus the protobuf/signature overhead reserve above. A
+ * ContractCreateTransaction has no chunking mechanism (unlike
+ * FileAppendTransaction), so bytecode exceeding this must be uploaded via
+ * FileCreate/FileAppend first and referenced by File ID instead.
+ */
+export function getMaxContractBytecodeSize(
+  feePayer: AccountId | string | null | undefined,
+): number {
+  return getMaxTransactionSize(feePayer) - CONTRACT_CREATE_OVERHEAD_BYTES;
+}

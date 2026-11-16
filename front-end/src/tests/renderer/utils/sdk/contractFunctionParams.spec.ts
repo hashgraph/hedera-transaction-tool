@@ -4,10 +4,11 @@ import { describe, expect, test } from 'vitest';
 import { ContractFunctionParameters } from '@hiero-ledger/sdk';
 
 import { hexToUint8Array, uint8ToHex } from '@renderer/utils';
-import type { AbiFunctionItem, AbiItem } from '@renderer/utils/sdk/abi';
+import type { AbiConstructorItem, AbiFunctionItem, AbiItem } from '@renderer/utils/sdk/abi';
 import {
   areContractCallArgsEncodable,
   buildFunctionCallData,
+  decodeConstructorParams,
   decodeContractCall,
   decodeContractCallResult,
   encodeContractFunctionParams,
@@ -33,6 +34,16 @@ const fn = (
 
 const encodeCall = (name: string, args: ContractCallArgument[]) =>
   buildFunctionCallData(name, args).slice(2);
+
+// Raw constructorParameters bytes: same ABI head/tail encoding as a call's args, just with no
+// 4-byte selector prefix (ContractFunctionParameters._build() omits it when no name is given).
+const encodeConstructor = (args: ContractCallArgument[]) =>
+  uint8ToHex(encodeContractFunctionParams(args)._build());
+
+const ctor = (inputs: [string, string][]): AbiConstructorItem => ({
+  type: 'constructor',
+  inputs: inputs.map(([n, type]) => ({ name: n, type })),
+});
 
 describe('encodeContractFunctionParams', () => {
   test('encodes each static type into a 32-byte word', () => {
@@ -369,6 +380,71 @@ describe('decodeContractCall', () => {
     const data = hexToUint8Array(encodeCall('pause', []));
     const mixed = [fn('weird', [['t', 'tuple']]), fn('pause', [])];
     expect(decodeContractCall(mixed, data)?.functionName).toBe('pause');
+  });
+});
+
+describe('decodeConstructorParams', () => {
+  test('round-trips address + uint256 constructor args (no selector prefix)', () => {
+    const abi: AbiItem[] = [
+      ctor([
+        ['owner', 'address'],
+        ['supply', 'uint256'],
+      ]),
+    ];
+    const data = hexToUint8Array(
+      encodeConstructor([
+        { name: 'owner', type: 'address', value: ADDR },
+        { name: 'supply', type: 'uint256', value: '123456789' },
+      ]),
+    );
+    expect(decodeConstructorParams(abi, data)).toEqual([
+      { name: 'owner', type: 'address', value: ADDR },
+      { name: 'supply', type: 'uint256', value: '123456789' },
+    ]);
+  });
+
+  test('round-trips a string constructor arg (head/tail: offset + length + utf8 data)', () => {
+    const abi: AbiItem[] = [ctor([['name', 'string']])];
+    const data = hexToUint8Array(
+      encodeConstructor([{ name: 'name', type: 'string', value: 'My Token' }]),
+    );
+    expect(decodeConstructorParams(abi, data)).toEqual([
+      { name: 'name', type: 'string', value: 'My Token' },
+    ]);
+  });
+
+  test('no-arg constructor decodes to empty args', () => {
+    const abi: AbiItem[] = [ctor([])];
+    expect(decodeConstructorParams(abi, hexToUint8Array(encodeConstructor([])))).toEqual([]);
+  });
+
+  test('returns null when the ABI has no constructor entry', () => {
+    const abi: AbiItem[] = [fn('transfer', [['to', 'address']])];
+    const data = hexToUint8Array(encodeConstructor([]));
+    expect(decodeConstructorParams(abi, data)).toBeNull();
+  });
+
+  test('returns null when a constructor arg is a tuple/array, not a selector mismatch', () => {
+    const abi: AbiItem[] = [ctor([['x', 'tuple']])];
+    expect(decodeConstructorParams(abi, new Uint8Array(32))).toBeNull();
+  });
+
+  test('truncated static head decodes to null, not a wrong value', () => {
+    const abi: AbiItem[] = [
+      ctor([
+        ['owner', 'address'],
+        ['supply', 'uint256'],
+      ]),
+    ];
+    const full = hexToUint8Array(
+      encodeConstructor([
+        { name: 'owner', type: 'address', value: ADDR },
+        { name: 'supply', type: 'uint256', value: '123456789' },
+      ]),
+    );
+    // full "owner" word (32) + only 10 of the 32 bytes of "supply" - no selector to offset by
+    const truncated = full.slice(0, 32 + 10);
+    expect(decodeConstructorParams(abi, truncated)).toBeNull();
   });
 });
 
