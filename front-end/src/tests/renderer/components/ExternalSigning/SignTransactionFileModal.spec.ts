@@ -134,7 +134,7 @@ describe('SignTransactionFileModal – handleSignAll', () => {
     mocks.currentNetwork = 'testnet';
     mocks.filterItems.mockResolvedValue({ needSigning: [ITEM], fullySigned: [] });
     mocks.collectMissingSignerKeys.mockResolvedValue(['pubkey1']);
-    mocks.exportTransactionFile.mockResolvedValue(true);
+    mocks.exportTransactionFile.mockResolvedValue('/chosen/signed.tx2');
     // Simulates a user on OS keychain, so signing proceeds without a password prompt by default.
     mocks.getPasswordAsync.mockResolvedValue(null);
   });
@@ -177,14 +177,16 @@ describe('SignTransactionFileModal – handleSignAll', () => {
         items: [expect.objectContaining({ transactionBytes: SIGNED_HEX })],
       }),
       'original.tx2',
+      true,
     );
+    expect(wrapper.text()).toContain('You may now send the file /chosen/signed.tx2 to the person who sent you the transaction to sign.');
     // Success modal must appear
     expect(wrapper.find('[data-testid="button-close"]').exists()).toBe(true);
   });
 
   test('does not show success when the user cancels the save dialog', async () => {
     mocks.signTransaction.mockResolvedValue(new Uint8Array([0xde, 0xad]));
-    mocks.exportTransactionFile.mockResolvedValue(false);
+    mocks.exportTransactionFile.mockResolvedValue(null);
 
     const wrapper = mountModal();
     await flushPromises();

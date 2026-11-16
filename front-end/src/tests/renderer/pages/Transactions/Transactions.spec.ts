@@ -111,7 +111,7 @@ describe('Transactions.vue', () => {
     mocks.routerPush.mockReset();
     mocks.routerReplace.mockReset();
     mocks.importTransactionFile.mockResolvedValue({
-      kind: 'tx2', suggestedName: 'transactions.tx2', transactionFile: { network: 'testnet', items: [] },
+      kind: 'tx2', fileName: 'transactions.tx2', fileContent: { network: 'testnet', items: [] },
     });
     mocks.userStore.selectedOrganization = null;
     mocks.notificationsStore.notifications = {};
