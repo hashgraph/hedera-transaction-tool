@@ -2,6 +2,7 @@ import * as fsp from 'fs/promises';
 import type { TransactionFileImportResult, TransactionFile } from '@shared/interfaces';
 import { showTransactionOpenDialog, showTransactionSaveDialog } from '@main/modules/ipcHandlers/utils';
 import { filterForImportV1 } from '@main/services/localUser/importV1';
+import { basename } from 'node:path';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -62,9 +63,9 @@ export async function importTransactionFile(onlyV2 = false): Promise<Transaction
     throw new Error('Unsupported transaction file extension');
   }
 
-  const transactionFile = await readSelectedTransactionFile(filePath);
-  const suggestedName = filePath.split(/[\\/]/).pop() ?? 'transaction.tx2';
-  return { kind: 'tx2', suggestedName, transactionFile };
+  const fileContent = await readSelectedTransactionFile(filePath);
+  const fileName = basename(filePath);
+  return { kind: 'tx2', fileName, fileContent };
 }
 
 async function readSelectedTransactionFile(filePath: string): Promise<TransactionFile> {
