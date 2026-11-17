@@ -70,20 +70,12 @@ describe('ReviewerGroupsController', () => {
   });
 
   describe('getGroupChanges', () => {
-    it('delegates to service.getGroupChanges with id and optional fromVersion', async () => {
+    it('delegates to service.getGroupChanges with id', async () => {
       const result = [] as any;
       service.getGroupChanges.mockResolvedValueOnce(result);
 
-      expect(await controller.getGroupChanges(1, 3)).toBe(result);
-      expect(service.getGroupChanges).toHaveBeenCalledWith(1, 3);
-    });
-
-    it('passes undefined fromVersion when not supplied', async () => {
-      service.getGroupChanges.mockResolvedValueOnce([]);
-
-      await controller.getGroupChanges(1, undefined);
-
-      expect(service.getGroupChanges).toHaveBeenCalledWith(1, undefined);
+      expect(await controller.getGroupChanges(1)).toBe(result);
+      expect(service.getGroupChanges).toHaveBeenCalledWith(1);
     });
   });
 

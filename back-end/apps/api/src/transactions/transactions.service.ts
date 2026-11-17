@@ -132,7 +132,7 @@ export class TransactionsService {
         },
         observers: true,
         reviewerLists: {
-          members: true,
+          members: { userKey: true },
         },
         comments: true,
         groupItem: {

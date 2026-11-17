@@ -68,8 +68,12 @@ export enum TransactionStatus {
 
 export interface ITransactionReviewerListMember {
   userId: number;
+  /** The key the review signature was made with; null if no longer available. */
+  userKey: { id: number; publicKey: string } | null;
   accepted: boolean | null;
   note: string | null;
+  /** Hex signature over the review attestation message; null until the member reviews. */
+  signature: string | null;
   actionedAt: string | null;
 }
 

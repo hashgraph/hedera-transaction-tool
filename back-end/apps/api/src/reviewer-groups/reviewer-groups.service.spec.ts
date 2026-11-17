@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { DataSource, EntityManager, QueryFailedError, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, QueryFailedError, Repository } from 'typeorm';
 import { mockDeep } from 'jest-mock-extended';
 
 import {
@@ -82,7 +82,7 @@ describe('ReviewerGroupsService', () => {
       await expect(service.getGroupChanges(1)).rejects.toThrow(ErrorCodes.RGNF);
     });
 
-    it('returns all change records when no fromVersion supplied', async () => {
+    it('returns all change records for the group', async () => {
       const records = [mockAppliedRecord()];
       groupRepo.findOne.mockResolvedValueOnce(mockGroup());
       groupChangeRecordRepo.find.mockResolvedValueOnce(records);
@@ -92,19 +92,6 @@ describe('ReviewerGroupsService', () => {
       expect(result).toBe(records);
       expect(groupChangeRecordRepo.find).toHaveBeenCalledWith(
         expect.objectContaining({ where: { groupId: 1 } }),
-      );
-    });
-
-    it('filters by fromVersion when supplied', async () => {
-      groupRepo.findOne.mockResolvedValueOnce(mockGroup());
-      groupChangeRecordRepo.find.mockResolvedValueOnce([]);
-
-      await service.getGroupChanges(1, 3);
-
-      expect(groupChangeRecordRepo.find).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({ groupId: 1, snapshotVersion: expect.anything() }),
-        }),
       );
     });
   });
@@ -126,6 +113,41 @@ describe('ReviewerGroupsService', () => {
       expect(groupRepo.findOne).toHaveBeenCalledWith(
         expect.objectContaining({ relations: { members: true, rules: true } }),
       );
+    });
+
+    it('resolves each member\'s public key', async () => {
+      const group = {
+        ...mockGroup(),
+        members: [{ userId: 10, userKeyId: 20 }, { userId: 11, userKeyId: 21 }],
+      } as unknown as ReviewerGroup;
+      groupRepo.findOne.mockResolvedValueOnce(group);
+      userKeyRepo.findBy.mockResolvedValueOnce([
+        { id: 20, publicKey: 'key-one' } as UserKey,
+        { id: 21, publicKey: 'key-two' } as UserKey,
+      ]);
+
+      const result = await service.getGroup(1);
+
+      expect(userKeyRepo.findBy).toHaveBeenCalledWith({ id: In([20, 21]) });
+      expect(result.members).toEqual([
+        expect.objectContaining({ userId: 10, userKeyId: 20, publicKey: 'key-one' }),
+        expect.objectContaining({ userId: 11, userKeyId: 21, publicKey: 'key-two' }),
+      ]);
+    });
+
+    it('drops a member whose key cannot be resolved (their user was removed from the org), rather than failing the request', async () => {
+      const group = {
+        ...mockGroup(),
+        members: [{ userId: 10, userKeyId: 20 }, { userId: 11, userKeyId: 21 }],
+      } as unknown as ReviewerGroup;
+      groupRepo.findOne.mockResolvedValueOnce(group);
+      userKeyRepo.findBy.mockResolvedValueOnce([{ id: 20, publicKey: 'key-one' } as UserKey]);
+
+      const result = await service.getGroup(1);
+
+      expect(result.members).toEqual([
+        expect.objectContaining({ userId: 10, userKeyId: 20, publicKey: 'key-one' }),
+      ]);
     });
   });
 
@@ -175,6 +197,7 @@ describe('ReviewerGroupsService', () => {
 
       expect(result).toBe(group);
       expect(manager.save).toHaveBeenCalledTimes(3);
+      expect(result.members).toEqual([expect.objectContaining({ userKeyId: 20, publicKey: 'pubkey' })]);
     });
   });
 

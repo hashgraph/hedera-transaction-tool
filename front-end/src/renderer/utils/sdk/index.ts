@@ -472,3 +472,22 @@ export const verifyCreatorSignature = (
 
   return areByteArraysEqual(served.toBytes(), signed.toBytes());
 };
+
+/**
+ * Computes the hash a review attestation is bound to (see reviewers.service.ts
+ * buildReviewAttestationMessage), from the exact bytes the creator signed - never fetched from
+ * the organization, since a lying `transactionHash` could otherwise be used to make a genuine
+ * reviewer signature look invalid or, worse, go unnoticed as unverifiable.
+ *
+ * Returns null if the bytes aren't frozen: the back-end only ever hashes a frozen transaction,
+ * so an unfrozen one (signed by an older client) can't produce a comparable hash.
+ */
+export const computeTransactionHash = async (
+  unsignedTransactionBytes: Uint8Array,
+): Promise<string | null> => {
+  const transaction = Transaction.fromBytes(unsignedTransactionBytes);
+  if (!transaction.isFrozen()) return null;
+
+  const hash = await transaction.getTransactionHash();
+  return '0x' + uint8ToHex(hash);
+};

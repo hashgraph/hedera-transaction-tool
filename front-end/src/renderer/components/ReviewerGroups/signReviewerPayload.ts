@@ -6,7 +6,7 @@ import { getPrivateKey } from '@renderer/utils/sdk';
 import { uint8ToHex } from '@renderer/utils';
 import { ActionStatus, type ActionReport } from '@renderer/components/ActionController/ActionReport';
 
-// Reviewer group/rule actions are signed as the proposer's trust anchor using whichever of
+// Reviewer group/rule actions are signed by the proposer using whichever of
 // the user's own org keys is actually usable on this device — i.e. one whose private key is
 // stored locally (same selection the transaction-creator signing flow uses, see
 // TransactionGroupProcessor.vue's `user.keyPairs[0]`), not just any key the org knows about.
@@ -34,12 +34,10 @@ export function resolveReviewerSigningKey(
   return { orgKeyId: orgKey.id, orgKeyPublicKey: orgKey.publicKey };
 }
 
-// Group creation (snapshotVersion=1) and rule-add require no member attestation, but the
-// back-end DTOs still require the proposer's own signature as the trust anchor for the
-// change record. The back-end does not verify this signature yet (see reviewer-groups
-// .service.ts/reviewer-rules.service.ts createGroup/createRule — userSignature is stored,
-// not checked), so this canonical JSON form is a placeholder pending #3194 finalizing the
-// verification format.
+// The back-end DTOs require the proposer's signature over the change payload. The back-end
+// stores it on the change record but does not verify it, and nothing on the client verifies
+// it either (the org server is trusted for group/rule data), so this canonical JSON form is
+// just the signed representation kept for the audit record.
 export async function signReviewerPayload(
   personalUserId: string,
   personalPassword: string | null,

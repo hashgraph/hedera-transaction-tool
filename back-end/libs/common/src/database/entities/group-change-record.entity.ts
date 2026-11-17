@@ -48,25 +48,13 @@ export interface GroupSnapshot {
 // unique index — see the migration). TypeORM cannot express partial indexes via
 // decorators, so the constraint lives only in the DB.
 //
-// Chain-walking: to bring a local group state up to date, the client fetches all
-// records WHERE status = 'APPLIED' AND snapshotVersion > localVersion
-// ORDER BY snapshotVersion ASC, then processes them one step at a time:
-//   1. The prior member list is whatever the client holds for snapshotVersion - 1.
-//      Each member entry includes the publicKey — use those directly for verification.
-//      Never fetch public keys from the backend; a compromised backend could swap keys.
-//   2. For each attestationSignature, verify the signature over { vote, snapshotPayload }.
-//   3. If the count of valid 'approve' signatures >= threshold from snapshotVersion - 1,
-//      accept the new state and advance localVersion.
-//   4. Repeat for the next record using the member list just accepted.
-//
 // Each snapshotPayload is the COMPLETE group state at the time of the change:
 //   UPDATE — the new state (name, description, threshold, member list with public keys).
-//   DELETE — the final state before deletion; public keys are embedded so the chain
-//            remains self-contained even past the group's deletion.
+//   DELETE — the final state before deletion; public keys are embedded so the record
+//            stays self-contained even past the group's deletion.
 //
-// The first record (group creation, snapshotVersion=1) is the trust anchor. It is
-// created by an admin with no prior members to attest it; the client must receive it
-// over a trusted channel (e.g. initial app setup or admin-verified import).
+// The org backend is trusted for group/rule data; clients do not replay this history to
+// verify it. The attestation signatures are kept as an audit record.
 @Entity()
 @Index(['groupId'])
 export class GroupChangeRecord {
@@ -103,9 +91,8 @@ export class GroupChangeRecord {
   userKeyId!: number;
 
   // Hex-encoded Ed25519 signature over snapshotPayload, produced by the proposer's
-  // private key. Proves the proposer created this specific request — the backend cannot
-  // forge it without access to their private key. Intentionally not a FK so it is never
-  // nulled; the signature remains verifiable even after userId/userKeyId are cleared.
+  // private key. Stored for audit; not currently verified. Intentionally not a FK so it
+  // is never nulled.
   @Column({ type: String, nullable: true })
   userSignature!: string | null;
 
@@ -120,8 +107,7 @@ export class GroupChangeRecord {
 
   // Pre-assigned as currentVersion + 1 when the request is created. Because at most
   // one PENDING record exists per group at a time, the next version is unambiguous.
-  // The prior version (needed for client signature verification) is always
-  // snapshotVersion - 1; no separate column is required.
+  // The prior version is always snapshotVersion - 1; no separate column is required.
   @Column()
   snapshotVersion!: number;
 
