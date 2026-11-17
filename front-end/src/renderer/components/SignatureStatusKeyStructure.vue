@@ -5,7 +5,7 @@ import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import { ableToSign } from '@renderer/utils';
 
-import AppPublicKeyNickname from '@renderer/components/ui/AppPublicKeyNickname.vue';
+import SignatureStatusSingleKey from '@renderer/components/SignatureStatusSingleKey.vue';
 import KeyComponent from '@renderer/components/KeyComponent.vue';
 
 /* Props */
@@ -19,26 +19,20 @@ const props = defineProps<{
 /* Computed */
 const singlePublicKey = computed(() => {
   const keys = props.keyList.toArray();
-  return keys.length === 1 && keys[0] instanceof PublicKey ? keys[0].toStringRaw() : null;
+  return keys.length === 1 && keys[0] instanceof PublicKey ? keys[0] : null;
 });
 
 /* Emits */
 defineEmits(['update:keyList']);
 </script>
 <template>
-  <template v-if="singlePublicKey">
+  <template v-if="singlePublicKey !== null">
     <div class="d-flex position-relative text-nowrap">
-      <span
-        v-if="publicKeysSigned.includes(singlePublicKey)"
-        class="bi bi-check-lg text-success position-absolute"
-        :style="{ left: '-15px' }"
-        data-testid="span-checkmark-payer-key"
-      ></span>
-      <AppPublicKeyNickname
+      <SignatureStatusSingleKey
         :public-key="singlePublicKey"
-        class="me-2"
-        :signed="ableToSign(publicKeysSigned, keyList)"
-        :external="props.externalKeys.has(singlePublicKey)"
+        :signed="publicKeysSigned.includes(singlePublicKey.toStringRaw())"
+        :able-to-sign="ableToSign(publicKeysSigned, keyList)"
+        :external="props.externalKeys.has(singlePublicKey.toStringRaw())"
       />
     </div>
   </template>
@@ -73,19 +67,14 @@ defineEmits(['update:keyList']);
         </template>
         <template v-else-if="item instanceof PublicKey">
           <div class="d-flex position-relative text-nowrap ms-5 my-3">
-            <span
-              v-if="publicKeysSigned.includes(item.toStringRaw())"
-              class="bi bi-check-lg text-success position-absolute"
-              :style="{ left: '-15px' }"
-              :data-testid="`span-checkmark-public-key-${depth}-${_index}`"
-            ></span>
-            <p class="text-nowrap me-2" :data-testid="`span-public-key-${depth}-${_index}`">
-              <AppPublicKeyNickname
-                :signed="publicKeysSigned.includes(item.toStringRaw())"
-                :external="props.externalKeys.has(item.toStringRaw())"
-                :public-key="item"
-              />
-            </p>
+            <SignatureStatusSingleKey
+              :public-key="item"
+              :signed="publicKeysSigned.includes(item.toStringRaw())"
+              :able-to-sign="ableToSign(publicKeysSigned, keyList)"
+              :external="props.externalKeys.has(item.toStringRaw())"
+              :depth="depth"
+              :index="_index"
+            />
           </div>
         </template>
         <div v-else class="text-nowrap ms-5 my-3">
