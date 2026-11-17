@@ -2,7 +2,7 @@ FROM node:24.22.3-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adee
 
 WORKDIR /usr/src/app
 
-RUN npm install -g pnpm@11.15.1
+RUN npm install -g pnpm@12.21.0
 
 FROM base AS development
 
