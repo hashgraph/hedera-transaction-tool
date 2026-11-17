@@ -20,8 +20,8 @@ describe('IPC handlers transactionFile', () => {
   test('forwards the TX2-only import option and returns the import result', async () => {
     const importResult = {
       kind: 'tx2' as const,
-      suggestedName: 'transaction.tx2',
-      transactionFile: { network: 'testnet', items: [] },
+      fileName: 'transaction.tx2',
+      fileContent: { network: 'testnet', items: [] },
     };
     vi.mocked(importTransactionFile).mockResolvedValue(importResult);
 
@@ -31,11 +31,11 @@ describe('IPC handlers transactionFile', () => {
 
   test('forwards the transaction file and suggested name to export', async () => {
     const transactionFile: TransactionFile = { network: 'testnet', items: [] };
-    vi.mocked(exportTransactionFile).mockResolvedValue(true);
+    vi.mocked(exportTransactionFile).mockResolvedValue('/chosen/transaction.tx2');
 
     await expect(
-      invokeIPCHandler('transactionFile:exportTransactionFile', transactionFile, 'transaction.tx2'),
-    ).resolves.toBe(true);
-    expect(exportTransactionFile).toHaveBeenCalledWith(transactionFile, 'transaction.tx2');
+      invokeIPCHandler('transactionFile:exportTransactionFile', transactionFile, 'transaction.tx2', true),
+    ).resolves.toBe('/chosen/transaction.tx2');
+    expect(exportTransactionFile).toHaveBeenCalledWith(transactionFile, 'transaction.tx2', true);
   });
 });

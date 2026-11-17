@@ -425,7 +425,7 @@ describe('TransactionDetailsHeader.vue', () => {
   });
 
   test('shows success toast after successful export to tx2 format', async () => {
-    vi.mocked(exportTransactionFile).mockResolvedValueOnce(true);
+    vi.mocked(exportTransactionFile).mockResolvedValueOnce('/chosen/export.tx2');
 
     const wrapper = mountHeader(
       { status: TransactionStatus.CANCELED },

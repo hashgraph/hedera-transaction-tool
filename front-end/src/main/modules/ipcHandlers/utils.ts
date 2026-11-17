@@ -85,13 +85,16 @@ export async function showTransactionOpenDialog(onlyV2: boolean): Promise<OpenDi
   });
 }
 
-export async function showTransactionSaveDialog(defaultName: string): Promise<SaveDialogReturnValue> {
+export async function showTransactionSaveDialog(defaultName: string, signed = false): Promise<SaveDialogReturnValue> {
   const windows = BrowserWindow.getAllWindows();
   if (windows.length === 0) return { canceled: true, filePath: '' };
   if (isPlaywrightTestSession()) return getMockedSaveDialogResult();
   return dialog.showSaveDialog(windows[0], {
-    title: 'Export transactions', defaultPath: defaultName, buttonLabel: 'Export',
-    message: 'Export transaction', filters: [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }],
+    title: 'Export transactions',
+    defaultPath: defaultName,
+    buttonLabel: signed ? 'Save' : 'Export',
+    message: signed ? 'Save signed transaction file' : 'Export transaction',
+    filters: [{ name: 'TX2 (Tx Tool 2.0)', extensions: ['tx2'] }],
   });
 }
 

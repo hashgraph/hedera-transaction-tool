@@ -127,6 +127,26 @@ describe('registerUtilsListeners', () => {
       });
     });
 
+    test('uses save labels for a signed transaction file', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      await showTransactionSaveDialog('signed.tx2', true);
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], expect.objectContaining({
+        buttonLabel: 'Save',
+        message: 'Save signed transaction file',
+      }));
+    });
+
+    test('uses signing labels when saving a signed transaction file', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      await showTransactionSaveDialog('signed.tx2', true);
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], expect.objectContaining({
+        buttonLabel: 'Save',
+        message: 'Save signed transaction file',
+      }));
+    });
+
     test('uses the mocked save path during Playwright sessions', async () => {
       vi.mocked(BrowserWindow.getAllWindows).mockReturnValue([{}] as unknown as BrowserWindow[]);
       process.env.PLAYWRIGHT_TEST = 'true';
@@ -142,6 +162,16 @@ describe('registerUtilsListeners', () => {
     test('rejects invalid export file data', async () => {
       await expect(exportFilesWithDialog([], 'file.tx2', 'Export', 'Export', [], ''))
         .rejects.toThrow('Invalid export data');
+    });
+
+    test('uses save labels for a signed transaction file', async () => {
+      const windows = [{}];
+      vi.mocked(BrowserWindow.getAllWindows).mockReturnValue(windows as unknown as BrowserWindow[]);
+      await showTransactionSaveDialog('signed.tx2', true);
+      expect(dialog.showSaveDialog).toHaveBeenCalledWith(windows[0], expect.objectContaining({
+        buttonLabel: 'Save',
+        message: 'Save signed transaction file',
+      }));
     });
 
     test('uses the mocked save path during Playwright sessions', async () => {

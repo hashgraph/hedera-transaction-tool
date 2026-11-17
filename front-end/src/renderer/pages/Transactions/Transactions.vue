@@ -89,8 +89,8 @@ const isTransactionSelectionModalShown = ref(false);
 const isSignTransactionFileModalShown = ref(false);
 
 const collectionNodes = ref<ITransactionNode[]>([]);
-const selectedTx2FileName = ref<string | null>(null);
-const selectedTx2File = ref<import('@shared/interfaces').TransactionFile | null>(null);
+const suggestedSignedFileName = ref<string | null>(null);
+const fileContentToSign = ref<import('@shared/interfaces').TransactionFile | null>(null);
 
 const emptyFilterResult: V1ImportFilterResult = { candidates: [], ignoredPaths: [] };
 const filterResult = ref<V1ImportFilterResult>(emptyFilterResult);
@@ -192,8 +192,8 @@ async function handleTransactionFileAction(action: string) {
       {
         const selection = await importTransactionFile(true);
         if (selection?.kind === 'tx2') {
-          selectedTx2FileName.value = selection.suggestedName;
-          selectedTx2File.value = selection.transactionFile;
+          suggestedSignedFileName.value = suggestSignedFileName(selection.fileName);
+          fileContentToSign.value = selection.fileContent;
           isSignTransactionFileModalShown.value = true;
         }
       }
@@ -202,7 +202,7 @@ async function handleTransactionFileAction(action: string) {
       {
         const selection = await importTransactionFile();
         if (selection?.kind === 'tx2') {
-          await importSignaturesFromV2File(selection.transactionFile);
+          await importSignaturesFromV2File(selection.fileContent);
         } else if (selection?.kind === 'zip') {
           filterResult.value = selection.importResult;
           isImportModalVisible.value = true;
@@ -213,6 +213,29 @@ async function handleTransactionFileAction(action: string) {
 }
 
 /* Functions */
+
+/**
+ * Suggests a signed file name based on the initial file name (assumes extension always present)
+ *  - example.tx2 → example-signed.tx2
+ *  - example-signed.tx2 → example-signed2.tx2
+ *  - example-signed2   .tx2 → example-signed3.tx2
+ */
+function suggestSignedFileName(initialName: string): string {
+  const extensionIndex = initialName.lastIndexOf('.');
+  const name = initialName.slice(0, extensionIndex).trimEnd();
+  const extension = initialName.slice(extensionIndex);
+  const signedIndex = name.lastIndexOf('-signed');
+  if (signedIndex !== -1) {
+    const suffix = name.slice(signedIndex + '-signed'.length);
+    const isNumberedSuffix = [...suffix].every(character => character >= '0' && character <= '9');
+    if (isNumberedSuffix) {
+      const nextNumber = Number(suffix || 1) + 1;
+      return `${name.slice(0, signedIndex)}-signed${nextNumber}${extension}`;
+    }
+  }
+  return `${name}-signed${extension}`;
+}
+
 async function importSignaturesFromV2File(transactionFile: import('@shared/interfaces').TransactionFile) {
   assertIsLoggedInOrganization(user.selectedOrganization);
   const serverUrl = user.selectedOrganization.serverUrl;
@@ -435,8 +458,8 @@ onBeforeMount(async () => {
     <SignTransactionFileModal
       v-if="isSignTransactionFileModalShown"
       v-model:show="isSignTransactionFileModalShown"
-      :suggestedName="selectedTx2FileName"
-      :initialTransactionFile="selectedTx2File"
+      :suggestedName="suggestedSignedFileName"
+      :initialTransactionFile="fileContentToSign"
     />
 
     <TransactionImportModal v-model:show="isImportModalVisible" :filter-result="filterResult" />

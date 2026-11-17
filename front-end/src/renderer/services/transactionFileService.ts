@@ -11,13 +11,15 @@ export async function importTransactionFile(onlyV2 = false): Promise<Transaction
 export async function exportTransactionFile(
   transactionFile: TransactionFile,
   defaultName: string,
-): Promise<boolean> {
+  signed = false,
+): Promise<string | null> {
   return commonIPCHandler(
     async () =>
       await window.electronAPI.local.transactionFile.exportTransactionFile(
         transactionFile,
         defaultName,
+        signed,
       ),
-    'Failed to export transaction file',
+    'Failed to write transaction file',
   );
 }

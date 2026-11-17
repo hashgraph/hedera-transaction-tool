@@ -23,7 +23,7 @@ describe('transactionFile utils', () => {
 
     const selected = await importTransactionFile(true);
     expect(fsp.readFile).toHaveBeenCalledWith('/chosen/file.tx2', { encoding: 'utf8' });
-    expect(selected).toMatchObject({ kind: 'tx2', suggestedName: 'file.tx2', transactionFile });
+    expect(selected).toMatchObject({ kind: 'tx2', fileName: 'file.tx2', fileContent: transactionFile });
   });
 
   it('returns cancellation without reading a file', async () => {
@@ -55,7 +55,7 @@ describe('transactionFile utils', () => {
 
     await expect(importTransactionFile(true)).resolves.toMatchObject({
       kind: 'tx2',
-      transactionFile: customNetworkFile,
+      fileContent: customNetworkFile,
     });
   });
 
@@ -123,13 +123,14 @@ describe('transactionFile utils', () => {
 
   it('exports only to the path returned by the main-process save dialog', async () => {
     vi.mocked(showTransactionSaveDialog).mockResolvedValue({ canceled: false, filePath: '/chosen/export.tx2' });
-    await expect(exportTransactionFile(transactionFile, 'export.tx2')).resolves.toBe(true);
+    await expect(exportTransactionFile(transactionFile, 'export.tx2', true)).resolves.toBe('/chosen/export.tx2');
+    expect(showTransactionSaveDialog).toHaveBeenCalledWith('export.tx2', true);
     expect(fsp.writeFile).toHaveBeenCalledWith('/chosen/export.tx2', JSON.stringify(transactionFile), { encoding: 'utf8' });
   });
 
   it('does not write when export is cancelled', async () => {
     vi.mocked(showTransactionSaveDialog).mockResolvedValue({ canceled: true, filePath: '' });
-    await expect(exportTransactionFile(transactionFile, 'export.tx2')).resolves.toBe(false);
+    await expect(exportTransactionFile(transactionFile, 'export.tx2')).resolves.toBe(null);
     expect(fsp.writeFile).not.toHaveBeenCalled();
   });
 });
