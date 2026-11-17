@@ -70,14 +70,6 @@ vi.mock('@renderer/components/ui/AppInput.vue', () => ({
     template: '<div />',
   },
 }));
-vi.mock('@renderer/pages/SmartContracts/components/ContractSourceViewer.vue', () => ({
-  default: {
-    name: 'ContractSourceViewer',
-    props: ['contractName', 'sources'],
-    template: '<div data-testid="source-viewer">{{ contractName }}|{{ sources.length }}</div>',
-  },
-}));
-
 /* Fixtures */
 const ABI_WITH_CTOR = [
   {
@@ -158,7 +150,7 @@ describe('ContractCreateFormData.vue', () => {
     networkState.nodeNumbers = [0, 1, 2];
   });
 
-  describe('artifact upload (ABI + bytecode + source)', () => {
+  describe('artifact upload (ABI + bytecode)', () => {
     test('a Hardhat-style artifact populates bytecode and constructor args from the ABI', async () => {
       const { wrapper, emitted } = await mountForm();
       upload(
@@ -226,8 +218,8 @@ describe('ContractCreateFormData.vue', () => {
       expect(wrapper.text()).not.toContain('File is not valid JSON');
     });
 
-    test('a source-only Standard JSON Input file shows the source viewer', async () => {
-      const { wrapper } = await mountForm();
+    test('a source-only Standard JSON Input file is rejected (no ABI/bytecode to act on)', async () => {
+      const { wrapper, emitted } = await mountForm();
       upload(
         wrapper,
         fileOf(
@@ -238,7 +230,38 @@ describe('ContractCreateFormData.vue', () => {
         ),
       );
       await flushPromises();
-      expect(wrapper.find('[data-testid="source-viewer"]').text()).toBe('WorldClock|1');
+      expect(wrapper.text()).toContain('only has source code');
+      expect(emitted).toHaveLength(0);
+    });
+
+    test('removing a successfully-parsed file undoes what it contributed (bytecode, constructor args)', async () => {
+      const { wrapper, emitted } = await mountForm();
+      upload(wrapper, fileOf(JSON.stringify({ abi: ABI_WITH_CTOR, bytecode: '0x6080604052' })));
+      await flushPromises();
+      expect(emitted.at(-1)!.bytecodeHex).toBe('6080604052');
+
+      upload(wrapper, null);
+      await flushPromises();
+
+      expect(emitted.at(-1)!.bytecodeHex).toBe('');
+      expect(emitted.at(-1)!.constructorArgs).toEqual([]);
+      expect(wrapper.text()).not.toContain('Bytecode loaded');
+    });
+
+    test('removing a file after a failed re-upload still keeps the earlier successful data', async () => {
+      const { wrapper, emitted } = await mountForm();
+      upload(wrapper, fileOf(JSON.stringify({ abi: ABI_NO_CTOR, bytecode: '0x6080' })));
+      await flushPromises();
+      expect(emitted.at(-1)!.bytecodeHex).toBe('6080');
+
+      upload(wrapper, fileOf('not json'));
+      await flushPromises();
+      expect(wrapper.text()).toContain('File is not valid JSON');
+
+      upload(wrapper, null);
+      await flushPromises();
+      expect(wrapper.text()).not.toContain('File is not valid JSON');
+      expect(emitted.at(-1)!.bytecodeHex).toBe('6080');
     });
   });
 
@@ -251,7 +274,7 @@ describe('ContractCreateFormData.vue', () => {
       expect(wrapper.find('[data-testid="text-contract-create-bytecode-oversized"]').exists()).toBe(
         true,
       );
-      expect(wrapper.text()).toContain('Existing File ID');
+      expect(wrapper.text()).toContain('enter that File ID instead');
     });
 
     test('exactly at the limit is not oversized', async () => {
@@ -271,20 +294,55 @@ describe('ContractCreateFormData.vue', () => {
     });
   });
 
-  describe('bytecode source toggle', () => {
-    test('switching to "file" shows a Bytecode File ID input', async () => {
+  describe('bytecode: upload vs. existing File ID', () => {
+    test('the File ID input is always visible, and typing into it switches the source to "file"', async () => {
       const { wrapper, emitted } = await mountForm();
-      expect(wrapper.find('[data-testid="input-contract-create-bytecode-file-id"]').exists()).toBe(
+      const fileIdInput = wrapper.find('[data-testid="input-contract-create-bytecode-file-id"]');
+      expect(fileIdInput.exists()).toBe(true);
+
+      wrapper
+        .findAllComponents({ name: 'AppInput' })
+        .find(c => c.attributes('data-testid') === 'input-contract-create-bytecode-file-id')
+        ?.vm.$emit('update:modelValue', '0.0.1234');
+      await flushPromises();
+      expect(emitted.at(-1)!.bytecodeFileId).toBe('0.0.1234');
+      expect(emitted.at(-1)!.bytecodeSource).toBe('file');
+      // No ABI has been uploaded yet - the File ID only covers the bytecode, so the
+      // "using file id" message is held back in favor of the ABI-missing warning.
+      expect(wrapper.find('[data-testid="text-contract-create-abi-missing"]').exists()).toBe(true);
+      expect(
+        wrapper.find('[data-testid="text-contract-create-using-file-id"]').exists(),
+      ).toBe(false);
+
+      upload(wrapper, fileOf(JSON.stringify({ abi: ABI_NO_CTOR })));
+      await flushPromises();
+      expect(wrapper.find('[data-testid="text-contract-create-abi-missing"]').exists()).toBe(
         false,
       );
-      const select = wrapper.find('[data-testid="select-contract-create-bytecode-source"]');
-      (select.element as HTMLSelectElement).value = 'file';
-      await select.trigger('change');
-      await flushPromises();
-      expect(emitted.at(-1)!.bytecodeSource).toBe('file');
-      expect(wrapper.find('[data-testid="input-contract-create-bytecode-file-id"]').exists()).toBe(
-        true,
+      expect(
+        wrapper.find('[data-testid="text-contract-create-using-file-id"]').exists(),
+      ).toBe(true);
+    });
+
+    test('no ABI-missing warning when the File ID field is empty', async () => {
+      const { wrapper } = await mountForm();
+      expect(wrapper.find('[data-testid="text-contract-create-abi-missing"]').exists()).toBe(
+        false,
       );
+    });
+
+    test('clearing the File ID switches the source back to "inline"', async () => {
+      const { wrapper, emitted } = await mountForm({
+        bytecodeSource: 'file',
+        bytecodeFileId: '0.0.1234',
+      });
+      wrapper
+        .findAllComponents({ name: 'AppInput' })
+        .find(c => c.attributes('data-testid') === 'input-contract-create-bytecode-file-id')
+        ?.vm.$emit('update:modelValue', '');
+      await flushPromises();
+      expect(emitted.at(-1)!.bytecodeFileId).toBe('');
+      expect(emitted.at(-1)!.bytecodeSource).toBe('inline');
     });
   });
 
@@ -305,9 +363,9 @@ describe('ContractCreateFormData.vue', () => {
       );
     });
 
-    test('hidden for "file" bytecode source', async () => {
+    test('hidden once a Bytecode File ID is set', async () => {
       const { wrapper } = await mountForm(
-        { bytecodeSource: 'file' },
+        { bytecodeSource: 'file', bytecodeFileId: '0.0.1234' },
         { needsBytecodeReupload: true },
       );
       expect(wrapper.find('[data-testid="text-contract-create-reupload-needed"]').exists()).toBe(

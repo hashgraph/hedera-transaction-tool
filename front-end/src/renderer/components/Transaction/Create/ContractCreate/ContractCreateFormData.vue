@@ -6,13 +6,13 @@ import { Hbar } from '@hiero-ledger/sdk';
 import { computed, ref } from 'vue';
 
 import useNetworkStore from '@renderer/stores/storeNetwork';
+import useCreateTooltip from '@renderer/composables/useCreateTooltip';
 
 import {
   getAbiConstructor,
   isConstructorCallable,
   parseContractArtifact,
   type AbiItem,
-  type StandardJsonSource,
 } from '@renderer/utils/sdk/abi';
 import {
   decodeConstructorParams,
@@ -31,7 +31,6 @@ import AppUploadFile from '@renderer/components/ui/AppUploadFile.vue';
 import AppHbarInput from '@renderer/components/ui/AppHbarInput.vue';
 import AccountIdInput from '@renderer/components/AccountIdInput.vue';
 import KeyField from '@renderer/components/KeyField.vue';
-import ContractSourceViewer from '@renderer/pages/SmartContracts/components/ContractSourceViewer.vue';
 
 /* Props */
 const props = defineProps<{
@@ -55,9 +54,13 @@ const network = useNetworkStore();
 /* State */
 const artifactFile = ref<{ meta: File; content: Uint8Array; loadPercentage: number } | null>(null);
 const parsedAbi = ref<AbiItem[] | null>(null);
-const parsedSources = ref<StandardJsonSource[]>([]);
-const parsedContractNameHint = ref<string | null>(null);
 const artifactError = ref('');
+// What the *currently selected* file itself contributed (reset per upload attempt) - lets removal
+// undo only that, leaving anything that predates it (a reloaded draft, an earlier successful
+// upload whose result got merged in) alone.
+const uploadedByCurrentFile = ref({ abi: false, bytecode: false });
+const artifactHintIconRef = ref<HTMLElement | null>(null);
+useCreateTooltip(artifactHintIconRef);
 
 /* Computed */
 const maxBytecodeSize = computed(() => getMaxContractBytecodeSize(props.payerId || null));
@@ -83,11 +86,8 @@ function emitUpdate(partial: Partial<ContractCreateData>) {
   emit('update:data', { ...props.data, ...partial });
 }
 
-function handleBytecodeSourceChange(e: Event) {
-  const value = (e.target as HTMLSelectElement).value;
-  if (value === 'inline' || value === 'file') {
-    emitUpdate({ bytecodeSource: value });
-  }
+function handleBytecodeFileIdChange(value: string) {
+  emitUpdate({ bytecodeFileId: value, bytecodeSource: value ? 'file' : 'inline' });
 }
 
 const handleArtifactFileUpdate = async (
@@ -97,17 +97,32 @@ const handleArtifactFileUpdate = async (
   artifactError.value = '';
 
   if (!file) {
+    // Removing the file only undoes what it itself contributed - a failed re-upload that gets
+    // removed leaves an earlier successful upload's data alone (uploadedByCurrentFile was never
+    // set for the failed attempt), while removing a successful upload properly clears its ABI/
+    // bytecode instead of leaving stale state behind.
+    if (uploadedByCurrentFile.value.abi) {
+      parsedAbi.value = null;
+      emitUpdate({ constructorArgs: [], rawConstructorParametersHex: '' });
+    }
+    if (uploadedByCurrentFile.value.bytecode) {
+      emitUpdate({ bytecodeHex: '' });
+    }
+    uploadedByCurrentFile.value = { abi: false, bytecode: false };
     return;
   }
   if (file.loadPercentage < 100) {
     return;
   }
 
+  uploadedByCurrentFile.value = { abi: false, bytecode: false };
+
   try {
     const text = new TextDecoder().decode(file.content);
     const result = parseContractArtifact(text);
 
     if (result.abi !== null) {
+      uploadedByCurrentFile.value.abi = true;
       parsedAbi.value = result.abi;
       const ctor = getAbiConstructor(result.abi);
 
@@ -131,12 +146,17 @@ const handleArtifactFileUpdate = async (
       });
     }
     if (result.bytecode !== null) {
+      uploadedByCurrentFile.value.bytecode = true;
       const hex = result.bytecode.startsWith('0x') ? result.bytecode.slice(2) : result.bytecode;
       emitUpdate({ bytecodeHex: hex });
     }
-    if (result.sources.length > 0) {
-      parsedSources.value = result.sources;
-      parsedContractNameHint.value = result.contractNameHint;
+    // parseContractArtifact also accepts source-only files (a solc Standard JSON Input) since
+    // that shape is valid elsewhere (the Smart Contracts registry's Add page shows source there) -
+    // but there's nothing useful to do with source alone here, so call that out explicitly rather
+    // than silently accepting a file that did nothing.
+    if (result.abi === null && result.bytecode === null) {
+      artifactError.value =
+        'This file only has source code, not an ABI/bytecode - upload a build artifact or solc --standard-json output instead.';
     }
   } catch (error) {
     artifactError.value = getErrorMessage(error, 'Failed to parse file');
@@ -192,26 +212,20 @@ function handleNodeNumberChange(e: Event) {
     </div>
   </div>
 
-  <div class="row align-items-end mt-6">
-    <div class="form-group col-6 col-xxxl-4">
-      <label class="form-label">Bytecode Source</label>
-      <select
-        class="form-select is-fill"
-        :value="data.bytecodeSource"
-        @change="handleBytecodeSourceChange"
-        data-testid="select-contract-create-bytecode-source"
-      >
-        <option value="inline">Upload bytecode</option>
-        <option value="file">Existing File ID</option>
-      </select>
-    </div>
-  </div>
-
-  <div class="row align-items-start mt-4">
+  <div class="row align-items-start mt-6">
     <div class="form-group col-6 col-xxxl-4">
       <label class="form-label"
-        >Contract ABI / Bytecode <span class="text-danger">*</span></label
-      >
+        >Contract ABI / Bytecode <span class="text-danger">*</span>
+        <span
+          ref="artifactHintIconRef"
+          class="bi bi-info-circle ms-1"
+          data-bs-toggle="tooltip"
+          data-bs-trigger="hover"
+          data-bs-placement="top"
+          data-bs-custom-class="wide-tooltip"
+          data-bs-title="A Foundry/Hardhat build artifact or a solc --standard-json output gives you ABI + bytecode."
+        ></span>
+      </label>
       <AppUploadFile
         id="contract-create-artifact-upload"
         :file="artifactFile"
@@ -222,7 +236,14 @@ function handleNodeNumberChange(e: Event) {
       />
       <p v-if="artifactError" class="text-danger text-small mt-2">{{ artifactError }}</p>
       <p
-        v-else-if="needsBytecodeReupload && data.bytecodeSource === 'inline' && !data.bytecodeHex"
+        v-else-if="data.bytecodeFileId && !parsedAbi"
+        class="text-warning text-small mt-2"
+        data-testid="text-contract-create-abi-missing"
+      >
+        Please also upload the contract's ABI - the File ID only covers the bytecode.
+      </p>
+      <p
+        v-else-if="needsBytecodeReupload && !data.bytecodeFileId && !data.bytecodeHex"
         class="text-warning text-small mt-2"
         data-testid="text-contract-create-reupload-needed"
       >
@@ -236,27 +257,29 @@ function handleNodeNumberChange(e: Event) {
       >
         This bytecode ({{ bytecodeByteLength }} bytes) exceeds the transaction size limit
         ({{ maxBytecodeSize }} bytes). Upload it as a File first (FileCreate/FileAppend), then
-        switch "Bytecode Source" to "Existing File ID" and enter that File ID.
+        enter that File ID instead.
       </p>
       <p
-        v-else-if="data.bytecodeSource === 'inline' && data.bytecodeHex"
-        class="text-success text-small mt-2"
+        v-else-if="data.bytecodeFileId"
+        class="text-small mt-2"
+        data-testid="text-contract-create-using-file-id"
       >
+        Using the bytecode already stored in File {{ data.bytecodeFileId }} - any bytecode in
+        the uploaded artifact is ignored.
+      </p>
+      <p v-else-if="data.bytecodeHex" class="text-success text-small mt-2">
         Bytecode loaded ({{ bytecodeByteLength }} bytes).
       </p>
       <p v-if="parsedAbi && !constructorIsSupported" class="text-warning text-small mt-2">
         This constructor has parameter types that cannot be entered here (e.g. a struct/tuple or
         array) - double-check the deployed contract's initial state.
       </p>
-    </div>
-
-    <div v-if="data.bytecodeSource === 'file'" class="form-group col-6 col-xxxl-4">
-      <label class="form-label">Bytecode File ID <span class="text-danger">*</span></label>
       <AppInput
         :model-value="data.bytecodeFileId"
-        @update:model-value="(v: string) => emitUpdate({ bytecodeFileId: v })"
+        @update:model-value="handleBytecodeFileIdChange"
         :filled="true"
-        placeholder="0.0.1234"
+        placeholder="Bytecode File ID (optional)"
+        class="mt-2"
         data-testid="input-contract-create-bytecode-file-id"
       />
     </div>
@@ -417,16 +440,5 @@ function handleNodeNumberChange(e: Event) {
         </p>
       </div>
     </div>
-  </div>
-
-  <div v-if="parsedSources.length > 0" class="mt-6" style="height: 20rem">
-    <p class="text-small text-semi-bold">
-      {{ parsedContractNameHint || 'Contract' }} source code
-    </p>
-    <ContractSourceViewer
-      class="h-100"
-      :contract-name="parsedContractNameHint || ''"
-      :sources="parsedSources"
-    />
   </div>
 </template>

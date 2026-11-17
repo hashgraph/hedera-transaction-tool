@@ -84,8 +84,6 @@ In scope:
   this transaction." This differs from `ContractExecuteTransactionModel` (no new key involved) and
   from the existing `AccountCreateTransactionModel` (which has no override despite setting a new
   key - not following that precedent here since the protocol requirement is explicit).
-- Contract source import on the create form, reusing `parseContractArtifact` +
-  `ContractSourceViewer.vue` as-is from the registry's Add page.
 - `ContractCreateDetails.vue` for viewing/signing - decode constructor args the same way
   `ContractExecuteDetails.vue` decodes call args. Includes a "Link Contract" button (mirrors
   `AccountDetails.vue`'s `handleLinkEntity`: resolve the real Contract ID via mirror-node entity_id
@@ -137,20 +135,34 @@ oversized transaction fail at signing/submission time.
 
 `Transaction/Create/ContractCreate/`: `ContractCreate.vue` (orchestrator, mirrors
 `ContractExecute.vue`) + `ContractCreateFormData.vue`. One artifact upload control
-(`parseContractArtifact`) supplies ABI + bytecode + source together; bytecode source toggle
-(inline vs. existing File ID); oversized-bytecode message (Step 0) pointing at
-FileCreate/FileAppend; admin key via `KeyField`; gas, initial balance, contract memo, max
-automatic token associations, auto-renew account, staking fields (mirrors `AccountDataFormData`'s
-staking block); constructor-args dynamic form (mirrors `ContractExecuteFormData`'s function-args
-form, pointed at the ABI's `constructor` entry instead of a selected function); contract source
-display (`ContractSourceViewer.vue`). No auto-renew *period* field - same precedent as
-`AccountCreateTransaction`, which also leaves it at the SDK default rather than exposing it.
+(`parseContractArtifact`) supplies ABI + bytecode; the artifact upload and the "Existing Bytecode
+File ID" input are both always visible rather than gated behind a manual source-toggle dropdown -
+typing a File ID switches `bytecodeSource` to `'file'` automatically (cleared => back to
+`'inline'`), since the upload is always needed for the ABI regardless of which one actually
+supplies the bytecode; oversized-bytecode message (Step 0) pointing at FileCreate/FileAppend;
+admin key via `KeyField`; gas, initial balance, contract memo, max automatic token associations,
+auto-renew account, staking fields (mirrors `AccountDataFormData`'s staking block); constructor-args
+dynamic form (mirrors `ContractExecuteFormData`'s function-args form, pointed at the ABI's
+`constructor` entry instead of a selected function). No auto-renew *period* field - same precedent
+as `AccountCreateTransaction`, which also leaves it at the SDK default rather than exposing it.
 
 Decided (not in the original Step 2 bullet list): the artifact-upload handler must prefer
 decoding `rawConstructorParametersHex` against a freshly-(re)uploaded ABI over blindly resetting
 to blank fields, specifically for the "reloaded draft, re-uploaded the same artifact" case - doing
 the reset unconditionally silently discarded a decodable reload. See
 `ContractCreateFormData.vue`'s `handleArtifactFileUpdate`.
+
+Deviated later (not in the original Step 2 bullet list either): dropped contract-source display
+(`ContractSourceViewer.vue` + the Standard JSON Input upload path) from this form entirely. It's
+never persisted anywhere (no `source` column on `SmartContract`, nothing in
+`ContractCreateTransaction`'s protocol fields) and never shown to other signers on
+`ContractCreateDetails.vue` - it was a silent, easy-to-miss, session-only preview with no
+downstream value, and the single-upload-slot UX made "upload a second file to also see source"
+confusing (user feedback: can only select one file at a time; not clear uploading a second doesn't
+replace the first). Source display stays in the registry's Add Smart Contract page, where
+`parseContractArtifact` is still shared from - only this form's consumption of `result.sources`
+was removed. A source-only upload here now shows an explicit "this file only has source code, not
+an ABI/bytecode" message instead of silently doing nothing.
 
 ## 3. Details + signing (done)
 
