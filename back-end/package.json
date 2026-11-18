@@ -26,7 +26,7 @@
     "create-admin": "ts-node ./scripts/create-admin.ts",
     "create-users": "ts-node ./scripts/add-users.ts",
     "deploy:dev": "sh ./k8s/dev/deploy.sh",
-    "test:libs": "jest --testPathPatterns='libs/.*\\.spec\\.ts$'",
+    "test:libs": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --testPathPatterns='libs/.*\\.spec\\.ts$'",
     "test:migrations": "pnpm --filter=typeorm test",
     "test:all": "INCLUDE_LIBS=0 pnpm --filter=api test && INCLUDE_LIBS=0 pnpm --filter=chain test && INCLUDE_LIBS=0 pnpm --filter=notifications test && pnpm test:libs && pnpm --filter=typeorm test",
     "test:cov:all": "pnpm --filter=api test:cov && pnpm --filter=chain test:cov && pnpm --filter=notifications test:cov && pnpm --filter=typeorm test:cov",

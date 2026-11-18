@@ -9,10 +9,10 @@
     "test": "test"
   },
   "scripts": {
-    "test": "jest --config ./jest.config.ts",
-    "test:cov": "jest --config ./jest.config.ts --coverage",
-    "test:watch": "jest --config ./jest.config.ts --watch",
-    "test:watch:cov": "jest --config ./jest.config.ts --watch --coverage"
+    "test": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts",
+    "test:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --coverage",
+    "test:watch": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --watch",
+    "test:watch:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --watch --coverage"
   },
   "dependencies": {
     "@socket.io/redis-streams-adapter": "0.3.1",
