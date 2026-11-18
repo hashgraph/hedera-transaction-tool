@@ -50,7 +50,9 @@ const displayKey = computed(() => {
 });
 
 const shouldHighlight = computed(() => {
-  return containerRef.value === searchIndex.highlightElement.value;
+  return (
+    containerRef.value !== null && searchIndex.matches.value.indexOf(containerRef.value) !== -1
+  );
 });
 
 /* Hooks */
