@@ -73,6 +73,20 @@ const getMenuItems = (): MenuItem[] => [
   // },
 ];
 
+const matchesRoute = (item: MenuItem, path: string) =>
+  path.startsWith(item.activePrefix || item.link);
+
+/*
+ * The route decides which item is highlighted. The last clicked item is only a fallback for
+ * pages that belong to no menu item (e.g. /create-transaction), so they keep the section
+ * they were opened from highlighted. Otherwise a redirect (e.g. after switching organization)
+ * would leave the previously clicked item highlighted.
+ */
+const isActive = (item: MenuItem, items: MenuItem[], path: string) =>
+  items.some(i => matchesRoute(i, path))
+    ? matchesRoute(item, path)
+    : router.appMenuItem === item.title.toLowerCase();
+
 const handleClick = (item: MenuItem) => {
   router.appMenuItem = item.title.toLowerCase();
 };
@@ -94,10 +108,7 @@ const organizationOnly = ['/contact-list', '/reviewer-groups'];
         <RouterLink
           class="link-menu mt-2"
           :class="{
-            active:
-              router.appMenuItem === item.title.toLowerCase() ||
-              (router.appMenuItem === undefined &&
-                $route.path.startsWith(item.activePrefix || item.link)),
+            active: isActive(item, getMenuItems(), $route.path),
           }"
           :to="item.link"
           draggable="false"

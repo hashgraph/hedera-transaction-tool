@@ -61,6 +61,26 @@ describe('Menu.vue - smart contracts entry', () => {
     expect(router.appMenuItem).toBe('smart contracts');
   });
 
+  test('route wins over a stale clicked item after an automatic redirect', () => {
+    router.appMenuItem = 'smart contracts';
+    route.path = '/transactions';
+    const wrapper = mountMenu();
+    expect(wrapper.find('[data-testid="button-menu-transactions"]').classes()).toContain('active');
+    expect(wrapper.find('[data-testid="button-menu-smart-contracts"]').classes()).not.toContain(
+      'active',
+    );
+  });
+
+  test('keeps the clicked item highlighted on routes that belong to no menu item', () => {
+    router.appMenuItem = 'accounts';
+    route.path = '/create-transaction/account';
+    const wrapper = mountMenu();
+    expect(wrapper.find('[data-testid="button-menu-accounts"]').classes()).toContain('active');
+    expect(wrapper.find('[data-testid="button-menu-transactions"]').classes()).not.toContain(
+      'active',
+    );
+  });
+
   test('is listed between Files and Contact List-only entries and is not organization-only', () => {
     const wrapper = mountMenu();
     const ids = wrapper.findAll('a').map(a => a.attributes('data-testid'));
