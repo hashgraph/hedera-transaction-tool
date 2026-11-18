@@ -5,6 +5,7 @@ import type { Contact } from '@shared/interfaces';
 
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import { getAllPublicKeyMappings } from '@renderer/utils';
+import { addContact, updateContact } from '@renderer/services/contactsService';
 
 const mocks = vi.hoisted(() => ({
   userStore: {
@@ -198,6 +199,120 @@ describe('ContactDetails.vue', () => {
     await flushPromises();
 
     expect(wrapper.html()).toContain('Alice Key');
+  });
+
+  describe('editing the nickname', () => {
+    function mountForNicknameEdit(c: Contact = contact) {
+      mocks.contactsStore.contacts = [c];
+      return mount(ContactDetails, {
+        props: { contact: c, linkedAccounts: [] },
+        attachTo: document.body, // focus/blur only work on attached elements
+        global: {
+          stubs: {
+            AppButton: { template: '<button><slot /></button>' },
+            ContactDetailsAssociatedAccounts: { template: '<div />' },
+            ContactDetailsLinkedAccounts: { template: '<div />' },
+            RenamePublicKeyModal: { template: '<div />' },
+          },
+        },
+      });
+    }
+
+    async function startEdit(wrapper: ReturnType<typeof mountForNicknameEdit>) {
+      await wrapper.find('[data-testid="span-change-nickname"]').trigger('click');
+      // The component focuses the input (and seeds its value) after a 100ms timeout
+      await new Promise(resolve => setTimeout(resolve, 150));
+      await flushPromises();
+      return wrapper.find('[data-testid="input-change-nickname"]');
+    }
+
+    beforeEach(() => {
+      vi.mocked(addContact).mockClear();
+      vi.mocked(updateContact).mockClear();
+    });
+
+    test('pressing Enter saves the nickname', async () => {
+      const wrapper = mountForNicknameEdit();
+      const input = await startEdit(wrapper);
+
+      await input.setValue('Alice');
+      await input.trigger('keydown', { key: 'Enter' });
+      await flushPromises();
+
+      expect(addContact).toHaveBeenCalledTimes(1);
+      expect(addContact).toHaveBeenCalledWith(expect.objectContaining({ nickname: 'Alice' }));
+      expect(mocks.contactsStore.fetch).toHaveBeenCalledTimes(1);
+      wrapper.unmount();
+    });
+
+    test('pressing Enter closes the input', async () => {
+      const wrapper = mountForNicknameEdit();
+      const input = await startEdit(wrapper);
+
+      await input.trigger('keydown', { key: 'Enter' });
+      await flushPromises();
+
+      expect(wrapper.find('[data-testid="input-change-nickname"]').exists()).toBe(false);
+      wrapper.unmount();
+    });
+
+    test('pressing Enter updates an existing nickname instead of adding a new one', async () => {
+      const wrapper = mountForNicknameEdit({ ...contact, nickname: 'Old', nicknameId: 'nick-1' });
+      const input = await startEdit(wrapper);
+
+      await input.setValue('New');
+      await input.trigger('keydown', { key: 'Enter' });
+      await flushPromises();
+
+      expect(addContact).not.toHaveBeenCalled();
+      expect(updateContact).toHaveBeenCalledTimes(1);
+      expect(updateContact).toHaveBeenCalledWith(
+        'nick-1',
+        'local-user-id',
+        expect.objectContaining({ nickname: 'New' }),
+      );
+      wrapper.unmount();
+    });
+
+    test('clearing the field and pressing Enter removes the nickname', async () => {
+      const wrapper = mountForNicknameEdit({ ...contact, nickname: 'Old', nicknameId: 'nick-1' });
+      const input = await startEdit(wrapper);
+
+      await input.setValue('');
+      await input.trigger('keydown', { key: 'Enter' });
+      await flushPromises();
+
+      expect(updateContact).toHaveBeenCalledWith(
+        'nick-1',
+        'local-user-id',
+        expect.objectContaining({ nickname: '' }),
+      );
+      wrapper.unmount();
+    });
+
+    test('Enter confirming an IME composition does not save', async () => {
+      const wrapper = mountForNicknameEdit();
+      const input = await startEdit(wrapper);
+
+      await input.trigger('keydown', { key: 'Enter', isComposing: true });
+      await flushPromises();
+
+      expect(addContact).not.toHaveBeenCalled();
+      expect(wrapper.find('[data-testid="input-change-nickname"]').exists()).toBe(true);
+      wrapper.unmount();
+    });
+
+    test('losing focus still saves the nickname', async () => {
+      const wrapper = mountForNicknameEdit();
+      const input = await startEdit(wrapper);
+
+      await input.setValue('Bob');
+      await input.trigger('blur');
+      await flushPromises();
+
+      expect(addContact).toHaveBeenCalledWith(expect.objectContaining({ nickname: 'Bob' }));
+      wrapper.unmount();
+    });
   });
 
   test('shows admin contact actions only for organization admins', () => {
