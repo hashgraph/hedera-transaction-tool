@@ -701,6 +701,13 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | 10.1.5 | Associated accounts are displayed                               | Yes       | Verify associated accounts are displayed           |
 | 10.1.6 | Associated accounts verified against Mirror Node                | Yes       | Verify associated accounts are displayed           |
 | 10.1.7 | New user indicator dot shown on contact list items              | Yes as Component Test | shows registered, admin, and update-available indicators |
+| 10.1.8 | Search filters contacts by nickname or email as the user types (case-insensitive) | Yes as Component Test | filters by email, case-insensitively, without pressing enter / filters by nickname, including spaces / matches a nickname even when the email does not contain the term |
+| 10.1.9 | Clearing the search restores the full list; no matches shows "No contacts found" | Yes as Component Test | keeps the sort order while filtered and restores the full list when cleared / shows the empty state when nothing matches |
+| 10.1.10 | Contacts sort by name (nickname, falling back to email) A-Z / Z-A, admins included | Yes as Component Test | sorts by nickname when set and by email when not, interleaved / name Z-A reverses the display-name order |
+| 10.1.11 | Contacts sort by newest / oldest creation date | Yes as Component Test | sorts every contact, admins included, by newest / oldest |
+| 10.1.12 | List re-sorts when a nickname is added, changed, or removed | Yes as Component Test | adding a nickname re-sorts the list / changing a nickname re-sorts the list / removing a nickname re-sorts the contact by its email again |
+| 10.1.13 | Selected contact moves to the first match when filtered out; cleared when nothing matches | Yes as Component Test | selects the first result when the selected contact is filtered out / clears the selection when nothing matches |
+| 10.1.14 | Search does not reveal contacts without keys to non-admins | Yes as Component Test | search does not reveal contacts without keys to non-admins |
 
 ### 10.2 Admin Actions
 
@@ -969,23 +976,23 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | 7. Transaction Groups           | 39              | 29            | 7                        | 0       | 0       | 3        | 0       | 92%        | 92%                     |
 | 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
+| 10. Contact List                | 30              | 13            | 16                       | 0       | 1       | 0        | 0       | 97%        | 100%                    |
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 1                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
 | 16. User Migration              | 15              | 0             | 14                       | 0       | 0       | 1        | 0       | 93%        | 93%                     |
-| **Total**                       | **487**         | **365**       | **103**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
+| **Total**                       | **494**         | **365**       | **110**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 2,517 Vitest renderer test cases (unit + component) across 185 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3) / 487 = 96.71%`, rounded to `97%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 110 + 3) / 494 = 96.76%`, rounded to `97%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3 + 5) / 487 = 97.74%`, rounded to `98%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 110 + 3 + 5) / 494 = 97.77%`, rounded to `98%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 

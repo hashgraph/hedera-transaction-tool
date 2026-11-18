@@ -7,6 +7,7 @@ const props = defineProps<{
   toggleText: string;
   items: { label: string; value: T }[];
   color?: 'primary' | 'secondary' | 'borderless' | 'danger';
+  size?: 'small' | 'default';
   active?: boolean;
   dataTestid?: string;
   togglerIcon?: boolean;
@@ -61,7 +62,7 @@ watch(
 );
 </script>
 <template>
-  <div ref="dropdownRef" class="dropdown">
+  <div ref="dropdownRef" class="dropdown app-select" :class="{ 'app-select-small': size === 'small' }">
     <AppButton
       :color="(colorOnActive && active) || !colorOnActive ? color : undefined"
       class="d-flex flex-centered justify-content-between mw-100"
@@ -71,10 +72,10 @@ watch(
       :data-testid="dataTestid"
       :class="[buttonClass]"
     >
-      <div class="col-11 text-start overflow-hidden">
+      <div class="app-select-label text-start overflow-hidden">
         <span>{{ selected?.label || toggleText }}</span>
       </div>
-      <div class="col-1 ms-3">
+      <div class="app-select-icon">
         <i v-if="togglerIcon" class="bi bi-chevron-down flex-1"></i>
       </div>
     </AppButton>
