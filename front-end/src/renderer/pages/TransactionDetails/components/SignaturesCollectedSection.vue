@@ -36,8 +36,9 @@ const matchCount = computed(() => searchIndex.matches.value.length);
       v-if="showSearchButton"
       v-model:search-text="searchText"
       placeholder="Enter public key to search…"
+      @blur="searchText = ''"
     />
-    <span v-if="matchCount == 1" class="text-success text-micro">1 match</span>
+    <span v-if="matchCount == 1" class="bi bi-check text-title text-success"/>
     <span v-if="matchCount > 1" class="text-success text-micro">{{ matchCount }} matches</span>
   </div>
   <div v-if="props.signatureKeyObject !== null" class="text-small mt-5">
