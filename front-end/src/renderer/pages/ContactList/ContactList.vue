@@ -250,7 +250,7 @@ onBeforeMount(async () => {
           </template>
 
           <div
-            class="d-flex align-items-center gap-3 pe-3"
+            class="d-flex align-items-center gap-3"
             :class="isAdmin ? 'mt-4' : ''"
           >
             <AppInput

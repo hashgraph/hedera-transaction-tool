@@ -95,6 +95,8 @@ td .btn {
 
   &.app-select-small {
     > .btn {
+      // AppButton has a fixed 40px height; let padding/line-height size it like the small input
+      height: auto;
       padding: $input-padding-y-sm $input-padding-x-sm;
       font-size: $input-font-size;
       line-height: $input-line-height;
