@@ -27,7 +27,7 @@ export class SearchIndex {
     const result: HTMLElement[] = [];
     if (this.trimmedSearchText.value.length > 0) {
       for (const [candidate, elements] of this.candidates.value) {
-        if (candidate.startsWith(this.trimmedSearchText.value)) {
+        if (candidate == this.trimmedSearchText.value) {
           elements.forEach(e => result.push(e));
         }
       }
