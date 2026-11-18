@@ -3,7 +3,7 @@ import { computed } from 'vue';
 
 import { ableToSign, type SignatureAudit } from '@renderer/utils';
 
-import SignatureStatusEntities from '@renderer/components/SignatureStatusEntities.vue';
+import SignatureStatusEntities from '@renderer/components/SignatureStatus/SignatureStatusEntities.vue';
 
 /* Props */
 const props = defineProps<{

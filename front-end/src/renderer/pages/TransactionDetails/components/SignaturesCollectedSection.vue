@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import SignatureStatus from '@renderer/components/SignatureStatus.vue';
+import SignatureStatus from '@renderer/components/SignatureStatus/SignatureStatus.vue';
 import SearchField from '@renderer/components/SearchField/SearchField.vue';
 import { type SignatureAudit } from '@renderer/utils';
 
