@@ -21,12 +21,18 @@ export class KeylessAccountSupport1792600000000 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    // Data is not touched on the way down:
+    // Nothing is invented on the way down:
     // - cached_account: the invalid "{}" values are not restored.
     // - account_snapshot.encodedKey stays nullable; keyless snapshots have no key to restore
     //   and no honest placeholder value.
-    // Only the dropped columns are re-added (nullable, not backfilled).
-    await queryRunner.query(`ALTER TABLE "account_snapshot" ADD "keyHash" character varying(64)`);
-    await queryRunner.query(`ALTER TABLE "node_snapshot" ADD "keyHash" character varying(64)`);
+    // The dropped keyHash columns are re-added (nullable) and backfilled from encodedKey, so the
+    // previous code does not insert a redundant snapshot per account and node. Keyless rows keep
+    // a null keyHash.
+    for (const table of ['account_snapshot', 'node_snapshot']) {
+      await queryRunner.query(`ALTER TABLE "${table}" ADD "keyHash" character varying(64)`);
+      await queryRunner.query(
+        `UPDATE "${table}" SET "keyHash" = encode(sha256("encodedKey"), 'hex') WHERE "encodedKey" IS NOT NULL`,
+      );
+    }
   }
 }
