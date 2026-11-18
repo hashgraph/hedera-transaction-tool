@@ -58,20 +58,20 @@ watch(firstMatch, () => {
   searchIndex.highlightElement.value = firstMatch.value;
   if (firstMatch.value !== null) {
     const m = firstMatch.value;
-    nextTick(() => m.scrollIntoView({inline: 'center'}))
+    nextTick(() => m.scrollIntoView({ inline: 'center' }));
   }
 });
 </script>
 
 <template>
-  <h2 v-if="props.signatureKeyObject !== null">
+  <h2 v-if="props.signatureKeyObject !== null" class="d-flex align-items-center">
     <span class="text-title text-bold me-3">Signatures Collected</span>
     <SearchField
       v-if="showSearchButton"
       v-model:search-text="searchText"
       placeholder="Enter public key to search…"
     />
-    <span>Match count: {{ matches.length }}</span>
+    <span v-if="matches.length > 0" class="bi bi-check text-title text-success" />
   </h2>
   <div v-if="props.signatureKeyObject !== null" class="text-small mt-5">
     <SignatureStatus
