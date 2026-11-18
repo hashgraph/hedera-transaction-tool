@@ -14,9 +14,9 @@ import {
 //   SELECT ... WHERE nodeId = ? AND mirrorNetwork = ?
 //     AND createdAt <= :executedAt ORDER BY createdAt DESC LIMIT 1
 //
-// There is intentionally NO unique constraint on keyHash — same reasoning as
+// There is intentionally NO unique constraint on encodedKey — same reasoning as
 // AccountSnapshot: a key rotation A→B→A produces three rows with distinct
-// createdAt values, and dedup-by-hash would break the timestamp lookup.
+// createdAt values, and dedup-by-key would break the timestamp lookup.
 //
 // Note: the Hedera mirror node does not expose timestamp-based node key
 // history, so this snapshot table is the only reliable historical record
@@ -35,11 +35,10 @@ export class NodeSnapshot {
   @Column()
   mirrorNetwork!: string;
 
+  // Not nullable, unlike AccountSnapshot.encodedKey: nodes are expected to always have an
+  // admin key, and nodes without one are skipped at capture time.
   @Column({ type: 'bytea' })
   encodedKey!: Buffer;
-
-  @Column({ length: 64 })
-  keyHash!: string;
 
   @Column({ type: 'text', array: true })
   publicKeys!: string[];
