@@ -71,7 +71,7 @@ watch(containerRef, (newValue, oldValue) => {
 });
 </script>
 <template>
-  <span ref="containerRef" v-if="formattedPublicKey">
+  <span ref="containerRef" v-if="formattedPublicKey" class="font-monospace">
     <Highlighter :visible="shouldHighlight">
       <span v-if="signed" class="text-success">{{ formattedPublicKey }}</span>
       <span v-else-if="!signed && identifier">
