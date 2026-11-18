@@ -119,6 +119,12 @@ const handleStartKeyNicknameEdit = async (publicKey: string) => {
   isUpdateNicknameModalShown.value = true;
 };
 
+// Enter submits by blurring the input, so saving always goes through handleChangeNickname
+const handleNicknameEnter = (e: KeyboardEvent) => {
+  if (e.isComposing) return; // Enter confirming an IME composition is not a submit
+  (e.target as HTMLInputElement).blur();
+};
+
 const handleChangeNickname = async () => {
   isNicknameInputShown.value = false;
 
@@ -213,6 +219,7 @@ watch(() => props.contact.userKeys, async () => {
         ref="nicknameInputRef"
         data-testid="input-change-nickname"
         @blur="handleChangeNickname"
+        @keydown.enter="handleNicknameEnter"
         :filled="true"
       />
       <p

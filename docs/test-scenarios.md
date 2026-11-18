@@ -727,6 +727,7 @@ This document enumerates all user-facing scenarios in the Hedera Transaction Too
 | #      | Scenario                         | Automated | Covered By                      |
 | ------ | -------------------------------- | --------- | ------------------------------- |
 | 10.3.1 | User can change contact nickname | Yes       | Verify user can change nickname |
+| 10.3.2 | Pressing Enter in the nickname field saves it (same as leaving the field) | Yes as Component Test | pressing Enter saves the nickname / pressing Enter updates an existing nickname instead of adding a new one |
 
 ---
 
@@ -969,23 +970,23 @@ Renderer tests live in `front-end/src/tests/renderer/pages/Migrate/`. The main-p
 | 7. Transaction Groups           | 39              | 29            | 7                        | 0       | 0       | 3        | 0       | 92%        | 92%                     |
 | 8. Accounts                     | 35              | 22            | 13                       | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 9. Files                        | 29              | 20            | 9                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
-| 10. Contact List                | 23              | 13            | 9                        | 0       | 1       | 0        | 0       | 96%        | 100%                    |
+| 10. Contact List                | 24              | 13            | 10                       | 0       | 1       | 0        | 0       | 96%        | 100%                    |
 | 11. Org Transaction Workflows   | 24              | 22            | 0                        | 0       | 2       | 0        | 0       | 92%        | 100%                    |
 | 12. Notifications               | 10              | 10            | 0                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 13. Navigation and Layout       | 12              | 11            | 1                        | 0       | 0       | 0        | 0       | 100%       | 100%                    |
 | 14. Error Handling / Edge Cases | 17              | 10            | 4                        | 3       | 0       | 0        | 0       | 100%       | 100%                    |
 | 15. Upgrade                     | 5               | 3             | 0                        | 0       | 0       | 2        | 0       | 60%        | 60%                     |
 | 16. User Migration              | 15              | 0             | 14                       | 0       | 0       | 1        | 0       | 93%        | 93%                     |
-| **Total**                       | **487**         | **365**       | **103**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
+| **Total**                       | **488**         | **365**       | **104**                  | **3**   | **5**   | **9**    | **2**   | **97%**    | **98%**                 |
 
 The `Automated Renderer Test` column counts scenarios covered by frontend renderer tests (Vitest unit and component tests).
 The migrated frontend package coverage currently comes from 2,517 Vitest renderer test cases (unit + component) across 185 spec files.
 
 Coverage % is calculated as `(Automated E2E + Automated Renderer Test + Backend) / Total Scenarios`, rounded to the nearest whole percentage.
-Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3) / 487 = 96.71%`, rounded to `97%`.
+Skipped, Manual, and N/A scenarios are not counted as covered. For the total row: `(365 + 104 + 3) / 488 = 96.72%`, rounded to `97%`.
 
 Coverage % with Skipped is calculated as `(Automated E2E + Automated Renderer Test + Backend + Skipped) / Total Scenarios`, rounded to the nearest whole percentage.
-Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 103 + 3 + 5) / 487 = 97.74%`, rounded to `98%`.
+Manual and N/A scenarios are not counted as covered. For the total row: `(365 + 104 + 3 + 5) / 488 = 97.75%`, rounded to `98%`.
 
 The `Backend` column counts scenarios that the renderer UI cannot reach (UI guards prevent the state) but that ARE exercised by a backend / API test. *Covered By* on those rows points to the matching backend test path. The `N/A` column is reserved for UI-unreachable scenarios that have no equivalent test at any layer.
 
