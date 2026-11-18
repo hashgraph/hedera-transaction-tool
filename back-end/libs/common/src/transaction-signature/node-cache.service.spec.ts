@@ -72,7 +72,7 @@ describe('NodeCacheService', () => {
     cacheHelper = {
       tryClaimRefresh: jest.fn(),
       saveAndReleaseClaim: jest.fn(),
-      insertKeys: jest.fn(),
+      replaceKeys: jest.fn(),
     } as any;
 
     configService = {
@@ -656,7 +656,7 @@ describe('NodeCacheService', () => {
         etag: 'etag-123',
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
-      cacheHelper.insertKeys.mockResolvedValue(undefined);
+      cacheHelper.replaceKeys.mockResolvedValue(undefined);
 
       const result = await (service as any).saveNodeData(
         1,
@@ -669,12 +669,26 @@ describe('NodeCacheService', () => {
       expect(result).toEqual({ id: 1, nodeData: { admin_key: mockKey, node_account_id: AccountId.fromString('0.0.3') } });
       expect(serializeKey).toHaveBeenCalledWith(mockKey);
       expect(flattenKeyList).toHaveBeenCalledWith(mockKey);
-      expect(cacheHelper.insertKeys).toHaveBeenCalledWith(
+      expect(cacheHelper.replaceKeys).toHaveBeenCalledWith(
         CachedNodeAdminKey,
         1,
         'cachedNode',
         [mockKey]
       );
+    });
+
+    it('should clear existing admin key rows when the node has no admin key', async () => {
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      await (service as any).saveNodeData(
+        1,
+        'testnet',
+        'token-123',
+        { admin_key: null, node_account_id: AccountId.fromString('0.0.3') } as NodeInfoParsed,
+        'etag-123'
+      );
+
+      expect(cacheHelper.replaceKeys).toHaveBeenCalledWith(CachedNodeAdminKey, 1, 'cachedNode', []);
     });
 
     it('should return null when claim is lost', async () => {
@@ -705,7 +719,7 @@ describe('NodeCacheService', () => {
       );
 
       expect(result).toEqual({ id: 1 });
-      expect(cacheHelper.insertKeys).not.toHaveBeenCalled();
+      expect(cacheHelper.replaceKeys).not.toHaveBeenCalled();
     });
 
     it('should link transaction when transactionId provided', async () => {

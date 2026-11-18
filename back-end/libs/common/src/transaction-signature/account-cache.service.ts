@@ -165,13 +165,10 @@ export class AccountCacheService {
       return null; // Claim was lost
     }
 
-    // Persist account keys if present (ignore duplicates)
+    // Replace the normalized key rows so they match the saved key (empty for a keyless account)
     if (accountData) {
       const keys = accountData.key !== null ? flattenKeyList(accountData.key) : [];
-
-      if (keys.length > 0) {
-        await this.insertAccountKeys(id, keys);
-      }
+      await this.replaceAccountKeys(id, keys);
     }
 
     // Link to transaction when provided (idempotent)
@@ -314,11 +311,11 @@ export class AccountCacheService {
       .execute();
   }
 
-  private insertAccountKeys(
+  private replaceAccountKeys(
     cachedAccountId: number,
     keys: PublicKey[],
   ): Promise<void> {
-    return this.cacheHelper.insertKeys(
+    return this.cacheHelper.replaceKeys(
       CachedAccountKey,
       cachedAccountId,
       'cachedAccount',

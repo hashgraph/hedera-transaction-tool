@@ -163,13 +163,10 @@ export class NodeCacheService {
       return null; // Claim was lost
     }
 
-    // Persist admin keys if present (ignore duplicates)
-    if (nodeData?.admin_key) {
-      const keys = flattenKeyList(nodeData.admin_key);
-
-      if (keys.length > 0) {
-        await this.insertNodeAdminKeys(id, keys);
-      }
+    // Replace the normalized admin key rows so they match the saved key (empty if there is none)
+    if (nodeData) {
+      const keys = nodeData.admin_key ? flattenKeyList(nodeData.admin_key) : [];
+      await this.replaceNodeAdminKeys(id, keys);
     }
 
     // Link to transaction when provided (idempotent)
@@ -301,11 +298,11 @@ export class NodeCacheService {
       .execute();
   }
 
-  private insertNodeAdminKeys(
+  private replaceNodeAdminKeys(
     cachedNodeId: number,
     keys: PublicKey[],
   ): Promise<void> {
-    return this.cacheHelper.insertKeys(
+    return this.cacheHelper.replaceKeys(
       CachedNodeAdminKey,
       cachedNodeId,
       'cachedNode',

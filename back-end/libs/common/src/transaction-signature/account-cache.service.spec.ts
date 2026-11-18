@@ -72,7 +72,7 @@ describe('AccountCacheService', () => {
     cacheHelper = {
       tryClaimRefresh: jest.fn(),
       saveAndReleaseClaim: jest.fn(),
-      insertKeys: jest.fn(),
+      replaceKeys: jest.fn(),
     } as any;
 
     configService = {
@@ -712,7 +712,7 @@ describe('AccountCacheService', () => {
         etag: 'etag-123',
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
-      cacheHelper.insertKeys.mockResolvedValue(undefined);
+      cacheHelper.replaceKeys.mockResolvedValue(undefined);
 
       const result = await (service as any).saveAccountData(
         '0.0.123',
@@ -725,7 +725,7 @@ describe('AccountCacheService', () => {
       expect(result).toEqual({ id: 1, accountData: { key: mockKey, receiverSignatureRequired: false } });
       expect(serializeKey).toHaveBeenCalledWith(mockKey);
       expect(flattenKeyList).toHaveBeenCalledWith(mockKey);
-      expect(cacheHelper.insertKeys).toHaveBeenCalledWith(
+      expect(cacheHelper.replaceKeys).toHaveBeenCalledWith(
         CachedAccountKey,
         1,
         'cachedAccount',
@@ -757,7 +757,8 @@ describe('AccountCacheService', () => {
         { receiverSignatureRequired: false, encodedKey: null, etag: 'etag-123' },
       );
       expect(serializeKey).not.toHaveBeenCalled();
-      expect(cacheHelper.insertKeys).not.toHaveBeenCalled();
+      // Existing key rows are cleared so a previously keyed account does not keep stale keys
+      expect(cacheHelper.replaceKeys).toHaveBeenCalledWith(CachedAccountKey, 1, 'cachedAccount', []);
     });
 
     it('should return null when claim is lost', async () => {
@@ -787,7 +788,7 @@ describe('AccountCacheService', () => {
       );
 
       expect(result).toEqual({ id: 1 });
-      expect(cacheHelper.insertKeys).not.toHaveBeenCalled();
+      expect(cacheHelper.replaceKeys).not.toHaveBeenCalled();
     });
 
     it('should link transaction when transactionId provided', async () => {
