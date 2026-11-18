@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import SignatureStatus from '@renderer/components/SignatureStatus/SignatureStatus.vue';
 import SearchField from '@renderer/components/SearchField/SearchField.vue';
 import { type SignatureAudit } from '@renderer/utils';
@@ -54,12 +54,11 @@ const firstMatch = computed<HTMLElement | null>(() => {
 });
 
 /* Hooks */
-watch(firstMatch, () => {
-  searchIndex.highlightElement.value = firstMatch.value;
-  if (firstMatch.value !== null) {
-    const m = firstMatch.value;
-    nextTick(() => m.scrollIntoView({ inline: 'center' }));
-  }
+watch(firstMatch, newValue => {
+  searchIndex.highlightElement.value = newValue;
+  // if (newValue !== null) {
+  //   nextTick(() => newValue.scrollIntoView({ inline: 'center' }));
+  // }
 });
 </script>
 
