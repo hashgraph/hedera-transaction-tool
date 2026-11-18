@@ -35,6 +35,8 @@ export class NodeSnapshot {
   @Column()
   mirrorNetwork!: string;
 
+  // Not nullable, unlike AccountSnapshot.encodedKey: nodes are expected to always have an
+  // admin key, and nodes without one are skipped at capture time.
   @Column({ type: 'bytea' })
   encodedKey!: Buffer;
 
