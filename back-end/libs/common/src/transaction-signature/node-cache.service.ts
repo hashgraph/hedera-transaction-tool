@@ -10,6 +10,7 @@ import {
   TransactionCachedNode,
 } from '@entities';
 import {
+  areEncodedKeysEqual,
   deserializeKey,
   flattenKeyList,
   isFresh,
@@ -345,12 +346,8 @@ export class NodeCacheService {
     }
 
     const serializedKey = fetchedData.admin_key !== null ? serializeKey(fetchedData.admin_key) : null;
-    const keysEqual =
-      Buffer.isBuffer(serializedKey) && Buffer.isBuffer(cached.encodedKey)
-        ? Buffer.compare(serializedKey, cached.encodedKey) === 0
-        : serializedKey === cached.encodedKey;
 
-    if (!keysEqual) {
+    if (!areEncodedKeysEqual(serializedKey, cached.encodedKey)) {
       return true;
     }
 
