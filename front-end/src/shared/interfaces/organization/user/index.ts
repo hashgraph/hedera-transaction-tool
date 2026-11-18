@@ -15,6 +15,7 @@ export interface IUser {
   status: 'NEW' | 'NONE';
   admin: boolean;
   canViewReports: boolean;
+  createdAt: string;
   keys: IUserKey[];
   clients?: IClient[];
   updateAvailable?: boolean;

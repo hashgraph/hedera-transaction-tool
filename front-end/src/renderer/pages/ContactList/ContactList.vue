@@ -2,7 +2,7 @@
 import type { HederaAccount } from '@prisma/client';
 import { NotificationType, type Contact } from '@shared/interfaces';
 
-import { computed, onBeforeMount, ref } from 'vue';
+import { computed, onBeforeMount, ref, watch } from 'vue';
 
 import useUserStore from '@renderer/stores/storeUser';
 import useNetworkStore from '@renderer/stores/storeNetwork';
@@ -27,6 +27,8 @@ import {
 
 import AppButton from '@renderer/components/ui/AppButton.vue';
 import AppConfirmModal from '@renderer/components/ui/AppConfirmModal.vue';
+import AppInput from '@renderer/components/ui/AppInput.vue';
+import AppSelect from '@renderer/components/ui/AppSelect.vue';
 import AppLoader from '@renderer/components/ui/AppLoader.vue';
 import ContactDetails from '@renderer/components/Contacts/ContactDetails.vue';
 import DeleteContactModal from '@renderer/components/Contacts/DeleteContactModal.vue';
@@ -44,7 +46,38 @@ useRedirectOnOnlyOrganization();
 useSetDynamicLayout(LOGGED_IN_LAYOUT);
 const { oldNotifications } = useMarkNotifications([NotificationType.USER_REGISTERED]);
 
+/* Misc */
+type SortOption = 'name-asc' | 'name-desc' | 'newest' | 'oldest';
+
+const SORT_ITEMS: { label: string; value: SortOption }[] = [
+  { label: 'Name A–Z', value: 'name-asc' },
+  { label: 'Name Z–A', value: 'name-desc' },
+  { label: 'Newest', value: 'newest' },
+  { label: 'Oldest', value: 'oldest' },
+];
+
+const compareText = (a: string, b: string) => a.localeCompare(b, undefined, { sensitivity: 'base' });
+
+const compareEmail = (a: Contact, b: Contact) => compareText(a.user.email, b.user.email);
+
+/** Sorts by the nickname shown on the card, falling back to the email when there is none */
+const displayName = (c: Contact) => c.nickname || c.user.email;
+
+const compareName = (a: Contact, b: Contact) =>
+  compareText(displayName(a), displayName(b)) || compareEmail(a, b);
+
+const createdAtMs = (c: Contact) => Date.parse(c.user.createdAt) || 0;
+
+const SORT_COMPARATORS: Record<SortOption, (a: Contact, b: Contact) => number> = {
+  'name-asc': compareName,
+  'name-desc': (a, b) => compareName(b, a),
+  newest: (a, b) => createdAtMs(b) - createdAtMs(a) || compareName(a, b),
+  oldest: (a, b) => createdAtMs(a) - createdAtMs(b) || compareName(a, b),
+};
+
 /* State */
+const search = ref('');
+const sortOption = ref<SortOption>('name-asc');
 const selectedId = ref<number | null>(null);
 const isDeleteContactModalShown = ref(false);
 const isElevateToAdminModalShown = ref(false);
@@ -60,17 +93,20 @@ const isAdmin = computed(
   () => isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin,
 );
 
+const visibleContacts = computed(() => {
+  const term = search.value.trim().toLowerCase();
+  return contacts.contacts.filter(c => {
+    if (!isAdmin.value && c.userKeys.length === 0) return false;
+    if (!term) return true;
+    return (
+      c.user.email.toLowerCase().includes(term) || (c.nickname || '').toLowerCase().includes(term)
+    );
+  });
+});
+
+/** Single list, ordered by the chosen sort; admins are identified by their badge */
 const contactList = computed(() =>
-  contacts.contacts
-    .filter(c =>
-      isLoggedInOrganization(user.selectedOrganization) && user.selectedOrganization.admin
-        ? true
-        : c.userKeys.length > 0,
-    )
-    .sort((a, b) => {
-      const getPriority = (user: typeof a.user) => (user.admin ? 0 : user.status === 'NEW' ? 1 : 2);
-      return getPriority(a.user) - getPriority(b.user);
-    }),
+  [...visibleContacts.value].sort(SORT_COMPARATORS[sortOption.value]),
 );
 
 const updateAvailableUserIds = computed(() => {
@@ -163,6 +199,13 @@ async function handleToggleViewReports() {
   await contacts.fetch();
 }
 
+/* Watchers */
+watch(search, () => {
+  if (!contactList.value.some(c => c.user.id === selectedId.value)) {
+    selectedId.value = contactList.value[0]?.user.id ?? null;
+  }
+});
+
 /* Hooks */
 onBeforeMount(async () => {
   if (isUserLoggedIn(user.personal)) {
@@ -204,9 +247,32 @@ onBeforeMount(async () => {
             >
               Add New
             </AppButton>
-
-            <hr class="separator my-5" />
           </template>
+
+          <div
+            class="d-flex align-items-center gap-3"
+            :class="isAdmin ? 'mt-4' : ''"
+          >
+            <AppInput
+              v-model="search"
+              :auto-trim="false"
+              size="small"
+              filled
+              class="flex-1"
+              placeholder="Search by name or email"
+              data-testid="input-search-contacts"
+            />
+            <AppSelect
+              v-model:value="sortOption"
+              :items="SORT_ITEMS"
+              size="small"
+              toggle-text="Sort"
+              toggler-icon
+              data-testid="dropdown-sort-contacts"
+            />
+          </div>
+
+          <hr class="separator my-4" />
 
           <div class="fill-remaining pe-3">
             <template v-if="contacts.fetching">

@@ -80,6 +80,69 @@ td .btn {
   min-width: 6rem;
 }
 
+/* AppSelect: layout of the toggle, with a compact "small" variant */
+.app-select {
+  .app-select-label {
+    flex: 0 0 auto;
+    width: 91.66666667%;
+  }
+
+  .app-select-icon {
+    flex: 0 0 auto;
+    width: 8.33333333%;
+    margin-left: $spacer;
+  }
+
+  &.app-select-small {
+    > .btn {
+      // AppButton has a fixed 40px height; let padding/line-height size it like the small input
+      height: auto;
+      padding: $input-padding-y-sm $input-padding-x-sm;
+      font-size: $input-font-size;
+      line-height: $input-line-height;
+      border-radius: $form-select-border-radius-sm;
+    }
+
+    .app-select-label {
+      flex: 1 1 auto;
+      width: auto;
+    }
+
+    .app-select-icon {
+      width: auto;
+      margin-left: $spacer * 0.5;
+    }
+
+    // Default look (no `color` given, so the button has no btn-<variant> class):
+    // the same as a filled form-select
+    > .btn:not([class*='btn-']) {
+      font-weight: normal;
+      color: var(--#{$prefix}body-color);
+      background-color: var(--#{$prefix}input-fill-bg-color);
+      border: 1px solid var(--#{$prefix}input-fill-bg-color);
+
+      &:hover {
+        color: var(--#{$prefix}body-color);
+        background-color: var(--#{$prefix}input-fill-bg-color);
+        border-color: var(--#{$prefix}input-fill-bg-color);
+      }
+
+      &:focus,
+      &.show {
+        color: var(--#{$prefix}body-color);
+        background-color: var(--#{$prefix}input-fill-focus-bg-color);
+        border-color: var(--#{$prefix}input-fill-focus-bg-color);
+      }
+    }
+
+    // text-body on the items is !important and would otherwise override the selected
+    // item's text color (only visible while not hovering)
+    .dropdown-item.active {
+      color: var(--#{$prefix}dropdown-link-active-color) !important;
+    }
+  }
+}
+
 /* Forms */
 .form-control,
 .form-select {

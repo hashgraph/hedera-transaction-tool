@@ -124,6 +124,7 @@ describe('ContactDetails.vue', () => {
       admin: false,
       canViewReports: false,
       status: 'NONE',
+      createdAt: '2024-01-01T00:00:00.000Z',
       keys: [],
       clients: [],
     },
