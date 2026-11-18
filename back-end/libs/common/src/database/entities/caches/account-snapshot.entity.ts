@@ -17,9 +17,9 @@ import {
 // This returns the exact key structure that was active when any given
 // transaction executed, without needing a separate join table.
 //
-// There is intentionally NO unique constraint on keyHash. This is a changelog,
+// There is intentionally NO unique constraint on encodedKey. This is a changelog,
 // not a dedup table — a key rotation A→B→A legitimately produces three rows
-// with distinct createdAt values. Dedup-by-hash would collapse the timeline
+// with distinct createdAt values. Dedup-by-key would collapse the timeline
 // and cause the timestamp lookup to return the wrong row for transactions that
 // executed while key B was active.
 //
@@ -39,11 +39,9 @@ export class AccountSnapshot {
   @Column()
   mirrorNetwork!: string;
 
-  @Column({ type: 'bytea' })
-  encodedKey!: Buffer;
-
-  @Column({ length: 64 })
-  keyHash!: string;
+  // Null for a keyless account (e.g. hollow accounts), mirroring CachedAccount.encodedKey.
+  @Column({ type: 'bytea', nullable: true })
+  encodedKey!: Buffer | null;
 
   @Column({ type: 'text', array: true })
   publicKeys!: string[];
