@@ -19,8 +19,17 @@ export class SearchIndex {
     }
   }
 
-  public removeCandidate(candidate: string) {
-    this.candidates.value.delete(candidate);
+  public removeCandidate(candidate: string, element: HTMLElement) {
+    const elements = this.candidates.value.get(candidate);
+    if (elements !== undefined) {
+      const elementIndex = elements.indexOf(element);
+      if (elementIndex !== -1) {
+        elements.splice(elementIndex, 1);
+      }
+      if (elements.length == 0) {
+        this.candidates.value.delete(candidate);
+      }
+    }
   }
 
   public readonly matches = computed<HTMLElement[]>(() => {

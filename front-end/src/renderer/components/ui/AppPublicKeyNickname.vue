@@ -66,7 +66,7 @@ watch(containerRef, (newValue, oldValue) => {
   if (newValue !== null) {
     searchIndex.pushCandidate(value.value, newValue);
   } else if (oldValue !== null) {
-    searchIndex.removeCandidate(value.value);
+    searchIndex.removeCandidate(value.value, oldValue);
   }
 });
 </script>
