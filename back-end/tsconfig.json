@@ -42,7 +42,9 @@
   },
   "exclude": [
     "node_modules",
-    "dist"
+"dist",
+    "**/jest.config.mts",
+    "**/jest-e2e.config.mts"
   ],
   "ts-node": {
     "compilerOptions": {
