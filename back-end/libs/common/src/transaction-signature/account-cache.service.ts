@@ -11,6 +11,7 @@ import {
 } from '@entities';
 import {
   AccountInfoParsed,
+  areEncodedKeysEqual,
   deserializeKey,
   flattenKeyList,
   isFresh,
@@ -148,7 +149,7 @@ export class AccountCacheService {
     const updates = accountData
       ? {
           receiverSignatureRequired: accountData.receiverSignatureRequired,
-          encodedKey: accountData.key !== null ? serializeKey(accountData.key) : [],
+          encodedKey: accountData.key !== null ? serializeKey(accountData.key) : null,
           etag,
         }
       : {};
@@ -362,12 +363,8 @@ export class AccountCacheService {
     }
 
     const serializedKey = fetchedData.key !== null ? serializeKey(fetchedData.key) : null;
-    const keysEqual =
-      serializedKey !== null && Buffer.isBuffer(cached.encodedKey)
-        ? Buffer.compare(serializedKey, cached.encodedKey) === 0
-        : serializedKey === cached.encodedKey;
 
-    if (!keysEqual) {
+    if (!areEncodedKeysEqual(serializedKey, cached.encodedKey)) {
       return true;
     }
 
@@ -375,9 +372,16 @@ export class AccountCacheService {
   }
 
   /**
-   * Check whether the cached account has the required persisted data (encoded key present).
+   * Check whether the cached account has been fetched from the mirror node.
+   * A keyless account (e.g. hollow accounts) is stored with a null encodedKey, so the key alone
+   * cannot signal completeness; receiverSignatureRequired is only set by a successful fetch.
+   *
+   * This relies on two invariants: the row is created with receiverSignatureRequired = null,
+   * and a fetch always writes a boolean (parseAccountProperty uses Boolean(...)). If either
+   * changes, this check silently breaks for keyless accounts (they would be refetched on every
+   * request). In that case, add an explicit marker column (e.g. fetchedAt) instead.
    */
   private hasCompleteData(cached: CachedAccount | null): boolean {
-    return !!(cached?.encodedKey);
+    return !!cached && (!!cached.encodedKey || cached.receiverSignatureRequired != null);
   }
 }

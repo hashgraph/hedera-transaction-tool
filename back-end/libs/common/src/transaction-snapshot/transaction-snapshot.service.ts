@@ -1,7 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { createHash } from 'crypto';
 
 import {
   AccountSnapshot,
@@ -12,7 +11,7 @@ import {
   TransactionNodeSnapshot,
 } from '@entities';
 
-import { deserializeKey, flattenKeyList } from '../utils/sdk/key';
+import { areEncodedKeysEqual, deserializeKey, flattenKeyList } from '../utils/sdk/key';
 
 @Injectable()
 export class TransactionSnapshotService {
@@ -62,10 +61,12 @@ export class TransactionSnapshotService {
 
     for (const link of links) {
       const ca = link.cachedAccount;
-      if (!ca?.encodedKey) {
+      // A keyless account (e.g. reward accounts) has a null encodedKey but has still been fetched
+      // (receiverSignatureRequired is set); it is snapshotted with a null key.
+      if (!ca || (!ca.encodedKey && ca.receiverSignatureRequired == null)) {
         this.logger.warn(
           `Skipping account snapshot for transaction ${transactionId}: ` +
-          `${!ca ? 'cachedAccount missing' : `encodedKey null on ${ca.account}/${ca.mirrorNetwork}`}`,
+          `${!ca ? 'cachedAccount missing' : `account not yet fetched ${ca.account}/${ca.mirrorNetwork}`}`,
         );
         continue;
       }
@@ -134,25 +135,27 @@ export class TransactionSnapshotService {
   private async resolveAccountSnapshot(
     account: string,
     mirrorNetwork: string,
-    encodedKey: Buffer,
+    encodedKey: Buffer | null,
     receiverSignatureRequired: boolean,
     executedAt: Date,
   ): Promise<AccountSnapshot> {
-    const keyHash = createHash('sha256').update(encodedKey).digest('hex');
-
     const latest = await this.accountSnapshotRepo.findOne({
       where: { account, mirrorNetwork },
       order: { createdAt: 'DESC' },
-      select: { id: true, keyHash: true, receiverSignatureRequired: true },
+      select: { id: true, encodedKey: true, receiverSignatureRequired: true },
     });
 
-    if (latest?.keyHash === keyHash && latest.receiverSignatureRequired === receiverSignatureRequired) {
+    if (
+      latest &&
+      areEncodedKeysEqual(latest.encodedKey, encodedKey) &&
+      latest.receiverSignatureRequired === receiverSignatureRequired
+    ) {
       return latest;
     }
 
-    const publicKeys = this.extractPublicKeys(encodedKey);
+    const publicKeys = encodedKey ? this.extractPublicKeys(encodedKey) : [];
     return this.accountSnapshotRepo.save({
-      account, mirrorNetwork, encodedKey, keyHash, publicKeys, receiverSignatureRequired,
+      account, mirrorNetwork, encodedKey, publicKeys, receiverSignatureRequired,
       createdAt: executedAt,
     });
   }
@@ -164,21 +167,19 @@ export class TransactionSnapshotService {
     encodedKey: Buffer,
     executedAt: Date,
   ): Promise<NodeSnapshot> {
-    const keyHash = createHash('sha256').update(encodedKey).digest('hex');
-
     const latest = await this.nodeSnapshotRepo.findOne({
       where: { nodeId, mirrorNetwork },
       order: { createdAt: 'DESC' },
-      select: { id: true, keyHash: true },
+      select: { id: true, encodedKey: true },
     });
 
-    if (latest?.keyHash === keyHash) {
+    if (latest && areEncodedKeysEqual(latest.encodedKey, encodedKey)) {
       return latest;
     }
 
     const publicKeys = this.extractPublicKeys(encodedKey);
     return this.nodeSnapshotRepo.save({
-      nodeId, mirrorNetwork, encodedKey, keyHash, publicKeys,
+      nodeId, mirrorNetwork, encodedKey, publicKeys,
       createdAt: executedAt,
     });
   }

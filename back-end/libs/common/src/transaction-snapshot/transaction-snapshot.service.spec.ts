@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { mockDeep } from 'jest-mock-extended';
-import { createHash } from 'crypto';
 import { Repository } from 'typeorm';
 
 import {
@@ -70,10 +69,8 @@ describe('TransactionSnapshotService', () => {
 
   // Helpers
   const encodedAccountKey = Buffer.from('account-key');
-  const accountKeyHash = createHash('sha256').update(encodedAccountKey).digest('hex');
 
   const encodedNodeKey = Buffer.from('node-key');
-  const nodeKeyHash = createHash('sha256').update(encodedNodeKey).digest('hex');
 
   const makeAccountLink = (opts: {
     encodedKey?: Buffer | null;
@@ -131,12 +128,46 @@ describe('TransactionSnapshotService', () => {
       transactionCachedNodeRepo.find.mockResolvedValue([]);
     });
 
-    it('should skip accounts with null encodedKey', async () => {
-      transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink({ encodedKey: null })] as any);
+    it('should skip accounts that have not been fetched yet (null key, null receiverSignatureRequired)', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([
+        makeAccountLink({ encodedKey: null, receiverSignatureRequired: null }),
+      ] as any);
 
       await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.findOne).not.toHaveBeenCalled();
+      expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('should snapshot a fetched keyless account with a null key', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([
+        makeAccountLink({ encodedKey: null, receiverSignatureRequired: false, isReceiver: true }),
+      ] as any);
+      accountSnapshotRepo.findOne.mockResolvedValue(null);
+      accountSnapshotRepo.save.mockResolvedValue({ id: 10 } as any);
+
+      await service.captureForTransaction(1, executedAt);
+
+      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          account: '0.0.1',
+          encodedKey: null,
+          publicKeys: [],
+          receiverSignatureRequired: false,
+        }),
+      );
+    });
+
+    it('should reuse the existing snapshot when a keyless account is unchanged', async () => {
+      transactionCachedAccountRepo.find.mockResolvedValue([
+        makeAccountLink({ encodedKey: null, receiverSignatureRequired: false }),
+      ] as any);
+      accountSnapshotRepo.findOne.mockResolvedValue({
+        id: 77, encodedKey: null, receiverSignatureRequired: false,
+      } as any);
+
+      await service.captureForTransaction(1, executedAt);
+
       expect(accountSnapshotRepo.save).not.toHaveBeenCalled();
     });
 
@@ -151,7 +182,7 @@ describe('TransactionSnapshotService', () => {
         expect.objectContaining({
           account: '0.0.1',
           mirrorNetwork: 'testnet',
-          keyHash: accountKeyHash,
+          encodedKey: encodedAccountKey,
           receiverSignatureRequired: false,
           createdAt: executedAt,
         }),
@@ -161,7 +192,7 @@ describe('TransactionSnapshotService', () => {
     it('should reuse the latest snapshot when key and receiverSignatureRequired are unchanged', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink()] as any);
       accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 99, keyHash: accountKeyHash, receiverSignatureRequired: false,
+        id: 99, encodedKey: encodedAccountKey, receiverSignatureRequired: false,
       } as any);
 
       await service.captureForTransaction(1, executedAt);
@@ -179,14 +210,14 @@ describe('TransactionSnapshotService', () => {
       expect(accountSnapshotRepo.findOne).toHaveBeenCalledWith({
         where: { account: '0.0.1', mirrorNetwork: 'testnet' },
         order: { createdAt: 'DESC' },
-        select: { id: true, keyHash: true, receiverSignatureRequired: true },
+        select: { id: true, encodedKey: true, receiverSignatureRequired: true },
       });
     });
 
-    it('should treat an exact keyHash match as unchanged (no insert)', async () => {
+    it('should treat an identical encodedKey as unchanged (no insert)', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink()] as any);
       accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 88, keyHash: accountKeyHash, receiverSignatureRequired: false,
+        id: 88, encodedKey: encodedAccountKey, receiverSignatureRequired: false,
       } as any);
 
       await service.captureForTransaction(1, executedAt);
@@ -196,7 +227,6 @@ describe('TransactionSnapshotService', () => {
 
     it('should process all accounts in the transaction, not just the first', async () => {
       const key2 = Buffer.from('account-key-2');
-      const keyHash2 = createHash('sha256').update(key2).digest('hex');
 
       transactionCachedAccountRepo.find.mockResolvedValue([
         makeAccountLink(),
@@ -210,14 +240,14 @@ describe('TransactionSnapshotService', () => {
       await service.captureForTransaction(1, executedAt);
 
       expect(accountSnapshotRepo.save).toHaveBeenCalledTimes(2);
-      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.1', keyHash: accountKeyHash }));
-      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.2', keyHash: keyHash2 }));
+      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.1', encodedKey: encodedAccountKey }));
+      expect(accountSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ account: '0.0.2', encodedKey: key2 }));
     });
 
     it('should insert a new snapshot when the key changes', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink()] as any);
       accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 1, keyHash: 'a'.repeat(64), receiverSignatureRequired: false,
+        id: 1, encodedKey: Buffer.from('previous-key'), receiverSignatureRequired: false,
       } as any);
       accountSnapshotRepo.save.mockResolvedValue({ id: 11 } as any);
 
@@ -229,7 +259,7 @@ describe('TransactionSnapshotService', () => {
     it('should insert a new snapshot when receiverSignatureRequired changes', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink()] as any);
       accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 1, keyHash: accountKeyHash, receiverSignatureRequired: true,
+        id: 1, encodedKey: encodedAccountKey, receiverSignatureRequired: true,
       } as any);
       accountSnapshotRepo.save.mockResolvedValue({ id: 12 } as any);
 
@@ -243,7 +273,7 @@ describe('TransactionSnapshotService', () => {
         [makeAccountLink({ receiverSignatureRequired: null })] as any,
       );
       accountSnapshotRepo.findOne.mockResolvedValue({
-        id: 77, keyHash: accountKeyHash, receiverSignatureRequired: false,
+        id: 77, encodedKey: encodedAccountKey, receiverSignatureRequired: false,
       } as any);
 
       await service.captureForTransaction(1, executedAt);
@@ -281,7 +311,7 @@ describe('TransactionSnapshotService', () => {
 
     it('should insert a junction row with isReceiver: true when the link is a receiver', async () => {
       transactionCachedAccountRepo.find.mockResolvedValue([makeAccountLink({ isReceiver: true })] as any);
-      accountSnapshotRepo.findOne.mockResolvedValue({ id: 99, keyHash: accountKeyHash, receiverSignatureRequired: false } as any);
+      accountSnapshotRepo.findOne.mockResolvedValue({ id: 99, encodedKey: encodedAccountKey, receiverSignatureRequired: false } as any);
 
       await service.captureForTransaction(1, executedAt);
 
@@ -315,13 +345,13 @@ describe('TransactionSnapshotService', () => {
       await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ nodeId: 5, mirrorNetwork: 'testnet', keyHash: nodeKeyHash, createdAt: executedAt }),
+        expect.objectContaining({ nodeId: 5, mirrorNetwork: 'testnet', encodedKey: encodedNodeKey, createdAt: executedAt }),
       );
     });
 
     it('should reuse the latest snapshot when the key is unchanged', async () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
-      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 55, keyHash: nodeKeyHash } as any);
+      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 55, encodedKey: encodedNodeKey } as any);
 
       await service.captureForTransaction(1, executedAt);
 
@@ -338,13 +368,13 @@ describe('TransactionSnapshotService', () => {
       expect(nodeSnapshotRepo.findOne).toHaveBeenCalledWith({
         where: { nodeId: 5, mirrorNetwork: 'testnet' },
         order: { createdAt: 'DESC' },
-        select: { id: true, keyHash: true },
+        select: { id: true, encodedKey: true },
       });
     });
 
-    it('should treat an exact keyHash match as unchanged (no insert)', async () => {
+    it('should treat an identical encodedKey as unchanged (no insert)', async () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
-      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 66, keyHash: nodeKeyHash } as any);
+      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 66, encodedKey: encodedNodeKey } as any);
 
       await service.captureForTransaction(1, executedAt);
 
@@ -353,7 +383,6 @@ describe('TransactionSnapshotService', () => {
 
     it('should process all nodes in the transaction, not just the first', async () => {
       const key2 = Buffer.from('node-key-2');
-      const keyHash2 = createHash('sha256').update(key2).digest('hex');
 
       transactionCachedNodeRepo.find.mockResolvedValue([
         makeNodeLink(),
@@ -367,13 +396,13 @@ describe('TransactionSnapshotService', () => {
       await service.captureForTransaction(1, executedAt);
 
       expect(nodeSnapshotRepo.save).toHaveBeenCalledTimes(2);
-      expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ nodeId: 5, keyHash: nodeKeyHash }));
-      expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ nodeId: 7, keyHash: keyHash2 }));
+      expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ nodeId: 5, encodedKey: encodedNodeKey }));
+      expect(nodeSnapshotRepo.save).toHaveBeenCalledWith(expect.objectContaining({ nodeId: 7, encodedKey: key2 }));
     });
 
     it('should insert a new snapshot when the key changes', async () => {
       transactionCachedNodeRepo.find.mockResolvedValue([makeNodeLink()] as any);
-      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 1, keyHash: 'b'.repeat(64) } as any);
+      nodeSnapshotRepo.findOne.mockResolvedValue({ id: 1, encodedKey: Buffer.from('previous-key') } as any);
       nodeSnapshotRepo.save.mockResolvedValue({ id: 201 } as any);
 
       await service.captureForTransaction(1, executedAt);

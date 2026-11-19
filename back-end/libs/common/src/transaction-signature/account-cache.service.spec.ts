@@ -733,6 +733,33 @@ describe('AccountCacheService', () => {
       );
     });
 
+    it('should persist a null encodedKey (not []) for a keyless account', async () => {
+      // An empty array would be serialized by pg as the text "{}" in a bytea column,
+      // which later fails protobuf decoding ("index out of range: 2 + 4 > 2").
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      const result = await (service as any).saveAccountData(
+        '0.0.123',
+        'testnet',
+        'token-123',
+        { key: null, receiverSignatureRequired: false } as AccountInfoParsed,
+        'etag-123',
+      );
+
+      expect(result).toEqual({
+        id: 1,
+        accountData: { key: null, receiverSignatureRequired: false },
+      });
+      expect(cacheHelper.saveAndReleaseClaim).toHaveBeenCalledWith(
+        CachedAccount,
+        { account: '0.0.123', mirrorNetwork: 'testnet' },
+        'token-123',
+        { receiverSignatureRequired: false, encodedKey: null, etag: 'etag-123' },
+      );
+      expect(serializeKey).not.toHaveBeenCalled();
+      expect(cacheHelper.insertKeys).not.toHaveBeenCalled();
+    });
+
     it('should return null when claim is lost', async () => {
       const accountInfo: Partial<AccountInfoParsed> = {
         key: mockKey,
@@ -825,6 +852,12 @@ describe('AccountCacheService', () => {
       const cached = {
         encodedKey: Buffer.from('encoded-key'),
       } as CachedAccount;
+
+      expect((service as any).hasCompleteData(cached)).toBe(true);
+    });
+
+    it('should return true for a fetched keyless account (null key, receiverSignatureRequired set)', () => {
+      const cached = { encodedKey: null, receiverSignatureRequired: false } as CachedAccount;
 
       expect((service as any).hasCompleteData(cached)).toBe(true);
     });

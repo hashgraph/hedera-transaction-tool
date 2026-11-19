@@ -69,6 +69,12 @@ export const deserializeKey = (buffer: Buffer) => {
   return Key._fromProtobufKey(protoKey);
 };
 
+/**
+ * Compares two protobuf-encoded keys byte for byte. Null means keyless; two keyless values are equal.
+ */
+export const areEncodedKeysEqual = (a: Buffer | null, b: Buffer | null): boolean =>
+  a === null || b === null ? a === b : a.equals(b);
+
 export const decodeProtobufKey = (protobuffEncodedKey: string) => {
   const buffer = Buffer.from(protobuffEncodedKey, 'hex');
   return deserializeKey(buffer);

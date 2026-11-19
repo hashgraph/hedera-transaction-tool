@@ -1,6 +1,11 @@
 import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
-import { areKeysEqual, computeShortenedPublicKeyList, hasValidSignatureKey } from '.';
+import {
+  areEncodedKeysEqual,
+  areKeysEqual,
+  computeShortenedPublicKeyList,
+  hasValidSignatureKey,
+} from '.';
 
 jest.mock('@app/common/utils');
 
@@ -175,5 +180,28 @@ describe('computeShortenedPublicKeyList', () => {
     _nestedKeyList2.setThreshold(1);
 
     expect(areKeysEqual(keyList, keyList2)).toBe(false);
+  });
+});
+
+describe('areEncodedKeysEqual', () => {
+  it('should return true for identical bytes in different buffers', () => {
+    expect(areEncodedKeysEqual(Buffer.from([1, 2, 3]), Buffer.from([1, 2, 3]))).toBe(true);
+  });
+
+  it('should return false for different bytes', () => {
+    expect(areEncodedKeysEqual(Buffer.from([1, 2, 3]), Buffer.from([1, 2, 4]))).toBe(false);
+  });
+
+  it('should return false for different lengths', () => {
+    expect(areEncodedKeysEqual(Buffer.from([1, 2]), Buffer.from([1, 2, 3]))).toBe(false);
+  });
+
+  it('should treat two keyless (null) values as equal', () => {
+    expect(areEncodedKeysEqual(null, null)).toBe(true);
+  });
+
+  it('should return false when only one side is keyless', () => {
+    expect(areEncodedKeysEqual(null, Buffer.from([1]))).toBe(false);
+    expect(areEncodedKeysEqual(Buffer.from([1]), null)).toBe(false);
   });
 });
