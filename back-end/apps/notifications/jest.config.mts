@@ -14,7 +14,7 @@ const config: Config = {
     '^@app/common(|/.*)$': '<rootDir>/../../libs/common/src/$1',
     '^@entities(|/.*)$': '<rootDir>/../../libs/common/src/database/entities/$1',
   },
-  detectOpenHandles: enableDiag,
+  // Use --detectOpenHandles explicitly when debugging; it disables worker recycling.
   setupFiles: enableDiag ? ['<rootDir>/../../test-utils/jest.setup.diag.ts'] : [],
 };
 
