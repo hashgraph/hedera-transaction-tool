@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import { KeyList } from '@hiero-ledger/sdk';
 import SignatureStatus from '@renderer/components/SignatureStatus/SignatureStatus.vue';
 import SearchField from '@renderer/components/SearchField/SearchField.vue';
 import { type SignatureAudit } from '@renderer/utils';
 import { SearchIndex } from '@renderer/components/SignatureStatus/SearchIndex.ts';
+import { flattenKeyList } from '@renderer/services/keyPairService.ts';
 
 /* Props */
 const props = defineProps<{
@@ -20,9 +22,10 @@ const searchIndex = new SearchIndex(searchText);
 SearchIndex.provide(searchIndex);
 
 /* Computed */
-const showSearchButton = computed(
-  () => props.signatureKeyObject !== null && props.signatureKeyObject.signatureKeys.length > 1,
-);
+const showSearchButton = computed(() => {
+  const signatureKeys = props.signatureKeyObject?.signatureKeys ?? [];
+  return flattenKeyList(new KeyList(signatureKeys)).length > 1;
+});
 
 const matchCount = computed(() => searchIndex.matches.value.length);
 </script>
@@ -38,7 +41,7 @@ const matchCount = computed(() => searchIndex.matches.value.length);
       placeholder="Enter public key to search…"
       @blur="searchText = ''"
     />
-    <span v-if="matchCount == 1" class="bi bi-check text-title text-success"/>
+    <span v-if="matchCount == 1" class="bi bi-check text-title text-success" />
     <span v-if="matchCount > 1" class="text-success text-micro">{{ matchCount }} matches</span>
   </div>
   <div v-if="props.signatureKeyObject !== null" class="text-small mt-5">
