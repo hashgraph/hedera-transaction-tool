@@ -108,7 +108,7 @@ const handleLinkAccount = async () => {
       await contacts.fetch();
     } catch (error) {
       logger.error('Failed to sign up user', { error });
-      toastManager.error('Failed to sign up user');
+      toastManager.error(getErrorMessage(error, 'Failed to sign up user'));
     }
   }
   router.back();
