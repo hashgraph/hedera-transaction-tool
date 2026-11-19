@@ -1,6 +1,6 @@
 import type { Config } from 'jest';
 import baseConfig from '../../jest.config.mts';
-import { enableDiag } from '../../test-utils/diag-enabled.ts';
+import { enableDiag } from '../../test-utils/diag-enabled.cjs';
 
 const includeLibs = process.env.INCLUDE_LIBS !== '0';
 

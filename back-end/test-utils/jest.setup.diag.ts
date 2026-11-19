@@ -12,7 +12,7 @@
  * Scope: currently wired only into the Notifications jest config, where the
  * leak addressed by this PR lived. To extend the dragnet to other apps
  * (api, chain, typeorm), mirror the same `setupFiles` line into their leaf
- * jest configs gated on the same `enableDiag` flag — `back-end/jest.config.ts`
+ * jest configs gated on the same `enableDiag` flag — `back-end/jest.config.mts`
  * is a shared base imported by each leaf config and not a runnable target,
  * so wiring there would also work but applies to every consumer at once.
  *

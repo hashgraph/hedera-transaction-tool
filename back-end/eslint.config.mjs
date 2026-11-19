@@ -33,4 +33,11 @@ export default [
       '@typescript-eslint/no-unused-vars': 'warn',
     },
   },
+  {
+    files: ['**/*.cjs'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: globals.node,
+    },
+  },
 ];

@@ -1,7 +1,7 @@
 import { PostgreSqlContainer } from '@testcontainers/postgresql';
 import { DataSource } from 'typeorm';
 import { AppDataSource } from '../typeorm/data-source';
-import { enableDiag } from './diag-enabled';
+import { enableDiag } from './diag-enabled.cjs';
 
 const POSTGRES_TEST_IMAGE = 'postgres:16.13-alpine3.22';
 
