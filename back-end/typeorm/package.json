@@ -6,10 +6,10 @@
     "build": "tsc",
     "migration:run": "typeorm migration:run --dataSource ../dist/typeorm/data-source.js",
     "migration:revert": "typeorm migration:revert --dataSource ../dist/typeorm/data-source.js",
-    "test": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts",
-    "test:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --coverage",
-    "test:watch": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --watch",
-    "test:watch:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.ts --watch --coverage"
+    "test": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.mts",
+    "test:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.mts --coverage",
+    "test:watch": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.mts --watch",
+    "test:watch:cov": "NODE_OPTIONS=\"${NODE_OPTIONS:-} --experimental-vm-modules\" jest --config jest.config.mts --watch --coverage"
   },
   "dependencies": {
     "pg": "catalog:",
