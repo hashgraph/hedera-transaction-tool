@@ -180,7 +180,7 @@ describe('details navigation', () => {
 
     await wrapper.get('[data-testid="button-group-transaction-0"]').trigger('click');
 
-    expect(wrapper.emitted('handleDetails')).toEqual([[1]]);
+    expect(wrapper.emitted('handleDetails')).toEqual([[1, undefined]]);
   });
 });
 

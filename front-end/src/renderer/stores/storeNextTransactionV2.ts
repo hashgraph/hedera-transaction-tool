@@ -21,10 +21,15 @@ const logger = createLogger('renderer.store.nextTransactionV2');
 export type TransactionNodeId =
   | {
       transactionId: number | string;
+      // The real Hedera-format transaction id (e.g. "0.0.x@seconds.nanos"), when already known
+      // at navigation time. Carried through purely so TransactionDetails.vue can show/log a
+      // meaningful id if the fetch-by-id fails; never used to perform the lookup itself.
+      sdkTransactionId?: string;
       groupId?: never;
     }
   | {
       transactionId?: never;
+      sdkTransactionId?: never;
       groupId: number | string;
     };
 
@@ -196,6 +201,7 @@ const useNextTransactionV2 = defineStore(
           await router.push({
             name: 'transactionDetails',
             params: { id: nodeId.transactionId },
+            query: nodeId.sdkTransactionId ? { txId: nodeId.sdkTransactionId } : undefined,
             replace,
           });
         } else if (nodeId.groupId) {

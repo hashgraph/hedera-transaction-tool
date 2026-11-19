@@ -27,6 +27,7 @@ import useSetDynamicLayout, { LOGGED_IN_LAYOUT } from '@renderer/composables/use
 import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 import { parseTransactionActionPayload } from '@renderer/utils/parseTransactionActionPayload';
 import { isInProgressStatus } from '@renderer/utils/transactionStatusGuards';
+import { redirectToPreviousTransactionsTab } from '@renderer/utils/router';
 
 import { getTransactionGroupById } from '@renderer/services/organization';
 import { getTransaction } from '@renderer/services/transactionService';
@@ -67,6 +68,9 @@ import useNotificationsStore from '@renderer/stores/storeNotifications.ts';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
 import { isSignableStatus } from '@renderer/utils/transactionStatusGuards';
 import { CREATOR_SIGNATURE_TEXT } from '@renderer/utils/creatorSignatureText';
+import { createLogger } from '@renderer/utils/logger';
+
+const logger = createLogger('renderer.pages.TransactionDetails');
 
 /* Injectables */
 const toastManager = ToastManager.inject();
@@ -228,16 +232,43 @@ const formattedId = computed(() => {
   return id ? (Array.isArray(id) ? id[0] : id) : null;
 });
 
+// The real Hedera-format transaction id (e.g. "0.0.x@seconds.nanos"), carried on the route by
+// whichever list the user navigated from. Only used for error reporting below - never to
+// perform the actual lookup, which always happens by the local/DB id.
+const knownSdkTransactionId = computed(() => {
+  const txId = route.query.txId;
+  return typeof txId === 'string' ? txId : null;
+});
+
 /* Functions */
+
+// The DB/local id alone isn't meaningful to a user; prefer the real transactionId when we have
+// one, either from a previous successful load of this same transaction (e.g. a websocket-
+// triggered refetch) or from the route query carried over from the list that was navigated from.
+function buildTransactionFetchError(
+  error: unknown,
+  dbId: string,
+  previousSdkTransactionId?: string,
+): Error {
+  const sdkTransactionId = previousSdkTransactionId || knownSdkTransactionId.value || undefined;
+  const message = `Failed to get transaction with id ${sdkTransactionId ?? dbId}`;
+  logger.error(message, { dbId, sdkTransactionId, cause: error });
+  return new Error(message);
+}
+
 async function fetchTransaction() {
   const id = formattedId.value!;
   let transactionBytes: Uint8Array;
   try {
     if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(Number(id))) {
-      orgTransaction.value = await appCache.backendTransaction.lookup(
-        Number(id),
-        user.selectedOrganization?.serverUrl || '',
-      );
+      try {
+        orgTransaction.value = await appCache.backendTransaction.lookup(
+          Number(id),
+          user.selectedOrganization?.serverUrl || '',
+        );
+      } catch (error) {
+        throw buildTransactionFetchError(error, id, orgTransaction.value?.transactionId);
+      }
       transactionBytes = hexToUint8Array(orgTransaction.value.transactionBytes);
 
       // To be backwards compatible, check if the groupItem exists but group does not
@@ -258,7 +289,11 @@ async function fetchTransaction() {
         }
       }
     } else {
-      localTransaction.value = await getTransaction(id.toString());
+      try {
+        localTransaction.value = await getTransaction(id.toString());
+      } catch (error) {
+        throw buildTransactionFetchError(error, id, localTransaction.value?.transaction_id);
+      }
       transactionBytes = getUInt8ArrayFromBytesString(localTransaction.value.body);
       if (localTransaction.value?.group_id) {
         const localGroup = await getGroup(localTransaction.value.group_id.toString());
@@ -329,7 +364,16 @@ onBeforeMount(async () => {
     return;
   }
 
-  await fetchTransaction();
+  try {
+    await fetchTransaction();
+  } catch (error) {
+    // Nothing useful can be shown on this page if the initial load failed; send the user back
+    // to whatever transactions tab they came from (or its default) instead of leaving them on
+    // an infinite loader. Toast manually since catching here stops it from reaching the global
+    // onErrorCaptured handler.
+    toastManager.error(getErrorMessage(error, 'An error occurred'));
+    await redirectToPreviousTransactionsTab(router);
+  }
 });
 
 onBeforeRouteLeave(to => {

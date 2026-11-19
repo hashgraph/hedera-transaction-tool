@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   loadedDraftDescription: '',
   infoControlsDescription: null as string | null,
   infoControlsDelayMs: 0,
+  routeDown: vi.fn(),
 }));
 
 vi.mock('vue-router', () => ({
@@ -34,7 +35,7 @@ vi.mock('@renderer/stores/storeNetwork', () => ({
   default: () => ({ mirrorNodeBaseURL: 'http://localhost' }),
 }));
 vi.mock('@renderer/stores/storeNextTransactionV2.ts', () => ({
-  default: () => ({}),
+  default: () => ({ routeDown: mocks.routeDown }),
 }));
 
 vi.mock('@renderer/utils/ToastManager', () => ({
@@ -133,7 +134,11 @@ vi.mock('@renderer/components/ui/AppInput.vue', () => ({
   default: { name: 'AppInput', template: '<div></div>' },
 }));
 vi.mock('@renderer/components/Transaction/TransactionProcessor', () => ({
-  default: { name: 'TransactionProcessor', template: '<div></div>' },
+  default: {
+    name: 'TransactionProcessor',
+    props: ['onExecuted', 'onSubmitted', 'onGroupSubmitted', 'onLocalStored'],
+    template: '<div></div>',
+  },
   CustomRequest: class {},
   TransactionRequest: class {},
 }));
@@ -269,5 +274,59 @@ describe('BaseTransaction.vue – initial valid start', () => {
       wrapper.unmount();
       vi.useRealTimers();
     }
+  });
+});
+
+describe('BaseTransaction.vue – routing after submit carries the real transaction id', () => {
+  beforeEach(() => {
+    mockRouteQuery = {};
+    mocks.loadedDraftTransaction = null;
+    mocks.loadedDraftDescription = '';
+    mocks.infoControlsDescription = null;
+    mocks.infoControlsDelayMs = 0;
+    mocks.routeDown.mockClear();
+  });
+
+  test('handleSubmit passes the SDK transactionId alongside the DB id', async () => {
+    const wrapper = mountBase();
+    await flushPromises();
+
+    const onSubmitted = wrapper.findComponent({ name: 'TransactionProcessor' }).props('onSubmitted');
+    await onSubmitted(93, 'deadbeef');
+
+    expect(mocks.routeDown).toHaveBeenCalledTimes(1);
+    const [targetNodeId, collection] = mocks.routeDown.mock.calls[0];
+    expect(targetNodeId.transactionId).toBe(93);
+    expect(targetNodeId.sdkTransactionId).toMatch(/^0\.0\.2@\d+\.\d+$/);
+    expect(collection).toEqual([targetNodeId]);
+  });
+
+  test('handleLocalStored passes the SDK transactionId alongside the local id', async () => {
+    const wrapper = mountBase();
+    await flushPromises();
+
+    const onLocalStored = wrapper
+      .findComponent({ name: 'TransactionProcessor' })
+      .props('onLocalStored');
+    await onLocalStored('local-uuid-1');
+
+    expect(mocks.routeDown).toHaveBeenCalledTimes(1);
+    const [targetNodeId] = mocks.routeDown.mock.calls[0];
+    expect(targetNodeId.transactionId).toBe('local-uuid-1');
+    expect(targetNodeId.sdkTransactionId).toMatch(/^0\.0\.2@\d+\.\d+$/);
+  });
+
+  test('handleGroupSubmit does not carry a single-transaction sdkTransactionId', async () => {
+    const wrapper = mountBase();
+    await flushPromises();
+
+    const onGroupSubmitted = wrapper
+      .findComponent({ name: 'TransactionProcessor' })
+      .props('onGroupSubmitted');
+    await onGroupSubmitted(55);
+
+    expect(mocks.routeDown).toHaveBeenCalledTimes(1);
+    const [targetNodeId] = mocks.routeDown.mock.calls[0];
+    expect(targetNodeId).toEqual({ groupId: 55 });
   });
 });
