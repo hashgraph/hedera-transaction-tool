@@ -12,8 +12,10 @@ import {
 import {
   areEncodedKeysEqual,
   deserializeKey,
+  emitTransactionUpdate,
   flattenKeyList,
   isFresh,
+  NatsPublisherService,
   NodeInfoParsed,
   serializeKey,
 } from '@app/common';
@@ -37,6 +39,7 @@ export class NodeCacheService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly sqlBuilder: SqlBuilderService,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
@@ -258,6 +261,11 @@ export class NodeCacheService {
         return { status: RefreshStatus.DATA_UNCHANGED, data: nodeData };
       }
 
+      // Previously cached data that changed (not a first fetch) can change who must sign
+      if (this.hasCompleteData(claimedNode)) {
+        await this.emitSignersChanged(claimedNode.id);
+      }
+
       return { status: RefreshStatus.REFRESHED, data: nodeData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
@@ -275,6 +283,28 @@ export class NodeCacheService {
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Tell the notifications service that the cached admin key or account of a node changed, so the
+   * signer notifications of its transactions can be reconciled.
+   * Never throws: a failed lookup or publish must not affect the refresh.
+   */
+  private async emitSignersChanged(cachedNodeId: number): Promise<void> {
+    try {
+      const links = await this.dataSource.manager.find(TransactionCachedNode, {
+        where: { cachedNodeId },
+        select: { transactionId: true },
+      });
+      if (links.length === 0) return;
+
+      await emitTransactionUpdate(
+        this.notificationsPublisher,
+        links.map(link => ({ entityId: link.transactionId, additionalData: { signersChanged: true } })),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to emit signers-changed for cached node ${cachedNodeId}`, error);
     }
   }
 

@@ -17,6 +17,7 @@ import {
 import {
   deserializeKey,
   flattenKeyList,
+  NatsPublisherService,
   NodeInfoParsed,
   serializeKey,
   SqlBuilderService,
@@ -37,6 +38,7 @@ describe('NodeCacheService', () => {
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
+  let publisher: { publish: jest.Mock };
 
   const sqlBuilderService = mockDeep<SqlBuilderService>();
 
@@ -50,7 +52,10 @@ describe('NodeCacheService', () => {
   beforeEach(async () => {
     const mockManager = {
       findOne: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
     };
+
+    publisher = { publish: jest.fn().mockResolvedValue({ success: true }) };
 
     mirrorNodeClient = {
       fetchNodeInfo: jest.fn(),
@@ -89,6 +94,7 @@ describe('NodeCacheService', () => {
         },
         { provide: ConfigService, useValue: configService },
         { provide: SqlBuilderService, useValue: sqlBuilderService },
+        { provide: NatsPublisherService, useValue: publisher },
       ],
     }).compile();
 
@@ -584,10 +590,19 @@ describe('NodeCacheService', () => {
         etag: 'new-etag',
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockResolvedValue([{ transactionId: 21 }]);
 
       const result = await (service as any).performRefreshForClaimedNode(claimedNode);
 
       expect(result.status).toBe(RefreshStatus.REFRESHED);
+      // Previously cached data changed: the linked transactions are told the signers may have changed
+      expect(dataSource.manager.find).toHaveBeenCalledWith(TransactionCachedNode, {
+        where: { cachedNodeId: 1 },
+        select: { transactionId: true },
+      });
+      expect(publisher.publish).toHaveBeenCalledWith(expect.any(String), [
+        { entityId: 21, additionalData: { signersChanged: true } },
+      ]);
     });
 
     it('should return REFRESHED when nodeAccountId differs', async () => {
@@ -641,6 +656,75 @@ describe('NodeCacheService', () => {
       const result = await (service as any).performRefreshForClaimedNode(claimedNode);
 
       expect(result.status).toBe(RefreshStatus.REFRESHED);
+      // A first fetch is not a change, so nothing is emitted
+      expect(dataSource.manager.find).not.toHaveBeenCalled();
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should not emit when the data is unchanged', async () => {
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${mockKey}`),
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: { admin_key: mockKey, node_account_id: AccountId.fromString('0.0.3') } as unknown as NodeInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should not publish when a changed node has no linked transactions', async () => {
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${PrivateKey.generateED25519().publicKey}`),
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: { admin_key: mockKey, node_account_id: AccountId.fromString('0.0.3') } as unknown as NodeInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockResolvedValue([]);
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should still return REFRESHED and log when emitting the change fails', async () => {
+      const claimedNode = {
+        id: 1,
+        nodeId: 1,
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${PrivateKey.generateED25519().publicKey}`),
+        nodeAccountId: '0.0.3',
+      } as unknown as CachedNode;
+      mirrorNodeClient.fetchNodeInfo.mockResolvedValue({
+        data: { admin_key: mockKey, node_account_id: AccountId.fromString('0.0.3') } as unknown as NodeInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockRejectedValue(new Error('db down'));
+      const errorSpy = jest.spyOn((service as any).logger, 'error').mockImplementation();
+
+      const result = await (service as any).performRefreshForClaimedNode(claimedNode);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('cached node 1'), expect.any(Error));
+      expect(cacheHelper.saveAndReleaseClaim).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -20,6 +20,7 @@ import {
   deserializeKey,
   flattenKeyList,
   AccountInfoParsed,
+  NatsPublisherService,
   SqlBuilderService,
 } from '@app/common';
 
@@ -37,6 +38,7 @@ describe('AccountCacheService', () => {
   let dataSource: jest.Mocked<DataSource>;
   let cacheHelper: jest.Mocked<CacheHelper>;
   let configService: jest.Mocked<ConfigService>;
+  let publisher: { publish: jest.Mock };
 
   const sqlBuilderService = mockDeep<SqlBuilderService>();
 
@@ -50,7 +52,10 @@ describe('AccountCacheService', () => {
   beforeEach(async () => {
     const mockManager = {
       findOne: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
     };
+
+    publisher = { publish: jest.fn().mockResolvedValue({ success: true }) };
 
     mirrorNodeClient = {
       fetchAccountInfo: jest.fn(),
@@ -89,6 +94,7 @@ describe('AccountCacheService', () => {
         },
         { provide: ConfigService, useValue: configService },
         { provide: SqlBuilderService, useValue: sqlBuilderService },
+        { provide: NatsPublisherService, useValue: publisher },
       ],
     }).compile();
 
@@ -642,9 +648,20 @@ describe('AccountCacheService', () => {
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
 
+      (dataSource.manager.find as jest.Mock).mockResolvedValue([{ transactionId: 11 }, { transactionId: 12 }]);
+
       const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
 
       expect(result.status).toBe(RefreshStatus.REFRESHED);
+      // Previously cached data changed: the linked transactions are told the signers may have changed
+      expect(dataSource.manager.find).toHaveBeenCalledWith(TransactionCachedAccount, {
+        where: { cachedAccountId: 1 },
+        select: { transactionId: true },
+      });
+      expect(publisher.publish).toHaveBeenCalledWith(expect.any(String), [
+        { entityId: 11, additionalData: { signersChanged: true } },
+        { entityId: 12, additionalData: { signersChanged: true } },
+      ]);
     });
 
     it('should return REFRESHED when receiverSignatureRequired differs', async () => {
@@ -668,10 +685,15 @@ describe('AccountCacheService', () => {
         etag: 'new-etag',
       });
       cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockResolvedValue([{ transactionId: 31 }]);
 
       const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
 
       expect(result.status).toBe(RefreshStatus.REFRESHED);
+      // only the receiver-signature flag changed, which also changes who must sign
+      expect(publisher.publish).toHaveBeenCalledWith(expect.any(String), [
+        { entityId: 31, additionalData: { signersChanged: true } },
+      ]);
     });
 
     it('should return REFRESHED when cache has no prior data (first fetch)', async () => {
@@ -697,6 +719,76 @@ describe('AccountCacheService', () => {
       const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
 
       expect(result.status).toBe(RefreshStatus.REFRESHED);
+      // A first fetch is not a change, so nothing is emitted
+      expect(dataSource.manager.find).not.toHaveBeenCalled();
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should not emit when the data is unchanged', async () => {
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${mockKey}`),
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: { key: mockKey, receiverSignatureRequired: false } as unknown as AccountInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+
+      await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should not publish when a changed account has no linked transactions', async () => {
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${PrivateKey.generateED25519().publicKey}`),
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: { key: mockKey, receiverSignatureRequired: false } as unknown as AccountInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockResolvedValue([]);
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+      expect(publisher.publish).not.toHaveBeenCalled();
+    });
+
+    it('should still return REFRESHED and log when emitting the change fails', async () => {
+      const claimedAccount = {
+        id: 1,
+        account: '0.0.123',
+        mirrorNetwork: 'testnet',
+        refreshToken: 'token-123',
+        encodedKey: Buffer.from(`serialized-${PrivateKey.generateED25519().publicKey}`),
+        receiverSignatureRequired: false,
+      } as unknown as CachedAccount;
+      mirrorNodeClient.fetchAccountInfo.mockResolvedValue({
+        data: { key: mockKey, receiverSignatureRequired: false } as unknown as AccountInfoParsed,
+        etag: 'e',
+      });
+      cacheHelper.saveAndReleaseClaim.mockResolvedValue(1);
+      (dataSource.manager.find as jest.Mock).mockRejectedValue(new Error('db down'));
+      const errorSpy = jest.spyOn((service as any).logger, 'error').mockImplementation();
+
+      const result = await (service as any).performRefreshForClaimedAccount(claimedAccount);
+
+      expect(result.status).toBe(RefreshStatus.REFRESHED);
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('cached account 1'), expect.any(Error));
+      // the refresh must not have been treated as a failure (no claim-clearing save after an error)
+      expect(cacheHelper.saveAndReleaseClaim).toHaveBeenCalledTimes(1);
     });
   });
 

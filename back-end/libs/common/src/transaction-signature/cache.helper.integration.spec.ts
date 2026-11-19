@@ -25,7 +25,7 @@ describe('CacheHelper.replaceKeys - Integration', () => {
   beforeAll(async () => {
     ({ dataSource, cleanup } = await createTestPostgresDataSource());
     helper = new CacheHelper(dataSource);
-  });
+  }, 120_000);
 
   afterAll(async () => {
     await cleanup();
