@@ -5,6 +5,7 @@
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,
     "allowSyntheticDefaultImports": true,
+    "rewriteRelativeImportExtensions": true,
     "target": "ES2021",
     "sourceMap": true,
     "outDir": "./dist",
@@ -41,9 +42,9 @@
   },
   "exclude": [
     "node_modules",
-    "dist",
-    "**/jest.config.ts",
-    "**/jest-e2e.config.ts"
+"dist",
+    "**/jest.config.mts",
+    "**/jest-e2e.config.mts"
   ],
   "ts-node": {
     "compilerOptions": {

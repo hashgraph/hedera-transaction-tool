@@ -2,6 +2,8 @@ import { RedisIoAdapter } from './redis-io.adapter';
 import { IoAdapter } from '@nestjs/platform-socket.io';
 import { createAdapter } from '@socket.io/redis-streams-adapter';
 import { Redis } from 'ioredis';
+import { mock } from 'jest-mock-extended';
+import { Server } from 'socket.io';
 import { LEGACY_IOREDIS_OPTIONS } from '@app/common';
 
 jest.mock('ioredis', () => {
@@ -24,6 +26,7 @@ describe('RedisIoAdapter', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
   it('should connect to Redis and create an adapter', () => {
@@ -34,18 +37,27 @@ describe('RedisIoAdapter', () => {
     expect(mockCreateAdapter).toHaveBeenCalledWith(mockRedisClient);
   });
 
-  it('should create an IO server and set the adapter', () => {
-    const port = 3000;
-    const mockServer = {
-      adapter: jest.fn(),
-    };
+  it('should reject server creation before Redis is initialized', () => {
+    const createServer = jest.spyOn(IoAdapter.prototype, 'createIOServer');
+
+    expect(() => redisIoAdapter.createIOServer(3000)).toThrow(
+      'Call connectToRedis() before creating the Socket.IO server',
+    );
+    expect(createServer).not.toHaveBeenCalled();
+  });
+
+  it.each([3000, undefined])('should create an IO server on port %s and set the adapter', port => {
+    const mockServer = mock<Server>();
+    const adapterConstructor = jest.fn();
+    mockCreateAdapter.mockReturnValue(adapterConstructor);
+    redisIoAdapter.connectToRedis('redis://localhost:6379');
 
     jest.spyOn(IoAdapter.prototype, 'createIOServer').mockReturnValue(mockServer);
 
     const server = redisIoAdapter.createIOServer(port);
 
     expect(IoAdapter.prototype.createIOServer).toHaveBeenCalledWith(port, undefined);
-    expect(mockServer.adapter).toHaveBeenCalledWith(redisIoAdapter['adapterConstructor']);
+    expect(mockServer.adapter).toHaveBeenCalledWith(adapterConstructor);
     expect(server).toBe(mockServer);
   });
 });

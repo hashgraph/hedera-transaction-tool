@@ -20,6 +20,8 @@ const config: Config = {
 
 if (process.env.CI) {
   config.maxWorkers = 2; // This is to prevent Jest from starving the worker in CI environments and causing instability
+  // Recycle workers between suites to bound memory growth during CI coverage runs.
+  config.workerIdleMemoryLimit = '1GiB';
 }
 
 export default config;
