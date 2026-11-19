@@ -146,7 +146,7 @@ describe('SignUpUser', () => {
   });
 
   describe('multiple emails mode', () => {
-    const enableMultipleMode = async wrapper => {
+    const enableMultipleMode = async (wrapper: ReturnType<typeof mountComponent>) => {
       await wrapper.find('[data-testid="switch-multiple-emails-mode"]').setValue(true);
     };
 
