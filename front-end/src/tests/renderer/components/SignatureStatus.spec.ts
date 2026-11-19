@@ -4,7 +4,7 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { KeyList, PrivateKey, PublicKey } from '@hiero-ledger/sdk';
 
 import type { SignatureAudit } from '@renderer/utils';
-import SignatureStatus from '@renderer/components/SignatureStatus.vue';
+import SignatureStatus from '@renderer/components/SignatureStatus/SignatureStatus.vue';
 
 vi.mock('@renderer/stores/storeUser', () => ({
   default: () => ({ personal: { id: 'user-id', isLoggedIn: true } }),

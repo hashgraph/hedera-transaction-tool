@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { ITransactionBrowserItem } from '@renderer/components/ExternalSigning/TransactionBrowser/ITransactionBrowserItem.ts';
-import SignatureStatus from '@renderer/components/SignatureStatus.vue';
+import SignatureStatus from '@renderer/components/SignatureStatus/SignatureStatus.vue';
 import { computed, ref, watch, type Ref } from 'vue';
 import { Transaction } from '@hiero-ledger/sdk';
 import { hexToUint8Array, type SignatureAudit } from '@renderer/utils';
