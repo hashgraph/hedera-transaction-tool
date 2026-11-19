@@ -13,7 +13,6 @@ function diag(message: string, extra?: Record<string, unknown>) {
     pid: process.pid,
     ...extra,
   };
-  // eslint-disable-next-line no-console
   console.log(`${DIAG_TAG} ${message}`, payload);
 }
 
