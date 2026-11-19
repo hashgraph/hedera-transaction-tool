@@ -62,11 +62,24 @@ watchEffect(async () => {
   }
 });
 
-watch(containerRef, (newValue, oldValue) => {
-  if (newValue !== null) {
-    searchIndex.pushCandidate(value.value, newValue);
-  } else if (oldValue !== null) {
-    searchIndex.removeCandidate(value.value, oldValue);
+watch(
+  containerRef,
+  (newValue, oldValue) => {
+    if (oldValue) {
+      searchIndex.removeCandidate(value.value, oldValue);
+    }
+    if (newValue !== null) {
+      searchIndex.pushCandidate(value.value, newValue);
+    }
+  },
+  { immediate: true },
+);
+watch(value, (newValue, oldValue) => {
+  if (containerRef.value !== null) {
+    if (oldValue) {
+      searchIndex.removeCandidate(oldValue, containerRef.value);
+    }
+    searchIndex.pushCandidate(newValue, containerRef.value);
   }
 });
 </script>
