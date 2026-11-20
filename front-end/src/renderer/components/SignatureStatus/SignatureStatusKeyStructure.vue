@@ -5,7 +5,7 @@ import { KeyList, PublicKey } from '@hiero-ledger/sdk';
 
 import { ableToSign } from '@renderer/utils';
 
-import SignatureStatusSingleKey from '@renderer/components/SignatureStatusSingleKey.vue';
+import SignatureStatusSingleKey from '@renderer/components/SignatureStatus/SignatureStatusSingleKey.vue';
 import KeyComponent from '@renderer/components/KeyComponent.vue';
 
 /* Props */

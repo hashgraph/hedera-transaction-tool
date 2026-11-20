@@ -53,7 +53,7 @@ describe('EmailService', () => {
   beforeEach(async () => {
     jest.resetAllMocks();
 
-    configService.getOrThrow.mockImplementation((key: string) => {
+    jest.mocked(configService.getOrThrow).mockImplementation((key: string) => {
       const config: Record<string, any> = {
         EMAIL_API_HOST: 'smtp.example.com',
         EMAIL_API_PORT: 587,
@@ -64,7 +64,7 @@ describe('EmailService', () => {
       return config[key];
     });
 
-    configService.get.mockImplementation((key: string) => {
+    jest.mocked(configService.get).mockImplementation((key: string) => {
       const config: Record<string, any> = {
         EMAIL_API_USERNAME: 'testuser',
         EMAIL_API_PASSWORD: 'testpass',
@@ -116,7 +116,7 @@ describe('EmailService', () => {
       jest.clearAllMocks();
 
       // Mock getOrThrow to return required config values
-      configService.getOrThrow.mockImplementation((key: string) => {
+      jest.mocked(configService.getOrThrow).mockImplementation((key: string) => {
         const config: Record<string, any> = {
           EMAIL_API_HOST: 'smtp.example.com',
           EMAIL_API_PORT: 587,
@@ -128,7 +128,7 @@ describe('EmailService', () => {
       });
 
       // Mock get to return undefined for auth credentials
-      configService.get.mockReturnValue(undefined);
+      jest.mocked(configService.get).mockReturnValue(undefined);
 
       const module = await Test.createTestingModule({
         providers: [
@@ -152,7 +152,7 @@ describe('EmailService', () => {
     it('should throw error if required config is missing', async () => {
       jest.clearAllMocks();
 
-      configService.getOrThrow.mockImplementation(() => {
+      jest.mocked(configService.getOrThrow).mockImplementation(() => {
         throw new Error('Config value not found');
       });
 

@@ -33,7 +33,7 @@ describe('JwtStrategy', () => {
     beforeEach(async () => {
       jest.resetAllMocks();
 
-      mockConfigService.getOrThrow.mockReturnValue('secret');
+      jest.mocked(mockConfigService.getOrThrow).mockReturnValue('secret');
 
       const module = await Test.createTestingModule({
         providers: [
@@ -105,7 +105,7 @@ describe('JwtStrategy', () => {
     it('should throw UnauthorizedException when the token is older than the current JWT_EXPIRATION', async () => {
       const iat = 1_700_000_000;
       const expirationDays = 7;
-      mockConfigService.get.mockReturnValue(expirationDays);
+      jest.mocked(mockConfigService.get).mockReturnValue(expirationDays);
       const nowSpy = jest
         .spyOn(Date, 'now')
         .mockReturnValue((iat + expirationDays * 24 * 60 * 60 + 1) * 1000);
@@ -122,7 +122,7 @@ describe('JwtStrategy', () => {
       const iat = 1_700_000_000;
       const expirationDays = 7;
       const user = { id: 1, email: 'test@test.com', credentialVersion: 0 };
-      mockConfigService.get.mockReturnValue(expirationDays);
+      jest.mocked(mockConfigService.get).mockReturnValue(expirationDays);
       mockUsersService.getUser.mockResolvedValue(user as User);
       const nowSpy = jest
         .spyOn(Date, 'now')

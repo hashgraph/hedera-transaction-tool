@@ -61,7 +61,7 @@ describe('ApiKeysService', () => {
     service = module.get<ApiKeysService>(ApiKeysService);
 
     jest.resetAllMocks();
-    configService.get.mockReturnValue(180);
+    jest.mocked(configService.get).mockReturnValue(180);
     mockTransaction();
     dataSource.manager.create.mockImplementation((_entity, data) => data as any);
     dataSource.manager.save.mockImplementation(async entity => entity as any);

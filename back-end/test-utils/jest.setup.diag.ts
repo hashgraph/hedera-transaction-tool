@@ -12,7 +12,7 @@
  * Scope: currently wired only into the Notifications jest config, where the
  * leak addressed by this PR lived. To extend the dragnet to other apps
  * (api, chain, typeorm), mirror the same `setupFiles` line into their leaf
- * jest configs gated on the same `enableDiag` flag — `back-end/jest.config.ts`
+ * jest configs gated on the same `enableDiag` flag — `back-end/jest.config.mts`
  * is a shared base imported by each leaf config and not a runnable target,
  * so wiring there would also work but applies to every consumer at once.
  *
@@ -22,9 +22,7 @@
  * per worker; suppressed counts are reported on `process:exit`.
  */
 
-import type Module from 'module';
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const NodeModule: typeof Module = require('module');
+import { Module as NodeModule } from 'node:module';
 
 const DIAG_TAG = '[jest-diag]';
 
@@ -234,7 +232,8 @@ let hadConnect = false;
 let hadSendCommand = false;
 
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // Load synchronously after the require hook is installed, inside the diagnostic error boundary.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const ioredis = require('ioredis');
   const OriginalRedis = ioredis.Redis ?? ioredis.default ?? ioredis;
 
