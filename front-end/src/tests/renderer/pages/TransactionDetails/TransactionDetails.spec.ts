@@ -466,6 +466,21 @@ describe('TransactionDetails.vue — fetch failure reporting and recovery', () =
     );
   });
 
+  test('logs both ids and toasts when computing the signature key fails, without redirecting', async () => {
+    const cause = new Error('mirror node down');
+    lookupMock.mockResolvedValue(makeOrgTransaction());
+    computeSignatureKeyMock.mockRejectedValue(cause);
+
+    await mountFailingDetails();
+
+    expect(loggerErrorMock).toHaveBeenCalledWith(
+      'Failed to compute signature key',
+      expect.objectContaining({ dbId: '101', sdkTransactionId: '0.0.101@123456.0001', cause }),
+    );
+    expect(toastManager.findEntry('mirror node down', 'error')).not.toBeNull();
+    expect(routerMock.push).not.toHaveBeenCalled();
+  });
+
   test('navigates back to the previous transactions tab after an initial load failure', async () => {
     routerMock.previousTab = 'Ready to Sign';
     lookupMock.mockRejectedValue(new Error('network blip'));
