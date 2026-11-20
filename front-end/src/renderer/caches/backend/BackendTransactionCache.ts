@@ -4,6 +4,14 @@ import { getTransactionById } from '@renderer/services/organization';
 import type { ITransactionFull } from '@shared/interfaces';
 
 export class BackendTransactionCache extends EntityCache<number | string, ITransactionFull> {
+  // Transactions are mutable and status-bearing: keep entries short-lived so that
+  // a missed websocket event can only leave stale data for a few seconds.
+  public static readonly TTL = 10_000; // ms
+
+  public constructor() {
+    super(BackendTransactionCache.TTL);
+  }
+
   //
   // Public
   //

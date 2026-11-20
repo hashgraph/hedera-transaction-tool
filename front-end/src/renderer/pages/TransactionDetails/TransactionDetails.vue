@@ -313,8 +313,7 @@ async function fetchTransactionOnNotif(): Promise<void> {
   // 1) Before calling fetchTransaction(), we clear transaction cache
   const id = Number(formattedId.value);
   if (isLoggedInOrganization(user.selectedOrganization) && !isNaN(id)) {
-    // We clear cache with strict==false to keep young data
-    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl, false);
+    appCache.backendTransaction.forget(id, user.selectedOrganization.serverUrl);
   }
   // 2) Now fetch transaction
   await fetchTransaction();

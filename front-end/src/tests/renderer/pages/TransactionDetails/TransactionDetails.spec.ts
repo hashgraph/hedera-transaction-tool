@@ -6,11 +6,13 @@ import { flushPromises, mount } from '@vue/test-utils';
 import { type ITransactionFull, TransactionStatus } from '@shared/interfaces';
 import TransactionDetails from '@renderer/pages/TransactionDetails/TransactionDetails.vue';
 import { ToastManager } from '@renderer/utils/ToastManager.ts';
+import useWebsocketSubscription from '@renderer/composables/useWebsocketSubscription';
 
 const toastManager = new ToastManager();
 
-const { lookupMock, computeSignatureKeyMock } = vi.hoisted(() => ({
+const { lookupMock, forgetMock, computeSignatureKeyMock } = vi.hoisted(() => ({
   lookupMock: vi.fn(),
+  forgetMock: vi.fn(),
   computeSignatureKeyMock: vi.fn().mockResolvedValue(null),
 }));
 
@@ -98,7 +100,7 @@ vi.mock('@shared/constants', async importOriginal => {
 vi.mock('@renderer/caches/AppCache.ts', () => ({
   AppCache: {
     inject: () => ({
-      backendTransaction: { lookup: lookupMock },
+      backendTransaction: { lookup: lookupMock, forget: forgetMock },
       computeSignatureKey: computeSignatureKeyMock,
     }),
   },
@@ -197,9 +199,45 @@ const mountTransactionDetails = async (orgTransaction: ITransactionFull) => {
 describe('TransactionDetails.vue review warnings', () => {
   beforeEach(() => {
     lookupMock.mockReset();
+    forgetMock.mockReset();
     computeSignatureKeyMock.mockReset().mockResolvedValue(null);
     toastManager.reset();
     routerMock.previousTab = undefined;
+  });
+
+  test('a status-update event for this transaction drops the cached entry and refetches', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    expect(lookupMock).toHaveBeenCalledTimes(1);
+
+    lookupMock.mockResolvedValue(makeOrgTransaction({ status: TransactionStatus.EXECUTED }));
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+    await onAction([{ transactionIds: [101], groupIds: [], eventType: 'status_update' }]);
+    await flushPromises();
+
+    expect(forgetMock).toHaveBeenCalledWith(101, 'https://org.example.com');
+    expect(lookupMock).toHaveBeenCalledTimes(2);
+    expect(forgetMock.mock.invocationCallOrder[0]).toBeLessThan(
+      lookupMock.mock.invocationCallOrder[1],
+    );
+  });
+
+  test('an event for a different transaction does not touch the cache', async () => {
+    await mountTransactionDetails(
+      makeOrgTransaction({ status: TransactionStatus.WAITING_FOR_EXECUTION }),
+    );
+    const onAction = vi.mocked(useWebsocketSubscription).mock.calls.at(-1)![1] as (
+      payload?: unknown,
+    ) => Promise<void>;
+
+    await onAction([{ transactionIds: [999], groupIds: [], eventType: 'status_update' }]);
+    await flushPromises();
+
+    expect(forgetMock).not.toHaveBeenCalled();
+    expect(lookupMock).toHaveBeenCalledTimes(1);
   });
 
   test('shows no banner when there is no rejection and the transaction is not pending review', async () => {
