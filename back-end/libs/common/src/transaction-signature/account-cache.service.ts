@@ -13,8 +13,10 @@ import {
   AccountInfoParsed,
   areEncodedKeysEqual,
   deserializeKey,
+  emitTransactionUpdate,
   flattenKeyList,
   isFresh,
+  NatsPublisherService,
   serializeKey,
 } from '@app/common';
 import { MirrorNodeClient } from './mirror-node.client';
@@ -37,6 +39,7 @@ export class AccountCacheService {
     private readonly dataSource: DataSource,
     private readonly configService: ConfigService,
     private readonly sqlBuilder: SqlBuilderService,
+    private readonly notificationsPublisher: NatsPublisherService,
   ) {
     this.cacheHelper = new CacheHelper(dataSource);
     this.cacheTtlMs = this.configService.get<number>('CACHE_STALE_THRESHOLD_MS', 10 * 1000);
@@ -165,13 +168,10 @@ export class AccountCacheService {
       return null; // Claim was lost
     }
 
-    // Persist account keys if present (ignore duplicates)
+    // Replace the normalized key rows so they match the saved key (empty for a keyless account)
     if (accountData) {
       const keys = accountData.key !== null ? flattenKeyList(accountData.key) : [];
-
-      if (keys.length > 0) {
-        await this.insertAccountKeys(id, keys);
-      }
+      await this.replaceAccountKeys(id, keys);
     }
 
     // Link to transaction when provided (idempotent)
@@ -270,6 +270,11 @@ export class AccountCacheService {
         return { status: RefreshStatus.DATA_UNCHANGED, data: accountData };
       }
 
+      // Previously cached data that changed (not a first fetch) can change who must sign
+      if (this.hasCompleteData(claimedAccount)) {
+        await this.emitSignersChanged(claimedAccount.id);
+      }
+
       return { status: RefreshStatus.REFRESHED, data: accountData };
     } catch (error) {
       // On error, clear the refresh token so another process can try
@@ -289,6 +294,28 @@ export class AccountCacheService {
       }
 
       throw error;
+    }
+  }
+
+  /**
+   * Tell the notifications service that the cached key or receiver-signature flag of an account
+   * changed, so the signer notifications of its transactions can be reconciled.
+   * Never throws: a failed lookup or publish must not affect the refresh.
+   */
+  private async emitSignersChanged(cachedAccountId: number): Promise<void> {
+    try {
+      const links = await this.dataSource.manager.find(TransactionCachedAccount, {
+        where: { cachedAccountId },
+        select: { transactionId: true },
+      });
+      if (links.length === 0) return;
+
+      await emitTransactionUpdate(
+        this.notificationsPublisher,
+        links.map(link => ({ entityId: link.transactionId, additionalData: { signersChanged: true } })),
+      );
+    } catch (error) {
+      this.logger.error(`Failed to emit signers-changed for cached account ${cachedAccountId}`, error);
     }
   }
 
@@ -314,11 +341,11 @@ export class AccountCacheService {
       .execute();
   }
 
-  private insertAccountKeys(
+  private replaceAccountKeys(
     cachedAccountId: number,
     keys: PublicKey[],
   ): Promise<void> {
-    return this.cacheHelper.insertKeys(
+    return this.cacheHelper.replaceKeys(
       CachedAccountKey,
       cachedAccountId,
       'cachedAccount',

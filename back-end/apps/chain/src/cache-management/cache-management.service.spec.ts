@@ -10,17 +10,10 @@ import {
 import {
   AccountCacheService,
   MirrorNodeCircuitBreaker,
-  NatsPublisherService,
   NodeCacheService,
-  emitTransactionUpdate,
 } from '@app/common';
 import { CacheManagementService } from './cache-management.service';
 import { mockDeep } from 'jest-mock-extended';
-
-jest.mock('@app/common', () => ({
-  ...jest.requireActual('@app/common'),
-  emitTransactionUpdate: jest.fn(),
-}));
 
 function returningRows(count: number): [any[], number] {
   return [[], count];
@@ -35,7 +28,6 @@ describe('CacheManagementService', () => {
   const accountRepository = mockDeep<Repository<CachedAccount>>();
   const nodeRepository = mockDeep<Repository<CachedNode>>();
   const configService = mockDeep<ConfigService>();
-  const notificationsPublisher = mockDeep<NatsPublisherService>();
   const circuitBreaker = mockDeep<MirrorNodeCircuitBreaker>();
 
   const createMockQueryBuilder = () => {
@@ -46,7 +38,6 @@ describe('CacheManagementService', () => {
       limit: jest.fn().mockReturnThis(),
       setLock: jest.fn().mockReturnThis(),
       setOnLocked: jest.fn().mockReturnThis(),
-      innerJoinAndSelect: jest.fn().mockReturnThis(),
       getMany: jest.fn(),
     } as unknown as jest.Mocked<SelectQueryBuilder<any>>;
     return mockQueryBuilder;
@@ -81,10 +72,6 @@ describe('CacheManagementService', () => {
         {
           provide: ConfigService,
           useValue: configService,
-        },
-        {
-          provide: NatsPublisherService,
-          useValue: notificationsPublisher,
         },
         {
           provide: MirrorNodeCircuitBreaker,
@@ -191,41 +178,27 @@ describe('CacheManagementService', () => {
   });
 
   describe('refreshStaleAccounts', () => {
-    it('should refresh stale accounts and emit transaction updates', async () => {
+    it('should refresh every stale account', async () => {
       const mockAccount1: CachedAccount = { id: 1, account: '0.0.100', mirrorNetwork: 'testnet' } as CachedAccount;
       const mockAccount2: CachedAccount = { id: 2, account: '0.0.200', mirrorNetwork: 'testnet' } as CachedAccount;
-
-      const mockTransactionAccount = {
-        cachedAccount: mockAccount1,
-        cachedAccountId: mockAccount1.id,
-        transaction: { id: 10 },
-      };
 
       const accountQueryBuilder = createMockQueryBuilder();
       accountQueryBuilder.getMany.mockResolvedValue([mockAccount1, mockAccount2]);
 
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue([mockTransactionAccount]);
-
       const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(accountQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
+        createQueryBuilder: jest.fn().mockReturnValue(accountQueryBuilder),
       };
 
       dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
 
-      accountCacheService.refreshAccount
-        .mockResolvedValueOnce(true)  // Account 1 refreshed
-        .mockResolvedValueOnce(false); // Account 2 not refreshed
-
       await service.refreshStaleAccounts();
 
       expect(accountCacheService.refreshAccount).toHaveBeenCalledTimes(2);
-      expect(emitTransactionUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        [{ entityId: 10 }]
-      );
+      expect(accountCacheService.refreshAccount).toHaveBeenCalledWith(mockAccount1);
+      expect(accountCacheService.refreshAccount).toHaveBeenCalledWith(mockAccount2);
+      // the stale accounts are selected with a lock that skips rows other instances hold
+      expect(accountQueryBuilder.setLock).toHaveBeenCalledWith('pessimistic_write');
+      expect(accountQueryBuilder.setOnLocked).toHaveBeenCalledWith('skip_locked');
     });
 
     it('should handle empty stale accounts', async () => {
@@ -241,109 +214,30 @@ describe('CacheManagementService', () => {
       await service.refreshStaleAccounts();
 
       expect(accountCacheService.refreshAccount).not.toHaveBeenCalled();
-      expect(emitTransactionUpdate).not.toHaveBeenCalled();
-    });
-
-    it('should deduplicate transaction IDs across multiple accounts', async () => {
-      const mockAccount1: CachedAccount = { id: 1, account: '0.0.100', mirrorNetwork: 'testnet' } as CachedAccount;
-      const mockAccount2: CachedAccount = { id: 2, account: '0.0.200', mirrorNetwork: 'testnet' } as CachedAccount;
-
-      const mockTransactionAccounts = [
-        { cachedAccount: mockAccount1, cachedAccountId: mockAccount1.id, transaction: { id: 10 } },
-        { cachedAccount: mockAccount1, cachedAccountId: mockAccount1.id, transaction: { id: 20 } },
-        { cachedAccount: mockAccount2, cachedAccountId: mockAccount2.id, transaction: { id: 10 } }, // Duplicate transaction ID
-      ];
-
-      const accountQueryBuilder = createMockQueryBuilder();
-      accountQueryBuilder.getMany.mockResolvedValue([mockAccount1, mockAccount2]);
-
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue(mockTransactionAccounts);
-
-      const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(accountQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
-      };
-
-      dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
-
-      accountCacheService.refreshAccount.mockResolvedValue(true);
-
-      await service.refreshStaleAccounts();
-
-      expect(emitTransactionUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        expect.arrayContaining([
-          { entityId: 10 },
-          { entityId: 20 },
-        ])
-      );
-      // Should only have 2 unique transaction IDs
-      expect((emitTransactionUpdate as jest.Mock).mock.calls[0][1]).toHaveLength(2);
-    });
-
-    it('should not emit updates when no accounts were refreshed', async () => {
-      const mockAccount: CachedAccount = { id: 1, account: '0.0.100', mirrorNetwork: 'testnet' } as CachedAccount;
-
-      const accountQueryBuilder = createMockQueryBuilder();
-      accountQueryBuilder.getMany.mockResolvedValue([mockAccount]);
-
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue([]);
-
-      const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(accountQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
-      };
-
-      dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
-
-      accountCacheService.refreshAccount.mockResolvedValue(false);
-
-      await service.refreshStaleAccounts();
-
-      expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
   });
 
   describe('refreshStaleNodes', () => {
-    it('should refresh stale nodes and emit transaction updates', async () => {
+    it('should refresh every stale node', async () => {
       const mockNode1: CachedNode = { id: 1, nodeId: 3, mirrorNetwork: 'testnet' } as CachedNode;
       const mockNode2: CachedNode = { id: 2, nodeId: 4, mirrorNetwork: 'testnet' } as CachedNode;
-
-      const mockTransactionNode = {
-        cachedNode: mockNode1,
-        cachedNodeId: mockNode1.id,
-        transaction: { id: 30 },
-      };
 
       const nodeQueryBuilder = createMockQueryBuilder();
       nodeQueryBuilder.getMany.mockResolvedValue([mockNode1, mockNode2]);
 
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue([mockTransactionNode]);
-
       const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(nodeQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
+        createQueryBuilder: jest.fn().mockReturnValue(nodeQueryBuilder),
       };
 
       dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
 
-      nodeCacheService.refreshNode
-        .mockResolvedValueOnce(true)  // Node 1 refreshed
-        .mockResolvedValueOnce(false); // Node 2 not refreshed
-
       await service.refreshStaleNodes();
 
       expect(nodeCacheService.refreshNode).toHaveBeenCalledTimes(2);
-      expect(emitTransactionUpdate).toHaveBeenCalledWith(
-        notificationsPublisher,
-        [{ entityId: 30 }]
-      );
+      expect(nodeCacheService.refreshNode).toHaveBeenCalledWith(mockNode1);
+      expect(nodeCacheService.refreshNode).toHaveBeenCalledWith(mockNode2);
+      expect(nodeQueryBuilder.setLock).toHaveBeenCalledWith('pessimistic_write');
+      expect(nodeQueryBuilder.setOnLocked).toHaveBeenCalledWith('skip_locked');
     });
 
     it('should handle empty stale nodes', async () => {
@@ -359,48 +253,27 @@ describe('CacheManagementService', () => {
       await service.refreshStaleNodes();
 
       expect(nodeCacheService.refreshNode).not.toHaveBeenCalled();
-      expect(emitTransactionUpdate).not.toHaveBeenCalled();
     });
   });
 
   describe('circuit breaker integration', () => {
     const setupAccountTransaction = (accounts: CachedAccount[]) => {
-      const transactionAccounts = accounts.map((a, i) => ({
-        cachedAccountId: a.id,
-        transaction: { id: 100 + i },
-      }));
-
       const accountQueryBuilder = createMockQueryBuilder();
       accountQueryBuilder.getMany.mockResolvedValue(accounts);
 
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue(transactionAccounts);
-
       const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(accountQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
+        createQueryBuilder: jest.fn().mockReturnValue(accountQueryBuilder),
       };
 
       dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
     };
 
     const setupNodeTransaction = (nodes: CachedNode[]) => {
-      const transactionNodes = nodes.map((n, i) => ({
-        cachedNodeId: n.id,
-        transaction: { id: 200 + i },
-      }));
-
       const nodeQueryBuilder = createMockQueryBuilder();
       nodeQueryBuilder.getMany.mockResolvedValue(nodes);
 
-      const transactionQueryBuilder = createMockQueryBuilder();
-      transactionQueryBuilder.getMany.mockResolvedValue(transactionNodes);
-
       const mockManager = {
-        createQueryBuilder: jest.fn()
-          .mockReturnValueOnce(nodeQueryBuilder)
-          .mockReturnValueOnce(transactionQueryBuilder),
+        createQueryBuilder: jest.fn().mockReturnValue(nodeQueryBuilder),
       };
 
       dataSource.transaction = jest.fn(async (callback) => callback(mockManager)) as any;
