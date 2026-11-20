@@ -303,9 +303,8 @@ async function fetchNodesOnNotif(options?: { silent?: boolean }): Promise<void> 
   if (isLoggedInOrganization(user.selectedOrganization)) {
     const serverUrl = user.selectedOrganization.serverUrl;
     for (const node of nodes.value) {
-      // We clear cache with strict==false to keep young data
       if (node.transactionId) {
-        transactionCache.forget(node.transactionId, serverUrl, false);
+        transactionCache.forget(node.transactionId, serverUrl);
       }
     }
   }
