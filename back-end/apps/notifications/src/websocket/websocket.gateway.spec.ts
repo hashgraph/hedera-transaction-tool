@@ -87,7 +87,7 @@ describe('WebsocketGateway', () => {
   describe('afterInit', () => {
     it('should apply frontend version and auth middlewares after init', () => {
       const minimumVersion = '1.0.0';
-      configService.getOrThrow.mockReturnValue(minimumVersion);
+      jest.mocked(configService.getOrThrow).mockReturnValue(minimumVersion);
 
       const server: Partial<Server> = {
         use: jest.fn(),

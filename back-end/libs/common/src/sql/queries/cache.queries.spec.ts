@@ -1,7 +1,7 @@
 import { DataSource } from 'typeorm';
 import { CachedAccount, CachedNode } from '@entities';
 import { createTestPostgresDataSource } from '../../../../../test-utils/postgres-test-db';
-import { enableDiag } from '../../../../../test-utils/diag-enabled';
+import { enableDiag } from '../../../../../test-utils/diag-enabled.cjs';
 import { getUpsertRefreshTokenForCacheQuery, SqlBuilderService } from '@app/common';
 import { randomUUID } from 'node:crypto';
 

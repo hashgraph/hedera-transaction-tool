@@ -13,7 +13,11 @@ export class RedisIoAdapter extends IoAdapter {
     this.adapterConstructor = createAdapter(redisClient);
   }
 
-  override createIOServer(port: number, options?: ServerOptions) {
+  override createIOServer(port: number | undefined, options?: ServerOptions) {
+    if (!this.adapterConstructor) {
+      throw new Error('Call connectToRedis() before creating the Socket.IO server');
+    }
+
     const server = super.createIOServer(port, options);
     server.adapter(this.adapterConstructor);
     return server;
