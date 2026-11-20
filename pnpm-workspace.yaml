@@ -120,6 +120,7 @@ overrides:
   "follow-redirects": "1.16.2"
   "minimatch@>=7.0.0": "11.0.1"
   "glob@>=9.0.0": "14.0.4"
+  "effect": "3.22.1"
 
 # Refuse to resolve packages published fewer than 3 days ago (4320 minutes)
 # This blocks supply-chain attacks that race to publish malicious versions.
